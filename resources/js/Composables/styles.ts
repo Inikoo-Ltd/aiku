@@ -144,9 +144,9 @@ export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
             ? `${getVal(properties.dimension, ['width', 'value'])}${getVal(properties.dimension, ['width','unit'])}`
             : null,
 
-        color: properties?.text?.color || null,
-        fontFamily: properties?.text?.fontFamily || null,
-        fontSize: properties?.text?.fontSize ? properties?.text?.fontSize + 'px' : null,
+        color:  getVal(properties?.text, ['color']) || null,
+        fontFamily:  getVal(properties?.text, ['fontFamily'])  || null,
+        fontSize: getVal(properties?.text, ['fontSize']) ? getVal(properties?.text, ['fontSize']) + 'px' : null,
         objectFit: getVal(properties?.object_fit),
         objectPosition: getVal(properties?.object_position),
 

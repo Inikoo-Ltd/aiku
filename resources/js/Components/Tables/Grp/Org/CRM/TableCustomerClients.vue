@@ -60,11 +60,21 @@ function customerRoute(customer: CustomerSalesChannel) {
                     (route().params as RouteParams).fulfilmentCustomer,
                     customer.ulid]);
         case "retina.dropshipping.customer_clients.index":
-        case "retina.dropshipping.customer_sales_channels.client.index":
             return route(
                 "retina.dropshipping.customer_clients.show",
-                [customer.ulid]
+                [
+                    (route().params as RouteParams).customerSalesChannel,
+                    customer.ulid
+                ]
             );
+        case "retina.dropshipping.customer_sales_channels.client.index":
+            // return route(
+            //     "retina.dropshipping.customer_sales_channels.client.show",
+            //     [
+            //         (route().params as RouteParams).customerSalesChannel,
+            //         customer.ulid
+            //     ]);
+            return '#'
         case "retina.fulfilment.dropshipping.customer_sales_channels.client.index":
             return route(
                 "retina.fulfilment.dropshipping.customer_sales_channels.client.show",

@@ -43,14 +43,14 @@ function orderRoute(order) {
       return route(
         "retina.dropshipping.customer_sales_channels.orders.show",
         {
-          platform: (route().params as RouteParams).platform,
+          customerSalesChannel: (route().params as RouteParams).customerSalesChannel,
           order: order.slug
         });
     case "retina.dropshipping.customer_sales_channels.basket.index":
       return route(
         "retina.dropshipping.customer_sales_channels.basket.show",
         {
-          platform: (route().params as RouteParams).platform,
+          customerSalesChannel: (route().params as RouteParams).customerSalesChannel,
           order: order.slug
         });
 

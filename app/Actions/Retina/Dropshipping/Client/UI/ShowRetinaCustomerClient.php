@@ -106,16 +106,16 @@ class ShowRetinaCustomerClient extends RetinaAction
             array_merge(
                 IndexRetinaCustomerClients::make()->getBreadcrumbs(),
                 [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'retina.dropshipping.customer_clients.show',
-                                'parameters' => [$customerClient->ulid]
-                            ],
-                            'label' => $customerClient->name,
-                        ]
-                    ]
+                    // [
+                    //     'type'   => 'simple',
+                    //     'simple' => [
+                    //         'route' => [
+                    //             'name'       => 'retina.dropshipping.customer_clients.show',
+                    //             'parameters' => [$customerClient->ulid]
+                    //         ],
+                    //         'label' => $customerClient->name,
+                    //     ]
+                    // ]
                 ]
             );
     }

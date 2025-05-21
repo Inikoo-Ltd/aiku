@@ -55,7 +55,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                     'route_generate' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
                         'parameters' => [
-                            'platform' => $platform->slug,
+                            'customerSalesChannel' => $platform->slug,
                         ],
                     ],
                 ],
