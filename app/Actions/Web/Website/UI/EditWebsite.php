@@ -117,11 +117,11 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'G-XXXXXXXXXX',
                     'required' => false,
                 ],
-                'luigi_tracker_id' => [  // TODO: check if this is the correct name
+                'luigisbox_tracker_id' => [  // TODO: check if this is the correct name
                     'information' => __('For Luigi search in the header'),
                     'type'     => 'input',
                     'label'    => __('Luigi Search Tracker ID'),
-                    'value'    => Arr::get($website->settings, "luigi_tracker_id"),
+                    'value'    => Arr::get($website->settings, "luigisbox.tracker_id"),
                     'placeholder' => '123456-123456',
                     'required' => false,
                 ],
