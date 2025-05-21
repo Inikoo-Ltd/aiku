@@ -68,7 +68,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'route'         => [
                 'name' => 'retina.dropshipping.customer_sales_channels.orders.index',
                 'parameters' => [
-                    'platform' => $customerSalesChannel->platform->slug,
+                    'customerSalesChannel' => $customerSalesChannel->platform->slug,
                 ]
             ]
         ];
@@ -81,7 +81,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'route'         => [
                 'name' => 'retina.dropshipping.customer_sales_channels.client.index',
                 'parameters' => [
-                    'platform' => $customerSalesChannel->platform->slug,
+                    'customerSalesChannel' => $customerSalesChannel->platform->slug,
                 ]
             ]
         ];
@@ -94,7 +94,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'route'         => [
                 'name' => 'retina.dropshipping.customer_sales_channels.portfolios.index',
                 'parameters' => [
-                    'platform' => $customerSalesChannel->platform->slug,
+                    'customerSalesChannel' => $customerSalesChannel->platform->slug,
                 ]
             ]
         ];

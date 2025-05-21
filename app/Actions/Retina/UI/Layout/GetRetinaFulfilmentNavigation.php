@@ -98,7 +98,7 @@ class GetRetinaFulfilmentNavigation
                         'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
                         'key'           => $customerSalesChannel->slug.'_platform',
-                        'img'           => $this->getPlatformLogo($customerSalesChannels),
+                        'img'           => $this->getPlatformLogo($customerSalesChannel),
                         'label'         => $customerSalesChannel->platform->name.' ('.$reference.')',
                         'route'         => [
                             'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
