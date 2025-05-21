@@ -15,82 +15,28 @@ use App\Http\Resources\Mail\MailshotResource;
 use App\Http\Resources\Mail\NewsletterMailshotsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexNewsletterMailshots extends OrgAction
 {
     use HasUIMailshots;
     use WithCatalogueAuthorisation;
+    use WithIndexMailshots;
 
     public Group|Outbox|PostRoom|Organisation|Shop $parent;
 
     public function handle(Group|Outbox|PostRoom|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereWith('mailshots.subject', $value);
-            });
-        });
-
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
-
-        $queryBuilder = QueryBuilder::for(Mailshot::class)
-            ->leftJoin('organisations', 'mailshots.organisation_id', '=', 'organisations.id')
-            ->leftJoin('shops', 'mailshots.shop_id', '=', 'shops.id');
-        if ($parent instanceof Group) {
-            $queryBuilder->where('mailshots.group_id', $parent->id);
-        }
-        $queryBuilder->leftJoin('outboxes', 'mailshots.outbox_id', 'outboxes.id')
-            ->leftJoin('mailshot_stats', 'mailshot_stats.mailshot_id', 'mailshots.id')
-            ->leftJoin('post_rooms', 'outboxes.post_room_id', 'post_rooms.id')
-            ->when($parent, function ($query) use ($parent) {
-                if (class_basename($parent) == 'Comms') {
-                    $query->where('mailshots.post_room_id', $parent->id);
-                }
-            });
-        $queryBuilder->where('mailshots.type', OutboxCodeEnum::NEWSLETTER->value);
-
-        return $queryBuilder
-            ->defaultSort('mailshots.id')
-            ->select([
-                'mailshots.state',
-                'mailshots.date',
-                'mailshots.slug',
-                'mailshots.id',
-                'mailshots.subject',
-                'outboxes.slug as outboxes_slug',
-                'post_rooms.id as post_room_id',
-                'mailshot_stats.number_dispatched_emails as dispatched_emails',
-                'mailshot_stats.number_dispatched_emails_state_sent as sent',
-                'mailshot_stats.number_dispatched_emails_state_delivered as delivered',
-                'mailshot_stats.number_dispatched_emails_state_hard_bounce as hard_bounce',
-                'mailshot_stats.number_dispatched_emails_state_soft_bounce as soft_bounce',
-                'mailshot_stats.number_dispatched_emails_state_opened as opened',
-                'mailshot_stats.number_dispatched_emails_state_clicked as clicked',
-                'mailshot_stats.number_dispatched_emails_state_spam as spam',
-                'shops.name as shop_name',
-                'shops.slug as shop_slug',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-            ])
-            ->allowedSorts(['state', 'data', 'subject', 'date', 'sent', 'hard_bounce', 'soft_bounce', 'delivered', 'opened', 'clicked', 'spam'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $this->handleMailshot(OutboxCodeEnum::NEWSLETTER, $parent, $prefix);
     }
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
@@ -126,7 +72,6 @@ class IndexNewsletterMailshots extends OrgAction
     {
         return MailshotResource::collection($mailshots);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
@@ -188,6 +133,6 @@ class IndexNewsletterMailshots extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($organisation);
+        return $this->handle($shop);
     }
 }

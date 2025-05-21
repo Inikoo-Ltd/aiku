@@ -39,16 +39,16 @@ function orderRoute(order) {
         {
           order: order.slug
         });
-    case "retina.dropshipping.platforms.orders.index":
+    case "retina.dropshipping.customer_sales_channels.orders.index":
       return route(
-        "retina.dropshipping.platforms.orders.show",
+        "retina.dropshipping.customer_sales_channels.orders.show",
         {
           platform: (route().params as RouteParams).platform,
           order: order.slug
         });
-    case "retina.dropshipping.platforms.basket.index":
+    case "retina.dropshipping.customer_sales_channels.basket.index":
       return route(
-        "retina.dropshipping.platforms.basket.show",
+        "retina.dropshipping.customer_sales_channels.basket.show",
         {
           platform: (route().params as RouteParams).platform,
           order: order.slug
@@ -56,7 +56,6 @@ function orderRoute(order) {
 
   }
 }
-
 
 </script>
 
@@ -98,7 +97,7 @@ function orderRoute(order) {
 
 
       <template #cell(total_amount)="{ item }">
-        {{ locale?.currencyFormat(currency.code || "usd", item.total_amount || 0) }}
+        {{ locale?.currencyFormat(currency?.code || "usd", item.total_amount || 0) }}
       </template>
 
       <template #cell(date)="{ item: order }">

@@ -10,7 +10,8 @@ export interface Mailshot {
     outbox_id:string,
     data: string,
     created_at: string
-    updated_at: string
+    updated_at: string,
+    slug: string,
 
 
 }

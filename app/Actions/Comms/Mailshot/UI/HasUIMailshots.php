@@ -40,9 +40,7 @@ trait HasUIMailshots
             'grp.overview.comms-marketing.abandoned-cart-mailshots.index',
             'grp.overview.comms-marketing.newsletters.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',
@@ -59,7 +57,7 @@ trait HasUIMailshots
             ),
             'grp.org.shops.show.marketing.mailshots.index' =>
             array_merge(
-                (new MarketingHub())->getBreadcrumbs($routeName, $routeParameters),
+                MarketingHub::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
@@ -76,7 +74,7 @@ trait HasUIMailshots
             ),
             'grp.org.shops.show.marketing.newsletters.index' =>
             array_merge(
-                (new MarketingHub())->getBreadcrumbs($routeName, $routeParameters),
+                MarketingHub::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
@@ -93,7 +91,7 @@ trait HasUIMailshots
             ),
             'mail.post_rooms.show.mailshots.show' =>
             array_merge(
-                (new ShowPostRoom())->getBreadcrumbs($parent),
+                ShowPostRoom::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb([$parent->slug])
             ),
             default => []

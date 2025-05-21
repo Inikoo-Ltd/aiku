@@ -118,7 +118,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                 'tooltip' => $fetchClientLabel,
                 'label'   => $fetchClientLabel,
                 'route'   => [
-                    'name'       => 'retina.dropshipping.platforms.client.fetch',
+                    'name'       => 'retina.dropshipping.customer_sales_channels.client.fetch',
                     'parameters' => [
                         'platform' => $this->customerSalesChannel->platform->slug
                     ]
@@ -133,7 +133,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                 'tooltip' => $fetchClientLabel,
                 'label'   => $fetchClientLabel,
                 'route'   => [
-                    'name'       => 'retina.dropshipping.platforms.client.wc-fetch',
+                    'name'       => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
                     'parameters' => [
                         'platform' => $this->customerSalesChannel->platform->slug
                     ]

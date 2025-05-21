@@ -35,21 +35,24 @@ class ShowMarketingDashboard extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
+
+        $title = __('Marketing Dashboard');
+
         return Inertia::render(
             'Org/Marketing/MarketingDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'        =>  __('Marketing Dashboard'),
+                'title'        =>  $title,
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-bullhorn'],
-                        'title' =>  __('Marketing Dashboard'),
+                        'title' =>  $title,
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
                         'title' => __('marketing')
                     ],
-                    'title' => __('Marketing Dashboard'),
+                    'title' => $title,
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
@@ -67,7 +70,7 @@ class ShowMarketingDashboard extends OrgAction
                     ],
                     [
                         'name' => __('Mailshots'),
-                        'value' => $this->shop->commsStats->number_mailshots_type_mailshot,
+                        'value' => $this->shop->commsStats->number_mailshots_type_marketing,
                         'icon'  => ['fal', 'fa-mail-bulk'],
                         'route' => [
                             'name'       => 'grp.org.shops.show.marketing.mailshots.index',

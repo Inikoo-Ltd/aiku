@@ -170,7 +170,7 @@ class MarketingHub extends InertiaAction
                             'route' => [
                                 'name' => 'grp.org.shops.show.marketing.dashboard'
                             ],
-                            'label' => __('marketing').' ('.__('all shops').')',
+                            'label' => __('Marketing').' ('.__('all shops').')',
                             'icon'  => 'fal fa-bullhorn'
                         ],
                     ],
@@ -187,7 +187,7 @@ class MarketingHub extends InertiaAction
                                 'name'       => 'grp.org.shops.show.marketing.dashboard',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __('marketing').' ('.$routeParameters['shop'].')',
+                            'label' => __('Marketing').' ('.$routeParameters['shop'].')',
                             'icon'  => 'fal fa-bullhorn'
                         ],
                     ],

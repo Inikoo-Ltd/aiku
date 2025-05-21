@@ -1,12 +1,12 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Wed, 16 Oct 2024 10:47:26 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 20 May 2025 16:58:42 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Dropshipping\Client\UI;
+namespace App\Actions\Pupil;
 
 use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
@@ -14,10 +14,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -25,25 +22,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexRetinaPlatformCustomerClients extends RetinaAction
+class IndexPupilPlatformCustomerClients extends RetinaAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->is_root;
-    }
-
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
-
-        return IndexCustomerPlatformCustomerClients::run($this->customer, $customerSalesChannel->platform);
-    }
-
-    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
     {
         $this->asAction = true;
         $this->initialisationFromPupil($request);
@@ -70,29 +51,9 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
-        $icon      = ['fal', 'fa-user'];
-        $title     = $this->platformUser->name;
-        $title = __('Clients');
-        $iconRight = [
-            'icon'  => ['fal', 'fa-user-friends'],
-            'title' => __('customer client')
-        ];
 
-        // if ($this->platformUser instanceof TiktokUser) {
-        //     $afterTitle = [
-        //         'label' => __('Tiktok Clients')
-        //     ];
-        // } elseif ($this->platformUser instanceof ShopifyUser) {
-        //     $afterTitle = [
-        //         'label' => __('Shopify Clients')
-        //     ];
-        // } else {
-        //     $afterTitle = [
-        //         'label' => __('Clients')
-        //     ];
-        // }
-        $actions = [];
-        $shopifyActions = [];
+        $title = __('Clients');
+
         $shopifyActions = match (class_basename($this->platformUser)) {
             'ShopifyUser' => [
                 'type'    => 'button',
@@ -155,7 +116,6 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                     ],
                 ],
             ];
-        // dd($actions);
         return Inertia::render(
             'Dropshipping/Client/CustomerClients',
             [
@@ -167,8 +127,6 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                 'pageHead'    => [
                     'title'      => $title,
                     'model'      => $this->platformUser->name ?? __('Manual'),
-                    // 'afterTitle' => $afterTitle,
-                    // 'iconRight'  => $iconRight,
                     'icon'       => [
                         'icon'  => ['fal', 'fa-user-friends'],
                         'title' => __('customer client')

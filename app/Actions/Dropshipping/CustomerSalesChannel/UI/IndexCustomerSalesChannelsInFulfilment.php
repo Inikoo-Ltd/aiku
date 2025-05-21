@@ -17,7 +17,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -45,7 +44,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(CustomerSalesChannel::class)
+        return QueryBuilder::for(CustomerSalesChannel::class)
             ->where('customer_sales_channels.customer_id', $fulfilmentCustomer->customer_id)
             ->select([
                 'customer_sales_channels.id',
@@ -68,7 +67,6 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
 
-        return $query;
     }
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response

@@ -75,6 +75,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_outboxes_type_send_invoice_to_customer
  * @property int $number_dispatched_emails_state_delay
+ * @property int $number_outboxes_type_new_pallet_return_from_customer
+ * @property int $number_outboxes_type_new_pallet_delivery_from_customer
+ * @property int $number_outboxes_type_pallet_delivery_deleted
+ * @property int $number_outboxes_type_pallet_return_deleted
+ * @property int $number_outboxes_type_pallet_deleted
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats query()

@@ -104,6 +104,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Currency $currency
+ * @property-read CustomerSalesChannel|null $customerSaleChannel
  * @property-read Address|null $deliveryAddress
  * @property-read mixed $discount_amount
  * @property-read Collection<int, Address> $fixedAddresses
@@ -117,6 +118,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read \App\Models\Fulfilment\RecurringBill|null $recurringBill
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
+ * @property-read SalesChannel|null $salesChannel
  * @property-read Collection<int, Shipment> $shipments
  * @property-read ShopifyUserHasFulfilment|null $shopifyFulfilment
  * @property-read \App\Models\Fulfilment\PalletReturnStats|null $stats

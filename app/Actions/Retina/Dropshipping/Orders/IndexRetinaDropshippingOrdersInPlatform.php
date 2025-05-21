@@ -13,7 +13,6 @@ use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
-use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
@@ -123,7 +122,6 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
-        // dd(RetinaDropshippingOrdersResources::collection($orders)->resolve());
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [

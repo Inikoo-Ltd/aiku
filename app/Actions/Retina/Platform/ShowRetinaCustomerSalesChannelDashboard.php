@@ -11,8 +11,6 @@ namespace App\Actions\Retina\Platform;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
-use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,7 +66,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'count'         => $customerSalesChannel->number_orders,
             'description'   => __('total orders'),
             'route'         => [
-                'name' => 'retina.dropshipping.platforms.orders.index',
+                'name' => 'retina.dropshipping.customer_sales_channels.orders.index',
                 'parameters' => [
                     'platform' => $customerSalesChannel->platform->slug,
                 ]
@@ -81,7 +79,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'count'         => $customerSalesChannel->number_customer_clients,
             'description'   => __('total clients'),
             'route'         => [
-                'name' => 'retina.dropshipping.platforms.client.index',
+                'name' => 'retina.dropshipping.customer_sales_channels.client.index',
                 'parameters' => [
                     'platform' => $customerSalesChannel->platform->slug,
                 ]
@@ -94,7 +92,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'count'         => $customerSalesChannel->number_portfolios,
             'description'   => __('total portfolios'),
             'route'         => [
-                'name' => 'retina.dropshipping.platforms.portfolios.index',
+                'name' => 'retina.dropshipping.customer_sales_channels.portfolios.index',
                 'parameters' => [
                     'platform' => $customerSalesChannel->platform->slug,
                 ]
@@ -115,7 +113,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.platforms.dashboard',
+                                'name' => 'retina.dropshipping.customer_sales_channels.dashboard',
                                 'parameters'  => ['manual']  // TODO: change to correct one
                             ],
                             'label' => __('Channel Dashboard'),
