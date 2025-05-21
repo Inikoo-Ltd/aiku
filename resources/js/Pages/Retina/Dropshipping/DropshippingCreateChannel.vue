@@ -258,7 +258,7 @@ const onSubmitWoocommerce = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'local'"
+                        v-if="layout?.app?.environment === 'local' && layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
