@@ -8,8 +8,10 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,7 +28,11 @@ class DeleteWooCommerceUser extends OrgAction
     {
         $wooCommerceUser->products()->detach();
         $wooCommerceUser->orders()->detach();
-        $wooCommerceUser->customer->customerSalesChannelsXXX()->detach();
+        if ($wooCommerceUser->customerSalesChannel) {
+            UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
+                'status' => CustomerSalesChannelStatusEnum::CLOSED
+            ]);
+        }
 
         $wooCommerceUser->forceDelete();
     }

@@ -92,7 +92,6 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     ],
                 ],
                 'type_manual'   => [
-                    'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
                     'createRoute'       => [
                         'method' => 'post',
                         'name' => match ($customer->is_fulfilment) {

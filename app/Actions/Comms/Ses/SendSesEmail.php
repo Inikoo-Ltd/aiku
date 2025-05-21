@@ -103,10 +103,8 @@ class SendSesEmail
                     ]
                 );
 
-                if ($dispatchedEmail->recipient) {
-                    if ($dispatchedEmail->recipient_type == 'Prospect') {
-                        UpdateProspectEmailSent::run($dispatchedEmail->recipient);
-                    }
+                if ($dispatchedEmail->recipient && $dispatchedEmail->recipient_type == 'Prospect') {
+                    UpdateProspectEmailSent::run($dispatchedEmail->recipient);
                 }
             } catch (AwsException $e) {
 

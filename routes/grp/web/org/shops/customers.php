@@ -14,7 +14,6 @@ use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
-use App\Actions\CRM\Customer\UI\IndexCustomerPlatformCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\Customer\UI\IndexFilteredProducts;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
@@ -56,7 +55,6 @@ Route::prefix('{customer}')->as('show')->group(function () {
             Route::prefix('/customer-clients')->as('.customer_clients')->group(function () {
                 Route::get('', IndexCustomerClients::class)->name('.index');
                 Route::get('create', CreateCustomerClient::class)->name('.create');
-                Route::get('other-platforms', IndexCustomerPlatformCustomerClients::class)->name('.other_platform.index');
                 Route::get('/{customerClient}', ShowCustomerClient::class)->name('.show');
                 Route::get('/{customerClient}/edit', EditCustomerClient::class)->name('.edit');
 

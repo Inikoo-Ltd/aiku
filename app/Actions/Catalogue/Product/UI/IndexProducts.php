@@ -57,7 +57,6 @@ class IndexProducts extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->asAction) {
             return true;
         }
@@ -79,6 +78,7 @@ class IndexProducts extends OrgAction
             return $request->user()->authTo("group-overview");
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
+
             return $request->user()->authTo("products.{$this->shop->id}.view");
         }
     }
@@ -122,7 +122,7 @@ class IndexProducts extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->orderBy('products.state', 'asc');
+        $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
@@ -172,7 +172,7 @@ class IndexProducts extends OrgAction
             });
         } elseif ($parent instanceof ShopifyUser) {
             if ($bucket == 'current') {
-                $queryBuilder->join('shopify_user_has_products', function ($join) use ($parent, $bucket) {
+                $queryBuilder->join('shopify_user_has_products', function ($join) use ($parent) {
                     $join->on('products.id', '=', 'shopify_user_has_products.product_id')
                         ->where('shopify_user_has_products.shopify_user_id', '=', $parent->id);
                 });
@@ -186,12 +186,12 @@ class IndexProducts extends OrgAction
                 $productIds = $parent->customer->portfolios()->where('item_type', class_basename(Product::class))->pluck('item_id');
 
                 $queryBuilder->where('shop_id', $parent->customer->shop_id)
-                ->whereNotIn('products.id', $productIds)
-                ->where('products.state', ProductStateEnum::ACTIVE);
+                    ->whereNotIn('products.id', $productIds)
+                    ->where('products.state', ProductStateEnum::ACTIVE);
             }
         } elseif ($parent instanceof TiktokUser) {
             if ($bucket == 'current') {
-                $queryBuilder->join('tiktok_user_has_products', function ($join) use ($parent, $bucket) {
+                $queryBuilder->join('tiktok_user_has_products', function ($join) use ($parent) {
                     $join->on('products.id', '=', 'tiktok_user_has_products.product_id')
                         ->where('tiktok_user_has_products.tiktok_user_id', '=', $parent->id);
                 });
@@ -205,12 +205,12 @@ class IndexProducts extends OrgAction
                 $productIds = $parent->customer->portfolios()->where('item_type', class_basename(Product::class))->pluck('item_id');
 
                 $queryBuilder->where('shop_id', $parent->customer->shop_id)
-                ->whereNotIn('products.id', $productIds)
-                ->where('products.state', ProductStateEnum::ACTIVE);
+                    ->whereNotIn('products.id', $productIds)
+                    ->where('products.state', ProductStateEnum::ACTIVE);
             }
         } elseif ($parent instanceof WooCommerceUser) {
             if ($bucket == 'current') {
-                $queryBuilder->join('wc_user_has_products', function ($join) use ($parent, $bucket) {
+                $queryBuilder->join('wc_user_has_products', function ($join) use ($parent) {
                     $join->on('products.id', '=', 'wc_user_has_products.product_id')
                         ->where('wc_user_has_products.woo_commerce_user_id', '=', $parent->id);
                 });
@@ -224,8 +224,8 @@ class IndexProducts extends OrgAction
                 $productIds = $parent->customer->portfolios()->where('item_type', class_basename(Product::class))->pluck('item_id');
 
                 $queryBuilder->where('shop_id', $parent->customer->shop_id)
-                ->whereNotIn('products.id', $productIds)
-                ->where('products.state', ProductStateEnum::ACTIVE);
+                    ->whereNotIn('products.id', $productIds)
+                    ->where('products.state', ProductStateEnum::ACTIVE);
             }
         } elseif ($parent instanceof Customer) {
             $productIds = $parent->portfolios()->where('item_type', class_basename(Product::class))->pluck('item_id');
@@ -233,7 +233,6 @@ class IndexProducts extends OrgAction
             $queryBuilder->where('shop_id', $parent->shop_id)
                 ->whereNotIn('products.id', $productIds)
                 ->where('products.state', ProductStateEnum::ACTIVE);
-
         } elseif ($parent instanceof Group) {
             $queryBuilder->where('products.group_id', $parent->id);
         } else {
@@ -290,7 +289,7 @@ class IndexProducts extends OrgAction
             }
 
             if (class_basename($parent) == 'Shop') {
-                if ($bucket == 'current' or $bucket == 'all') {
+                if ($bucket == 'current' || $bucket == 'all') {
                     foreach ($this->getElementGroups($parent, $bucket) as $key => $elementGroup) {
                         $table->elementGroup(
                             key: $key,
@@ -353,7 +352,7 @@ class IndexProducts extends OrgAction
                         default => null
                     }
                 );
-            if (!($parent instanceof Shop and in_array($bucket, ['in_process', 'discontinued']))) {
+            if (!($parent instanceof Shop && in_array($bucket, ['in_process', 'discontinued']))) {
                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             }
             if ($parent instanceof Organisation) {
@@ -367,23 +366,22 @@ class IndexProducts extends OrgAction
             }
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
 
                 if ($parent instanceof Group) {
                     $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
-                if (!$parent instanceof ShopifyUser || !$parent instanceof Customer) {
-                    $table->column(key: 'tags', label: __('tags'), canBeHidden: false);
-                }
+                $table->column(key: 'tags', label: __('tags'), canBeHidden: false);
 
-                if ($parent instanceof Collection or $parent instanceof ShopifyUser) {
+
+                if ($parent instanceof Collection || $parent instanceof ShopifyUser) {
                     $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
                 }
             }
@@ -404,7 +402,7 @@ class IndexProducts extends OrgAction
             [
                 'label'  => __('Current'),
                 'root'   => 'grp.org.shops.show.catalogue.products.current_products.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
                     'parameters' => [
                         $this->organisation->slug,
@@ -417,7 +415,7 @@ class IndexProducts extends OrgAction
             [
                 'label'  => __('In Process'),
                 'root'   => 'grp.org.shops.show.catalogue.products.in_process_products.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.in_process_products.index',
                     'parameters' => [
                         $this->organisation->slug,
@@ -429,7 +427,7 @@ class IndexProducts extends OrgAction
             [
                 'label'  => __('Discontinued'),
                 'root'   => 'grp.org.shops.show.catalogue.products.discontinued_products.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.discontinued_products.index',
                     'parameters' => [
                         $this->organisation->slug,
@@ -443,7 +441,7 @@ class IndexProducts extends OrgAction
                 'label'  => __('All'),
                 'icon'   => 'fal fa-bars',
                 'root'   => 'grp.org.shops.show.catalogue.products.all_products.',
-                'route'   => [
+                'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
                     'parameters' => [
                         $this->organisation->slug,
@@ -558,13 +556,13 @@ class IndexProducts extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Products',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'                  => $this->getBreadcrumbs(
                     $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Products'),
-                'pageHead'    => [
+                'title'                        => __('Products'),
+                'pageHead'                     => [
                     'title'         => $title,
                     'model'         => $model,
                     'icon'          => $icon,
@@ -597,9 +595,9 @@ class IndexProducts extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
-                'routes'      => $routes,
-                'tagRoute'   => [
-                    'store' => [
+                'routes'                       => $routes,
+                'tagRoute'                     => [
+                    'store'  => [
                         'name'       => 'grp.models.product.tag.store',
                         'parameters' => []
                     ],
@@ -608,24 +606,24 @@ class IndexProducts extends OrgAction
                         'parameters' => []
                     ],
                 ],
-                'tagsList'    => TagResource::collection(Tag::where('type', 'catalogue')->get()),
-                'data'        => ProductsResource::collection($products),
-                'tabs' => [
+                'tagsList'                     => TagResource::collection(Tag::where('type', 'catalogue')->get()),
+                'data'                         => ProductsResource::collection($products),
+                'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
-                fn () => ProductsResource::collection($products)
-                : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    fn () => ProductsResource::collection($products)
+                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
-                fn () => ProductsResource::collection($products)
-                : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    fn () => ProductsResource::collection($products)
+                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
 
             ]
-        )->table($this->tableStructure(parent: $this->parent, modelOperations:null, canEdit:false, prefix:ProductsTabsEnum::INDEX->value, sales: false))
-        ->table($this->tableStructure(parent: $this->parent, modelOperations:null, canEdit:false, prefix:ProductsTabsEnum::SALES->value, sales: $this->sales));
+        )->table($this->tableStructure(parent: $this->parent, prefix: ProductsTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProductsTabsEnum::SALES->value, sales: $this->sales));
     }
 
 
@@ -633,7 +631,7 @@ class IndexProducts extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = group();
-        $this->sales = false;
+        $this->sales  = false;
         $this->initialisationFromGroup($this->parent, $request)->withTab(ProductsTabsEnum::values());
 
         return $this->handle(parent: group(), bucket: $this->bucket);
@@ -651,8 +649,8 @@ class IndexProducts extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
     {
-        $this->bucket = 'all';
-        $this->parent = $family;
+        $this->bucket       = 'all';
+        $this->parent       = $family;
         $this->higherParent = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
@@ -662,18 +660,19 @@ class IndexProducts extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
     {
-        $this->bucket = 'all';
-        $this->parent = $family;
+        $this->bucket       = 'all';
+        $this->parent       = $family;
         $this->higherParent = $department;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
         return $this->handle(parent: $family, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
     {
-        $this->bucket = 'all';
-        $this->parent = $family;
+        $this->bucket       = 'all';
+        $this->parent       = $family;
         $this->higherParent = $subDepartment;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
@@ -709,23 +708,13 @@ class IndexProducts extends OrgAction
         return $this->handle(parent: $shop, bucket: $this->bucket);
     }
 
-    public function inRetina(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->asAction = true;
-        $this->bucket = 'all';
-        $shop = $request->get('website')->shop;
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
-
-        return $this->handle(parent: $shop, bucket: $this->bucket);
-    }
 
     public function inDropshipping(ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, string $bucket): LengthAwarePaginator
     {
         $this->asAction = true;
-        $this->bucket = $bucket;
-        $this->parent = $parent;
-        if ($parent instanceof ShopifyUser or $parent instanceof TiktokUser or $parent instanceof WooCommerceUser) {
+        $this->bucket   = $bucket;
+        $this->parent   = $parent;
+        if ($parent instanceof ShopifyUser || $parent instanceof TiktokUser || $parent instanceof WooCommerceUser) {
             $shop = $parent->customer->shop;
         } else {
             $shop = $parent->shop;
@@ -901,9 +890,7 @@ class IndexProducts extends OrgAction
             ),
             'grp.overview.catalogue.products.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,
