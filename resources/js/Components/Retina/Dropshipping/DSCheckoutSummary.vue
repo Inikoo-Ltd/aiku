@@ -29,11 +29,13 @@ const isModalShippingAddress = ref(false)
 </script>
 
 <template>
+
     <div class="py-4 grid grid-cols-7 px-4 gap-x-6">
         <div class="col-span-2">
+
             <!-- Field: Reference Number -->
-            <Link as="a" v-if="summary?.customer_client.reference" v-tooltip="trans('Reference')"
-                :href="route('retina.dropshipping.customer_clients.show', summary?.customer_client.reference)"
+            <Link as="a" v-if="summary?.customer_client.ulid" v-tooltip="trans('Reference')"
+                :href="route('retina.dropshipping.customer_sales_channels.client.show',[route().params['customerSalesChannel'], summary?.customer_client.ulid])"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />

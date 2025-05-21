@@ -62,7 +62,8 @@ class IndexDispatchedEmails extends OrgAction
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':
-                $queryBuilder->where('dispatched_emails.mailshot_id', $parent->id);
+                $queryBuilder->where('dispatched_emails.parent_type', 'Mailshot');
+                $queryBuilder->where('dispatched_emails.parent_id', $parent->id);
                 break;
             case 'Organisation':
                 $queryBuilder->where('dispatched_emails.organisation_id', $parent->id);
@@ -75,7 +76,6 @@ class IndexDispatchedEmails extends OrgAction
                 break;
             default:
                 abort(404);
-
         }
 
 

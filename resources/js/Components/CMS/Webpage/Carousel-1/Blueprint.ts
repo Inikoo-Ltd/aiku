@@ -16,6 +16,11 @@ export default {
 					key: ["carousel_setting", "spaceBetween"],
 					type: "number",
 				},
+				{
+					label: "Use Text",
+					key: ["carousel_setting", "use_text"],
+					type: "switch",
+				},
 			],
 		},
 		{

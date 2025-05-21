@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Product;
 
 use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
+use App\Actions\Dropshipping\Shopify\Product\StoreProductShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -30,7 +31,11 @@ class StoreRetinaProductManual extends RetinaAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
         DB::transaction(function () use ($customerSalesChannel, $modelData) {
-            StoreMultipleManualPortfolios::run($customerSalesChannel, $modelData);
+            if ($customerSalesChannel->platform_user_type == "ShopifyUser") {
+                StoreProductShopify::run($customerSalesChannel->user, $modelData);
+            } else {
+                StoreMultipleManualPortfolios::run($customerSalesChannel, $modelData);
+            }
         });
     }
 

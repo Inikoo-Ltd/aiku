@@ -15,7 +15,6 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -114,7 +113,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ] : [],
                     ]
                 ],
-                'routes'    => [ 
+                'routes'    => [
                     'itemRoute' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
                         'parameters' => [
@@ -136,6 +135,14 @@ class IndexRetinaPortfolios extends RetinaAction
                         'platform' => $this->platform->id
                     ]
                 ] : [],
+                'content' => [
+                    'portfolio_empty' => [
+                        'title' => __("You don't any items in your portfolio"),
+                        'description' => __("To get started, add products to your portfolios."),
+                        'separation' => __("or"),
+                        'add_button' => __("Add Portfolio"),
+                    ]
+                ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()

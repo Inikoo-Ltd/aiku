@@ -29,13 +29,13 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	tabs: TSTabs
-    content: {
-        portfolio_empty: {
-			title: string,
-			description: string,
-			separation: string,
-			sync_button: string,
-			add_button: string
+    content?: {
+        portfolio_empty?: {
+			title?: string,
+			description?: string,
+			separation?: string,
+			sync_button?: string,
+			add_button?: string
 		}
     }
 	products: {}
@@ -114,13 +114,13 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 				v-if="routes?.syncAllRoute"
 				:routeTarget="routes?.syncAllRoute"
 				isWithError
-				:label="content.portfolio_empty.sync_button"
+				:label="content?.portfolio_empty?.sync_button"
 				icon="fas fa-sync-alt"
 				xtype="tertiary"
 				size="xl"
 			/>
 			<div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">{{ content?.portfolio_empty?.separation || trans('or') }}</div>
-			<Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true" :label="content.portfolio_empty.add_button" icon="fas fa-plus" size="xl" />
+			<Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true" :label="content?.portfolio_empty?.add_button || trans('Add portfolio')" icon="fas fa-plus" size="xl" />
 		</div>
 	</div>
 
