@@ -16,8 +16,6 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,6 +25,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaPlatformCustomerClients extends RetinaAction
 {
+    /**
+     * @var \App\Models\Dropshipping\CustomerSalesChannel
+     */
+    private CustomerSalesChannel $scope;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -38,6 +41,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
+        $this->scope = $customerSalesChannel;
         $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
 
         return IndexCustomerPlatformCustomerClients::run($this->customer, $customerSalesChannel->platform);
@@ -70,29 +74,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $customerClients, ActionRequest $request): Response
     {
-        $icon      = ['fal', 'fa-user'];
-        $title     = $this->platformUser->name;
         $title = __('Clients');
-        $iconRight = [
-            'icon'  => ['fal', 'fa-user-friends'],
-            'title' => __('customer client')
-        ];
-
-        // if ($this->platformUser instanceof TiktokUser) {
-        //     $afterTitle = [
-        //         'label' => __('Tiktok Clients')
-        //     ];
-        // } elseif ($this->platformUser instanceof ShopifyUser) {
-        //     $afterTitle = [
-        //         'label' => __('Shopify Clients')
-        //     ];
-        // } else {
-        //     $afterTitle = [
-        //         'label' => __('Clients')
-        //     ];
-        // }
-        $actions = [];
-        $shopifyActions = [];
         $shopifyActions = match (class_basename($this->platformUser)) {
             'ShopifyUser' => [
                 'type'    => 'button',
@@ -102,7 +84,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                 'route'   => [
                     'name'       => $this->asPupil ? 'pupil.dropshipping.platforms.client.fetch' : 'retina.dropshipping.customer_sales_channels.client.fetch',
                     'parameters' => [
-                        'platform' => $this->platform->slug
+                        'customerSalesChannel' => $this->scope->slug
                     ]
                 ]
             ],
@@ -114,7 +96,7 @@ class IndexRetinaPlatformCustomerClients extends RetinaAction
                 'route'   => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
                     'parameters' => [
-                        'platform' => $this->platform->slug
+                        'customerSalesChannel' => $this->scope->slug
                     ]
                 ]
             ],

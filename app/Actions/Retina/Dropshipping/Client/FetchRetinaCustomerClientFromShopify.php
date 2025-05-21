@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Client;
 
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -52,14 +53,7 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): void
-    {
-        $this->initialisation($request);
-
-        $this->handle();
-    }
-
-    public function inPlatform(Platform $platform, ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisation($request);
 

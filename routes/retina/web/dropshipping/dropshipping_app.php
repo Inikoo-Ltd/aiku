@@ -24,9 +24,7 @@ use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\EditRetinaCustomerClient;
-use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClientsInCustomerSalesChannel;
-use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaPlatformCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
@@ -85,12 +83,13 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     });
 
     Route::prefix('client')->as('client.')->group(function () {
+        Route::get('create', CreateRetinaCustomerClient::class)->name('create');
+        Route::get('fetch', FetchRetinaCustomerClientFromShopify::class)->name('fetch');
+        Route::get('wc-fetch', [FetchRetinaCustomerClientFromWooCommerce::class, 'inPlatform'])->name('wc-fetch');
+
         Route::get('/', IndexRetinaCustomerClientsInCustomerSalesChannel::class)->name('index');
         Route::get('{customerClient}', ShowRetinaCustomerClient::class)->name('show');
         Route::get('/{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
-        Route::get('create', CreateRetinaCustomerClient::class)->name('create');
-        Route::get('fetch', [FetchRetinaCustomerClientFromShopify::class, 'inPlatform'])->name('fetch');
-        Route::get('wc-fetch', [FetchRetinaCustomerClientFromWooCommerce::class, 'inPlatform'])->name('wc-fetch');
     });
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
