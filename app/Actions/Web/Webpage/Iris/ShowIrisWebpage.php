@@ -31,7 +31,7 @@ class ShowIrisWebpage
 
         $webBlocks = $this->getIrisWebBlocks(
             webpage: $webpage,
-            webBlocks:Arr::get($webPageLayout, 'web_blocks'),
+            webBlocks:Arr::get($webPageLayout, 'web_blocks', []),
             isLoggedIn: auth()->check()
         );
 
