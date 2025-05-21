@@ -26,7 +26,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -52,9 +51,8 @@ class ShowCustomerClient extends OrgAction
         return $customerClient;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): CustomerClient
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): CustomerClient
     {
-        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent        = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(CustomerTabsEnum::values());
 
@@ -277,7 +275,7 @@ class ShowCustomerClient extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show'
             => array_merge(
-                (new ShowCustomerSalesChannel())->getBreadcrumbs($parent->platform, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', $routeParameters),
+                (new ShowCustomerSalesChannel())->getBreadcrumbs($parent, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', $routeParameters),
                 $headCrumb(
                     $customerClient,
                     [

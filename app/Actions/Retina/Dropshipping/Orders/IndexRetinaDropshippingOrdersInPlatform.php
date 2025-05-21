@@ -11,18 +11,12 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\ShopifyUserHasFulfilment;
-use App\Models\Dropshipping\TiktokUser;
-use App\Models\Dropshipping\TiktokUserHasOrder;
-use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -33,92 +27,66 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer|TiktokUser|WebUser|WooCommerceUser $parent, $prefix = null): LengthAwarePaginator
+    private CustomerSalesChannel $customerSalesChannel;
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
-        $selects = [];
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('pallets.reference', $value)
-                    ->orWhereWith('pallets.reference', $value);
+                $query->whereAnyWordStartWith('orders.reference', $value)
+                    ->orWhereWith('orders.reference', $value);
             });
         });
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-        if ($this->platformUser instanceof ShopifyUser) {
-            $query = QueryBuilder::for(ShopifyUserHasFulfilment::class);
-        } elseif ($this->platformUser instanceof TiktokUser) {
-            $query = QueryBuilder::for(TiktokUserHasOrder::class);
-        } else {
-            $query = QueryBuilder::for(Order::class);
-        }
 
-        if ($this->platformUser instanceof ShopifyUser) {
-            $query->where('shopify_user_has_fulfilments.shopify_user_id', $parent->id);
+        $query = QueryBuilder::for(Order::class);
+        $query->where('orders.platform_id', $customerSalesChannel->platform->id);
+        $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
+        $query->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED]);
 
-            $query->leftJoin('orders', 'orders.id', '=', 'shopify_user_has_fulfilments.model_id');
-            if ($this->customer->is_dropshipping) {
-                $query->where('shopify_user_has_fulfilments.model_type', '=', class_basename(Order::class));
-            }
-            $selects = ['shopify_user_has_fulfilments.shopify_order_id as platform_order_id'];
-
-        } elseif ($this->platformUser instanceof TiktokUser) {
-            $query->where('tiktok_user_has_orders.tiktok_user_id', $parent->id);
-        } else {
-            $query->where('orders.customer_id', $this->customer->id);
-            $query->where('orders.state', '!=', OrderStateEnum::CREATING);
-        }
-
-        $query->leftJoin('customer_clients', 'customer_clients.id', '=', 'orders.customer_client_id');
+        $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('order_stats', 'orders.id', '=', 'order_stats.order_id');
 
-        if (!($this->platformUser instanceof WebUser)) {
-            $query->with('model');
-        }
-        $query->defaultSort('orders.id');
-
-        $query->select([
+        $query->select(
             'orders.id',
-            'orders.date',
-            'orders.reference',
             'orders.slug',
-            'customer_clients.name as client_name',
-            'orders.state as order_state',
+            'orders.reference',
+            'orders.state',
+            'orders.type',
+            'orders.customer_reference',
+            'pallet_return_stats.number_item_transactions as number_item_transactions',
+            'orders.date',
             'orders.total_amount',
-            'order_stats.number_item_transactions as number_item_transactions',
-            ...$selects
-        ]);
-
-        return $query->defaultSort('orders.id')
-            ->allowedSorts(['orders.id'])
+            'currencies.code as currency_code',
+        );
+        return $query->defaultSort('id')
+            ->allowedSorts(['id'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
 
-    public function asController(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromPlatform($platform, $request);
-        if ($platform->type == PlatformTypeEnum::MANUAL) {
-            return IndexRetinaDropshippingOrders::run($this->customer, $platform);
-        } else {
-            return $this->handle($this->platformUser);
-        }
+        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        return $this->handle($customerSalesChannel);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->platform = $platform;
-        $this->platformUser = $request->user();
-        $this->asAction     = true;
-        $this->initialisationFromPupil($request);
-        $shopifyUser = $this->shopifyUser;
+    // /** @noinspection PhpUnusedParameterInspection */
+    // public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    // {
+    //     $this->platform = $platform;
+    //     $this->platformUser = $request->user();
+    //     $this->asAction     = true;
+    //     $this->initialisationFromPupil($request);
+    //     $shopifyUser = $this->shopifyUser;
 
-        return $this->handle($shopifyUser);
-    }
+    //     return $this->handle($shopifyUser);
+    // }
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {

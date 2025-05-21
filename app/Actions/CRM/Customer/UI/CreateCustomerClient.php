@@ -26,6 +26,8 @@ class CreateCustomerClient extends OrgAction
     {
         $customer = $customerSalesChannel->customer;
 
+        $request->route()->getName();
+
         return Inertia::render(
             'CreateModel',
             [
@@ -47,10 +49,7 @@ class CreateCustomerClient extends OrgAction
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => match ($request->route()->getName()) {
-                                    'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create' => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                    default => preg_replace('/create$/', 'index', $request->route()->getName())
-                                },
+                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]

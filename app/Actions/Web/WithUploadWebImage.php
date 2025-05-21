@@ -48,7 +48,7 @@ trait WithUploadWebImage
     {
         return [
             'images'   => ['required'],
-            'images.*' => ["mimes:jpg,png,jpeg,gif", "max:50000"],
+            'images.*' => ["mimes:jpg,png,jpeg,gif,avif,webp", "max:50000"],
         ];
     }
 

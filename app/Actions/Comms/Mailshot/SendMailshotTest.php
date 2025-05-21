@@ -15,7 +15,7 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
@@ -73,7 +73,7 @@ class SendMailshotTest extends OrgAction
 
     public function jsonResponse($dispatchedEmails): AnonymousResourceCollection
     {
-        return DispatchedEmailResource::collection($dispatchedEmails);
+        return DispatchedEmailsResource::collection($dispatchedEmails);
     }
 
     public function rules(): array

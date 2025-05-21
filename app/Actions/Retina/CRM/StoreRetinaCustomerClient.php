@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -50,8 +51,15 @@ class StoreRetinaCustomerClient extends RetinaAction
 
     public function htmlResponse(CustomerClient $customerClient): RedirectResponse
     {
-        return Redirect::route('retina.dropshipping.customer_sales_channels.client.index', [
-            'platform' => $customerClient->platform->slug
+        if($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.client.show', [
+                $customerClient->salesChannel->slug,
+                $customerClient->ulid
+            ]);
+        }
+        return Redirect::route('retina.dropshipping.customer_sales_channels.client.show', [
+                $customerClient->salesChannel->slug,
+                $customerClient->ulid
         ]);
     }
 

@@ -1,29 +1,22 @@
 <script setup lang="ts">
-import { Pie } from "vue-chartjs"
-import { trans } from "laravel-vue-i18n"
-import { capitalize } from "@/Composables/capitalize"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { useLocaleStore } from "@/Stores/locale"
-import { FulfilmentCustomerStats, PieCustomer } from "@/types/Pallet"
-
+import { FulfilmentCustomerStats } from "@/types/Pallet"
 import "@/Composables/Icon/PalletStateEnum.ts"
 import "@/Composables/Icon/PalletDeliveryStateEnum.ts"
 import "@/Composables/Icon/PalletReturnStateEnum.ts"
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle, faInfoCircle, faExclamationTriangle, faCheck } from "@fal"
-
 import { library } from "@fortawesome/fontawesome-svg-core"
 import CountUp from "vue-countup-v3"
-import index from "@/Components/Banners/SlidesWorkshop/Fields/index.vue"
 import { Link } from "@inertiajs/vue3"
-import { el } from "date-fns/locale"
+import { RouteParams } from "@/types/route-params";
 library.add(faCheckCircle, faInfoCircle, faExclamationTriangle, faCheck)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
 const locale = useLocaleStore()
 
-const props = defineProps<{
+defineProps<{
 	stats: {
 		[key: string]: FulfilmentCustomerStats
 	}
@@ -34,27 +27,27 @@ function routePallet(storageData: any) {
     
 	if (storageData == "Deliveries") {
 		return route("grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.index", [
-			route().params.organisation,
-			route().params.fulfilment,
-			route().params.fulfilmentCustomer,
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).fulfilment,
+            (route().params as RouteParams).fulfilmentCustomer,
 		])
 	} else if (storageData == "Returns") {
         return route("grp.org.fulfilments.show.crm.customers.show.pallet_returns.index", [
-            route().params.organisation,
-            route().params.fulfilment,
-            route().params.fulfilmentCustomer,
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).fulfilment,
+            (route().params as RouteParams).fulfilmentCustomer,
         ])
     } else if (storageData == "Invoice") {
         return route("grp.org.fulfilments.show.crm.customers.show.invoices.index", [
-            route().params.organisation,
-            route().params.fulfilment,
-            route().params.fulfilmentCustomer,
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).fulfilment,
+            (route().params as RouteParams).fulfilmentCustomer,
         ])
     } else if (storageData == "Pallets") {
         return route("grp.org.fulfilments.show.crm.customers.show.pallets.index", [
-            route().params.organisation,
-            route().params.fulfilment,
-            route().params.fulfilmentCustomer,
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).fulfilment,
+            (route().params as RouteParams).fulfilmentCustomer,
         ])
     } 
 }
@@ -65,7 +58,7 @@ function routePallet(storageData: any) {
 		<!-- Box: Pallets -->
 		<div
 			class="flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums col-span-2">
-			<div class="">
+			<dl>
 				<dt class="text-base font-medium text-gray-400 capitalize">
 					{{ stats.pallets.label }}
 				</dt>
@@ -74,7 +67,7 @@ function routePallet(storageData: any) {
 						class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
 						<!-- In Total -->
 						<div class="flex gap-x-2 items-end">
-							<Link :href="routePallet(stats.pallets.label)">
+							<Link :href="routePallet(stats.pallets.label) as string">
 							<CountUp
 								class="primaryLink"
 								:endVal="stats.pallets.count"
@@ -132,13 +125,13 @@ function routePallet(storageData: any) {
 						</div>
 					</div>
 				</dd>
-			</div>
+			</dl>
 		</div>
 
 		<!-- Box: Pallet Deliveries -->
 		<div
 			class="flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
-			<div class="">
+			<dl>
 				<dt class="text-base font-medium text-gray-400 capitalize">
 					{{ stats.pallet_deliveries.label }}
 				</dt>
@@ -147,7 +140,7 @@ function routePallet(storageData: any) {
 						class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
 						<!-- In Total -->
 						<div class="flex gap-x-2 items-end">
-							<Link :href="routePallet(stats.pallet_deliveries.label)">
+							<Link :href="routePallet(stats.pallet_deliveries.label) as string">
 								<CountUp
 									class="primaryLink"
 									:endVal="stats.pallet_deliveries.count"
@@ -164,13 +157,13 @@ function routePallet(storageData: any) {
 						</div>
 					</div>
 				</dd>
-			</div>
+			</dl>
 		</div>
 
 		<!-- Box: Pallet Returns -->
 		<div
 			class="flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
-			<div class="">
+			<dl>
 				<dt class="text-base font-medium text-gray-400 capitalize">
 					{{ stats.pallet_returns.label }}
 				</dt>
@@ -179,7 +172,7 @@ function routePallet(storageData: any) {
 						class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
 						<!-- In Total -->
 						<div class="flex gap-x-2 items-end">
-							<Link :href="routePallet(stats.pallet_returns.label)">
+							<Link :href="routePallet(stats.pallet_returns.label) as string">
 								<CountUp
 									class="primaryLink"
 									:endVal="stats.pallet_returns.count"
@@ -196,13 +189,13 @@ function routePallet(storageData: any) {
 						</div>
 					</div>
 				</dd>
-			</div>
+			</dl>
 		</div>
 
 		<!-- Box: Invoice -->
 		<div
 			class="col-span-2 flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
-			<div class="">
+			<dl>
 				<dt class="text-base font-medium text-gray-400 capitalize">
 					{{ stats.invoice.label }}
 				</dt>
@@ -211,7 +204,7 @@ function routePallet(storageData: any) {
 						class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
 						<!-- In Total -->
 						<div class="flex gap-x-2 items-end">
-							<Link :href="routePallet(stats.invoice.label)">
+							<Link :href="routePallet(stats.invoice.label) as string">
 								<CountUp
 									class="primaryLink"
 									:endVal="stats.invoice.count"
@@ -228,7 +221,7 @@ function routePallet(storageData: any) {
 						</div>
 					</div>
 				</dd>
-			</div>
+			</dl>
 		</div>
 	</div>
 </template>

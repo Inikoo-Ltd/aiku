@@ -135,7 +135,13 @@ test('UI Index catalogue departments', function () {
 
 test('UI show department', function () {
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.shops.show.catalogue.departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
+
+
+    $response = get(route('grp.org.shops.show.catalogue.departments.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug
+    ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Catalogue/Department')
@@ -258,7 +264,8 @@ test('UI Index catalogue product inside department', function () {
 
 test('UI Index catalogue family in (tab index)', function () {
     $response = get(route('grp.org.shops.show.catalogue.families.index', [
-        $this->organisation->slug, $this->shop->slug,
+        $this->organisation->slug,
+        $this->shop->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -275,7 +282,8 @@ test('UI Index catalogue family in (tab index)', function () {
 
 test('UI Index catalogue family in (tab sales)', function () {
     $response = get(route('grp.org.shops.show.catalogue.families.index', [
-        $this->organisation->slug, $this->shop->slug,
+        $this->organisation->slug,
+        $this->shop->slug,
         'tab' => 'sales'
     ]));
 
@@ -293,7 +301,8 @@ test('UI Index catalogue family in (tab sales)', function () {
 
 test('UI Index catalogue product in current', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.current_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -310,7 +319,8 @@ test('UI Index catalogue product in current', function () {
 
 test('UI Index catalogue product all', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -327,7 +337,8 @@ test('UI Index catalogue product all', function () {
 
 test('UI Index catalogue product in process', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.in_process_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -345,7 +356,8 @@ test('UI Index catalogue product in process', function () {
 
 test('UI Index catalogue product in discontinued', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.discontinued_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {

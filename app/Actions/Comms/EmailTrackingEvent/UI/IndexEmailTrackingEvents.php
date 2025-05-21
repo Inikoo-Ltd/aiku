@@ -14,7 +14,7 @@ use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\UI\Marketing\MarketingHub;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
@@ -128,8 +128,8 @@ class IndexEmailTrackingEvents extends OrgAction
     //             ],
     //             ...array_merge(
     //                 ($this->parent instanceof Group) ?
-    //                 ['data' => DispatchedEmailResource::collection($dispatched_emails)] :
-    //                 ['dispatched_emails' => DispatchedEmailResource::collection($dispatched_emails)]
+    //                 ['data' => DispatchedEmailsResource::collection($dispatched_emails)] :
+    //                 ['dispatched_emails' => DispatchedEmailsResource::collection($dispatched_emails)]
     //             ),
     //         ]
     //     )->table($this->tableStructure($this->parent));

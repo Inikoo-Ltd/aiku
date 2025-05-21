@@ -16,13 +16,10 @@ use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -117,18 +114,21 @@ class IndexRetinaPortfolios extends RetinaAction
                         ] : [],
                     ]
                 ],
-                // 'routes'    => [  // TODO: fix this route
-                //     'itemRoute' => [
-                //         'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
-                //     ],
-                //     'syncAllRoute' => $syncAllRoute,
-                //     'addPortfolioRoute' => [
-                //         'name' => 'retina.models.customer_sales_channel.customer.product.store',
-                //         'parameters' => [
-                //             'customerSalesChannel' => $this->customerSalesChannel->id
-                //         ]
-                //     ]
-                // ],
+                'routes'    => [ 
+                    'itemRoute' => [
+                        'name' => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
+                    ],
+                    // 'syncAllRoute' => $syncAllRoute,
+                    'addPortfolioRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ]
+                ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [

@@ -12,7 +12,6 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,7 +29,7 @@ class CreateRetinaCustomerClient extends RetinaAction
         return Inertia::render(
             'CreateModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('new client'),
                 'pageHead'    => [
                     'title'        => __('new client'),
@@ -109,29 +108,18 @@ class CreateRetinaCustomerClient extends RetinaAction
     }
 
 
-    public function asController(ActionRequest $request): Response
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
-        $this->initialisation($request);
-        $this->parent = $this->customer;
-
-        return $this->handle($request);
-    }
-
-    public function inPlatform(Platform $platform, ActionRequest $request): Response
-    {
-
-        $customer = $request->user()->customer;
-        $this->initialisationFromPlatform($platform, $request);
-        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->scope = $customerSalesChannel;
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
 
         return $this->handle($request);
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs($routeName, $routeParameters): array
     {
         return array_merge(
-            IndexRetinaCustomerClients::make()->getBreadcrumbs(),
+            IndexRetinaCustomerClientsInCustomerSalesChannel::make()->getBreadcrumbs($routeName, $routeParameters),
             [
                 [
                     'type'          => 'creatingModel',

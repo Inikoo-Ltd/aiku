@@ -28,7 +28,9 @@ class PlatformHydrateCustomers implements ShouldBeUnique
     public function handle(Platform $platform): void
     {
 
-        $query = DB::table('customer_sales_channels')->where('platform_id', $platform->id)
+        $query = DB::table('customer_sales_channels')
+            ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
+            ->where('platform_id', $platform->id)
             ->distinct('customer_id');
         $stats = [
             'number_customers' => $query->count('customer_id')
@@ -36,7 +38,7 @@ class PlatformHydrateCustomers implements ShouldBeUnique
         ];
 
         foreach (CustomerStateEnum::cases() as $state) {
-            $stats['number_customers_' . $state->value] = $query->where('state', $state->value)->count('customer_id');
+            $stats['number_customers_state_' . $state->value] = $query->where('customers.state', $state->value)->count('customer_id');
         }
 
 

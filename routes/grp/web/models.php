@@ -674,7 +674,6 @@ Route::patch('stored-items/{storedItem:id}', UpdateStoredItem::class)->name('sto
 Route::patch('/group-settings', UpdateGroupSettings::class)->name('group-settings.update');
 
 Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mailshot.update');
-Route::post('/shop/{shop:id}/mailshot', StoreMailshot::class)->name('shop.mailshot.store');
 
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
@@ -748,6 +747,10 @@ Route::name('rentals.')->prefix('rentals/')->group(function () {
 Route::name('invoice-category.')->prefix('invoice-category/')->group(function () {
     Route::patch('{invoiceCategory:id}/update', UpdateInvoiceCategory::class)->name('update');
 });
+
+
+Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.mailshot.store');
+
 
 require __DIR__."/models/inventory/warehouse.php";
 require __DIR__."/models/inventory/location_org_stock.php";

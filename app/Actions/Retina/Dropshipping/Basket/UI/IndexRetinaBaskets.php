@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Basket\UI;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\OrdersResource;

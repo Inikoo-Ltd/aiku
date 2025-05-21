@@ -75,21 +75,20 @@ class IndexNewsletterMailshots extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
-        $actions = [
-            [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('mailshot'),
-                'route' => [
-                    'name'       => 'grp.org.shops.show.marketing.mailshots.create',
-                    'parameters' => array_values($request->route()->originalParameters())
+        $actions = [];
+        $model   = __('marketing');
+        if ($this->parent instanceof Shop) {
+            $actions = [
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('New Newsletter'),
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.marketing.newsletters.create',
+                        'parameters' => array_values($request->route()->originalParameters())
+                    ]
                 ]
-            ]
-        ];
-
-        $model = __('marketing');
-        if ($this->parent instanceof Group) {
-            $actions = [];
+            ];
         }
 
         return Inertia::render(
@@ -120,17 +119,10 @@ class IndexNewsletterMailshots extends OrgAction
         return $this->handle(parent: group());
     }
 
-    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
 
-        return $this->handle($organisation);
-    }
-
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $organisation;
+        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop);
