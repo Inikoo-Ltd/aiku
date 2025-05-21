@@ -72,7 +72,6 @@ class ShowRetinaCustomerClient extends RetinaAction
                                 'name'       => 'retina.models.customer-client.order.store',
                                 'parameters' => [
                                     'customerClient' => $customerClient->id,
-                                    'platform' => $customerClient->platform->id
                                 ],
                                 'method'     => 'post'
                             ]

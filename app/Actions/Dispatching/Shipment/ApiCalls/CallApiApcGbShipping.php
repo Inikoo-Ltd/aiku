@@ -107,7 +107,7 @@ class CallApiApcGbShipping extends OrgAction
             'ClosedAt'        => $closedAt->format('H:i'),
             'Reference'       => Str::limit($parent->reference, 30),
             'Delivery'        => [
-                'CompanyName'  => '',
+                'CompanyName'  => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
                 'AddressLine1' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1'), 60),
                 'AddressLine2' => Str::limit(Arr::get($parentResource, 'to_address.address_line_2'), 60),
                 'PostalCode'   => Arr::get($parentResource, 'to_address.postal_code'),
