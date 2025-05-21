@@ -24,14 +24,14 @@ Route::name("newsletters.")->prefix('newsletters')
     ->group(function () {
         Route::get('', [IndexNewsletterMailshots::class, 'inShop'])->name('index');
         Route::get('create', CreateDummy::class)->name('create');
-        Route::get('{mailshot}', [ShowMailshot::class, 'inShop'])->name('show');
+        Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
     });
 Route::name("mailshots.")->prefix('mailshots')
     ->group(function () {
         Route::get('', [IndexMarketingMailshots::class, 'inShop'])->name('index');
         Route::get('create', CreateMailshot::class)->name('create');
-        Route::get('{mailshot}', [ShowMailshot::class, 'inShop'])->name('show');
+        Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
     });

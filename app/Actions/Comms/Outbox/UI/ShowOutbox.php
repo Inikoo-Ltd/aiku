@@ -14,7 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Web\HasWorkshopAction;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\UI\Mail\OutboxTabsEnum;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Http\Resources\Mail\MailshotResource;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\Models\Catalogue\Shop;
@@ -148,8 +148,8 @@ class ShowOutbox extends OrgAction
                     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($outbox, OutboxTabsEnum::MAILSHOTS->value))),
 
                 OutboxTabsEnum::DISPATCHED_EMAILS->value => $this->tab == OutboxTabsEnum::DISPATCHED_EMAILS->value ?
-                    fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))
-                    : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))),
+                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))
+                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))),
 
 
 

@@ -32,14 +32,14 @@ class EditMailshot extends OrgAction
         $fields[] = [
             'title'  => '',
             'fields' => [
-                'subject' => [
+                'subject'        => [
                     'type'        => 'input',
                     'label'       => __('subject'),
                     'placeholder' => __('Email subject'),
                     'required'    => false,
                     'value'       => $mailshot->subject,
                 ],
-                'type' => [
+                'type'           => [
                     'type'     => 'select',
                     'label'    => __('type'),
                     'required' => false,
@@ -47,11 +47,11 @@ class EditMailshot extends OrgAction
                     'options'  => Options::forEnum(MailshotTypeEnum::class),
                 ],
                 'recipient_type' => [
-                    'type'        => 'radio',
-                    'label'       => __('Recipient Type'),
-                    'required'    => true,
-                    'value'       => 'query',
-                    'options'     => [
+                    'type'     => 'radio',
+                    'label'    => __('Recipient Type'),
+                    'required' => true,
+                    'value'    => 'query',
+                    'options'  => [
                         [
                             "label" => "Query",
                             "value" => "query"
@@ -70,34 +70,33 @@ class EditMailshot extends OrgAction
         ];
 
 
-
         $fields[] = [
             'title'  => '',
             'fields' => [
                 'recipients_recipe' => [
-                    'type'        => 'mailshotRecipient',
-                    'label'       => __('recipients'),
-                    'required'    => true,
-                    'options'     => [
+                    'type'     => 'mailshotRecipient',
+                    'label'    => __('recipients'),
+                    'required' => true,
+                    'options'  => [
                         'query'                  => IndexProspects::run(parent: $mailshot->shop, prefix: null, scope: 'all'),
                         'custom_prospects_query' => '',
                         'tags'                   => TagResource::collection(Tag::where('type', 'crm')->get()),
                     ],
-                    'full'      => true,
-                    'value'     => [
-                            'query'                     => $mailshot->recipients_recipe['query'] ?? null,
-                            'custom_prospects_query'    => [
-                                "tags" => [
-                                    "tag_ids" => $mailshot->recipients_recipe['custom_prospects_query']['tags']['tag_ids'] ?? null,
-                                    "logic" => 'all',
-                                    "negative_tag_ids" => $mailshot->recipients_recipe['custom_prospects_query']['tags']['negative_tag_ids'] ?? null
-                                ],
-                                "last_contact" => [
-                                    "use_contact" => false,
-                                    "interval" => $mailshot->recipients_recipe['custom_prospects_query']['last_contact']['interval'] ?? null
-                                ]
+                    'full'     => true,
+                    'value'    => [
+                        'query'                  => $mailshot->recipients_recipe['query'] ?? null,
+                        'custom_prospects_query' => [
+                            "tags"         => [
+                                "tag_ids"          => $mailshot->recipients_recipe['custom_prospects_query']['tags']['tag_ids'] ?? null,
+                                "logic"            => 'all',
+                                "negative_tag_ids" => $mailshot->recipients_recipe['custom_prospects_query']['tags']['negative_tag_ids'] ?? null
                             ],
-                            'prospects' => $mailshot->recipients_recipe['query'] ?? null,
+                            "last_contact" => [
+                                "use_contact" => false,
+                                "interval"    => $mailshot->recipients_recipe['custom_prospects_query']['last_contact']['interval'] ?? null
+                            ]
+                        ],
+                        'prospects'              => $mailshot->recipients_recipe['query'] ?? null,
                     ]
                 ],
             ]
@@ -107,14 +106,15 @@ class EditMailshot extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $mailshot,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('Edit mailshot'),
-                'pageHead' => [
+                'title'       => __('Edit mailshot'),
+                'pageHead'    => [
                     'title' => __('edit mailshot')
                 ],
-                'formData' => [
+                'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
                         [
@@ -123,15 +123,15 @@ class EditMailshot extends OrgAction
                                 'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                             ]
                         ],
-                        'args' => [
-                            'updateRoute' => [
-                                'name'      => 'grp.models.shop.mailshot.update',
-                                'parameters' => [
-                                    'mailshot' => $mailshot->id
-                                    ]
+                    'args'       => [
+                        'updateRoute' => [
+                            'name'       => 'grp.models.shop.mailshot.update',
+                            'parameters' => [
+                                'mailshot' => $mailshot->id
+                            ]
 
-                            ],
-                        ]
+                        ],
+                    ]
                 ],
 
             ]
@@ -153,12 +153,12 @@ class EditMailshot extends OrgAction
         return $this->handle($mailshot, $request);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters): array
     {
         return ShowMailshot::make()->getBreadcrumbs(
+            mailshot: $mailshot,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            parent: $this->shop,
             suffix: '('.__('Editing').')'
         );
     }

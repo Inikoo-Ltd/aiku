@@ -49,6 +49,7 @@ class UpdateCustomerSalesChannel extends OrgAction
                 ),
             ],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
+            'name' => ['sometimes', 'string', 'max:255']
         ];
     }
 
