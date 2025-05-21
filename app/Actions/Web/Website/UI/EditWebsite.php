@@ -117,12 +117,20 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'G-XXXXXXXXXX',
                     'required' => false,
                 ],
-                'luigisbox_tracker_id' => [  // TODO: check if this is the correct name
+                'luigisbox_tracker_id' => [
                     'information' => __('For Luigi search in the header'),
                     'type'     => 'input',
                     'label'    => __('Luigi Search Tracker ID'),
                     'value'    => Arr::get($website->settings, "luigisbox.tracker_id"),
                     'placeholder' => '123456-123456',
+                    'required' => false,
+                ],
+                'luigisbox_script_lbx' => [
+                    'information' => __('Script for Luigi search in the header'),
+                    'type'     => 'input',
+                    'label'    => __('Script LBX Luigi Search'),
+                    'value'    => Arr::get($website->settings, "luigisbox.script_lbx"),
+                    'placeholder' => '<script async src="https://scripts.luigisbox.com/LBX-xxxxxx.js"></script>',
                     'required' => false,
                 ],
                 "image"         => [

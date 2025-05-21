@@ -44,7 +44,8 @@ class CustomerSalesChannelsResource extends JsonResource
             'amount'            => $this->total_amount,
             'platform_code'     => $platform?->code,
             'platform_name'     => $platform?->name,
-            'platform_image'    => $this->getPlatformLogo($customerSalesChannels)
+            'platform_image'    => $this->getPlatformLogo($customerSalesChannels),
+            'name'              => $this->name ?? $this->reference
         ];
     }
 }

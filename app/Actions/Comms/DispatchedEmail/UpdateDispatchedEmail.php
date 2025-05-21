@@ -12,7 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Comms\DispatchedEmail;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -60,8 +60,8 @@ class UpdateDispatchedEmail extends OrgAction
         return $this->handle($dispatchedEmail, $this->validatedData);
     }
 
-    public function jsonResponse(DispatchedEmail $dispatchedEmail): DispatchedEmailResource
+    public function jsonResponse(DispatchedEmail $dispatchedEmail): DispatchedEmailsResource
     {
-        return new DispatchedEmailResource($dispatchedEmail);
+        return new DispatchedEmailsResource($dispatchedEmail);
     }
 }

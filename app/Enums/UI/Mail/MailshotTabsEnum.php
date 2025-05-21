@@ -17,14 +17,24 @@ enum MailshotTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case RECIPIENTS = 'recipients';
+    case DISPATCHED_EMAILS = 'dispatched_emails';
 
     public function blueprint(): array
     {
         return match ($this) {
             MailshotTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
-                'icon'  => 'fas fa-info-circle',
-            ]
+                'icon'  => 'fal fa-tachometer-alt',
+            ],
+            MailshotTabsEnum::RECIPIENTS => [
+                'title' => __('Recipients'),
+                'icon'  => 'fal fa-users',
+            ],
+            MailshotTabsEnum::DISPATCHED_EMAILS => [
+                'title' => __('Dispatched Emails'),
+                'icon'  => 'fal fa-paper-plane',
+            ],
         };
     }
 }

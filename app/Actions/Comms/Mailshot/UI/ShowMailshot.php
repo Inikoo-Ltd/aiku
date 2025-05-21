@@ -8,10 +8,14 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\UI\Mail\MailshotTabsEnum;
+use App\Http\Resources\Inventory\LocationResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -20,7 +24,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Enums\UI\Mail\MailshotTabsEnum;
 use App\Models\Web\Website;
 
 /**
@@ -35,16 +38,8 @@ class ShowMailshot extends OrgAction
         return $mailshot;
     }
 
-    public function inOrganisation(Mailshot $mailshot, ActionRequest $request): Mailshot
-    {
-        $this->initialisation($mailshot->organisation, $request)->withTab(MailshotTabsEnum::values());
 
-        return $this->handle($mailshot);
-    }
-
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
+    public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
         $this->initialisationFromShop($shop, $request)->withTab(MailshotTabsEnum::values());
 
@@ -117,8 +112,29 @@ class ShowMailshot extends OrgAction
                 ],
                 MailshotTabsEnum::SHOWCASE->value => $this->tab == MailshotTabsEnum::SHOWCASE->value ?
                     fn () => GetMailshotShowcase::run($mailshot)
-                    : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot))
+                    : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot)),
+
+                MailshotTabsEnum::DISPATCHED_EMAILS->value => $this->tab == MailshotTabsEnum::DISPATCHED_EMAILS->value
+                    ?
+                    fn () => DispatchedEmailsResource::collection(
+                        IndexDispatchedEmails::run(
+                            parent: $mailshot,
+                            prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
+                        )
+                    )
+                    : Inertia::lazy(fn () => LocationResource::collection(
+                        IndexDispatchedEmails::run(
+                            parent: $mailshot,
+                            prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
+                        )
+                    )),
+
             ]
+        )->table(
+            IndexDispatchedEmails::make()->tableStructure(
+                parent: $mailshot,
+                prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
+            )
         );
     }
 

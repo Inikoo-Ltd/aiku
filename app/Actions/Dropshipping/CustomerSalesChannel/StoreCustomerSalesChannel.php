@@ -33,6 +33,7 @@ class StoreCustomerSalesChannel extends OrgAction
     public function rules(): array
     {
         return [
+            'name' => 'nullable|string|max:255',
             'reference' => 'nullable|string|max:255',
             'platform_user_type' => ['sometimes','nullable','string','max:255'],
             'platform_user_id'   => ['sometimes','nullable','integer'],

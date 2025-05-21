@@ -53,6 +53,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.tracker_id", Arr::pull($modelData, "luigisbox_tracker_id"));
         }
 
+        if (Arr::has($modelData, "luigisbox_script_lbx")) {
+            data_set($modelData, "settings.luigisbox.script_lbx", Arr::pull($modelData, "luigisbox_script_lbx"));
+        }
+
         $website = $this->update($website, $modelData, ['data', 'settings']);
         WebsiteRecordSearch::run($website);
 
@@ -120,6 +124,10 @@ class UpdateWebsite extends OrgAction
                 'sometimes',
                 'string',
                 'regex:/^\d{6}-\d{6}$/'
+            ],
+            'luigisbox_script_lbx' => [
+                'sometimes',
+                'string',
             ],
             // 'luigisbox_api_key' => ['sometimes', 'string'],
             'image'       => [
