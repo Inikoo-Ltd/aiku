@@ -11,7 +11,7 @@
 namespace App\Actions\Retina\Dropshipping;
 
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use Illuminate\Support\Facades\DB;
@@ -95,7 +95,10 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'isAuthenticated' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::MANUAL->value)->exists(),
                     'createRoute'       => [
                         'method' => 'post',
-                        'name' => 'retina.models.fulfilment.customer_sales_channel.manual.store'
+                        'name' => match ($customer->is_fulfilment) {
+                            true => 'retina.models.fulfilment.customer_sales_channel.manual.store',
+                            default => 'retina.models.customer_sales_channel.manual.store',
+                        }
                     ]
                 ],
                 'type_tiktok'   => [
@@ -117,16 +120,16 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
     {
         return
             array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs($routeParameters),
+                IndexDropshippingCustomerSalesChannels::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.platform.dashboard',
+                                'name'       => 'retina.dropshipping.customer_sales_channels.create',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __('Channels'),
+                            'label' => __('Create'),
                         ]
                     ]
                 ]
