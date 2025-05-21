@@ -43,6 +43,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
         return $query
             ->defaultSort('customer_sales_channels.reference')
             ->select([
+                'customer_sales_channels.id',
                 'customer_sales_channels.reference',
                 'customer_sales_channels.slug',
                 'customer_sales_channels.number_customer_clients as number_customer_clients',
