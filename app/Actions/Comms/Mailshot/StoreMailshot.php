@@ -18,19 +18,16 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreMailshot extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use HasUIMailshots;
     use WithCatalogueAuthorisation;
     use WithNoStrictRules;
@@ -59,6 +56,7 @@ class StoreMailshot extends OrgAction
         OutboxHydrateMailshots::dispatch($outbox)->delay($this->hydratorsDelay);
         ShopHydrateMailshots::dispatch($outbox->shop)->delay($this->hydratorsDelay);
 
+
         return $mailshot;
     }
 
@@ -67,9 +65,9 @@ class StoreMailshot extends OrgAction
     {
         $rules = [
             'subject'           => ['required', 'string', 'max:255'],
-            'type'              => ['sometimes', 'required', Rule::enum(MailshotTypeEnum::class)],
+            'type'              => ['required', Rule::enum(MailshotTypeEnum::class)],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
-            'recipients_recipe' => ['present', 'array']
+            'recipients_recipe' => ['sometimes', 'array']
 
         ];
 
@@ -111,6 +109,20 @@ class StoreMailshot extends OrgAction
     }
 
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if (!$this->has('type')) {
+            $outbox = $request->route('outbox');
+            $type   = match ($outbox->code) {
+                OutboxCodeEnum::NEWSLETTER => MailshotTypeEnum::NEWSLETTER->value,
+                OutboxCodeEnum::MARKETING => MailshotTypeEnum::MARKETING->value,
+                default => null
+            };
+            $this->set('type', $type);
+        }
+    }
+
+
     /**
      * @throws \Throwable
      */
@@ -124,6 +136,7 @@ class StoreMailshot extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot): \Symfony\Component\HttpFoundation\Response
     {
+
         return Inertia::location(route('grp.org.shops.show.marketing.mailshots.index', [
             'organisation' => $mailshot->shop->organisation->slug,
             'shop'         => $mailshot->shop->slug

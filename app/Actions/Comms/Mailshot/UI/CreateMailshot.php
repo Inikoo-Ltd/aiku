@@ -126,7 +126,7 @@ class CreateMailshot extends OrgAction
                     'route' => [
                         'name'       => 'grp.models.shop.mailshot.store',
                         'parameters' => [
-                            'shop'         => $parent->id,
+                            'outbox'         => $parent->id,
                         ]
                     ]
                 ],
