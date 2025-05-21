@@ -32,7 +32,7 @@ const props = defineProps<{
 
 <template>
 	<div :style="getStyles(fieldValue.container.properties,screenType)">
-		<div class="relative isolate px-6 py-24 text-center sm:px-16">
+		<div class="relative  px-6 py-24 text-center sm:px-16">
 			<section v-html="fieldValue.headline" />
 
 			<div class="mt-10 flex items-center justify-center gap-x-6">
