@@ -19,41 +19,17 @@ defineProps<{
 
 
 function platformRoute(platform: Platform) {
-  return route(
-    "grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
-    [
-      (route().params as RouteParams).organisation,
-      (route().params as RouteParams).shop,
-      (route().params as RouteParams).customer,
-      platform.slug])
+  return ""
 }
 
 function portfoliosRoute(platform: Platform) {
-  return route(
-    "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
-    [
-      (route().params as RouteParams).organisation,
-      (route().params as RouteParams).shop,
-      (route().params as RouteParams).customer,
-      platform.slug])
+  return ""
 }
 function clientsRoute(platform: Platform) {
-  return route(
-    "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
-    [
-      (route().params as RouteParams).organisation,
-      (route().params as RouteParams).shop,
-      (route().params as RouteParams).customer,
-      platform.slug])
+  return ""
 }
 function ordersRoute(platform: Platform) {
-  return route(
-    "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
-    [
-      (route().params as RouteParams).organisation,
-      (route().params as RouteParams).shop,
-      (route().params as RouteParams).customer,
-      platform.slug])
+  return ""
 }
 
 </script>
