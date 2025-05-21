@@ -50,6 +50,11 @@ class ShowIrisWebpage
         /** @var Website $website */
         $website = $request->get('website');
         $webpageID = $this->getWebpageID($website, $path);
+
+        if ($webpageID === null) {
+            abort(404);
+        }
+
         $webpage   = Webpage::find($webpageID);
 
 
@@ -66,7 +71,7 @@ class ShowIrisWebpage
     }
 
 
-    private function getWebpageID(Website $website, ?string $path): int
+    private function getWebpageID(Website $website, ?string $path): ?int
     {
         if ($path === null) {
             $webpageID = $website->storefront_id;
