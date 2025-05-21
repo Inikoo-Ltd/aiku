@@ -16,6 +16,7 @@ use App\Actions\Ordering\Order\UI\GetOrderAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -30,18 +31,21 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
+    private CustomerSalesChannel $customerSalesChannel;
     public function handle(Order $order): Order
     {
         return $order;
     }
 
-    public function asController(Platform $platform, Order $order, ActionRequest $request): Order
+    public function asController(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
+        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
@@ -57,6 +61,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
             [
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $order,
                     $request->route()->originalParameters(),
                 ),
                 'pageHead'    => [
@@ -200,7 +205,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         return new OrderResource($order);
     }
 
-    public function getBreadcrumbs(array $routeParameters, $suffix = ''): array
+    public function getBreadcrumbs(Order $order, array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (Order $order, array $routeParameters, string $suffix) {
             return [
@@ -215,20 +220,22 @@ class ShowRetinaDropshippingBasket extends RetinaAction
             ];
         };
 
-        $order = Order::where('slug', $routeParameters['order'])->first();
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $routeParameters['customerSalesChannel'])->first();
 
         return array_merge(
-            IndexRetinaDropshippingOrders::make()->getBreadcrumbs(),
+            IndexRetinaBaskets::make()->getBreadcrumbs($customerSalesChannel),
             $headCrumb(
                 $order,
                 [
                     'index' => [
-                        'name' => 'retina.dropshipping.orders.index',
-                        'parameters' => []
+                        'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                        'parameters' => [
+                            $customerSalesChannel->slug
+                        ]
                     ],
                     'model' => [
-                        'name' => 'retina.dropshipping.orders.show',
-                        'parameters' => [$order->slug]
+                        'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                        'parameters' => [$customerSalesChannel->slug, $order->slug]
                     ]
                 ],
                 $suffix

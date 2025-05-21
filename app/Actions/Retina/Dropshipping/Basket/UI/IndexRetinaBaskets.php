@@ -131,7 +131,10 @@ class IndexRetinaBaskets extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.basket.index'
+                                'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                                'parameters' => [
+                                    $customerSalesChannel->slug
+                                ]
                             ],
                             'label'  => __('Baskets'),
                         ]
