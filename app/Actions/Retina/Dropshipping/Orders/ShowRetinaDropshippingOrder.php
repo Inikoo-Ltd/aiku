@@ -31,6 +31,7 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 
 class ShowRetinaDropshippingOrder extends RetinaAction
@@ -47,16 +48,9 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return $this->handle($order);
     }
 
-    public function inBasket(Platform $platform, Order $order, ActionRequest $request): Order
+    public function inPlatform(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
-
-        return $this->handle($order);
-    }
-
-    public function inPlatform(Platform $platform, Order $order, ActionRequest $request): Order
-    {
-        $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
@@ -257,17 +251,17 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         $order = Order::where('slug', $routeParameters['order'])->first();
 
         return array_merge(
-            IndexRetinaDropshippingOrders::make()->getBreadcrumbs(),
+            IndexRetinaDropshippingOrdersInPlatform::make()->getBreadcrumbs(),
             $headCrumb(
                 $order,
                 [
                     'index' => [
-                        'name' => 'retina.dropshipping.orders.index',
+                        'name' => 'retina.dropshipping.customer_sales_channels.orders.index',
                         'parameters' => []
                     ],
                     'model' => [
-                        'name' => 'retina.dropshipping.orders.show',
-                        'parameters' => [$order->slug]
+                        'name' => 'retina.dropshipping.customer_sales_channels.orders.show',
+                        'parameters' => [ $routeParameters['customerSalesChannel'], $order->slug]
                     ]
                 ],
                 $suffix
