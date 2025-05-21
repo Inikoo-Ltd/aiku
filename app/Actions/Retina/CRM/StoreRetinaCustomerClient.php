@@ -51,7 +51,7 @@ class StoreRetinaCustomerClient extends RetinaAction
 
     public function htmlResponse(CustomerClient $customerClient): RedirectResponse
     {
-        if($this->shop->type == ShopTypeEnum::FULFILMENT) {
+        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.client.show', [
                 $customerClient->salesChannel->slug,
                 $customerClient->ulid

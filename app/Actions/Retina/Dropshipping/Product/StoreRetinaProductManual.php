@@ -31,7 +31,7 @@ class StoreRetinaProductManual extends RetinaAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
         DB::transaction(function () use ($customerSalesChannel, $modelData) {
-            if($customerSalesChannel->platform_user_type == "ShopifyUser") {
+            if ($customerSalesChannel->platform_user_type == "ShopifyUser") {
                 StoreProductShopify::run($customerSalesChannel->user, $modelData);
             } else {
                 StoreMultipleManualPortfolios::run($customerSalesChannel, $modelData);
