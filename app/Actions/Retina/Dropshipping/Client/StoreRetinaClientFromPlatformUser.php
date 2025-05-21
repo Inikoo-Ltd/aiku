@@ -25,17 +25,18 @@ class StoreRetinaClientFromPlatformUser extends RetinaAction
      */
     public function handle(ShopifyUser|TiktokUser $parent, array $attributes, array $customer, ?CustomerClient $existsClient): CustomerClient
     {
+        data_set($attributes, 'customer_sales_channel_id', $parent->customerSalesChannel->id);
         if (!$existsClient) {
             $customerClient = StoreCustomerClient::make()->action($parent->customerSalesChannel, $attributes);
 
             AttachRetinaPlatformCustomerClient::run($parent->customer, $parent, [
-                'customer_client_id'          => $customerClient->id,
+                'customer_client_id' => $customerClient->id,
                 'platform_customer_client_id' => Arr::get($customer, 'id')
             ]);
         } else {
             if (!$parent->clients()->where('customer_client_id', $existsClient->id)->exists()) {
                 AttachRetinaPlatformCustomerClient::run($parent->customer, $parent, [
-                    'customer_client_id'          => $existsClient->id,
+                    'customer_client_id' => $existsClient->id,
                     'platform_customer_client_id' => Arr::get($customer, 'id')
                 ]);
             }
