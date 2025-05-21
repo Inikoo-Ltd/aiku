@@ -73,9 +73,9 @@ class GetRetinaDropshippingNavigation
                         'label'         => __('Channels'),
                         'icon'          => 'fal fa-code-branch',
                         'icon_rotation' => 90,
-                        'root'          => 'retina.dropshipping.platform.',
+                        'root'          => 'retina.dropshipping.customer_sales_channels.',
                         'route'         => [
-                            'name' => 'retina.dropshipping.platform.index'
+                            'name' => 'retina.dropshipping.customer_sales_channels.index'
                         ]
                     ]
                 ]
