@@ -51,9 +51,9 @@ watch(
         <SwiperSlide v-for="(card, index) in modelValue.carousel_data.cards" :key="index"
             :style="getStyles(modelValue.carousel_data.card_container.properties, screenType)"
             class="overflow-hidden flex flex-col">
-            <div class="w-full h-36 sm:h-44 md:h-48 bg-gray-100 flex items-center justify-center overflow-auto">
+            <div :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)" :class="[!card.image?.source && 'bg-gray-100 w-full h-36 sm:h-44 md:h-48  flex items-center justify-center overflow-auto', 'overflow-hidden']">
                 <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
-                    :imageCover="true" class="w-full h-full" />
+                    :imageCover="true" :style="getStyles(card.image.properties, screenType)" :class="null"/>
                 <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
             </div>
 

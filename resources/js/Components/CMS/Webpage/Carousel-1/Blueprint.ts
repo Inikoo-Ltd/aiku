@@ -58,6 +58,18 @@ export default {
 					],
 				},
 				{
+					name: "Image layout",
+					key: ["card_container", "image_properties"],
+					replaceForm: [
+						{
+							key: ["dimension"],
+							label: "Dimension",
+							type: "dimension",
+							useIn: ["desktop", "tablet", "mobile"],
+						},
+					],
+				},
+				{
 					key: ["cards"],
 					name: "Cards  Data",
 					type: "array-data",
