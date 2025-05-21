@@ -122,7 +122,10 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                     // 'syncAllRoute' => $syncAllRoute,
                     'addPortfolioRoute' => [
-                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                        'name' => match ($this->customerSalesChannel->platform->type) {
+                            PlatformTypeEnum::WOOCOMMERCE => 'retina.models.customer_sales_channel.woo.product.store',
+                            default => 'retina.models.customer_sales_channel.customer.product.store'
+                        },
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]

@@ -203,12 +203,11 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('shopify-sync-all-stored-items', SyncRetinaStoredItemsFromApiProductsShopify::class)->name('shopify_sync_all_stored_items');
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
+    Route::post('wc-products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
-
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
-    Route::post('wc-user/{wooCommerceUser:id}/products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
 
