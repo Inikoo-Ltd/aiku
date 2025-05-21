@@ -138,7 +138,7 @@ class ShowMailshotWorkshop extends OrgAction
                 ),
                 $headCrumb(
                     'modelWithIndex',
-                   $mailshot,
+                    $mailshot,
                     [
                         'index' => [
                             'name'       => 'grp.org.shops.show.marketing.mailshots.index',
