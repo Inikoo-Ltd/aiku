@@ -39,10 +39,24 @@ const checkScreenType = () => {
 
 
 onMounted(() => {
+  // Inject structured data script
   const script = document.createElement('script')
   script.type = 'application/ld+json'
-  script.textContent = JSON.stringify(props.meta.structured_data)
+
+  // Fix: stringify only if needed
+  let structuredData = props.meta.structured_data
+  if (typeof structuredData !== 'string') {
+    try {
+      structuredData = JSON.stringify(structuredData)
+    } catch (e) {
+      console.error('Invalid structured data:', e)
+      structuredData = ''
+    }
+  }
+
+  script.textContent = structuredData
   document.head.appendChild(script)
+
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
 })

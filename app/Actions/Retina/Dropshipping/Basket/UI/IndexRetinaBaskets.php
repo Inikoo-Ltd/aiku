@@ -16,6 +16,7 @@ use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
@@ -27,12 +28,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaBaskets extends RetinaAction
 {
-    public function handle($prefix = null): \Illuminate\Pagination\LengthAwarePaginator
+    private CustomerSalesChannel $customerSalesChannel;
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('pallets.reference', $value)
-                    ->orWhereWith('pallets.reference', $value);
+                $query->whereAnyWordStartWith('orders.reference', $value)
+                    ->orWhereWith('orders.customer_reference', $value);
             });
         });
 
@@ -41,7 +43,8 @@ class IndexRetinaBaskets extends RetinaAction
         }
 
         $query = QueryBuilder::for(Order::class);
-        $query->where('orders.customer_id', $this->customer->id);
+        $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
+        $query->where('orders.platform_id', $customerSalesChannel->platform_id);
         $query->where('orders.state', OrderStateEnum::CREATING);
 
         return $query->defaultSort('id')
@@ -56,13 +59,12 @@ class IndexRetinaBaskets extends RetinaAction
         return $request->user()->is_root;
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($request);
-        $this->platform = $this->organisation->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
 
-
-        return $this->handle();
+        return $this->handle($customerSalesChannel);
     }
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
@@ -73,7 +75,7 @@ class IndexRetinaBaskets extends RetinaAction
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
                 'title'       => $title,
                 'pageHead'    => [
                     'title' => $title,
@@ -119,7 +121,7 @@ class IndexRetinaBaskets extends RetinaAction
         };
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
         return
             array_merge(
@@ -129,7 +131,7 @@ class IndexRetinaBaskets extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.orders.index'
+                                'name' => 'retina.dropshipping.customer_sales_channels.basket.index'
                             ],
                             'label'  => __('Baskets'),
                         ]

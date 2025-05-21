@@ -124,9 +124,9 @@ const isLoadingVisitActiveHorizontal = ref(false)
                 </Transition>
 
                 <Transition v-if="currentActiveHorizontal?.img" name="spin-to-down">
-                    <div :key="currentActiveHorizontal?.img" class="">
-                        <LoadingIcon v-if="isLoadingVisitActiveHorizontal" />
-                        <img v-else :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-6" />
+                    <div :key="currentActiveHorizontal?.img" class="h-4 w-[18.5px] flex items-center justify-center">
+                        <LoadingIcon v-if="isLoadingVisitActiveHorizontal" class=""/>
+                        <img v-else :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-4 w-[17.5px]" />
                     </div>
                 </Transition>
 

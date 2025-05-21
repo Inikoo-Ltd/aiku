@@ -104,22 +104,23 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 
 	<div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-            {{content.portfolio_empty.title}}
+            {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
 		</h1>
         <p class="mt-4 text-xl">
-			{{content.portfolio_empty.description}}
+			{{ content?.portfolio_empty?.description || trans('To get started, add products to your portfolios. You can sync from your inventory or create a new one.') }}
 		</p>
 		<div class="mt-6 space-y-4">
 			<ButtonWithLink
-				:routeTarget="routes.syncAllRoute"
+				v-if="routes?.syncAllRoute"
+				:routeTarget="routes?.syncAllRoute"
 				isWithError
 				:label="content.portfolio_empty.sync_button"
 				icon="fas fa-sync-alt"
 				xtype="tertiary"
 				size="xl"
 			/>
-			<div class="text-gray-500">{{content.portfolio_empty.separation}}</div>
-			<Button @click="isOpenModalPortfolios = true" :label="content.portfolio_empty.add_button" icon="fas fa-plus" size="xl" />
+			<div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">{{ content?.portfolio_empty?.separation || trans('or') }}</div>
+			<Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true" :label="content.portfolio_empty.add_button" icon="fas fa-plus" size="xl" />
 		</div>
 	</div>
 

@@ -76,7 +76,7 @@ Route::prefix('orders')->as('orders.')->group(function () {
 
 Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
 
-    Route::get('/dashboard', ShowRetinaCustomerSalesChannelDashboard::class)->name('dashboard');
+    Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');

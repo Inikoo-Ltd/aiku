@@ -144,6 +144,18 @@ class IndexRetinaPortfolios extends RetinaAction
                         ] : [],
                     ]
                 ],
+                // 'routes'    => [  // TODO: fix this route
+                //     'itemRoute' => [
+                //         'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
+                //     ],
+                //     'syncAllRoute' => $syncAllRoute,
+                //     'addPortfolioRoute' => [
+                //         'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                //         'parameters' => [
+                //             'customerSalesChannel' => $this->customerSalesChannel->id
+                //         ]
+                //     ]
+                // ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [
