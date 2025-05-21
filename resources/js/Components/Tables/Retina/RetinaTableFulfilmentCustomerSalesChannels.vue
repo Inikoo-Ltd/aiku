@@ -20,9 +20,7 @@ defineProps<{
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
   return route(
     "retina.fulfilment.dropshipping.customer_sales_channels.show",
-    [
-     
-      customerSalesChannel.slug])
+    [customerSalesChannel.slug])
 }
 
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
@@ -47,7 +45,13 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 
 </script>
 <template>
-     <Table :resource="data" >
+      <Table :resource="data" >
+        <template #cell(platform_name)="{ item: customerSalesChannel }">
+            <div class="flex items-center gap-2">
+                <img :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
+                {{ customerSalesChannel.platform_name }}
+            </div>
+        </template>
         <template #cell(reference)="{ item: customerSalesChannel }">
             <Link :href="customerSalesChannelRoute(customerSalesChannel) as string" class="primaryLink">
                 {{ customerSalesChannel["reference"] }}

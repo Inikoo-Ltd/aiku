@@ -34,7 +34,7 @@ function productRoute(product: Product) {
 				return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
 			}
 
-			return route("retina.dropshipping.portfolios.show", [product.slug])
+			return route("retina.dropshipping.customer_sales_channels.portfolios.show", [route().params['customerSalesChannel'], product.slug])
 
 		case "grp.overview.catalogue.products.index":
 			return route("grp.org.shops.show.catalogue.products.current_products.show", [

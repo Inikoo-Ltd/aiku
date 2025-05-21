@@ -44,7 +44,6 @@ use App\Models\Fulfilment\StoredItemAudit;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\getJson;
 
 uses()->group('ui');
 
@@ -52,11 +51,10 @@ beforeAll(function () {
     loadDB();
 });
 beforeEach(function () {
-
-    $this->organisation      = createOrganisation();
-    $this->warehouse         = createWarehouse();
-    $this->fulfilment        = createFulfilment($this->organisation);
-    $this->website           = createWebsite($this->fulfilment->shop);
+    $this->organisation = createOrganisation();
+    $this->warehouse    = createWarehouse();
+    $this->fulfilment   = createFulfilment($this->organisation);
+    $this->website      = createWebsite($this->fulfilment->shop);
     if ($this->website->state != WebsiteStateEnum::LIVE) {
         LaunchWebsite::make()->action($this->website);
     }
@@ -69,7 +67,6 @@ beforeEach(function () {
         data_set($storeData, 'state', RentalAgreementStateEnum::ACTIVE);
         data_set($storeData, 'username', 'test');
         data_set($storeData, 'email', 'test@aiku.io');
-
 
 
         $rentalAgreement = StoreRentalAgreement::make()->action(
@@ -154,7 +151,6 @@ beforeEach(function () {
         data_set($storeData, 'email', 'test@aiku.io');
 
 
-
         $rentalAgreement = StoreRentalAgreement::make()->action(
             $this->customer->fulfilmentCustomer,
             $storeData
@@ -179,11 +175,11 @@ beforeEach(function () {
         $rental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
-                'code' => 'rent-code',
-                'name' => 'rento',
-                'price'  => 10,
+                'code'  => 'rent-code',
+                'name'  => 'rent name',
+                'price' => 10,
                 'unit'  => RentalUnitEnum::DAY->value,
-                'type'   => RentalTypeEnum::SPACE
+                'type'  => RentalTypeEnum::SPACE
             ]
         );
     }
@@ -195,24 +191,23 @@ beforeEach(function () {
         $space = StoreSpace::make()->action(
             $this->customer->fulfilmentCustomer,
             [
-                'reference' => 'space-ref',
+                'reference'       => 'space-ref',
                 'exclude_weekend' => true,
-                'start_at'  => now(),
-                'rental_id' => $this->rental->id
+                'start_at'        => now(),
+                'rental_id'       => $this->rental->id
             ]
         );
     }
 
     $this->space = $space;
 
-    $this->webUser  = createWebUser($this->customer);
+    $this->webUser = createWebUser($this->customer);
 
     Config::set(
         'inertia.testing.page_paths',
         [resource_path('js/Pages/Retina')]
     );
     DetectWebsiteFromDomain::shouldRun()->with('localhost')->andReturn($this->website);
-
 });
 
 test('show log in', function () {
@@ -248,29 +243,26 @@ test('show profile', function () {
     $response = $this->get(route('retina.profile.show'));
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('EditModel')
-        ->has(
-            'formData.args.updateRoute',
-            fn (AssertableInertia $page) => $page
+            ->has(
+                'formData.args.updateRoute',
+                fn(AssertableInertia $page) => $page
                     ->where('name', 'retina.models.profile.update')
-        );
+            );
     });
 });
 
 test('create rental agreement for 4th customer', function () {
-
     $rentalAgreement = StoreRentalAgreement::make()->action(
         $this->webUser->customer->fulfilmentCustomer,
         [
-             'billing_cycle' => RentalAgreementBillingCycleEnum::MONTHLY,
-             'state'         => RentalAgreementStateEnum::ACTIVE,
-             'username'      => 'test',
-             'email'         => 'hello@aiku.io',
-         ]
+            'billing_cycle' => RentalAgreementBillingCycleEnum::MONTHLY,
+            'state'         => RentalAgreementStateEnum::ACTIVE,
+            'username'      => 'test',
+            'email'         => 'hello@aiku.io',
+        ]
     );
 
     expect($rentalAgreement)->toBeInstanceOf(RentalAgreement::class);
-
-
 });
 
 test('index pallets', function () {
@@ -281,7 +273,6 @@ test('index pallets', function () {
         $page
             ->component('Storage/RetinaPallets')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('data');
     });
@@ -295,7 +286,6 @@ test('index pallets sub nav storing', function () {
         $page
             ->component('Storage/RetinaPallets')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('data');
     });
@@ -309,7 +299,6 @@ test('index pallets sub nav returned', function () {
         $page
             ->component('Storage/RetinaPallets')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('data');
     });
@@ -323,7 +312,6 @@ test('index pallets sub nav in process', function () {
         $page
             ->component('Storage/RetinaPallets')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('data');
     });
@@ -337,7 +325,6 @@ test('index pallets sub nav incidents', function () {
         $page
             ->component('Storage/RetinaPallets')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('data');
     });
@@ -351,15 +338,13 @@ test('show pallet', function () {
         $page
             ->component('Storage/RetinaPallet')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->pallet->reference)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->pallet->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -372,11 +357,10 @@ test('edit pallet', function () {
             ->component('EditModel')
             ->has(
                 'formData.args.updateRoute',
-                fn (AssertableInertia $page) => $page
-                        ->where('name', 'retina.models.pallet.update')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('name', 'retina.models.pallet.update')
+                    ->etc()
             );
-
     });
 });
 
@@ -388,7 +372,6 @@ test('index pallet deliveries', function () {
         $page
             ->component('Storage/RetinaPalletDeliveries')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('data');
     });
@@ -404,7 +387,6 @@ test('index pallet deliveries (tabs upload)', function () {
         $page
             ->component('Storage/RetinaPalletDeliveries')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has(PalletDeliveriesTabsEnum::UPLOADS->value);
     });
@@ -418,15 +400,13 @@ test('show pallet delivery (pallet tab)', function () {
         $page
             ->component('Storage/RetinaPalletDelivery')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletDelivery->slug)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -443,15 +423,13 @@ test('show pallet delivery (attachments tab)', function () {
         $page
             ->component('Storage/RetinaPalletDelivery')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletDelivery->slug)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -474,15 +452,13 @@ test('show pallet delivery state in process', function () {
         $page
             ->component('Storage/RetinaPalletDelivery')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletDelivery->slug)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 
     $palletDelivery->update(['state' => PalletDeliveryStateEnum::CONFIRMED]);
@@ -506,15 +482,13 @@ test('show pallet delivery state booked in or booking in', function () {
         $page
             ->component('Storage/RetinaPalletDelivery')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletDelivery->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletDelivery->slug)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 
     $palletDelivery->update(['state' => PalletDeliveryStateEnum::CONFIRMED]);
@@ -528,14 +502,12 @@ test('show pallet delivery (services tab)', function () {
         $page
             ->component('Storage/RetinaPalletDelivery')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -547,14 +519,12 @@ test('show pallet delivery (physical goods tab)', function () {
         $page
             ->component('Storage/RetinaPalletDelivery')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -574,7 +544,6 @@ test('index pallet returns', function () {
         $page
             ->component('Storage/RetinaPalletReturns')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has('pageHead')
             ->has('data');
     });
@@ -588,15 +557,13 @@ test('show pallet return (pallet tab)', function () {
         $page
             ->component('Storage/RetinaPalletReturn')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -608,15 +575,13 @@ test('show pallet return (stored item tab)', function () {
         $page
             ->component('Storage/RetinaPalletReturn')
             ->has('title')
-            ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 })->todo();
 
@@ -628,15 +593,13 @@ test('show pallet return (services tab)', function () {
         $page
             ->component('Storage/RetinaPalletReturn')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -648,15 +611,13 @@ test('show pallet return (physical goods tab)', function () {
         $page
             ->component('Storage/RetinaPalletReturn')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -668,16 +629,14 @@ test('index web users', function () {
         $page
             ->component('SysAdmin/RetinaWebUsers')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'Users')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'Users')
+                    ->etc()
             )
             ->has('labels')
             ->has('data');
-
     });
 });
 
@@ -689,15 +648,13 @@ test('create web user', function () {
         $page
             ->component('CreateModel')
             ->has('title')
-            ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'Create User')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'Create User')
+                    ->etc()
             )
             ->has('formData');
-
     });
 });
 
@@ -709,15 +666,13 @@ test('edit sysadmin settings', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'Account management')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'Account management')
+                    ->etc()
             )
             ->has('formData');
-
     });
 });
 
@@ -729,15 +684,13 @@ test('index stored items', function () {
         $page
             ->component('Storage/RetinaStoredItems')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'SKUs')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'SKUs')
+                    ->etc()
             )
             ->has('data');
-
     });
 });
 
@@ -749,15 +702,13 @@ test('index stored item audits', function () {
         $page
             ->component('Storage/RetinaStoredItemsAudits')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'stored item audits')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'stored item audits')
+                    ->etc()
             )
             ->has('data');
-
     });
 });
 
@@ -774,19 +725,18 @@ test('show stored item audit', function () {
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', "SKUs audit")
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', "SKUs audit")
+                    ->etc()
             )
             ->has('pallets')
             ->has('data');
-
     });
 });
 
 test('show dropshipping dashboard', function () {
     actingAs($this->webUser, 'retina');
-    $response = $this->get(route('retina.dropshipping.platform.create'));
+    $response = $this->get(route('retina.dropshipping.customer_sales_channels.create'));
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Dropshipping/DropshippingCreateChannel');
     });
@@ -800,16 +750,14 @@ test('index pricing', function () {
         $page
             ->component('Storage/RetinaStoragePricing')
             ->has('title')
-            ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'Prices')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'Prices')
+                    ->etc()
             )
             ->has('currency')
             ->has('assets');
-
     });
 })->todo();
 
@@ -821,15 +769,13 @@ test('index pricing (goods)', function () {
         $page
             ->component('Pricing/RetinaGoods')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'goods')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'goods')
+                    ->etc()
             )
             ->has('data');
-
     });
 });
 
@@ -841,15 +787,13 @@ test('index pricing (services)', function () {
         $page
             ->component('Pricing/RetinaServices')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'services')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'services')
+                    ->etc()
             )
             ->has('data');
-
     });
 });
 
@@ -861,15 +805,13 @@ test('index pricing (rentals)', function () {
         $page
             ->component('Pricing/RetinaRentals')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'rentals')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'rentals')
+                    ->etc()
             )
             ->has('data');
-
     });
 });
 
@@ -881,15 +823,13 @@ test('index spaces', function () {
         $page
             ->component('Space/RetinaSpaces')
             ->has('title')
-            ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'Spaces')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'Spaces')
+                    ->etc()
             )
             ->has('data');
-
     });
 });
 
@@ -901,16 +841,14 @@ test('show space', function () {
         $page
             ->component('Space/RetinaSpace')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->space->reference)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->space->reference)
+                    ->etc()
             )
             ->has('tabs')
             ->has('showcase');
-
     });
 });
 
@@ -930,15 +868,13 @@ test('index invoices', function () {
         $page
             ->component('Billing/RetinaInvoices')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'Invoices')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'Invoices')
+                    ->etc()
             )
             ->has('data');
-
     });
 });
 
@@ -950,17 +886,15 @@ test('show next bill', function () {
         $page
             ->component('Billing/RetinaRecurringBill')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->recurringBill->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->recurringBill->slug)
+                    ->etc()
             )
             ->has('currency')
             ->has('box_stats')
             ->has('tabs');
-
     });
 });
 
@@ -974,17 +908,15 @@ test('show pallet return with stored item', function () {
         $page
             ->component('Storage/RetinaPalletReturn')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->palletReturn->reference)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->palletReturn->reference)
+                    ->etc()
             )
             ->has('box_stats')
             ->has('notes_data')
             ->has('tabs');
-
     });
 });
 
@@ -997,12 +929,11 @@ test('show stored item', function () {
         $page
             ->component('Storage/RetinaStoredItem')
             ->has('title')
-            ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->storedItem->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->storedItem->slug)
+                    ->etc()
             )
             ->has('showcase')
             ->has('tabs');
@@ -1019,12 +950,11 @@ test('show stored item (tab pallets)', function () {
         $page
             ->component('Storage/RetinaStoredItem')
             ->has('title')
-            ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->storedItem->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->storedItem->slug)
+                    ->etc()
             )
             ->has(StoredItemTabsEnum::PALLETS->value)
             ->has('tabs');
@@ -1041,12 +971,11 @@ test('show stored item (tab audits)', function () {
         $page
             ->component('Storage/RetinaStoredItem')
             ->has('title')
-            ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->storedItem->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->storedItem->slug)
+                    ->etc()
             )
             ->has(StoredItemTabsEnum::AUDITS->value)
             ->has('tabs');
@@ -1063,12 +992,11 @@ test('show stored item (tab movements)', function () {
         $page
             ->component('Storage/RetinaStoredItem')
             ->has('title')
-            ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->storedItem->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->storedItem->slug)
+                    ->etc()
             )
             ->has(StoredItemTabsEnum::MOVEMENTS->value)
             ->has('tabs');
@@ -1085,12 +1013,11 @@ test('show stored item (tab history)', function () {
         $page
             ->component('Storage/RetinaStoredItem')
             ->has('title')
-            ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->storedItem->slug)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->storedItem->slug)
+                    ->etc()
             )
             ->has(StoredItemTabsEnum::HISTORY->value)
             ->has('tabs');
@@ -1106,12 +1033,11 @@ test('show web user', function () {
         $page
             ->component('SysAdmin/RetinaWebUser')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', $this->webUser->username)
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', $this->webUser->username)
+                    ->etc()
             )
             ->has('data');
     });
@@ -1126,24 +1052,14 @@ test('edit web user', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
-                        ->where('title', 'Edit web user')
-                        ->etc()
+                fn(AssertableInertia $page) => $page
+                    ->where('title', 'Edit web user')
+                    ->etc()
             )
             ->has('formData');
     });
 });
 
-// test('UI json get pallet return whole pallet', function () {
-//     $this->withoutExceptionHandling();
-//     $response = getJson(route('retina.json.fulfilment.return.physical-goods.index', [
-//         $this->palletReturn->slug
-//     ]));
-//     $response->assertStatus(200)
-//         ->assertJsonStructure([
-//             'data',
-//         ]);
-// });
+

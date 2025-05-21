@@ -44,7 +44,7 @@ class ShowBannerWorkshop extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Banner $banner, ActionRequest $request): Banner
     {
-        $this->initialisationFromShop($fulfilment->shop, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handler($website, $banner);
     }

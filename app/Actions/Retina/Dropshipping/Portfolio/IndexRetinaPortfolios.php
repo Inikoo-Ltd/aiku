@@ -114,18 +114,21 @@ class IndexRetinaPortfolios extends RetinaAction
                         ] : [],
                     ]
                 ],
-                // 'routes'    => [  // TODO: fix this route
-                //     'itemRoute' => [
-                //         'name' => 'retina.fulfilment.itemised_storage.stored_items.index',
-                //     ],
-                //     'syncAllRoute' => $syncAllRoute,
-                //     'addPortfolioRoute' => [
-                //         'name' => 'retina.models.customer_sales_channel.customer.product.store',
-                //         'parameters' => [
-                //             'customerSalesChannel' => $this->customerSalesChannel->id
-                //         ]
-                //     ]
-                // ],
+                'routes'    => [ 
+                    'itemRoute' => [
+                        'name' => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
+                    ],
+                    // 'syncAllRoute' => $syncAllRoute,
+                    'addPortfolioRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ]
+                ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [
@@ -133,6 +136,14 @@ class IndexRetinaPortfolios extends RetinaAction
                         'platform' => $this->platform->id
                     ]
                 ] : [],
+                'content' => [
+                    'portfolio_empty' => [
+                        'title' => __("You don't any items in your portfolio"),
+                        'description' => __("To get started, add products to your portfolios."),
+                        'separation' => __("or"),
+                        'add_button' => __("Add Portfolio"),
+                    ]
+                ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()

@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Mailshot\UI;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\Organisation;
@@ -29,6 +30,14 @@ class CreateMailshot extends OrgAction
      */
     public function handle(Shop|Outbox $parent, ActionRequest $request): Response
     {
+
+        if ($parent instanceof Shop) {
+            $outbox = $parent->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
+
+        } else {
+            $outbox = $parent;
+        }
+
         $fields[] = [
             'title'  => '',
             'fields' => [
@@ -124,9 +133,9 @@ class CreateMailshot extends OrgAction
                             ]
                         ],
                     'route' => [
-                        'name'       => 'grp.models.shop.mailshot.store',
+                        'name'       => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
-                            'outbox'         => $parent->id,
+                            'outbox'         => $outbox->id,
                         ]
                     ]
                 ],
