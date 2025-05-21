@@ -75,4 +75,3 @@ test('add product to customer portfolio', function (CustomerClient $customerClie
 
     return $dropshippingCustomerPortfolio;
 })->depends('update customer client');
-

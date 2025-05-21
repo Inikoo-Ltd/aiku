@@ -20,7 +20,7 @@ trait GetPlatformLogo
         } elseif ($customerSalesChannels->platform->code === 'tiktok') {
             $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
         } elseif ($customerSalesChannels->platform->code === 'woocommerce') {
-            $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
+            $logo_img = 'https://cdn-icons-png.flaticon.com/512/825/825519.png';
         } elseif ($customerSalesChannels->platform->code === 'manual') {
             $logo_img = 'https://aw.aurora.systems/art/aurora_log_v2_orange.png';
         }
