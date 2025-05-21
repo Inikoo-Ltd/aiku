@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Comms\Mailshot\UI\CreateMailshot;
+use App\Actions\Comms\Mailshot\UI\CreateNewsletter;
 use App\Actions\Comms\Mailshot\UI\EditMailshot;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
 use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
@@ -22,8 +23,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('', ShowMarketingDashboard::class)->name('dashboard');
 Route::name("newsletters.")->prefix('newsletters')
     ->group(function () {
-        Route::get('', [IndexNewsletterMailshots::class, 'inShop'])->name('index');
-        Route::get('create', CreateDummy::class)->name('create');
+        Route::get('', IndexNewsletterMailshots::class)->name('index');
+        Route::get('create', CreateNewsletter::class)->name('create');
         Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
     });
