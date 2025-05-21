@@ -29,6 +29,7 @@ class CustomerSalesChannelsResource extends JsonResource
         /** @var Platform $platform */
         $platform = Platform::find($this->platform_id);
 
+        // dd($platform);
         return [
             'slug'              => $this->slug,
             'id'                => $this->id,
@@ -38,6 +39,8 @@ class CustomerSalesChannelsResource extends JsonResource
             'number_orders'     => $this->number_orders,
             'type'              => $this->type,
             'amount'            => $this->total_amount,
+            'platform_code'     => $platform?->code,
+            'platform_name'     => $platform?->name,
             'platform_image'    => $platform?->imageSources(48, 48) ?? null,
         ];
     }
