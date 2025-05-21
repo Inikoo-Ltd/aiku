@@ -51,7 +51,7 @@ const emits = defineEmits<{
 							modelHasWebBlocks: blockData?.id,
 						}
 					}" />
-					<pre>{{ modelValue?.button?.container?.properties }}</pre>
+			
 				<div class="flex justify-center">
 					<div typeof="button" @click="
 						() =>
