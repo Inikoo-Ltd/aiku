@@ -26,6 +26,7 @@ const updateData = (newVal: any) => {
 </script>
 
 <template>
+		
 	<section class="w-full min-h-[100px] flex items-center justify-center"
 		:style="getStyles(modelValue?.data?.fieldValue?.container?.properties,screenType)"
 	>
@@ -37,6 +38,7 @@ const updateData = (newVal: any) => {
 			<p class="text-sm">{{ trans("Please select or add a content block first.") }}</p>
 		</div>
 
+	
 		<component
 			v-else
 			class="w-full"

@@ -12,7 +12,9 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Events\UploadProductToWooCommerceProgressEvent;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
@@ -37,6 +39,7 @@ class StoreProductWooCommerce extends RetinaAction
             throw new \Exception('No product IDs provided for batch upload');
         }
 
+        $totalProducts = count($products['items']);
         $successCount = 0;
         $failedProducts = [];
 
@@ -90,6 +93,8 @@ class StoreProductWooCommerce extends RetinaAction
                 ]);
 
                 $successCount++;
+
+                UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $totalProducts, $successCount);
             } catch (\Exception $e) {
                 $failedProducts[] = [
                     'id' => $productId,
@@ -143,8 +148,10 @@ class StoreProductWooCommerce extends RetinaAction
         ];
     }
 
-    public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request)
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
     {
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = $customerSalesChannel->user;
         $this->initialisation($request);
 
         $this->handle($wooCommerceUser, $this->validatedData);

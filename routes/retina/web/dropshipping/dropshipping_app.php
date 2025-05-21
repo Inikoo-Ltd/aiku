@@ -56,7 +56,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
 Route::prefix('client')->as('client.')->group(function () {
     Route::get('/', IndexRetinaCustomerClientsInCustomerSalesChannel::class)->name('index');
     Route::get('create', CreateRetinaCustomerClient::class)->name('create');
-    Route::get('fetch', FetchRetinaCustomerClientFromShopify::class)->name('fetch');
+
     Route::get('{customerClient}/show', ShowRetinaCustomerClient::class)->name('show');
     Route::get('{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
 });
@@ -90,7 +90,6 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
         Route::get('/', IndexRetinaCustomerClientsInCustomerSalesChannel::class)->name('index');
         Route::get('create', CreateRetinaCustomerClient::class)->name('create');
-        Route::get('fetch', [FetchRetinaCustomerClientFromShopify::class, 'inPlatform'])->name('fetch');
         Route::get('wc-fetch', [FetchRetinaCustomerClientFromWooCommerce::class, 'inPlatform'])->name('wc-fetch');
         Route::get('/{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
         Route::get('{customerClient}', ShowRetinaCustomerClient::class)->name('show');
@@ -98,6 +97,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
         Route::get('my-portfolio', IndexRetinaPortfolios::class)->name('index');
+        Route::get('my-portfolio/{product}', [ShowRetinaProduct::class, 'inPlatform'])->name('show');
         Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
         Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
     });

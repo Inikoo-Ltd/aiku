@@ -15,7 +15,7 @@ use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class HandleApiDeleteProductFromWooCommerce extends OrgAction
+class DeleteProductFromWooCommerce extends OrgAction
 {
     use AsAction;
     use WithAttributes;

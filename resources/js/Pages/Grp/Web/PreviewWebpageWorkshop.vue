@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
 	</Head>
 	<div class="editor-class">
-		<div class="shadow-xl px-1" :class="'container max-w-7xl mx-auto'">
+		<div class="shadow-xl px-1" >
 			<div v-if="webpage">
 				<div v-if="webpage?.layout?.web_blocks?.length">
 					<TransitionGroup tag="div" name="list" class="relative">

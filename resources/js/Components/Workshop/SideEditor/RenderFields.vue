@@ -30,7 +30,8 @@ const emits = defineEmits<{
   (e: 'update:modelValue', key: string | string[], value: any): void
 }>()
 
-const currentView = ref('desktop')
+const currentView = inject('currentView','desktop')
+
 
 const valueForField = computed(() => {
   const rawVal = get(modelValue.value, props.blueprint.key)
@@ -91,7 +92,7 @@ const onPropertyUpdate = (newVal: any, path: any) => {
       </div>
       <ScreenView
         :show-list="blueprint.useIn || []"
-        :currentView="currentView"
+        v-model="currentView"
         @screen-view="e => currentView = e"
       />
     </div>

@@ -68,7 +68,7 @@ onMounted(() => {
 	</div>
 
 
-	<div v-if="model" class="w-full mt-2">
+	<div v-if="model?.data?.fieldValue" class="w-full mt-2">
 		<SideEditor 
 			v-model="model.data.fieldValue" 
 			:blueprint="getBlueprint(model.code)" 
@@ -78,7 +78,7 @@ onMounted(() => {
 	</div>
 		
 	<Modal :isOpen="modelModalBlocklist" @onClose="modelModalBlocklist = false">
-		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="element" />
+		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes"  />
 	</Modal>
 </template>
 

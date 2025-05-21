@@ -245,7 +245,7 @@ test('show profile', function () {
         $page->component('EditModel')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'retina.models.profile.update')
             );
     });
@@ -340,7 +340,7 @@ test('show pallet', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->pallet->reference)
                     ->etc()
             )
@@ -357,7 +357,7 @@ test('edit pallet', function () {
             ->component('EditModel')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'retina.models.pallet.update')
                     ->etc()
             );
@@ -402,7 +402,7 @@ test('show pallet delivery (pallet tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->slug)
                     ->etc()
             )
@@ -425,7 +425,7 @@ test('show pallet delivery (attachments tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->slug)
                     ->etc()
             )
@@ -454,7 +454,7 @@ test('show pallet delivery state in process', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->slug)
                     ->etc()
             )
@@ -484,7 +484,7 @@ test('show pallet delivery state booked in or booking in', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletDelivery->slug)
                     ->etc()
             )
@@ -504,7 +504,7 @@ test('show pallet delivery (services tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->etc()
             )
             ->has('tabs');
@@ -521,7 +521,7 @@ test('show pallet delivery (physical goods tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->etc()
             )
             ->has('tabs');
@@ -559,7 +559,7 @@ test('show pallet return (pallet tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -577,7 +577,7 @@ test('show pallet return (stored item tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -595,7 +595,7 @@ test('show pallet return (services tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -613,7 +613,7 @@ test('show pallet return (physical goods tab)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -631,7 +631,7 @@ test('index web users', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Users')
                     ->etc()
             )
@@ -650,7 +650,7 @@ test('create web user', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Create User')
                     ->etc()
             )
@@ -668,7 +668,7 @@ test('edit sysadmin settings', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Account management')
                     ->etc()
             )
@@ -686,7 +686,7 @@ test('index stored items', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'SKUs')
                     ->etc()
             )
@@ -704,7 +704,7 @@ test('index stored item audits', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'stored item audits')
                     ->etc()
             )
@@ -725,7 +725,7 @@ test('show stored item audit', function () {
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', "SKUs audit")
                     ->etc()
             )
@@ -752,7 +752,7 @@ test('index pricing', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Prices')
                     ->etc()
             )
@@ -771,7 +771,7 @@ test('index pricing (goods)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'goods')
                     ->etc()
             )
@@ -789,7 +789,7 @@ test('index pricing (services)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'services')
                     ->etc()
             )
@@ -807,7 +807,7 @@ test('index pricing (rentals)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'rentals')
                     ->etc()
             )
@@ -825,7 +825,7 @@ test('index spaces', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Spaces')
                     ->etc()
             )
@@ -843,7 +843,7 @@ test('show space', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->space->reference)
                     ->etc()
             )
@@ -870,7 +870,7 @@ test('index invoices', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Invoices')
                     ->etc()
             )
@@ -888,7 +888,7 @@ test('show next bill', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->recurringBill->slug)
                     ->etc()
             )
@@ -910,7 +910,7 @@ test('show pallet return with stored item', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
@@ -931,7 +931,7 @@ test('show stored item', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->storedItem->slug)
                     ->etc()
             )
@@ -952,7 +952,7 @@ test('show stored item (tab pallets)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->storedItem->slug)
                     ->etc()
             )
@@ -973,7 +973,7 @@ test('show stored item (tab audits)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->storedItem->slug)
                     ->etc()
             )
@@ -994,7 +994,7 @@ test('show stored item (tab movements)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->storedItem->slug)
                     ->etc()
             )
@@ -1015,7 +1015,7 @@ test('show stored item (tab history)', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->storedItem->slug)
                     ->etc()
             )
@@ -1035,7 +1035,7 @@ test('show web user', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->webUser->username)
                     ->etc()
             )
@@ -1054,12 +1054,10 @@ test('edit web user', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Edit web user')
                     ->etc()
             )
             ->has('formData');
     });
 });
-
-

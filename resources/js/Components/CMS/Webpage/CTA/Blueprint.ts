@@ -7,19 +7,64 @@ export default {
 			key: ["image"],
 			replaceForm: [
 				{
-					key : ['source'],
+					key: ["source"],
 					label: "Image",
 					type: "upload_image",
 				},
 				{
-					key : ['alt'],
+					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
 				},
 				{
+					key: ["properties", "dimension"],
+					label: "Dimension",
+					type: "dimension",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["properties","padding"],
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Padding",
+					type: "padding",
+				},
+				{
+					key: ["properties","margin"],
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Margin",
+					type: "margin",
+				},
+					{
+					key: ['container',"properties", "justifyContent"],
+					label: "Justify Content",
+					useIn: ["desktop", "tablet", "mobile"],
+					type: "select",
+					props_data: {
+						placeholder: "Object",
+						options: [
+							{
+								label: "Center",
+								value: "center",
+							},
+							{
+								label: "End",
+								value: "end",
+							},
+							{
+								label: "Start",
+								value: "start",
+							},
+							{
+								label: "none",
+								value: null,
+							},
+						],
+					},
+				},
+				{
 					key: ["properties", "object_fit"],
 					label: "Object Image",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 					type: "select",
 					props_data: {
 						placeholder: "Object",
@@ -46,7 +91,7 @@ export default {
 				{
 					key: ["properties", "object_position"],
 					label: "Object Position",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 					type: "select",
 					props_data: {
 						placeholder: "Object",
@@ -114,51 +159,68 @@ export default {
 			],
 		},
 		{
+			name: "Text Block",
+			key: ["text_block"],
+			replaceForm: [
+				{
+					key: ["properties","padding"],
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Padding",
+					type: "padding",
+				},
+				{
+					key: ["properties","margin"],
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Margin",
+					type: "margin",
+				},
+			],
+		},
+		{
 			name: "Button",
 			key: ["button"],
-			editGlobalStyle : "button",
+			editGlobalStyle: "button",
 			replaceForm: [
 				{
 					key: ["link"],
-					label : "Link",
+					label: "Link",
 					type: "link",
 				},
 				{
 					key: ["text"],
-					label : "Text",
+					label: "Text",
 					type: "text",
 				},
 				{
-					key: ["container",'properties',"text"],
+					key: ["container", "properties", "text"],
 					type: "textProperty",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
-					key: ["container",'properties',"background"],
-					label : "Background",
+					key: ["container", "properties", "background"],
+					label: "Background",
 					type: "background",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
-					key: ["container",'properties',"margin"],
-					label : "Margin",
+					key: ["container", "properties", "margin"],
+					label: "Margin",
 					type: "margin",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
-					key: ["container",'properties',"padding"],
-					label : "Padding",
+					key: ["container", "properties", "padding"],
+					label: "Padding",
 					type: "padding",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
-					key: ["container",'properties',"border"],
-					label : "Border",
+					key: ["container", "properties", "border"],
+					label: "Border",
 					type: "border",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 			],
-		
 		},
 		{
 			name: "Layout",
@@ -166,44 +228,40 @@ export default {
 			replaceForm: [
 				{
 					key: ["background"],
-					useIn : ["desktop", "tablet", "mobile"],
-					label :"Background",
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Background",
 					type: "background",
-	
 				},
 				{
 					key: ["padding"],
-					useIn : ["desktop", "tablet", "mobile"],
-					label : "Padding",
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Padding",
 					type: "padding",
-					
 				},
 				{
 					key: ["margin"],
-					useIn : ["desktop", "tablet", "mobile"],
-					label : "Margin",
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Margin",
 					type: "margin",
-					
 				},
 				{
 					key: ["border"],
-					useIn : ["desktop", "tablet", "mobile"],
-					label : "Border",
+					useIn: ["desktop", "tablet", "mobile"],
+					label: "Border",
 					type: "border",
-					
 				},
 				{
-                    key: ["shadow"],
-                    label : "Shadow",
-                    type: "shadow",
-					useIn : ["desktop", "tablet", "mobile"],
-                },
-                {
-                    key: ["shadowColor"],
-                    label : "Shadow Color",
-                    type: "color",
-					useIn : ["desktop", "tablet", "mobile"],
-                },
+					key: ["shadow"],
+					label: "Shadow",
+					type: "shadow",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["shadowColor"],
+					label: "Shadow Color",
+					type: "color",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
 			],
 		},
 	],

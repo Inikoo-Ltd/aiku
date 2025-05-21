@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { inject, ref, defineExpose } from 'vue'
+import { inject, ref, defineExpose, computed} from 'vue'
 import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash } from '@fal'
 import draggable from "vuedraggable"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -16,7 +16,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import VisibleCheckmark from '@/Components/CMS/Fields/VisibleCheckmark.vue';
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
-import { getBlueprint, getBluprintPermissions} from '@/Composables/getBlueprintWorkshop'
+import { getBlueprint, getBluprintPermissions } from '@/Composables/getBlueprintWorkshop'
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
@@ -28,6 +28,7 @@ import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import { faCogs, faExclamation, faExclamationTriangle, faLayerGroup } from '@fas'
 import { routeType } from '@/types/route'
+import PureMultiselect from '../Pure/PureMultiselect.vue'
 
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash)
@@ -44,8 +45,8 @@ const props = defineProps<{
 
 const selectedTab = ref(1)
 
-function changeTab(index : Number) {
-  selectedTab.value = index
+function changeTab(index: Number) {
+    selectedTab.value = index
 }
 
 const emits = defineEmits<{
@@ -65,7 +66,7 @@ const sendNewBlock = async (block: Daum) => {
 }
 
 const sendBlockUpdate = async (block: Daum) => {
-    console.log('test',block)
+    console.log('test', block)
     emits('update', block)
 }
 
@@ -133,17 +134,41 @@ const confirmDelete = (event: Event, data: Daum) => {
 };
 
 const tabs = [
-    { label: 'Settings', icon: faCogs, tooltip : 'Page Setting' }, 
-    { label: 'Block', icon: faLayerGroup, tooltip : 'Blocks'}
+    { label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
+    { label: 'Block', icon: faLayerGroup, tooltip: 'Blocks' }
 ]
 
 defineExpose({
     addType
 })
 
+const filterBlock = ref('all')
 
+
+/* const filteredBlocks = computed(() => {
+  if (filterBlock.value === 'logged-in') {
+    return props.webpage.layout.web_blocks.filter(item => item.visibility?.in === true);
+  }
+
+  if (filterBlock.value === 'logged-out') {
+    return props.webpage.layout.web_blocks.filter(item => item.visibility?.out === true);
+  }
+
+  // default: show all
+  return props.webpage.layout.web_blocks;
+});
+ */
 const openedBlockSideEditor = inject('openedBlockSideEditor', ref(null))
 const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
+
+const showWebpage = (activityItem) => {
+    if (filterBlock.value === 'all') return true
+    else if (filterBlock.value === 'logged-out' && activityItem?.visibility.out) return true
+    else if (filterBlock.value === 'logged-in' && activityItem?.visibility.in) return true
+    else return false
+}
+
+
 </script>
 
 <template>
@@ -158,30 +183,37 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
         <TabPanels>
             <TabPanel class="w-[400px] p-1">
                 <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
-                    <SiteSettings 
-                    :webpage="webpage"
-                    :webBlockTypes="webBlockTypes" 
-                    @onSaveSiteSettings="(value)=>emits('onSaveSiteSettings',value)"
-                />
+                    <SiteSettings :webpage="webpage" :webBlockTypes="webBlockTypes"
+                        @onSaveSiteSettings="(value) => emits('onSaveSiteSettings', value)" />
                 </div>
-               
+
             </TabPanel>
             <TabPanel class="w-[400px] p-1">
                 <div class="max-h-[calc(100vh-220px)] transition-all overflow-y-auto flex flex-col">
-                    <div class="full">
-                        <Button class="mt-3" full type="dashed" @click="openModalBlockList">
+                    <div class="flex justify-between">
+                        <Button class="mt-3" type="dashed" @click="openModalBlockList">
                             <div class="text-gray-500">
                                 <FontAwesomeIcon icon='fal fa-plus' class='' fixed-width aria-hidden='true' />
                                 {{ trans('Add block') }}
                             </div>
                         </Button>
+                        <div> 
+                            <select class="mt-3 bg-transparent border rounded-md  border-gray-400 text-gray-700 hover:bg-black/10  inline-flex items-center gap-x-2 font-medium focus:outline-none" v-model="filterBlock" required>
+                                <option disabled value="">Filter</option> 
+                                <option value="all">All</option>
+                                <option value="logged-out">Logged out</option>
+                                <option value="logged-in">Logged in</option>
+                            </select>
+
+                        </div>
                     </div>
 
                     <template v-if="webpage?.layout?.web_blocks.length > 0 || isAddBlockLoading">
-                        <draggable :list="webpage.layout.web_blocks" handle=".handle" @change="onChangeOrderBlock"
+                        <draggable :list="props.webpage.layout.web_blocks" handle=".handle" @change="onChangeOrderBlock"
                             ghost-class="ghost" group="column" itemKey="id" class="mt-2 space-y-1 shadow">
-                            <template #item="{ element, index }">
-                                <div class="bg-slate-50 border border-gray-300 ">
+                            <template #item="{ element, index }" >
+                              
+                                <div class="bg-slate-50 border border-gray-300" v-if="showWebpage(element)">
                                     <div class="group flex justify-between items-center gap-x-2 relative w-full cursor-pointer"
                                         :class="openedBlockSideEditor === index ? 'bg-indigo-500 text-white' : 'hover:bg-gray-100'">
                                         <div class="h-10 flex items-center gap-x-2 py-2 px-3 w-full"
@@ -196,8 +228,9 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                                             <LoadingIcon v-if="isLoadingblock === element.id" class="" />
                                         </div>
 
-                                        <div  class="h-full text-base cursor-pointer">
-                                            <div v-if="getBluprintPermissions(element.type)" class="flex h-full items-center">
+                                        <div class="h-full text-base cursor-pointer">
+                                            <div v-if="getBluprintPermissions(element.type)"
+                                                class="flex h-full items-center">
                                                 <div @click="(e) => setShowBlock(e, element)" class="py-1 px-2"
                                                     :class="openedBlockSideEditor === index ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-gray-600'">
                                                     <FontAwesomeIcon v-if="!element.show"
@@ -231,7 +264,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                                                 <VisibleCheckmark v-model="element.visibility"
                                                     @update:modelValue="sendBlockUpdate(element)" />
                                             </div>
-                                            
+
 
                                             <SideEditor v-model="element.web_block.layout.data.fieldValue"
                                                 :panelOpen="openedChildSideEditor"
@@ -241,6 +274,7 @@ const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
                                         </div>
                                     </Collapse>
                                 </div>
+                          
                             </template>
                         </draggable>
 

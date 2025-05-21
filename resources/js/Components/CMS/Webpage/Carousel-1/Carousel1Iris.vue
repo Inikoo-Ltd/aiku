@@ -45,16 +45,18 @@ const getHref = (item: number) => {
         }">
         <SwiperSlide v-for="(card, index) in fieldValue.carousel_data.cards" :key="index"
             :style="getStyles(fieldValue.carousel_data.card_container.properties, screenType)"
-            class="overflow-hidden flex flex-col">
-            <component :is="getHref(card) ? 'a' : 'div'" :href="card.link.href" :target="card.link.target" 
-                class="flex-1 flex flex-col">
-                 <div :style="getStyles(fieldValue?.carousel_data?.card_container?.image_properties, screenType)" :class="[!card.image?.source && 'bg-gray-100 w-full h-36 sm:h-44 md:h-48  flex items-center justify-center overflow-auto', 'overflow-hidden']">
-                <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
-                    :imageCover="true" :style="getStyles(card.image.properties, screenType)" :class="null"/>
-                <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
+            class=" flex flex-col">
+            <component :is="getHref(card) ? 'a' : 'div'" :href="card?.link?.href" :target="card?.link?.target"  class="flex-1 flex flex-col">
+              <div class="flex justify-center">
+                <div :style="getStyles(fieldValue?.carousel_data?.card_container?.image_properties, screenType)"
+                    :class="[!card.image?.source && 'bg-gray-100 w-full h-36 sm:h-44 md:h-48  flex items-center justify-center overflow-auto', 'overflow-hidden']">
+                    <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
+                        :imageCover="true" :style="getStyles(card.image.properties, screenType)" /> 
+                     <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
+                </div>
             </div>
 
-                <div class="p-4 flex-1 flex flex-col justify-between">
+                <div  v-if="fieldValue?.carousel_data?.carousel_setting?.use_text" class="p-4 flex-1 flex flex-col justify-between">
                     <div v-html="card.text"></div>
                 </div>
             </component>
