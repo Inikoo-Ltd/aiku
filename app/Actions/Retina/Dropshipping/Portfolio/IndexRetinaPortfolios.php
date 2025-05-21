@@ -17,6 +17,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -31,20 +32,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
-    public function handle(ShopifyUser|TiktokUser|Customer|WebUser|WooCommerceUser $scope, $prefix = null): LengthAwarePaginator
+    private CustomerSalesChannel $customerSalesChannel;
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
-
-        if ($scope instanceof ShopifyUser || $scope instanceof TiktokUser || $scope instanceof WooCommerceUser) {
-            $customer = $scope->customer;
-            $query->where('customer_id', $customer->id);
-        } elseif ($scope instanceof WebUser) {
-            $query->where('customer_id', $scope->customer->id);
-        } elseif ($scope instanceof Customer) {
-            $query->where('customer_id', $scope->id);
-        }
-
-        $query->where('platform_id', $this->platform->id);
+        $query->where('customer_sales_channel_id', $customerSalesChannel->id);
 
         $query->with(['item']);
 
@@ -60,39 +52,20 @@ class IndexRetinaPortfolios extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
-
-        return $request->user()->is_root;
+        return false;
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
-        $customer = $request->user()->customer;
+        $this->customerSalesChannel = $customerSalesChannel;
 
-        $this->initialisation($request);
+        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
 
-        return $this->handle($customer);
-    }
-
-    public function inPlatform(Platform $platform, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisationFromPlatform($platform, $request);
-
-        return $this->handle($this->platformUser);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->platformUser = $request->user();
-        $this->platform = $platform;
-        $this->asAction = true;
-        $this->initialisationFromPupil($request);
-
-        return $this->handle($this->shopifyUser);
+        return $this->handle($customerSalesChannel);
     }
 
     public function jsonResponse(LengthAwarePaginator $portfolios)
@@ -112,7 +85,7 @@ class IndexRetinaPortfolios extends RetinaAction
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
                 'title'       => $title,
                 'is_manual'   => $manual,
                 'pageHead'    => [
@@ -199,7 +172,7 @@ class IndexRetinaPortfolios extends RetinaAction
         };
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
         return
             array_merge(
@@ -209,7 +182,10 @@ class IndexRetinaPortfolios extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.portfolios.index'
+                                'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                                'parameters' => [
+                                    $customerSalesChannel->slug
+                                ]
                             ],
                             'label' => __('My Portfolio'),
                         ]

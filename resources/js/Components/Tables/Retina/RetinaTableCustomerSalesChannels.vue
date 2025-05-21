@@ -1,4 +1,3 @@
-
 <!--
   - Author: Raul Perusquia <raul@inikoo.com>
   - Created: Tue, 20 May 2025 09:42:22 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -9,8 +8,9 @@
 import { Link } from "@inertiajs/vue3"
 import Table from '@/Components/Table/Table.vue'
 import type { Table as TableTS } from "@/types/Table"
-import { RouteParams } from "@/types/route-params";
-import { Platform } from "@/types/platform";
+import { RouteParams } from "@/types/route-params"
+import { Platform } from "@/types/platform"
+import Image from "@/Components/Image.vue"
 
 defineProps<{
     data: TableTS,
@@ -19,40 +19,47 @@ defineProps<{
 
 
 function platformRoute(platform: Platform) {
-  return ""
+    return ""
 }
 
 function portfoliosRoute(platform: Platform) {
-  return ""
+    return ""
 }
 function clientsRoute(platform: Platform) {
-  return ""
+    return ""
 }
 function ordersRoute(platform: Platform) {
-  return ""
+    return ""
 }
 
 </script>
 <template>
-     <Table :resource="data" >
+    <Table :resource="data">
+        <template #cell(platform_name)="{ item: platform }">
+            <div class="flex items-center gap-2">
+                <img :src="platform.platform_image" :alt="platform.platform_name" class="w-6 h-6" />
+                {{ platform.platform_name }}
+            </div>
+        </template>
+
         <template #cell(reference)="{ item: platform }">
-            <Link :href="platformRoute(platform) as string" class="primaryLink">
-                {{ platform["reference"] }}
+            <Link :href="(platformRoute(platform) as string)" class="primaryLink">
+            {{ platform["reference"] }}
             </Link>
         </template>
         <template #cell(number_portfolios)="{ item: platform }">
-            <Link :href="portfoliosRoute(platform) as string" class="secondaryLink">
-                {{ platform["number_portfolios"] }}
+            <Link :href="(portfoliosRoute(platform) as string)" class="secondaryLink">
+            {{ platform["number_portfolios"] }}
             </Link>
         </template>
         <template #cell(number_clients)="{ item: platform }">
-            <Link :href="clientsRoute(platform) as string" class="secondaryLink">
-                {{ platform["number_clients"] }}
+            <Link :href="(clientsRoute(platform) as string)" class="secondaryLink">
+            {{ platform["number_clients"] }}
             </Link>
         </template>
         <template #cell(number_orders)="{ item: platform }">
-            <Link :href="ordersRoute(platform) as string" class="secondaryLink">
-                {{ platform["number_orders"] }}
+            <Link :href="(ordersRoute(platform) as string)" class="secondaryLink">
+            {{ platform["number_orders"] }}
             </Link>
         </template>
     </Table>

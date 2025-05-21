@@ -27,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateWebsite extends OrgAction
 {
     use WithActionUpdate;
-    use WithWebAuthorisation;
+    // use WithWebAuthorisation;
     use WithLogo;
     use WithFavicon;
 
@@ -47,6 +47,10 @@ class UpdateWebsite extends OrgAction
 
         if (Arr::has($modelData, "catalogue_template")) {
             data_set($modelData, "settings.catalogue_template", Arr::pull($modelData, "catalogue_template"));
+        }
+
+        if (Arr::has($modelData, "luigisbox_tracker_id")) {
+            data_set($modelData, "settings.luigisbox.tracker_id", Arr::pull($modelData, "luigisbox_tracker_id"));
         }
 
         $website = $this->update($website, $modelData, ['data', 'settings']);
@@ -112,6 +116,12 @@ class UpdateWebsite extends OrgAction
             'status'        => ['sometimes', 'boolean'],
             'google_tag_id' => ['sometimes', 'string'],
             'catalogue_template' => ['sometimes', 'array'],
+            'luigisbox_tracker_id' => [
+                'sometimes',
+                'string',
+                'regex:/^\d{6}-\d{6}$/'
+            ],
+            // 'luigisbox_api_key' => ['sometimes', 'string'],
             'image'       => [
                 'sometimes',
                 'nullable',
