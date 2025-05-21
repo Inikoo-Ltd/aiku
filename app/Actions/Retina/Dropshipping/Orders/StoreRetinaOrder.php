@@ -31,23 +31,16 @@ class StoreRetinaOrder extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(CustomerClient|Customer $parent, Platform $platform): Order
+    public function handle(CustomerClient $customerClient): Order
     {
-        $order = StoreOrder::make()->action($parent, [
-            'platform_id' => $platform->id
+        $order = StoreOrder::make()->action($customerClient, [
+            'platform_id' => $customerClient->platform_id,
+            'customer_sales_channel_id' => $customerClient->customer_sales_channel_id
         ]);
 
-        $customerSalesChannel = $this->customer->customerSalesChannels()
-            ->where('platform_id', $platform->id)
-            ->first();
+        CustomerSalesChannelsHydrateOrders::dispatch($customerClient->salesChannel);
 
-        CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
-
-        if ($parent instanceof CustomerClient) {
-            CustomerClientHydrateOrders::dispatch($parent);
-        } elseif ($parent instanceof Customer) {
-            CustomerHydrateOrders::dispatch($parent);
-        }
+        CustomerClientHydrateOrders::dispatch($customerClient);
 
         return $order;
     }
@@ -65,18 +58,11 @@ class StoreRetinaOrder extends RetinaAction
         ]);
     }
 
-    public function asController(Customer $customer, Platform $platform, ActionRequest $request): Order
+    public function inCustomerClient(CustomerClient $customerClient, ActionRequest $request): Order
     {
-        $this->initialisationFromPlatform($platform, $request);
+        $this->initialisationFromPlatform($customerClient->platform, $request);
 
-        return $this->handle($customer, $platform);
-    }
-
-    public function inCustomerClient(CustomerClient $customerClient, Platform $platform, ActionRequest $request): Order
-    {
-        $this->initialisationFromPlatform($platform, $request);
-
-        return $this->handle($customerClient, $platform);
+        return $this->handle($customerClient);
     }
 
     public function inDashboard(CustomerClient $customerClient, ActionRequest $request): Order
@@ -89,6 +75,6 @@ class StoreRetinaOrder extends RetinaAction
 
         $this->initialisationFromPlatform($platform, $request);
 
-        return $this->handle($customerClient, $platform);
+        return $this->handle($customerClient);
     }
 }
