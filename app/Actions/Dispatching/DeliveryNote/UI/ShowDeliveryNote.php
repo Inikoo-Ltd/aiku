@@ -139,6 +139,24 @@ class ShowDeliveryNote extends OrgAction
                         'key'     => 'to-queue',
                     ]
                 ],
+                DeliveryNoteStateEnum::QUEUED => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'tooltip' => __('Change picker'),
+                        'label'   => __('Change Picker'),
+                        'key'     => 'change-picker',
+                    ]
+                ],
+                DeliveryNoteStateEnum::HANDLING => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'tooltip' => __('Change picker'),
+                        'label'   => __('Change Picker'),
+                        'key'     => 'change-picker',
+                    ]
+                ],
                 DeliveryNoteStateEnum::PACKED => [
                     [
                         'type'    => 'button',
