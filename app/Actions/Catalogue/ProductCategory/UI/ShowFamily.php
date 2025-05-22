@@ -28,7 +28,7 @@ class ShowFamily extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithFamilySubNavigation;
-
+    use WithWebpageActions;
 
     private Organisation|ProductCategory|Shop $parent;
 
@@ -65,6 +65,7 @@ class ShowFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->parent = $subDepartment;
@@ -97,34 +98,7 @@ class ShowFamily extends OrgAction
                         'title' => __('department')
                     ],
                     'actions' => [
-                        $family->webpage ?
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'tooltip' => __('To Webpage'),
-                            'label'   => __('To Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.web.webpages.show',
-                                'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'website'      => $this->shop->website->slug,
-                                    'webpage'      => $family->webpage->slug
-                                ]
-                            ]
-                        ] : [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'tooltip' => __('Create Webpage'),
-                            'label'   => __('Create Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.models.webpages.product_category.store',
-                                'parameters' => $family->id,
-                                'method'     => 'post'
-                            ]
-                        ],
+                        $this->getWebpageActions($family),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
