@@ -43,6 +43,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $done_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation

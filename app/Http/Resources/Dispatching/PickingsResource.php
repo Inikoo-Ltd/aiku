@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Http\Resources\Inventory\LocationResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PickingsResource extends JsonResource

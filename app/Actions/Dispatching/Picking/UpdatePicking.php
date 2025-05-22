@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 22-05-2025-13h-37m
@@ -8,17 +9,13 @@
 
 namespace App\Actions\Dispatching\Picking;
 
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingStateEnum;
-use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -36,7 +33,7 @@ class UpdatePicking extends OrgAction
     {
         $picking = $this->update($picking, $modelData);
 
-            /** @var DeliveryNoteItem $deliveryNoteItem */
+        /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $picking->deliveryNoteItem;
 
         $totalPicked = $deliveryNoteItem->pickings()->sum('quantity_picked');

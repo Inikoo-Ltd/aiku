@@ -91,6 +91,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property int|null $favicon_id
+ * @property int|null $unpublished_menu_snapshot_id
+ * @property int|null $live_menu_snapshot_id
+ * @property string|null $published_menu_checksum
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read mixed $condition
  * @property-read Collection<int, Deployment> $deployments
@@ -110,6 +113,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedFooterSnapshot
  * @property-read Snapshot|null $unpublishedHeaderSnapshot
+ * @property-read Snapshot|null $unpublishedMenuSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
  * @property-read Collection<int, \App\Models\Web\Webpage> $webpages

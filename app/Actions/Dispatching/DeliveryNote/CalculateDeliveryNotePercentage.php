@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 22-05-2025-15h-44m
@@ -9,14 +10,10 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithOrganisationsArgument;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
-use Illuminate\Console\Command;
 
 class CalculateDeliveryNotePercentage extends OrgAction
 {
-
     public function handle(DeliveryNote $deliveryNote): void
     {
         $pickingPercentage = 0;

@@ -110,7 +110,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Employee|null $packer
+ * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read Employee|null $picker
+ * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read \App\Models\Dispatching\DeliveryNoteStats|null $stats

@@ -101,7 +101,7 @@ Route::name('delivery-note-item.')->prefix('delivery-note-item/{deliveryNoteItem
 });
 
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
-    Route::patch('not-picked', NotPickedPicking::class)->name('not_picked');   
+    Route::patch('not-picked', NotPickedPicking::class)->name('not_picked');
     Route::patch('update', UpdatePicking::class)->name('update');
 
     Route::name('assign.')->prefix('assign')->group(function () {
