@@ -17,6 +17,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\Picking\UpdatePickingStateToDone;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
@@ -242,27 +243,38 @@ test('update picking', function (Picking $picking) {
     $picking = UpdatePicking::make()->action($picking, [
         'quantity_picked' => 5
     ]);
-    
-    expect($picking)->toBeInstanceOf(Picking::class)
-        ->and($picking->quantity_picked)->toBe(5)
-        ->and($picking->state)->toBe(PickingStateEnum::PICKING);
-    
+
     $picking->refresh();
+    expect($picking)->toBeInstanceOf(Picking::class)
+        ->and(intval($picking->quantity_picked))->toBe(5);
+    expect(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5);
     
     //ALL
     $picking = UpdatePicking::make()->action($picking, [
-        'quantity_picked' => 5
+        'quantity_picked' => 10
     ]);
     
+    $picking->refresh();
     expect($picking)->toBeInstanceOf(Picking::class)
-        ->and($picking->quantity_picked)->toBe(5)
-        ->and($picking->state)->toBe(PickingStateEnum::DONE);
+        ->and(intval($picking->quantity_picked))->toBe(10);
+    expect(intval($picking->deliveryNoteItem->quantity_picked))->toBe(10);
     
     $picking->refresh();
 
     return $picking;
 
 })->depends('store picking');
+
+test('mark picking as done', function (Picking $picking) {
+
+    $picking = UpdatePickingStateToDone::make()->action($picking);
+
+    expect($picking)->toBeInstanceOf(Picking::class)
+        ->and($picking->state)->toBe(PickingStateEnum::DONE);
+
+    return $picking;
+
+})->depends('update picking');
 
 //test('assign picker to picking', function (DeliveryNote $deliveryNote) {
 //
