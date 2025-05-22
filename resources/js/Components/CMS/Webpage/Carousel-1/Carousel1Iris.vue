@@ -32,11 +32,11 @@ const getHref = (item: number) => {
 </script>
 
 <template>
-    <Swiper :key="keySwiper" :slides-per-view="fieldValue.carousel_data.carousel_setting.slidesPerView.desktop"
-     :loop="fieldValue?.carousel_data?.carousel_setting?.loop"
-      :autoplay="fieldValue?.carousel_data?.carousel_setting?.autoplay"  :touch-angle="45" :touch-start-prevent-default="false"
-        :simulate-touch="true" :touch-ratio="1" :pagination="{ clickable: true }" :modules="[Pagination, Autoplay]"
-        :spaceBetween="fieldValue.carousel_data.carousel_setting.spaceBetween" class="touch-pan-x"
+    <Swiper :key="keySwiper" :slides-per-view="fieldValue.carousel_data.carousel_setting.slidesPerView.desktop" 
+     :loop="fieldValue?.carousel_data?.carousel_setting?.loop"  direction="horizontal" :passiveListeners="true" 
+      :autoplay="fieldValue?.carousel_data?.carousel_setting?.autoplay"  :touch-angle="30" :touch-start-prevent-default="false"
+        :simulate-touch="false" :touch-ratio="1" :pagination="{ clickable: true }" :modules="[Pagination, Autoplay]"
+        :spaceBetween="fieldValue.carousel_data.carousel_setting.spaceBetween" class="touch-pan-x touch-pan-y"
         :style="getStyles(fieldValue.container?.properties, screenType)" :breakpoints="{
             0: { slidesPerView: fieldValue.carousel_data.carousel_setting.slidesPerView.mobile },
             640: { slidesPerView: fieldValue.carousel_data.carousel_setting.slidesPerView.mobile },
@@ -75,4 +75,9 @@ const getHref = (item: number) => {
 :deep(.swiper-pagination-bullet-active) {
     background: #4b5563 !important;
 }
+
+.swiper {
+  touch-action: pan-y;
+}
+
 </style>

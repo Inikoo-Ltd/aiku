@@ -18,6 +18,7 @@ import { useLocaleStore } from "@/Stores/locale";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 const props = defineProps<{
     data: TableTS,
@@ -96,6 +97,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
 
 const isModalPick = ref(null)
 const isLoadingPick = ref(false)
+const isErrorPicker = ref<string | null>(null)
 const onClickPick = () => {
     if (!isModalPick.value?.employee_pick_route?.name) {
         console.error("No route name found for employee pick")
@@ -110,6 +112,14 @@ const onClickPick = () => {
         {
             onStart: () => {
                 isLoadingPick.value = true
+            },
+            onError: (errors) => {
+                isErrorPicker.value = errors.messages
+                notify({
+                    title: trans("Something went wrong"),
+                    text: isErrorPicker.value,
+                    type: "error",
+                })
             },
             onSuccess: () => {
                 isModalPick.value = null
@@ -160,7 +170,7 @@ const onClickPick = () => {
 
     <Modal
         :isOpen="!!isModalPick"
-        @close="isModalPick = null"
+        @close="isModalPick = null, isErrorPicker = null"
         width="w-full max-w-lg"
     >
         <div class="sm:flex sm:items-start w-full">
@@ -174,6 +184,7 @@ const onClickPick = () => {
                     </p>
                 </div>                
                 
+
                 <div class="mt-5 sm:flex sm:flex-row-reverse gap-x-2">
                     <Button
                         :loading="isLoadingPick"
@@ -190,6 +201,10 @@ const onClickPick = () => {
                         @click="() => (isModalPick = null)"
                     />
                 </div>
+
+                <p v-if="isErrorPicker" class="mt-2 text-xs text-red-500 italic">
+                    *{{ isErrorPicker }}
+                </p>
             </div>
 
         </div>
