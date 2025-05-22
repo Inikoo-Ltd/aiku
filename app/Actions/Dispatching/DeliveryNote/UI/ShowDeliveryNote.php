@@ -128,7 +128,7 @@ class ShowDeliveryNote extends OrgAction
                         'style'   => 'save',
                         'tooltip' => __('Unassigned'),
                         'label'   => __('Put in Queue'),
-                        'key'     => 'action',
+                        'key'     => 'to-queue',
                     ]
                 ],
                 DeliveryNoteStateEnum::PACKED => [

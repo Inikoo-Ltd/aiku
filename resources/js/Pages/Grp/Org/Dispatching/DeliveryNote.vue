@@ -5,9 +5,10 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCube, faChair, faFolder, } from '@fal'
+import { faCube, faChair, faFolder } from '@fal'
+import { faArrowRight } from '@fas'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -26,9 +27,15 @@ import TablePickings from '@/Components/Warehouse/DeliveryNotes/TablePickings.vu
 import { routeType } from '@/types/route'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import type { DeliveryNote } from '@/types/warehouse'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import { trans } from 'laravel-vue-i18n'
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { notify } from '@kyvg/vue3-notification'
 
 
-library.add(faFolder, faCube, faChair)
+library.add(faFolder, faCube, faChair, faArrowRight)
 
 const props = defineProps<{
     title: string,
@@ -64,6 +71,7 @@ const props = defineProps<{
         products_list: routeType
         pickers_list: routeType
         packers_list: routeType
+        set_queue: routeType
     }
 }>()
 
@@ -78,15 +86,56 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
+// Section: To Queue
+const isModalToQueue = ref(false)
+
+// Section: Picker
+const selectedPicker = ref(props.box_stats.picker)
+const disable = ref(props.box_stats.state)
+const isLoading = ref<{ [key: string]: boolean }>({})
+const isLoadingToQueue = ref(false)
+const onSetToQueue = () => {
+    router.patch(
+        route(props.routes.set_queue.name, {
+            ...props.routes.set_queue.parameters,
+            employee: selectedPicker.value.id,
+        }),
+        {
+            
+        },
+        {
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error",
+                })
+            },
+            onSuccess: () => {
+                isModalToQueue.value = false
+            },
+            onStart: () => isLoadingToQueue.value = true,
+            onFinish: () => isLoadingToQueue.value = false,
+            preserveScroll: true,
+        }
+    )
+}
 </script>
 
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <!-- <template #button-action-picked="{ action }">
-            {{action}}
-        </template> -->
+        <template #button-to-queue ="{ action }">
+            <Button
+                @click="isModalToQueue = true"
+                :label="action.label"
+                :icon="action.icon"
+                :type="action.type"
+            >
+
+            </Button>
+        </template>
     </PageHeading>
 
     <!-- Section: Pallet Warning -->
@@ -126,5 +175,111 @@ const component = computed(() => {
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes :state="delivery_note.state" />
     </div>
 
-    <!-- <pre>{{ props }}</pre> -->
+    <Modal
+        :isOpen="isModalToQueue"
+        @close="isModalToQueue = false"
+        width="w-full max-w-lg"
+        :title
+    >
+        <div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
+            <div class="mx-auto font-semibold text-lg">
+                {{ trans("Select Picker before go to queue") }}
+            </div>
+
+            <div class="mt-4 flex items-center w-full gap-x-1.5">
+                <dd class="flex-1">
+                    <!-- Label for Picker -->
+                    <div class="text-sm font-medium">
+                        {{ trans("Select picker") }}
+                    </div>
+                    <PureMultiselectInfiniteScroll
+                        v-model="selectedPicker"
+                        xxxupdate:modelValue="
+                            (selectedPicker) => onSubmitPickerPacker(selectedPicker, 'picker')
+                        "
+                        :fetchRoute="routes.pickers_list"
+                        :placeholder="trans('Select picker')"
+                        labelProp="contact_name"
+                        valueProp="id"
+                        object
+                        clearOnBlur
+                        :loading="isLoading['picker' + selectedPicker?.id]"
+                        :disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'"
+                        >
+                        <template #singlelabel="{ value }">
+                            <div
+                                class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                                {{ value.contact_name }}
+                            </div>
+                        </template>
+
+                        <template #option="{ option, isSelected, isPointed }">
+                            <div class="w-full text-left text-sm whitespace-nowrap truncate">
+                                {{ option.contact_name }}
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
+                </dd>
+            </div>
+
+            <div class="w-full mt-2">
+                <Button
+                    @click="onSetToQueue()"
+                    :label="trans('Set to queue')"
+                    :iconRight="['fas', 'fa-arrow-right']"
+                    full
+                    :loading="isLoadingToQueue"
+                    :disabled="!selectedPicker"
+                    v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')"
+                >
+
+                </Button>
+            </div>
+        </div>
+
+			<!-- <div
+				v-tooltip="trans('Select Packer')"
+				class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
+				<div class="flex items-center w-full gap-x-1.5">
+					<dt class="flex-none">
+						<FontAwesomeIcon
+							icon="fal fa-weight"
+							fixed-width
+							aria-hidden="true"
+							class="text-gray-500" />
+					</dt>
+					<dd class="flex-1">
+						<label class="text-sm font-medium text-gray-700">
+							{{ trans("Packer") }}
+						</label>
+						<PureMultiselectInfiniteScroll
+							v-model="selectedPacker"
+							@update:modelValue="
+								(selectedPacker) => onSubmitPickerPacker(selectedPacker, 'packer')
+							"
+							:fetchRoute="routes.packers_list"
+							:placeholder="trans('Select packer')"
+							labelProp="contact_name"
+							valueProp="id"
+							object
+							clearOnBlur
+							:loading="isLoading['packer' + selectedPacker?.id]"
+							:disabled="disable == 'packing' ||  disable == 'packed' || disable == 'finalised' || disable == 'settled'">
+							<template #singlelabel="{ value }">
+								<div
+									class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+									{{ value.contact_name }}
+								</div>
+							</template>
+
+							<template #option="{ option, isSelected, isPointed }">
+								<div class="w-full text-left text-sm whitespace-nowrap truncate">
+									{{ option.contact_name }}
+								</div>
+							</template>
+						</PureMultiselectInfiniteScroll>
+					</dd>
+				</div>
+			</div> -->
+    </Modal>
 </template>
