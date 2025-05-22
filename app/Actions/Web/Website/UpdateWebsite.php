@@ -121,7 +121,7 @@ class UpdateWebsite extends OrgAction
             'google_tag_id' => [
                 'sometimes',
                 'string',
-                'regex:/^(G-[A-Z0-9]{10}|UA-\d{4,10}-\d{1,4}|GTM-[A-Z0-9]{7})$/'
+                'regex:/^(G-[A-Z0-9]{10}|UA-\d{4,10}-\d{1,4}|GTM-[A-Z0-9]{8}|AW-\d{9,11})$/'
             ],
             'catalogue_template' => ['sometimes', 'array'],
             'luigisbox_tracker_id' => [
