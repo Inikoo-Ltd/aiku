@@ -75,6 +75,11 @@ class Picking extends Model
         return $this->belongsTo(DeliveryNoteItem::class);
     }
 
+    public function deliveryNote(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryNote::class);
+    }
+
     public function picker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'picker_id');

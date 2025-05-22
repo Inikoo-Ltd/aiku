@@ -243,4 +243,14 @@ class DeliveryNote extends Model implements Auditable
         return $this->morphToMany(Shipment::class, 'model', 'model_has_shipments');
     }
 
+    public function pickings(): HasMany
+    {
+        return $this->hasMany(Picking::class);
+    }
+
+    public function packings(): HasMany
+    {
+        return $this->hasMany(Packing::class);
+    }
+
 }
