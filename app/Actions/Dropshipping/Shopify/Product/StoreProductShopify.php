@@ -33,6 +33,7 @@ class StoreProductShopify extends OrgAction
 
         DB::transaction(function () use ($shopifyUser, $modelData) {
 
+            $portfolios = [];
             $response = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-04/products.json');
 
             $products = collect(Arr::get($response, 'body.products', []));
@@ -68,8 +69,12 @@ class StoreProductShopify extends OrgAction
                     'portfolio_id' => $portfolio->id
                 ]);
 
-                //                HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
+                $portfolios[] = $portfolio->id;
             }
+
+            HandleApiProductToShopify::dispatch($shopifyUser, [
+                'portfolios' => $portfolios
+            ]);
         });
     }
 

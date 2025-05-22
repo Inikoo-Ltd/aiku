@@ -79,7 +79,12 @@ class IndexRetinaPortfolios extends RetinaAction
         $title = __('My Portfolio');
 
 
+        $platformName = $this->customerSalesChannel->name;
         $portfolioUser = $this->customerSalesChannel->user;
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $platformName = __('Manual');
+        }
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -89,7 +94,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'is_manual'   => $manual,
                 'pageHead'    => [
                     'title'   => $title,
-                    'model'   => $portfolioUser->name ?? __('Manual'),
+                    'model'   =>  $platformName,
                     'icon'    => 'fal fa-cube',
                     'actions' => [
                         $this->customer->is_fulfilment && ($portfolioUser instanceof ShopifyUser) ? [
@@ -97,7 +102,7 @@ class IndexRetinaPortfolios extends RetinaAction
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
-                                'name'       => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
+                                'name'       => 'retina.models.dropshipping.shopify_user.product.sync',
                                 'parameters' => [
                                     'shopifyUser' => $portfolioUser->id
                                 ]
