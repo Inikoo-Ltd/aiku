@@ -12,7 +12,6 @@ use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateCumulativeDispat
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunSentState;
 use App\Actions\Comms\Mailshot\GetHtmlLayout;
-use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateCumulativeDispatchedEmails;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Mailshot\UpdateMailshotSentState;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
@@ -87,7 +86,6 @@ class SendEmailDeliveryChannel
         $model->refresh();
 
         if ($model instanceof Mailshot) {
-            MailshotHydrateCumulativeDispatchedEmails::run($model, DispatchedEmailStateEnum::SENT);
             MailshotHydrateDispatchedEmails::run($model);
             UpdateMailshotSentState::run($model);
         } else {
