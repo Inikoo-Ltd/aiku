@@ -136,7 +136,7 @@ class ShowSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(ProductCategory $subDepartment, array $routeParameters): array
+    public function getBreadcrumbs(ProductCategory $subDepartment, array $routeParameters, ?string $suffix = null): array
     {
         return
             array_merge(
@@ -145,11 +145,12 @@ class ShowSubDepartment extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'route' => [
-                                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                            'route'  => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => $subDepartment->name,
+                            'label'  => $subDepartment->name,
+                            'suffix' => $suffix,
                         ]
                     ]
                 ]
@@ -158,7 +159,7 @@ class ShowSubDepartment extends OrgAction
 
     public function getPrevious(ProductCategory $subDepartment, ActionRequest $request): ?array
     {
-        $previous = ProductCategory::where('code', '<', $subDepartment->code)->where('shop_id', $this->shop->id)
+        $previous = ProductCategory::where('code', '<', $subDepartment->code)->where('shop_id', $subDepartment->shop->id)
             ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->orderBy('code', 'desc')->first();
 
@@ -167,7 +168,7 @@ class ShowSubDepartment extends OrgAction
 
     public function getNext(ProductCategory $subDepartment, ActionRequest $request): ?array
     {
-        $next = ProductCategory::where('code', '>', $subDepartment->code)->where('shop_id', $this->shop->id)
+        $next = ProductCategory::where('code', '>', $subDepartment->code)->where('shop_id', $subDepartment->shop->id)
             ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->orderBy('code')->first();
 

@@ -28,7 +28,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexSubDepartment extends OrgAction
+class IndexSubDepartments extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
@@ -36,26 +36,16 @@ class IndexSubDepartment extends OrgAction
     private Shop|ProductCategory|Organisation $parent;
 
 
-
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $department;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent: $department);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle(parent: $shop);
+        return $this->handle(department: $department);
     }
 
 
-    public function handle(Shop|ProductCategory|Organisation $parent, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $department, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -69,7 +59,7 @@ class IndexSubDepartment extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
 
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+        foreach ($this->getElementGroups($department) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -78,23 +68,9 @@ class IndexSubDepartment extends OrgAction
             );
         }
 
+        $queryBuilder->where('product_categories.department_id', $department->id);
+        $queryBuilder->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
 
-        if (class_basename($parent) == 'Shop') {
-            $queryBuilder->where('product_categories.shop_id', $parent->id);
-        } elseif (class_basename($parent) == 'ProductCategory') {
-
-
-
-            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-
-                $queryBuilder->where('product_categories.department_id', $parent->id);
-
-            } else {
-                // todo
-                abort(419);
-            }
-
-        }
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -122,7 +98,6 @@ class IndexSubDepartment extends OrgAction
 
     public function tableStructure(Shop|ProductCategory $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
-
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
             if ($prefix) {
                 $table
@@ -138,34 +113,31 @@ class IndexSubDepartment extends OrgAction
                 );
             }
 
+            $buttonLabel = __('New Sub-department');
+
             $table
                 ->defaultSort('code')
                 ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Shop' => [
-                            'title' => __("No Sub-departments found"),
-                            'count' => $parent->stats->number_families,
-                        ],
-                        'ProductCategory' => [
-                            'title'       => __("This department has no Sub-departments"),
-                            'count'       => $parent->stats->number_sub_departments,
-                            'action'      => [
+                    $canEdit ?
+                        [
+                            'title'  => __("This department has no Sub-departments"),
+                            'count'  => $parent->stats->number_sub_departments,
+                            'action' => [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new Sub-department'),
-                                'label'   => __('Sub-department'),
+                                'tooltip' => $buttonLabel,
+                                'label'   => $buttonLabel,
                                 'route'   => [
-                                    'name'           => 'grp.org.shops.show.catalogue.departments.show.sub_departments.create',
-                                    'parameters'     => [
+                                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.create',
+                                    'parameters' => [
                                         'organisation' => $parent->organisation->slug,
                                         'shop'         => $parent->shop->slug,
                                         'department'   => $parent->slug
                                     ]
                                 ]
                             ]
-                        ],
-                        default => null
-                    }
+                        ] : null
+
                 )
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
@@ -175,9 +147,7 @@ class IndexSubDepartment extends OrgAction
             if ($parent instanceof Organisation) {
                 $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'department_code', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
-
             }
-
 
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
@@ -193,37 +163,32 @@ class IndexSubDepartment extends OrgAction
     public function htmlResponse(LengthAwarePaginator $subDepartment, ActionRequest $request): Response
     {
         $subNavigation = null;
-        if ($this->parent instanceof ProductCategory) {
-            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $subNavigation = $this->getDepartmentSubNavigation($this->parent);
-            }
+        if ($this->parent instanceof ProductCategory && $this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $subNavigation = $this->getDepartmentSubNavigation($this->parent);
         }
 
-        $title = __('Sub-departments');
-        $model = '';
-        $icon  = [
+        $title      = __('Sub-departments');
+        $model      = '';
+        $icon       = [
             'icon'  => ['fal', 'fa-dot-circle'],
             'title' => __('Sub-department')
         ];
         $afterTitle = null;
-        $iconRight = null;
+        $iconRight  = null;
 
-        if ($this->parent instanceof ProductCategory) {
-            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $title = $this->parent->name;
-                $model = '';
-                $icon  = [
-                    'icon'  => ['fal', 'fa-folder-tree'],
-                    'title' => __('department')
-                ];
-                $iconRight    = [
-                    'icon' => 'fal fa-dot-circle',
-                ];
-                $afterTitle = [
+        if ($this->parent instanceof ProductCategory && $this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $title      = $this->parent->name;
+            $icon       = [
+                'icon'  => ['fal', 'fa-folder-tree'],
+                'title' => __('department')
+            ];
+            $iconRight  = [
+                'icon' => 'fal fa-dot-circle',
+            ];
+            $afterTitle = [
 
-                    'label'     => __('Sub-departments')
-                ];
-            }
+                'label' => __('Sub-departments')
+            ];
         }
 
         return Inertia::render(
@@ -241,9 +206,7 @@ class IndexSubDepartment extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->canEdit ? (
-                            class_basename($this->parent) == 'ProductCategory'
-                            ? [
+                        $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new Sub-department'),
@@ -253,17 +216,8 @@ class IndexSubDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ]
-                            : (class_basename($this->parent) == 'Shop' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new Sub-department'),
-                            'label'   => __('Sub-department'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.families.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false)
-                        ) : false,
+
+                            : false,
                     ],
                     'subNavigation' => $subNavigation,
                 ],
