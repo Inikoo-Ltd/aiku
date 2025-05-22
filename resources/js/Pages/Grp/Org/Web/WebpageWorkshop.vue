@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, onMounted, IframeHTMLAttributes, provide, watch, toRaw} from "vue"
+import { ref, onMounted, IframeHTMLAttributes, provide, watch, toRaw, computed, inject} from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -22,7 +22,7 @@ import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { debounce } from 'lodash';
-import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
+import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 /* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
@@ -32,6 +32,8 @@ import { useConfirm } from "primevue/useconfirm";
 
 import { routeType } from "@/types/route"
 import { faLowVision } from "@far"
+import { useLiveUsers } from "@/Stores/active-users"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faLowVision)
 
@@ -43,6 +45,8 @@ const props = defineProps<{
 }>()
 
 provide('isInWorkshop', true)
+
+const layout = inject('layout', layoutStructure)
 
 const confirm = useConfirm();
 const data = ref(props.webpage)
@@ -473,10 +477,14 @@ watch(openedBlockSideEditor, (newValue) => {
 
 const fullScreeen = ref(false)
 
+
+// console.log('ewewqewq', useLiveUsers().liveUsersArray.filter(user => user.current_page?.route_name === layout.currentRoute))
+const compUsersEditThisPage = computed(() => {
+	return useLiveUsers().liveUsersArray.filter(user => user.current_page?.route_name === layout.currentRoute).map(user => user.name ?? user.username)
+})
 </script>
 
 <template>
-
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #button-publish="{ action }">
@@ -520,6 +528,13 @@ const fullScreeen = ref(false)
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'redo'" @click="redo">
 						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
 					</div> -->
+				</div>
+
+				<!-- Users edit same page -->
+				<div v-if="compUsersEditThisPage?.length > 1" v-tooltip="compUsersEditThisPage.join(', ') + trans('. Your changes may conflict each others.')" class="text-center bg-yellow-300 rounded my-1 flex items-center gap-x-1 px-2">
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width aria-hidden="true" />
+					{{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width aria-hidden="true" />
 				</div>
 
 				<!-- Tools: login-logout, edit-preview -->
