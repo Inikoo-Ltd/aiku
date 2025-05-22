@@ -52,9 +52,9 @@ class PickDeliveryNoteAsEmployee extends OrgAction
         return $this->handle($deliveryNote, $employee);
     }
 
-    public function prepareForValidation($request)
+    public function prepareForValidation()
     {
-        $employee = $request->user()->employees()->first();
+        $employee = request()->user()->employees()->first();
         if (!$employee)
         {
             throw ValidationException::withMessages([

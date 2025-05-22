@@ -104,7 +104,7 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.type',
                 'delivery_notes.state',
                 'delivery_notes.weight',
-                'delivery_notes.weight',
+                'delivery_notes.effective_weight',
                 'delivery_notes.estimated_weight',
                 'shops.slug as shop_slug',
                 'customers.slug as customer_slug',
