@@ -27,15 +27,15 @@ class GetProductCategoryFamilies extends OrgAction
     use WithCatalogueAuthorisation;
     private Shop $parent;
 
-    public function asController(Shop $shop, ProductCategory $productcategory, ActionRequest $request): LengthAwarePaginator
+    public function asController(Shop $shop, ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(productcategory: $productcategory);
+        return $this->handle(productCategory: $productCategory);
     }
 
-    public function handle(ProductCategory $productcategory, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -45,12 +45,12 @@ class GetProductCategoryFamilies extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
-        $queryBuilder->where('product_categories.shop_id', $productcategory->shop_id);
+        $queryBuilder->where('product_categories.shop_id', $productCategory->shop_id);
 
-        if ($productcategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $queryBuilder->where('product_categories.department_id', $productcategory->id);
-        } elseif ($productcategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $queryBuilder->where('product_categories.sub_department_id', $productcategory->id);
+        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $queryBuilder->where('product_categories.department_id', $productCategory->id);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $queryBuilder->where('product_categories.sub_department_id', $productCategory->id);
         }
 
         return $queryBuilder
