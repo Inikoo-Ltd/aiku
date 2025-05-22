@@ -20,9 +20,9 @@ const props = defineProps<{
 function subDepartmentRoute( SubDepartment: SubDepartmentx) {
   switch (route().current()) { 
     case "grp.shops.show":
-    case "grp.org.shops.show.catalogue.departments.show.sub-departments.index":
+    case "grp.org.shops.show.catalogue.departments.show.sub_departments.index":
     return route(
-        "grp.org.shops.show.catalogue.departments.show.sub-departments.show",
+        "grp.org.shops.show.catalogue.departments.show.sub_departments.show",
         [route().params["organisation"], route().params["shop"], route().params["department"], SubDepartment.slug]);
   }
 }

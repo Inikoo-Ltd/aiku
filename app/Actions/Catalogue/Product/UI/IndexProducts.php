@@ -861,11 +861,11 @@ class IndexProducts extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $parent,
-                    'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show',
+                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                     $routeParameters
                 ),
                 $headCrumb(

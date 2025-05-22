@@ -36,68 +36,74 @@ class StoreOrderFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $customer        = Arr::get($modelData, 'customer');
-        $deliveryAddress = Arr::get($modelData, 'customer.default_address');
-        $customerClient  = $shopifyUser->customer?->clients()->where('email', Arr::get($customer, 'email'))->first();
+        $customer = Arr::get($modelData, 'customer');
+        $deliveryAddress = Arr::get($modelData, 'shipping_address');
+        $customerClient = $shopifyUser->customer?->clients()->where('email', Arr::get($customer, 'email'))->first();
 
         $shopifyProducts = collect($modelData['line_items']);
 
-        $attributes      = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
+        $attributes = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
         $deliveryAddress = Arr::get($attributes, 'address');
 
         if (!$customerClient) {
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
         }
 
-        $order = StoreOrder::make()->action($shopifyUser->customer, [
-            'customer_client_id'        => $customerClient->id,
-            'platform_id'               => $shopifyUser->platform_id,
-            'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
-            'date'                      => $modelData['created_at'],
-            'delivery_address'          => new Address($deliveryAddress),
-            'billing_address'           => new Address($deliveryAddress)
-        ]);
+        $shopifyUserHasProductExists = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
+            ->whereIn('shopify_product_id', $shopifyProducts->pluck('product_id'))->exists();
 
-        foreach ($shopifyProducts as $shopifyProduct) {
-            /** @var ShopifyUserHasProduct $shopifyUserHasProduct */
-            $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
-                ->where('shopify_product_id', $shopifyProduct['product_id'])->first();
+        if ($shopifyUserHasProductExists) {
+            $order = StoreOrder::make()->action($shopifyUser->customer, [
+                'customer_client_id' => $customerClient->id,
+                'platform_id' => $shopifyUser->platform_id,
+                'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
+                'date' => $modelData['created_at'],
+                'delivery_address' => new Address($deliveryAddress),
+                'billing_address' => new Address($deliveryAddress),
+                'data' => $modelData
+            ], false);
 
-            if ($shopifyUserHasProduct) {
-                /** @var \App\Models\Catalogue\Product $product */
-                $product = $shopifyUserHasProduct->product;
-                if (!$product) {
-                    \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a product');
-                    continue;
+            foreach ($shopifyProducts as $shopifyProduct) {
+                /** @var ShopifyUserHasProduct $shopifyUserHasProduct */
+                $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
+                    ->where('shopify_product_id', $shopifyProduct['product_id'])->first();
+
+                if ($shopifyUserHasProduct) {
+                    /** @var \App\Models\Catalogue\Product $product */
+                    $product = $shopifyUserHasProduct->product;
+                    if (!$product) {
+                        \Sentry\captureMessage('ShopifyUserHasProduct ' . $shopifyUserHasProduct->id . ' does not have a product');
+                        continue;
+                    }
+
+                    /** @var \App\Models\Catalogue\HistoricAsset $product */
+                    $historicAsset = $product->asset?->historicAsset;
+                    if (!$historicAsset) {
+                        \Sentry\captureMessage('ShopifyUserHasProduct ' . $shopifyUserHasProduct->id . ' does not have a historic asset');
+                        continue;
+                    }
+
+                    StoreTransaction::make()->action(
+                        order: $order,
+                        historicAsset: $historicAsset,
+                        modelData: [
+                            'quantity_ordered' => $shopifyProduct['quantity'],
+                        ]
+                    );
                 }
-
-                /** @var \App\Models\Catalogue\HistoricAsset $product */
-                $historicAsset = $product->asset?->historicAsset;
-                if (!$historicAsset) {
-                    \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a historic asset');
-                    continue;
-                }
-
-                StoreTransaction::make()->action(
-                    order: $order,
-                    historicAsset: $historicAsset,
-                    modelData: [
-                        'quantity_ordered' => $shopifyProduct['quantity'],
-                    ]
-                );
             }
+
+            $shopifyUser->orders()->attach($order->id, [
+                'shopify_user_id' => $shopifyUser->id,
+                'model_type' => class_basename(Order::class),
+                'model_id' => $order->id,
+                'shopify_order_id' => Arr::get($modelData, 'order_id'),
+                'shopify_fulfilment_id' => Arr::get($modelData, 'id'),
+                'state' => ChannelFulfilmentStateEnum::OPEN,
+                'customer_client_id' => $customerClient->id
+            ]);
+
+            SubmitOrder::run($order);
         }
-
-        $shopifyUser->orders()->attach($order->id, [
-            'shopify_user_id'       => $shopifyUser->id,
-            'model_type'            => class_basename(Order::class),
-            'model_id'              => $order->id,
-            'shopify_order_id'      => Arr::get($modelData, 'order_id'),
-            'shopify_fulfilment_id' => Arr::get($modelData, 'id'),
-            'state'                 => ChannelFulfilmentStateEnum::OPEN,
-            'customer_client_id'    => $customerClient->id
-        ]);
-
-        SubmitOrder::run($order);
     }
 }

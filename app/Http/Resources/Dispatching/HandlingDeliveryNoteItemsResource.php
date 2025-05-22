@@ -27,7 +27,15 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
             'org_stock_code'      => $this->org_stock_code,
             'org_stock_name'      => $this->org_stock_name,
             'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
-            'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : []
+            'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+
+            'picking_route'       => [
+                'name' => 'grp.models.delivery-note-item.picking.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ]
         ];
     }
 }

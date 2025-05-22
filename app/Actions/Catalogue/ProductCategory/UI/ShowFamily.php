@@ -212,18 +212,18 @@ class ShowFamily extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show' =>
             array_merge(
-                (new ShowSubDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub-departments.show', $routeParameters),
+                (new ShowSubDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub_departments.show', $routeParameters),
                 $headCrumb(
                     $family,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show',
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                             'parameters' => $routeParameters
 
 
