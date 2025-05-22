@@ -23,20 +23,31 @@ class GetProductCategoryShowcase
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
 
             $data = [
-                'department' => DepartmentResource::make($productCategory),
-                'families'   => FamilyResource::collection($productCategory->getFamilies()),
+                'department' => DepartmentResource::make($productCategory)->toArray(request()),
+                'families'   => FamilyResource::collection($productCategory->getFamilies()->toArray(request())),
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             // TODO: check this
             $data = [
-                'department' => DepartmentResource::make($productCategory->department),
-                'families'   => FamilyResource::collection($productCategory->getSubDepartmentFamilies()),
+                'department' => DepartmentResource::make($productCategory->department)->toArray(request()),
+                'families'   => FamilyResource::collection($productCategory->getSubDepartmentFamilies())->toArray(request()),
             ];
         } else {
             $data = [
                 'family' => FamilyResource::make($productCategory),
             ];
         }
+
+        $data['routes'] = [
+            'detach_family' => [
+                'name'       => 'grp.models.sub-department.family.detach',
+                'parameters' => [
+                    'subDepartment' => $productCategory->slug,
+                    // 'family'        => null  // Add from FE
+                ],
+                'method'     => 'delete'
+            ],
+        ];
 
         return $data;
     }
