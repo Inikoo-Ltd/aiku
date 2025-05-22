@@ -136,7 +136,7 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
                 'route'   => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
                     'parameters' => [
-                        'customerSalesChannel' => $this->customerSalesChannel->platform->slug
+                        'customerSalesChannel' => $this->customerSalesChannel->slug
                     ]
                 ]
             ];

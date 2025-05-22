@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
@@ -18,6 +19,8 @@ use App\Models\Ordering\Order;
 
 trait IsOrder
 {
+    use GetPlatformLogo;
+
     public function getOrderBoxStats(Order $order): array
     {
 
@@ -45,6 +48,13 @@ trait IsOrder
                 ]
             ),
             'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
+            'customer_channel' => [
+                'status' => ! blank($order->customer_sales_channel_id),
+                'platform' => [
+                    'name' => $order->platform?->name,
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel)
+                ]
+            ],
             'products' => [
                 'payment'          => [
                     'routes'       => [

@@ -26,6 +26,18 @@ class PickingsResource extends JsonResource
             'engine'              => $this->engine,
             'picker_name'         => $this->picker->contact_name,
             'location_code'       => $this->location->code,
+            'update_route'        => [
+                'name'  => 'grp.models.picking.update',
+                'parameters' => [
+                    'picking' => $this->id
+                ]
+            ],
+            'not_picked_route' => [
+                'name'  => 'grp.models.picking.not_picked',
+                'parameters' => [
+                    'picking' => $this->id
+                ]
+            ]
         ];
     }
 }

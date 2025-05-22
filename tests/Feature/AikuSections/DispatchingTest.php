@@ -15,6 +15,8 @@ use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\Picking\StorePicking;
+use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
@@ -22,16 +24,21 @@ use App\Actions\Dispatching\Shipper\UpdateShipper;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
+use App\Models\Inventory\Location;
 use App\Models\Ordering\Transaction;
 
 beforeAll(function () {
@@ -199,7 +206,6 @@ test('create second delivery note item', function (DeliveryNote $deliveryNote) {
 test('update second delivery note state to in queue', function (DeliveryNote $deliveryNote) {
     $employee = StoreEmployee::make()->action($this->organisation, Employee::factory()->definition());
 
-    //set prefered picker to put it to queue
     $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $employee);
 
     $deliveryNote->refresh();
@@ -208,8 +214,55 @@ test('update second delivery note state to in queue', function (DeliveryNote $de
         ->and($deliveryNote->picker_id)->toBe($employee->id)
         ->and($deliveryNote->state)->toBe(DeliveryNoteStateEnum::QUEUED);
 
+    return $deliveryNote;
 })->depends('create second delivery note');
 
+test('store picking', function (DeliveryNote $deliveryNote) {
+    $location = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+
+    $deliveryNoteItem = $deliveryNote->deliveryNoteItems->first();
+    expect($deliveryNoteItem)->toBeInstanceOf(DeliveryNoteItem::class); 
+
+    $picking = StorePicking::make()->action($deliveryNoteItem, [
+        'picker_id' => $this->user->id,
+        'location_id' => $location->id
+    ]);
+    
+    expect($picking)->toBeInstanceOf(Picking::class);
+
+    $picking->refresh();
+
+    return $picking;
+
+})->depends('update second delivery note state to in queue');
+
+test('update picking', function (Picking $picking) {
+
+    //HALF
+    $picking = UpdatePicking::make()->action($picking, [
+        'quantity_picked' => 5
+    ]);
+    
+    expect($picking)->toBeInstanceOf(Picking::class)
+        ->and($picking->quantity_picked)->toBe(5)
+        ->and($picking->state)->toBe(PickingStateEnum::PICKING);
+    
+    $picking->refresh();
+    
+    //ALL
+    $picking = UpdatePicking::make()->action($picking, [
+        'quantity_picked' => 5
+    ]);
+    
+    expect($picking)->toBeInstanceOf(Picking::class)
+        ->and($picking->quantity_picked)->toBe(5)
+        ->and($picking->state)->toBe(PickingStateEnum::DONE);
+    
+    $picking->refresh();
+
+    return $picking;
+
+})->depends('store picking');
 
 //test('assign picker to picking', function (DeliveryNote $deliveryNote) {
 //

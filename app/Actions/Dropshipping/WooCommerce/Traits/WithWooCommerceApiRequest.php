@@ -215,7 +215,7 @@ trait WithWooCommerceApiRequest
      *
      * @return array|null Customers data
      */
-    public function getWooCommerceCustomers(array $params = [], bool $useCache = true): ?array
+    public function getWooCommerceCustomers(array $params = [], bool $useCache = false): ?array
     {
         return $this->makeWooCommerceRequest('GET', 'customers', $params, $useCache);
     }
