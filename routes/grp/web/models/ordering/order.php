@@ -82,7 +82,7 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
-        Route::patch('in-queue/{employee:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue');
+        Route::patch('in-queue/{employee:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
         Route::patch('picker-assigned', UpdateDeliveryNoteStateToPickerAssigned::class)->name('picker-assigned');
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
