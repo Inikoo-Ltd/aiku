@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,7 +29,9 @@ class HandleApiProductToShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $attributes): void
     {
-        $shopifyReadyUploadProducts = $shopifyUser->products()->whereIn('portfolio_id', Arr::get($attributes, 'portfolios'))->get();
+        $shopifyReadyUploadProducts = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
+            ->whereIn('portfolio_id', Arr::get($attributes, 'portfolios'))->get();
+
         $portfolios = $shopifyUser
             ->customer->portfolios()
             ->whereIn('id', $shopifyReadyUploadProducts->pluck('portfolio_id')->toArray())
@@ -102,7 +105,7 @@ class HandleApiProductToShopify extends OrgAction
 
                 $uploaded++;
 
-                $this->update($portfolio->shopifyProduct, [
+                $this->update($portfolio->shopifyPortfolio, [
                     'shopify_product_id' => Arr::get($productShopify, 'id')
                 ]);
 

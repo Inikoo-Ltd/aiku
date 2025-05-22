@@ -37,19 +37,17 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
-
         $title = __('Channel Dashboard');
+
         return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
             'title'        => $title,
-            'breadcrumbs'    => $this->getBreadcrumbs(),
+            'breadcrumbs'    => $this->getBreadcrumbs($customerSalesChannel),
             'pageHead'    => [
-
                 'title'         => $title,
                 'icon'          => [
                     'icon'  => ['fal', 'fa-tachometer-alt'],
                     'title' => $title
                 ],
-
             ],
             'customer_sales_channel' => $customerSalesChannel,
             'platform'       =>  $customerSalesChannel->platform,
@@ -105,7 +103,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         return $stats;
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
 
         return
@@ -117,9 +115,9 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.dropshipping.customer_sales_channels.show',
-                                'parameters'  => ['manual']  // TODO: change to correct one
+                                'parameters'  => [$customerSalesChannel->slug]
                             ],
-                            'label' => __('Channel Dashboard'),
+                            'label' => __('Channel Dashboard') . " ($customerSalesChannel->name)",
                         ]
                     ]
                 ]
