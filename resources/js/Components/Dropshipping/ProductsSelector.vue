@@ -67,7 +67,8 @@ const getPortfoliosList = async (url?: string) => {
         portfoliosMeta.value = response?.data.meta || null
         portfoliosLinks.value = response?.data.links || null
         isLoadingFetch.value = false
-    } catch {
+    } catch (e) {
+        console.error('Error', e)
         isLoadingFetch.value = false
         notify({
             title: trans("Something went wrong."),
