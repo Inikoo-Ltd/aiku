@@ -60,7 +60,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
         return $this->handle($customerSalesChannel);
     }
 
@@ -101,7 +101,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'actions' => [
                         $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
-                            'xxstyle' => 'tertiary',
+                            'style' => 'tertiary',
                             'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [
@@ -165,7 +165,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, align: 'right', searchable: true);
+            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'actions', label: __('actions'), canBeHidden: false);
         };
     }

@@ -33,6 +33,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaStoredItemReturn extends RetinaAction
 {
+    /**
+     * @var \App\Models\Dropshipping\CustomerSalesChannel
+     */
+    private CustomerSalesChannel $customerSalesChannel;
+
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
         return $palletReturn;
@@ -49,28 +54,22 @@ class ShowRetinaStoredItemReturn extends RetinaAction
     }
 
 
-    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function inStorage(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->customerSalesChannel = $palletReturn->customerSaleChannel;
         $this->initialisation($request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
     }
 
-    public function inBasket(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function asController(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(PalletReturnTabsEnum::values());
+        $this->initialisation($request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
     }
 
-    public function inOrder(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
-    {
-        $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(PalletReturnTabsEnum::values());
-
-        return $this->handle($palletReturn);
-    }
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
     {
@@ -84,19 +83,16 @@ class ShowRetinaStoredItemReturn extends RetinaAction
 
         $actions = GetRetinaPalletReturnActions::run($palletReturn);
 
+        $title = __('goods out');
 
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('goods out'),
+                'title'       => $title,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                // 'navigation'  => [
-                //     'previous' => ShowRetinaPalletReturn::make()->getPrevious($palletReturn, $request, true),
-                //     'next'     => ShowRetinaPalletReturn::make()->getNext($palletReturn, $request, true),
-                // ],
                 'pageHead'    => [
                     'title'      => $palletReturn->reference,
                     'icon'       => [
@@ -104,7 +100,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                         'title' => $palletReturn->reference
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'      => __('goods out'),
+                    'model'      => $title,
                     'actions'    => $actions
                 ],
 
@@ -215,8 +211,8 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                 'data' => PalletReturnResource::make($palletReturn),
 
                 PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?
-                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value)) //todo idk if this is right
-                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))), //todo idk if this is right
+                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))
+                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))),
 
                 PalletReturnTabsEnum::SERVICES->value => $this->tab == PalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, PalletReturnTabsEnum::SERVICES->value))

@@ -14,9 +14,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +27,9 @@ class StoreRetinaOrder extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(CustomerClient $customerClient): Order
     {
         $order = StoreOrder::make()->action($customerClient, [
@@ -45,10 +46,14 @@ class StoreRetinaOrder extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return true;
+        $customerClient = $request->route('customerClient');
+        if ($customerClient->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
     }
 
-    public function htmlResponse(Order $order)
+    public function htmlResponse(Order $order): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         return Redirect::route('retina.dropshipping.customer_sales_channels.basket.show', [
             $order->customerSalesChannel->slug,
@@ -56,23 +61,15 @@ class StoreRetinaOrder extends RetinaAction
         ]);
     }
 
-    public function inCustomerClient(CustomerClient $customerClient, ActionRequest $request): Order
+    /**
+     * @throws \Throwable
+     */
+    public function asController(CustomerClient $customerClient, ActionRequest $request): Order
     {
-        $this->initialisationFromPlatform($customerClient->platform, $request);
+        $this->initialisation($request);
 
         return $this->handle($customerClient);
     }
 
-    public function inDashboard(CustomerClient $customerClient, ActionRequest $request): Order
-    {
-        $platform = $customerClient->platform;
 
-        if ($platform) {
-            $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
-        }
-
-        $this->initialisationFromPlatform($platform, $request);
-
-        return $this->handle($customerClient);
-    }
 }
