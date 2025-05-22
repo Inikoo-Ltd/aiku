@@ -46,7 +46,6 @@ class GetProductCategoryFamilies extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
         $queryBuilder->where('product_categories.shop_id', $productcategory->shop_id);
-        $queryBuilder->where('type', ProductCategoryTypeEnum::FAMILY);
         $queryBuilder->where('product_categories.department_id', $productcategory->id);
 
         return $queryBuilder
@@ -77,6 +76,6 @@ class GetProductCategoryFamilies extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $families): AnonymousResourceCollection
     {
-        return FamiliesResource::productcategory($families);
+        return FamiliesResource::collection($families);
     }
 }
