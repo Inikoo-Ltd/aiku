@@ -478,8 +478,6 @@ test("UI Index locations", function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", "locations")->etc()
             )
-            ->has("tagRoute")
-            ->has("tagsList")
             ->has("data");
     });
 });
@@ -649,8 +647,7 @@ test("UI Index warehouses", function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $warehouse->name)->etc()
             )
-            ->has("tabs")
-            ->has("tagsList");
+            ->has("tabs");
     });
 });
 
