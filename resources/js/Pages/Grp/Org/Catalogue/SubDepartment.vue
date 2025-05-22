@@ -125,7 +125,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 
 <template>
 
-    <pre>{{ routes }}</pre>
+    <!-- <pre>{{ routes }}</pre> -->
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>

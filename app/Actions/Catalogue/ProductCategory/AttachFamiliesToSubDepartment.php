@@ -21,10 +21,14 @@ class AttachFamiliesToSubDepartment extends OrgAction
     use WithActionUpdate;
     // use WithFulfilmentWarehouseEditAuthorisation;
 
+    // TODO: check this
     public function handle(ProductCategory $subDepartment, array $modelData): ProductCategory
     {
         ProductCategory::whereIn('id', $modelData['families_id'])
-            ->update(['sub_department_id' => $subDepartment->id]);
+            ->update([
+                'sub_department_id' => $subDepartment->id
+            ]);
+
         $subDepartment->refresh();
 
         return $subDepartment;

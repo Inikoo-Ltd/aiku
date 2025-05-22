@@ -28,11 +28,11 @@ export default {
 				tooltip: "Text",
 			},
 			replaceForm: [
-				{
+				/* {
 					key: ["visible"],
 					label :'Visibility',
 					type: "VisibleLoggedIn",
-				},
+				}, */
 				{
 					key: ["text"],
 					label :'Text',
@@ -40,7 +40,7 @@ export default {
 				},
 			],
 		},
-		{
+		/* {
 			name: "Login",
             key:['login'],
 			icon: {
@@ -79,7 +79,7 @@ export default {
 					type: "padding",
 				},
 			],
-		},
+		}, */
 		{
 			name: "Profile",
             key: ["profile"],
@@ -125,7 +125,7 @@ export default {
 				},
 			],
 		},
-		{
+		/* {
 			name: "Logout",
             key:['logout'],
 			icon: {
@@ -199,6 +199,6 @@ export default {
 					type: "padding",
 				},
 			],
-		},
+		}, */
 	],
 }
