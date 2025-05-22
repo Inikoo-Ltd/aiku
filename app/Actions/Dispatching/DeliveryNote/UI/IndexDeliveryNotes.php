@@ -29,6 +29,8 @@ class IndexDeliveryNotes extends OrgAction
     use IsDeliveryNotesIndex;
 
 
+    private string $shopType;
+
     public function htmlResponse(LengthAwarePaginator $deliveryNotes, ActionRequest $request): Response
     {
         $navigation = DeliveryNotesTabsEnum::navigation();
@@ -93,6 +95,7 @@ class IndexDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;

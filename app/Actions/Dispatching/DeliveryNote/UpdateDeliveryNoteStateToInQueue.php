@@ -20,6 +20,7 @@ class UpdateDeliveryNoteStateToInQueue extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        dd('DN IS UNDER CONSTRUCTION');
         data_set($modelData, 'queued_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::QUEUED->value);
 

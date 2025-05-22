@@ -24,7 +24,7 @@ class UpdateProductFromWooCommerce extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser): \GuzzleHttp\Promise\PromiseInterface
+    public function handle(WooCommerceUser $wooCommerceUser)
     {
         $productId = 0;
         $body      = [
@@ -33,7 +33,7 @@ class UpdateProductFromWooCommerce extends OrgAction
             ]
         ];
 
-        // return $wooCommerceUser->api()->getRestClient()->request('PUT', '/admin/api/2024-04/products/'.$productId.'.json', $body);
+        return $wooCommerceUser->updateWooCommerceProduct($productId, $body);
     }
 
     public function asController(Customer $customer, WooCommerceUser $wooCommerceUser): \GuzzleHttp\Promise\PromiseInterface

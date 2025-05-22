@@ -280,7 +280,11 @@ return [
             'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
-        ]
+        ],
+        'luigisbox' => [
+            'tracking_id'      => env('LS_TRACKING_ID'),
+            'private_key'      => env('LS_PRIVATE_KEY'),
+        ],
     ]
 
 ];
