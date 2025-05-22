@@ -63,6 +63,7 @@ class AutosaveWebsiteMarginal extends OrgAction
 
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
 
+
             $this->update($website->unpublishedMenuSnapshot, [
                 'layout' => [
                     'menu' => $layout
