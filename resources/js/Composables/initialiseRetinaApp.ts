@@ -39,6 +39,15 @@ export const initialiseRetinaApp = () => {
         layout.currentParams = route().v().params  // current params
         layout.currentRoute = route().current()  // current route
 
+        if (layout.currentParams?.customerSalesChannel && layout.currentParams?.customerSalesChannel !== layout.currentPlatform) {
+            layout.currentPlatform = layout.currentParams.customerSalesChannel
+
+            localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
+                ...storageLayout,
+                currentPlatform: layout.currentPlatform
+            }))
+        }
+
         // if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
         //     layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
 
