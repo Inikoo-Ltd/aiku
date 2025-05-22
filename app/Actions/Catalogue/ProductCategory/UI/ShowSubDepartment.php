@@ -102,14 +102,6 @@ class ShowSubDepartment extends OrgAction
                         ],
                         'method'     => 'post'
                     ],
-                    'detach_families' => [
-                        'name'       => 'grp.models.sub-department.family.detach',
-                        'parameters' => [
-                            'subDepartment' => $subDepartment->slug,
-                            // 'family'        => null  // Add from FE
-                        ],
-                        'method'     => 'delete'
-                    ],
                     'fetch_families' => [
                         'name'       => 'grp.json.shop.catalogue.departments.families',
                         'parameters' => [
