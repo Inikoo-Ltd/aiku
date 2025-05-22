@@ -71,7 +71,7 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
 
 
             <div class="flex items-center cursor-pointer">
-                <Link href="/app/profile" v-if="!isLoggedIn">
+                <Link href="/app/profile" v-if="isLoggedIn">
                     <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
                         :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                 </Link>   

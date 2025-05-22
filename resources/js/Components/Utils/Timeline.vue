@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { ref, watch, onBeforeMount } from 'vue'
+import { ref, watch, onBeforeMount, computed } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -26,33 +26,41 @@ const emits = defineEmits<{
 }>()
 
 const _swiperRef = ref()
-const finalOptions = ref<Timeline[]>([])
+// const finalOptions = ref<Timeline[]>([])
 
-
-const stepsWithIndex = (() => {
+const computedXxx = computed(() => {
     const finalData = []
     Object.entries(props.options).forEach(([key, value], index) => {
         finalData.push({ ...value, index });
     });
 
-    // Do something with finalData array
-    finalOptions.value = finalData
-    // console.log(finalData)
-});
+    return finalData
+})
+
+// const stepsWithIndex = (() => {
+//     const finalData = []
+//     Object.entries(props.options).forEach(([key, value], index) => {
+//         finalData.push({ ...value, index });
+//     });
+
+//     // Do something with finalData array
+//     finalOptions.value = finalData
+//     // console.log(finalData)
+// });
 
 const setupState = (step: Timeline) => {
-    const foundState = finalOptions.value.find((item) => item.key === props.state)
+    const foundState = computedXxx.value.find((item) => item.key === props.state)
     if(foundState){
         const set = step.key == props.state || step.index < foundState.index
         return set
     }else return
 }
 
-watch(() => props.state, (newData) => {
-    stepsWithIndex()
-})
+// watch(() => props.state, (newData) => {
+//     stepsWithIndex()
+// })
 
-onBeforeMount(stepsWithIndex)
+// onBeforeMount(stepsWithIndex)
 
 // Format Date
 const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
@@ -70,10 +78,10 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
     <div class="w-full py-5 sm:py-2 flex flex-col isolate">
         <Swiper ref="_swiperRef" :slideToClickedSlide="false" :slidesPerView="slidesPerView"
             :centerInsufficientSlides="true" :pagination="{ clickable: true, }" class="w-full h-fit isolate">
-            <template v-for="(step, stepIndex) in finalOptions" :key="stepIndex">
+            <template v-for="(step, stepIndex) in computedXxx" :key="stepIndex">
                 <SwiperSlide>
                     <!-- Section: Title -->
-                    <div class="w-fit mx-auto capitalize text-xxs md:text-xs text-center"
+                    <div class="w-fit mx-auto capitalize text-xxs md:text-xs text-center whitespace-nowrap truncate max-w-full px-2"
                         :class="step.timestamp || state == step.key ? 'text-[#888] ' : 'text-gray-300'">
                         <FontAwesomeIcon v-if="step.icon" :icon='step.icon' class='text-sm' fixed-width aria-hidden='true' />
                         {{ step.label }}
@@ -90,7 +98,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                         </div>
 
                         <!-- Step: Head -->
-                        <div @click="() => emits('updateButton', { step: step, options: finalOptions })"
+                        <div @click="() => emits('updateButton', { step: step, options: computedXxx })"
                             v-tooltip="step.label"
                             class="z-20 aspect-square mx-auto rounded-full text-lg flex justify-center items-center"
                             :class="[

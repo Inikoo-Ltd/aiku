@@ -41,7 +41,7 @@ class SendSesEmail
         $actuallySend = false;
         if (app()->isProduction()) {
             $actuallySend = true;
-        } elseif (config('app.send_email_in_non_production_env') or $dispatchedEmail->is_test) {
+        } elseif (config('app.send_email_in_non_production_env') || $dispatchedEmail->is_test) {
             $actuallySend = true;
 
             $emailTo = config('app.test_email_to_address');
@@ -108,7 +108,7 @@ class SendSesEmail
                 }
             } catch (AwsException $e) {
 
-                if ($e->getAwsErrorCode() == 'Throttling' and $attempt < $numberAttempts - 1) {
+                if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {
                     $attempt++;
                     usleep(rand(200, 300) + pow(2, $attempt));
                     continue;
