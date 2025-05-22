@@ -5,26 +5,25 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import { library } from '@fortawesome/fontawesome-svg-core'
+import { Head } from "@inertiajs/vue3";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBullhorn,
     faCameraRetro,
     faCube,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser
-} from '@fal'
+    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser
+} from "@fal";
 
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { computed, defineAsyncComponent, ref } from "vue"
-import { useTabChange } from "@/Composables/tab-change"
-import ModelDetails from "@/Components/ModelDetails.vue"
-import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
-import TableMailshots from "@/Components/Tables/TableMailshots.vue"
-import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
-import { capitalize } from "@/Composables/capitalize"
+import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { computed, defineAsyncComponent, ref } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
+import ModelDetails from "@/Components/ModelDetails.vue";
+import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue";
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import TableMailshots from "@/Components/Tables/TableMailshots.vue";
+import { faDiagramNext } from "@fortawesome/free-solid-svg-icons";
+import { capitalize } from "@/Composables/capitalize";
 import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue";
-import FamilyMasterWorkshop from '@/Components/Showcases/Grp/FamilyMasterWorkshop.vue'
 
 library.add(
     faFolder,
@@ -35,10 +34,10 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faDiagramNext,
-)
+    faDiagramNext, faBrowser
+);
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
+const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
 const props = defineProps<{
     title: string,
@@ -52,22 +51,21 @@ const props = defineProps<{
     showcase: object
     details: object
     history: object
-}>()
+}>();
 
-let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
 
     const components = {
-        /* showcase: FamilyMasterWorkshop */
         showcase: FamilyShowcase,
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,
-        history: ModelChangelog,
-    }
-    return components[currentTab.value]
+        history: ModelChangelog
+    };
+    return components[currentTab.value];
 
 });
 
