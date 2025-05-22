@@ -39,6 +39,18 @@
         
         {{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
         @inertiaHead
+
+        <!-- Google tag manager (gtag.js) -->
+        @if(Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+            <script async src="https://www.googletagmanager.com/gtag/js?id={{ Arr::get(request()->get('website')->settings, 'google_tag_id', '') }}"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+
+                gtag('config', "{{ Arr::get(request()->get('website')->settings, 'google_tag_id', '') }}");
+            </script>
+        @endif
     </head>
     <body class="font-sans antialiased h-full">
         @inertia

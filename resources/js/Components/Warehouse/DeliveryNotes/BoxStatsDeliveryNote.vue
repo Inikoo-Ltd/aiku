@@ -55,32 +55,6 @@ const props = defineProps<{
 	}
 }>()
 
-// Section: Picker
-const selectedPicker = ref(props.boxStats.picker)
-const selectedPacker = ref(props.boxStats.packer)
-const disable = ref(props.boxStats.state)
-const isLoading = ref<{ [key: string]: boolean }>({})
-
-const onSelectPicker = () => {
-	try {
-	} catch (error) {}
-}
-const onSubmitPickerPacker = (selectedPicker: {}, scope: string) => {
-	console.log("dd", selectedPicker)
-	try {
-		router.patch(
-			route(props.routes.update.name, props.routes.update.parameters),
-			{
-				[`${scope}_id`]: selectedPicker?.id,
-			},
-			{
-				onStart: () => (isLoading.value[scope + selectedPicker?.id] = true),
-				onFinish: () => (isLoading.value[scope + selectedPicker?.id] = false),
-				preserveScroll: true,
-			}
-		)
-	} catch (error) {}
-}
 </script>
 
 <template>
@@ -191,10 +165,10 @@ const onSubmitPickerPacker = (selectedPicker: {}, scope: string) => {
 		</BoxStatPallet>
 
 		<!-- Box: Product stats -->
-		<BoxStatPallet class="py-4 pl-1.5 pr-3" icon="fal fa-user">
+		<BoxStatPallet class="py-2.5 pl-1.5 pr-3" icon="fal fa-user">
 			<div
 				v-tooltip="trans('Estimated weight of all products')"
-				class="mt-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 				<dt class="flex-none">
 					<FontAwesomeIcon
 						icon="fal fa-weight"
@@ -206,98 +180,7 @@ const onSubmitPickerPacker = (selectedPicker: {}, scope: string) => {
 					{{ boxStats?.products.estimated_weight || 0 }} kilograms
 				</dd>
 			</div>
-			<div
-				v-tooltip="trans('Select Picker')"
-				class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
-				<div class="flex items-center w-full gap-x-1.5">
-					<dt class="flex-none">
-						<FontAwesomeIcon
-							icon="fal fa-weight"
-							fixed-width
-							aria-hidden="true"
-							class="text-gray-500" />
-					</dt>
-					<dd class="flex-1">
-						<!-- Label for Picker -->
-						<label class="text-sm font-medium text-gray-700">
-							{{ trans("Picker") }}
-						</label>
-						<PureMultiselectInfiniteScroll
-							v-model="selectedPicker"
-							@update:modelValue="
-								(selectedPicker) => onSubmitPickerPacker(selectedPicker, 'picker')
-							"
-							:fetchRoute="routes.pickers_list"
-							:placeholder="trans('Select picker')"
-							labelProp="contact_name"
-							valueProp="id"
-							object
-							clearOnBlur
-							:loading="isLoading['picker' + selectedPicker?.id]"
-							:disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'"
-							>
-							<template #singlelabel="{ value }">
-								<div
-									class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
-									{{ value.contact_name }}
-								</div>
-							</template>
-
-							<template #option="{ option, isSelected, isPointed }">
-								<div class="w-full text-left text-sm whitespace-nowrap truncate">
-									{{ option.contact_name }}
-								</div>
-							</template>
-						</PureMultiselectInfiniteScroll>
-					</dd>
-				</div>
-			</div>
-
-			<div
-				v-tooltip="trans('Select Packer')"
-				class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
-				<div class="flex items-center w-full gap-x-1.5">
-					<dt class="flex-none">
-						<FontAwesomeIcon
-							icon="fal fa-weight"
-							fixed-width
-							aria-hidden="true"
-							class="text-gray-500" />
-					</dt>
-					<dd class="flex-1">
-						<!-- Label for Packer -->
-						<label class="text-sm font-medium text-gray-700">
-							{{ trans("Packer") }}
-						</label>
-						<PureMultiselectInfiniteScroll
-							v-model="selectedPacker"
-							@update:modelValue="
-								(selectedPacker) => onSubmitPickerPacker(selectedPacker, 'packer')
-							"
-							:fetchRoute="routes.packers_list"
-							:placeholder="trans('Select packer')"
-							labelProp="contact_name"
-							valueProp="id"
-							object
-							clearOnBlur
-							:loading="isLoading['packer' + selectedPacker?.id]"
-							:disabled="disable == 'packing' ||  disable == 'packed' || disable == 'finalised' || disable == 'settled'">
-							<template #singlelabel="{ value }">
-								<div
-									class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
-									{{ value.contact_name }}
-								</div>
-							</template>
-
-							<template #option="{ option, isSelected, isPointed }">
-								<div class="w-full text-left text-sm whitespace-nowrap truncate">
-									{{ option.contact_name }}
-								</div>
-							</template>
-						</PureMultiselectInfiniteScroll>
-					</dd>
-				</div>
-			</div>
+			
 		</BoxStatPallet>
 	</div>
 </template>

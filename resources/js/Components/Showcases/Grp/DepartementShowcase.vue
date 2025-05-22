@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SetVisibleList from '@/Components/Departement&Family/SetVisibleList.vue';
 import { faChevronCircleLeft, faChevronCircleRight, faImage } from '@far'
-import { faExclamation, faWindWarning } from '@fas';
+import { faExclamation, faInfoCircle, faWindWarning } from '@fas';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Image from '@/Components/Image.vue';
 import Message from 'primevue/message';
@@ -37,9 +37,9 @@ console.log(props)
 
 <template>
   <div class="px-4 pb-8 m-5">
-    <Message v-if="data.department.data?.follow_master" severity="warn" closable>
+    <Message v-if="data.department.data?.follow_master" severity="success" closable>
       <template #icon>
-        <FontAwesomeIcon :icon="faExclamation" />
+        <FontAwesomeIcon :icon="faInfoCircle" />
       </template>
       <span class="ml-2">Right Now you follow 
         <Link :href="'dsfsdf'" class="underline font-bold">
