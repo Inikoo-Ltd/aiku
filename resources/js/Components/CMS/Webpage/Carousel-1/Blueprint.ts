@@ -21,6 +21,16 @@ export default {
 					key: ["carousel_setting", "use_text"],
 					type: "switch",
 				},
+				{
+					label: "Autoplay",
+					key: ["carousel_setting", "autoplay"],
+					type: "switch",
+				},
+				{
+					label: "Loop",
+					key: ["carousel_setting", "loop"],
+					type: "switch",
+				},
 			],
 		},
 		{
