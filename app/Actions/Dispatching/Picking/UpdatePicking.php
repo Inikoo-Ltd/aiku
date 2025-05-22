@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -33,11 +34,18 @@ class UpdatePicking extends OrgAction
 
     public function handle(Picking $picking, array $modelData): Picking
     {
-        if(Arr::get($modelData, 'quantity_picked') + $picking->quantity_picked == $picking->quantity_required) {
-            data_set($modelData, 'state', PickingStateEnum::DONE);
-        }
-
         $picking = $this->update($picking, $modelData);
+
+            /** @var DeliveryNoteItem $deliveryNoteItem */
+        $deliveryNoteItem = $picking->deliveryNoteItem;
+
+        $totalPicked = $deliveryNoteItem->pickings()->sum('quantity_picked');
+
+        if ($deliveryNoteItem->quantity_picked != $totalPicked) {
+            UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
+                'quantity_picked' => $totalPicked
+            ]);
+        }
 
         return $picking;
     }
