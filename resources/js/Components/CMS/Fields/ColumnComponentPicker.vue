@@ -72,7 +72,7 @@ onMounted(() => {
 		<SideEditor 
 			v-model="model.data.fieldValue" 
 			:blueprint="getBlueprint(model.code)" 
-			@update:modelValue="(e) =>{emit('update:modelValue', e)}"
+			@update:modelValue="(e) =>{model.data.fieldValue = e , emit('update:modelValue', model)}"
 			:uploadImageRoute="uploadRoutes" 
 		/>
 	</div>

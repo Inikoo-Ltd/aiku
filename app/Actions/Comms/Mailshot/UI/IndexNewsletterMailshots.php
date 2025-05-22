@@ -58,13 +58,13 @@ class IndexNewsletterMailshots extends OrgAction
                     ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sent', label: __('sent'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'hard_bounce', label: __('hard bounce'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'soft_bounce', label: __('soft bounce'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'delivered', label: __('delivered'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'opened', label: __('opened'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'clicked', label: __('clicked'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'spam', label: __('spam'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'sent', icon:'fal fa-check', label: '', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'hard_bounce', icon: 'fal fa-skull', label: '', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'soft_bounce', icon: 'fal fa-dungeon', label: '', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'delivered', icon:'fal fa-check-double', label: '', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'opened', icon: 'fal fa-envelope-open', label: '', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'clicked', icon:'fal fa-hand-pointer', label: '', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'spam', icon:'fal fa-eye-slash', label: '', canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
