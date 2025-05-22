@@ -10,10 +10,11 @@ return new class () extends Migration {
         Schema::create('brands', function (Blueprint $table) {
             $table->increments('id');
             $table->string('slug')->unique()->collation('und_ns');
+            $table->string('reference')->index();
+            $table->string('name')->collation('und_ns')->index();
 
             $table->unsignedInteger('image_id')->nullable();
             $table->foreign('image_id')->references('id')->on('media')->onDelete('cascade');
-            $table->string('name')->collation('und_ns')->index();
         });
     }
 
