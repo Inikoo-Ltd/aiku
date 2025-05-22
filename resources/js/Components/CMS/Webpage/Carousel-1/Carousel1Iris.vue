@@ -33,8 +33,8 @@ const getHref = (item: number) => {
 
 <template>
     <Swiper :key="keySwiper" :slides-per-view="fieldValue.carousel_data.carousel_setting.slidesPerView.desktop"
-     :loop="true"
-      :autoplay="true"
+     :loop="fieldValue?.carousel_data?.carousel_setting?.loop"
+      :autoplay="fieldValue?.carousel_data?.carousel_setting?.autoplay"  :touch-angle="45" :touch-start-prevent-default="false"
         :simulate-touch="true" :touch-ratio="1" :pagination="{ clickable: true }" :modules="[Pagination, Autoplay]"
         :spaceBetween="fieldValue.carousel_data.carousel_setting.spaceBetween" class="touch-pan-x"
         :style="getStyles(fieldValue.container?.properties, screenType)" :breakpoints="{
@@ -61,7 +61,6 @@ const getHref = (item: number) => {
                 </div>
             </component>
         </SwiperSlide>
-
     </Swiper>
 </template>
 
