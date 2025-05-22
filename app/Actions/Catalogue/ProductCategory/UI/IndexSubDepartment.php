@@ -155,7 +155,7 @@ class IndexSubDepartment extends OrgAction
                                 'tooltip' => __('new Sub-department'),
                                 'label'   => __('Sub-department'),
                                 'route'   => [
-                                    'name'           => 'grp.org.shops.show.catalogue.departments.show.sub-departments.create',
+                                    'name'           => 'grp.org.shops.show.catalogue.departments.show.sub_departments.create',
                                     'parameters'     => [
                                         'organisation' => $parent->organisation->slug,
                                         'shop'         => $parent->shop->slug,
@@ -249,7 +249,7 @@ class IndexSubDepartment extends OrgAction
                             'tooltip' => __('new Sub-department'),
                             'label'   => __('Sub-department'),
                             'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.create',
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.create',
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ]
@@ -299,11 +299,11 @@ class IndexSubDepartment extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.index' => array_merge(
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.index' => array_merge(
                 ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.index',
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
                         'parameters' => [
                             $routeParameters['organisation'],
                             $routeParameters['shop'],

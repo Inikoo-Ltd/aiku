@@ -22,55 +22,23 @@ use Spatie\LaravelOptions\Options;
 class CreateSubDepartment extends OrgAction
 {
     use WithCatalogueAuthorisation;
-    private Shop|ProductCategory $parent;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
-
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inOrganisation(Organisation $organisation, ActionRequest $request): ActionRequest
-    {
-        $this->initialisation($organisation, $request);
-
-        return $request;
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): ActionRequest
+    /**
+     * @throws \Exception
+     */
+    public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $request;
-    }
-
-    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): Response
-    {
-        $this->parent = $department;
-        $this->initialisationFromShop($shop, $request);
-        return $this->handle(parent: $department, request: $request);
+        return $this->handle(department: $department, request: $request);
     }
 
 
-    public function handle(Shop|ProductCategory $parent, ActionRequest $request): Response
+    /**
+     * @throws \Exception
+     */
+    public function handle(ProductCategory $department, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
@@ -81,18 +49,14 @@ class CreateSubDepartment extends OrgAction
                 ),
                 'title'       => __('New Sub-department'),
                 'pageHead'    => [
-                    'title'        => __('new Sub-department'),
-                    'actions'      => [
+                    'title'   => __('new Sub-department'),
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => class_basename($this->parent) == 'ProductCategory'
-                                                 ? 'grp.org.shops.show.catalogue.departments.show.sub-departments.index'
-                                            : (class_basename($this->parent) == 'Shop'
-                                                ? 'grp.org.shops.show.catalogue.families.index'
-                                                : ''),
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -105,6 +69,7 @@ class CreateSubDepartment extends OrgAction
                                 'title'  => __('Sub-department'),
                                 'fields' => [
                                     'type' => [
+                                        'hidden'   => true,
                                         'type'     => 'select',
                                         'label'    => __('type'),
                                         'required' => true,
@@ -122,36 +87,19 @@ class CreateSubDepartment extends OrgAction
                                         'label'    => __('name'),
                                         'required' => true
                                     ],
-                                    'description' => [
-                                        'type'     => 'textEditor',
-                                        'label'    => __('name'),
-                                        'required' => true
-                                    ],
                                 ]
                             ]
                         ],
-                    'route' => match ($request->route()->getName()) {
-                        'shops.show.families.create' => [
-                            'name'      => 'grp.models.shop.family.store',
-                            'arguments' => $this->shop->id
-                        ],
-                        'grp.org.shops.show.catalogue.departments.show.sub-departments.create' => [
-                            'name'       => 'grp.models.org.catalogue.departments.sub-department.store',
-                            'parameters' => [
-                                'organisation'    => $this->organisation->id,
-                                'shop'            => $this->shop->id,
-                                'productCategory' => $this->parent->id
-                            ]
-                        ],
-                        default => [
-                            'name' => 'grp.models.family.store'
+                    'route'     => [
+                        'name'       => 'grp.models.department.sub_department.store',
+                        'parameters' => [
+                            'productCategory' => $department->id
                         ]
-                    }
+                    ]
                 ]
             ]
         );
     }
-
 
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -163,7 +111,7 @@ class CreateSubDepartment extends OrgAction
             ),
             [
                 [
-                    'type'         => 'creatingModel',
+                    'type'          => 'creatingModel',
                     'creatingModel' => [
                         'label' => __('Creating Sub-department'),
                     ]

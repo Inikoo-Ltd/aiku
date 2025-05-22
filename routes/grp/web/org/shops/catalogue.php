@@ -110,12 +110,12 @@ Route::name("departments.")->prefix('departments')
                 Route::get('{product}', [ShowProduct::class, 'inDepartment'])->name('show');
                 Route::get('edit/{product}', [EditProduct::class, 'inDepartment'])->name('edit');
             });
-            Route::prefix('sub-departments')->name('.sub-departments.')->group(function () {
+            Route::prefix('sub-departments')->name('.sub_departments.')->group(function () {
                 Route::get('', IndexSubDepartment::class)->name('index');
-                Route::get('create', [CreateSubDepartment::class, 'inDepartment'])->name('create');
+                Route::get('create', CreateSubDepartment::class)->name('create');
                 Route::get('edit/{subDepartment}', [EditSubDepartment::class, 'inDepartment'])->name('edit');
                 Route::prefix('{subDepartment}')->name('show')->group(function () {
-                    Route::get('', [ShowSubDepartment::class, 'inDepartment']);
+                    Route::get('', ShowSubDepartment::class);
                     Route::prefix('family')->name('.family.')->group(function () {
                         Route::get('index', [IndexFamilies::class, 'inSubDepartmentInDepartment'])->name('index');
                         Route::get('create', [CreateFamily::class, 'inSubDepartmentInDepartment'])->name('create');
@@ -124,8 +124,6 @@ Route::name("departments.")->prefix('departments')
                             Route::prefix('products')->name('.products.')->group(function () {
                                 Route::get('', [IndexProducts::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
                                 Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInDepartment'])->name('create');
-                                // Route::get('{product}', [ShowProduct::class, 'inFamily'])->name('show');
-                                // Route::get('edit/{product}', [EditProduct::class, 'inFamily'])->name('edit');
                             });
                         });
                     });

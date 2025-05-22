@@ -42,11 +42,11 @@ trait WithFamilySubNavigation
             ];
         } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $familyRoute  = [
-                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show',
+                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                 'parameters' => $routeParameters
             ];
             $productRoute = [
-                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show.products.index',
+                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index',
                 'parameters' => $routeParameters
             ];
         } elseif ($parent->type == ProductCategoryTypeEnum::FAMILY) {

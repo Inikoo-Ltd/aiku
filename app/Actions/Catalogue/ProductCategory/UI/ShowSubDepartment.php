@@ -8,12 +8,12 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -21,6 +21,7 @@ use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -38,23 +39,8 @@ class ShowSubDepartment extends OrgAction
         return $subDepartment;
     }
 
-    public function inOrganisation(Organisation $organisation, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
-    {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(DepartmentTabsEnum::values());
 
-        return $this->handle($subDepartment);
-    }
-
-    public function asController(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
-    {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
-
-        return $this->handle($subDepartment);
-    }
-
-    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
+    public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
         $this->parent = $department;
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
@@ -65,11 +51,11 @@ class ShowSubDepartment extends OrgAction
     public function htmlResponse(ProductCategory $subDepartment, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Catalogue/Department',
+            'Org/Catalogue/SubDepartment',
             [
                 'title'       => __('Sub-department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
+                    $subDepartment,
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
@@ -77,13 +63,13 @@ class ShowSubDepartment extends OrgAction
                     'next'     => $this->getNext($subDepartment, $request),
                 ],
                 'pageHead'    => [
-                    'title'     => $subDepartment->name,
-                    'model'     => __('Sub-department'),
-                    'icon'      => [
+                    'title'         => $subDepartment->name,
+                    'model'         => __('Sub-department'),
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('Sub-department')
                     ],
-                    'actions' => [
+                    'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -126,28 +112,11 @@ class ShowSubDepartment extends OrgAction
                             prefix: 'customers'
                         )
                     )),
-                // DepartmentTabsEnum::MAILSHOTS->value => $this->tab == DepartmentTabsEnum::MAILSHOTS->value
-                //     ?
-                //     fn () => MailshotResource::collection(
-                //         IndexMailshots::run(
-                //             parent: $subDepartment,
-                //             prefix: 'mailshots'
-                //         )
-                //     )
-                //     : Inertia::lazy(fn () => MailshotResource::collection(
-                //         IndexMailshots::run(
-                //             parent: $subDepartment,
-                //             prefix: 'mailshots'
-                //         )
-                //     )),
 
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($subDepartment))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($subDepartment))),
-
-
-
 
 
             ]
@@ -157,13 +126,6 @@ class ShowSubDepartment extends OrgAction
                 prefix: 'customers'
             )
         )
-        // ->table(
-        //     IndexMailshots::make()->tableStructure(
-        //         parent: $subDepartment->shop,
-        //         prefix: 'mailshots'
-        //     )
-        // )
-
             ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value));
     }
 
@@ -173,107 +135,41 @@ class ShowSubDepartment extends OrgAction
         return new DepartmentsResource($subDepartment);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
+
+    public function getBreadcrumbs(ProductCategory $subDepartment, array $routeParameters): array
     {
-        $headCrumb = function (ProductCategory $subDepartment, array $routeParameters, $suffix) {
-            return [
-
+        return
+            array_merge(
+                ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', Arr::only($routeParameters, ['organisation', 'shop', 'department'])),
                 [
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Sub-departments')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $subDepartment->code,
-                        ],
-                    ],
-                    'suffix'         => $suffix,
-
-                ],
-
-            ];
-        };
-
-        $subDepartment = ProductCategory::where('slug', $routeParameters['subDepartment'])->first();
-
-        return match ($routeName) {
-            /*
-            'shops.departments.show' =>
-            array_merge(
-                IndexShops::make()->getBreadcrumbs(),
-                $headCrumb(
-                    $routeParameters['department'],
                     [
-                        'index' => [
-                            'name'       => 'shops.departments.index',
-                            'parameters' => []
-                        ],
-                        'model' => [
-                            'name'       => 'shops.departments.show',
-                            'parameters' => [
-                                $routeParameters['department']->slug
-                            ]
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => $subDepartment->name,
                         ]
-                    ],
-                    $suffix
-                )
-            ),
-            */
-            'grp.org.shops.show.catalogue.departments.show' =>
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $subDepartment,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.show' =>
-            array_merge(
-                (new ShowDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
-                $headCrumb(
-                    $subDepartment,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show',
-                            'parameters' => $routeParameters
-
-
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            default => []
-        };
+                    ]
+                ]
+            );
     }
 
     public function getPrevious(ProductCategory $subDepartment, ActionRequest $request): ?array
     {
-        $previous = ProductCategory::where('code', '<', $subDepartment->code)->where('shop_id', $this->shop->id)->orderBy('code', 'desc')->first();
+        $previous = ProductCategory::where('code', '<', $subDepartment->code)->where('shop_id', $this->shop->id)
+            ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(ProductCategory $subDepartment, ActionRequest $request): ?array
     {
-        $next = ProductCategory::where('code', '>', $subDepartment->code)->where('shop_id', $this->shop->id)->orderBy('code')->first();
+        $next = ProductCategory::where('code', '>', $subDepartment->code)->where('shop_id', $this->shop->id)
+            ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->orderBy('code')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
@@ -284,27 +180,18 @@ class ShowSubDepartment extends OrgAction
             return null;
         }
 
-        return match ($routeName) {
-            'shops.families.show' => [
-                'label' => $subDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'department' => $subDepartment->slug
-                    ]
+
+        return [
+            'label' => $subDepartment->name,
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => [
+                    'organisation'  => $subDepartment->organisation->slug,
+                    'shop'          => $subDepartment->shop->slug,
+                    'department'    => $subDepartment->parent->slug,
+                    'subDepartment' => $subDepartment->slug
                 ]
-            ],
-            'shops.show.families.show' => [
-                'label' => $subDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'shop'       => $subDepartment->shop->slug,
-                        'department' => $subDepartment->slug
-                    ]
-                ]
-            ],
-            default => [] // Add a default case to handle unmatched route names
-        };
+            ]
+        ];
     }
 }

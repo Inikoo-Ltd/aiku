@@ -55,7 +55,7 @@ trait WithDepartmentSubNavigation
                 'label'    => __('Sub-departments'),
                 'number'   => $department->stats->number_sub_departments,
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.index',
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
                     'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
                 ],
                 'leftIcon' => [
