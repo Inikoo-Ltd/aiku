@@ -62,7 +62,7 @@ class DeliveryNotesResource extends JsonResource
                 'parameters' => [
                     'deliveryNote' => $this->id
                 ],
-                'method' => 'post'
+                'method' => 'patch'
             ]
         ];
     }
