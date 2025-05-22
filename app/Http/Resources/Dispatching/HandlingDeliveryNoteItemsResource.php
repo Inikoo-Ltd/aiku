@@ -17,6 +17,16 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
     {
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
         // dd($deliveryNoteItem);
+        $fullWarning = [
+            'condition' => false,
+            'message' => ''
+        ];
+        if($deliveryNoteItem->quantity_picked == $deliveryNoteItem->quantity_required) {
+            $fullWarning = [
+                'condition' => true,
+                'message' => __('The required quantity has already been fully picked. Do you really want to add more?')
+            ];
+        }
         return [
             'id'                  => $this->id,
             'state'               => $this->state,
@@ -28,7 +38,7 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
             'org_stock_name'      => $this->org_stock_name,
             'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-
+            'warning'             => $fullWarning,
             'picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.picking.store',
                 'parameters' => [
