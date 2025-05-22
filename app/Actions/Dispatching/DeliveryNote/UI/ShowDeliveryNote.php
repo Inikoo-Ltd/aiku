@@ -108,9 +108,15 @@ class ShowDeliveryNote extends OrgAction
             $timestamp = $timestamp ?: null;
             // dd($state);
             $label = $state->labels()[$state->value];
-            if($deliveryNote->state === DeliveryNoteStateEnum::QUEUED || $deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+            if($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
                 if (
-                in_array($state, [DeliveryNoteStateEnum::QUEUED, DeliveryNoteStateEnum::HANDLING])
+                in_array($state, [DeliveryNoteStateEnum::QUEUED])
+                ) {
+                    $label .= ' (' . $deliveryNote->picker->contact_name . ')';
+                }
+            } elseif ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+                if (
+                in_array($state, [DeliveryNoteStateEnum::HANDLING])
                 ) {
                     $label .= ' (' . $deliveryNote->picker->contact_name . ')';
                 }
