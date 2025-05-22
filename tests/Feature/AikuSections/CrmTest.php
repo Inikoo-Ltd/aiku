@@ -34,7 +34,6 @@ use App\Actions\CRM\PollReply\StorePollReply;
 use App\Actions\CRM\PollReply\UpdatePollReply;
 use App\Actions\CRM\Prospect\Search\ReindexProspectSearch;
 use App\Actions\CRM\Prospect\StoreProspect;
-use App\Actions\CRM\Prospect\Tags\SyncTagsProspect;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\Prospect\UpdateProspectEmailClicked;
 use App\Actions\CRM\Prospect\UpdateProspectEmailHardBounced;
@@ -231,16 +230,6 @@ test('create 2nd prospect', function () {
 
     return $prospect;
 });
-
-test('update prospect tags', function ($prospect) {
-    $modelData = [
-        'tags' => ['seo', 'social'],
-    ];
-    $prospect  = SyncTagsProspect::make()->action(prospect: $prospect, modelData: $modelData);
-    expect($prospect)->toBeInstanceOf(Prospect::class)->and($prospect->tags->count())->toBe(2);
-
-    return $prospect;
-})->depends('create 2nd prospect');
 
 test('prospect query count', function () {
     $this->artisan('query:count')->assertExitCode(0);

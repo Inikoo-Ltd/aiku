@@ -15,13 +15,11 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\Organisation;
-use App\Http\Resources\Tag\TagResource;
 use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
-use Spatie\Tags\Tag;
 
 class CreateMailshot extends OrgAction
 {
@@ -89,7 +87,6 @@ class CreateMailshot extends OrgAction
                     'options'     => [
                         'query'                  => IndexProspects::run(parent:$parent, prefix: null, scope: 'all'),
                         'custom_prospects_query' => '',
-                        'tags'                   => TagResource::collection(Tag::where('type', 'crm')->get()),
                     ],
                     'full'      => true,
                     'value'     => [

@@ -16,8 +16,6 @@ use App\Enums\UI\Production\ProductionTabsEnum;
 use App\Enums\UI\Production\RawMaterialTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\RawMaterialsResource;
-use App\Http\Resources\Tag\TagResource;
-use App\Models\Helpers\Tag;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
 use App\Models\SysAdmin\Organisation;
@@ -61,11 +59,12 @@ class ShowRawMaterial extends OrgAction
 
     public function htmlResponse(RawMaterial $rawMaterial, ActionRequest $request): Response
     {
+        $title = __('Raw Material');
 
         return Inertia::render(
             'Org/Production/RawMaterial',
             [
-                'title'                            => __('raw material'),
+                'title'                            => $title,
                 'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'                       => [
                     'previous' => $this->getPrevious($rawMaterial, $request),
@@ -75,10 +74,10 @@ class ShowRawMaterial extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'industry'],
-                            'title' => __('raw material')
+                            'title' => $title
                         ],
                     'title'   => $rawMaterial->code,
-                    'model'   => __('raw material'),
+                    'model'   => $title,
                     'actions' => [
                         [
                             'type'    => 'button',
@@ -101,7 +100,6 @@ class ShowRawMaterial extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => RawMaterialTabsEnum::navigation(),
                 ],
-                'tagsList'      => TagResource::collection(Tag::all()),
 
                 RawMaterialTabsEnum::SHOWCASE->value => $this->tab == RawMaterialTabsEnum::SHOWCASE->value ?
                     fn () => GetRawMaterialShowcase::run($rawMaterial)
@@ -181,7 +179,7 @@ class ShowRawMaterial extends OrgAction
 
         return match ($routeName) {
             'grp.org.productions.show.infrastructure.dashboard' => [
-                'label' => $rawMaterial->cide,
+                'label' => $rawMaterial->code,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [

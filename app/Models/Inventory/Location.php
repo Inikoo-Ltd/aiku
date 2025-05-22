@@ -29,7 +29,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Spatie\Tags\HasTags;
 
 /**
  * App\Models\Inventory\Location
@@ -69,7 +68,6 @@ use Spatie\Tags\HasTags;
  * @property-read Organisation $organisation
  * @property-read Collection<int, Pallet> $pallets
  * @property-read Collection<int, PickingRoute> $pickingRoutes
- * @property Collection<int, \Spatie\Tags\Tag> $tags
  * @property-read \App\Models\Inventory\LocationStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
  * @property-read \App\Models\Inventory\Warehouse $warehouse
@@ -79,13 +77,7 @@ use Spatie\Tags\HasTags;
  * @method static Builder<static>|Location newQuery()
  * @method static Builder<static>|Location onlyTrashed()
  * @method static Builder<static>|Location query()
- * @method static Builder<static>|Location withAllTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static Builder<static>|Location withAllTagsOfAnyType($tags)
- * @method static Builder<static>|Location withAnyTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static Builder<static>|Location withAnyTagsOfAnyType($tags)
- * @method static Builder<static>|Location withAnyTagsOfType(array|string $type)
  * @method static Builder<static>|Location withTrashed()
- * @method static Builder<static>|Location withoutTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
  * @method static Builder<static>|Location withoutTrashed()
  * @mixin Eloquent
  */
@@ -96,7 +88,6 @@ class Location extends Model implements Auditable
     use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
-    use HasTags;
     use InWarehouse;
 
     protected $casts = [

@@ -28,7 +28,6 @@ use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
-use App\Actions\Helpers\Tag\GetTagOptions;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -58,8 +57,6 @@ Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWhole
 
 Route::get('fulfilment-customer/{fulfilmentCustomer}/storing-pallets', GetFulfilmentCustomerStoringPallets::class)->name('fulfilment-customer.storing-pallets.index');
 Route::get('fulfilment-customer/{fulfilmentCustomer}/audit/{storedItemAudit}/stored-items', GetPalletAuditStoredItems::class)->name('fulfilment-customer.audit.stored-items.index');
-
-Route::get('tags', GetTagOptions::class)->name('tags');
 
 Route::get('email/templates/seeded', GetSeededEmailTemplates::class)->name('email_templates.seeded');
 Route::get('email/templates/outboxes/{outbox:id}', GetOutboxEmailTemplates::class)->name('email_templates.outbox');

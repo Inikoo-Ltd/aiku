@@ -15,7 +15,6 @@ use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\UI\CRM\ProspectsQueriesTabsEnum;
 use App\Http\Resources\CRM\ProspectQueriesResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Tag\TagResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Prospect;
@@ -28,7 +27,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\Tags\Tag;
 
 class IndexProspectQueries extends InertiaAction
 {
@@ -40,11 +38,7 @@ class IndexProspectQueries extends InertiaAction
     {
         $this->canEdit = $request->user()->authTo('crm.prospects.edit');
 
-        return
-            (
-                $request->user()->tokenCan('root') or
-                $request->user()->authTo('crm.prospects.view')
-            );
+        return $request->user()->authTo('crm.prospects.view');
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -146,8 +140,6 @@ class IndexProspectQueries extends InertiaAction
                     'current'    => $this->tab,
                     'navigation' => ProspectsQueriesTabsEnum::navigation(),
                 ],
-
-                'tags' => TagResource::collection(Tag::all()),
 
 
                 ProspectsQueriesTabsEnum::LISTS->value => $this->tab == ProspectsQueriesTabsEnum::LISTS->value ?

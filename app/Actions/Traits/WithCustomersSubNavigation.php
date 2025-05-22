@@ -50,28 +50,17 @@ trait WithCustomersSubNavigation
             ]
         ];
 
-        $meta[] = [
-            // 'route'     => [
-            //     'name'       => 'grp.org.shops.show.crm.prospects.tags.index',
-            //     'parameters' => $request->route()->originalParameters()
-            // ],
-            'number'   => $this->parent->crmStats->number_tags,
-            'label'    => __('Tags'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-tags',
-                'tooltip' => __('tags')
-            ]
-        ];
+
 
         $meta[] = [
             'route'     => [
                 'name'       => 'grp.org.shops.show.crm.polls.index',
                 'parameters' => $request->route()->originalParameters()
             ],
-            'number'   => $this->parent->crmStats->number_tags,
+            'number'   => $this->parent->crmStats->number_polls,
             'label'    => __('Polls'),
             'leftIcon' => [
-                'icon'    => 'fal fa-tags',
+                'icon'    => 'fal fa-poll',
                 'tooltip' => __('polls')
             ]
         ];

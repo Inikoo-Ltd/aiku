@@ -11,10 +11,8 @@ namespace App\Actions\Comms\Mailshot\UI;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Http\Resources\Tag\TagResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
-use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Inertia\Inertia;
@@ -80,7 +78,6 @@ class EditMailshot extends OrgAction
                     'options'  => [
                         'query'                  => IndexProspects::run(parent: $mailshot->shop, prefix: null, scope: 'all'),
                         'custom_prospects_query' => '',
-                        'tags'                   => TagResource::collection(Tag::where('type', 'crm')->get()),
                     ],
                     'full'     => true,
                     'value'    => [

@@ -8,6 +8,7 @@ export interface Location {
     slug: string,
     warehouse_area_slug: string,
     warehouse_slug: string
+    organisation_slug: string,
     code: string
     status: string
     stock_value: string

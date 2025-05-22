@@ -21,7 +21,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
-use App\Http\Resources\Tag\TagResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -31,7 +30,6 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Dropshipping\WooCommerceUser;
-use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -378,7 +376,6 @@ class IndexProducts extends OrgAction
                         ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
-                $table->column(key: 'tags', label: __('tags'), canBeHidden: false);
 
 
                 if ($parent instanceof Collection || $parent instanceof ShopifyUser) {
@@ -596,17 +593,6 @@ class IndexProducts extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'                       => $routes,
-                'tagRoute'                     => [
-                    'store'  => [
-                        'name'       => 'grp.models.product.tag.store',
-                        'parameters' => []
-                    ],
-                    'update' => [
-                        'name'       => 'grp.models.product.tag.attach',
-                        'parameters' => []
-                    ],
-                ],
-                'tagsList'                     => TagResource::collection(Tag::where('type', 'catalogue')->get()),
                 'data'                         => ProductsResource::collection($products),
                 'tabs'                         => [
                     'current'    => $this->tab,

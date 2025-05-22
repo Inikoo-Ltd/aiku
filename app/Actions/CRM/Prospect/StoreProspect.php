@@ -10,7 +10,6 @@ namespace App\Actions\CRM\Prospect;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
 use App\Actions\CRM\Prospect\Search\ProspectRecordSearch;
-use App\Actions\CRM\Prospect\Tags\SyncTagsProspect;
 use App\Actions\Helpers\Query\HydrateModelTypeQueries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProspects;
@@ -48,9 +47,6 @@ class StoreProspect extends OrgAction
      */
     public function handle(Shop $shop, array $modelData): Prospect
     {
-        $tags = Arr::get($modelData, 'tags', []);
-        Arr::forget($modelData, 'tags');
-
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
 
@@ -66,10 +62,11 @@ class StoreProspect extends OrgAction
 
 
         if (
-            !$isValidEmail and
-            !Arr::has($modelData, 'phone')
-            and (!Arr::has($modelData, 'state')
-                or Arr::get($modelData, 'state') == ProspectStateEnum::NO_CONTACTED
+            !$isValidEmail
+            && !Arr::has($modelData, 'phone')
+            && (
+                !Arr::has($modelData, 'state')
+                || Arr::get($modelData, 'state') == ProspectStateEnum::NO_CONTACTED
             )
         ) {
             data_set($modelData, 'state', ProspectStateEnum::FAIL);
@@ -104,9 +101,6 @@ class StoreProspect extends OrgAction
 
         HydrateModelTypeQueries::dispatch('Prospect')->delay($this->hydratorsDelay);
 
-        if ($tags && count($tags)) {
-            SyncTagsProspect::make()->action($prospect, ['tags' => $tags, 'type' => 'crm']);
-        }
 
         $prospect->refresh();
 
@@ -135,8 +129,6 @@ class StoreProspect extends OrgAction
             'address'           => ['sometimes', 'nullable', new ValidAddress()],
             'contact_name'      => ['nullable', 'string', 'max:255'],
             'company_name'      => ['nullable', 'string', 'max:255'],
-            'tags'              => ['sometimes', 'nullable', 'array'],
-            'tags.*'            => ['string'],
             'email'             => [
                 $this->strict ? 'email' : 'string:500',
                 new IUnique(

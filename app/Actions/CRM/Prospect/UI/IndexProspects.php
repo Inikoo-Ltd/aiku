@@ -21,7 +21,6 @@ use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Enums\UI\CRM\ProspectsTabsEnum;
 use App\Http\Resources\CRM\ProspectsResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Tag\TagResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Prospect;
@@ -138,7 +137,7 @@ class IndexProspects extends OrgAction
         return $elements;
     }
 
-    // if $scope is set as $scope='all' then php artisan ide-helper:meta will fail!
+    // if $scope is set as $scope= all, then php artisan ide-helper:meta will fail!
     public function handle(Group|Organisation|Shop|Fulfilment|Tag $parent, $prefix = null, $scope): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -175,10 +174,6 @@ class IndexProspects extends OrgAction
             $queryBuilder->where('prospects.organisation_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $queryBuilder->where('prospects.group_id', $parent->id);
-        } elseif ($parent instanceof Tag) {
-            $queryBuilder->leftJoin('taggables', 'taggables.tag_id', '=', 'tags.id')
-                ->where('taggables.taggable_id', $parent->id)
-                ->where('taggables.taggable_type', 'Prospect');
         }
 
         if ($scope == 'contacted') {
@@ -274,18 +269,6 @@ class IndexProspects extends OrgAction
                 ? ProspectsResource::collection($prospects)
                 : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
 
-            'tagRoute' => [
-                'store'  => [
-                    'name'       => 'grp.models.prospect.tag.store',
-                    'parameters' => [],
-                ],
-                'update' => [
-                    'name'       => 'grp.models.prospect.tag.attach',
-                    'parameters' => [],
-                ],
-            ],
-
-            'tagsList' => TagResource::collection(Tag::where('type', 'crm')->get()),
         ];
 
         $tabs = [

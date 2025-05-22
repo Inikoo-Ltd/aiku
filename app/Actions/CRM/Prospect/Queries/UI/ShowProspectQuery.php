@@ -15,9 +15,7 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\CRM\Prospect\ShowProspectTabsEnum;
 use App\Http\Resources\CRM\ProspectsResource;
-use App\Http\Resources\Tag\TagResource;
 use App\Models\Helpers\Query;
-use App\Models\Helpers\Tag;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -72,7 +70,6 @@ class ShowProspectQuery extends InertiaAction
                     'navigation' => ShowProspectTabsEnum::navigation()
                 ],
 
-                'tags' => TagResource::collection(Tag::all()),
 
                 ShowProspectTabsEnum::PROSPECTS->value => $this->tab == ShowProspectTabsEnum::PROSPECTS->value ?
                     fn () => ProspectsResource::collection(GetQueryEloquentQueryBuilder::run($query)->paginate())

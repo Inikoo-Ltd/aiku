@@ -4,7 +4,7 @@
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -12,14 +12,12 @@ import { faWarehouse, faMapSigns } from '@fal'
 import { faFileExport } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { get } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { ref } from "vue"
 import { trans } from 'laravel-vue-i18n'
 import { routeType } from '@/types/route'
-import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
+import { Menu, MenuButton, MenuItems } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { UploadPallet } from '@/types/Pallet'
 
 library.add(faWarehouse, faMapSigns, faFileExport)
@@ -41,9 +39,6 @@ const props = defineProps<{
     title: string
     pageHead: {}
     data: {}
-    tagsList: {
-        data: {}
-    }
     export: {
         route: routeType
         columns: {
@@ -186,18 +181,9 @@ const onExport = () => {
         </template>
     </PageHeading>
     
-    <!-- <pre>{{ export }}</pre> -->
-    <TableLocations :data="data" :tagsList="tagsList.data" />
+    <TableLocations :data="data"  />
 
-    <!-- <UploadExcel
-        v-model="isModalUploadOpen"
-        scope="Pallet delivery"
-        :title="{
-            label: trans('Upload your new pallet deliveries'),
-            information: 'The list of column file: customer_reference, notes, stored_items'
-        }"
-        progressDescription="Adding Pallet Deliveries"
-    /> -->
+
 
     <UploadExcel
         v-model="isModalUploadOpen"

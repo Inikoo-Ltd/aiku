@@ -35,8 +35,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Spatie\Tags\HasTags;
-use Spatie\Tags\Tag;
 
 /**
  * App\Models\CRM\Prospect
@@ -89,7 +87,6 @@ use Spatie\Tags\Tag;
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read Group $group
  * @property-read Organisation $organisation
- * @property Collection<int, Tag> $tags
  * @property-read Shop $shop
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
  * @property-read UniversalSearch|null $universalSearch
@@ -98,13 +95,7 @@ use Spatie\Tags\Tag;
  * @method static Builder<static>|Prospect newQuery()
  * @method static Builder<static>|Prospect onlyTrashed()
  * @method static Builder<static>|Prospect query()
- * @method static Builder<static>|Prospect withAllTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static Builder<static>|Prospect withAllTagsOfAnyType($tags)
- * @method static Builder<static>|Prospect withAnyTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static Builder<static>|Prospect withAnyTagsOfAnyType($tags)
- * @method static Builder<static>|Prospect withAnyTagsOfType(array|string $type)
  * @method static Builder<static>|Prospect withTrashed()
- * @method static Builder<static>|Prospect withoutTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
  * @method static Builder<static>|Prospect withoutTrashed()
  * @mixin Eloquent
  */
@@ -114,7 +105,6 @@ class Prospect extends Model implements Auditable
     use HasSlug;
     use HasUniversalSearch;
     use HasFactory;
-    use HasTags;
     use InCustomer;
     use HasAddress;
     use HasAddresses;

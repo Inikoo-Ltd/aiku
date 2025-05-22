@@ -22,7 +22,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Spatie\Tags\HasTags;
 
 /**
  *
@@ -51,24 +50,16 @@ use Spatie\Tags\HasTags;
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read Model|\Eloquent $parent
  * @property-read Media|null $screenshot
- * @property \Illuminate\Database\Eloquent\Collection<int, \Spatie\Tags\Tag> $tags
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate withAllTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate withAllTagsOfAnyType($tags)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate withAnyTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate withAnyTagsOfAnyType($tags)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate withAnyTagsOfType(array|string $type)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate withoutTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
  * @mixin \Eloquent
  */
 class EmailTemplate extends Model implements HasMedia, Auditable
 {
     use HasFactory;
     use InShop;
-    use HasTags;
     use HasHistory;
     use HasSlug;
     use HasImage;

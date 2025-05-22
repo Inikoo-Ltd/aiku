@@ -15,8 +15,6 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ProductionTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ProductionResource;
-use App\Http\Resources\Tag\TagResource;
-use App\Models\Helpers\Tag;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -101,7 +99,6 @@ class ShowProduction extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => ProductionTabsEnum::navigation(),
                 ],
-                'tagsList'      => TagResource::collection(Tag::all()),
 
                 ProductionTabsEnum::SHOWCASE->value => $this->tab == ProductionTabsEnum::SHOWCASE->value ?
                     fn () => GetProductionShowcase::run($production)

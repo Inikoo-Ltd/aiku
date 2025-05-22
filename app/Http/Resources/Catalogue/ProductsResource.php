@@ -56,7 +56,6 @@ class ProductsResource extends JsonResource
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
             'stock'                     => $this->available_quantity,
-            'tags'                      => $this->tags()->pluck('slug')->toArray(),
             'customers_invoiced_all'    => $this->customers_invoiced_all,
             'invoices_all'              => $this->invoices_all,
             'sales_all'                 => $this->sales_all,

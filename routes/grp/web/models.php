@@ -147,8 +147,6 @@ use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\GoogleDrive\CallbackClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
-use App\Actions\Helpers\Tag\StoreTag;
-use App\Actions\Helpers\Tag\SyncTagsModel;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
@@ -396,8 +394,6 @@ Route::delete('recurring-bill-transaction/{recurringBillTransaction:id}', Delete
 
 Route::name('product.')->prefix('product')->group(function () {
     Route::post('/product/', StoreProduct::class)->name('store');
-    Route::post('/{product:id}/tags', [StoreTag::class, 'inProduct'])->name('tag.store');
-    Route::patch('/{product:id}/tags/attach', [SyncTagsModel::class, 'inProduct'])->name('tag.attach');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
 });
@@ -743,10 +739,6 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
 });
 
-Route::name('prospect.')->prefix('prospect/{prospect:id}')->group(function () {
-    Route::post('/tags', [StoreTag::class, 'inProspect'])->name('tag.store');
-    Route::patch('/tags/attach', [SyncTagsModel::class, 'inProspect'])->name('tag.attach');
-});
 Route::name('email.')->prefix('email/')->group(function () {
     Route::name('snapshot.')->prefix('snapshot/{snapshot:id}')->group(function () {
         Route::patch('/update', UpdateEmailUnpublishedSnapshot::class)->name('update');

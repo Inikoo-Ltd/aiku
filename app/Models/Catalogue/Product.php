@@ -36,7 +36,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Spatie\Tags\HasTags;
 
 /**
  *
@@ -101,7 +100,6 @@ use Spatie\Tags\HasTags;
  * @property-read Organisation $organisation
  * @property-read Portfolio|null $portfolio
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $productVariants
- * @property \Illuminate\Database\Eloquent\Collection<int, \Spatie\Tags\Tag> $tags
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
@@ -113,13 +111,7 @@ use Spatie\Tags\HasTags;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAllTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAllTagsOfAnyType($tags)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAnyTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAnyTagsOfAnyType($tags)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAnyTagsOfType(array|string $type)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTrashed()
  * @mixin \Eloquent
  */
@@ -132,7 +124,6 @@ class Product extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasFactory;
     use HasImage;
-    use HasTags;
 
     protected $guarded = [];
 
