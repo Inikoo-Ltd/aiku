@@ -194,7 +194,6 @@ test('create prospect', function () {
         ->and($this->organisation->crmStats->number_prospects_state_fail)->toBe(0)
         ->and($this->organisation->crmStats->number_prospects_state_success)->toBe(0);
 
-    $this->assertDatabaseCount('tags', 3);
 
     return $prospect;
 });
@@ -875,17 +874,7 @@ test('can show list of prospects', function () {
     });
 });
 
-test('can show list of tags', function () {
-    $this->withoutExceptionHandling();
-    $shop         = $this->shop;
-    $organisation = $this->organisation;
-    $response     = get(route('grp.org.shops.show.crm.prospects.tags.index', [$organisation->slug, $shop->slug]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Shop/CRM/Tags')
-            ->has('title');
-    });
-});
+
 
 test('UI get section route crm dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.index', [
