@@ -21,16 +21,8 @@ class GetProductCategoryShowcase
     public function handle(ProductCategory $productCategory): array
     {
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $urlMaster = null;
-            if ($productCategory->master_product_category_id) {
-                $urlMaster = route('grp.masters.departments.show', [
-                    'masterDepartment' => $productCategory->masterProductCategory->slug,
-                ]);
-            }
-
 
             $data = [
-                'url_master' => $urlMaster,
                 'department' => DepartmentResource::make($productCategory),
                 'families'   => FamilyResource::collection($productCategory->getFamilies()),
             ];
