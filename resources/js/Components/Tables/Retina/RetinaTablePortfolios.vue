@@ -52,7 +52,7 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-	
+
 
 	<!-- <pre>{{ data.data[0] }}</pre> -->
 	<Table :resource="data" :name="tab" class="mt-5">
@@ -61,6 +61,12 @@ const locale = inject('locale', aikuLocaleStructure)
 			<Link :href="productRoute(product)" class="primaryLink">
 				{{ product["slug"] }}
 			</Link>
+		</template>
+
+		<template #cell(platform_product_id)="{ item }">
+			<div>
+				{{ item.platform_product_id }}
+			</div>
 		</template>
 
 		<template #cell(quantity_left)="{ item }">

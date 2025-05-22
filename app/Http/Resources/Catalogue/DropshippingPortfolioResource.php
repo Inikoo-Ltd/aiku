@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -51,6 +52,13 @@ class DropshippingPortfolioResource extends JsonResource
             $image = $this->item->imageSources(64, 64);
         }
 
+        $platformProductId = [];
+        if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $platformProductId = [
+                'platform_product_id' => $this->shopifyPortfolio?->shopify_product_id
+            ];
+        }
+
         return [
             'id'                        => $this->id,
             'item_id'                   => $itemId,
@@ -59,12 +67,14 @@ class DropshippingPortfolioResource extends JsonResource
             'currency_code'             => $this->item?->currency?->code,
             'name'                      => $this->item?->name ?? $this->item_name ?? $this->item?->code,
             'quantity_left'             => $quantity,
+            'platform_product_id'       => $this->platform_product_id,
             'weight'                    => $weight,
             'price'                     => $price,
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
+            ...$platformProductId,
             'delete_product' => [
                 'method' => 'delete',
                 'name'       => 'retina.models.dropshipping.shopify_user.product.delete',

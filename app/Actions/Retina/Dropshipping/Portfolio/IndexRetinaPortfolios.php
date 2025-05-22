@@ -34,6 +34,10 @@ class IndexRetinaPortfolios extends RetinaAction
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
 
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $query->with(['shopifyPortfolio']);
+        }
+
         $query->with(['item']);
 
         if ($this->customer->is_fulfilment) {
@@ -182,6 +186,9 @@ class IndexRetinaPortfolios extends RetinaAction
                 ]);
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+                $table->column(key: 'platform_product_id', label: __('Platform Product Id'), canBeHidden: false, sortable: true, searchable: true);
+            }
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
