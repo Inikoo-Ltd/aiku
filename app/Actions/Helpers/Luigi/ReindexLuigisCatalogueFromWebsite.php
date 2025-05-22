@@ -2,7 +2,7 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 21-05-2025, Bali, Indonesia
+ * Created on: 22-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
  *
@@ -21,8 +21,7 @@ class ReindexLuigisCatalogueFromWebsite
 {
     use AsAction;
 
-    public string $commandSignature = 'test_search';
-
+    public string $commandSignature = 'luigis:reindex_catalogue {website?}';
 
 
     public function digest($key, $content_type, $method, $endpoint, $date): string
@@ -43,11 +42,11 @@ class ReindexLuigisCatalogueFromWebsite
 
 
 
-    private function request(Website $website, string $endPoint, string $method = 'post', array $body)
+    private function request(Website $website, string $endPoint, string $method = 'post', array $body, $compressed = false)
     {
         $content_type = 'application/json; charset=utf-8';
 
-        $offsetSeconds = 0;
+        $offsetSeconds = 6;
         $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
         [$publicKey, $privateKey] = $this->getAccessToken($website);
@@ -60,13 +59,23 @@ class ReindexLuigisCatalogueFromWebsite
             $date
         );
 
-
-        $response = Http::withHeaders([
+        $header = [
             'Accept-Encoding' => 'gzip',
             'Content-Type'    => $content_type,
             'Date'            => $date,
-            'Authorization'   => "Hello {$publicKey}:{$signature}",
-        ])->{strtolower($method)}('https://live.luigisbox.com/'.$endPoint, $body);
+            'Authorization'  => "Hello {$publicKey}:{$signature}",
+        ];
+
+        if ($compressed) {
+            $header['Content-Encoding'] = 'gzip';
+            $body = gzencode(json_encode($body), 9);
+        } else {
+            $body = json_encode($body);
+        }
+
+        $response = Http::withHeaders($header)
+            ->withBody($body, $content_type)
+            ->{strtolower($method)}('https://live.luigisbox.com/'.$endPoint);
 
 
         if ($response->failed()) {
@@ -83,20 +92,18 @@ class ReindexLuigisCatalogueFromWebsite
     {
         $webpages = $website->webpages()
             ->with('model')
+            ->with('model.family.webpage')
             ->where('state', 'live')
             ->where('type', WebpageTypeEnum::CATALOGUE)
             ->where('model_type', 'Product')
             ->get();
 
-        $body = [
-            'objects' => []
-        ];
+        $objects = [];
         foreach ($webpages as $webpage) {
-
             $product = $webpage->model;
+            $family = $product?->family;
 
-
-            $body['objects'][] = [
+            $objects[] = [
                 "identity" => "$website->group_id:$website->organisation_id:$website->shop_id:$website->id:$webpage->id",
                 "type" => "item",
                 "fields" => array_filter([
@@ -106,29 +113,61 @@ class ReindexLuigisCatalogueFromWebsite
                     "stock_qty" => $product->available_quantity ?? 0,
                     "price" => $product->price ?? 0,
                     "formatted_price" => $product->currency->symbol . $product->price . '/' . $product->unit,
-                    "image_link" => Arr::get($product->imageSources(400, 400), 'original'),
+                    "image_link" => Arr::get($product->imageSources(200, 200), 'original'),
                     "product_code" => $product->code,
                     "introduced_at" => $product?->created_at ? $product->created_at->format('c') : null,
-                    "category" => $product?->family?->webpage?->title,
                     "description" => $product->description,
                 ]),
+                ...($family && $family?->webpage ? [
+                    "nested" => [
+                        [
+                            "type" => "category",
+                            "identity" => $family?->webpage?->url,
+                            "fields" => array_filter([
+                                "title" => $family?->webpage?->title,
+                                "web_url" => $family?->webpage?->getFullUrl(),
+                                "description" => $family?->webpage?->description,
+                                "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
+                            ]),
+                        ],
+                    ],
+                ] : []),
             ];
-
-            dd($body);
         }
 
+        if (count($objects) > 1000) {
+            $chunks = array_chunk($objects, 1000);
+            foreach ($chunks as $chunk) {
+                $body = [
+                    'objects' => $chunk
+                ];
+                if (count($chunk) >= 1000) {
+                    $this->request($website, '/v1/content', 'post', $body, true);
+                } else {
+                    $this->request($website, '/v1/content', 'post', $body);
+                }
+            }
+            return;
+        }
 
-        $this->request($website, '/v1/content', 'post', $body);
+        $body = [
+            'objects' => $objects
+        ];
+        $this->request($website, '/v1/content', 'post', $body, true);
+
     }
 
     /**
      * @throws \Laravel\Octane\Exceptions\DdException
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function asCommand()
+    public function asCommand($command)
     {
-        $website = Website::find(11);
-
+        if ($command->argument('website')) {
+            $website = Website::find($command->argument('website'));
+        } else {
+            $website = Website::first();
+        }
         $this->handle($website);
     }
 }
