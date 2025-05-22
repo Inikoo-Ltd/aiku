@@ -117,6 +117,14 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'G-XXXXXXXXXX',
                     'required' => false,
                 ],
+                'luigisbox_private_key' => [
+                    'information' => __('Private key for API Luigi search'),
+                    'type'     => 'purePassword',
+                    'label'    => __('Luigi Search Private Key'),
+                    'value'    => Arr::get($website->settings, "luigisbox.private_key"),
+                    'placeholder' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    'required' => false,
+                ],
                 'luigisbox_tracker_id' => [
                     'information' => __('For Luigi search in the header'),
                     'type'     => 'input',
