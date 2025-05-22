@@ -21,6 +21,10 @@ const props = defineProps<{
         code: string
         icon: string
     }
+    customer_sales_channel: {
+        reference: string
+        slug: string
+    }
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -34,7 +38,7 @@ const platformImage = {
 </script>
 
 <template>
-    <div class="relative isolate py-12 px-8">
+    <div class="relative isolate py-12 px-8 max-w-6xl">
         <!-- <pre>{{ platform }}</pre> -->
         <!-- <pre>{{ platformData }}</pre> -->
         <!-- <div class="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl"
@@ -49,7 +53,7 @@ const platformImage = {
         </div> -->
 
         <div class="flex justify-between">
-            <h3 class="text-2xl font-semibold">Your stats <span class="text-gray-500 font-normal">({{ platform.name }})</span></h3>
+            <h3 class="text-2xl font-semibold">{{ platform.name }} <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span></h3>
             <img
                 v-tooltip="platform.name"
                 :src="platformImage[platform.code]"

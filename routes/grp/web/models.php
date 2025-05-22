@@ -25,6 +25,7 @@ use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -299,6 +300,9 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::patch('', UpdateProductCategory::class)->name('update');
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
+});
+Route::prefix('sub-department/{subDepartment}')->name('sub-department.')->group(function () {
+    Route::post('families/attach', AttachFamiliesToSubDepartment::class)->name('families.attach');
 });
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete')->withoutScopedBindings();
