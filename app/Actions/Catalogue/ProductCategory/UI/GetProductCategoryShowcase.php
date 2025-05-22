@@ -29,7 +29,10 @@ class GetProductCategoryShowcase
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $data = [
                 'department' => DepartmentResource::make($productCategory->department),
-                'families'   => FamilyResource::collection($productCategory->getFamilies()),
+                'families'   => FamilyResource::collection(ProductCategory::query()
+                ->where('sub_department_id', $productCategory->id)
+                ->where('type', ProductCategoryTypeEnum::FAMILY)
+                ->get()),
             ];
         } else {
             $data = [
