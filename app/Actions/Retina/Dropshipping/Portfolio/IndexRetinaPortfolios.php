@@ -143,7 +143,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 ] : [],
                 'content' => [
                     'portfolio_empty' => [
-                        'title' => __("You don't any items in your portfolio"),
+                        'title' => __("You don't have any items in your portfolio"),
                         'description' => __("To get started, add products to your portfolios."),
                         'separation' => __("or"),
                         'add_button' => __("Add Portfolio"),
