@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexHandlingDeliveryNoteItems;
-use App\Actions\Dispatching\Picking\UI\IndexPickings;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
@@ -23,7 +22,6 @@ use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\HandlingDeliveryNoteItemsResource;
-use App\Http\Resources\Dispatching\PickingsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -110,15 +108,15 @@ class ShowDeliveryNote extends OrgAction
             $timestamp = $timestamp ?: null;
             // dd($state);
             $label = $state->labels()[$state->value];
-            if($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
+            if ($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
                 if (
-                in_array($state, [DeliveryNoteStateEnum::QUEUED])
+                    in_array($state, [DeliveryNoteStateEnum::QUEUED])
                 ) {
                     $label .= ' (' . $deliveryNote->picker->contact_name . ')';
                 }
             } elseif ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
                 if (
-                in_array($state, [DeliveryNoteStateEnum::HANDLING])
+                    in_array($state, [DeliveryNoteStateEnum::HANDLING])
                 ) {
                     $label .= ' (' . $deliveryNote->picker->contact_name . ')';
                 }
@@ -137,166 +135,166 @@ class ShowDeliveryNote extends OrgAction
 
         $actions = [];
 
-            $actions = match ($deliveryNote->state) {
-                DeliveryNoteStateEnum::UNASSIGNED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Unassigned'),
-                        'label'   => __('Put in Queue'),
-                        'key'     => 'to-queue',
-                    ]
-                ],
-                DeliveryNoteStateEnum::QUEUED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Change picker'),
-                        'label'   => __('Change Picker'),
-                        'key'     => 'change-picker',
-                    ]
-                ],
-                DeliveryNoteStateEnum::HANDLING => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Change picker'),
-                        'label'   => __('Change Picker'),
-                        'key'     => 'change-picker',
-                    ]
-                ],
-                DeliveryNoteStateEnum::PACKED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Finalised'),
-                        'label'   => __('Finalised'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.delivery-note.state.finalised',
-                            'parameters' => [
-                                'deliveryNote' => $deliveryNote->id
-                            ]
+        $actions = match ($deliveryNote->state) {
+            DeliveryNoteStateEnum::UNASSIGNED => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Unassigned'),
+                    'label'   => __('Put in Queue'),
+                    'key'     => 'to-queue',
+                ]
+            ],
+            DeliveryNoteStateEnum::QUEUED => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Change picker'),
+                    'label'   => __('Change Picker'),
+                    'key'     => 'change-picker',
+                ]
+            ],
+            DeliveryNoteStateEnum::HANDLING => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Change picker'),
+                    'label'   => __('Change Picker'),
+                    'key'     => 'change-picker',
+                ]
+            ],
+            DeliveryNoteStateEnum::PACKED => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Finalised'),
+                    'label'   => __('Finalised'),
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery-note.state.finalised',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ],
-                DeliveryNoteStateEnum::FINALISED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Settled'),
-                        'label'   => __('Settled'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.delivery-note.state.settled',
-                            'parameters' => [
-                                'deliveryNote' => $deliveryNote->id
-                            ]
+                ]
+            ],
+            DeliveryNoteStateEnum::FINALISED => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Settled'),
+                    'label'   => __('Settled'),
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery-note.state.settled',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ],
-                default => []
-            };
+                ]
+            ],
+            default => []
+        };
 
-            return Inertia::render(
+        return Inertia::render(
             'Org/Dispatching/DeliveryNote',
             [
-                'title'         => __('delivery note'),
-                'breadcrumbs'   => $this->getBreadcrumbs(
-                    $deliveryNote,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters(),
+            'title'         => __('delivery note'),
+            'breadcrumbs'   => $this->getBreadcrumbs(
+                $deliveryNote,
+                $request->route()->getName(),
+                $request->route()->originalParameters(),
+            ),
+            'navigation'    => [
+                'previous' => $this->getPrevious($deliveryNote, $request),
+                'next'     => $this->getNext($deliveryNote, $request),
+            ],
+            'pageHead'      => [
+                'title'   => $deliveryNote->reference,
+                'model'   => __('Delivery Note'),
+                'icon'    => [
+                    'icon'  => 'fal fa-truck',
+                    'title' => __('delivery note')
+                ],
+                'actions' => $actions
+            ],
+            'tabs'          => [
+                'current'    => $this->tab,
+                'navigation' => DeliveryNoteTabsEnum::navigation($deliveryNote)
+            ],
+            'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
+
+            'timelines' => $finalTimeline,
+            'box_stats' => [
+                'state'    => $deliveryNote->state,
+                'customer' => array_merge(
+                    CustomerResource::make($deliveryNote->customer)->getArray(),
+                    [
+                        'addresses' => [
+                            'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+                        ],
+                    ]
                 ),
-                'navigation'    => [
-                    'previous' => $this->getPrevious($deliveryNote, $request),
-                    'next'     => $this->getNext($deliveryNote, $request),
+                'products' => [
+                    'estimated_weight' => $estWeight,
+                    'number_items'     => $deliveryNote->stats->number_items,
                 ],
-                'pageHead'      => [
-                    'title'   => $deliveryNote->reference,
-                    'model'   => __('Delivery Note'),
-                    'icon'    => [
-                        'icon'  => 'fal fa-truck',
-                        'title' => __('delivery note')
-                    ],
-                    'actions' => $actions
+                'picker'   => $deliveryNote->picker,
+                'packer'   => $deliveryNote->packer,
+            ],
+            'routes'    => [
+                'update'         => [
+                    'name'       => 'grp.models.delivery-note.update',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
                 ],
-                'tabs'          => [
-                    'current'    => $this->tab,
-                    'navigation' => DeliveryNoteTabsEnum::navigation($deliveryNote)
+                'set_queue'      => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery-note.state.in-queue',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                        //employee
+                    ]
                 ],
-                'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
-
-                'timelines' => $finalTimeline,
-                'box_stats' => [
-                    'state'    => $deliveryNote->state,
-                    'customer' => array_merge(
-                        CustomerResource::make($deliveryNote->customer)->getArray(),
-                        [
-                            'addresses' => [
-                                'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
-                            ],
-                        ]
-                    ),
-                    'products' => [
-                        'estimated_weight' => $estWeight,
-                        'number_items'     => $deliveryNote->stats->number_items,
-                    ],
-                    'picker'   => $deliveryNote->picker,
-                    'packer'   => $deliveryNote->packer,
+                'pickers_list'   => [
+                    'name'       => 'grp.json.employees.pickers',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug
+                    ]
                 ],
-                'routes'    => [
-                    'update'         => [
-                        'name'       => 'grp.models.delivery-note.update',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                    'set_queue'      => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery-note.state.in-queue',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                            //employee
-                        ]
-                    ],
-                    'pickers_list'   => [
-                        'name'       => 'grp.json.employees.pickers',
-                        'parameters' => [
-                            'organisation' => $deliveryNote->organisation->slug
-                        ]
-                    ],
-                    'packers_list'   => [
-                        'name'       => 'grp.json.employees.packers',
-                        'parameters' => [
-                            'organisation' => $deliveryNote->organisation->slug
-                        ]
-                    ],
-                    'exportPdfRoute' => [
-                        'name'       => 'grp.org.accounting.invoices.download',
-                        'parameters' => [
-                            'organisation' => $deliveryNote->organisation->slug,
-                            'invoice'      => $deliveryNote->slug
-                        ]
-                    ],
+                'packers_list'   => [
+                    'name'       => 'grp.json.employees.packers',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug
+                    ]
                 ],
-                'delivery_note_state' => [
-                    'value' => $deliveryNote->state,
-                    'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
+                'exportPdfRoute' => [
+                    'name'       => 'grp.org.accounting.invoices.download',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug,
+                        'invoice'      => $deliveryNote->slug
+                    ]
+                ],
+                ],
+            'delivery_note_state' => [
+                'value' => $deliveryNote->state,
+                'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
 
-                DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+            DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
+                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
+                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
-                DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
-                    fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
-                    : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
+            DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
+                fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
+                : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
             ]
         )
-            ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value))
-            ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
+        ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value))
+        ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
     }
 
     public function prepareForValidation(ActionRequest $request): void

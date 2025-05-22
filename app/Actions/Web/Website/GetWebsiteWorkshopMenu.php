@@ -13,7 +13,7 @@ class GetWebsiteWorkshopMenu
     public function handle(Website $website): array
     {
         return [
-            'menu'    => Arr::get($website->published_layout, 'menu', [])
+            'menu'    => Arr::get($website->unpublishedHeaderSnapshot, 'menu', [])
         ];
     }
 }

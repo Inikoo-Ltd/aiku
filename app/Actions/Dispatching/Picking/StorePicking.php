@@ -30,8 +30,7 @@ class StorePicking extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
-        if($deliveryNoteItem->deliveryNote->state != DeliveryNoteStateEnum::HANDLING)
-        {
+        if ($deliveryNoteItem->deliveryNote->state != DeliveryNoteStateEnum::HANDLING) {
             UpdateDeliveryNote::make()->action($deliveryNoteItem->deliveryNote, [
                 'state' => DeliveryNoteStateEnum::HANDLING
             ]);

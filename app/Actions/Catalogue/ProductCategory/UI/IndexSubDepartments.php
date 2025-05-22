@@ -137,7 +137,6 @@ class IndexSubDepartments extends OrgAction
                                 ]
                             ]
                         ] : null
-
                 )
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')

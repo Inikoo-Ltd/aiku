@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 22-05-2025-11h-14m
@@ -21,7 +22,7 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
             'condition' => false,
             'message' => ''
         ];
-        if($deliveryNoteItem->quantity_picked == $deliveryNoteItem->quantity_required) {
+        if ($deliveryNoteItem->quantity_picked == $deliveryNoteItem->quantity_required) {
             $fullWarning = [
                 'condition' => true,
                 'message' => __('The required quantity has already been fully picked. Do you really want to add more?')

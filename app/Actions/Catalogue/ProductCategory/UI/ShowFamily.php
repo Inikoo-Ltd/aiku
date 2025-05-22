@@ -129,12 +129,12 @@ class ShowFamily extends OrgAction
                 ],
 
                 FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
-                    fn() => GetProductCategoryShowcase::run($family)
-                    : Inertia::lazy(fn() => GetProductCategoryShowcase::run($family)),
+                    fn () => GetProductCategoryShowcase::run($family)
+                    : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
 
                 FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
-                    fn() => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                    : Inertia::lazy(fn() => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
+                    fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+                    : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
 
             ]

@@ -45,9 +45,7 @@ const props = defineProps<{
 }>()
 
 provide('isInWorkshop', true)
-
 const layout = inject('layout', layoutStructure)
-
 const confirm = useConfirm();
 const data = ref(props.webpage)
 const iframeClass = ref("w-full h-full")
@@ -475,10 +473,12 @@ watch(openedBlockSideEditor, (newValue) => {
 	sendToIframe({ key: 'activeBlock', value: newValue })
 })
 
+watch(currentView, (newValue) => {
+	iframeClass.value = setIframeView(newValue)
+})
+
 const fullScreeen = ref(false)
 
-
-// console.log('ewewqewq', useLiveUsers().liveUsersArray.filter(user => user.current_page?.route_name === layout.currentRoute))
 const compUsersEditThisPage = computed(() => {
 	return useLiveUsers().liveUsersArray.filter(user => user.current_page?.route_name === layout.currentRoute).map(user => user.name ?? user.username)
 })
@@ -515,7 +515,7 @@ const compUsersEditThisPage = computed(() => {
 			<div class="flex justify-between">
 				<!-- Section: Screenview -->
 				<div class="flex">
-					<ScreenView @screenView="(e) => {iframeClass = setIframeView(e), currentView = e}" v-model="currentView" />
+					<ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'Preview'" @click="openFullScreenPreview">
 						<FontAwesomeIcon :icon="faLowVision" fixed-width aria-hidden="true" />
 					</div>
@@ -529,14 +529,12 @@ const compUsersEditThisPage = computed(() => {
 						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
 					</div> -->
 				</div>
-
-				<!-- Users edit same page -->
+	<!-- Users edit same page -->
 				<div v-if="compUsersEditThisPage?.length > 1" v-tooltip="compUsersEditThisPage.join(', ') + trans('. Your changes may conflict each others.')" class="text-center bg-yellow-300 rounded my-1 flex items-center gap-x-1 px-2">
 					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width aria-hidden="true" />
 					{{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
 					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width aria-hidden="true" />
 				</div>
-
 				<!-- Tools: login-logout, edit-preview -->
 				<div class="flex gap-3 items-center px-4">
 					<ButtonPreviewLogin v-model="isPreviewLoggedIn"

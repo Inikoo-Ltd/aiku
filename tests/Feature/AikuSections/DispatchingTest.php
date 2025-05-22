@@ -222,13 +222,13 @@ test('store picking', function (DeliveryNote $deliveryNote) {
     $location = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
 
     $deliveryNoteItem = $deliveryNote->deliveryNoteItems->first();
-    expect($deliveryNoteItem)->toBeInstanceOf(DeliveryNoteItem::class); 
+    expect($deliveryNoteItem)->toBeInstanceOf(DeliveryNoteItem::class);
 
     $picking = StorePicking::make()->action($deliveryNoteItem, [
         'picker_id' => $this->user->id,
         'location_id' => $location->id
     ]);
-    
+
     expect($picking)->toBeInstanceOf(Picking::class);
 
     $picking->refresh();
@@ -248,17 +248,17 @@ test('update picking', function (Picking $picking) {
     expect($picking)->toBeInstanceOf(Picking::class)
         ->and(intval($picking->quantity_picked))->toBe(5);
     expect(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5);
-    
+
     //ALL
     $picking = UpdatePicking::make()->action($picking, [
         'quantity_picked' => 10
     ]);
-    
+
     $picking->refresh();
     expect($picking)->toBeInstanceOf(Picking::class)
         ->and(intval($picking->quantity_picked))->toBe(10);
     expect(intval($picking->deliveryNoteItem->quantity_picked))->toBe(10);
-    
+
     $picking->refresh();
 
     return $picking;
