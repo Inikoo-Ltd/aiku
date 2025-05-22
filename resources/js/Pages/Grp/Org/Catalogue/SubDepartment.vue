@@ -35,6 +35,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Image from '@/Components/Image.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { routeType } from '@/types/route'
 
 library.add(
     faFolder,
@@ -59,9 +60,19 @@ const props = defineProps<{
         current: string
         navigation: object
     }
-    customers: object
-    mailshots: object
-    products: object
+
+    routes: {
+        fetch_families: routeType
+        attach_families: routeType
+        detach_families: routeType
+    }
+
+    showcase: {
+
+    }
+    customers: {}
+    mailshots: {}
+    products: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -84,9 +95,11 @@ const component: Component = computed(() => {
 const isOpenModalPortfolios = ref(false)
 const isLoadingSubmit = ref(false)
 const onSubmitAddItem = async (idProduct: number[]) => {
-    router.post(route('grp.models.sub-department.families.attach', { subDepartment: layout.currentParams.subDepartment} ), {
+    router.post(route(props.routes.attach_families.name, props.routes.attach_families.parameters ),
+    {
         families_id: idProduct
-    }, {
+    },
+    {
         onBefore: () => isLoadingSubmit.value = true,
         onError: (error) => {
             notify({
@@ -112,10 +125,11 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 
 <template>
 
+    <!-- <pre>{{ routes }}</pre> -->
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button @click="() => isOpenModalPortfolios = true" :label="trans('Add families')" />
+            <Button @click="() => isOpenModalPortfolios = true" :label="trans('Add families')" icon="fas fa-plus" />
         </template>
     </PageHeading>
 
@@ -126,13 +140,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
             :headLabel="trans('Add products to portfolios')"
-            :route-fetch="{
-                name: 'grp.json.shop.catalogue.departments.families',
-                parameters: {
-                    shop: layout?.currentParams?.shop,
-                    productCategory: layout?.currentParams?.department,
-                }
-            }"
+            :route-fetch="routes.fetch_families"
             :isLoadingSubmit
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
         >

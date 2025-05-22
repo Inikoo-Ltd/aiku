@@ -94,6 +94,23 @@ class ShowSubDepartment extends OrgAction
                     'navigation' => DepartmentTabsEnum::navigation()
                 ],
 
+                'routes'    => [
+                    'attach_families' => [
+                        'name'       => 'grp.models.sub-department.families.attach',
+                        'parameters' => [
+                            'subDepartment' => $subDepartment->slug,
+                        ],
+                        'method'     => 'post'
+                    ],
+                    'fetch_families' => [
+                        'name'       => 'grp.json.shop.catalogue.departments.families',
+                        'parameters' => [
+                            'shop'  => $subDepartment->shop->slug,
+                            'productCategory'   => $this->parent->slug
+                        ]
+                    ],
+                ],
+
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($subDepartment)),

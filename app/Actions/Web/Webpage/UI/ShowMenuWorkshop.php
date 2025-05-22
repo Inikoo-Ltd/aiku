@@ -41,7 +41,6 @@ class ShowMenuWorkshop extends OrgAction
     {
         $menuLayout   = Arr::get($website->published_layout, 'menu');
         $isMenuActive = Arr::get($menuLayout, 'status');
-
         return Inertia::render(
             'Org/Web/Workshop/Menu/MenuWorkshop',
             [
@@ -88,7 +87,7 @@ class ShowMenuWorkshop extends OrgAction
                 'domain'        => $website->domain,
                 'data'          => GetWebsiteWorkshopMenu::run($website),
                 'webBlockTypes' => WebBlockTypesResource::collection(
-                    $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->get()
+                    $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->where('data->component', 'menu')->get()
                 )
             ]
         );

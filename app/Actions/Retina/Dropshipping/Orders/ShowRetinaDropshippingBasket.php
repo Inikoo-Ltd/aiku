@@ -35,16 +35,24 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
-    private CustomerSalesChannel $customerSalesChannel;
     public function handle(Order $order): Order
     {
         return $order;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
+    }
+
     public function asController(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(OrderTabsEnum::values());
+        $this->platform = $customerSalesChannel->platform;
+        $this->initialisation($request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
@@ -157,7 +165,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
                 'balance'        => $order->customer?->balance,
                 'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
-                'total_products'    => 1,  // TODO: get the actual total products
+
 
 
 
