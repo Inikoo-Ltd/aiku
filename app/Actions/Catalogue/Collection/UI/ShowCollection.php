@@ -57,7 +57,6 @@ class ShowCollection extends OrgAction
 
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
-        // dd($collection->stats);
         return Inertia::render(
             'Org/Catalogue/Collection',
             [
@@ -100,7 +99,7 @@ class ShowCollection extends OrgAction
                             'style' => 'edit',
                             'tooltip' => __('Create Webpage'),
                             'label'   => __('Create Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
+                            'icon'  => ["fas", "fa-plus"],
                             'route' => [
                                 'name'       => 'grp.models.webpages.collection.store',
                                 'parameters' => $collection->id,
@@ -115,16 +114,8 @@ class ShowCollection extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        // $this->canDelete ? [
-                        //     'type'  => 'button',
-                        //     'style' => 'delete',
-                        //     'route' => [
-                        //         'name'       => 'shops.show.products.remove',
-                        //         'parameters' => $request->route()->originalParameters()
-                        //     ]
-                        // ] : false
+
                     ],
-                    // 'subNavigation' => $this->getCollectionSubNavigation($collection),
                 ],
                 'routes' => [
                     'departments' => [
@@ -227,7 +218,7 @@ class ShowCollection extends OrgAction
 
                 CollectionTabsEnum::DEPARTMENTS->value => $this->tab == CollectionTabsEnum::DEPARTMENTS->value ?
                     fn () => DepartmentsResource::collection(IndexDepartments::run($collection))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(DepartmentsResource::run($collection))),
+                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($collection))),
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
                     fn () => FamiliesResource::collection(IndexFamilies::run($collection))
@@ -241,19 +232,7 @@ class ShowCollection extends OrgAction
                     fn () => CollectionsResource::collection(IndexCollection::run($collection))
                     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollection::run($collection))),
 
-                // ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
-                //     fn () => CustomersResource::collection(IndexCustomers::run($product))
-                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
 
-                // ProductTabsEnum::MAILSHOTS->value => $this->tab == ProductTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($product))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($product))),
-
-                /*
-                ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
-                    fn () => ImagesResource::collection(IndexImages::run($product))
-                    : Inertia::lazy(fn () => ImagesResource::collection(IndexImages::run($product))),
-                */
 
             ]
         )->table(

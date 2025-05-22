@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faBullhorn,
@@ -16,6 +16,7 @@ import {
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { computed, defineAsyncComponent, ref } from "vue"
+import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -24,6 +25,16 @@ import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import { capitalize } from "@/Composables/capitalize"
+import Modal from '@/Components/Utils/Modal.vue'
+import { trans } from 'laravel-vue-i18n'
+import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
+import { notify } from '@kyvg/vue3-notification'
+import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
+import { inject } from 'vue'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Image from '@/Components/Image.vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 library.add(
     faFolder,
@@ -37,6 +48,8 @@ library.add(
     faDiagramNext,
 )
 
+const layout = inject('layout', layoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
@@ -52,11 +65,11 @@ const props = defineProps<{
 }>()
 
 let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const component = computed(() => {
-
+const component: Component = computed(() => {
     const components = {
+        showcase: SubDepartmentShowcase,
         products: TableProducts,
         mailshots: TableMailshots,
         customers: TableCustomers,
@@ -67,13 +80,76 @@ const component = computed(() => {
 
 });
 
+// Method: Submit the family
+const isOpenModalPortfolios = ref(false)
+const isLoadingSubmit = ref(false)
+const onSubmitAddItem = async (idProduct: number[]) => {
+    router.post(route('grp.models.sub-department.families.attach', { subDepartment: layout.currentParams.subDepartment} ), {
+        families_id: idProduct
+    }, {
+        onBefore: () => isLoadingSubmit.value = true,
+        onError: (error) => {
+            notify({
+                title: "Something went wrong.",
+                text: error.products || undefined,
+                type: "error"
+            })
+        },
+        onSuccess: () => {
+            router.reload({only: ['data']})
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully added portfolios"),
+                type: "success"
+            })
+            isOpenModalPortfolios.value = false
+        },
+        onFinish: () => isLoadingSubmit.value = false
+    })
+}
 </script>
 
 
 <template>
 
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template #other>
+            <Button @click="() => isOpenModalPortfolios = true" :label="trans('Add families')" />
+        </template>
+    </PageHeading>
+
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+
+    <!-- {{ layout?.currentParams }} -->
+    <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
+        <ProductsSelector
+            :headLabel="trans('Add products to portfolios')"
+            :route-fetch="{
+                name: 'grp.json.shop.catalogue.departments.families',
+                parameters: {
+                    shop: layout?.currentParams?.shop,
+                    productCategory: layout?.currentParams?.department,
+                }
+            }"
+            :isLoadingSubmit
+            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
+        >
+            <template #product="{ item }">
+                <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
+                <div class="flex flex-col justify-between">
+                    <div class="w-fit" xclick="() => selectProduct(item)">
+                        <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                        <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                        <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                        <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                    </div>
+                    <div v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                        {{ locale?.number(item.number_current_products || 0) }} {{ trans("products") }}
+                    </div>
+                </div>
+            </template>
+        </ProductsSelector>
+    </Modal>
 </template>

@@ -51,7 +51,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ],
 
             ],
-
+            'customer_sales_channel' => $customerSalesChannel,
             'platform'       =>  $customerSalesChannel->platform,
             'platformData'  => $this->getPlatformData($customerSalesChannel),
         ]);

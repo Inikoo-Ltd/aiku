@@ -67,7 +67,8 @@ const getPortfoliosList = async (url?: string) => {
         portfoliosMeta.value = response?.data.meta || null
         portfoliosLinks.value = response?.data.links || null
         isLoadingFetch.value = false
-    } catch {
+    } catch (e) {
+        console.error('Error', e)
         isLoadingFetch.value = false
         notify({
             title: trans("Something went wrong."),
@@ -150,29 +151,29 @@ onUnmounted(() => {
                                     <Transition name="slide-to-right">
                                         <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)" icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500" fixed-width aria-hidden="true" />
                                     </Transition>
-                                    <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
-                                    <div class="flex flex-col justify-between">
-                                        <div class="w-fit" xclick="() => selectProduct(item)">
-                                            <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                            <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
-                                            <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
-                                            <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                                    <slot name="product" :item="item">
+                                        <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
+                                        <div class="flex flex-col justify-between">
+                                            <div class="w-fit" xclick="() => selectProduct(item)">
+                                                <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                                                <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                                <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                                                <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                                            </div>
+                                            <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                                {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
+                                            </div>
+                                            <NumberWithButtonSave
+                                                v-if="withQuantity"
+                                                :modelValue="get(item, 'quantity_selected', 1)"
+                                                :bindToTarget="{ min: 1 }"
+                                                @update:modelValue="(e: number) => (set(item, 'quantity_selected', e), selectedProduct.includes(item) ? '' : selectedProduct?.push(item))"
+                                                noUndoButton
+                                                noSaveButton
+                                                parentClass="w-min"
+                                            />
                                         </div>
-
-                                        <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
-                                            {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
-                                        </div>
-
-                                        <NumberWithButtonSave
-                                            v-if="withQuantity"
-                                            :modelValue="get(item, 'quantity_selected', 1)"
-                                            :bindToTarget="{ min: 1 }"
-                                            @update:modelValue="(e: number) => (set(item, 'quantity_selected', e), selectedProduct.includes(item) ? '' : selectedProduct?.push(item))"
-                                            noUndoButton
-                                            noSaveButton
-                                            parentClass="w-min"
-                                        />
-                                    </div>
+                                    </slot>
                                 </div>
                             </template>
                             <div v-else class="text-center text-gray-500 col-span-3">
