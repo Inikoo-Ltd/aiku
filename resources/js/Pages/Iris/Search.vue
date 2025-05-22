@@ -38,9 +38,9 @@ const LBInitSearchResult = async () => {
     console.log("Init Search")
 }
 
-onMounted(() => {
-    LBInitSearchResult()
-})
+// onMounted(() => {
+//     LBInitSearchResult()
+// })
 const inputValue = ref('')
 </script>
 

@@ -121,10 +121,10 @@ const locale = inject('locale', {})
 console.log('layout:', layout)
 console.log('locale:', locale)
 
-onMounted(() => {
-    importStyleCSS()
-    LBInitAutocompleteNew()
-})
+// onMounted(() => {
+//     importStyleCSS()
+//     LBInitAutocompleteNew()
+// })
 </script>
 
 <template>
