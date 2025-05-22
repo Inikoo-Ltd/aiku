@@ -84,6 +84,8 @@ const selectedTab = ref(tabs[0])
 const saveCancelToken = ref<Function | null>(null)
 const isPreviewLoggedIn = ref(false)
 const _iframe = ref<IframeHTMLAttributes | null>(null)
+const currentView = ref('desktop')
+provide('currentView',currentView )
 
 const isLoadingTemplate = ref(false)
 const onSelectBlock = async (selectedBlock: object) => {
@@ -239,6 +241,9 @@ onMounted(() => {
     })
 })
 
+watch(currentView, (newValue) => {
+	iframeClass.value = setIframeView(newValue)
+})
 
 </script>
 
@@ -326,7 +331,7 @@ onMounted(() => {
             <div v-if="usedTemplates?.topBar?.code || usedTemplates?.header?.code" class="bg-white h-full">
                 <div class="flex justify-between max-w-7xl mx-auto bg-slate-200 border border-b-gray-300 pr-6">
                     <div class="flex">
-                        <ScreenView @screenView="(e) => iframeClass = setIframeView(e)" />
+                        <ScreenView  @screenView="(e) => {currentView = e}" v-model="currentView" />
                         <div class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'"
                             @click="openFullScreenPreview">
                             <FontAwesomeIcon :icon='faLowVision' aria-hidden='true' />

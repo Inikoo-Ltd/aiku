@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, IframeHTMLAttributes, onMounted } from 'vue'
+import { ref, watch, IframeHTMLAttributes, onMounted, provide} from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -176,6 +176,12 @@ onMounted(() => {
     window.addEventListener('message', handleIframeMessage);
 });
 
+const currentView = ref('desktop')
+provide('currentView',currentView )
+watch(currentView, (newValue) => {
+	iframeClass.value = setIframeView(newValue)
+})
+
 </script>
 
 <template>
@@ -244,7 +250,7 @@ onMounted(() => {
                 <div v-if="usedTemplates?.data" class="w-full h-full">
                     <div class="flex justify-between bg-slate-200 border border-b-gray-300">
                         <div class="flex">
-                            <ScreenView @screenView="(e) => iframeClass = setIframeView(e)" />
+                            <ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
                             <div class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'"
                                 @click="openFullScreenPreview">
                                 <FontAwesomeIcon :icon='faLowVision' aria-hidden='true' />
