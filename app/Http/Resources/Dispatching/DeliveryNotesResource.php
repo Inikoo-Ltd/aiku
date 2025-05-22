@@ -57,6 +57,13 @@ class DeliveryNotesResource extends JsonResource
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
+            'employee_pick_route' => [
+                'name' => 'grp.models.delivery-note.employee.pick',
+                'parameters' => [
+                    'deliveryNote' => $this->id
+                ],
+                'method' => 'post'
+            ]
         ];
     }
 }

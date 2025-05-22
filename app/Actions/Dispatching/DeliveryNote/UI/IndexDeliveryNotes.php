@@ -82,7 +82,7 @@ class IndexDeliveryNotes extends OrgAction
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
             ]
-        )->table($this->tableStructure(parent: $this->parent));
+        )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator

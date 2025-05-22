@@ -9,11 +9,11 @@ import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Mailshot } from "@/types/mailshot";
 import icon from "@/Components/Icon.vue";
-import { faSpellCheck, faSeedling, faPaperPlane, faStop } from "@fal";
+import { faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouteParams } from "@/types/route-params";
 
-library.add(faSpellCheck, faSeedling, faPaperPlane, faStop);
+library.add(faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash);
 
 defineProps<{
     data: object,
