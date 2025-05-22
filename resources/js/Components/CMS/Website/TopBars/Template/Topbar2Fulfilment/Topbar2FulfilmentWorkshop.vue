@@ -80,6 +80,13 @@ const emits = defineEmits<{
     >
 
         <div class="md:col-span-2 action_buttons flex justify-center md:justify-start ">
+           <!-- Section: Main title -->
+            <div v-if="!isLoggedIn"
+                @click="()=> emits('setPanelActive', 'main_title')"
+                class="hover-dashed text-center flex items-center"
+                v-html="textReplaceVariables(model.main_title.text, layout.iris_variables)"
+            />
+            
             <!-- Section: Profile -->
             <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
