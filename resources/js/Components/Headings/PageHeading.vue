@@ -145,6 +145,7 @@ const layout = inject('layout', layoutStructure)
                         <slot v-if="action.type == 'button'"
                             :name="`button-${kebabCase(action.key ? action.key : action.label)}`" :action="action">
                             <slot :name="`button-index-${actIndex}`" :action="action">
+                                <!-- {{ `button-${kebabCase(action.key ? action.key : action.label)}` }} -->
                                 <Action v-if="action" :action="action" :dataToSubmit="dataToSubmit" />
                             </slot>
                         </slot>

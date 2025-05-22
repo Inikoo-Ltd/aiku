@@ -8,6 +8,7 @@
 
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
@@ -79,8 +80,9 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
 Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
+    Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
-        Route::patch('in-queue', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue');
+        Route::patch('in-queue/{employee:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
         Route::patch('picker-assigned', UpdateDeliveryNoteStateToPickerAssigned::class)->name('picker-assigned');
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');

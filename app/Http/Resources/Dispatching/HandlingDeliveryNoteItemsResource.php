@@ -1,20 +1,22 @@
 <?php
-
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 22 Feb 2023 22:40:34 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * author Arya Permana - Kirin
+ * created on 22-05-2025-11h-14m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
 
 namespace App\Http\Resources\Dispatching;
 
 use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DeliveryNoteItemsResource extends JsonResource
+class HandlingDeliveryNoteItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $deliveryNoteItem = DeliveryNoteItem::find($this->id);
+        // dd($deliveryNoteItem);
         return [
             'id'                  => $this->id,
             'state'               => $this->state,
@@ -22,9 +24,10 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_required'   => intVal($this->quantity_required),
             'quantity_picked'     => intVal($this->quantity_picked),
             'quantity_packed'     => intVal($this->quantity_packed),
-            'quantity_dispatched' => intVal($this->quantity_dispatched),
             'org_stock_code'      => $this->org_stock_code,
-            'org_stock_name'      => $this->org_stock_name
+            'org_stock_name'      => $this->org_stock_name,
+            'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
+            'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : []
         ];
     }
 }

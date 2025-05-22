@@ -16,6 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 import { capitalize } from "@/Composables/capitalize";
 import type { routeType } from '@/types/route';
+import { faInfoCircle } from '@fas';
 
 const props = defineProps<{
   title: string,
@@ -103,9 +104,9 @@ const confirmFollowMaster = (item) => {
   <PageHeading :data="pageHead" />
 
   <div class="px-4 pb-8 m-5">
-    <Message v-if="productCategory.data.follow_master" severity="warn" closable>
+    <Message v-if="productCategory.data.follow_master" severity="success" closable>
       <template #icon>
-        <FontAwesomeIcon :icon="faExclamation" />
+        <FontAwesomeIcon :icon="faInfoCircle" />
       </template>
       <span class="ml-2">Right now you follow the master data</span>
     </Message>
