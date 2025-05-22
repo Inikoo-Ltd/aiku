@@ -8,9 +8,12 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\HumanResources\Employee;
 use Illuminate\Validation\ValidationException;
@@ -30,6 +33,11 @@ class UpdateDeliveryNoteStateToInQueue extends OrgAction
         data_set($modelData, 'queued_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::QUEUED->value);
 
+        foreach ($deliveryNote->deliveryNoteItems as $item) {
+            UpdateDeliveryNoteItem::make()->action($item, [
+                'state' => DeliveryNoteItemStateEnum::QUEUED->value
+            ]);
+        }
         return $this->update($deliveryNote, $modelData);
     }
 

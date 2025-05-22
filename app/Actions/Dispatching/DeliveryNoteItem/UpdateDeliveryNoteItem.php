@@ -13,6 +13,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
+use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteItem extends OrgAction
@@ -44,7 +45,11 @@ class UpdateDeliveryNoteItem extends OrgAction
 
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'quantity_picked'     => ['sometimes', 'numeric'],
+            'quantity_packed'     => ['sometimes', 'numeric'],
+            'state'               => ['sometimes', new Enum(DeliveryNoteItemStateEnum::class)],
+        ];
 
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
