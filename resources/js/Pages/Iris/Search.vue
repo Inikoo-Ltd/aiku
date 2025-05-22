@@ -2,7 +2,7 @@
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { computed, inject, onMounted, ref } from "vue"
 
-import "https://cdn.luigisbox.com/search.js";
+//import "https://cdn.luigisbox.com/search.js";
 
 const layout = inject('layout', layoutStructure)
 const isLogin = computed(() => {

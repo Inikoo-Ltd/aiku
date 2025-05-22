@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from "vue"
-import "https://cdn.luigisbox.com/autocomplete.js"
+//import "https://cdn.luigisbox.com/autocomplete.js"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { AutoComplete } from "primevue";
 
 
 // vika_luigi.js
