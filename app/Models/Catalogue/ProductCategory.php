@@ -191,11 +191,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(ProductCategory::class, 'department_id');
     }
 
-    public function subDepartment(): BelongsTo
-    {
-        return $this->belongsTo(ProductCategory::class, 'sub_department_id');
-    }
-
     public function subDepartments(): HasMany
     {
         return $this->hasMany(ProductCategory::class, 'department_id');

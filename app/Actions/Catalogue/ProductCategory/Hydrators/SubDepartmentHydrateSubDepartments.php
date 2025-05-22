@@ -13,6 +13,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SubDepartmentHydrateSubDepartments
@@ -40,7 +41,10 @@ class SubDepartmentHydrateSubDepartments
         }
 
         $stats = [
-            'number_sub_departments' => $productCategory->subDepartments()->count(),
+            'number_sub_departments' => DB::table('product_categories')
+                ->where('sub_department_id', $productCategory->id)
+                ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+                ->count(),
         ];
 
         $stats = array_merge(
