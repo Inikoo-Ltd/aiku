@@ -129,13 +129,6 @@ class ShowDeliveryNote extends OrgAction
                         'tooltip' => __('Unassigned'),
                         'label'   => __('Put in Queue'),
                         'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.delivery-note.state.in-queue',
-                            'parameters' => [
-                                'deliveryNote' => $deliveryNote->id
-                            ]
-                        ]
                     ]
                 ],
                 DeliveryNoteStateEnum::PACKED => [
@@ -225,6 +218,14 @@ class ShowDeliveryNote extends OrgAction
                         'name'       => 'grp.models.delivery-note.update',
                         'parameters' => [
                             'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
+                    'set_queue'      => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery-note.state.in-queue',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                            //employee
                         ]
                     ],
                     'pickers_list'   => [

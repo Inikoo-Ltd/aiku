@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\HumanResources\Employee;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -20,36 +21,31 @@ class UpdateDeliveryNoteStateToInQueue extends OrgAction
     use WithActionUpdate;
 
     private DeliveryNote $deliveryNote;
-    public function handle(DeliveryNote $deliveryNote): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, Employee $employee): DeliveryNote
     {
+        $deliveryNote = UpdateDeliveryNote::make()->action($deliveryNote, [
+            'picker_id' => $employee->id,
+        ]);
+
         data_set($modelData, 'queued_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::QUEUED->value);
 
         return $this->update($deliveryNote, $modelData);
     }
 
-    public function prepareForValidation()
-    {
-        if(!$this->deliveryNote->picker_id || !$this->deliveryNote->packer_id)
-        {
-            throw ValidationException::withMessages([
-                'messages' => __('Please assign prefered picker and packer first')
-            ]);
-        }
-    }
-
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    public function asController(DeliveryNote $deliveryNote, Employee $employee, ActionRequest $request): DeliveryNote
     {
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $employee);
     }
 
-    public function action(DeliveryNote $deliveryNote): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, Employee $employee): DeliveryNote
     {
+        $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $employee);
     }
 }

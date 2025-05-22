@@ -189,21 +189,27 @@ test('create second delivery note item', function (DeliveryNote $deliveryNote) {
     ];
 
     $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteData);
+    $deliveryNote->refresh();
+    expect($deliveryNoteItem->delivery_note_id)->toBe($deliveryNoteData['delivery_note_id'])
+        ->and($deliveryNote->deliveryNoteItems()->count())->toBe(1);
 
-    expect($deliveryNoteItem->delivery_note_id)->toBe($deliveryNoteData['delivery_note_id']);
-
-    // dd($deliveryNoteItem->pickings);
     return $deliveryNoteItem;
 })->depends('create second delivery note');
 
-test('update second delivery note item state to in queue', function (DeliveryNote $deliveryNote) {
-    $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote);
+test('update second delivery note state to in queue', function (DeliveryNote $deliveryNote) {
+    $employee = StoreEmployee::make()->action($this->organisation, Employee::factory()->definition());
+
+    //set prefered picker to put it to queue
+    $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $employee);
+
+    $deliveryNote->refresh();
 
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($deliveryNote->picker_id)->toBe($employee->id)
         ->and($deliveryNote->state)->toBe(DeliveryNoteStateEnum::QUEUED);
 
-    return $deliveryNote;
 })->depends('create second delivery note');
+
 
 //test('assign picker to picking', function (DeliveryNote $deliveryNote) {
 //
