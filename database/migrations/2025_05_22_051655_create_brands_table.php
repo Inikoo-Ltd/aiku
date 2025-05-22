@@ -11,7 +11,7 @@ return new class () extends Migration {
             $table->increments('id');
             $table->string('slug')->unique()->collation('und_ns');
             $table->string('reference')->index();
-            $table->string('name')->collation('und_ns')->index();
+            $table->string('name')->index();
 
             $table->unsignedInteger('image_id')->nullable();
             $table->foreign('image_id')->references('id')->on('media')->onDelete('cascade');
