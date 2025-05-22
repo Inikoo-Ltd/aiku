@@ -46,7 +46,12 @@ class GetProductCategoryFamilies extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
         $queryBuilder->where('product_categories.shop_id', $productcategory->shop_id);
-        $queryBuilder->where('product_categories.department_id', $productcategory->id);
+
+        if ($productcategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $queryBuilder->where('product_categories.department_id', $productcategory->id);
+        } elseif ($productcategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $queryBuilder->where('product_categories.sub_department_id', $productcategory->id);
+        }
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
