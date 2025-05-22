@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Client;
 
-use App\Actions\Dropshipping\WooCommerce\Clients\FetchRetinaCustomerClientFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -26,7 +26,7 @@ class FetchRetinaFulfilmentCustomerClientFromWooCommerce extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
-        FetchRetinaCustomerClientFromWooCommerce::run($wooCommerceUser);
+        GetRetinaCustomerClientFromWooCommerce::run($wooCommerceUser);
     }
 
 
