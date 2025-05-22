@@ -12,10 +12,8 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Http\Resources\Fulfilment\PalletReturnResource;
-use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
+use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 
 class AttachFamiliesToSubDepartment extends OrgAction
@@ -25,8 +23,8 @@ class AttachFamiliesToSubDepartment extends OrgAction
 
     public function handle(ProductCategory $subDepartment, array $modelData): ProductCategory
     {
-
-        $subDepartment->families()->sync($modelData['families_id']);
+        ProductCategory::whereIn('id', $modelData['families_id'])
+            ->update(['sub_department_id' => $subDepartment->id]);
         $subDepartment->refresh();
 
         return $subDepartment;
@@ -52,8 +50,8 @@ class AttachFamiliesToSubDepartment extends OrgAction
     }
 
 
-    public function jsonResponse(PalletReturn $palletReturn): PalletReturnResource
+    public function jsonResponse(ProductCategory $subDepartment): SubDepartmentResource
     {
-        return new PalletReturnResource($palletReturn);
+        return new SubDepartmentResource($subDepartment);
     }
 }

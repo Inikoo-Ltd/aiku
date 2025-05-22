@@ -33,6 +33,8 @@ import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
 import { inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Image from '@/Components/Image.vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 library.add(
     faFolder,
@@ -47,6 +49,7 @@ library.add(
 )
 
 const layout = inject('layout', layoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
@@ -80,29 +83,29 @@ const component: Component = computed(() => {
 // Method: Submit the family
 const isOpenModalPortfolios = ref(false)
 const isLoadingSubmit = ref(false)
-const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: number) => {
-    // router.post(route('grp.models.customer_sales_channel.portfolio.store_multiple_manual', { customerSalesChannel: customerSalesChannelId} ), {
-    //     items: idProduct
-    // }, {
-    //     onBefore: () => isLoadingSubmit.value = true,
-    //     onError: (error) => {
-    //         notify({
-    //             title: "Something went wrong.",
-    //             text: error.products || undefined,
-    //             type: "error"
-    //         })
-    //     },
-    //     onSuccess: () => {
-    //         router.reload({only: ['data']})
-    //         notify({
-    //             title: trans("Success!"),
-    //             text: trans("Successfully added portfolios"),
-    //             type: "success"
-    //         })
-    //         isOpenModalPortfolios.value = false
-    //     },
-    //     onFinish: () => isLoadingSubmit.value = false
-    // })
+const onSubmitAddItem = async (idProduct: number[]) => {
+    router.post(route('grp.models.sub-department.families.attach', { subDepartment: layout.currentParams.subDepartment} ), {
+        families_id: idProduct
+    }, {
+        onBefore: () => isLoadingSubmit.value = true,
+        onError: (error) => {
+            notify({
+                title: "Something went wrong.",
+                text: error.products || undefined,
+                type: "error"
+            })
+        },
+        onSuccess: () => {
+            router.reload({only: ['data']})
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully added portfolios"),
+                type: "success"
+            })
+            isOpenModalPortfolios.value = false
+        },
+        onFinish: () => isLoadingSubmit.value = false
+    })
 }
 </script>
 
@@ -112,9 +115,10 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button @click="() => isOpenModalPortfolios = true" label="xxx" />
+            <Button @click="() => isOpenModalPortfolios = true" :label="trans('Add families')" />
         </template>
     </PageHeading>
+
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 
@@ -132,6 +136,20 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
             :isLoadingSubmit
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
         >
+            <template #product="{ item }">
+                <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
+                <div class="flex flex-col justify-between">
+                    <div class="w-fit" xclick="() => selectProduct(item)">
+                        <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                        <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                        <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                        <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                    </div>
+                    <div v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                        {{ locale?.number(item.number_current_products || 0) }} {{ trans("products") }}
+                    </div>
+                </div>
+            </template>
         </ProductsSelector>
     </Modal>
 </template>
