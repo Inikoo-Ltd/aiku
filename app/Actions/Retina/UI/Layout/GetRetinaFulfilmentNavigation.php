@@ -97,7 +97,7 @@ class GetRetinaFulfilmentNavigation
                         'id'            => $customerSalesChannel->id,
                         'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
-                        'key'           => $customerSalesChannel->slug.'_platform',
+                        'key'           => $customerSalesChannel->slug,
                         'img'           => $this->getPlatformLogo($customerSalesChannel),
                         'label'         => $customerSalesChannel->platform->name.' ('.$reference.')',
                         'route'         => [

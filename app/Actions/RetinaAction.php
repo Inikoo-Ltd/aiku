@@ -11,7 +11,6 @@ namespace App\Actions;
 use App\Actions\Traits\WithTab;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -149,30 +148,6 @@ class RetinaAction
         $this->fillFromRequest($request);
 
         $this->validatedData = $this->validateAttributes();
-
-        return $this;
-    }
-
-    public function initialisationFromPlatform(Platform $platform, ActionRequest $request): static
-    {
-        $this->webUser = $request->user();
-        $this->platform = $platform;
-        $this->customer = $this->webUser->customer;
-        $this->fulfilmentCustomer = $this->customer->fulfilmentCustomer;
-        $this->shop = $this->customer->shop;
-        $this->fulfilment = $this->shop->fulfilment;
-        $this->organisation = $this->shop->organisation;
-        $this->website = $this->shop->website;
-        $this->fillFromRequest($request);
-
-        $this->validatedData = $this->validateAttributes();
-
-        $this->platformUser = match ($platform->type) {
-            PlatformTypeEnum::SHOPIFY => $this->customer->shopifyUser,
-            PlatformTypeEnum::TIKTOK  => $this->customer->tiktokUser,
-            PlatformTypeEnum::WOOCOMMERCE  => $this->customer->wooCommerceUser,
-            default                   => $this->webUser
-        };
 
         return $this;
     }

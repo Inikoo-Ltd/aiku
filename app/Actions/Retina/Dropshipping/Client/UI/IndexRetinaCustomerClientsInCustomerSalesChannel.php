@@ -112,6 +112,12 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
 
         $actions = [];
 
+        $platformName = $this->customerSalesChannel->name;
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $platformName = __('Manual');
+        }
+
         if ($this->customerSalesChannel->platform_user_type == 'ShopifyUser') {
             $actions[] = [
                 'type'    => 'button',
@@ -136,7 +142,7 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
                 'route'   => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.client.wc-fetch',
                     'parameters' => [
-                        'customerSalesChannel' => $this->customerSalesChannel->platform->slug
+                        'customerSalesChannel' => $this->customerSalesChannel->slug
                     ]
                 ]
             ];
@@ -187,8 +193,8 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
                         'icon'  => ['fal', 'fa-user-friends'],
                         'title' => __('customer client')
                     ],
+                    'model' => $platformName,
                     'actions'    => $actions
-
                 ],
                 'data'        => CustomerClientResource::collection($customerClients),
                 'upload_spreadsheet' => $spreadsheetRoute

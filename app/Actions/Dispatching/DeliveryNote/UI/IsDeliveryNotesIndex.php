@@ -168,7 +168,7 @@ trait IsDeliveryNotesIndex
             }
             $table->column(key: 'effective_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_items', label: __('items'), canBeHidden: false, sortable: true, searchable: true);
-            if($bucket && $bucket == 'unassigned') {
+            if ($bucket && $bucket == 'unassigned') {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false);
             }
         };

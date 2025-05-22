@@ -60,7 +60,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
         return $this->handle($customerSalesChannel);
     }
 
@@ -101,7 +101,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 'actions' => [
                         $portfolios->isNotEmpty() ? [
                             'type'  => 'button',
-                            'xxstyle' => 'tertiary',
+                            'style' => 'tertiary',
                             'icon'  => 'fas fa-sync-alt',
                             'label' => 'Sync All Items',
                             'route' => [
@@ -129,7 +129,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
                 'content' => [
                     'portfolio_empty' => [
-                        'title' => __("You don't any items in your portfolio"),
+                        'title' => __("You don't have any items in your portfolio"),
                         'description' => __("To get started, add products to your portfolios. You can sync from your inventory or create a new one."),
                         'separation' => __("or"),
                         'sync_button' => __("Sync from Inventory"),
@@ -165,7 +165,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, align: 'right', searchable: true);
+            $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'actions', label: __('actions'), canBeHidden: false);
         };
     }

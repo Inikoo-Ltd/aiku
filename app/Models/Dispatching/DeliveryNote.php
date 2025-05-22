@@ -110,7 +110,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Employee|null $packer
+ * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read Employee|null $picker
+ * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read \App\Models\Dispatching\DeliveryNoteStats|null $stats
@@ -241,6 +243,16 @@ class DeliveryNote extends Model implements Auditable
     public function shipments(): MorphToMany
     {
         return $this->morphToMany(Shipment::class, 'model', 'model_has_shipments');
+    }
+
+    public function pickings(): HasMany
+    {
+        return $this->hasMany(Picking::class);
+    }
+
+    public function packings(): HasMany
+    {
+        return $this->hasMany(Packing::class);
     }
 
 }

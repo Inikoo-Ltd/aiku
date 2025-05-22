@@ -8,8 +8,10 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,6 +41,31 @@ class AutosaveWebsiteMarginal extends OrgAction
             $this->update($website->unpublishedFooterSnapshot, [
                 'layout' => [
                     'footer' => $layout
+                ]
+            ]);
+        } elseif ($marginal == 'menu') {
+            if (!$website->unpublishedMenuSnapshot) {
+                $menuSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::MENU,
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_menu_snapshot_id' => $menuSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+
+            $this->update($website->unpublishedMenuSnapshot, [
+                'layout' => [
+                    'menu' => $layout
                 ]
             ]);
         }

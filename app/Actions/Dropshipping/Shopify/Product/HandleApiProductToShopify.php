@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,14 +29,17 @@ class HandleApiProductToShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $attributes): void
     {
+        $shopifyReadyUploadProducts = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
+            ->whereIn('portfolio_id', Arr::get($attributes, 'portfolios'))->get();
+
         $portfolios = $shopifyUser
             ->customer->portfolios()
-            ->whereIn('id', $attributes)
+            ->whereIn('id', $shopifyReadyUploadProducts->pluck('portfolio_id')->toArray())
             ->get();
 
         $totalProducts = $portfolios->count();
         $uploaded      = 0;
-        foreach ($portfolios->chunk(2) as $portfolioChunk) {
+        foreach ($portfolios->chunk(10) as $portfolioChunk) {
             $client   = $shopifyUser->api()->getRestClient();
 
             $variants = [];
@@ -50,6 +54,8 @@ class HandleApiProductToShopify extends OrgAction
                             "option1"      => $variant->name,
                             "price"        => $variant->price,
                             "barcode"      => $variant->slug,
+                            "weight"      => $variant->gross_weight / 1000,
+                            "weight_unit"      => "kg",
                             "inventory_management"      => "shopify"
                         ];
                     }
@@ -75,7 +81,7 @@ class HandleApiProductToShopify extends OrgAction
                         "images"       => $images,
                         "variants"     => $variants,
                         "options"      => [
-                            "name"   => "Options",
+                            "name"   => "Variants",
                             "values" => Arr::pluck($variants, "option1")
                         ]
                     ]
@@ -97,15 +103,15 @@ class HandleApiProductToShopify extends OrgAction
 
                 HandleApiInventoryProductShopify::run($shopifyUser, $inventoryVariants);
 
-                $shopifyUser->products()->attach($product, [
-                    'shopify_user_id' => $shopifyUser->id,
-                    'product_type' => class_basename($product),
-                    'product_id' => $product->id,
-                    'portfolio_id' => $portfolio->id,
+                $uploaded++;
+
+                $this->update($portfolio->shopifyPortfolio, [
                     'shopify_product_id' => Arr::get($productShopify, 'id')
                 ]);
 
-                $uploaded++;
+                $this->update($portfolio, [
+                    'data' => []
+                ]);
 
                 UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $totalProducts, $uploaded);
             }

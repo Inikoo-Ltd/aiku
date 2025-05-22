@@ -27,7 +27,6 @@ class UpdatePickingStateToDone extends OrgAction
 
     public function handle(Picking $picking): Picking
     {
-        data_set($modelData, 'packed_at', now());
         data_set($modelData, 'state', PickingStateEnum::DONE->value);
 
         return $this->update($picking, $modelData);

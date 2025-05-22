@@ -11,12 +11,11 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -27,7 +26,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
-    private CustomerSalesChannel $customerSalesChannel;
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -67,39 +65,40 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             ->withQueryString();
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $customerSalesChannel = $request->route()->parameter('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
+    }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->platform = $customerSalesChannel->platform;
+        $this->initialisation($request);
         return $this->handle($customerSalesChannel);
     }
 
-    // /** @noinspection PhpUnusedParameterInspection */
-    // public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
-    // {
-    //     $this->platform = $platform;
-    //     $this->platformUser = $request->user();
-    //     $this->asAction     = true;
-    //     $this->initialisationFromPupil($request);
-    //     $shopifyUser = $this->shopifyUser;
 
-    //     return $this->handle($shopifyUser);
-    // }
-
-    public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $orders): Response
     {
+        $platformName = $this->customerSalesChannel->name;
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $platformName = __('Manual');
+        }
+
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),
                 'pageHead'    => [
-                    'title'      => __('Orders'),
                     'icon'       => 'fal fa-shopping-cart',
-                    'afterTitle' => [
-                        'label' => ' @'.$this->platform->name,
-                    ]
+                    'title'   => __('Orders'),
+                    'model'   =>  $platformName,
                 ],
 
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),

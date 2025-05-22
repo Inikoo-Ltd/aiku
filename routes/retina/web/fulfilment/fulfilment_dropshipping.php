@@ -58,14 +58,14 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('basket')->as('basket.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentBaskets::class)->name('index');
-            Route::get('{palletReturn}', [ShowRetinaStoredItemReturn::class, 'inBasket'])->name('show');
+            Route::get('{palletReturn}', ShowRetinaStoredItemReturn::class)->name('show');
         });
 
         Route::prefix('client')->as('client.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::class)->name('index');
             Route::get('{customerClient}', ShowRetinaFulfilmentCustomerClient::class)->name('show');
             Route::get('/{customerClient}/edit', EditRetinaFulfilmentPlatformCustomerClient::class)->name('edit');
-            Route::get('create', [CreateRetinaFulfilmentPlatformCustomerClient::class, 'inPlatform'])->name('create');
+            Route::get('create', CreateRetinaFulfilmentPlatformCustomerClient::class)->name('create');
             Route::get('fetch', FetchRetinaFulfilmentCustomerClientFromShopify::class)->name('fetch');
             Route::get('wc-fetch', FetchRetinaFulfilmentCustomerClientFromWooCommerce::class)->name('wc-fetch');
         });
@@ -76,7 +76,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('orders')->as('orders.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentOrders::class)->name('index');
-            Route::get('/{palletReturn}', [ShowRetinaStoredItemReturn::class, 'inOrder'])->name('show');
+            Route::get('/{palletReturn}', ShowRetinaStoredItemReturn::class)->name('show');
         });
 
 

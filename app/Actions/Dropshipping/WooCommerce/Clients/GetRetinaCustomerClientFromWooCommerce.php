@@ -9,7 +9,7 @@
 namespace App\Actions\Dropshipping\WooCommerce\Clients;
 
 use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
-use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
+use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -18,9 +18,9 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
-class FetchRetinaCustomerClientFromWooCommerce extends RetinaAction
+class GetRetinaCustomerClientFromWooCommerce extends RetinaAction
 {
-    use WithGeneratedShopifyAddress;
+    use WithGeneratedWooCommerceAddress;
 
     /**
      * @throws \Throwable
@@ -30,9 +30,11 @@ class FetchRetinaCustomerClientFromWooCommerce extends RetinaAction
         $customers = $wooCommerceUser->getWooCommerceCustomers();
 
         foreach ($customers as $customer) {
-            $customer = $customer->toArray();
-            $address = Arr::get($customer, 'default_address', []);
-            $existsClient = $this->customer->clients()->where('email', $customer['email'])->first();
+            $address = Arr::get($customer, 'shipping', []);
+            $existsClient = $this->customer->clients()
+                ->where('email', $customer['email'])
+                ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
+                ->first();
 
             $attributes = $this->getAttributes($customer, $address);
 

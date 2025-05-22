@@ -155,11 +155,11 @@ class IndexBlueprintDepartment extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.index' => array_merge(
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.index' => array_merge(
                 ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.index',
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
                         'parameters' => [
                             $routeParameters['organisation'],
                             $routeParameters['shop'],

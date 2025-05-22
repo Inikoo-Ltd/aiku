@@ -186,8 +186,8 @@ Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCust
 
 Route::name('customer-client.')->prefix('customer-client')->group(function () {
     Route::patch('{customerClient:id}/update', UpdateRetinaCustomerClient::class)->name('update')->withoutScopedBindings();
-    Route::post('{customerClient:id}/order', [StoreRetinaOrder::class, 'inCustomerClient'])->name('order.store')->withoutScopedBindings();
-    Route::post('{customerClient:id}/dashboard/order', [StoreRetinaOrder::class, 'inDashboard'])->name('dashboard-order.store')->withoutScopedBindings();
+    Route::post('{customerClient:id}/order', StoreRetinaOrder::class)->name('order.store')->withoutScopedBindings();
+    Route::post('{customerClient:id}/dashboard/order', StoreRetinaOrder::class)->name('dashboard-order.store')->withoutScopedBindings();
     Route::post('{customerClient:id}/fulfilment/order', StoreRetinaPlatformPalletReturn::class)->name('fulfilment_order.store')->withoutScopedBindings();
 });
 

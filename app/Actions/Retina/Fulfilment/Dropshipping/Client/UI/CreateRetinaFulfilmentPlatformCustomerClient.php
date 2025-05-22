@@ -20,12 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
 {
-    /**
-     * @var \App\Models\Dropshipping\CustomerSalesChannel|\Eloquent|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Model|object|null
-     */
-    private CustomerSalesChannel $scope;
-
-    public function handle(ActionRequest $request): Response
+    public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
@@ -33,18 +28,18 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('new client'),
                 'pageHead'    => [
-                    'title'        => __('new client'),
-                    'icon'         => [
+                    'title'   => __('new client'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('client')
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       =>  preg_replace('/create$/', 'index', $request->route()->getName()),
+                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -64,11 +59,11 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                                         'type'  => 'input',
                                         'label' => __('contact name')
                                     ],
-                                    'email' => [
+                                    'email'        => [
                                         'type'  => 'input',
                                         'label' => __('email')
                                     ],
-                                    'phone' => [
+                                    'phone'        => [
                                         'type'  => 'input',
                                         'label' => __('phone')
                                     ],
@@ -94,7 +89,7 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                     'route'     => [
                         'name'       => 'retina.models.customer_sales_channel.fulfilment.customer-client.store',
                         'parameters' => [
-                            'customerSalesChannel' => $this->scope->id
+                            'customerSalesChannel' => $customerSalesChannel->id
                         ]
                     ]
                 ]
@@ -105,24 +100,18 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        $customerSalesChannel = $request->route()->parameter('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
     }
 
-
-    public function asController(ActionRequest $request): Response
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $this->initialisation($request);
-        $this->parent = $this->customer;
 
-        return $this->handle($request);
-    }
-
-    public function inPlatform(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
-    {
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
-        $this->scope = $customerSalesChannel;
-
-        return $this->handle($request);
+        return $this->handle($customerSalesChannel, $request);
     }
 
     public function getBreadcrumbs(): array

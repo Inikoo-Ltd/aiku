@@ -105,7 +105,7 @@ class CreateFamily extends OrgAction
                                 'name' => class_basename($this->parent) == 'ProductCategory'
                                             ? ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT
                                                 ? 'grp.org.shops.show.catalogue.departments.show.families.index'
-                                                : 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index')
+                                                : 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index')
                                             : (class_basename($this->parent) == 'Shop'
                                                 ? 'grp.org.shops.show.catalogue.families.index'
                                                 : ''),
@@ -159,7 +159,7 @@ class CreateFamily extends OrgAction
                                 'productCategory' => $this->parent->id
                             ]
                         ],
-                        'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.create' => [
+                        'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create' => [
                             'name'       => 'grp.models.sub-department.family.store',
                             'parameters' => [
                                 'productCategory' => $this->parent->id

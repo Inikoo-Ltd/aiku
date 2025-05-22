@@ -51,7 +51,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     order: {}
 
-    
+
     routes?: {
         update_route: routeType
         submit_route: routeType
@@ -60,7 +60,7 @@ const props = defineProps<{
 
     }
 
-    
+
     box_stats: {
         customer: {
             reference: string
@@ -71,6 +71,13 @@ const props = defineProps<{
             addresses: {
                 delivery: Address
                 billing: Address
+            }
+        }
+        customer_channel: {
+            status: boolean
+            platform: {
+                name: string
+                image: string
             }
         }
         products: {
@@ -92,12 +99,12 @@ const props = defineProps<{
     currency: Currency
     data?: {
         data: {
-            
+
         }
     }
 
 
-    
+
     transactions: {}
     invoices?: {}
     delivery_notes: {
@@ -106,7 +113,7 @@ const props = defineProps<{
     attachments?: {}
 
     // upload_spreadsheet: UploadPallet
-    // balance: string 
+    // balance: string
     // total_to_pay: number
     // address_management: AddressManagement
 }>()
@@ -137,7 +144,7 @@ console.log('DS Orders', props)
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
     </PageHeading>
-    
+
     <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2 max-w-5xl">
         <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
     </div>

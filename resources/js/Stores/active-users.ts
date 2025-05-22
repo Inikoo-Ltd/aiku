@@ -42,6 +42,8 @@ export const useLiveUsers = defineStore('useLiveUsers', {
     }),
     getters: {
         count: (state) => Object.keys(state.liveUsers).length,
+        liveUsersArray: (state) => Object.values(state.liveUsers),
+        // listUsersName: (state) => Object.values(state.liveUsers).map(user => user?.name ?? user?.username)?.join(', ')
         // liveUsersWithoutMe: (state) => state.liveUsers.filter((liveUser, keyUser) => keyUser != layout.user.id )
     },
     actions: {

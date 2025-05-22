@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Basket\UI;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\OrdersResource;
@@ -55,13 +56,17 @@ class IndexRetinaBaskets extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        if ($this->customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->platform = $customerSalesChannel->platform;
+        $this->initialisation($request);
 
         return $this->handle($customerSalesChannel);
     }
@@ -70,6 +75,11 @@ class IndexRetinaBaskets extends RetinaAction
     {
 
         $title = __('Baskets');
+        $platformName = $this->customerSalesChannel->name;
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $platformName = __('Manual');
+        }
 
         return Inertia::render(
             'Dropshipping/RetinaOrders',
@@ -80,10 +90,9 @@ class IndexRetinaBaskets extends RetinaAction
                     'title' => $title,
                     'icon'  => 'fal fa-shopping-basket',
                     'afterTitle' => [
-                        'label' => ' @'.$this->platform->name
+                        'label' => '@'.$this->platform->name
                     ],
                 ],
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()

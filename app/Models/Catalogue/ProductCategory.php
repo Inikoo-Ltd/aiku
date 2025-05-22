@@ -89,7 +89,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\ProductCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
- * @property-read ProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, BackInStockReminder> $subDepartmentBackInStockReminders
  * @property-read LaravelCollection<int, Favourite> $subDepartmentFavourites
  * @property-read LaravelCollection<int, ProductCategory> $subDepartments
@@ -193,7 +192,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     public function subDepartments(): HasMany
     {
-        return $this->hasMany(ProductCategory::class, 'department_id');
+        return $this->hasMany(ProductCategory::class, 'sub_department_id');
     }
 
 
@@ -210,6 +209,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public function getFamilies(): LaravelCollection
     {
         return $this->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
+    }
+
+    public function getSubDepartmentFamilies(): LaravelCollection
+    {
+        return $this->subDepartments()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
 
     public function getProducts(): LaravelCollection

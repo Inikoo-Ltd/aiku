@@ -32,7 +32,7 @@ class StoreRetinaPlatformPalletReturn extends RetinaAction
     }
 
 
-    public function prepareForValidation(ActionRequest $request): void
+    public function prepareForValidation(): void
     {
         if ($this->fulfilment->warehouses()->count() == 1) {
             /** @var Warehouse $warehouse */
@@ -44,7 +44,7 @@ class StoreRetinaPlatformPalletReturn extends RetinaAction
     public function rules(): array
     {
         return [
-            'warehouse_id'   => [
+            'warehouse_id' => [
                 'required',
                 'integer',
                 Rule::exists('warehouses', 'id')
@@ -53,10 +53,19 @@ class StoreRetinaPlatformPalletReturn extends RetinaAction
         ];
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $customerClient = $request->route('customerClient');
+        if ($customerClient->customer_id == $this->customer->id) {
+            return true;
+        }
+
+        return false;
+    }
 
     public function asController(CustomerClient $customerClient, ActionRequest $request): PalletReturn
     {
-        $this->initialisationFromPlatform($customerClient->platform, $request);
+        $this->initialisation($request);
 
         return $this->handle($customerClient, $this->validatedData);
     }
@@ -68,11 +77,11 @@ class StoreRetinaPlatformPalletReturn extends RetinaAction
         return $this->handle($customerClient, $this->validatedData);
     }
 
-    public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
+    public function htmlResponse(PalletReturn $palletReturn): RedirectResponse
     {
-        return  Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.basket.show', [
+        return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.basket.show', [
             'customerSalesChannel' => $palletReturn->customerSaleChannel->slug,
-            'palletReturn' => $palletReturn->slug
+            'palletReturn'         => $palletReturn->slug
         ]);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 22-05-2025-09h-47m
@@ -55,8 +56,7 @@ class PickDeliveryNoteAsEmployee extends OrgAction
     public function prepareForValidation()
     {
         $employee = request()->user()->employees()->first();
-        if (!$employee)
-        {
+        if (!$employee) {
             throw ValidationException::withMessages([
                 'messages' => __('You Are Not An Employee')
             ]);
@@ -65,12 +65,14 @@ class PickDeliveryNoteAsEmployee extends OrgAction
 
     public function htmlResponse(DeliveryNote $deliveryNote): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.dispatching.delivery-notes.show', 
-        [
+        return Redirect::route(
+            'grp.org.warehouses.show.dispatching.delivery-notes.show',
+            [
             'organisation' => $deliveryNote->organisation->slug,
             'warehouse' => $deliveryNote->warehouse->slug,
             'deliveryNote' => $deliveryNote->slug
-        ]);
+        ]
+        );
     }
 
     public function action(DeliveryNote $deliveryNote, Employee $employee): DeliveryNote

@@ -35,6 +35,8 @@ class PublishWebsiteMarginal extends OrgAction
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout;
         } elseif ($marginal == 'footer') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFooterSnapshot->layout;
+        } elseif ($marginal == 'menu') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
         }
 
         $firstCommit = true;
@@ -72,7 +74,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer'])) {
+        if (in_array($marginal, ['header', 'footer','menu'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,
@@ -117,6 +119,12 @@ class PublishWebsiteMarginal extends OrgAction
         $this->handle($website, 'header', $this->validatedData);
     }
 
+    public function menu(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'menu', $this->validatedData);
+    }
+
     public function footer(Website $website, ActionRequest $request): void
     {
         $this->initialisationFromShop($website->shop, $request);
@@ -129,11 +137,7 @@ class PublishWebsiteMarginal extends OrgAction
         $this->handle($website, 'theme', $this->validatedData);
     }
 
-    public function menu(Website $website, ActionRequest $request): void
-    {
-        $this->initialisationFromShop($website->shop, $request);
-        $this->handle($website, 'menu', $this->validatedData);
-    }
+
 
     public function action(Website $website, $marginal, $modelData): string
     {

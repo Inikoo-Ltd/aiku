@@ -11,8 +11,6 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
-use App\Actions\Dispatching\Picking\AssignPackerToPicking;
-use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
@@ -41,7 +39,7 @@ class UpdateDeliveryNote extends OrgAction
         $changes      = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
         $deliveryNote->refresh();
-        
+
         if (count($changes) > 0) {
             DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
             if (Arr::hasAny($changes, ['type', 'state', 'status'])) {
