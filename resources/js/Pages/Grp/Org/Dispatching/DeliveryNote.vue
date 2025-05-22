@@ -73,6 +73,10 @@ const props = defineProps<{
         packers_list: routeType
         set_queue: routeType
     }
+    delivery_note_state: {
+        label: string
+        value: string
+    }
 }>()
 
 const currentTab = ref(props.tabs?.current)
@@ -120,6 +124,29 @@ const onSetToQueue = () => {
         }
     )
 }
+const onUpdatePicker = () => {
+    router.patch(
+        route(props.routes.update.name, props.routes.update.parameters),
+        {
+            picker_id: selectedPicker.value.id
+        },
+        {
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error",
+                })
+            },
+            onSuccess: () => {
+                isModalToQueue.value = false
+            },
+            onStart: () => isLoadingToQueue.value = true,
+            onFinish: () => isLoadingToQueue.value = false,
+            preserveScroll: true,
+        }
+    )
+}
 </script>
 
 
@@ -132,9 +159,15 @@ const onSetToQueue = () => {
                 :label="action.label"
                 :icon="action.icon"
                 :type="action.type"
-            >
-
-            </Button>
+            />
+        </template>
+        <template #button-change-picker ="{ action }">
+            <Button
+                @click="isModalToQueue = true"
+                :label="action.label"
+                :icon="action.icon"
+                type="tertiary"
+            />
         </template>
     </PageHeading>
 
@@ -158,9 +191,8 @@ const onSetToQueue = () => {
     </div>
 
     <!-- Section: Timeline -->
-    <div class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
+    <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
         <Timeline
-            v-if="timelines"
             :options="timelines"
             :state="delivery_note.state"
             :slidesPerView="6"
@@ -174,7 +206,6 @@ const onSetToQueue = () => {
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes :state="delivery_note.state" />
     </div>
-
     <Modal
         :isOpen="isModalToQueue"
         @close="isModalToQueue = false"
@@ -197,6 +228,7 @@ const onSetToQueue = () => {
                         xxxupdate:modelValue="
                             (selectedPicker) => onSubmitPickerPacker(selectedPicker, 'picker')
                         "
+                        required
                         :fetchRoute="routes.pickers_list"
                         :placeholder="trans('Select picker')"
                         labelProp="contact_name"
@@ -224,8 +256,8 @@ const onSetToQueue = () => {
 
             <div class="w-full mt-2">
                 <Button
-                    @click="onSetToQueue()"
-                    :label="trans('Set to queue')"
+                    @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
+                    :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set to queue')"
                     :iconRight="['fas', 'fa-arrow-right']"
                     full
                     :loading="isLoadingToQueue"

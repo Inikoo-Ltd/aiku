@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexHandlingDeliveryNoteItems;
 use App\Actions\Dispatching\Picking\UI\IndexPickings;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -21,6 +22,7 @@ use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
+use App\Http\Resources\Dispatching\HandlingDeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\PickingsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Catalogue\Shop;
@@ -108,9 +110,15 @@ class ShowDeliveryNote extends OrgAction
             $timestamp = $timestamp ?: null;
             // dd($state);
             $label = $state->labels()[$state->value];
-            if($deliveryNote->state === DeliveryNoteStateEnum::QUEUED || $deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+            if($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
                 if (
-                in_array($state, [DeliveryNoteStateEnum::QUEUED, DeliveryNoteStateEnum::HANDLING])
+                in_array($state, [DeliveryNoteStateEnum::QUEUED])
+                ) {
+                    $label .= ' (' . $deliveryNote->picker->contact_name . ')';
+                }
+            } elseif ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+                if (
+                in_array($state, [DeliveryNoteStateEnum::HANDLING])
                 ) {
                     $label .= ' (' . $deliveryNote->picker->contact_name . ')';
                 }
@@ -192,8 +200,7 @@ class ShowDeliveryNote extends OrgAction
                 default => []
             };
 
-
-        return Inertia::render(
+            return Inertia::render(
             'Org/Dispatching/DeliveryNote',
             [
                 'title'         => __('delivery note'),
@@ -274,18 +281,22 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ],
                 ],
+                'delivery_note_state' => [
+                    'value' => $deliveryNote->state,
+                    'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
+                ],
 
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
                     fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
                     : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
                 DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
-                    fn () => PickingsResource::collection(IndexPickings::run($deliveryNote))
-                    : Inertia::lazy(fn () => PickingsResource::collection(IndexPickings::run($deliveryNote))),
+                    fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
+                    : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
             ]
         )
             ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value))
-            ->table(IndexPickings::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
+            ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
     }
 
     public function prepareForValidation(ActionRequest $request): void
