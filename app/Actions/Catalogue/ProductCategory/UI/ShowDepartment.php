@@ -48,14 +48,16 @@ class ShowDepartment extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): ProductCategory
     {
+
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
-
         return $this->handle($department);
     }
 
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
+
+
         return Inertia::render(
             'Org/Catalogue/Department',
             [
@@ -118,8 +120,6 @@ class ShowDepartment extends OrgAction
                             prefix: 'customers'
                         )
                     )),
-
-
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($department))

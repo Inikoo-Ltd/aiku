@@ -8,37 +8,31 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property string $slug
- * @property string $code
- * @property mixed $created_at
- * @property mixed $updated_at
- * @property string $name
- * @property string $state
- * @property integer $image_id
- *
- */
 class FamilyResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var ProductCategory $family */
+        $family = $this;
+
+
         return [
-            'slug'       => $this->slug,
-            'id'         => $this->id,
-            'image_id'   => $this->image_id,
-            'code'       => $this->code,
-            'show_in_website' => $this->show_in_website,
-            'name'       => $this->name,
-            'state'      => $this->state,
-            'description' => $this->description,
-            'image'        => $this ->imageSources(720, 480),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'show_in_website'  => $this->show_in_website,
-            'type'              => $this->type,
-            'follow_master'     => $this->follow_master
+            'slug'            => $family->slug,
+            'id'              => $family->id,
+            'image_id'        => $family->image_id,
+            'code'            => $family->code,
+            'show_in_website' => $family->show_in_website,
+            'name'            => $family->name,
+            'state'           => $family->state,
+            'description'     => $family->description,
+            'image'           => $family->imageSources(720, 480),
+            'created_at'      => $family->created_at,
+            'updated_at'      => $family->updated_at,
+            'type'            => $family->type,
+            'follow_master'   => $family->follow_master
         ];
     }
 }

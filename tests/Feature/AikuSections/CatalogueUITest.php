@@ -418,7 +418,7 @@ test('UI show sub department in department', function () {
     $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Catalogue/Department')
+            ->component('Org/Catalogue/SubDepartment')
             ->has('title')
             ->has('breadcrumbs', 4)
             ->has('navigation')

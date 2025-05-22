@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
+use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -24,13 +25,12 @@ class GetProductCategoryShowcase
 
             $data = [
                 'department' => DepartmentResource::make($productCategory)->toArray(request()),
-                'families'   => FamilyResource::collection($productCategory->getFamilies()->toArray(request())),
+                'families'   => FamilyResource::collection($productCategory->getFamilies()),
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            // TODO: check this
             $data = [
-                'department' => DepartmentResource::make($productCategory->department)->toArray(request()),
-                'families'   => FamilyResource::collection($productCategory->getSubDepartmentFamilies())->toArray(request()),
+                'subDepartment' => SubDepartmentResource::make($productCategory->department)->toArray(request()),
+                'families'   => FamilyResource::collection($productCategory->getFamilies()),
             ];
         } else {
             $data = [
@@ -43,7 +43,6 @@ class GetProductCategoryShowcase
                 'name'       => 'grp.models.sub-department.family.detach',
                 'parameters' => [
                     'subDepartment' => $productCategory->slug,
-                    // 'family'        => null  // Add from FE
                 ],
                 'method'     => 'delete'
             ],
