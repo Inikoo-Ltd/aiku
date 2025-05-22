@@ -112,9 +112,8 @@ class IndexTransactions extends OrgAction
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
-            if ( $parent instanceof Order &&
-                (!isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)) 
-            {
+            if ($parent instanceof Order &&
+                (!isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)) {
                 $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
