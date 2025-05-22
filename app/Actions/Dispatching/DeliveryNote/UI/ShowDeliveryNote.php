@@ -274,6 +274,10 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ],
                 ],
+                'delivery_note_state' => [
+                    'value' => $deliveryNote->state,
+                    'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
+                ],
 
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
                     fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
