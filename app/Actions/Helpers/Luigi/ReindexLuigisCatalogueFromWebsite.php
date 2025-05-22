@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Helpers\Language\Luigi;
+namespace App\Actions\Helpers\Luigi;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -113,6 +113,8 @@ class ReindexLuigisCatalogueFromWebsite
                     "description" => $product->description,
                 ]),
             ];
+
+            dd($body);
         }
 
 

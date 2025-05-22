@@ -42,7 +42,8 @@ watch(
 
 <template>
     <Swiper :key="keySwiper" :slides-per-view="modelValue.carousel_data.carousel_setting.slidesPerView.desktop"
-        :loop="true" :autoplay="true" :simulate-touch="true" :touch-ratio="1" :pagination="{ clickable: true }"
+        :loop="modelValue?.carousel_data?.carousel_setting?.loop"
+      :autoplay="modelValue?.carousel_data?.carousel_setting?.autoplay"  :simulate-touch="true" :touch-ratio="1" :pagination="{ clickable: true }"
         :modules="[Pagination]" :spaceBetween="modelValue.carousel_data.carousel_setting.spaceBetween"
         class="touch-pan-x" :style="getStyles(modelValue.container?.properties, screenType)" :breakpoints="{
             0: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.mobile },
