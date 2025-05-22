@@ -25,9 +25,9 @@ class AttachFamiliesToSubDepartment extends OrgAction
     {
         ProductCategory::whereIn('id', $modelData['families_id'])
             ->update([
-                'department_id' => null,
                 'sub_department_id' => $subDepartment->id
             ]);
+
         $subDepartment->refresh();
 
         return $subDepartment;

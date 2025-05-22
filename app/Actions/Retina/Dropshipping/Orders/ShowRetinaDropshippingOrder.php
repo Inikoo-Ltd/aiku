@@ -17,8 +17,6 @@ use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\RetinaAction;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Ordering\TransactionsResource;
@@ -31,7 +29,6 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
-use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingOrder extends RetinaAction
 {
@@ -47,18 +44,9 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return $this->handle($order);
     }
 
-    public function inPlatform(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
-    {
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request)->withTab(OrderTabsEnum::values());
-
-        return $this->handle($order);
-    }
-
-
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-
         $finalTimeline = ShowOrder::make()->getOrderTimeline($order);
 
 
@@ -66,35 +54,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $action = [];
 
-        $action[] = $this->platform && $this->platform->type == PlatformTypeEnum::MANUAL && OrderStateEnum::CREATING == $order->state ? [
-            'type' => 'buttonGroup',
-            'key' => 'upload-add',
-            'button' => [
-                [
-                    'type' => 'button',
-                    // 'style' => 'secondary',
-                    // 'icon' => ['fal', 'fa-upload'],
-                    // 'label' => '',
-                    // 'key' => 'upload',
-                    // 'tooltip' => __('Upload pallets via spreadsheet'),
-                ],
-            ],
-        ] : [];
-
-        // if($order->state == OrderStateEnum::CREATING) {
-        //     $action[] = [
-        //         'type'  => 'button',
-        //         'style' => 'create',
-        //         'label' => __('Submit'),
-        //         'route' => [
-        //             'name'       => 'retina.models.order.submit',
-        //             'parameters' => [
-        //                 'order' => $order->id
-        //             ],
-        //             'method'     => 'patch'
-        //         ]
-        //     ];
-        // }
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingOrder',
@@ -117,7 +76,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'navigation' => OrderTabsEnum::navigation()
                 ],
 
-                'routes'    => [
+                'routes' => [
                     'update_route' => [
                         'name'       => 'retina.models.order.update',
                         'parameters' => [
@@ -134,76 +93,32 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     ]
                 ],
 
-                // 'upload_spreadsheet' => [
-                //     'title' => [
-                //         'label' => __('Upload product'),
-                //         'information' => __('The list of column file') . ": code, quantity"
-                //     ],
-                //     'progressDescription'   => __('Adding Products'),
-                //     'preview_template'    => [
-                //         'header' => ['code', 'quantity'],
-                //         'rows' => [
-                //             [
-                //                 'code' => 'product-001',
-                //                 'quantity' => '1'
-                //             ]
-                //         ]
-                //     ],
-                //     'upload_spreadsheet'    => [
-                //         'event'           => 'action-progress',
-                //         'channel'         => 'grp.personal.'.$this->organisation->id,
-                //         'required_fields' => ['code', 'quantity'],
-                //         'template'        => [
-                //             'label' => 'Download template (.xlsx)'
-                //         ],
-                //         'route'           => [
-                //             'upload'   => [
-                //                 'name'       => 'retina.models.order.transaction.upload',
-                //                 'parameters' => [
-                //                     'order' => $order->id
-                //                 ]
-                //             ],
-                //             'history'  => [
-                //                 'name'       => 'retina.dropshipping.orders.recent_uploads',
-                //                 'parameters' => [
-                //                     'order' => $order->slug
-                //                 ]
-                //             ],
-                //             'download' => [
-                //                 'name'       => 'retina.dropshipping.orders.upload_templates',
-                //                 'parameters' => [
-                //                     'order'        => $order->slug
-                //                 ]
-                //             ],
-                //         ],
-                //     ]
-                // ],
 
-                'timelines'   => $finalTimeline,
+                'timelines' => $finalTimeline,
 
-                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina:true),
+                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
 
 
-                'box_stats'      => ShowOrder::make()->getOrderBoxStats($order),
-                'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'           => OrderResource::make($order),
+                'box_stats' => ShowOrder::make()->getOrderBoxStats($order),
+                'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
+                'data'      => OrderResource::make($order),
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
-                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
-                     fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                     : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
+                    fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
-                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
-                     fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                     : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
+                    fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
-                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
-                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
             ]
         )
@@ -214,17 +129,23 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     prefix: OrderTabsEnum::TRANSACTIONS->value
                 )
             )
-            ->table(IndexInvoices::make()->tableStructure(
-                parent: $order,
-                prefix: OrderTabsEnum::INVOICES->value
-            ))
-            ->table(IndexAttachments::make()->tableStructure(
-                prefix: OrderTabsEnum::ATTACHMENTS->value
-            ))
-            ->table(IndexDeliveryNotes::make()->tableStructure(
-                parent: $order,
-                prefix: OrderTabsEnum::DELIVERY_NOTES->value
-            ));
+            ->table(
+                IndexInvoices::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::INVOICES->value
+                )
+            )
+            ->table(
+                IndexAttachments::make()->tableStructure(
+                    prefix: OrderTabsEnum::ATTACHMENTS->value
+                )
+            )
+            ->table(
+                IndexDeliveryNotes::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::DELIVERY_NOTES->value
+                )
+            );
     }
 
     public function jsonResponse(Order $order): OrderResource
@@ -255,12 +176,12 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 $order,
                 [
                     'index' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.orders.index',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.index',
                         'parameters' => []
                     ],
                     'model' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.orders.show',
-                        'parameters' => [ $routeParameters['customerSalesChannel'], $order->slug]
+                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.show',
+                        'parameters' => [$routeParameters['customerSalesChannel'], $order->slug]
                     ]
                 ],
                 $suffix

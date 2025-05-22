@@ -19,12 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaCustomerClient extends RetinaAction
 {
-    /**
-     * @var \App\Models\Dropshipping\CustomerSalesChannel|\Eloquent|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Model|object|null
-     */
-    private CustomerSalesChannel $scope;
-
-    public function handle(ActionRequest $request): Response
+    public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
@@ -93,7 +88,7 @@ class CreateRetinaCustomerClient extends RetinaAction
                     'route'     => [
                         'name'       => 'retina.models.customer_sales_channel.customer-client.store',
                         'parameters' => [
-                            'customerSalesChannel' => $this->scope->id
+                            'customerSalesChannel' => $customerSalesChannel->id
                         ]
                     ]
                 ]
@@ -104,16 +99,19 @@ class CreateRetinaCustomerClient extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        $customerSalesChannel = $request->route()->parameter('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
     }
 
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
-        $this->scope = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
 
-        return $this->handle($request);
+        return $this->handle($customerSalesChannel, $request);
     }
 
     public function getBreadcrumbs($routeName, $routeParameters): array

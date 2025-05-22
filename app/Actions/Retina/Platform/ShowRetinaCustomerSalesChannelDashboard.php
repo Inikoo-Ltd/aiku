@@ -22,38 +22,39 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     public function authorize(ActionRequest $request): bool
     {
         $customerSalesChannel = $request->route('customerSalesChannel');
-        if ($customerSalesChannel->customer_id !== $this->customer->id) {
-            return false;
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
+
         return $customerSalesChannel;
     }
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
-
         $title = __('Channel Dashboard');
-        return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
-            'title'        => $title,
-            'breadcrumbs'    => $this->getBreadcrumbs(),
-            'pageHead'    => [
 
-                'title'         => $title,
-                'icon'          => [
+        return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
+            'title'                  => $title,
+            'breadcrumbs'            => $this->getBreadcrumbs($customerSalesChannel),
+            'pageHead'               => [
+
+                'title' => $title,
+                'icon'  => [
                     'icon'  => ['fal', 'fa-tachometer-alt'],
                     'title' => $title
                 ],
 
             ],
             'customer_sales_channel' => $customerSalesChannel,
-            'platform'       =>  $customerSalesChannel->platform,
-            'platformData'  => $this->getPlatformData($customerSalesChannel),
+            'platform'               => $customerSalesChannel->platform,
+            'platformData'           => $this->getPlatformData($customerSalesChannel),
         ]);
     }
 
@@ -64,12 +65,12 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
 
         $stats['orders'] = [
-            'label'         => __('Orders'),
-            'icon'          => 'fal fa-shopping-cart',
-            'count'         => $customerSalesChannel->number_orders,
-            'description'   => __('total orders'),
-            'route'         => [
-                'name' => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index' : 'retina.dropshipping.customer_sales_channels.orders.index',
+            'label'       => __('Orders'),
+            'icon'        => 'fal fa-shopping-cart',
+            'count'       => $customerSalesChannel->number_orders,
+            'description' => __('total orders'),
+            'route'       => [
+                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index' : 'retina.dropshipping.customer_sales_channels.orders.index',
                 'parameters' => [
                     'customerSalesChannel' => $customerSalesChannel->slug,
                 ]
@@ -77,12 +78,12 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         ];
 
         $stats['clients'] = [
-            'label'         => __('Clients'),
-            'icon'          => 'fal fa-user-friends',
-            'count'         => $customerSalesChannel->number_customer_clients,
-            'description'   => __('total clients'),
-            'route'         => [
-                'name' => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
+            'label'       => __('Clients'),
+            'icon'        => 'fal fa-user-friends',
+            'count'       => $customerSalesChannel->number_customer_clients,
+            'description' => __('total clients'),
+            'route'       => [
+                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
                 'parameters' => [
                     'customerSalesChannel' => $customerSalesChannel->slug,
                 ]
@@ -90,12 +91,12 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         ];
 
         $stats['portfolios'] = [
-            'label'         => __('Portfolios'),
-            'icon'          => 'fal fa-cube',
-            'count'         => $customerSalesChannel->number_portfolios,
-            'description'   => __('total portfolios'),
-            'route'         => [
-                'name' => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index' : 'retina.dropshipping.customer_sales_channels.portfolios.index',
+            'label'       => __('Portfolios'),
+            'icon'        => 'fal fa-cube',
+            'count'       => $customerSalesChannel->number_portfolios,
+            'description' => __('total portfolios'),
+            'route'       => [
+                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index' : 'retina.dropshipping.customer_sales_channels.portfolios.index',
                 'parameters' => [
                     'customerSalesChannel' => $customerSalesChannel->slug,
                 ]
@@ -105,9 +106,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         return $stats;
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
-
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
@@ -116,14 +116,13 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.show',
-                                'parameters'  => ['manual']  // TODO: change to correct one
+                                'name'       => 'retina.dropshipping.customer_sales_channels.show',
+                                'parameters' => [$customerSalesChannel->slug]
                             ],
                             'label' => __('Channel Dashboard'),
                         ]
                     ]
                 ]
             );
-
     }
 }

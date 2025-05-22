@@ -30,6 +30,7 @@ use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
+use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrderInCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
@@ -64,7 +65,6 @@ Route::prefix('client')->as('client.')->group(function () {
 Route::prefix('portfolios')->as('portfolios.')->group(function () {
     Route::get('my-portfolio', IndexRetinaPortfolios::class)->name('index');
     Route::get('my-portfolio/{product}', ShowRetinaProduct::class)->name('show');
-    Route::get('products', IndexRetinaProductsInDropshipping::class)->name('products.index');
 });
 
 Route::prefix('orders')->as('orders.')->group(function () {
@@ -98,12 +98,12 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
         Route::get('my-portfolio', IndexRetinaPortfolios::class)->name('index');
         Route::get('my-portfolio/{product}', [ShowRetinaProduct::class, 'inPlatform'])->name('show');
         Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
-        Route::get('products', [IndexRetinaProductsInDropshipping::class, 'inPlatform'])->name('products.index');
+        Route::get('products', IndexRetinaProductsInDropshipping::class)->name('products.index');
     });
 
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::get('/', IndexRetinaDropshippingOrdersInPlatform::class)->name('index');
-        Route::get('/{order}', [ShowRetinaDropshippingOrder::class, 'inPlatform'])->name('show');
+        Route::get('/{order}', ShowRetinaDropshippingOrderInCustomerSalesChannel::class)->name('show');
     });
 
     Route::prefix('api')->as('api.')->group(function () {

@@ -82,9 +82,18 @@ class IndexRetinaFilteredProducts extends RetinaAction
         return FilteredProductsResource::collection($products);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $customerSalesChannel = $request->route()->parameter('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
+    }
+
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
 
         return $this->handle($customerSalesChannel);
     }
