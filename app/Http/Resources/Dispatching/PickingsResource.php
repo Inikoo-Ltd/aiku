@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Http\Resources\Inventory\LocationResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PickingsResource extends JsonResource
@@ -16,96 +17,15 @@ class PickingsResource extends JsonResource
     {
         return [
             'id'                  => $this->id,
-            'org_stock_code'      => $this->org_stock_code,
-            'org_stock_name'      => $this->org_stock_name,
-            'state'               => $this->state->stateIcon()[$this->state->value],
-            'state_icon'          => $this->state->stateIcon()[$this->state->value],
-            'picker_name'         => $this->picker_name    ?? null,
-            'packer_name'         => $this->packer_name    ?? null,
-            'picker'            => [
-                'selected' => ($this->picker_id === null && $this->picker_name === null)
-                    ? null
-                    : [
-                        'user_id'      => $this->picker_id ?? 0,
-                        'contact_name' => $this->picker_name,
-                    ],
-                'pickerId'   => $this->picker_id,
-                'pickerName' => $this->picker_name,
-            ],
-            'packer'            => [
-                'selected' => ($this->packer_id === null && $this->packer_name === null)
-                    ? null
-                    : [
-                        'user_id'      => $this->packer_id ?? 0,
-                        'contact_name' => $this->packer_name,
-                    ]
-            ],
-            // 'packer_name'         => $this->packer_name    ?? null,
-            'engine'      => $this->engine            ?? null,
-            'picking_at'          => $this->picking_at                ?? null,
-            'picked_at'           => $this->picked_at                 ?? null,
-            'packing_at'          => $this->packing_at                ?? null,
-            'packed_at'           => $this->packed_at                 ?? null,
-            'quantity_required'   => intval($this->quantity_required) ?? 0,
-            'quantity_picked'     => intval($this->quantity_picked)   ?? 0,
-            'location_id'         => $this->location_id,
-
-            'assign_picker'  => [
-                'name'          => 'grp.models.picking.assign.picker',
-                'parameters'    => [
-                    'picking'   => $this->id
-                    ]
-                ],
-            'assign_packer'  => [
-                'name'          => 'grp.models.picking.assign.packer',
-                'parameters'    => [
-                    'picking'   => $this->id
-                    ]
-                ],
-            'routes'         => [
-                'pickingRoute'  => [
-                    'name'          => 'grp.models.picking.state.picking',
-                    'method'        => 'patch',
-                    'parameters'    => [
-                        'picking'   => $this->id
-                    ]
-                ],
-                'queriedRoute'  => [
-                    'name'          => 'grp.models.picking.state.queried',
-                    'method'        => 'patch',
-                    'parameters'    => [
-                        'picking'   => $this->id
-                    ]
-                ],
-                'waitingRoute'  => [
-                    'name'          => 'grp.models.picking.state.waiting',
-                    'method'        => 'patch',
-                    'parameters'    => [
-                        'picking'   => $this->id
-                    ]
-                ],
-                'pickedRoute'  => [
-                    'name'          => 'grp.models.picking.state.picked',
-                    'method'        => 'patch',
-                    'parameters'    => [
-                        'picking'   => $this->id
-                    ]
-                ],
-                'packingRoute'  => [
-                    'name'          => 'grp.models.picking.state.packing',
-                    'method'        => 'patch',
-                    'parameters'    => [
-                        'picking'   => $this->id
-                    ]
-                ],
-                'doneRoute'  => [
-                    'name'          => 'grp.models.picking.state.done',
-                    'method'        => 'patch',
-                    'parameters'    => [
-                        'picking'   => $this->id
-                    ]
-                ],
-            ]
+            'state'               => $this->state,
+            'status'              => $this->status,
+            'not_picked_reason'   => $this->not_picked_reason,
+            'not_picked_note'     => $this->not_picked_note,
+            'quantity_required'   => $this->quantity_required,
+            'quantity_picked'     => $this->quantity_picked,
+            'engine'              => $this->engine,
+            'picker_name'         => $this->picker->contact_name,
+            'location_code'       => $this->location->code,
         ];
     }
 }
