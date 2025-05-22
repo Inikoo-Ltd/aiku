@@ -55,13 +55,16 @@ class IndexRetinaBaskets extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        if ($this->customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
 
         return $this->handle($customerSalesChannel);
     }

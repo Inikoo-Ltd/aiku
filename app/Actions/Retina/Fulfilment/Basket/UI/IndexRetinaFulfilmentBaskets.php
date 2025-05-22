@@ -84,13 +84,16 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        if ($this->customerSalesChannel->customer_id == $this->customer->id) {
+            return  true;
+        }
+        return false;
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
         return $this->handle($customerSalesChannel);
     }
 
@@ -155,8 +158,7 @@ class IndexRetinaFulfilmentBaskets extends RetinaAction
                 ->column(key: 'created_at', label: __('Created at'), canBeHidden: false, type: 'date')
                 ->column(key: 'reference', label: __('reference number'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('Your reference'), canBeHidden: false, sortable: true, searchable: true)
-                // ->column(key: 'customer', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'total_amount', label: __('total amount'), canBeHidden: false, sortable: false, searchable: false, type: 'currency');
+                ->column(key: 'total_amount', label: __('total amount'), canBeHidden: false, type: 'currency');
         };
     }
 
