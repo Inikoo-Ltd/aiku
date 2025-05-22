@@ -29,6 +29,18 @@ trait IsOrder
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;
 
+        $customerChannel = null;
+        if ($order->customer_sales_channel_id) {
+            $customerChannel = [
+                'status' => $order->customer_sales_channel_id,
+                'platform' => [
+                    'name' => $order->platform?->name,
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel)
+                ]
+            ];
+        }
+
+
         return [
             'customer' => array_merge(
                 CustomerResource::make($order->customer)->getArray(),
@@ -48,13 +60,7 @@ trait IsOrder
                 ]
             ),
             'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
-            'customer_channel' => [
-                'status' => ! blank($order->customer_sales_channel_id),
-                'platform' => [
-                    'name' => $order->platform?->name,
-                    'image' => $this->getPlatformLogo($order->customerSalesChannel)
-                ]
-            ],
+            'customer_channel' => $customerChannel,
             'products' => [
                 'payment'          => [
                     'routes'       => [

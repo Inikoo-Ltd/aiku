@@ -900,6 +900,7 @@ test('show next bill', function () {
 
 
 test('show pallet return with stored item', function () {
+    $this->withoutExceptionHandling();
     actingAs($this->webUser, 'retina');
     $response = $this->get(route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
         $this->palletReturn->slug

@@ -34,9 +34,9 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowRetinaStoredItemReturn extends RetinaAction
 {
     /**
-     * @var \App\Models\Dropshipping\CustomerSalesChannel
+     * @var \App\Models\Dropshipping\CustcustomerSalesChannelomerSalesChannel|null
      */
-    private CustomerSalesChannel $customerSalesChannel;
+    private ?CustomerSalesChannel $customerSalesChannel;
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
