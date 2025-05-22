@@ -75,6 +75,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
+        $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request);
         return $this->handle($customerSalesChannel);
     }

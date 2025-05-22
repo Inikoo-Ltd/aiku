@@ -61,10 +61,13 @@ class StoreWebsite extends OrgAction
             $website,
             [
                 'scope'  => SnapshotScopeEnum::HEADER,
-                /*'layout' => json_decode(
-                    Storage::disk('datasets')->get('web-block-types/header.json'),
-                    true
-                )*/
+                'layout' => []
+            ]
+        );
+        $menuSnapshot = StoreWebsiteSnapshot::run(
+            $website,
+            [
+                'scope'  => SnapshotScopeEnum::MENU,
                 'layout' => []
             ]
         );
@@ -78,9 +81,11 @@ class StoreWebsite extends OrgAction
         $website->update(
             [
                 'unpublished_header_snapshot_id' => $headerSnapshot->id,
+                'unpublished_menu_snapshot_id' => $menuSnapshot->id,
                 'unpublished_footer_snapshot_id' => $footerSnapshot->id,
                 'published_layout'               => [
                     'header' => $headerSnapshot->layout,
+                    'menu' => $menuSnapshot->layout,
                     'footer' => $footerSnapshot->layout
                 ]
             ]

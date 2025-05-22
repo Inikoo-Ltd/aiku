@@ -51,6 +51,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
     public function asController(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
+        $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
