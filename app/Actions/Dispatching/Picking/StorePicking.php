@@ -8,7 +8,9 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
@@ -28,11 +30,21 @@ class StorePicking extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
+        if($deliveryNoteItem->deliveryNote->state != DeliveryNoteStateEnum::HANDLING)
+        {
+            UpdateDeliveryNote::make()->action($deliveryNoteItem->deliveryNote, [
+                'state' => DeliveryNoteStateEnum::HANDLING
+            ]);
+        }
+
         data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
         data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
         data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
         data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
         data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
+        data_set($modelData, 'quantity_required', $deliveryNoteItem->quantity_required);
+        data_set($modelData, 'state', PickingStateEnum::PICKING);
+        data_set($modelData, 'engine', PickingEngineEnum::AIKU);
 
         return $deliveryNoteItem->pickings()->create($modelData);
     }
@@ -41,15 +53,15 @@ class StorePicking extends OrgAction
     {
         return [
             'state'           => ['sometimes', Rule::enum(PickingStateEnum::class)],
-            'outcome'         => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
+            'not_picked_reason'         => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
             'engine'          => ['sometimes', Rule::enum(PickingEngineEnum::class)],
             'location_id'     => [
-                'sometimes',
+                'required',
                 Rule::Exists('locations', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
             ],
             'quantity_picked' => ['sometimes', 'numeric'],
             'picker_id'       => [
-                'sometimes',
+                'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
             ],
         ];
