@@ -13,7 +13,7 @@ use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
-use App\Actions\Dropshipping\WooCommerce\Clients\FetchRetinaCustomerClientFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
@@ -86,7 +86,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::prefix('client')->as('client.')->group(function () {
         Route::get('create', CreateRetinaCustomerClient::class)->name('create');
         Route::get('fetch', FetchRetinaCustomerClientFromShopify::class)->name('fetch');
-        Route::get('wc-fetch', FetchRetinaCustomerClientFromWooCommerce::class)->name('wc-fetch');
+        Route::get('wc-fetch', GetRetinaCustomerClientFromWooCommerce::class)->name('wc-fetch');
 
         Route::get('/', IndexRetinaCustomerClientsInCustomerSalesChannel::class)->name('index');
         Route::get('create', CreateRetinaCustomerClient::class)->name('create');

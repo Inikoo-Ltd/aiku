@@ -12,10 +12,11 @@ use App\Actions\RetinaAction;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 
 class AttachRetinaPlatformCustomerClient extends RetinaAction
 {
-    public function handle(Customer $customer, ShopifyUser|TiktokUser $userable, $modelData = []): void
+    public function handle(Customer $customer, ShopifyUser|TiktokUser|WooCommerceUser $userable, $modelData = []): void
     {
         data_set($modelData, 'customer_id', $customer->id);
         data_set($modelData, 'group_id', $customer->group_id);
