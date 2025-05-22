@@ -41,30 +41,7 @@ class UpdateDeliveryNote extends OrgAction
         $changes      = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
         $deliveryNote->refresh();
-
-        if (Arr::get($modelData, 'picker_id')) {
-            foreach ($deliveryNote->deliveryNoteItems as $item) {
-                AssignPickerToPicking::make()->action(
-                    $item->pickings,
-                    [
-                        'picker_id' => $deliveryNote->picker_id
-                    ]
-                );
-            }
-        }
-
-        if (Arr::get($modelData, 'packer_id')) {
-            foreach ($deliveryNote->deliveryNoteItems as $item) {
-                AssignPackerToPicking::make()->action(
-                    $item->pickings,
-                    [
-                        'packer_id' => $deliveryNote->packer_id
-                    ]
-                );
-            }
-        }
-
-
+        
         if (count($changes) > 0) {
             DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
             if (Arr::hasAny($changes, ['type', 'state', 'status'])) {

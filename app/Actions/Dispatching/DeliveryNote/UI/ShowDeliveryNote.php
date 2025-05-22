@@ -138,41 +138,6 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ]
                 ],
-                DeliveryNoteStateEnum::QUEUED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('In Queue'),
-                        'label'   => __('In Queue'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.delivery-note.state.picker-assigned',
-                            'parameters' => [
-                                'deliveryNote' => $deliveryNote->id
-                            ]
-                        ]
-                    ]
-                ],
-
-                DeliveryNoteStateEnum::HANDLING => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Handling'),
-                        'label'   => __('Handling'),
-                        'key'     => 'action-picked',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.delivery-note.state.picked',
-                            'parameters' => [
-                                'deliveryNote' => $deliveryNote->id
-                            ]
-                        ]
-                    ]
-                ],
-
-
                 DeliveryNoteStateEnum::PACKED => [
                     [
                         'type'    => 'button',
