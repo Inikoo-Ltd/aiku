@@ -12,6 +12,14 @@ class GetWebsiteWorkshopMenu
 
     public function handle(Website $website): array
     {
+        //todo thi sis a horrible hack need to ne replaced one day from a repair action
+        if(!$website->unpublishedHeaderSnapshot){
+
+            return [
+                'menu'    => Arr::get($website->published_layout, 'menu', [])
+            ];
+        }
+
         return [
             'menu'    => Arr::get($website->unpublishedHeaderSnapshot, 'menu', [])
         ];
