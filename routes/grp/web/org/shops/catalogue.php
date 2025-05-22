@@ -92,7 +92,7 @@ Route::name("departments.")->prefix('departments')
 
                 Route::prefix('{family}')->group(function () {
                     Route::get('edit', [EditFamily::class, 'inDepartment'])->name('edit');
-                    Route::get('', [ShowFamily::class, 'inDepartment'])->name('show');
+                    Route::get('', ShowFamily::class)->name('show');
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
                             Route::get('', [IndexProducts::class, 'inFamilyInDepartment'])->name('index');
@@ -120,7 +120,7 @@ Route::name("departments.")->prefix('departments')
                         Route::get('index', [IndexFamilies::class, 'inSubDepartmentInDepartment'])->name('index');
                         Route::get('create', [CreateFamily::class, 'inSubDepartmentInDepartment'])->name('create');
                         Route::prefix('{family}')->name('show')->group(function () {
-                            Route::get('', [ShowFamily::class, 'inSubDepartmentInDepartment']);
+                            Route::get('', [ShowFamily::class, 'inSubDepartment']);
                             Route::prefix('products')->name('.products.')->group(function () {
                                 Route::get('', [IndexProducts::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
                                 Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInDepartment'])->name('create');
