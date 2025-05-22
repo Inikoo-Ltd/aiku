@@ -15,30 +15,35 @@ enum DispatchedEmailStateEnum: string
     use EnumHelperTrait;
 
     case READY = 'ready';
-    case SENT_TO_PROVIDER = 'sent_to_provider';
 
-    case ERROR = 'error';
-    case REJECTED_BY_PROVIDER = 'rejected_by_provider';
+    //case SENT_TO_PROVIDER = 'sent_to_provider'; // <-- no used
 
-    case SENT = 'sent';
+    case ERROR = 'error'; // Sent to the provider results in error
+    case SENT = 'sent'; // Sent to provider ok
 
-    case DELIVERED = 'delivered';
+
+    case REJECTED_BY_PROVIDER = 'rejected_by_provider';  //  but determined that it contained a virus and didn’t attempt to deliver it to the recipient’s mail server.
+    case DELAY = 'delay'; //The email couldn't be delivered to the recipient’s mail server because a temporary issue occurred. Delivery delays can occur, for example, when the recipient's inbox is full, or when the receiving email server experiences a transient issue.
+
+
+    case DELIVERED = 'delivered'; //Amazon SES successfully delivered the email to the recipient's mail server.
+
+
     case HARD_BOUNCE = 'hard_bounce';
     case SOFT_BOUNCE = 'soft_bounce';
-    case OPENED = 'opened';
 
+    case OPENED = 'opened';
     case CLICKED = 'clicked';
     case SPAM = 'spam';
     case UNSUBSCRIBED = 'unsubscribed';
 
-    case DELAY = 'delay';
+
 
 
     public static function labels(): array
     {
         return [
             'ready'                => __('Ready to send'),
-            'sent_to_provider'     => __('Sent to provider'),
             'error'                => __('Error, count not send'),
             'rejected_by_provider' => __('Rejected'),
             'sent'                 => __('Sent'),
@@ -64,13 +69,7 @@ enum DispatchedEmailStateEnum: string
 
 
             ],
-            'sent_to_provider'     => [
 
-                'tooltip' => __('Sent to provider'),
-                'icon'    => 'fal fa-paper-plane',
-                'class'   => 'text-green-600 animate-pulse'
-
-            ],
             'error'                => [
 
                 'tooltip' => __('Error'),
