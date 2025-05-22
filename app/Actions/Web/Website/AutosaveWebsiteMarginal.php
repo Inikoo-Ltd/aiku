@@ -41,6 +41,14 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'footer' => $layout
                 ]
             ]);
+        } elseif ($marginal == 'menu') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+
+            $this->update($website->unpublishedMenuSnapshot, [
+                'layout' => [
+                    'menu' => $layout
+                ]
+            ]);
         }
 
         return $website;
