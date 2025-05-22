@@ -36,9 +36,8 @@ class FetchAuroraDispatchedEmail extends FetchAurora
 
         $state = match ($this->auroraModelData->{'Email Tracking State'}) {
             'Ready' => DispatchedEmailStateEnum::READY,
-            'Sent to SES' => DispatchedEmailStateEnum::SENT_TO_PROVIDER,
+            'Sent to SES', 'Sent' => DispatchedEmailStateEnum::SENT,
             'Rejected by SES' => DispatchedEmailStateEnum::REJECTED_BY_PROVIDER,
-            'Sent' => DispatchedEmailStateEnum::SENT,
             'Soft Bounce' => DispatchedEmailStateEnum::SOFT_BOUNCE,
             'Hard Bounce' => DispatchedEmailStateEnum::HARD_BOUNCE,
             'Delivered' => DispatchedEmailStateEnum::DELIVERED,

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DeliveryNoteItemsResource extends JsonResource

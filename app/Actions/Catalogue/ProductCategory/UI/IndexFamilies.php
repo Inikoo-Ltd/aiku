@@ -328,7 +328,7 @@ class IndexFamilies extends OrgAction
                     'label'     => __('Families')
                 ];
 
-                $createRoute = "grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.create";
+                $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
 
             }
         } elseif ($this->parent instanceof Collection) {
@@ -468,11 +468,11 @@ class IndexFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub-departments.show', $routeParameters),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub_departments.show', $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
                         'parameters' => [
                             $routeParameters['organisation'],
                             $routeParameters['shop'],

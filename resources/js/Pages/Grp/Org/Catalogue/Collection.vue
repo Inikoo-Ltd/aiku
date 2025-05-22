@@ -5,7 +5,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Component } from 'vue'
 
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
@@ -14,7 +14,6 @@ import Popover from '@/Components/Popover.vue'
 
 import CollectionsShowcase from '@/Components/Dropshipping/Catalogue/CollectionsShowcase.vue'
 
-// import FileShowcase from '@/xxxxxxxxxxxx'
 import TableDepartments from '@/Components/Tables/Grp/Org/Catalogue/TableDepartments.vue'
 import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 import TableProducts from '@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue'
@@ -25,6 +24,16 @@ import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+
+import {
+    faPlus
+} from "@fas";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(
+    faPlus
+);
+
 
 const props = defineProps<{
     title: string,
@@ -164,10 +173,7 @@ const onSubmitDepartments = async (closedPopover: Function, scope: string, route
                             />
                         </div>
                         
-                        <!-- Loading: fetching service list -->
-                        <!-- <div v-if="isLoading === 'fetchProduct'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                            <LoadingIcon class="text-5xl" />
-                        </div> -->
+
                     </div>
                 </template>
             </Popover>

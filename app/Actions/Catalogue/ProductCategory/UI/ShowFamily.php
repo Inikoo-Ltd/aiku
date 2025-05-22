@@ -28,7 +28,7 @@ class ShowFamily extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithFamilySubNavigation;
-
+    use WithWebpageActions;
 
     private Organisation|ProductCategory|Shop $parent;
 
@@ -38,13 +38,15 @@ class ShowFamily extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
     {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(FamilyTabsEnum::values());
+        $this->parent = $department;
+
+        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
 
         return $this->handle($family);
     }
+
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): ProductCategory
@@ -55,23 +57,43 @@ class ShowFamily extends OrgAction
         return $this->handle($family);
     }
 
+
     /** @noinspection PhpUnusedParameterInspection */
-    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
-    {
-        $this->parent = $department;
-
-        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
-
-        return $this->handle($family);
-    }
-
-    public function inSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->parent = $subDepartment;
 
         $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
 
         return $this->handle($family);
+    }
+
+    public function getActions(ProductCategory $family, ActionRequest $request): array
+    {
+        $actions = [];
+
+
+
+
+        return array_merge($actions, [
+            $this->getWebpageActions($family),
+            $this->canEdit ? [
+                'type'  => 'button',
+                'style' => 'edit',
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ] : false,
+            $this->canDelete ? [
+                'type'  => 'button',
+                'style' => 'delete',
+                'route' => [
+                    'name'       => 'shops.show.families.remove',
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ] : false
+        ]);
     }
 
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
@@ -96,52 +118,8 @@ class ShowFamily extends OrgAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('department')
                     ],
-                    'actions' => [
-                        $family->webpage ?
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'tooltip' => __('To Webpage'),
-                            'label'   => __('To Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.web.webpages.show',
-                                'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'website'      => $this->shop->website->slug,
-                                    'webpage'      => $family->webpage->slug
-                                ]
-                            ]
-                        ] : [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'tooltip' => __('Create Webpage'),
-                            'label'   => __('Create Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.models.webpages.product_category.store',
-                                'parameters' => $family->id,
-                                'method'     => 'post'
-                            ]
-                        ],
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'shops.show.families.remove',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false
-                    ],
+                    'actions' => $this->getActions($family, $request),
+
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
 
                 ],
@@ -151,21 +129,17 @@ class ShowFamily extends OrgAction
                 ],
 
                 FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
-                    fn () => GetProductCategoryShowcase::run($family)
-                    : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
+                    fn() => GetProductCategoryShowcase::run($family)
+                    : Inertia::lazy(fn() => GetProductCategoryShowcase::run($family)),
 
                 FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
-                    fn () => CustomersResource::collection(IndexCustomers::run(parent : $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                    : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
-                // FamilyTabsEnum::MAILSHOTS->value => $this->tab == FamilyTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($family))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($family))),
+                    fn() => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+                    : Inertia::lazy(fn() => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
 
             ]
         )->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($family));
-
     }
 
 
@@ -238,18 +212,21 @@ class ShowFamily extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show' =>
             array_merge(
-                (new ShowSubDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub-departments.show', $routeParameters),
+                (new ShowSubDepartment())->getBreadcrumbs(
+                    $family->parent,
+                    $routeParameters
+                ),
                 $headCrumb(
                     $family,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show',
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                             'parameters' => $routeParameters
 
 

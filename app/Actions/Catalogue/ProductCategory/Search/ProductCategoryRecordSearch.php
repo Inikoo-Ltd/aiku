@@ -49,7 +49,7 @@ class ProductCategoryRecordSearch
                             ]
                         ],
                         ProductCategoryTypeEnum::SUB_DEPARTMENT => [
-                            'name'          => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show',
+                            'name'          => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                             'parameters'    => [
                                 $productCategory->organisation->slug,
                                 $productCategory->shop->slug,

@@ -59,12 +59,12 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $this->customerSalesChannel = $customerSalesChannel;
 
-        $this->initialisationFromPlatform($customerSalesChannel->platform, $request);
+        $this->initialisation($request);
 
         return $this->handle($customerSalesChannel);
     }
 
-    public function jsonResponse(LengthAwarePaginator $portfolios)
+    public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
     {
         return DropshippingPortfolioResource::collection($portfolios);
     }
@@ -78,6 +78,9 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $title = __('My Portfolio');
 
+
+        $portfolioUser = $this->customerSalesChannel->user;
+
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -86,28 +89,28 @@ class IndexRetinaPortfolios extends RetinaAction
                 'is_manual'   => $manual,
                 'pageHead'    => [
                     'title'   => $title,
-                    'model'   => $this->platformUser->name ?? __('Manual'),
+                    'model'   => $portfolioUser->name ?? __('Manual'),
                     'icon'    => 'fal fa-cube',
                     'actions' => [
-                        $this->customer->is_fulfilment && ($this->platformUser instanceof ShopifyUser) ? [
+                        $this->customer->is_fulfilment && ($portfolioUser instanceof ShopifyUser) ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
                                 'name'       => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
                                 'parameters' => [
-                                    'shopifyUser' => $this->platformUser->id
+                                    'shopifyUser' => $portfolioUser->id
                                 ]
                             ]
                         ] : [],
-                        $this->customer->is_fulfilment && ($this->platformUser instanceof TiktokUser) ? [
+                        $this->customer->is_fulfilment && ($portfolioUser instanceof TiktokUser) ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => 'Sync Items',
                             'route' => [
                                 'name'       => 'retina.models.dropshipping.tiktok.product.sync',
                                 'parameters' => [
-                                    'tiktokUser' => $this->platformUser->id
+                                    'tiktokUser' => $portfolioUser->id
                                 ]
                             ]
                         ] : [],

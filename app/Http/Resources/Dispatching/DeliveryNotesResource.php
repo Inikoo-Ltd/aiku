@@ -48,6 +48,7 @@ class DeliveryNotesResource extends JsonResource
             'type'              => $this->type,
             'weight'            => $this->weight,
             'estimated_weight'  => $this->estimated_weight,
+            'effective_weight'  => $this->effective_weight,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
             'shop_slug'         => $this->shop_slug,
@@ -57,6 +58,13 @@ class DeliveryNotesResource extends JsonResource
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
+            'employee_pick_route' => [
+                'name' => 'grp.models.delivery-note.employee.pick',
+                'parameters' => [
+                    'deliveryNote' => $this->id
+                ],
+                'method' => 'patch'
+            ]
         ];
     }
 }

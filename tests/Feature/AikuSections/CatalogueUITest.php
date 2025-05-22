@@ -394,7 +394,7 @@ test('UI show product in department', function () {
 
 
 test('UI Index catalogue sub department inside department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.index', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -405,7 +405,7 @@ test('UI Index catalogue sub department inside department', function () {
 });
 
 test('UI Create catalogue sub department inside department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.create', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.create', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -415,7 +415,7 @@ test('UI Create catalogue sub department inside department', function () {
 });
 
 test('UI show sub department in department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Catalogue/Department')
@@ -433,7 +433,7 @@ test('UI show sub department in department', function () {
 });
 
 test('UI edit sub department in department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('EditModel')

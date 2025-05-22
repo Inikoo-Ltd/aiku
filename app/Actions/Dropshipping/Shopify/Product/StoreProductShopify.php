@@ -32,15 +32,43 @@ class StoreProductShopify extends OrgAction
     {
 
         DB::transaction(function () use ($shopifyUser, $modelData) {
+
+            $response = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-04/products.json');
+
+            $products = collect(Arr::get($response, 'body.products', []));
+            $productCodes = $products->flatMap(function ($product) {
+                return collect(Arr::get($product, 'variants'))->pluck('barcode');
+            })->filter()->values();
+
             foreach (Arr::get($modelData, 'items') as $product) {
                 $product = Product::find($product);
+
+                $modelData = [];
+                if (in_array($product->slug, $productCodes->toArray())) {
+                    $modelData = [
+                        'data' => [
+                            'shopify' => [
+                                'status' => 'duplicated',
+                                'barcode' => $product->slug
+                            ]
+                        ]
+                    ];
+                }
+
                 $portfolio = StorePortfolio::run(
                     $shopifyUser->customerSalesChannel,
                     $product,
-                    []
+                    $modelData
                 );
 
-                HandleApiProductToShopify::dispatch($shopifyUser, [$portfolio->id]);
+                $shopifyUser->products()->attach($product, [
+                    'shopify_user_id' => $shopifyUser->id,
+                    'product_type' => class_basename($product),
+                    'product_id' => $product->id,
+                    'portfolio_id' => $portfolio->id
+                ]);
+
+                //                HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
             }
         });
     }

@@ -57,6 +57,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.script_lbx", Arr::pull($modelData, "luigisbox_script_lbx"));
         }
 
+        if (Arr::has($modelData, "luigisbox_private_key")) {
+            data_set($modelData, "settings.luigisbox.private_key", Arr::pull($modelData, "luigisbox_private_key"));
+        }
+
         $website = $this->update($website, $modelData, ['data', 'settings']);
         WebsiteRecordSearch::run($website);
 
@@ -133,7 +137,7 @@ class UpdateWebsite extends OrgAction
                 'sometimes',
                 'string',
             ],
-            // 'luigisbox_api_key' => ['sometimes', 'string'],
+            'luigisbox_private_key' => ['sometimes', 'string'],
             'image'       => [
                 'sometimes',
                 'nullable',

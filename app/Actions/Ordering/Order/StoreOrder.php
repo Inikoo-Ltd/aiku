@@ -94,7 +94,6 @@ class StoreOrder extends OrgAction
             $deliveryAddress = Arr::pull($modelData, 'delivery_address');
         }
 
-
         if (class_basename($parent) == 'Customer') {
             $modelData['customer_id'] = $parent->id;
             $modelData['currency_id'] = $parent->shop->currency_id;
@@ -269,6 +268,7 @@ class StoreOrder extends OrgAction
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
+            'data' => ['sometimes', 'array'],
             'sales_channel_id'          => [
                 'sometimes',
                 'required',

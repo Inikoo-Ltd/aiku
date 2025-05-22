@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
@@ -17,6 +17,13 @@ defineProps<{
         goods_amount: string
         services_amount: string
         charges_amount: string
+        customer_channel: {
+            status: boolean
+            platform: {
+                name: string
+                image: string
+            }
+        }
     }
     balance?: string
     address_management?: AddressManagement
@@ -32,6 +39,17 @@ const isModalShippingAddress = ref(false)
 
     <div class="py-4 grid grid-cols-7 px-4 gap-x-6">
         <div class="col-span-2">
+            <!-- Field: Platform -->
+            <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <div v-tooltip="trans('Platform')" class="flex-none">
+                    <FontAwesomeIcon
+                        icon="fal fa-parachute-box"
+                        class="text-gray-400" fixed-width />
+                </div>
+                <div class="flex items-center gap-x-2">
+                    <img v-tooltip="summary?.customer_channel?.platform?.name" :src="summary?.customer_channel?.platform?.image" alt="" class="h-6">
+                </div>
+            </div>
 
             <!-- Field: Reference Number -->
             <Link as="a" v-if="summary?.customer_client.ulid" v-tooltip="trans('Reference')"
@@ -97,7 +115,7 @@ const isModalShippingAddress = ref(false)
 
 
         </div>
-        
+
         <div class="col-span-2">
         </div>
 
@@ -108,7 +126,7 @@ const isModalShippingAddress = ref(false)
                     {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
                 </div>
             </div>
-            
+
             <div class="border border-gray-200 p-2 rounded">
                 <OrderSummary
                     :order_summary="summary.order_summary"
