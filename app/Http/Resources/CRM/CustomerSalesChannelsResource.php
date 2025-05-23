@@ -47,7 +47,15 @@ class CustomerSalesChannelsResource extends JsonResource
             'platform_image'    => $this->getPlatformLogo($customerSalesChannels),
             'name'              => $this->name ?? $this->reference,
             'unlink_route' => [
+                'method' => 'delete',
                 'name' => 'retina.models.customer_sales_channel.unlink',
+                'parameters' => [
+                    'customerSalesChannel' => $this->id
+                ]
+            ],
+            'toggle_route' => [
+                'method' => 'patch',
+                'name' => 'retina.models.customer_sales_channel.toggle',
                 'parameters' => [
                     'customerSalesChannel' => $this->id
                 ]

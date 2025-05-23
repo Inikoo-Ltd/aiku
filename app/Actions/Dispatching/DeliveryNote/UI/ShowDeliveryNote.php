@@ -112,13 +112,13 @@ class ShowDeliveryNote extends OrgAction
                 if (
                     in_array($state, [DeliveryNoteStateEnum::QUEUED])
                 ) {
-                    $label .= ' (' . $deliveryNote->picker->contact_name . ')';
+                    $label .= ' (' . $deliveryNote->pickerUser->contact_name . ')';
                 }
             } elseif ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
                 if (
                     in_array($state, [DeliveryNoteStateEnum::HANDLING])
                 ) {
-                    $label .= ' (' . $deliveryNote->picker->contact_name . ')';
+                    $label .= ' (' . $deliveryNote->pickerUser->contact_name . ')';
                 }
             }
             $timeline[$state->value] = [
@@ -134,7 +134,7 @@ class ShowDeliveryNote extends OrgAction
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
 
         $actions = [];
-
+        
         $actions = match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
                 [
@@ -152,7 +152,14 @@ class ShowDeliveryNote extends OrgAction
                     'tooltip' => __('Change picker'),
                     'label'   => __('Change Picker'),
                     'key'     => 'change-picker',
-                ]
+                ],
+                $deliveryNote->pickerUser->id == $request->user()->id ? [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Start picking'),
+                    'label'   => __('Start picking'),
+                    'key'     => 'start-picking',
+                    ] : []
             ],
             DeliveryNoteStateEnum::HANDLING => [
                 [
@@ -241,8 +248,8 @@ class ShowDeliveryNote extends OrgAction
                     'estimated_weight' => $estWeight,
                     'number_items'     => $deliveryNote->stats->number_items,
                 ],
-                'picker'   => $deliveryNote->picker,
-                'packer'   => $deliveryNote->packer,
+                'picker'   => $deliveryNote->pickerUser,
+                'packer'   => $deliveryNote->packerUser,
             ],
             'routes'    => [
                 'update'         => [
@@ -260,7 +267,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
                 'pickers_list'   => [
-                    'name'       => 'grp.json.employees.pickers',
+                    'name'       => 'grp.json.employees.picker_users',
                     'parameters' => [
                         'organisation' => $deliveryNote->organisation->slug
                     ]
