@@ -14,12 +14,15 @@ import { routeType } from "@/types/route"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { trans } from "laravel-vue-i18n"
 import { ref } from "vue"
+import { notify } from "@kyvg/vue3-notification"
+import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 // import { useFormatTime } from '@/Composables/useFormatTime'
 import { useTruncate } from '@/Composables/useTruncate'
 import Action from "@/Components/Forms/Fields/Action.vue"
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     routes: {
@@ -58,24 +61,164 @@ const onSubmitPickerPacker = (fetchRoute: routeType, selectedPicker: {}, rowInde
         
     }
 }
+const selectedPicker = ref()
+const selectedLocation = ref()
 
+const isModalPick = ref(null)
+const isLoadingPick = ref(false)
+const isErrorPicker = ref<string | null>(null)
+const onClickPick = () => {
+    if (!isModalPick.value?.picking_route?.name) {
+        console.error("No route name found for picking")
+        return
+    }
+
+    router.post(
+        route(isModalPick.value.picking_route.name, isModalPick.value.picking_route.parameters),
+        {
+
+        }, 
+        {
+            onStart: () => {
+                isLoadingPick.value = true
+            },
+            onError: (errors) => {
+                isErrorPicker.value = errors.messages
+                notify({
+                    title: trans("Something went wrong"),
+                    text: isErrorPicker.value,
+                    type: "error",
+                })
+            },
+            onSuccess: () => {
+                isModalPick.value = null
+            },
+            onFinish: () => {
+                isLoadingPick.value = false
+            }
+        }
+    )
+}
 </script>
 
 <template>
     <!-- <pre>{{ data.data[0] }}</pre> -->
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Reference -->
+         {{ data }}
         <template #cell(org_stock_code)="{ item: deliveryNote }">
             <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
                 {{ deliveryNote.org_stock_code }}
             </Link>
         </template>
         <!-- Column: Date -->
-        <template #cell(actions)="{ item }">
-            <!-- <pre>{{item}}</pre> -->
-            <!-- {{item.routes.doneRoute}} -->
-            <Action v-if="state === 'picking' && !item.vessel_picking" :action="{ label: 'Pick', type: 'secondary', route: item.routes.pickedRoute, key: 'picking_item' + item.index}" />
-            <Action v-if="state === 'packing' && !item.vessel_packing" :action="{ label: 'Pack', type: 'secondary', route: item.routes.doneRoute, key: 'packing_item' + item.index}" />
+        <template #cell(picking)="{ item: deliveryNote }">
+            <Button
+                @click="() => isModalPick = deliveryNote"
+                type="secondary"
+                :label="trans('Pick')"
+                size="xs"
+            />
         </template>
     </Table>
+        <Modal
+        :isOpen="!!isModalPick"
+        @close="isModalPick = null, isErrorPicker = null"
+        width="w-full max-w-lg"
+    >
+        <div class="sm:flex sm:items-start w-full">
+            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                <DialogTitle as="h3" class="text-base font-semibold">
+                    {{ trans("Item Picking") }}
+                </DialogTitle>
+                <div class="mt-2">
+                    <div class="text-sm font-medium mb-2">
+                        {{ trans("Select picker") }}
+                    </div>
+                    <PureMultiselectInfiniteScroll
+                        v-model="selectedPicker"
+                        xxxupdate:modelValue="
+                            (selectedPicker) => onSubmitPickerPacker(selectedPicker, 'picker')
+                        "
+                        required
+                        :fetchRoute="isModalPick.pickers_list_route"
+                        :placeholder="trans('Select picker')"
+                        labelProp="contact_name"
+                        valueProp="id"
+                        object
+                        clearOnBlur
+                        :loading="isLoading['picker' + selectedPicker?.id]"
+                        :disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'"
+                        >
+                        <template #singlelabel="{ value }">
+                            <div
+                                class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                                {{ value.contact_name }}
+                            </div>
+                        </template>
+
+                        <template #option="{ option, isSelected, isPointed }">
+                            <div class="w-full text-left text-sm whitespace-nowrap truncate">
+                                {{ option.contact_name }}
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
+
+                    <div class="text-sm font-medium my-2">
+                        {{ trans("Select Location") }}
+                    </div>
+                    <PureMultiselectInfiniteScroll
+                        v-model="selectedLocation"
+                    
+                        required
+                        :fetchRoute="isModalPick.location_list_route"
+                        :placeholder="trans('Select Location')"
+                        object
+                        clearOnBlur
+                        >
+                        <template #singlelabel="{ value }">
+                            <div
+                                class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                                {{ value.contact_name }}
+                            </div>
+                        </template>
+
+                        <template #option="{ option, isSelected, isPointed }">
+                            <div class="w-full text-left text-sm whitespace-nowrap truncate">
+                                {{ option.contact_name }}
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
+
+                    <div class="text-sm font-medium my-2">
+
+                    </div>
+                </div>                
+                
+
+                <div class="mt-5 sm:flex sm:flex-row-reverse gap-x-2">
+                    <Button
+                        :loading="isLoadingPick"
+                        @click="() => onClickPick()"
+                        :label="trans('save')"
+                        full
+                        :disabled="true"
+                    />
+
+                    <Button
+                        type="tertiary"
+                        icccon="far fa-arrow-left"
+                        :label="trans('cancel')"
+                        
+                        @click="() => (isModalPick = null)"
+                    />
+                </div>
+
+                <p v-if="isErrorPicker" class="mt-2 text-xs text-red-500 italic">
+                    *{{ isErrorPicker }}
+                </p>
+            </div>
+
+        </div>
+    </Modal>
 </template>

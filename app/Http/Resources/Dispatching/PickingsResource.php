@@ -36,6 +36,12 @@ class PickingsResource extends JsonResource
                 'parameters' => [
                     'picking' => $this->id
                 ]
+            ],
+            'set_done_route' => [
+                'name' => 'grp.models.picking.state.done',
+                'parameters' => [
+                    'picking' => $this->id
+                ]
             ]
         ];
     }

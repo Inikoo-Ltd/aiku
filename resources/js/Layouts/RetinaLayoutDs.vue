@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePage } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import { provide, ref } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
@@ -45,10 +45,12 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 initialiseRetinaApp()
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
-provide("layout", useLayoutStore())
-provide("locale", useLocaleStore())
-
 const layout = useLayoutStore()
+const locale = useLocaleStore()
+
+provide("layout", layout)
+provide("locale", locale)
+
 const { props } = usePage()
 const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
@@ -107,12 +109,22 @@ console.log("Layout Ds")
 
 				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<Breadcrumbs
-						class="absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1"
-						:breadcrumbs="usePage().props.breadcrumbs ?? []"
-						:navigation="usePage().props.navigation ?? []"
-						:layout="layout"
-						style="max-width: calc(1280px - 200px)" />
+					<div class="flex justify-between absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
+						<Breadcrumbs
+							class=""
+							:breadcrumbs="usePage().props.breadcrumbs ?? []"
+							:navigation="usePage().props.navigation ?? []"
+							:layout="layout"
+							style="max-width: calc(1280px - 200px)"
+						/>
+
+						<Link :href="route('retina.top_up.dashboard')" class="flex items-center gap-x-2 text-indigo-600">
+							<FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" />
+							<span class="font-semibold tabular-nums">
+								{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0)}}
+							</span>
+						</Link>
+					</div>
 					<div
 						style="max-width: calc(1280px - 200px)"
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">

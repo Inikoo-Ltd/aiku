@@ -17,8 +17,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -84,7 +82,6 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
         $platformName = $this->customerSalesChannel->name;
-        $portfolioUser = $this->customerSalesChannel->user;
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $platformName = __('Manual');
@@ -100,30 +97,19 @@ class IndexRetinaPortfolios extends RetinaAction
                     'title'   => $title,
                     'model'   =>  $platformName,
                     'icon'    => 'fal fa-cube',
-                    'actions' => [
-                        $this->customer->is_fulfilment && ($portfolioUser instanceof ShopifyUser) ? [
+                    /*'actions' => [
+                        $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => 'Sync Items',
+                            'label' => 'Upload Products to ' . $this->customerSalesChannel->platform->name,
                             'route' => [
-                                'name'       => 'retina.models.dropshipping.shopify_user.product.sync',
+                                'name'       => 'retina.models.customer_sales_channel.shopify.batch_upload',
                                 'parameters' => [
-                                    'shopifyUser' => $portfolioUser->id
+                                    'customerSalesChannel' => $this->customerSalesChannel->id
                                 ]
                             ]
                         ] : [],
-                        $this->customer->is_fulfilment && ($portfolioUser instanceof TiktokUser) ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => 'Sync Items',
-                            'route' => [
-                                'name'       => 'retina.models.dropshipping.tiktok.product.sync',
-                                'parameters' => [
-                                    'tiktokUser' => $portfolioUser->id
-                                ]
-                            ]
-                        ] : [],
-                    ]
+                    ]*/
                 ],
                 'routes'    => [
                     'itemRoute' => [
@@ -191,8 +177,8 @@ class IndexRetinaPortfolios extends RetinaAction
             }
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'weight', label: __('weight'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'price', label: __('price'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'action', label: __('action'), canBeHidden: false);
         };
     }

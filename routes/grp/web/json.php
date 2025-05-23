@@ -21,6 +21,7 @@ use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
+use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentPhysicalGoods;
@@ -73,6 +74,7 @@ Route::get('shop/{shop}/catalogue/{scope}/collections', GetCollections::class)->
 
 Route::get('organisation/{organisation}/employees/packers', GetPackers::class)->name('employees.packers');
 Route::get('organisation/{organisation}/employees/pickers', GetPickers::class)->name('employees.pickers');
+Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers::class)->name('employees.picker_users');
 
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');

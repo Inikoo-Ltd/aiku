@@ -75,6 +75,10 @@ class RouteServiceProvider extends ServiceProvider
         Route::middleware('iris')
             ->name('iris.')
             ->group(base_path('routes/iris/root.php'));
+
+        // API Documentation Routes
+        Route::middleware('web')
+            ->group(base_path('routes/api-docs.php'));
     }
 
     protected function configureRateLimiting(): void

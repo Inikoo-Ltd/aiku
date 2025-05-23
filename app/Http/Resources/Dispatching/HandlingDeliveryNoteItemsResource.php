@@ -46,7 +46,27 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
                     'deliveryNoteItem' => $this->id
                 ],
                 'method' => 'post'
-            ]
+            ],
+            'pickers_list_route'   => [
+                'name'       => 'grp.json.employees.picker_users',
+                'parameters' => [
+                    'organisation' => $deliveryNoteItem->organisation->slug
+                ]
+            ],
+            'packers_list_route'   => [
+                'name'       => 'grp.json.employees.packers',
+                'parameters' => [
+                    'organisation' => $deliveryNoteItem->organisation->slug
+                ]
+            ],
+            'location_list_route' => [
+                'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                'parameters' => [
+                    'organisation' => $deliveryNoteItem->organisation->slug,
+                    'warehouse'    => $deliveryNoteItem->deliveryNote->slug
+                ]
+            ],
+
         ];
     }
 }

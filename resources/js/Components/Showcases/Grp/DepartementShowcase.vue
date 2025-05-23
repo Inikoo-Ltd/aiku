@@ -37,7 +37,7 @@ const goToNext = () => {
 <template>
     <div class="px-4 pb-8 m-5">
 
-        <Message v-if="data.department.data.url_master" severity="success" closable>
+        <Message v-if="data.department?.data?.url_master" severity="success" closable>
             <template #icon>
                 <FontAwesomeIcon :icon="faInfoCircle" />
             </template>
@@ -61,7 +61,7 @@ const goToNext = () => {
                       </button> -->
                         <div class="flex-1 mx-4">
                             <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
-                                <Image v-if="data.department.data.image" :src="data.department.data.image" :imageCover="true"
+                                <Image v-if="data?.department?.data?.image" :src="data?.department?.data?.image" :imageCover="true"
                                        class="w-full h-40 object-cover rounded-t-lg" />
                                 <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
                                     <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
@@ -76,10 +76,10 @@ const goToNext = () => {
 
                     <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
                         <div class="text-sm font-medium">
-                            <span>{{ data.department.data.name || "No label" }}</span>
+                            <span>{{ data?.department?.data?.name || "No label" }}</span>
                         </div>
                         <div class="text-md">
-                            <span class="text-gray-400">{{ data.department.data.description || "No description" }}</span>
+                            <span class="text-gray-400">{{ data?.department?.data?.description || "No description" }}</span>
                         </div>
                     </div>
                 </div>

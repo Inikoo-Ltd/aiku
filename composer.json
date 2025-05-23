@@ -29,6 +29,7 @@
     "cloudstudio/ollama-laravel": "^1.0",
     "commerceguys/addressing": "^1.4",
     "commerceguys/intl": "^1.1",
+    "darkaonline/l5-swagger": "^9.0",
     "deepseek-php/deepseek-php-client": "^2.0",
     "doctrine/dbal": "^3.5",
     "elasticsearch/elasticsearch": "^8.8",
