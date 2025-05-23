@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
@@ -25,6 +26,13 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
+        $cardExist = $customerSalesChannel->customer->mitSavedCard()->exists();
+        $portfolioExist = $customerSalesChannel->customer->portfolios()->exists();
+
+        if ($cardExist && $portfolioExist) {
+            data_set($modelData, 'state', CustomerSalesChannelStateEnum::READY);
+        }
+
         return $this->update($customerSalesChannel, $modelData);
     }
 
@@ -49,6 +57,7 @@ class UpdateCustomerSalesChannel extends OrgAction
                 ),
             ],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
+            'state'       => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
             'name' => ['sometimes', 'string', 'max:255']
         ];
     }
