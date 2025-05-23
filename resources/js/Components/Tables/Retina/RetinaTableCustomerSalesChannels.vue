@@ -18,6 +18,13 @@ import Toggle from "primevue/toggleswitch"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faUnlink } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faUnlink)
 
 defineProps<{
     data: TableTS,
@@ -118,13 +125,23 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
         </template>
 
         <template #cell(action)="{ item: customerSalesChannel }">
-            <ButtonWithLink
-                v-tooltip="trans('Unlink channel')"
-                type="negative"
-                icon="fal fa-trash-alt"
-                :routeTarget="customerSalesChannel.unlink_route"
-                size="s"
-            />
+            <!-- <pre>{{ customerSalesChannel.platform_name }} ({{ customerSalesChannel.reference }})</pre> -->
+            <ModalConfirmationDelete
+                :routeDelete="customerSalesChannel.unlink_route"
+                :title="trans('Are you sure you want to unlink platform') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        v-tooltip="trans('Unlink') + ' ' + customerSalesChannel.platform_name"
+                        @click="() => changeModel()"
+                        type="negative"
+                        icon="fal fa-unlink"
+                        size="s"
+                        :key="1"
+                    />
+                </template>
+            </ModalConfirmationDelete>
         </template>
     </Table>
 </template>
