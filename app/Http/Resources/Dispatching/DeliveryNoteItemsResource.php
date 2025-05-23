@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Dispatching;
 
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
-use App\Http\Resources\Inventory\LocationsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;

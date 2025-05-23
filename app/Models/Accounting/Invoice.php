@@ -109,11 +109,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $identity_document_number
  * @property int|null $platform_id
  * @property int|null $customer_sales_channel_id
+ * @property int|null $delivery_address_id
+ * @property int|null $delivery_country_id
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Currency $currency
  * @property-read Customer $customer
+ * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read Collection<int, Address> $fixedAddresses
  * @property-read Group $group
@@ -239,6 +242,11 @@ class Invoice extends Model implements Auditable
     public function billingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'address_id');
+    }
+
+    public function deliveryAddress(): BelongsTo
+    {
+        return $this->belongsTo(Address::class, 'delivery_address_id');
     }
 
     public function fixedAddresses(): MorphToMany
