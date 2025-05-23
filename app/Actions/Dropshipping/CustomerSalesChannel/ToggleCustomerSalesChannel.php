@@ -23,7 +23,7 @@ class ToggleCustomerSalesChannel extends OrgAction
         $currentStatus = $customerSalesChannel->status;
 
         if ($currentStatus === CustomerSalesChannelStatusEnum::OPEN) {
-            $newStatus = CustomerSalesChannelStatusEnum::INACTIVE;
+            $newStatus = CustomerSalesChannelStatusEnum::CLOSED;
         } else {
             $newStatus = CustomerSalesChannelStatusEnum::OPEN;
         }

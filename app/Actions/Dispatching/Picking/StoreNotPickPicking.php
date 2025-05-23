@@ -17,6 +17,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use Illuminate\Console\Command;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -97,5 +98,27 @@ class StoreNotPickPicking extends OrgAction
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
+    }
+
+    public string $commandSignature = 'not-picking:store {deliveryNoteItem} {locationId} {userId} {quantity}';
+
+
+    public function asCommand(Command $command)
+    {
+        $deliveryNoteItem = DeliveryNoteItem::findOrFail($command->argument('deliveryNoteItem'));
+
+        $this->deliveryNoteItem = $deliveryNoteItem;
+
+        $data = [
+            'location_id'     => (int) $command->argument('locationId'),
+            'picker_user_id'  => (int) $command->argument('userId'),
+            'quantity'        => (int) $command->argument('quantity'),
+        ];
+
+        $picking = $this->handle($deliveryNoteItem, $data);
+
+        $command->info("Picking type NOT PICK created successfully with ID: {$picking->id}");
+
+        return 1;
     }
 }
