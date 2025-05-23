@@ -28,20 +28,25 @@ class FetchAuroraProduct extends FetchAurora
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Store Key'});
 
-        if ($shop == ShopTypeEnum::FULFILMENT) {
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return;
         }
 
         $this->parsedData['shop'] = $shop;
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
-        if ($this->auroraModelData->{'Product Family Category Key'}) {
-            $family = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Product Family Category Key'});
-            if ($family) {
-                if ($family->shop_id != $this->parsedData['shop']->id) {
-                    dd('Wrong family - shop');
+
+
+
+        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
+            if ($this->auroraModelData->{'Product Family Category Key'}) {
+                $family = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Product Family Category Key'});
+                if ($family) {
+                    if ($family->shop_id != $this->parsedData['shop']->id) {
+                        dd('Wrong family - shop');
+                    }
+                    $this->parsedData['parent'] = $family;
                 }
-                $this->parsedData['parent'] = $family;
             }
         }
 
