@@ -32,7 +32,7 @@ const emits = defineEmits<{
 					'activeChildBlock',
 					Blueprint?.blueprint?.[0]?.key?.join('-')
 				)
-		" class="relative overflow-hidden">
+		">
 			<div class="w-full flex" :style="getStyles(modelValue?.image?.container?.properties, screenType)" >
 				<template v-if="modelValue?.image?.source">
 					<Image :src="modelValue.image.source" :imageCover="true"
