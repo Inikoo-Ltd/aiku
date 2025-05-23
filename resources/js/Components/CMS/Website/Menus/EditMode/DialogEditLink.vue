@@ -149,4 +149,7 @@ const selectQueryOnChange = (e) => {
     </div>
 
 </template>
-<style scss></style>
+<style scss scoped>
+
+
+</style>

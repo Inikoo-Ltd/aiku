@@ -17,6 +17,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
@@ -118,14 +119,14 @@ class DeliveryNoteItem extends Model
 
     protected $guarded = [];
 
-    public function pickings(): HasOne
+    public function pickings(): HasMany
     {
-        return $this->hasOne(Picking::class);
+        return $this->hasMany(Picking::class);
     }
 
-    public function packings(): HasOne
+    public function packings(): HasMany
     {
-        return $this->hasOne(Packing::class);
+        return $this->hasMany(Packing::class);
     }
 
     public function deliveryNote(): BelongsTo

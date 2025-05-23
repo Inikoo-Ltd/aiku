@@ -8,10 +8,12 @@
 
 namespace App\Actions\Dropshipping\Shopify\Webhook;
 
+use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\DeleteShopifyUserHasProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,11 +29,15 @@ class DeleteProductWebhooksShopify extends OrgAction
     {
         $productId = Arr::get($modelData, 'product_id');
 
-        $product = $shopifyUser->products()
+        $product = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
             ->where("shopify_product_id", $productId)
             ->firstOrFail();
 
-        DeleteShopifyUserHasProduct::run($product);
+        if ($shopifyUser->customer->is_dropshipping) {
+            DeletePortfolio::run($shopifyUser->customerSalesChannel, $product->product);
+        } else {
+            DeleteShopifyUserHasProduct::run($product);
+        }
     }
 
     public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
