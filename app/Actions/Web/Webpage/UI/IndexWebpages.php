@@ -262,9 +262,13 @@ class IndexWebpages extends OrgAction
 
         if (request()->expectsJson()) {
             $queryBuilder->orderByRaw("CASE 
-            WHEN webpages.sub_type = 'family' THEN 1
-            WHEN webpages.sub_type = 'product' THEN 2
-            ELSE 3
+            WHEN webpages.sub_type = 'storefront' THEN 1
+            WHEN webpages.sub_type = 'department' THEN 2
+            WHEN webpages.sub_type = 'sub_department' THEN 3
+            WHEN webpages.sub_type = 'family' THEN 4
+            WHEN webpages.sub_type = 'catalogue' THEN 5
+            WHEN webpages.sub_type = 'product' THEN 6
+            ELSE 7
             END, webpages.sub_type ASC");
         }
 
