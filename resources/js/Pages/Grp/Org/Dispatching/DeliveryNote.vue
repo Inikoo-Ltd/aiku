@@ -102,7 +102,7 @@ const onSetToQueue = () => {
     router.patch(
         route(props.routes.set_queue.name, {
             ...props.routes.set_queue.parameters,
-            employee: selectedPicker.value.id,
+            user: selectedPicker.value.id,
         }),
         {
             
@@ -128,7 +128,7 @@ const onUpdatePicker = () => {
     router.patch(
         route(props.routes.update.name, props.routes.update.parameters),
         {
-            picker_id: selectedPicker.value.id
+            picker_user_id: selectedPicker.value.id
         },
         {
             onError: (error) => {
@@ -214,7 +214,7 @@ const onUpdatePicker = () => {
     >
         <div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
             <div class="mx-auto font-semibold text-lg">
-                {{ trans("Select Picker before go to queue") }}
+                {{ trans("Select Picker") }}
             </div>
 
             <div class="mt-4 flex items-center w-full gap-x-1.5">
@@ -257,7 +257,7 @@ const onUpdatePicker = () => {
             <div class="w-full mt-2">
                 <Button
                     @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
-                    :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set to queue')"
+                    :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set Picker')"
                     :iconRight="['fas', 'fa-arrow-right']"
                     full
                     :loading="isLoadingToQueue"
