@@ -13,7 +13,7 @@ use App\Enums\EnumHelperTrait;
 enum PickingStatusEnum: string
 {
     use EnumHelperTrait;
-
+//TODO: Unused, delete
     case PROCESSING = 'processing';
     case PICKED = 'picked';
     case PARTIALLY_PICKED = 'partially-picked';
