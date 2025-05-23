@@ -56,7 +56,7 @@ watch(
             zIndex: activeEditorIndex === index ? 50 : 10
         }" class="flex flex-col overflow-visible relative overflow-hidden">
             <!-- Image area -->
-            <div class="flex justify-center overflow-visible">
+            <div class="flex justify-center overflow-visible" :style="getStyles(modelValue?.carousel_data?.card_container?.container_image, screenType)">
                 <div :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)"
                     class="bg-gray-100 w-full flex items-center justify-center overflow-visible">
                     <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"

@@ -45,53 +45,6 @@ export default {
 						],
 					},
 				},
-				{
-					key: ["properties", "object_position"],
-					label: "Object Position",
-					useIn: ["desktop", "tablet", "mobile"],
-					type: "select",
-					props_data: {
-						placeholder: "Object",
-						options: [
-							{
-								label: "Bottom",
-								value: "bottom",
-							},
-							{
-								label: "Center",
-								value: "center",
-							},
-							{
-								label: "Left",
-								value: "left",
-							},
-							{
-								label: "Right",
-								value: "right",
-							},
-							{
-								label: "Top",
-								value: "top",
-							},
-							{
-								label: "Left Bottom",
-								value: "left bottom",
-							},
-							{
-								label: "Left Top",
-								value: "left top",
-							},
-							{
-								label: "Right Bottom",
-								value: "right bottom",
-							},
-							{
-								label: "Right Top",
-								value: "right top",
-							},
-						],
-					},
-				},
 			],
 		},
 		{
