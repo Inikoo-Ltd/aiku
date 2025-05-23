@@ -19,7 +19,7 @@ enum DeliveryNoteTabsEnum: string
     use HasTabsWithIndicator;
 
     case ITEMS = 'items';
-    case PICKINGS = 'pickings';
+    // case PICKINGS = 'pickings';
 
 
     public function blueprint(DeliveryNote $parent): array
@@ -39,13 +39,13 @@ enum DeliveryNoteTabsEnum: string
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
-            DeliveryNoteTabsEnum::PICKINGS => [
-                'title'     => __('pickings '),
-                'icon'      => 'fal fa-box-full',
-                'type'      => 'icon',
-                'align'     => 'right',
-                'indicator' => $indicator
-            ],
+            // DeliveryNoteTabsEnum::PICKINGS => [
+            //     'title'     => __('pickings '),
+            //     'icon'      => 'fal fa-box-full',
+            //     'type'      => 'icon',
+            //     'align'     => 'right',
+            //     'indicator' => $indicator
+            // ],
         };
     }
 }
