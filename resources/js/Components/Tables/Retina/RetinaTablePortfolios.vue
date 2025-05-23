@@ -90,7 +90,7 @@ const locale = inject('locale', aikuLocaleStructure)
 			<ButtonWithLink
 				v-tooltip="trans('Unselect portfolio')"
 				type="negative"
-				icon="fal fa-times"
+				icon="fal fa-trash-alt"
 				:routeTarget="item.delete_portfolio"
 				size="s"
 			/>
