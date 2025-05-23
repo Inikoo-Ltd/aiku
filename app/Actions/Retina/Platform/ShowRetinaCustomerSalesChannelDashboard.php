@@ -40,6 +40,18 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     {
         $title = __('Channel Dashboard');
 
+        $stepLabel = __('Great! You just complete first step.');
+        $stepLabel = __('Almost! Setup credit card to make you easier in the future.');
+        $stepLabel = __('Very very last! Add products to your store.');
+
+        $stepTitle = __('Connect your store');
+        $stepTitle = __('Setup your credit card');
+        $stepTitle = __('Add products to your store');
+
+        $stepDescription = __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.');
+        $stepDescription = __('To manage your payment methods. If you mind to do it later, you can skip this step.');
+        $stepDescription = __('Add products to your store to start selling. Select items from our catalogue or upload your own products to showcase in your sales channel.');
+
         return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
             'title'                  => $title,
             'breadcrumbs'            => $this->getBreadcrumbs($customerSalesChannel),
@@ -75,6 +87,11 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platformData'           => $this->getPlatformData($customerSalesChannel),
+            'step'  => [
+                'label'         => $stepLabel,
+                'title'         => $stepTitle,
+                'description'   => $stepDescription,
+            ]
         ]);
     }
 
