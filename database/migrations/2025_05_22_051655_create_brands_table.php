@@ -12,6 +12,7 @@ return new class () extends Migration {
             $table->string('slug')->unique()->collation('und_ns');
             $table->string('reference')->index();
             $table->string('name')->index();
+            $table->unsignedInteger('number_models')->default(0);
 
             $table->unsignedInteger('image_id')->nullable();
             $table->foreign('image_id')->references('id')->on('media')->onDelete('cascade');
