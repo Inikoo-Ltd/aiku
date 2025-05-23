@@ -40,6 +40,7 @@ const props = defineProps<{
     isLoadingblock?: number | null | String
     isAddBlockLoading?: number | null | String
     isLoadingDeleteBlock?: number | null | String
+    filterBlock : string
 }>()
 
 
@@ -56,6 +57,7 @@ const emits = defineEmits<{
     (e: 'order', value: Object): void
     (e: 'setVisible', value: Object): void
     (e: 'onSaveSiteSettings', value: Object): void
+    (e: 'update:filterBlock', value: string): void
 }>()
 
 const confirm = useConfirm();
@@ -66,7 +68,6 @@ const sendNewBlock = async (block: Daum) => {
 }
 
 const sendBlockUpdate = async (block: Daum) => {
-    console.log('test', block)
     emits('update', block)
 }
 
@@ -142,31 +143,26 @@ defineExpose({
     addType
 })
 
-const filterBlock = ref('all')
 
 
-/* const filteredBlocks = computed(() => {
-  if (filterBlock.value === 'logged-in') {
-    return props.webpage.layout.web_blocks.filter(item => item.visibility?.in === true);
-  }
-
-  if (filterBlock.value === 'logged-out') {
-    return props.webpage.layout.web_blocks.filter(item => item.visibility?.out === true);
-  }
-
-  // default: show all
-  return props.webpage.layout.web_blocks;
-});
- */
 const openedBlockSideEditor = inject('openedBlockSideEditor', ref(null))
 const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
 
-const showWebpage = (activityItem) => {
-    if (filterBlock.value === 'all') return true
-    else if (filterBlock.value === 'logged-out' && activityItem?.visibility.out) return true
-    else if (filterBlock.value === 'logged-in' && activityItem?.visibility.in) return true
-    else return false
+const showWebpage = (activityItem: Daum) => {
+    if (!activityItem?.visibility) return true
+
+    switch (props.filterBlock) {
+        case 'all':
+            return true
+        case 'logged-out':
+            return activityItem.visibility.out
+        case 'logged-in':
+            return activityItem.visibility.in
+        default:
+            return true
+    }
 }
+
 
 
 </script>
@@ -197,22 +193,24 @@ const showWebpage = (activityItem) => {
                                 {{ trans('Add block') }}
                             </div>
                         </Button>
-                        <div> 
-                            <select class="mt-3 bg-transparent border rounded-md  border-gray-400 text-gray-700 hover:bg-black/10  inline-flex items-center gap-x-2 font-medium focus:outline-none" v-model="filterBlock" required>
-                                <option disabled value="">Filter</option> 
+                        <div>
+                            <select
+                                class="mt-3 bg-transparent border rounded-md border-gray-400 text-gray-700 hover:bg-black/10 inline-flex items-center gap-x-2 font-medium focus:outline-none"
+                                :value="filterBlock" @change="e => emits('update:filterBlock', e.target.value)"
+                                required>
+                                <option disabled value="">Filter</option>
                                 <option value="all">All</option>
                                 <option value="logged-out">Logged out</option>
                                 <option value="logged-in">Logged in</option>
                             </select>
-
                         </div>
                     </div>
 
                     <template v-if="webpage?.layout?.web_blocks.length > 0 || isAddBlockLoading">
                         <draggable :list="props.webpage.layout.web_blocks" handle=".handle" @change="onChangeOrderBlock"
                             ghost-class="ghost" group="column" itemKey="id" class="mt-2 space-y-1 shadow">
-                            <template #item="{ element, index }" >
-                              
+                            <template #item="{ element, index }">
+
                                 <div class="bg-slate-50 border border-gray-300" v-if="showWebpage(element)">
                                     <div class="group flex justify-between items-center gap-x-2 relative w-full cursor-pointer"
                                         :class="openedBlockSideEditor === index ? 'bg-indigo-500 text-white' : 'hover:bg-gray-100'">
@@ -274,7 +272,7 @@ const showWebpage = (activityItem) => {
                                         </div>
                                     </Collapse>
                                 </div>
-                          
+
                             </template>
                         </draggable>
 
