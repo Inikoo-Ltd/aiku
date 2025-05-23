@@ -258,7 +258,7 @@
         {{--        <td style="text-align:left;width:20% ">Discount</td>--}}
         <td style="text-align:left;width:20% ">{{ __('Price') }}</td>
 
-        <td style="text-align:left">{{ __('Qty') }}</td>
+        <td style="text-align:left">{{ __('Qty')  }}.</td>
 
         <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
     </tr>
