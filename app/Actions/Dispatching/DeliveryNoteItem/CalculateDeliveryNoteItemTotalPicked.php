@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 23-05-2025-14h-59m
@@ -11,11 +12,8 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
-use Illuminate\Validation\Rules\Enum;
-use Lorisleiva\Actions\ActionRequest;
 
 class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 {
