@@ -40,10 +40,17 @@ const props = defineProps<{
     isWithError?: boolean
 }>()
 
+const emits = defineEmits<{
+    (e: "finish"): void
+    (e: "start"): void
+    (e: "error", error: {}): void
+    (e: "success"): void
+}>()
 
 const isLoadingVisit = ref(false)
 
-const setError = () => {
+const setError = (e) => {
+    console.error("Error", e)
     notify({
         title: trans("Something went wrong"),
         text: trans("Please try again or contact support."),
@@ -56,9 +63,10 @@ const setError = () => {
     <component
         :is="props.routeTarget || props.url ? Link : 'div'"
         :href="props.url || (props.routeTarget?.name ? route(props.routeTarget?.name, props.routeTarget?.parameters) : '#')"
-        @start="() => isLoadingVisit = true"
-        @error="() => isWithError ? setError() : false"
-        @finish="() => fullLoading ? '' : isLoadingVisit = false"
+        @start="() => (isLoadingVisit = true, emits('start'))"
+        @success="() => (emits('success'))"
+        @error="(e) => (isWithError ? setError(e) : false, emits('error', e))"
+        @finish="() => (fullLoading ? '' : isLoadingVisit = false, emits('finish'))"
         :method="props.method || props.routeTarget?.method || undefined"
         :data="props.body ?? props.routeTarget?.body"
         v-bind="bindToLink"
