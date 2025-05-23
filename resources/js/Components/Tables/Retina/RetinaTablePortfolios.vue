@@ -55,8 +55,6 @@ const locale = inject('locale', aikuLocaleStructure)
 
 <template>
 
-
-	<!-- <pre>{{ data.data[0] }}</pre> -->
 	<Table :resource="data" :name="tab" class="mt-5">
 
 		<template #cell(slug)="{ item: product }">
@@ -73,9 +71,24 @@ const locale = inject('locale', aikuLocaleStructure)
 			</div>
 		</template> -->
 
+		<!-- Column: Stock -->
 		<template #cell(quantity_left)="{ item }">
 			<div>
 				{{ locale.number(item.quantity_left) }}
+			</div>
+		</template>
+
+		<!-- Column: Weight -->
+		<template #cell(weight)="{ item }">
+			<div>
+				{{ locale.number(item.weight/1000) }} kg
+			</div>
+		</template>
+
+		<!-- Column: Price -->
+		<template #cell(price)="{ item }">
+			<div>
+				{{ locale.currencyFormat(item.currency_code, item.price) }}
 			</div>
 		</template>
 
