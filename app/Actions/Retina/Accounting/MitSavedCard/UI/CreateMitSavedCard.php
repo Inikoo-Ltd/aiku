@@ -122,7 +122,8 @@ class CreateMitSavedCard extends RetinaAction
                     'title' => $title
                 ],
             ],
-            'checkout_com_data' => $checkoutComData
+            'checkout_com_data' => $checkoutComData,
+            'head_title'           => __('Save your card for future purchases'),
 
         ]);
     }

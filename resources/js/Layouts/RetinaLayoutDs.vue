@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePage } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import { provide, ref } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
@@ -118,12 +118,12 @@ console.log("Layout Ds")
 							style="max-width: calc(1280px - 200px)"
 						/>
 
-						<div class="flex items-center gap-x-2 text-indigo-600">
+						<Link :href="route('retina.top_up.dashboard')" class="flex items-center gap-x-2 text-indigo-600">
 							<FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" />
 							<span class="font-semibold tabular-nums">
 								{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0)}}
 							</span>
-						</div>
+						</Link>
 					</div>
 					<div
 						style="max-width: calc(1280px - 200px)"
