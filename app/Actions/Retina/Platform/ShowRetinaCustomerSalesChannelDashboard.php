@@ -52,6 +52,35 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ],
 
             ],
+            'timeline' => [  // TODO
+                'current_state' => 'submitted',
+                'options'   => [
+                    "in_process" => [
+                        "label" => "Get started",
+                        "tooltip" => "In Process",
+                        "key" => "in_process",
+                        "timestamp" => "2025-01-20T10:56:58.000000Z"
+                    ],
+                    "submitted" => [
+                        "label" => "Add products",
+                        "tooltip" => "Add products to your portfolio",
+                        "key" => "submitted",
+                        "timestamp" => "2025-01-22T07:31:44.000000Z"
+                    ],
+                    "confirmed" => [
+                        "label" => "Setup card",
+                        "tooltip" => "Confirmed",
+                        "key" => "confirmed",
+                        // "timestamp" => "2025-01-22T07:31:45.000000Z"
+                    ],
+                    "booked_in" => [
+                        "label" => "Finish",
+                        "tooltip" => "Booked In",
+                        "key" => "booked_in",
+                        // "timestamp" => "2025-01-22T13:45:30.000000Z"
+                    ]
+                ],
+            ],
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platformData'           => $this->getPlatformData($customerSalesChannel),

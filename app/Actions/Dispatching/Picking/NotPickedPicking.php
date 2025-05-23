@@ -12,7 +12,6 @@ namespace App\Actions\Dispatching\Picking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Models\Dispatching\Picking;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,14 +24,11 @@ class NotPickedPicking extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    private Picking $picking;
 
     public function handle(Picking $picking, array $modelData): Picking
     {
-        data_set($modelData, 'state', PickingStateEnum::PICKING_BLOCKED);
-        $picking = $this->update($picking, $modelData);
+        return $this->update($picking, $modelData);
 
-        return $picking;
     }
 
     public function rules(): array

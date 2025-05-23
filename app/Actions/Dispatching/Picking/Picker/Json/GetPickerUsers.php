@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 23-05-2025-10h-16m
@@ -33,17 +34,17 @@ class GetPickerUsers extends OrgAction
 
 
 
-    $queryBuilder = QueryBuilder::for(Employee::class)
-            ->where('employees.organisation_id', $organisation->id)
-            ->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', '=', 'employees.id')
-            ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
-            ->where('job_positions.organisation_id', $organisation->id)
-            ->where('job_positions.name', 'Picker')
-            ->join('user_has_models', function ($join) {
-                $join->on('user_has_models.model_id', '=', 'employees.id')
-                    ->where('user_has_models.model_type', '=', 'Employee');
-            });
-        
+        $queryBuilder = QueryBuilder::for(Employee::class)
+                ->where('employees.organisation_id', $organisation->id)
+                ->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', '=', 'employees.id')
+                ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
+                ->where('job_positions.organisation_id', $organisation->id)
+                ->where('job_positions.name', 'Picker')
+                ->join('user_has_models', function ($join) {
+                    $join->on('user_has_models.model_id', '=', 'employees.id')
+                        ->where('user_has_models.model_type', '=', 'Employee');
+                });
+
         $queryBuilder
             ->defaultSort('employees.id')
             ->select([
