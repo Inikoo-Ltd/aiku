@@ -82,17 +82,11 @@ class DropshippingPortfolioResource extends JsonResource
             'updated_at'                => $this->updated_at,
             ...$platformProductId,
             'category' => $category,
-            'delete_product' => [
-                'method' => 'delete',
-                'name'       => 'retina.models.dropshipping.shopify_user.product.delete',
-                'parameters' => [
-                    'product' => $this->id
-                ]
-            ],
             'delete_portfolio' => [
                 'method' => 'delete',
-                'name'       => 'retina.models.portfolio.delete',
+                'name'       => 'retina.models.customer_sales_channel.product.delete',
                 'parameters' => [
+                    'customerSalesChannel' => $this->customer_sales_channel_id,
                     'portfolio' => $this->id
                 ]
             ],

@@ -65,12 +65,6 @@ const locale = inject('locale', aikuLocaleStructure)
 			<FontAwesomeIcon v-if="product.platform_product_id" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
 		</template>
 
-		<!-- <template #cell(platform_product_id)="{ item }">
-			<div>
-				{{ item.platform_product_id }}
-			</div>
-		</template> -->
-
 		<!-- Column: Stock -->
 		<template #cell(quantity_left)="{ item }">
 			<div>
