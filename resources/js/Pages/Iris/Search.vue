@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { computed, inject, onMounted, ref } from "vue"
-
-//import "https://cdn.luigisbox.com/search.js";
+import { computed, inject, onBeforeMount, onMounted, ref } from "vue"
 
 const layout = inject('layout', layoutStructure)
 const isLogin = computed(() => {
@@ -38,9 +36,16 @@ const LBInitSearchResult = async () => {
     console.log("Init Search")
 }
 
-// onMounted(() => {
-//     LBInitSearchResult()
-// })
+onBeforeMount(() => {
+    const script = document.createElement('script');
+    script.src = "https://cdn.luigisbox.com/search.js";
+    script.async = true;
+    document.head.appendChild(script);
+})
+
+onMounted(() => {
+    LBInitSearchResult()
+})
 const inputValue = ref('')
 </script>
 

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, ref } from "vue"
-//import "https://cdn.luigisbox.com/autocomplete.js"
+import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { AutoComplete } from "primevue";
+import { AutoComplete } from "primevue"
 
 
 // vika_luigi.js
@@ -121,10 +120,17 @@ const locale = inject('locale', {})
 console.log('layout:', layout)
 console.log('locale:', locale)
 
-// onMounted(() => {
-//     importStyleCSS()
-//     LBInitAutocompleteNew()
-// })
+onBeforeMount(() => {
+    const script = document.createElement('script');
+    script.src = "https://cdn.luigisbox.com/autocomplete.js";
+    script.async = true;
+    document.head.appendChild(script);
+})
+
+onMounted(() => {
+    importStyleCSS()
+    LBInitAutocompleteNew()
+})
 </script>
 
 <template>
