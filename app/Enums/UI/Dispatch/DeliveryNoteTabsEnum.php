@@ -24,15 +24,6 @@ enum DeliveryNoteTabsEnum: string
 
     public function blueprint(DeliveryNote $parent): array
     {
-        $indicator = false;
-        if ($parent->state == DeliveryNoteStateEnum::QUEUED) {
-            foreach ($parent->deliveryNoteItems as $deliveryNoteItem) {
-                if (!$deliveryNoteItem->pickings || !$deliveryNoteItem->pickings->picker_id) {
-                    $indicator = true;
-                }
-            }
-        }
-
 
         return match ($this) {
             DeliveryNoteTabsEnum::ITEMS => [
