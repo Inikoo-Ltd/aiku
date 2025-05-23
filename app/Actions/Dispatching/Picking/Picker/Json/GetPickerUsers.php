@@ -34,24 +34,23 @@ class GetPickerUsers extends OrgAction
 
 
     $queryBuilder = QueryBuilder::for(Employee::class)
-        ->where('employees.organisation_id', $organisation->id)
-        ->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', '=', 'employees.id')
-        ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
-        ->where('job_positions.organisation_id', $organisation->id)
-        ->where('job_positions.name', 'Picker')
-        ->leftJoin('user_has_models', function ($join) {
-            $join->on('user_has_models.model_id', '=', 'employees.id')
-                ->where('user_has_models.model_type', '=', Employee::class);
-        })
-        ->whereNotNull('user_has_models.model_id'); // Ensures the relation exists
-
+            ->where('employees.organisation_id', $organisation->id)
+            ->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', '=', 'employees.id')
+            ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
+            ->where('job_positions.organisation_id', $organisation->id)
+            ->where('job_positions.name', 'Picker')
+            ->join('user_has_models', function ($join) {
+                $join->on('user_has_models.model_id', '=', 'employees.id')
+                    ->where('user_has_models.model_type', '=', 'Employee');
+            });
+        
         $queryBuilder
             ->defaultSort('employees.id')
             ->select([
-                'employees.id',
+                'employees.id as employee_id',
                 'employees.contact_name',
                 'employees.alias',
-                'user_has_models.user_id as user_id'
+                'user_has_models.user_id as id'
             ]);
 
 

@@ -31,7 +31,7 @@ class CustomerSalesChannelsResource extends JsonResource
     {
         /** @var Platform $platform */
         $platform = Platform::find($this->platform_id);
-        // dd($platform);
+
         $customerSalesChannels = CustomerSalesChannel::find($this->id);
         return [
             'slug'              => $this->slug,
@@ -45,7 +45,21 @@ class CustomerSalesChannelsResource extends JsonResource
             'platform_code'     => $platform?->code,
             'platform_name'     => $platform?->name,
             'platform_image'    => $this->getPlatformLogo($customerSalesChannels),
-            'name'              => $this->name ?? $this->reference
+            'name'              => $this->name ?? $this->reference,
+            'unlink_route' => [
+                'method' => 'delete',
+                'name' => 'retina.models.customer_sales_channel.unlink',
+                'parameters' => [
+                    'customerSalesChannel' => $this->id
+                ]
+            ],
+            'toggle_route' => [
+                'method' => 'patch',
+                'name' => 'retina.models.customer_sales_channel.toggle',
+                'parameters' => [
+                    'customerSalesChannel' => $this->id
+                ]
+            ]
         ];
     }
 }

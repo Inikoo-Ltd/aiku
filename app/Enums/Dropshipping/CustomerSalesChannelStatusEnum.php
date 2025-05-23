@@ -15,6 +15,7 @@ enum CustomerSalesChannelStatusEnum: string
     use EnumHelperTrait;
 
     case OPEN = 'open';
+    case INACTIVE = 'inactive';
     case CLOSED = 'closed';
 
 
@@ -22,6 +23,7 @@ enum CustomerSalesChannelStatusEnum: string
     {
         return [
             'open'   => __('Open'),
+            'inactive' => __('Inactive'),
             'closed' => __('Closed'),
         ];
     }
