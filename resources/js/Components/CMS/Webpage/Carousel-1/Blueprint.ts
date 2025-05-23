@@ -74,13 +74,40 @@ export default {
 				},
 				{
 					name: "Image layout",
-					key: ["card_container", "image_properties"],
+					key: ["card_container"],
 					replaceForm: [
 						{
-							key: ["dimension"],
+							key: [ "image_properties","dimension"],
 							label: "Dimension",
 							type: "dimension",
 							useIn: ["desktop", "tablet", "mobile"],
+						},
+						{
+							key: ["container_image", "justifyContent"],
+							label: "Justify Content",
+							useIn: ["desktop", "tablet", "mobile"],
+							type: "select",
+							props_data: {
+								placeholder: "Object",
+								options: [
+									{
+										label: "Center",
+										value: "center",
+									},
+									{
+										label: "End",
+										value: "end",
+									},
+									{
+										label: "Start",
+										value: "start",
+									},
+									{
+										label: "none",
+										value: null,
+									},
+								],
+							},
 						},
 					],
 				},
