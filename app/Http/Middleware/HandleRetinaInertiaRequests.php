@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tightenco\Ziggy\Ziggy;
+use App\Http\Resources\Helpers\CurrencyResource;
 
 class HandleRetinaInertiaRequests extends Middleware
 {
@@ -56,7 +57,9 @@ class HandleRetinaInertiaRequests extends Middleware
                     'location' => $request->url(),
                 ],
                 "retina" => [
-                    "type" => $website->shop->type->value,
+                    "type"      => $website->shop->type->value,
+                    "currency"  => CurrencyResource::make($website->shop->currency)->toArray(request()),
+                    "balance"   => $webUser?->customer?->balance,
                 ],
                 'iris'   => $this->getIrisData($website, $webUser)
             ],
