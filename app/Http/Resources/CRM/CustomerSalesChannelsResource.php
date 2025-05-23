@@ -51,6 +51,12 @@ class CustomerSalesChannelsResource extends JsonResource
                 'parameters' => [
                     'customerSalesChannel' => $this->id
                 ]
+            ],
+            'toggle_route' => [
+                'name' => 'retina.models.customer_sales_channel.unlink',
+                'parameters' => [
+                    'customerSalesChannel' => $this->id
+                ]
             ]
         ];
     }
