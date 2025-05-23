@@ -61,6 +61,8 @@ const onSubmitPickerPacker = (fetchRoute: routeType, selectedPicker: {}, rowInde
         
     }
 }
+const selectedPicker = ref()
+const selectedLocation = ref()
 
 const isModalPick = ref(null)
 const isLoadingPick = ref(false)
@@ -130,9 +132,67 @@ const onClickPick = () => {
                     {{ trans("Item Picking") }}
                 </DialogTitle>
                 <div class="mt-2">
-                    <p class="text-sm text-gray-500">
-                        {{ trans("This action is under construction") }}
-                    </p>
+                    <div class="text-sm font-medium mb-2">
+                        {{ trans("Select picker") }}
+                    </div>
+                    <PureMultiselectInfiniteScroll
+                        v-model="selectedPicker"
+                        xxxupdate:modelValue="
+                            (selectedPicker) => onSubmitPickerPacker(selectedPicker, 'picker')
+                        "
+                        required
+                        :fetchRoute="isModalPick.pickers_list_route"
+                        :placeholder="trans('Select picker')"
+                        labelProp="contact_name"
+                        valueProp="id"
+                        object
+                        clearOnBlur
+                        :loading="isLoading['picker' + selectedPicker?.id]"
+                        :disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'"
+                        >
+                        <template #singlelabel="{ value }">
+                            <div
+                                class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                                {{ value.contact_name }}
+                            </div>
+                        </template>
+
+                        <template #option="{ option, isSelected, isPointed }">
+                            <div class="w-full text-left text-sm whitespace-nowrap truncate">
+                                {{ option.contact_name }}
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
+
+                    <div class="text-sm font-medium my-2">
+                        {{ trans("Select Location") }}
+                    </div>
+                    <PureMultiselectInfiniteScroll
+                        v-model="selectedLocation"
+                    
+                        required
+                        :fetchRoute="isModalPick.location_list_route"
+                        :placeholder="trans('Select Location')"
+                        object
+                        clearOnBlur
+                        >
+                        <template #singlelabel="{ value }">
+                            <div
+                                class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                                {{ value.contact_name }}
+                            </div>
+                        </template>
+
+                        <template #option="{ option, isSelected, isPointed }">
+                            <div class="w-full text-left text-sm whitespace-nowrap truncate">
+                                {{ option.contact_name }}
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
+
+                    <div class="text-sm font-medium my-2">
+
+                    </div>
                 </div>                
                 
 
@@ -140,7 +200,7 @@ const onClickPick = () => {
                     <Button
                         :loading="isLoadingPick"
                         @click="() => onClickPick()"
-                        :label="trans('Under Construction')"
+                        :label="trans('save')"
                         full
                         :disabled="true"
                     />
