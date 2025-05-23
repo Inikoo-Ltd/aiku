@@ -8,6 +8,7 @@
 
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
@@ -208,7 +209,8 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('wc-products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
 
     Route::post('shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
-    Route::post('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
+    Route::delete('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
+    Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
