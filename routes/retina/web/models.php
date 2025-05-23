@@ -9,6 +9,7 @@
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
+use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
@@ -204,6 +205,8 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
     Route::post('wc-products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
+
+    Route::post('shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
