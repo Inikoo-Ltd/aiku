@@ -5,7 +5,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { reactive, ref } from "vue"
 import type { Component } from "vue"
 
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
@@ -87,11 +87,35 @@ const onSubmitAddItem = async (idProduct: number[]) => {
         onFinish: () => isLoadingSubmit.value = false
     })
 }
+
+const selectedData = reactive({
+	products: [] as number[],
+})
 </script>
 
 <template>
+<!-- {{ selectedData.products }} -->
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #button-upload-to-shopify="{ action }">
+			<!-- <pre>{{ action }}</pre> -->
+			<ButtonWithLink
+				:routeTarget="action.route"
+				method="post"
+				:style="action.style"
+				:body="{
+					portfolios: selectedData.products,
+				}"
+				:label="action.label"
+				:disabled="!selectedData.products.length"
+				@success="() => selectedData.products = []"
+				:bindToLink="{
+					preserveScroll: true,
+				}"
+				isWithError
+			/>
+		</template>
+
 		<template v-if="props.products?.data?.length" #other>
 			<Button
 				@click="isOpenModalPortfolios = true"
@@ -124,7 +148,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 		</div>
 	</div>
 
-	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" />
+	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
 	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector

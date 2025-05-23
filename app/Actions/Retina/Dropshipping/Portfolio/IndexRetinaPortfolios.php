@@ -102,6 +102,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
                             'type'  => 'button',
                             'style' => 'create',
+                            'key'   => 'upload-to-shopify',
                             'label' => 'Upload Products to ' . $this->customerSalesChannel->platform->name,
                             'route' => [
                                 'name'       => 'retina.models.customer_sales_channel.shopify.batch_upload',
