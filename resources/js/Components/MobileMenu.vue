@@ -47,6 +47,7 @@ const props = defineProps<{
 const visible = ref(false);
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout')
+
 </script>
 
 <template>
@@ -56,7 +57,7 @@ const onLogout = inject('onLogout')
                 :style="getStyles(header?.mobile?.menu?.container?.properties)" />
         </button>
 
-        <Drawer v-model:visible="visible" :header="''">
+        <Drawer v-model:visible="visible" :header="''" :style="getStyles(props.menu?.container?.properties)">
             <template #closeicon>
                 <FontAwesomeIcon :icon="faTimesCircle" @click="visible = false" class="text-sm" />
             </template>
@@ -65,13 +66,13 @@ const onLogout = inject('onLogout')
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />
             </template>
 
-            <div class="menu-container">
+            <div class="menu-container"  >
                 <div class="menu-content">
-                    <div v-for="(item, index) in props.menu" :key="index">
+                    <div v-for="(item, index) in props.menu.navigation" :key="index">
                         <!-- MULTIPLE TYPE WITH DROPDOWN -->
                         <Disclosure v-if="item.type === 'multiple'" v-slot="{ open }">
                             <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
-                                <div class="flex justify-between items-center text-lg">
+                                <div class="flex justify-between items-center text-lg" :style="getStyles(props.menu?.navigation_container?.properties)">
                                     <span>{{ item.label }}</span>
                                     <FontAwesomeIcon :icon="faChevronCircleDown"
                                         :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
@@ -81,13 +82,13 @@ const onLogout = inject('onLogout')
                             <DisclosurePanel class="disclosure-panel">
                                 <div v-for="(submenu, subIndex) in item.subnavs" :key="subIndex" class="mb-6">
                                     <a v-if="submenu.title" :href="submenu.link?.href" :target="submenu.link?.target"
-                                        class="block text-base font-bold text-gray-700 mb-2">
+                                        class="block text-base font-bold text-gray-700 mb-2" :style="getStyles(props.menu?.sub_navigation?.properties)">
                                         {{ submenu.title }}
                                     </a>
 
                                     <div v-if="submenu.links" class="space-y-2 mt-2 ml-4 pl-4  border-gray-200">
                                         <a v-for="(menu, menuIndex) in submenu.links" :key="menuIndex"
-                                            :href="menu.link?.href" :target="menu.link?.target"
+                                            :href="menu.link?.href" :target="menu.link?.target" :style="getStyles(props.menu?.sub_navigation_link?.properties)" 
                                             class="block text-sm text-gray-700 relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ menu.label }}
@@ -144,7 +145,6 @@ const onLogout = inject('onLogout')
 }
 
 .disclosure-panel {
-    background-color: #f9fafb;
     padding: 1rem 1.25rem;
 }
 

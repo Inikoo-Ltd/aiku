@@ -53,7 +53,7 @@ const toggle = (event) => {
 
 <template>
     <div class="shadow-sm" :style="getStyles(modelValue.container.properties, screenType)">
-        <div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
+        <div class="flex flex-col justify-between items-center py-4 px-6 ">
             <div class="w-full grid grid-cols-3 items-center gap-6">
                 <!-- Logo -->
                 <component v-if="modelValue?.logo?.image?.source" :is="modelValue?.logo?.image?.source ? 'a' : 'div'"
@@ -91,8 +91,6 @@ const toggle = (event) => {
                 </div>
             </div>
         </div>
-
-        <MobileHeader :header-data="modelValue" :menu-data="{}" :screenType="screenType" />
     </div>
 </template>
 
