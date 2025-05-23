@@ -47,7 +47,7 @@ const getHref = (item: number) => {
             :style="getStyles(fieldValue.carousel_data.card_container.properties, screenType)"
             class=" flex flex-col">
             <component :is="getHref(card) ? 'a' : 'div'" :href="card?.link?.href" :target="card?.link?.target"  class="flex-1 flex flex-col">
-              <div class="flex justify-center">
+              <div class="flex justify-center overflow-visible" :style="getStyles(fieldValue?.carousel_data?.card_container?.container_image, screenType)">
                 <div :style="getStyles(fieldValue?.carousel_data?.card_container?.image_properties, screenType)"
                     :class="[!card.image?.source && 'bg-gray-100 w-full h-36 sm:h-44 md:h-48  flex items-center justify-center overflow-auto', 'overflow-hidden']">
                     <Image v-if="card.image?.source" :src="card.image.source" :alt="card.image.alt || `image ${index}`"
