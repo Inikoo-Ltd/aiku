@@ -178,7 +178,6 @@ class ShowDeliveryNote extends OrgAction
                                 'deliveryNote' => $deliveryNote->id
                             ]
                         ],
-                        'disabled' => true
                     ]
             ],
             DeliveryNoteStateEnum::HANDLING => [
