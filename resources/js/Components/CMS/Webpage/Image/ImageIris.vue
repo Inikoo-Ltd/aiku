@@ -137,12 +137,12 @@ const getImageSlots = (layoutType: string) => {
     <!-- Desktop/Tablet Grid -->
     <div
       v-else
-      class="flex flex-wrap overflow-hidden"
+      class="flex flex-wrap"
     >
       <div
         v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
         :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
-        class="group relative p-2 hover:bg-white/40 overflow-hidden"
+        class="flex flex-col group relative p-2 hover:bg-white/40"
         :class="getColumnWidthClass(fieldValue?.value?.layout_type, index - 1)"
       >
         <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
@@ -165,6 +165,7 @@ const getImageSlots = (layoutType: string) => {
               :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
             />
           </a>
+
           <div v-else class="block w-full h-full">
             <Image
               :src="fieldValue?.value?.images?.[index - 1]?.source"
@@ -173,11 +174,17 @@ const getImageSlots = (layoutType: string) => {
               class="w-full h-full aspect-square object-cover rounded-lg"
               :style="{
                 ...getStyles(fieldValue?.value?.layout?.properties, screenType),
-                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType)
+                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType),
               }"
               :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
             />
           </div>
+
+          <div v-if="fieldValue?.value?.caption?.use_caption" class="flex justify-center">
+              <span v-if="fieldValue?.value?.images?.[index - 1]?.caption" :style="getStyles(fieldValue?.value?.caption?.properties, screenType)">{{fieldValue?.value?.images?.[index - 1]?.caption}}</span>
+              <span v-else class="text-gray-300 font-semibold">No caption</span>
+           
+            </div>
         </template>
       </div>
     </div>
