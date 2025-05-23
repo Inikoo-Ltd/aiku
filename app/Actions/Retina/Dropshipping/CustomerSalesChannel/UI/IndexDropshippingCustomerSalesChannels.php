@@ -119,6 +119,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
                 ->column(key: 'number_portfolios', label: __('Number Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Number Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Number Orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'status', label: __('Status'), canBeHidden: false)
                 ->column(key: 'action', label: __('Action'), canBeHidden: false)
                 ->defaultSort('reference');
         };

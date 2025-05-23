@@ -294,13 +294,13 @@ class ShowDeliveryNote extends OrgAction
                 fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
                 : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
-            DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
-                fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
+            // DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
+            //     fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
+            //     : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
             ]
         )
-        ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value))
-        ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
+        ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
+        // ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
     }
 
     public function prepareForValidation(ActionRequest $request): void
