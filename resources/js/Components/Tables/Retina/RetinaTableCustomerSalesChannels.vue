@@ -15,6 +15,9 @@ import {CustomerSalesChannel} from "@/types/customer-sales-channel";
 import {trans} from "laravel-vue-i18n";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import Toggle from "primevue/toggleswitch"
+import axios from "axios"
+import { routeType } from "@/types/route"
+import { notify } from "@kyvg/vue3-notification"
 
 defineProps<{
     data: TableTS,
@@ -45,6 +48,26 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
         [customerSalesChannel.slug])
 }
 
+
+const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string}, oldValue: string, newVal: string) => {
+    const data = await axios.patch(
+        route(routeUpdate.name, routeUpdate.parameters),
+        {
+            
+        }
+    )
+    // console.log('oldValue', oldValue, newVal)
+    if (data.status === 200) {
+        proxyItem.status = newVal
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully update the platform status"),
+            type: "success",
+        })
+    } else {
+        proxyItem.status = oldValue
+    }
+}
 </script>
 <template>
     <Table :resource="data">
@@ -76,18 +99,24 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
                 {{ customerSalesChannel["number_orders"] }}
             </Link>
         </template>
-        <template #cell(status)="{ item: customerSalesChannel }">
+
+        <template #cell(status)="{ proxyItem }">
             <Toggle
-                v-tooltip="customerSalesChannel.status"
-                type="negative"
-                icon="fal fa-times"
-                :routeTarget="customerSalesChannel.toggle_route"
-                size="s"
-                v-model="customerSalesChannel.status"
+                :routeTarget="proxyItem.toggle_route"
+                :modelValue="proxyItem.status"
+                @update:modelValue="(newVal: string) => {
+                    onChangeToggle(
+                        proxyItem.toggle_route,
+                        proxyItem,
+                        proxyItem.status,
+                        newVal
+                    )
+                }"
                 true-value="open"
                 false-value="closed"
             />
         </template>
+
         <template #cell(action)="{ item: customerSalesChannel }">
             <ButtonWithLink
                 v-tooltip="trans('Unlink channel')"
@@ -99,3 +128,9 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
         </template>
     </Table>
 </template>
+
+<style lang="scss">
+:root {
+    --p-toggleswitch-checked-background: #22c55e;
+}
+</style>
