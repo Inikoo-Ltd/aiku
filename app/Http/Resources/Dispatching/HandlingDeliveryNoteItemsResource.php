@@ -59,6 +59,14 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
                     'organisation' => $deliveryNoteItem->organisation->slug
                 ]
             ],
+            'location_list_route' => [
+                'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                'parameters' => [
+                    'organisation' => $deliveryNoteItem->organisation->slug,
+                    'warehouse'    => $deliveryNoteItem->deliveryNote->slug
+                ]
+            ],
+
         ];
     }
 }
