@@ -82,6 +82,7 @@ class DropshippingPortfolioResource extends JsonResource
             'updated_at'                => $this->updated_at,
             ...$platformProductId,
             'category' => $category,
+            'platform' => $this->platform->type,
             'delete_portfolio' => [
                 'method' => 'delete',
                 'name'       => 'retina.models.customer_sales_channel.product.delete',
