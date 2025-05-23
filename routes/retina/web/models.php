@@ -211,6 +211,8 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::delete('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
     Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
+
+    Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {

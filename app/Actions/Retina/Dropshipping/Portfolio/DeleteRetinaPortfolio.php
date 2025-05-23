@@ -9,9 +9,10 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use App\Actions\CRM\Customer\DeletePortfolio;
+use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,9 +23,9 @@ class DeleteRetinaPortfolio extends RetinaAction
 
     private Portfolio $portfolio;
 
-    public function handle(Portfolio $portfolio): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio): void
     {
-        DeletePortfolio::make()->action($portfolio);
+        DeletePortfolio::run($customerSalesChannel, $portfolio);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -32,11 +33,11 @@ class DeleteRetinaPortfolio extends RetinaAction
         return $this->portfolio->customer_id == $this->customer->id;
     }
 
-    public function asController(Portfolio $portfolio, ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio, ActionRequest $request): void
     {
         $this->portfolio = $portfolio;
         $this->initialisation($request);
 
-        $this->handle($portfolio);
+        $this->handle($customerSalesChannel, $portfolio);
     }
 }

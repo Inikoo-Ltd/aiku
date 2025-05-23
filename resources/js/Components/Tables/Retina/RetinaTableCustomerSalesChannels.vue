@@ -80,7 +80,7 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
                     v-tooltip="trans('Unlink channel')"
                     type="negative"
                     icon="fal fa-times"
-                    :routeTarget="customerSalesChannel.unlink_route"
+                    :routeTarget="customerSalesChannel.toggle_route"
                     size="s"
                     v-model="customerSalesChannel.status"
                     true-value="open"
