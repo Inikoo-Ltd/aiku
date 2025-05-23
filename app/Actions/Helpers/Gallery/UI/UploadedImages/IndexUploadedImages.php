@@ -35,6 +35,9 @@ class IndexUploadedImages extends GrpAction
 
         $queryBuilder = QueryBuilder::for(Media::class);
 
+        if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
+            $queryBuilder->orderBy('media.created_at', 'desc');
+        }
 
         return $queryBuilder
             ->defaultSort('media.name')
