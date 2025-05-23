@@ -8,10 +8,8 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Dispatching\Picking\UpdatePickingStateToPacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,13 +19,9 @@ class UpdateDeliveryNoteStateToPacking extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        $deliveryNoteItems = $deliveryNote->deliveryNoteItems;
 
-        foreach ($deliveryNoteItems as $deliveryNoteItem) {
-            UpdatePickingStateToPacking::make()->action($deliveryNoteItem->pickings, []);
-        }
+
         data_set($modelData, 'packing_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::PACKING->value);
 
         return $this->update($deliveryNote, $modelData);
     }

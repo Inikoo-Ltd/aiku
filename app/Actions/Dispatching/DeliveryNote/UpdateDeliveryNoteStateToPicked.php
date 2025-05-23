@@ -10,10 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Models\Dispatching\DeliveryNote;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStateToPicked extends OrgAction
@@ -25,23 +22,10 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         data_set($modelData, 'picked_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::PICKED->value);
 
         return $this->update($deliveryNote, $modelData);
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $deliveryNoteItems = $this->deliveryNote->deliveryNoteItems;
-
-        foreach ($deliveryNoteItems as $deliveryNoteItem) {
-            $picking = $deliveryNoteItem->pickings;
-
-            if (!$picking || $picking->state !== PickingStateEnum::PICKED) {
-                throw ValidationException::withMessages(['All items must be picked']);
-            }
-        }
-    }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {

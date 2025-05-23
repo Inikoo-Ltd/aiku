@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
@@ -165,15 +164,7 @@ class ShopHydrateOrderHandling implements ShouldBeUnique
                                                             ->distinct('delivery_note_items.id')
                                                             ->count('delivery_note_items.id'),
 
-            'number_pickings_state_queued' => $shop->pickings()->where('state', PickingStateEnum::QUEUED)->count(),
-            'number_pickings_state_picking' => $shop->pickings()->where('state', PickingStateEnum::PICKING)->count(),
-            'number_pickings_state_picking_blocked' => $shop->pickings()->where('state', PickingStateEnum::PICKING_BLOCKED)->count(),
-            'number_pickings_done_today' => $shop->pickings()->whereDate('done_at', Carbon::Today())->count(),
 
-            'number_packings_state_queued' => $shop->packings()->where('state', PickingStateEnum::QUEUED)->count(),
-            'number_packings_state_packing' => $shop->packings()->where('state', PickingStateEnum::PICKING)->count(),
-            'number_packings_state_packing_blocked' => $shop->packings()->where('state', PickingStateEnum::PICKING_BLOCKED)->count(),
-            'number_packings_done_today' => $shop->packings()->whereDate('done_at', Carbon::Today())->count(),
 
 
         ];

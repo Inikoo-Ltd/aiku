@@ -70,6 +70,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int|null $invoice_id
  * @property int $estimated_required_weight grams
  * @property int $estimated_picked_weight grams
+ * @property string $quantity_not_picked
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock

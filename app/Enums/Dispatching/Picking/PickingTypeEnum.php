@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 23-05-2025-11h-52m
@@ -17,7 +18,7 @@ enum PickingTypeEnum: string
     case PICK = 'pick';
     case NOT_PICK = 'not-pick';
 
-    public static function labels($forElements = false): array
+    public static function labels(): array
     {
         return [
             'pick'          => __('Pick'),
