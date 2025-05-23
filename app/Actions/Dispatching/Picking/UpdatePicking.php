@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -43,11 +44,7 @@ class UpdatePicking extends OrgAction
 
         $totalPicked = $deliveryNoteItem->pickings()->where('type', PickingTypeEnum::PICK)->sum('quantity');
 
-        if ($deliveryNoteItem->quantity_picked != $totalPicked) {
-            UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
-                'quantity_picked' => $totalPicked
-            ]);
-        }
+        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
 
         return $picking;
     }
