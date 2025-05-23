@@ -10,14 +10,16 @@ import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, } from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
 import { ref, inject } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { faStar } from "@fas"
+import { faCheck } from "@far"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add( faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt )
+library.add( faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck )
 
 const props = defineProps<{
 	data: {}
@@ -61,13 +63,15 @@ const locale = inject('locale', aikuLocaleStructure)
 			<Link :href="productRoute(product)" class="primaryLink">
 				{{ product["slug"] }}
 			</Link>
+
+			<FontAwesomeIcon v-if="product.platform_product_id" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
 		</template>
 
-		<template #cell(platform_product_id)="{ item }">
+		<!-- <template #cell(platform_product_id)="{ item }">
 			<div>
 				{{ item.platform_product_id }}
 			</div>
-		</template>
+		</template> -->
 
 		<template #cell(quantity_left)="{ item }">
 			<div>

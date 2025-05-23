@@ -37,7 +37,7 @@ const goToNext = () => {
 <template>
     <div class="px-4 pb-8 m-5">
 
-        <Message v-if="data.department.data.url_master" severity="success" closable>
+        <Message v-if="data.department?.data?.url_master" severity="success" closable>
             <template #icon>
                 <FontAwesomeIcon :icon="faInfoCircle" />
             </template>
