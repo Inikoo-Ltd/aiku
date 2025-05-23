@@ -66,7 +66,7 @@ const onUnchecked = (itemId: number) => {
 		:name="tab"
 		class="mt-5"
 		isCheckBox
-		:disabledCheckbox="(xxx) => !!xxx.platform_product_id"
+		:disabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'"
 		@onChecked="(item) => {
 			console.log('onChecked', item)
 			props.selectedData.products.push(item.id)
@@ -81,9 +81,7 @@ const onUnchecked = (itemId: number) => {
 			<Link :href="productRoute(product)" class="primaryLink">
 				{{ product["slug"] }}
 			</Link>
-
-			<FontAwesomeIcon v-if="product.platform_product_id" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-		</template>
+        </template>
 
 		<!-- Column: Stock -->
 		<template #cell(quantity_left)="{ item }">
@@ -105,6 +103,11 @@ const onUnchecked = (itemId: number) => {
 				{{ locale.currencyFormat(item.currency_code, item.price) }}
 			</div>
 		</template>
+
+		<!-- Column: Price -->
+		<template #cell(status)="{ item: product }">
+            <FontAwesomeIcon v-if="(product.platform_product_id) || (product.platform == 'manual')" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+        </template>
 
 		<template #cell(actions)="{ item }">
 			<ButtonWithLink
