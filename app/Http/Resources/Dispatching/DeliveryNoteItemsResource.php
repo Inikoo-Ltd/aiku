@@ -52,6 +52,13 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method' => 'post'
             ],
+            'not_picking_route'       => [
+                'name' => 'grp.models.delivery-note-item.not-picking.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ],
             'pickers_list_route'   => [
                 'name'       => 'grp.json.employees.picker_users',
                 'parameters' => [
