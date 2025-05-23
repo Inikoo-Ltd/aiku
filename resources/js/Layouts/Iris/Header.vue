@@ -64,7 +64,7 @@ provide("onLogout", onLogoutAuth);
              :colorThemed="colorThemed" class="hidden md:block" />
 
   <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)">
-      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue?.navigation" :screenType="screenType" />
+      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :screenType="screenType" />
   </div>
 
 </template>

@@ -482,6 +482,12 @@ const fullScreeen = ref(false)
 const compUsersEditThisPage = computed(() => {
 	return useLiveUsers().liveUsersArray.filter(user => user.current_page?.route_name === layout.currentRoute).map(user => user.name ?? user.username)
 })
+
+const filterBlock = ref('all')
+
+watch(filterBlock, (newValue) => {
+	sendToIframe({ key: 'isPreviewLoggedIn', value: newValue })
+})
 </script>
 
 <template>
@@ -506,7 +512,7 @@ const compUsersEditThisPage = computed(() => {
 		<!-- Section: Side editor -->
 		<div v-if="!fullScreeen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
 			<WebpageSideEditor v-model="isModalBlockList" :isLoadingblock :isLoadingDeleteBlock :isAddBlockLoading
-				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"
+				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"  v-model:filterBlock="filterBlock"
 				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings"/>
 		</div>
 
@@ -535,12 +541,12 @@ const compUsersEditThisPage = computed(() => {
 					{{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
 					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width aria-hidden="true" />
 				</div>
+
 				<!-- Tools: login-logout, edit-preview -->
-				<div class="flex gap-3 items-center px-4">
+				<!-- <div class="flex gap-3 items-center px-4">
 					<ButtonPreviewLogin v-model="isPreviewLoggedIn"
 						@update:model-value="(e) => sendToIframe({ key: 'isPreviewLoggedIn', value: e })" />
-
-				</div>
+				</div> -->
 			</div>
 
 			<div class="border-2 h-full w-full relative">
