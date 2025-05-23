@@ -8,13 +8,17 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -28,6 +32,12 @@ class StorePicking extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
+        if(Arr::get($modelData, 'quantity') > intval($deliveryNoteItem->quantity_required)) {
+            throw ValidationException::withMessages([
+                    'messages' => __('The quantity cannot be greater than the required quantity')
+            ]);
+        }
+
         data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
         data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
         data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
@@ -35,8 +45,13 @@ class StorePicking extends OrgAction
         data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
         data_set($modelData, 'engine', PickingEngineEnum::AIKU);
         data_set($modelData, 'type', PickingTypeEnum::PICK);
+        
+        $picking = $deliveryNoteItem->pickings()->create($modelData);
+        $picking->refresh();
 
-        return $deliveryNoteItem->pickings()->create($modelData);
+        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+        
+        return $picking;
     }
 
     public function rules(): array
@@ -77,5 +92,27 @@ class StorePicking extends OrgAction
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
+    }
+
+    public string $commandSignature = 'picking:store {deliveryNoteItem} {locationId} {userId} {quantity}';
+
+
+    public function asCommand(Command $command)
+    {
+        $deliveryNoteItem = DeliveryNoteItem::findOrFail($command->argument('deliveryNoteItem'));
+
+        $this->deliveryNoteItem = $deliveryNoteItem;
+
+        $data = [
+            'location_id'     => (int) $command->argument('locationId'),
+            'picker_user_id'  => (int) $command->argument('userId'),
+            'quantity'        => (int) $command->argument('quantity'),
+        ];
+
+        $picking = $this->handle($deliveryNoteItem, $data);
+
+        $command->info("Picking created successfully with ID: {$picking->id}");
+
+        return 1;
     }
 }

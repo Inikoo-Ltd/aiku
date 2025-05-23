@@ -36,9 +36,13 @@ function deliveryNoteRoute(deliveryNote: Order) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
+            <pre>
+                {{ data.data[0].id}}
+            </pre>
         </template>
 
         <!-- Column: Reference -->
@@ -49,7 +53,7 @@ function deliveryNoteRoute(deliveryNote: Order) {
         </template>
         <template #cell(action)="{ item: deliveryNote }">
             <pre>
-                {{ data.data[0].locations }}
+                {{ data.data[0].pickings }}
             </pre>
         </template>
 
