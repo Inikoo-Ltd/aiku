@@ -62,14 +62,17 @@ trait WithFixedAddressActions
             ]
         );
 
+
         AddressHydrateFixedUsage::dispatch($address);
 
+
         $model->updateQuietly([$addressField => $address->id]);
+        $model->refresh();
 
         return $address;
     }
 
-    protected function updateFixedAddress(Order|Invoice|DeliveryNote $model, Address $currentAddress, Address $addressData, string $fixedScope, $scope, $addressField): Address
+    protected function updateFixedAddress(Order|Invoice|DeliveryNote $model, ?Address $currentAddress, Address $addressData, string $fixedScope, $scope, $addressField): Address
     {
         if (!$currentAddress  || $currentAddress->checksum != $addressData->getChecksum()) {
 

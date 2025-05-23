@@ -43,8 +43,10 @@ class UpdateInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
-        $billingAddressData = Arr::get($modelData, 'billing_address');
-        data_forget($modelData, 'billing_address');
+        $billingAddressData = Arr::pull($modelData, 'billing_address');
+
+        $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
+
 
 
         $invoice = $this->update($invoice, $modelData, ['data']);
@@ -58,6 +60,27 @@ class UpdateInvoice extends OrgAction
                 'billing',
                 'address_id'
             );
+            $invoice->update([
+                'billing_country_id' => $invoice->billingAddress->country_id,
+            ]);
+        }
+
+
+        if ($deliveryAddressData) {
+
+            $this->updateFixedAddress(
+                $invoice,
+                $invoice->deliveryAddress,
+                $deliveryAddressData,
+                'Ordering',
+                'delivery',
+                'delivery_address_id'
+            );
+
+            $invoice->update([
+                'delivery_country_id' => $invoice->deliveryAddress->country_id,
+            ]);
+
         }
 
 
@@ -127,6 +150,7 @@ class UpdateInvoice extends OrgAction
             'tax_liability_at' => ['sometimes', 'date'],
             'footer'           => ['sometimes', 'string'],
             'billing_address'  => ['sometimes', 'required', new ValidAddress()],
+            'delivery_address' => ['sometimes', 'required', new ValidAddress()],
             'sales_channel_id' => [
                 'sometimes',
                 'required',

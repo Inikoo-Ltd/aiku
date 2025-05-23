@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Arr;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
+use Sentry;
 
 trait WithInvoicesExport
 {
@@ -45,7 +46,7 @@ trait WithInvoicesExport
             });
 
             $config = [
-                'title'                  => 'hello'.$invoice->reference,
+                'title'                  => $invoice->reference,
                 'margin_left'            => 8,
                 'margin_right'           => 8,
                 'margin_top'             => 2,
@@ -81,6 +82,7 @@ trait WithInvoicesExport
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
         } catch (Exception $e) {
+            Sentry::captureException($e);
             return response()->json(['error' => 'Failed to generate PDF'], 404);
         }
     }
