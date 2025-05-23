@@ -1,16 +1,18 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 23 Feb 2023 16:47:00 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * author Arya Permana - Kirin
+ * created on 22-05-2025-13h-56m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
 
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
+use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
+use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -19,12 +21,13 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StorePicking extends OrgAction
+class StoreNotPickPicking extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithActionUpdate;
 
-    protected DeliveryNoteItem $deliveryNoteItem;
+    private DeliveryNoteItem $deliveryNoteItem;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
@@ -34,16 +37,17 @@ class StorePicking extends OrgAction
         data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
         data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
         data_set($modelData, 'engine', PickingEngineEnum::AIKU);
-        data_set($modelData, 'type', PickingTypeEnum::PICK);
+        data_set($modelData, 'type', PickingTypeEnum::NOT_PICK);
 
         return $deliveryNoteItem->pickings()->create($modelData);
+
     }
 
     public function rules(): array
     {
         return [
-            'not_picked_reason'         => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
-            'engine'          => ['sometimes', Rule::enum(PickingEngineEnum::class)],
+            'not_picked_reason'  => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
+            'not_picked_note'    => ['sometimes', 'string'],
             'location_id'     => [
                 'required',
                 Rule::Exists('locations', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
@@ -60,6 +64,9 @@ class StorePicking extends OrgAction
     {
         if (!$request->has('picker_user_id')) {
             $this->set('picker_user_id', $request->user()->id);
+        }
+        if (!$request->has('quantity')) {
+            $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
         }
     }
 

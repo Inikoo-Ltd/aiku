@@ -32,18 +32,6 @@ class PickingsResource extends JsonResource
                     'picking' => $this->id
                 ]
             ],
-            'not_picked_route' => [
-                'name'  => 'grp.models.picking.not_picked',
-                'parameters' => [
-                    'picking' => $this->id
-                ]
-            ],
-            'set_done_route' => [
-                'name' => 'grp.models.picking.state.done',
-                'parameters' => [
-                    'picking' => $this->id
-                ]
-            ]
         ];
     }
 }
