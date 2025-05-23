@@ -30,11 +30,13 @@ class UnlinkCustomerSalesChannel extends OrgAction
             'status' => CustomerSalesChannelStatusEnum::CLOSED
         ]);
 
-        match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::SHOPIFY => DeleteRetinaShopifyUser::run($customerSalesChannel->user),
-            PlatformTypeEnum::WOOCOMMERCE => DeleteWooCommerceUser::run($customerSalesChannel->user),
-            default => null
-        };
+        if ($customerSalesChannel->user) {
+            match ($customerSalesChannel->platform->type) {
+                PlatformTypeEnum::SHOPIFY => DeleteRetinaShopifyUser::run($customerSalesChannel->user),
+                PlatformTypeEnum::WOOCOMMERCE => DeleteWooCommerceUser::run($customerSalesChannel->user),
+                default => null
+            };
+        }
 
         if (!$hasFulfilmentOrders || !$hasOrders) {
             $customerSalesChannel->delete();
