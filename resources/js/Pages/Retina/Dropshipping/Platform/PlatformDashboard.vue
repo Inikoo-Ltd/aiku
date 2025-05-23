@@ -2,6 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import CountUp from "vue-countup-v3"
 import { faArrowRight } from "@fal"
+import { faArrowRight as farArrowRight } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link } from "@inertiajs/vue3"
 import { inject } from "vue"
@@ -9,7 +10,8 @@ import Timeline from '@/Components/Utils/Timeline.vue'
 
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
-library.add(faArrowRight)
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+library.add(faArrowRight, farArrowRight)
 
 
 const props = defineProps<{
@@ -30,6 +32,11 @@ const props = defineProps<{
     timeline: {
         current_state: string
         options: {}[]
+    }
+    step: {
+        label: string
+        title: string
+        description: string
     }
 }>()
 
@@ -63,7 +70,132 @@ const platformImage = {
                 style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" />
         </div> -->
 
-        <div>
+        <div v-if="props.timeline">
+            <!-- {{ props.timeline?.current_state }} -->
+
+            <!-- Step 1: Created -->
+            <div v-if="props.timeline?.current_state === 'created'" class="relative isolate">
+                <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]" aria-hidden="true">
+                    <defs>
+                        <pattern id="83fd4e5a-9d52-42fc-97b6-718e5d7ee527" width="200" height="200" x="50%" y="-1" patternUnits="userSpaceOnUse">
+                            <path d="M100 200V.5M.5 .5H200" fill="none" />
+                        </pattern>
+                    </defs>
+                    <svg x="50%" y="-1" class="overflow-visible fill-gray-50">
+                        <path d="M-100.5 0h201v201h-201Z M699.5 0h201v201h-201Z M499.5 400h201v201h-201Z M-300.5 600h201v201h-201Z" stroke-width="0" />
+                    </svg>
+                    <rect width="100%" height="100%" stroke-width="0" fill="url(#83fd4e5a-9d52-42fc-97b6-718e5d7ee527)" />
+                </svg>
+
+                <div class="mx-auto max-w-7xl px-6 lg:flex lg:items-center lg:gap-x-10 lg:px-8">
+                    <div class="mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
+                        <div class="relative flex w-fit items-center gap-x-4 rounded-full bg-gray-100 px-4 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                            <span class="font-medium text-indigo-600 italic">
+                                {{ props.step.label}}
+                            </span>
+                        </div>
+                        <h1 class="mt-4 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
+                            {{ props.step.title }}
+                        </h1>
+                        <p class="mt-8 text-pretty text-lg text-gray-500 text-justify">
+                            {{ props.step.description }}
+                        </p>
+                        <div class="mt-10 flex items-center gap-x-6">
+                            <ButtonWithLink
+                                :routeTarget="{
+                                    name: 'retina.dropshipping.customer_sales_channels.index'
+                                }"
+                                :label="trans('Connect your store')"
+                                iconRight="far fa-arrow-right"
+                                xxbindToLink="{
+                                    preserveScroll: true,
+                                }"
+                            />
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- Step 2: Manage saved card -->
+            <div v-if="props.timeline?.current_state === 'authenticated'" class="relative isolate overflow-hidden">
+                <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
+                    aria-hidden="true">
+                    <defs>
+                        <pattern id="0787a7c5-978c-4f66-83c7-11c213f99cb7" width="200" height="200" x="50%" y="-1"
+                                patternUnits="userSpaceOnUse">
+                            <path d="M.5 200V.5H200" fill="none" />
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
+                </svg>
+                <div class="mx-auto max-w-7xl px-6 pb-12 pt-4 lg:flex lg:px-14 ">
+                    <div class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
+                        <div class="relative flex w-fit items-center gap-x-4 rounded-full bg-gray-100 px-4 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                            <span class="font-medium text-indigo-600 italic">
+                                {{ props.step.label }}
+                            </span>
+                        </div>
+                        <h1 class="text-pretty text-3xl font-semibold tracking-tight sm:text-7xl">
+                            {{ step.title }}
+                        </h1>
+                        <p class="mt-6 text-pretty text-base text-gray-500 sm:text-xl/8">
+                            {{ step.description }}
+                        </p>
+                        <div class="mt-10 flex items-center gap-x-6">
+                            <ButtonWithLink
+                                :routeTarget="{
+                                    name: 'retina.dropshipping.mit_saved_cards.create'
+                                    }"
+                                :label="trans('Add credit card')"
+                                icon="fas fa-plus"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Add products -->
+            <div v-if="props.timeline?.current_state === 'card_saved'" class="relative isolate overflow-hidden">
+                <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
+                    aria-hidden="true">
+                    <defs>
+                        <pattern id="0787a7c5-978c-4f66-83c7-11c213f99cb7" width="200" height="200" x="50%" y="-1"
+                                patternUnits="userSpaceOnUse">
+                            <path d="M.5 200V.5H200" fill="none" />
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
+                </svg>
+
+                <div class="mx-auto max-w-7xl px-6 pb-12 pt-4 lg:flex lg:px-14 ">
+                    <div class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
+                        <div class="relative flex w-fit items-center gap-x-4 rounded-full bg-gray-100 px-4 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                            <span class="font-medium text-indigo-600 italic">
+                                {{ props.step.label }}
+                            </span>
+                        </div>
+                        <h1 class="text-pretty text-3xl font-semibold tracking-tight sm:text-7xl">
+                            {{ step.title }}
+                        </h1>
+                        <p class="mt-6 text-pretty text-base text-gray-500 sm:text-xl/8">
+                            {{ step.description }}
+                        </p>
+                        <div class="mt-10 flex items-center gap-x-6">
+                            <ButtonWithLink
+                                :routeTarget="{
+                                    name: 'retina.dropshipping.mit_saved_cards.create'
+                                }"
+                                :label="trans('Add credit card')"
+                                icon="fas fa-plus"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else>
             <div class="flex justify-between">
                 <h3 class="text-2xl font-semibold">{{ platform.name }} <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span></h3>
                 <img
