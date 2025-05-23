@@ -80,7 +80,7 @@ class StoreProductShopify extends OrgAction
                 ]);
             }
 
-            HandleApiProductToShopify::dispatch($shopifyUser, [
+            HandleApiProductToShopify::run($shopifyUser, [
                 'portfolios' => $portfolios
             ]);
         });

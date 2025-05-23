@@ -117,7 +117,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                         "key" => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value
                     ]
                 ],
-            ] : [],
+            ] : null,
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platformData'           => $this->getPlatformData($customerSalesChannel),

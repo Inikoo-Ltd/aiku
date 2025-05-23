@@ -43,6 +43,10 @@ class IndexStockImages extends GrpAction
 
         $queryBuilder->where('model_has_media.group_id', $group->id);
 
+        if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
+            $queryBuilder->orderBy('media.created_at', 'desc');
+        }
+
         return $queryBuilder
             ->defaultSort('media.name')
             ->select(['media.name', 'media.id', 'size', 'mime_type', 'file_name', 'disk', 'media.slug', 'is_animated'])
