@@ -31,6 +31,7 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
+        $query->where('status', true);
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->with(['shopifyPortfolio']);
