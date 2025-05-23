@@ -26,8 +26,6 @@ class DeleteWooCommerceUser extends OrgAction
 
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
-        $wooCommerceUser->products()->detach();
-        $wooCommerceUser->orders()->detach();
         if ($wooCommerceUser->customerSalesChannel) {
             UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
                 'status' => CustomerSalesChannelStatusEnum::CLOSED

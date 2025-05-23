@@ -24,6 +24,7 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnlinkRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
@@ -207,6 +208,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('wc-products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
 
     Route::post('shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+    Route::post('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
