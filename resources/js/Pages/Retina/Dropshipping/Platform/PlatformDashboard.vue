@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import CountUp from "vue-countup-v3"
-import { faArrowRight } from "@fal"
+import { faArrowRight, faCube, faLink } from "@fal"
 import { faArrowRight as farArrowRight } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link } from "@inertiajs/vue3"
@@ -11,7 +11,7 @@ import Timeline from '@/Components/Utils/Timeline.vue'
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-library.add(faArrowRight, farArrowRight)
+library.add(faArrowRight, faCube, faLink, farArrowRight)
 
 
 const props = defineProps<{
@@ -71,10 +71,7 @@ const platformImage = {
         </div> -->
 
         <div v-if="props.timeline">
-            <!-- {{ props.timeline?.current_state }} -->
-
-            <!-- Step 1: Created -->
-            <div v-if="props.timeline?.current_state === 'created'" class="relative isolate">
+            <div class="relative isolate">
                 <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]" aria-hidden="true">
                     <defs>
                         <pattern id="83fd4e5a-9d52-42fc-97b6-718e5d7ee527" width="200" height="200" x="50%" y="-1" patternUnits="userSpaceOnUse">
@@ -86,6 +83,8 @@ const platformImage = {
                     </svg>
                     <rect width="100%" height="100%" stroke-width="0" fill="url(#83fd4e5a-9d52-42fc-97b6-718e5d7ee527)" />
                 </svg>
+
+                <FontAwesomeIcon :icon="props.step.icon" class="text-[200px] absolute opacity-15 right-12 top-1/2 -translate-y-3/4 -rotate-12" fixed-width aria-hidden="true" />
 
                 <div class="mx-auto max-w-7xl px-6 lg:flex lg:items-center lg:gap-x-10 lg:px-8">
                     <div class="mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
@@ -102,10 +101,8 @@ const platformImage = {
                         </p>
                         <div class="mt-10 flex items-center gap-x-6">
                             <ButtonWithLink
-                                :routeTarget="{
-                                    name: 'retina.dropshipping.customer_sales_channels.index'
-                                }"
-                                :label="trans('Connect your store')"
+                                :routeTarget="props.step?.label?.route_target"
+                                :label="props.step?.button?.label"
                                 iconRight="far fa-arrow-right"
                                 xxbindToLink="{
                                     preserveScroll: true,
@@ -114,83 +111,6 @@ const platformImage = {
                         </div>
                     </div>
                     
-                </div>
-            </div>
-
-            <!-- Step 2: Manage saved card -->
-            <div v-if="props.timeline?.current_state === 'authenticated'" class="relative isolate overflow-hidden">
-                <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
-                    aria-hidden="true">
-                    <defs>
-                        <pattern id="0787a7c5-978c-4f66-83c7-11c213f99cb7" width="200" height="200" x="50%" y="-1"
-                                patternUnits="userSpaceOnUse">
-                            <path d="M.5 200V.5H200" fill="none" />
-                        </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
-                </svg>
-                <div class="mx-auto max-w-7xl px-6 pb-12 pt-4 lg:flex lg:px-14 ">
-                    <div class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
-                        <div class="relative flex w-fit items-center gap-x-4 rounded-full bg-gray-100 px-4 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-                            <span class="font-medium text-indigo-600 italic">
-                                {{ props.step.label }}
-                            </span>
-                        </div>
-                        <h1 class="text-pretty text-3xl font-semibold tracking-tight sm:text-7xl">
-                            {{ step.title }}
-                        </h1>
-                        <p class="mt-6 text-pretty text-base text-gray-500 sm:text-xl/8">
-                            {{ step.description }}
-                        </p>
-                        <div class="mt-10 flex items-center gap-x-6">
-                            <ButtonWithLink
-                                :routeTarget="{
-                                    name: 'retina.dropshipping.mit_saved_cards.create'
-                                    }"
-                                :label="trans('Add credit card')"
-                                icon="fas fa-plus"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 3: Add products -->
-            <div v-if="props.timeline?.current_state === 'card_saved'" class="relative isolate overflow-hidden">
-                <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
-                    aria-hidden="true">
-                    <defs>
-                        <pattern id="0787a7c5-978c-4f66-83c7-11c213f99cb7" width="200" height="200" x="50%" y="-1"
-                                patternUnits="userSpaceOnUse">
-                            <path d="M.5 200V.5H200" fill="none" />
-                        </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
-                </svg>
-
-                <div class="mx-auto max-w-7xl px-6 pb-12 pt-4 lg:flex lg:px-14 ">
-                    <div class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
-                        <div class="relative flex w-fit items-center gap-x-4 rounded-full bg-gray-100 px-4 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-                            <span class="font-medium text-indigo-600 italic">
-                                {{ props.step.label }}
-                            </span>
-                        </div>
-                        <h1 class="text-pretty text-3xl font-semibold tracking-tight sm:text-7xl">
-                            {{ step.title }}
-                        </h1>
-                        <p class="mt-6 text-pretty text-base text-gray-500 sm:text-xl/8">
-                            {{ step.description }}
-                        </p>
-                        <div class="mt-10 flex items-center gap-x-6">
-                            <ButtonWithLink
-                                :routeTarget="{
-                                    name: 'retina.dropshipping.mit_saved_cards.create'
-                                }"
-                                :label="trans('Add credit card')"
-                                icon="fas fa-plus"
-                            />
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

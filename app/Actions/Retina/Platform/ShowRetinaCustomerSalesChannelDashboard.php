@@ -53,6 +53,34 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $stepDescription = __('To manage your payment methods. If you mind to do it later, you can skip this step.');
         $stepDescription = __('Add products to your store to start selling. Select items from our catalogue or upload your own products to showcase in your sales channel.');
 
+        $stepButton = [
+            'label'       => __('Connect your store'),
+            'route_target' => [
+                'name'       => 'retina.dropshipping.customer_sales_channels.index',
+            ],
+        ];
+
+        $stepButton = [
+            'label'       => __('Setup credit card'),
+            'route_target' => [
+                'name'       => 'retina.dropshipping.mit_saved_cards.create',
+            ],
+        ];
+
+        $stepButton = [
+            'label'       => __('Add portfolios'),
+            'route_target' => [
+                'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.index',
+                'parameters' => [
+                    'customerSalesChannel' => $customerSalesChannel->slug,
+                ]
+            ],
+        ];
+
+        $stepIcon = 'fal fa-link';
+        $stepIcon = 'fal fa-cube';
+        $stepIcon = 'fal fa-credit-card';
+
         return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
             'title'                  => $title,
             'breadcrumbs'            => $this->getBreadcrumbs($customerSalesChannel),
@@ -89,7 +117,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                         "key" => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value
                     ]
                 ],
-            ] : [],
+            ] : null,
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platformData'           => $this->getPlatformData($customerSalesChannel),
@@ -97,6 +125,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 'label'         => $stepLabel,
                 'title'         => $stepTitle,
                 'description'   => $stepDescription,
+                'button'        => $stepButton,
+                'icon'          => $stepIcon,
             ]
         ]);
     }

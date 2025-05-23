@@ -260,7 +260,7 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
         }
 
-        if (request()->expectsJson()) {
+        if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
             $queryBuilder->orderByRaw("CASE 
             WHEN webpages.sub_type = 'storefront' THEN 1
             WHEN webpages.sub_type = 'department' THEN 2
