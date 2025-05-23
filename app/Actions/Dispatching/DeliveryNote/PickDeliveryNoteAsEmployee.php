@@ -16,6 +16,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
@@ -26,13 +27,13 @@ class PickDeliveryNoteAsEmployee extends OrgAction
     use WithActionUpdate;
 
     private DeliveryNote $deliveryNote;
-    public function handle(DeliveryNote $deliveryNote, Employee $employee): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $deliveryNote = UpdateDeliveryNote::make()->action($deliveryNote, [
-            'picker_id' => $employee->id,
+            'picker_user_id' => $user->id,
         ]);
 
-        data_set($modelData, 'queued_at', now());
+        data_set($modelData, 'handling_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING->value);
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
@@ -48,15 +49,23 @@ class PickDeliveryNoteAsEmployee extends OrgAction
     {
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
-        $employee = $request->user()->employees()->first();
+        $user = $request->user();
 
-        return $this->handle($deliveryNote, $employee);
+        return $this->handle($deliveryNote, $user);
     }
 
     public function prepareForValidation()
     {
         $employee = request()->user()->employees()->first();
-        if (!$employee) {
+        if($employee) {
+            $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
+            if (!$pickerEmployee) {
+                throw ValidationException::withMessages([
+                    'messages' => __('You Are Not A Picker')
+                ]);
+            }
+        }
+        elseif (!$employee) {
             throw ValidationException::withMessages([
                 'messages' => __('You Are Not An Employee')
             ]);
@@ -75,11 +84,11 @@ class PickDeliveryNoteAsEmployee extends OrgAction
         );
     }
 
-    public function action(DeliveryNote $deliveryNote, Employee $employee): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote, $employee);
+        return $this->handle($deliveryNote, $user);
     }
 }

@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
@@ -86,8 +87,10 @@ class IndexDeliveryNoteItems extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_required', label: __('Quantity Required'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_picked', label: __('Quantity Picked'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_packed', label: __('Quantity Packed'), canBeHidden: false, sortable: true, searchable: true);
+            if ($parent->state != DeliveryNoteStateEnum::QUEUED) {
+                $table->column(key: 'quantity_picked', label: __('Quantity Picked'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'quantity_packed', label: __('Quantity Packed'), canBeHidden: false, sortable: true, searchable: true);
+            }
         };
     }
 
