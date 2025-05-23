@@ -106,7 +106,6 @@ class ShowDeliveryNote extends OrgAction
                 : null;
 
             $timestamp = $timestamp ?: null;
-            // dd($state);
             $label = $state->labels()[$state->value];
             if ($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
                 if (
@@ -134,7 +133,7 @@ class ShowDeliveryNote extends OrgAction
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
 
         $actions = [];
-        
+
         $actions = match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
                 [

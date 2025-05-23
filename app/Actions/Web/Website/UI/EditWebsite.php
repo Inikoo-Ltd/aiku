@@ -58,7 +58,7 @@ class EditWebsite extends OrgAction
      */
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        if ($website->shop->type==ShopTypeEnum::FULFILMENT) {
+        if ($website->shop->type == ShopTypeEnum::FULFILMENT) {
             $args = [
                 'updateRoute' => [
                     'name'       => 'grp.models.fulfilment.website.update',
