@@ -67,10 +67,9 @@ class StoreNotPickPicking extends OrgAction
         ];
     }
 
-    public function prepareForValidation($request)
+    public function prepareForValidation($request): void
     {
-        if($this->deliveryNoteItem->quantity_required == $this->deliveryNoteItem->quantity_picked || $this->deliveryNoteItem->is_completed == true)
-        {
+        if ($this->deliveryNoteItem->quantity_required == $this->deliveryNoteItem->quantity_picked || $this->deliveryNoteItem->is_completed) {
             throw ValidationException::withMessages([
                     'messages' => __('This delivery note item has been fully picked')
                 ]);

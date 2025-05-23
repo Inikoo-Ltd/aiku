@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * App\Models\Dispatching\DeliveryNoteItem
@@ -72,12 +71,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $estimated_required_weight grams
  * @property int $estimated_picked_weight grams
  * @property string $quantity_not_picked
+ * @property bool $is_completed
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Dispatching\Packing|null $packings
- * @property-read \App\Models\Dispatching\Picking|null $pickings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Packing> $packings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Transaction|null $transaction
  * @method static Builder<static>|DeliveryNoteItem newModelQuery()

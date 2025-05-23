@@ -79,128 +79,89 @@ const getImageSlots = (layoutType: string) => {
 </script>
 
 <template>
-  <section
-    :style="getStyles(modelValue?.container?.properties, screenType)"
-    aria-label="Image Gallery Section"
-  >
+  <section :style="getStyles(modelValue?.container?.properties, screenType)" aria-label="Image Gallery Section">
     <!-- Mobile Carousel -->
-    <Swiper
-      v-if="screenType === 'mobile' && modelValue?.mobile?.type === 'carousel'"
-      :slides-per-view="1"
-      :loop="true"
-      :autoplay="false"
-      :pagination="{ clickable: true }"
-      :modules="[Autoplay, Pagination]"
-      class="w-full"
-      :style="getStyles(modelValue?.value?.layout?.properties, screenType)"
-    >
-      <SwiperSlide
-        v-for="(image, index) in modelValue?.value?.images"
-        :key="index"
-        class="w-full"
-      >
-        <a
-          v-if="getHref(index)"
-          :href="getHref(index)"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block w-full h-full"
-        >
-          <Image
-            :src="image?.source"
-            :alt="image?.properties?.alt || `image ${index + 1}`"
-            :imageCover="true"
-          
-            :style="{
-              ...getStyles(modelValue?.value?.layout?.properties, screenType),
-              ...getStyles(image?.properties, screenType)
-            }"
-            :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
-          />
+    <Swiper v-if="screenType === 'mobile' && modelValue?.mobile?.type === 'carousel'" :slides-per-view="1" :loop="true"
+      :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]" class="w-full"
+      :style="getStyles(modelValue?.value?.layout?.properties, screenType)">
+      <SwiperSlide v-for="(image, index) in modelValue?.value?.images" :key="index" class="w-full">
+        <a v-if="getHref(index)" :href="getHref(index)" target="_blank" rel="noopener noreferrer"
+          class="block w-full h-full">
+          <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
+            ...getStyles(modelValue?.value?.layout?.properties, screenType),
+            ...getStyles(image?.properties, screenType)
+          }" :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" />
         </a>
         <div v-else class="block w-full h-full">
-          <Image
-            :src="image?.source"
-            :alt="image?.properties?.alt || `image ${index + 1}`"
-            :imageCover="true"
-        
-            :style="{
-              ...getStyles(modelValue?.value?.layout?.properties, screenType),
-              ...getStyles(image?.properties, screenType)
-            }"
-            :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
-          />
+          <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
+            ...getStyles(modelValue?.value?.layout?.properties, screenType),
+            ...getStyles(image?.properties, screenType)
+          }" :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" />
         </div>
       </SwiperSlide>
     </Swiper>
 
     <!-- Desktop/Tablet Grid -->
-    <div
-      v-else
-      class="flex flex-wrap overflow-hidden"
-    >
-      <div
-        v-for="index in getImageSlots(modelValue?.value?.layout_type)"
+    <div v-else class="flex flex-wrap overflow-hidden">
+      <div v-for="index in getImageSlots(modelValue?.value?.layout_type)"
         :key="`${index}-${modelValue?.value?.images?.[index - 1]?.source}`"
-        class="group relative p-2 hover:bg-white/40 overflow-hidden"
-        :class="getColumnWidthClass(modelValue?.value?.layout_type, index - 1)"
-      >
+           class="flex flex-col group relative p-2 hover:bg-white/40"
+        :class="getColumnWidthClass(modelValue?.value?.layout_type, index - 1)">
         <template v-if="modelValue?.value?.images?.[index - 1]?.source">
-          <a
-            v-if="getHref(index - 1)"
-            :href="getHref(index - 1)"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="block w-full h-full"
-          >
-            <Image
-              :src="modelValue?.value?.images?.[index - 1]?.source"
-              :alt="modelValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`"
-              :imageCover="true"
-              class="w-full h-full aspect-square object-cover rounded-lg"
-              :style="{
+          <a v-if="getHref(index - 1)" :href="getHref(index - 1)" target="_blank" rel="noopener noreferrer"
+            class="block w-full h-full">
+            <Image :src="modelValue?.value?.images?.[index - 1]?.source"
+              :alt="modelValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
+              class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                 ...getStyles(modelValue?.value?.layout?.properties, screenType),
                 ...getStyles(modelValue?.value?.images?.[index - 1]?.properties, screenType)
-              }"
-              :imgAttributes="{ ...modelValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
-            />
+              }" :imgAttributes="{ ...modelValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }" />
           </a>
           <div v-else class="block w-full h-full">
-            <Image
-              :src="modelValue?.value?.images?.[index - 1]?.source"
-              :alt="modelValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`"
-              :imageCover="true"
-              class="w-full h-full aspect-square object-cover rounded-lg"
-              :style="{
+            <Image :src="modelValue?.value?.images?.[index - 1]?.source"
+              :alt="modelValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
+              class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                 ...getStyles(modelValue?.value?.layout?.properties, screenType),
                 ...getStyles(modelValue?.value?.images?.[index - 1]?.properties, screenType)
-              }"
-              :imgAttributes="{ ...modelValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
-            />
+              }" :imgAttributes="{ ...modelValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }" />
+            <div class="flex justify-center">
+              <div v-if="modelValue?.value?.caption?.use_caption">
+                <span v-if="modelValue?.value?.images?.[index - 1]?.caption" :style="getStyles(modelValue?.value?.caption?.properties, screenType)">{{modelValue?.value?.images?.[index - 1]?.caption}}</span>
+                <span v-else class="text-gray-300 font-semibold">No caption</span>
+              </div>
+           
+            </div>
           </div>
+
         </template>
 
         <!-- Empty placeholder -->
-        <div
-          v-else
-          class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer"
-          :style="{
-            ...getStyles(modelValue?.value?.layout?.properties, screenType),
-            ...getStyles(modelValue?.value?.images?.[index - 1]?.properties, screenType)
-          }"
-        >
-          <font-awesome-icon
-            :icon="['fas', 'image']"
-            class="text-gray-500 text-4xl transition-colors duration-300 group-hover:text-gray-700"
-          />
+        <div v-else>
+          <div
+            class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer"
+            :style="{
+              ...getStyles(modelValue?.value?.layout?.properties, screenType),
+              ...getStyles(modelValue?.value?.images?.[index - 1]?.properties, screenType)
+            }">
+            <font-awesome-icon :icon="['fas', 'image']"
+              class="text-gray-500 text-4xl transition-colors duration-300 group-hover:text-gray-700" />
+          </div>
+          <div class="flex justify-center">
+            <div v-if="modelValue?.value?.caption?.use_caption">
+                <span v-if="modelValue?.value?.images?.[index - 1]?.caption" :style="getStyles(modelValue?.value?.caption?.properties, screenType)">{{modelValue?.value?.images?.[index - 1]?.caption}}</span>
+                <span v-else class="text-gray-300 font-semibold">No caption</span>
+              </div>
+          </div>
         </div>
+
+
       </div>
     </div>
   </section>
 </template>
 
 <style scoped lang="scss">
-:deep(.swiper-pagination-bullet){
+:deep(.swiper-pagination-bullet) {
   background-color: #d1d5db !important; // Tailwind's gray-300
   opacity: 1;
   transition: background-color 0.3s ease;
@@ -208,8 +169,6 @@ const getImageSlots = (layoutType: string) => {
 
 
 :deep(.swiper-pagination-bullet-active) {
-    background: #4b5563 !important;
+  background: #4b5563 !important;
 }
-
 </style>
-

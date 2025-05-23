@@ -15,13 +15,30 @@ export default {
 					label: "Dimension",
 					type: "dimension",
 					information: trans("Setup all dimension in all image"),
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					name: "Caption",
+					key: ["caption"],
+					replaceForm: [
+						{
+							key: ["use_caption"],
+							label: "Use Caption",
+							type: "switch",
+						},
+						{
+							key: ["properties",'text'],
+							label: "Style",
+							type: "textProperty",
+						},
+					],
 				},
 				{
 					label: "Images",
 					key: ["images"],
 					type: "images-property",
 				},
+				
 			],
 		},
 		{
@@ -32,31 +49,31 @@ export default {
 					key: ["padding"],
 					label: "Padding",
 					type: "padding",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["margin"],
 					label: "Margin",
 					type: "margin",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["border"],
 					label: "Border",
 					type: "border",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["shadow"],
 					label: "Shadow",
 					type: "shadow",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["shadowColor"],
 					label: "Shadow Color",
 					type: "color",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 			],
 		},

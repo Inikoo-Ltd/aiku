@@ -32,7 +32,7 @@ class StorePicking extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
-        if(Arr::get($modelData, 'quantity') > intval($deliveryNoteItem->quantity_required)) {
+        if (Arr::get($modelData, 'quantity') > intval($deliveryNoteItem->quantity_required)) {
             throw ValidationException::withMessages([
                     'messages' => __('The quantity cannot be greater than the required quantity')
             ]);
@@ -45,12 +45,12 @@ class StorePicking extends OrgAction
         data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
         data_set($modelData, 'engine', PickingEngineEnum::AIKU);
         data_set($modelData, 'type', PickingTypeEnum::PICK);
-        
+
         $picking = $deliveryNoteItem->pickings()->create($modelData);
         $picking->refresh();
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
-        
+
         return $picking;
     }
 
