@@ -387,7 +387,7 @@ class IndexFamilies extends OrgAction
                     'iconRight'     => $iconRight,
                     'actions'       => [
                         $this->canEdit ? (
-                            class_basename($this->parent) == 'ProductCategory' ? [
+                            class_basename($this->parent) == 'ProductCategory' && $this->parent->type != ProductCategoryTypeEnum::SUB_DEPARTMENT ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new family'),
@@ -469,7 +469,7 @@ class IndexFamilies extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub_departments.show', $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($this->parent, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
