@@ -29,7 +29,6 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
 use App\Http\Resources\Web\RedirectsResource;
 use App\Http\Resources\Web\WebpageResource;
-use App\Http\Resources\Web\WebpagesResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -348,8 +347,6 @@ class ShowWebpage extends OrgAction
                     'navigation' => WebpageTabsEnum::navigation()
                 ],
                 'root_active' => $subNavigationRoot,
-
-                'data' => WebpagesResource::collection(IndexChangesWebpages::make()->handle($webpage)),
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
