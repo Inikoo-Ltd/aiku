@@ -60,6 +60,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $platform_user_id
  * @property string|null $slug
  * @property string|null $name
+ * @property CustomerSalesChannelStateEnum|null $state
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders

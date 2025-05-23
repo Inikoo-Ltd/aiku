@@ -47,6 +47,11 @@ function deliveryNoteRoute(deliveryNote: Order) {
                 {{ deliveryNote.org_stock_code }}
             </Link>
         </template>
+        <template #cell(action)="{ item: deliveryNote }">
+            <pre>
+                {{ data.data[0].locations }}
+            </pre>
+        </template>
 
 
         <!-- Column: Date -->

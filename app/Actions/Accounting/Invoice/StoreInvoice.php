@@ -83,6 +83,13 @@ class StoreInvoice extends OrgAction
             }
         }
 
+        $deliveryAddressData = null;
+        if (Arr::has($modelData, 'delivery_address')) {
+            $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
+        }
+
+
+
         if (!Arr::exists($modelData, 'tax_category_id')) {
             $modelData = $this->processTaxCategory($modelData, $parent);
         }
@@ -104,7 +111,7 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'tax_liability_at', $date, overwrite: false);
 
 
-        $invoice = DB::transaction(function () use ($parent, $modelData, $billingAddressData) {
+        $invoice = DB::transaction(function () use ($parent, $modelData, $billingAddressData, $deliveryAddressData) {
             /** @var Invoice $invoice */
             $invoice = $parent->invoices()->create($modelData);
             $invoice->stats()->create();
@@ -115,11 +122,31 @@ class StoreInvoice extends OrgAction
                 'billing',
                 'address_id'
             );
+
+
+
             $invoice->updateQuietly(
                 [
                     'billing_country_id' => $invoice->address->country_id
                 ]
             );
+
+
+            if ($deliveryAddressData) {
+                $this->createFixedAddress(
+                    $invoice,
+                    $deliveryAddressData,
+                    'Ordering',
+                    'delivery',
+                    'delivery_address_id'
+                );
+
+                $invoice->updateQuietly(
+                    [
+                        'delivery_country_id' => $invoice->deliveryAddress->country_id
+                    ]
+                );
+            }
 
             return $invoice;
         });
@@ -235,9 +262,11 @@ class StoreInvoice extends OrgAction
             $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
 
 
-            $rules['invoice_category_id']                = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
-            $rules['tax_category_id']                    = ['sometimes', 'required', 'exists:tax_categories,id'];
-            $rules['billing_address']                    = ['required', new ValidAddress()];
+            $rules['invoice_category_id'] = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
+            $rules['tax_category_id']     = ['sometimes', 'required', 'exists:tax_categories,id'];
+            $rules['billing_address']     = ['required', new ValidAddress()];
+            $rules['delivery_address']    = ['sometimes', new ValidAddress()];
+
             $rules['deleted_at']                         = ['sometimes', 'nullable', 'date'];
             $rules['deleted_note']                       = ['sometimes', 'string'];
             $rules['deleted_from_deleted_invoice_fetch'] = ['sometimes', 'boolean'];
