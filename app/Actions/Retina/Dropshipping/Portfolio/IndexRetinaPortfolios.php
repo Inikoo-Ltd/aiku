@@ -191,8 +191,8 @@ class IndexRetinaPortfolios extends RetinaAction
             }
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'weight', label: __('weight'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'price', label: __('price'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'action', label: __('action'), canBeHidden: false);
         };
     }
