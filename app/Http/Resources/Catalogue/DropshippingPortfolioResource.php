@@ -38,6 +38,7 @@ class DropshippingPortfolioResource extends JsonResource
     {
         $quantity = 0;
         $itemId   = null;
+        $category = null;
         if ($this->item instanceof StoredItem) {
             $quantity = $this->item->total_quantity;
             $itemId = $this->item->id;
@@ -45,11 +46,16 @@ class DropshippingPortfolioResource extends JsonResource
             $price = 0;
             $image = null;
         } elseif ($this->item instanceof Product) {
+            if ($department = $this->item->department) {
+                $department =  $department->name . ', ';
+            }
+
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
             $weight = $this->item->gross_weight;
             $price = $this->item->price;
             $image = $this->item->imageSources(64, 64);
+            $category = $department . $this->item->family?->name;
         }
 
         $platformProductId = [];
@@ -75,17 +81,12 @@ class DropshippingPortfolioResource extends JsonResource
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
             ...$platformProductId,
-            'delete_product' => [
-                'method' => 'delete',
-                'name'       => 'retina.models.dropshipping.shopify_user.product.delete',
-                'parameters' => [
-                    'product' => $this->id
-                ]
-            ],
+            'category' => $category,
             'delete_portfolio' => [
                 'method' => 'delete',
-                'name'       => 'retina.models.portfolio.delete',
+                'name'       => 'retina.models.customer_sales_channel.product.delete',
                 'parameters' => [
+                    'customerSalesChannel' => $this->customer_sales_channel_id,
                     'portfolio' => $this->id
                 ]
             ],

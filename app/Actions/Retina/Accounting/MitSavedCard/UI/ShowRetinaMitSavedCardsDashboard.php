@@ -59,6 +59,9 @@ class ShowRetinaMitSavedCardsDashboard extends RetinaAction
                 $this->customer->mitSavedCard()->where('state', MitSavedCardStateEnum::SUCCESS)->orderBy('priority')->get()
             ),
 
+            'head_title' => __('Manage your saved cards'),
+            'head_subtitle' => __('You can add, edit or delete your saved cards. This is a to manage your payment methods.'),
+
             'delete_route' => [
                 'name'   => 'retina.models.mit_saved_card.delete',
                 'method' => 'delete',

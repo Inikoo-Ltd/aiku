@@ -172,14 +172,12 @@ class IndexRetinaPortfolios extends RetinaAction
                 ]);
 
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-            if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-                $table->column(key: 'platform_product_id', label: __('Platform Product Id'), canBeHidden: false, sortable: true, searchable: true);
-            }
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'category', label: __('category'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'weight', label: __('weight'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'price', label: __('price'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false);
+            $table->column(key: 'actions', label: __('action'), canBeHidden: false);
         };
     }
 

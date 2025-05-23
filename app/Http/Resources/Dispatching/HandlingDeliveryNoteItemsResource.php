@@ -48,7 +48,7 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
                 'method' => 'post'
             ],
             'pickers_list_route'   => [
-                'name'       => 'grp.json.employees.pickers',
+                'name'       => 'grp.json.employees.picker_users',
                 'parameters' => [
                     'organisation' => $deliveryNoteItem->organisation->slug
                 ]

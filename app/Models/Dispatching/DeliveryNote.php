@@ -20,6 +20,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;
@@ -98,6 +99,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $parcels
  * @property int|null $platform_id
  * @property int|null $customer_sales_channel_id
+ * @property int|null $picker_user_id
+ * @property int|null $packer_user_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -110,8 +113,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Employee|null $packer
+ * @property-read User|null $packerUser
  * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read Employee|null $picker
+ * @property-read User|null $pickerUser
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
@@ -225,9 +230,19 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsTo(Employee::class, 'picker_id');
     }
 
+    public function pickerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'picker_user_id');
+    }
+
     public function packer(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'packer_id');
+    }
+
+    public function packerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'packer_user_id');
     }
 
     public function fixedAddresses(): MorphToMany

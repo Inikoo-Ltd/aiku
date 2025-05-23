@@ -74,7 +74,9 @@ class UpdateDeliveryNote extends OrgAction
             'phone'     => ['sometimes', 'nullable', 'string'],
             'date'      => ['sometimes', 'date'],
             'picker_id' => ['sometimes'],
-            'packer_id' => ['sometimes']
+            'packer_id' => ['sometimes'],
+            'picker_user_id' => ['sometimes'],
+            'packer_user_id' => ['sometimes']
         ];
 
         if (!$this->strict) {

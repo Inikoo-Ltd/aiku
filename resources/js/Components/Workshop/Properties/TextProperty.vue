@@ -32,7 +32,7 @@ const model = defineModel<TextProperty | any>({
 
 
 const localModel = computed<TextProperty>({
-    get: () => model.value ?? { color: '#000000', fontFamily: 'Arial', fontSize: 20 },
+    get: () => model.value ?? { color: '#000000', fontFamily: 'Arial', fontSize: null },
     set: (newVal) => {
         if (model.value && JSON.stringify(model.value) !== JSON.stringify(newVal)) {
             model.value = newVal

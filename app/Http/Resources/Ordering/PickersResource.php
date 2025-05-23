@@ -24,6 +24,7 @@ class PickersResource extends JsonResource
             'id'           => $this->id,
             'contact_name' => $this->contact_name,
             'alias'        => $this->alias,
+            'employee_id'  => $this->employee_id
         ];
     }
 }

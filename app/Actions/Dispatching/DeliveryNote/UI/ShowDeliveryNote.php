@@ -106,19 +106,18 @@ class ShowDeliveryNote extends OrgAction
                 : null;
 
             $timestamp = $timestamp ?: null;
-            // dd($state);
             $label = $state->labels()[$state->value];
             if ($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
                 if (
                     in_array($state, [DeliveryNoteStateEnum::QUEUED])
                 ) {
-                    $label .= ' (' . $deliveryNote->picker->contact_name . ')';
+                    $label .= ' (' . $deliveryNote->pickerUser->contact_name . ')';
                 }
             } elseif ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
                 if (
                     in_array($state, [DeliveryNoteStateEnum::HANDLING])
                 ) {
-                    $label .= ' (' . $deliveryNote->picker->contact_name . ')';
+                    $label .= ' (' . $deliveryNote->pickerUser->contact_name . ')';
                 }
             }
             $timeline[$state->value] = [
@@ -152,7 +151,14 @@ class ShowDeliveryNote extends OrgAction
                     'tooltip' => __('Change picker'),
                     'label'   => __('Change Picker'),
                     'key'     => 'change-picker',
-                ]
+                ],
+                $deliveryNote->pickerUser->id == $request->user()->id ? [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Start picking'),
+                    'label'   => __('Start picking'),
+                    'key'     => 'start-picking',
+                    ] : []
             ],
             DeliveryNoteStateEnum::HANDLING => [
                 [
@@ -241,8 +247,8 @@ class ShowDeliveryNote extends OrgAction
                     'estimated_weight' => $estWeight,
                     'number_items'     => $deliveryNote->stats->number_items,
                 ],
-                'picker'   => $deliveryNote->picker,
-                'packer'   => $deliveryNote->packer,
+                'picker'   => $deliveryNote->pickerUser,
+                'packer'   => $deliveryNote->packerUser,
             ],
             'routes'    => [
                 'update'         => [
@@ -260,7 +266,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
                 'pickers_list'   => [
-                    'name'       => 'grp.json.employees.pickers',
+                    'name'       => 'grp.json.employees.picker_users',
                     'parameters' => [
                         'organisation' => $deliveryNote->organisation->slug
                     ]
@@ -288,13 +294,13 @@ class ShowDeliveryNote extends OrgAction
                 fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
                 : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
-            DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
-                fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
+            // DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
+            //     fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
+            //     : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
             ]
         )
-        ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value))
-        ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
+        ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
+        // ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
     }
 
     public function prepareForValidation(ActionRequest $request): void

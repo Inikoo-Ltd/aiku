@@ -21,12 +21,6 @@ use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\NotPickedPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToDone;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToPacking;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToPicked;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToPicking;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToQueried;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToWaiting;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
@@ -85,7 +79,7 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
-        Route::patch('in-queue/{employee:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
+        Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
         Route::patch('picker-assigned', UpdateDeliveryNoteStateToPickerAssigned::class)->name('picker-assigned');
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
@@ -109,12 +103,4 @@ Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
         Route::patch('packer', AssignPackerToPicking::class)->name('packer');
     });
 
-    Route::name('state.')->prefix('state')->group(function () {
-        Route::patch('picking', UpdatePickingStateToPicking::class)->name('picking');
-        Route::patch('queried', UpdatePickingStateToQueried::class)->name('queried');
-        Route::patch('waiting', UpdatePickingStateToWaiting::class)->name('waiting');
-        Route::patch('picked', UpdatePickingStateToPicked::class)->name('picked');
-        Route::patch('packing', UpdatePickingStateToPacking::class)->name('packing');
-        Route::patch('done', UpdatePickingStateToDone::class)->name('done');
-    });
 });

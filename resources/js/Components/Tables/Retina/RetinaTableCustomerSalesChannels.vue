@@ -12,6 +12,9 @@ import { RouteParams } from "@/types/route-params"
 import { Platform } from "@/types/platform"
 import Image from "@/Components/Image.vue"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel";
+import {trans} from "laravel-vue-i18n";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
+import Toggle from "primevue/toggleswitch"
 
 defineProps<{
     data: TableTS,
@@ -70,6 +73,27 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
             <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">
             {{ customerSalesChannel["number_orders"] }}
             </Link>
+        </template>
+        <template #cell(action)="{ item: customerSalesChannel }">
+            <div class="flex gap-2">
+                <Toggle
+                    v-tooltip="trans('Unlink channel')"
+                    type="negative"
+                    icon="fal fa-times"
+                    :routeTarget="customerSalesChannel.toggle_route"
+                    size="s"
+                    v-model="customerSalesChannel.status"
+                    true-value="open"
+                    false-value="closed"
+                />
+                <ButtonWithLink
+                    v-tooltip="trans('Unlink channel')"
+                    type="negative"
+                    icon="fal fa-times"
+                    :routeTarget="customerSalesChannel.unlink_route"
+                    size="s"
+                />
+            </div>
         </template>
     </Table>
 </template>

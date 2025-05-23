@@ -13,7 +13,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use Illuminate\Validation\Rule;
@@ -36,7 +36,7 @@ class UpdatePicking extends OrgAction
         /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $picking->deliveryNoteItem;
 
-        $totalPicked = $deliveryNoteItem->pickings()->sum('quantity_picked');
+        $totalPicked = $deliveryNoteItem->pickings()->where('type', PickingTypeEnum::PICK)->sum('quantity');
 
         if ($deliveryNoteItem->quantity_picked != $totalPicked) {
             UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
@@ -50,7 +50,7 @@ class UpdatePicking extends OrgAction
     public function rules(): array
     {
         return [
-            'state'              => ['sometimes', Rule::enum(PickingStateEnum::class)],
+            'type'              => ['sometimes', Rule::enum(PickingTypeEnum::class)],
             'not_picked_reason'  => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
             'not_picked_note'    => ['sometimes', 'string'],
             'location_id'     => [

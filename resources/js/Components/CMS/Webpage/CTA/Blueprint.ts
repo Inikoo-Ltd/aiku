@@ -34,7 +34,7 @@ export default {
 					label: "Margin",
 					type: "margin",
 				},
-					{
+				{
 					key: ['container',"properties", "justifyContent"],
 					label: "Justify Content",
 					useIn: ["desktop", "tablet", "mobile"],

@@ -24,7 +24,6 @@ use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -95,7 +94,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $live_menu_snapshot_id
  * @property string|null $published_menu_checksum
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read mixed $condition
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
@@ -235,18 +233,7 @@ class Website extends Model implements Auditable, HasMedia
         return null;
     }
 
-    protected function condition(): Attribute
-    {
-        return Attribute::make(
-            get: function (mixed $value, array $attributes) {
-                if ($attributes['state'] == 'live') {
-                    return $attributes['status'] ? 'live' : 'maintenance';
-                }
 
-                return $attributes['state'];
-            }
-        );
-    }
 
     public function images(): MorphToMany
     {

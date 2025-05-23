@@ -10,6 +10,7 @@ namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -36,7 +37,6 @@ class EditWebsite extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $shop;
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
@@ -46,7 +46,6 @@ class EditWebsite extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $fulfilment;
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -59,12 +58,12 @@ class EditWebsite extends OrgAction
      */
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        if ($this->scope instanceof Fulfilment) {
+        if ($website->shop->type == ShopTypeEnum::FULFILMENT) {
             $args = [
                 'updateRoute' => [
                     'name'       => 'grp.models.fulfilment.website.update',
                     'parameters' => [
-                        $this->scope->id,
+                        $website->shop->fulfilment->id,
                         $website->id,
                     ]
                 ],
@@ -154,7 +153,7 @@ class EditWebsite extends OrgAction
                     "information"   => __("Will show on browsers tab icon in size 18x18 pixels."),
                     "type"    => "image_crop_square",
                     "label"   => __("favicon"),
-                    "value"   => $website->imageSources(160, 160),
+                    "value"   => $website->faviconSources(160, 160),
                     'options' => [
                         'aspectRatio' => 1
                     ]
