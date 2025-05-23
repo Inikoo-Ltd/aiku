@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
@@ -39,7 +40,12 @@ class StoreNotPickPicking extends OrgAction
         data_set($modelData, 'engine', PickingEngineEnum::AIKU);
         data_set($modelData, 'type', PickingTypeEnum::NOT_PICK);
 
-        return $deliveryNoteItem->pickings()->create($modelData);
+        $picking = $deliveryNoteItem->pickings()->create($modelData);
+        $picking->refresh();
+
+        CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
+        
+        return $picking;
 
     }
 

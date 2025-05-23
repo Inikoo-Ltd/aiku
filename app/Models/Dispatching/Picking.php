@@ -11,6 +11,7 @@ namespace App\Models\Dispatching;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Models\Inventory\Location;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
@@ -77,7 +78,12 @@ class Picking extends Model
 
     public function picker(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'picker_id');
+        return $this->belongsTo(User::class, 'picker_user_id');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'location_id');
     }
 
 

@@ -206,6 +206,7 @@ class IndexWebpages extends OrgAction
 
     public function handle(Group|Organisation|Website|Webpage $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
+
         if ($bucket) {
             $this->bucket = $bucket;
         }
@@ -257,6 +258,18 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($bucket == 'storefront') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
+        }
+
+        if (request()->expectsJson()) {
+            $queryBuilder->orderByRaw("CASE 
+            WHEN webpages.sub_type = 'storefront' THEN 1
+            WHEN webpages.sub_type = 'department' THEN 2
+            WHEN webpages.sub_type = 'sub_department' THEN 3
+            WHEN webpages.sub_type = 'family' THEN 4
+            WHEN webpages.sub_type = 'catalogue' THEN 5
+            WHEN webpages.sub_type = 'product' THEN 6
+            ELSE 7
+            END, webpages.sub_type ASC");
         }
 
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');

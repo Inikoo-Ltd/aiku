@@ -16,11 +16,8 @@ class PickingsResource extends JsonResource
     {
         return [
             'id'                  => $this->id,
-            'state'               => $this->state,
-            'status'              => $this->status,
             'not_picked_reason'   => $this->not_picked_reason,
             'not_picked_note'     => $this->not_picked_note,
-            'quantity_required'   => $this->quantity_required,
             'quantity_picked'     => $this->quantity_picked,
             'engine'              => $this->engine,
             'picker_name'         => $this->picker->contact_name,
