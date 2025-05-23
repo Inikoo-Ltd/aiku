@@ -15,7 +15,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -57,15 +56,14 @@ class PickDeliveryNoteAsEmployee extends OrgAction
     public function prepareForValidation()
     {
         $employee = request()->user()->employees()->first();
-        if($employee) {
+        if ($employee) {
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
             if (!$pickerEmployee) {
                 throw ValidationException::withMessages([
                     'messages' => __('You Are Not A Picker')
                 ]);
             }
-        }
-        elseif (!$employee) {
+        } elseif (!$employee) {
             throw ValidationException::withMessages([
                 'messages' => __('You Are Not An Employee')
             ]);

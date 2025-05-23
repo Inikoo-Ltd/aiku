@@ -101,7 +101,7 @@ const onLogout = inject('onLogout')
 
                         <!-- SINGLE LINK -->
                         <div v-else class="py-4 px-5 border-b">
-                            <a :href="item.link?.href" :target="item.link?.target"
+                            <a :href="item.link?.href" :target="item.link?.target" :style="getStyles(props.menu?.navigation_container?.properties)"
                                 class="font-bold text-gray-600 text-lg">
                                 {{ item.label }}
                             </a>

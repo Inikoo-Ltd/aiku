@@ -314,10 +314,13 @@ watch(() => props.modelValue, (newValue) => {
 </template>
 
 
-<style scoped>
+<style scoped >
 .ghost {
     opacity: 0.5;
     background-color: #e2e8f0;
     border: 2px dashed #4F46E5;
+}
+:deep(.p-dialog-content) {
+    overflow-y: visible  !important;
 }
 </style>

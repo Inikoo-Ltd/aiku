@@ -114,10 +114,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_notes_dispatched_today
  * @property string $weight_delivery_notes_dispatched_today
  * @property int $number_items_delivery_notes_dispatched_today
- * @property int $number_pickings_state_queued
- * @property int $number_pickings_state_picking
- * @property int $number_pickings_state_picking_blocked
- * @property int $number_pickings_done_today
  * @property int $number_packings_state_queued
  * @property int $number_packings_state_packing
  * @property int $number_packings_state_packing_blocked

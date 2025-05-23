@@ -11,6 +11,7 @@ use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
+use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPickerAssigned;
@@ -18,7 +19,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToSettled;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
-use App\Actions\Dispatching\Picking\NotPickedPicking;
+use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
@@ -80,6 +81,7 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
+        Route::patch('handling', StartHandlingDeliveryNote::class)->name('handling');
         Route::patch('picker-assigned', UpdateDeliveryNoteStateToPickerAssigned::class)->name('picker-assigned');
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
@@ -92,10 +94,10 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
 
 Route::name('delivery-note-item.')->prefix('delivery-note-item/{deliveryNoteItem:id}')->group(function () {
     Route::post('picking', StorePicking::class)->name('picking.store')->withoutScopedBindings();
+    Route::post('not-picking', StoreNotPickPicking::class)->name('not-picking.store')->withoutScopedBindings();
 });
 
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
-    Route::patch('not-picked', NotPickedPicking::class)->name('not_picked');
     Route::patch('update', UpdatePicking::class)->name('update');
 
     Route::name('assign.')->prefix('assign')->group(function () {
