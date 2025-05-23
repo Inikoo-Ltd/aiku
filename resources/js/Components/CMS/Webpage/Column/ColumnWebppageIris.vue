@@ -33,6 +33,7 @@ const props = defineProps<{
 			class="w-full"
 			:is="getIrisComponent(fieldValue.code)"
 			:fieldValue="fieldValue.data.fieldValue"
+			:screenType="screenType"
 		/>
 	</section>
 </template>
