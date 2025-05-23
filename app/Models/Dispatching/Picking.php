@@ -11,6 +11,7 @@ namespace App\Models\Dispatching;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
@@ -60,7 +61,7 @@ class Picking extends Model
 
     protected $casts = [
         'data'              => 'array',
-        'state'             => PickingStateEnum::class,
+        'type'              => PickingTypeEnum::class,
         'not_picked_reason' => PickingNotPickedReasonEnum::class,
         'engine'            => PickingEngineEnum::class,
     ];
