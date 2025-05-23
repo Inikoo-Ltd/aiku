@@ -7,12 +7,6 @@
  */
 
 
-use App\Actions\Dispatching\Picking\UpdatePickingStateToDone;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToPacking;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToPicked;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToPicking;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToQueried;
-use App\Actions\Dispatching\Picking\UpdatePickingStateToWaiting;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\ReturnPalletToCustomer;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
@@ -85,12 +79,6 @@ Route::patch('pallet-return-item/stored-items/{palletReturnItem:id}/pick', PickP
 Route::patch('pallet-return-item/stored-items/{palletReturnItem:id}/undo-pick', UndoStoredItemPick::class)->name('pallet-return-item.stored-item.not-picked');
 
 
-Route::patch('pickings/{picking:id}/picking', UpdatePickingStateToPicking::class)->name('pickings.picking');
-Route::patch('pickings/{picking:id}/queried', UpdatePickingStateToQueried::class)->name('pickings.queried');
-Route::patch('pickings/{picking:id}/waiting', UpdatePickingStateToWaiting::class)->name('pickings.waiting');
-Route::patch('pickings/{picking:id}/picked', UpdatePickingStateToPicked::class)->name('pickings.picked');
-Route::patch('pickings/{picking:id}/packing', UpdatePickingStateToPacking::class)->name('pickings.packing');
-Route::patch('pickings/{picking:id}/done', UpdatePickingStateToDone::class)->name('pickings.done');
 
 
 //audit

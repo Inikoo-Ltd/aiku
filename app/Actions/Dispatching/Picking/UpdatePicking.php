@@ -13,9 +13,10 @@ use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,14 +30,18 @@ class UpdatePicking extends OrgAction
 
     private Picking $picking;
 
-    public function handle(Picking $picking, array $modelData): Picking
+    public function handle(Picking $picking, array $modelData): Picking|bool
     {
+        if(Arr::get($modelData, 'quantity') == 0){
+            return DeletePicking::make()->action($picking);
+        }
+
         $picking = $this->update($picking, $modelData);
 
         /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $picking->deliveryNoteItem;
 
-        $totalPicked = $deliveryNoteItem->pickings()->sum('quantity_picked');
+        $totalPicked = $deliveryNoteItem->pickings()->where('type', PickingTypeEnum::PICK)->sum('quantity');
 
         if ($deliveryNoteItem->quantity_picked != $totalPicked) {
             UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
@@ -50,18 +55,10 @@ class UpdatePicking extends OrgAction
     public function rules(): array
     {
         return [
-            'state'              => ['sometimes', Rule::enum(PickingStateEnum::class)],
+            'type'              => ['sometimes', Rule::enum(PickingTypeEnum::class)],
             'not_picked_reason'  => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
             'not_picked_note'    => ['sometimes', 'string'],
-            'location_id'     => [
-                'sometimes',
-                Rule::Exists('locations', 'id')->where('warehouse_id', $this->picking->deliveryNoteItem->deliveryNote->warehouse_id)
-            ],
-            'quantity_picked' => ['sometimes', 'numeric'],
-            'picker_id'       => [
-                'sometimes',
-                Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
-            ],
+            'quantity' => ['sometimes', 'numeric'],
         ];
     }
 

@@ -52,6 +52,26 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ],
 
             ],
+            'timeline' => [
+                'current_state' => $customerSalesChannel->state,
+                'options'   => [
+                    "authenticate" => [
+                        "label" => "Connect To Shopify",
+                        "tooltip" => "Connect to shopify to able receive orders",
+                        "key" => "authenticate"
+                    ],
+                    "setup_cards" => [
+                        "label" => "Setup card",
+                        "tooltip" => "Setup cards to make a payment",
+                        "key" => "setup_cards"
+                    ],
+                    "add_portfolio" => [
+                        "label" => "Add products",
+                        "tooltip" => "Add products to your portfolio",
+                        "key" => "add_portfolio"
+                    ]
+                ],
+            ],
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platformData'           => $this->getPlatformData($customerSalesChannel),

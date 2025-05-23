@@ -31,11 +31,11 @@ import { useConfirm } from "primevue/useconfirm";
 
 
 import { routeType } from "@/types/route"
-import { faLowVision } from "@far"
+import { faEye } from "@fad"
 import { useLiveUsers } from "@/Stores/active-users"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faLowVision)
+library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars)
 
 const props = defineProps<{
 	title: string
@@ -523,7 +523,7 @@ watch(filterBlock, (newValue) => {
 				<div class="flex">
 					<ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'Preview'" @click="openFullScreenPreview">
-						<FontAwesomeIcon :icon="faLowVision" fixed-width aria-hidden="true" />
+						<FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
 					</div>
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'fullScreeen'" @click="fullScreeen = !fullScreeen">
 						<FontAwesomeIcon :icon="!fullScreeen  ? faExpandWide : faCompressWide" fixed-width aria-hidden="true" />

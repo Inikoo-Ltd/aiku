@@ -31,6 +31,7 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
+        $query->where('status', true);
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->with(['shopifyPortfolio']);
@@ -97,10 +98,11 @@ class IndexRetinaPortfolios extends RetinaAction
                     'title'   => $title,
                     'model'   =>  $platformName,
                     'icon'    => 'fal fa-cube',
-                    /*'actions' => [
+                    'actions' => [
                         $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
                             'type'  => 'button',
                             'style' => 'create',
+                            'key'   => 'upload-to-shopify',
                             'label' => 'Upload Products to ' . $this->customerSalesChannel->platform->name,
                             'route' => [
                                 'name'       => 'retina.models.customer_sales_channel.shopify.batch_upload',
@@ -109,7 +111,7 @@ class IndexRetinaPortfolios extends RetinaAction
                                 ]
                             ]
                         ] : [],
-                    ]*/
+                    ]
                 ],
                 'routes'    => [
                     'itemRoute' => [
@@ -177,7 +179,8 @@ class IndexRetinaPortfolios extends RetinaAction
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'weight', label: __('weight'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'price', label: __('price'), align: 'right', canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false);
+            $table->column(key: 'status', label: __('status'));
+            $table->column(key: 'actions', label: __('action'), canBeHidden: false);
         };
     }
 

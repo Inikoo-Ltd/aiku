@@ -8,8 +8,6 @@
 
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
-use App\Enums\Dispatching\Picking\PickingStatusEnum;
 use App\Stubs\Migrations\HasPicking;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -22,8 +20,8 @@ return new class () extends Migration {
         Schema::create('pickings', function (Blueprint $table) {
             $table = $this->pickingHead($table);
 
-            $table->string('state')->default(PickingStateEnum::QUEUED->value)->index();
-            $table->string('status')->default(PickingStatusEnum::PROCESSING->value)->index();
+            $table->string('state')->nullable()->index();
+            $table->string('status')->nullable()->index();
             $table->string('not_picked_reason')->default(PickingNotPickedReasonEnum::NA->value)->index();
             $table->string('not_picked_note')->nullable();
 

@@ -94,7 +94,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $live_menu_snapshot_id
  * @property string|null $published_menu_checksum
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read mixed $condition
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon

@@ -9,6 +9,7 @@
 namespace App\Models\Dropshipping;
 
 use App\Actions\Utils\Abbreviate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
@@ -87,7 +88,8 @@ class CustomerSalesChannel extends Model
 
     protected $casts = [
         'data'   => 'array',
-        'status' => CustomerSalesChannelStatusEnum::class
+        'status' => CustomerSalesChannelStatusEnum::class,
+        'state' => CustomerSalesChannelStateEnum::class
     ];
 
     public function getSlugOptions(): SlugOptions

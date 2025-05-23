@@ -115,6 +115,11 @@ trait WithLuigis
                         "formatted_price" => $product->currency->symbol . $product->price . '/' . $product->unit,
                         "image_link" => Arr::get($product->imageSources(200, 200), 'original'),
                         "product_code" => $product->code,
+                        "ean" => $product->tradeUnits->map(
+                            function ($tradeUnit) {
+                                return $tradeUnit->barcode;
+                            }
+                        )->toArray(),
                         "introduced_at" => $product?->created_at ? $product->created_at->format('c') : null,
                         "description" => $product->description,
                         ]),
