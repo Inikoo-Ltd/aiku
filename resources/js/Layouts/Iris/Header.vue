@@ -53,14 +53,14 @@ provide("onLogout", onLogoutAuth);
 <template>
   <!-- Section: Topbar -->
   <component v-if="data?.topBar?.data.fieldValue" :is="getIrisComponent(data?.topBar.code)"
-             :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" class="hidden md:block" />
+             :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" />
 
   <!-- Section: Header -->
   <component :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
              class="hidden md:block" />
 
   <!-- Section: Menu desktop -->
-  <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :navigations="menu.data.fieldValue.navigation"
+  <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :fieldValue="menu?.data?.fieldValue"
              :colorThemed="colorThemed" class="hidden md:block" />
 
   <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)">

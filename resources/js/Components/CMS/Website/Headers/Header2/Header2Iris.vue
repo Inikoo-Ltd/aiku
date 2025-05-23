@@ -36,7 +36,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 
 <template>
 	<div class="relative shadow-sm" :style="getStyles(fieldValue.container.properties)">
-		<div class="flex flex-col justify-between items-start py-4 px-6 hidden lg:block">
+		<div class="flex flex-col justify-between items-start py-4 px-6">
 			<div class="w-full grid grid-cols-3 items-start gap-6">
 				<!-- Logo -->
 				<component

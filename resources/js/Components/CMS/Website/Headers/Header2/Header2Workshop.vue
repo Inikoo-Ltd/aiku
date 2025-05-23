@@ -162,7 +162,7 @@ const editable = ref(true)
 	<div
 		class="relative shadow-sm"
 		:style="getStyles(modelValue.container.properties, screenType)">
-		<div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
+		<div class="flex flex-col justify-between items-center py-4 px-6 ">
 			<div class="w-full grid grid-cols-3 items-start gap-6">
 				<!-- Logo -->
 				<component
@@ -223,8 +223,6 @@ const editable = ref(true)
 					}" /> -->
 			</div>
 		</div>
-
-		<MobileHeader :header-data="modelValue" :menu-data="{}" :screenType="screenType" />
 	</div>
 
 	<!-- <pre>{{ getStyles(modelValue.logo.properties,screenType) }}</pre> -->

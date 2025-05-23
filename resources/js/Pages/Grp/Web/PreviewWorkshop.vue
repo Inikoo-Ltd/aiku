@@ -13,6 +13,7 @@ import { sendMessageToParent} from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
 import { router } from '@inertiajs/vue3'
 import "@/../css/Iris/editor.css"
+import { getStyles } from "@/Composables/styles";
 
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
@@ -58,8 +59,9 @@ onMounted(() => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
         if (event.data.key === 'reload') {
+            console.log('haloo',event)
             router.reload({
-                only: ['footer', 'header', 'webpage'],
+                only: ['footer', 'header', 'webpage', 'navigation'],
                 onSuccess: () => {
                     /*   if(props.footer?.footer) Object.assign(layout.footer, toRaw(props.footer.footer));
                       if(props.header?.data) Object.assign(layout.header, toRaw(props.header.data)); */
@@ -87,7 +89,6 @@ onBeforeUnmount(() => {
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
 
-console.log(route().current())
 </script>
 
 

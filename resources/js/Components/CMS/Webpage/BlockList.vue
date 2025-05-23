@@ -76,7 +76,6 @@ onMounted(() => {
 					<Image :src="block.screenshot" class="max-h-full max-w-full object-contain"
 						:alt="`Screenshot of ${block.name}`" />
 				</div>
-
 				<div
 					class="absolute bottom-0 w-full h-1/4  rounded-b-xl flex items-center justify-center font-semibold text-sm p-2 truncate">
 					{{ block.name }}
@@ -84,7 +83,4 @@ onMounted(() => {
 			</div>
 		</div>
 	</div>
-
-
-
 </template>
