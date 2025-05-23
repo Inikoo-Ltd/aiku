@@ -18,6 +18,7 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -44,7 +45,7 @@ class StoreNotPickPicking extends OrgAction
         $picking->refresh();
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
-        
+
         return $picking;
 
     }
@@ -68,12 +69,19 @@ class StoreNotPickPicking extends OrgAction
 
     public function prepareForValidation($request)
     {
+        if($this->deliveryNoteItem->quantity_required == $this->deliveryNoteItem->quantity_picked || $this->deliveryNoteItem->is_completed == true)
+        {
+            throw ValidationException::withMessages([
+                    'messages' => __('This delivery note item has been fully picked')
+                ]);
+        }
         if (!$request->has('picker_user_id')) {
             $this->set('picker_user_id', $request->user()->id);
         }
         if (!$request->has('quantity')) {
             $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
         }
+
     }
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): Picking
