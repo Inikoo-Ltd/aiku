@@ -28,7 +28,7 @@ trait WithInvoicesExport
 
             $totalNet = $totalItemsNet + $totalShipping;
 
-            $transactions = $invoice->invoiceTransactions->map(function ($transaction) {
+            $transactions = $invoice->invoiceTransactions->where('model_type', 'Product')->map(function ($transaction) {
                 if (!empty($transaction->data['pallet_id'])) {
                     $pallet = Pallet::find($transaction->data['pallet_id']);
                     $transaction->pallet = $pallet->reference;
