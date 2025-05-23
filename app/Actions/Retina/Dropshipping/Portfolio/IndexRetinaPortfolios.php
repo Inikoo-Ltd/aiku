@@ -97,7 +97,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     'title'   => $title,
                     'model'   =>  $platformName,
                     'icon'    => 'fal fa-cube',
-                    'actions' => [
+                    /*'actions' => [
                         $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
                             'type'  => 'button',
                             'style' => 'create',
@@ -109,7 +109,7 @@ class IndexRetinaPortfolios extends RetinaAction
                                 ]
                             ]
                         ] : [],
-                    ]
+                    ]*/
                 ],
                 'routes'    => [
                     'itemRoute' => [
