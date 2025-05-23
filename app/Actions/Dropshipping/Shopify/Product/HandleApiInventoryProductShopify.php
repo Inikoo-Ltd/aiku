@@ -27,6 +27,7 @@ class HandleApiInventoryProductShopify extends OrgAction
     public function handle(ShopifyUser $shopifyUser, array $productVariants): void
     {
         $client = $shopifyUser->api()->getRestClient();
+
         $locations = $client->request('GET', '/admin/api/2025-04/locations.json');
         $locationId = Arr::get($locations, 'body.locations.0.id');
 
