@@ -158,7 +158,27 @@ class ShowDeliveryNote extends OrgAction
                     'tooltip' => __('Start picking'),
                     'label'   => __('Start picking'),
                     'key'     => 'start-picking',
-                    ] : []
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery-note.state.handling',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                    ] : [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'tooltip' => __('Take over delivery note'),
+                        'label'   => __('Take over'),
+                        'key'     => 'start-picking',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.delivery-note.state.handling',
+                            'parameters' => [
+                                'deliveryNote' => $deliveryNote->id
+                            ]
+                        ],
+                    ]
             ],
             DeliveryNoteStateEnum::HANDLING => [
                 [

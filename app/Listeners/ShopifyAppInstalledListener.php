@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Shopify\Webhook\StoreWebhooksToShopify;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
@@ -41,7 +42,8 @@ class ShopifyAppInstalledListener
         ]);
 
         UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
-            'name' => Arr::get($shopifyUser->data, 'store.name')
+            'name' => Arr::get($shopifyUser->data, 'store.name'),
+            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
         ]);
     }
 }

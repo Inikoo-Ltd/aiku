@@ -91,6 +91,15 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
                     route().params['warehouse'],
                     palletReturn.slug
                 ]);
+        case 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.index':
+            return route(
+                'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show',
+                [
+                    route().params['organisation'],
+                    route().params['fulfilment'],
+                    route().params['fulfilmentCustomer'],
+                    palletReturn.slug
+                ]);
         case 'grp.org.fulfilments.show.operations.pallet-returns.index':
         case 'grp.org.fulfilments.show.operations.pallet-returns.confirmed.index':
         case 'grp.org.fulfilments.show.operations.pallet-returns.picking.index':

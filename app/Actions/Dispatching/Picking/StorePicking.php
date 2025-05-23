@@ -58,12 +58,11 @@ class StorePicking extends OrgAction
 
     public function prepareForValidation($request)
     {
-        if(!$request->has('picker_user_id'))
-        {
+        if (!$request->has('picker_user_id')) {
             $this->set('picker_user_id', $request->user()->id);
         }
     }
-    
+
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): Picking
     {
         $this->deliveryNoteItem = $deliveryNoteItem;

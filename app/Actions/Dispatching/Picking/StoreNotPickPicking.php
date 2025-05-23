@@ -14,7 +14,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use Illuminate\Validation\Rule;
@@ -63,12 +62,10 @@ class StoreNotPickPicking extends OrgAction
 
     public function prepareForValidation($request)
     {
-        if(!$request->has('picker_user_id'))
-        {
+        if (!$request->has('picker_user_id')) {
             $this->set('picker_user_id', $request->user()->id);
         }
-        if(!$request->has('quantity'))
-        {
+        if (!$request->has('quantity')) {
             $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
         }
     }
