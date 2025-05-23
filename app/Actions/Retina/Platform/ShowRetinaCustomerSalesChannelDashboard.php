@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Platform;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,26 +53,31 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ],
 
             ],
-            'timeline' => [
-                'current_state' => $customerSalesChannel->state,
+            'timeline' => $customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY ? [
+                'current_state' => $customerSalesChannel->state->value,
                 'options'   => [
-                    "authenticate" => [
-                        "label" => "Connect To Shopify",
-                        "tooltip" => "Connect to shopify to able receive orders",
-                        "key" => "authenticate"
+                    CustomerSalesChannelStateEnum::CREATED->value => [
+                        "label" => "Account Created",
+                        "tooltip" => "Create account to connect",
+                        "key" => CustomerSalesChannelStateEnum::CREATED->value
                     ],
-                    "setup_cards" => [
+                    CustomerSalesChannelStateEnum::AUTHENTICATED->value => [
+                        "label" => "Connected",
+                        "tooltip" => "Connect to platform to able receive orders",
+                        "key" => CustomerSalesChannelStateEnum::AUTHENTICATED->value
+                    ],
+                    CustomerSalesChannelStateEnum::CARD_SAVED->value => [
                         "label" => "Setup card",
                         "tooltip" => "Setup cards to make a payment",
-                        "key" => "setup_cards"
+                        "key" => CustomerSalesChannelStateEnum::CARD_SAVED->value
                     ],
-                    "add_portfolio" => [
+                    CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value => [
                         "label" => "Add products",
                         "tooltip" => "Add products to your portfolio",
-                        "key" => "add_portfolio"
+                        "key" => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value
                     ]
                 ],
-            ],
+            ] : [],
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platformData'           => $this->getPlatformData($customerSalesChannel),
