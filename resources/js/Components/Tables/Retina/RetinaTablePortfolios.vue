@@ -24,6 +24,9 @@ library.add( faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearc
 const props = defineProps<{
 	data: {}
 	tab?: string
+	selectedData: {
+		products: number[]
+	}
 }>()
 
 function productRoute(product: Product) {
@@ -51,19 +54,34 @@ function productRoute(product: Product) {
 
 const locale = inject('locale', aikuLocaleStructure)
 
+// const selectedProducts = ref<Product[]>([])
+const onUnchecked = (itemId: number) => {
+	props.selectedData.products = props.selectedData.products.filter(product => product !== itemId)
+}
 </script>
 
 <template>
-
-	<Table :resource="data" :name="tab" class="mt-5">
+	<Table
+		:resource="data"
+		:name="tab"
+		class="mt-5"
+		isCheckBox
+		:disabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'"
+		@onChecked="(item) => {
+			console.log('onChecked', item)
+			props.selectedData.products.push(item.id)
+		}"
+		@onUnchecked="(item) => {
+			onUnchecked(item.id)
+		}"
+		:isChecked="(item) => props.selectedData.products.includes(item.id)"
+	>
 
 		<template #cell(slug)="{ item: product }">
 			<Link :href="productRoute(product)" class="primaryLink">
 				{{ product["slug"] }}
 			</Link>
-
-			<FontAwesomeIcon v-if="product.platform_product_id" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-		</template>
+        </template>
 
 		<!-- Column: Stock -->
 		<template #cell(quantity_left)="{ item }">
@@ -86,13 +104,21 @@ const locale = inject('locale', aikuLocaleStructure)
 			</div>
 		</template>
 
+		<!-- Column: Price -->
+		<template #cell(status)="{ item: product }">
+            <FontAwesomeIcon v-if="(product.platform_product_id) || (product.platform == 'manual')" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+        </template>
+
 		<template #cell(actions)="{ item }">
 			<ButtonWithLink
 				v-tooltip="trans('Unselect portfolio')"
 				type="negative"
-				icon="fal fa-times"
+				icon="fal fa-trash-alt"
 				:routeTarget="item.delete_portfolio"
 				size="s"
+				:bindToLink="{
+					preserveScroll: true,
+				}"
 			/>
 		</template>
 	</Table>
