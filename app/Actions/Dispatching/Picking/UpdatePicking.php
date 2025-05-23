@@ -32,7 +32,7 @@ class UpdatePicking extends OrgAction
 
     public function handle(Picking $picking, array $modelData): Picking|bool
     {
-        if(Arr::get($modelData, 'quantity') == 0){
+        if (Arr::get($modelData, 'quantity') == 0) {
             return DeletePicking::make()->action($picking);
         }
 
