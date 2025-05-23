@@ -10,33 +10,47 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
+use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\FamilyResource;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Catalogue\ProductCategory;
 
 class DetachFamilyToSubDepartment extends OrgAction
 {
     use WithActionUpdate;
-    // use WithFulfilmentWarehouseEditAuthorisation;
 
-    // TODO: check this
     public function handle(ProductCategory $family): ProductCategory
     {
+        $currentSubDepartment = $family->subDepartment;
 
-        $family->update(['sub_department_id' => null]);
-        $family->refresh();
+        $family->update(
+            [
+                'sub_department_id' => null,
+                'department_id'     => $currentSubDepartment->department_id,
+                'parent_id'         => $currentSubDepartment->department_id,
+            ]
+        );
+
+        DB::table('products')->where('family_id', $family->id)->update([
+            'sub_department_id' => null,
+            'department_id' => $currentSubDepartment->department_id,
+        ]);
+
+        ProductCategoryHydrateFamilies::dispatch($currentSubDepartment);
+        SubDepartmentHydrateProducts::dispatch($currentSubDepartment);
 
         return $family;
     }
 
     public function asController(ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
     {
-
         $this->initialisationFromShop($family->shop, $request);
 
-        return $this->handle($family, $this->validatedData);
+        return $this->handle($family);
     }
 
 

@@ -10,8 +10,6 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\CRM\BackInStockReminder;
-use App\Models\CRM\Favourite;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
@@ -73,10 +71,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read ProductCategory|null $department
- * @property-read LaravelCollection<int, BackInStockReminder> $departmentBackInStockReminders
- * @property-read LaravelCollection<int, Favourite> $departmentFavourites
- * @property-read LaravelCollection<int, BackInStockReminder> $familyBackInStockReminders
- * @property-read LaravelCollection<int, Favourite> $familyFavourites
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -89,9 +83,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\ProductCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
- * @property-read LaravelCollection<int, BackInStockReminder> $subDepartmentBackInStockReminders
- * @property-read LaravelCollection<int, Favourite> $subDepartmentFavourites
- * @property-read LaravelCollection<int, ProductCategory> $subDepartments
+ * @property-read ProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategoryTimeSeries> $timeSeries
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
@@ -190,9 +182,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(ProductCategory::class, 'department_id');
     }
 
-    public function subDepartments(): HasMany
+
+    public function subDepartment(): BelongsTo
     {
-        return $this->hasMany(ProductCategory::class, 'sub_department_id');
+        return $this->belongsTo(ProductCategory::class, 'sub_department_id');
     }
 
 
@@ -211,19 +204,16 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
 
-    public function getSubDepartmentFamilies(): LaravelCollection
-    {
-        return $this->subDepartments()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
-    }
 
     public function getProducts(): LaravelCollection
     {
         return match ($this->type) {
             ProductCategoryTypeEnum::DEPARTMENT => Product::where('department_id', $this->id)->get(),
-            ProductCategoryTypeEnum::FAMILY     => Product::where('family_id', $this->id)->get(),
+            ProductCategoryTypeEnum::FAMILY => Product::where('family_id', $this->id)->get(),
             ProductCategoryTypeEnum::SUB_DEPARTMENT => Product::where('sub_department_id', $this->id)->get(),
         };
     }
+
     public function collections(): MorphToMany
     {
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
@@ -234,35 +224,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphOne(Webpage::class, 'model');
     }
 
-    public function departmentFavourites(): HasMany
-    {
-        return $this->hasMany(Favourite::class, 'department_id');
-    }
-
-    public function familyFavourites(): HasMany
-    {
-        return $this->hasMany(Favourite::class, 'family_id');
-    }
-
-    public function subDepartmentFavourites(): HasMany
-    {
-        return $this->hasMany(Favourite::class, 'sub_department_id');
-    }
-
-    public function departmentBackInStockReminders(): HasMany
-    {
-        return $this->hasMany(BackInStockReminder::class, 'department_id');
-    }
-
-    public function familyBackInStockReminders(): HasMany
-    {
-        return $this->hasMany(BackInStockReminder::class, 'family_id');
-    }
-
-    public function subDepartmentBackInStockReminders(): HasMany
-    {
-        return $this->hasMany(BackInStockReminder::class, 'sub_department_id');
-    }
 
     public function masterProductCategory(): BelongsTo
     {
