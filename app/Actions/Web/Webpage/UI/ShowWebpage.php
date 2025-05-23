@@ -321,8 +321,6 @@ class ShowWebpage extends OrgAction
 
         $subNavigationRoot = '';
 
-
-
         return Inertia::render(
             'Org/Web/Webpage',
             [
