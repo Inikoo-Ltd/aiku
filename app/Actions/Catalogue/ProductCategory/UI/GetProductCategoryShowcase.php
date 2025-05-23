@@ -25,12 +25,12 @@ class GetProductCategoryShowcase
 
             $data = [
                 'department' => DepartmentResource::make($productCategory)->toArray(request()),
-                'families'   => FamilyResource::collection($productCategory->getFamilies()),
+                'families'   => FamilyResource::collection($productCategory->getFamilies())->toArray(request()),
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $data = [
                 'subDepartment' => SubDepartmentResource::make($productCategory->department)->toArray(request()),
-                'families'   => FamilyResource::collection($productCategory->getFamilies()),
+                'families'   => FamilyResource::collection($productCategory->getFamilies())->toArray(request()),
             ];
         } else {
             $data = [

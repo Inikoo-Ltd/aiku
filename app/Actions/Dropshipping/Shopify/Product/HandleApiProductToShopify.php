@@ -8,17 +8,19 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
-use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToShopifyProgressEvent;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class HandleApiProductToShopify extends OrgAction
+class HandleApiProductToShopify extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -116,5 +118,21 @@ class HandleApiProductToShopify extends OrgAction
                 UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $totalProducts, $uploaded);
             }
         }
+    }
+
+    public function rules(): array
+    {
+        return [
+            'portfolios' => ['required', 'array']
+        ];
+    }
+
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
+    {
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $customerSalesChannel->user;
+        $this->initialisation($request);
+
+        $this->handle($shopifyUser, $this->validatedData);
     }
 }

@@ -22,7 +22,7 @@ class FetchAuroraFamily extends FetchAurora
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
 
-        if($shop->type == ShopTypeEnum::DROPSHIPPING){
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             return;
         }
 

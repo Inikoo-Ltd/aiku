@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 23 May 2025 00:10:20 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -8,7 +9,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
 /**
  * @OA\Info(
@@ -24,12 +24,12 @@ use Illuminate\Http\Request;
  *         url="https://opensource.org/licenses/MIT"
  *     )
  * )
- * 
+ *
  * @OA\Server(
  *     url=L5_SWAGGER_CONST_HOST,
  *     description="API Server"
  * )
- * 
+ *
  * @OA\SecurityScheme(
  *     securityScheme="sanctum",
  *     type="apiKey",
@@ -37,17 +37,17 @@ use Illuminate\Http\Request;
  *     name="Authorization",
  *     description="Enter token in format (Bearer <token>)"
  * )
- * 
+ *
  * @OA\Tag(
  *     name="Authentication",
  *     description="API endpoints for user authentication"
  * )
- * 
+ *
  * @OA\Tag(
  *     name="Retina",
  *     description="Retina API endpoints"
  * )
- * 
+ *
  * @OA\Tag(
  *     name="Aurora",
  *     description="Aurora integration API endpoints"
