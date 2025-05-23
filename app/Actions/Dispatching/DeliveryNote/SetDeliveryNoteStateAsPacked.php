@@ -11,9 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Models\Dispatching\DeliveryNote;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetDeliveryNoteStateAsPacked extends OrgAction
@@ -30,18 +28,6 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         return $this->update($deliveryNote, $modelData);
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $deliveryNoteItems = $this->deliveryNote->deliveryNoteItems;
-
-        foreach ($deliveryNoteItems as $deliveryNoteItem) {
-            $picking = $deliveryNoteItem->pickings;
-
-            if (!$picking || $picking->state !== PickingStateEnum::DONE) {
-                throw ValidationException::withMessages(['All items must be packed']);
-            }
-        }
-    }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {

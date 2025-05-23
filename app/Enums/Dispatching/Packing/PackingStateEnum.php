@@ -13,13 +13,12 @@ use App\Enums\EnumHelperTrait;
 enum PackingStateEnum: string
 {
     use EnumHelperTrait;
- //TODO: unused , delete
     case QUEUED = 'queued';
     case PACKING = 'packing';
     case PACKING_BLOCKED = 'packing-blocked';
     case DONE = 'done';
 
-    public static function labels($forElements = false): array
+    public static function labels(): array
     {
         return [
             'queued'          => __('Queued'),
