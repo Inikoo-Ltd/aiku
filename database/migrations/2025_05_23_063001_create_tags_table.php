@@ -11,6 +11,7 @@ return new class () extends Migration {
             $table->increments('id');
             $table->string('slug')->unique();
             $table->string('name');
+            $table->jsonb('data')->nullable();
             $table->unsignedInteger('number_models')->default(0);
             $table->timestamps();
         });
