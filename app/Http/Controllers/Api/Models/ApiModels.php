@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 22 May 2025 23:50:57 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -23,7 +24,7 @@ namespace App\Http\Controllers\Api\Models;
  *         description="Validation errors"
  *     )
  * )
- * 
+ *
  * @OA\Schema(
  *     schema="Order",
  *     title="Order",
@@ -57,7 +58,7 @@ namespace App\Http\Controllers\Api\Models;
  *         description="Last update date"
  *     )
  * )
- * 
+ *
  * @OA\Schema(
  *     schema="Transaction",
  *     title="Transaction",
@@ -99,7 +100,7 @@ namespace App\Http\Controllers\Api\Models;
  *         description="Last update date"
  *     )
  * )
- * 
+ *
  * @OA\Schema(
  *     schema="Portfolio",
  *     title="Portfolio",
@@ -128,7 +129,7 @@ namespace App\Http\Controllers\Api\Models;
  *         description="Last update date"
  *     )
  * )
- * 
+ *
  * @OA\Schema(
  *     schema="Client",
  *     title="Client",

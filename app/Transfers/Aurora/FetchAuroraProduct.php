@@ -28,7 +28,7 @@ class FetchAuroraProduct extends FetchAurora
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Store Key'});
 
-        if ($shop->type == ShopTypeEnum::FULFILMENT ) {
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
             return;
         }
 
@@ -38,7 +38,7 @@ class FetchAuroraProduct extends FetchAurora
 
 
 
-        if ($shop->type != ShopTypeEnum::DROPSHIPPING ) {
+        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
             if ($this->auroraModelData->{'Product Family Category Key'}) {
                 $family = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Product Family Category Key'});
                 if ($family) {
