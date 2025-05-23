@@ -148,9 +148,9 @@
             </div>
 
             @if($invoice->tax_liability_at)
-            <div style="text-align: right">
-                {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
-            </div>
+                <div style="text-align: right">
+                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
+                </div>
             @endif
 
         </td>
@@ -193,37 +193,60 @@
                 </td>-->
     </tr>
 </table>
-@if($invoice->billingAddress)
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
-        <td width="45%" style="border: 0.1mm solid #888888;"><span
-                style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
-            <div>
-                {{ $invoice->billingAddress->address_line_1 }}
-            </div>
-            <div>
-                {{ $invoice->billingAddress->locality }}
-            </div>
-            <div>
-                {{ $invoice->billingAddress->country->name }}
-            </div>
-        </td>
-        <td width="10%">&nbsp;</td>
-        <td width="45%" style="border: 0.1mm solid #888888;">
-            <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
-            <div>
-                {{ $invoice->deliveryAddress->address_line_1 }}
-            </div>
-            <div>
-                {{ $invoice->deliveryAddress->locality }}
-            </div>
-            <div>
-                {{ $invoice->deliveryAddress->country->name }}
-            </div>
-        </td>
+        @if($invoice->billingAddress)
+            <td width="45%" style="border: 0.1mm solid #888888;"><span
+                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
+                <div>
+                    {{ $invoice->billingAddress->address_line_1 }}
+                </div>
+                <div>
+                    {{ $invoice->billingAddress->address_line_2 }}
+                </div>
+                <div>
+                    {{ $invoice->billingAddress->administrative_area }}
+                </div>
+                <div>
+                    {{ $invoice->billingAddress->locality }}
+                </div>
+                <div>
+                    {{ $invoice->billingAddress->postal_code }}
+                </div>
+                <div>
+                    {{ $invoice->billingAddress->country->name }}
+                </div>
+            </td>
+            <td width="10%">&nbsp;</td>
+        @endif
+        @if($invoice->deliveryAddress)
+            <td width="45%" style="border: 0.1mm solid #888888;">
+                <span
+                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
+                <div>
+                    {{ $invoice->deliveryAddress->address_line_1 }}
+                </div>
+                <div>
+                    {{ $invoice->deliveryAddress->address_line_2 }}
+                </div>
+                <div>
+                    {{ $invoice->deliveryAddress->administrative_area }}
+                </div>
+                <div>
+                    {{ $invoice->deliveryAddress->locality }}
+                </div>
+                <div>
+                    {{ $invoice->deliveryAddress->postal_code }}
+                </div>
+                <div>
+                    {{ $invoice->deliveryAddress->country->name }}
+                </div>
+            </td>
+        @else
+            <td width="45%"></td>
+        @endif
     </tr>
 </table>
-@endif
 <br>
 
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
@@ -250,11 +273,11 @@
                 @if($transaction->historicAsset)
                     {{ $transaction->historicAsset?->name }}
                     @if(isset($transaction->pallet))
-                    <br>
+                        <br>
                         {{ __('Pallet') }}: {{$transaction->customerPallet}} ({{ $transaction->pallet }})
                     @endif
                     @if(isset($transaction->handling_date))
-                    <br>
+                        <br>
                         {{ __('Date') }}: {{ $transaction->handling_date }}
                     @endif
                 @endif
@@ -310,36 +333,36 @@
 <br>
 
 @if($invoice->payments->count() >0)
-<table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
-    <tr class="title">
-        <td colspan="5">{{ __('Payments') }}</td>
-    </tr>
-
-    <tr class="title">
-        <td style="width:40%;text-align:left">{{ __('Method') }}</td>
-        <td style="text-align:right">{{ __('Date') }}</td>
-        <td style="text-align:left">{{ __('Status') }}</td>
-        <td style="text-align:left">{{ __('Reference') }}</td>
-        <td style="text-align:right; width:14%;">{{ __('Amount') }}</td>
-    </tr>
-
-    <tbody>
-    @foreach($invoice->payments as $payment)
-        <tr class="@if($loop->last) last @endif">
-            <td style="text-align:left">
-                {{ $payment->paymentAccount['name'] }}
-            </td>
-            <td style="text-align:right">
-                {{ $payment->updated_at->format('F j, Y H:i a') }}
-            </td>
-            <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
-            <td style="text-align:left">{{ $payment->reference }}</td>
-            <td style="text-align:right">{{ $invoice->currency->symbol . $payment->amount }}</td>
+    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+        <tr class="title">
+            <td colspan="5">{{ __('Payments') }}</td>
         </tr>
-    @endforeach
-    </tbody>
 
-</table>
+        <tr class="title">
+            <td style="width:20%;text-align:left">{{ __('Method') }}</td>
+            <td style="text-align:right">{{ __('Date') }}</td>
+            <td style="text-align:left">{{ __('Status') }}</td>
+            <td style="text-align:left">{{ __('Reference') }}</td>
+            <td style="text-align:right; width:14%;">{{ __('Amount') }}</td>
+        </tr>
+
+        <tbody>
+        @foreach($invoice->payments as $payment)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">
+                    {{ $payment->paymentAccount['name'] }}
+                </td>
+                <td style="text-align:right">
+                    {{ $payment->updated_at->format('F j, Y H:i a') }}
+                </td>
+                <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
+                <td style="text-align:left">{{ $payment->reference }}</td>
+                <td style="text-align:right">{{ $invoice->currency->symbol . $payment->amount }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+
+    </table>
 @endif
 <br>
 <br>
