@@ -1,12 +1,6 @@
 <script setup lang='ts'>
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faCalendarAlt, faEnvelope, faPhone, faGlobe } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Tag from '@/Components/Tag.vue';
-import { useFormatTime } from '@/Composables/useFormatTime';
-import CopyButton from '@/Components/Utils/CopyButton.vue';
-import { capitalize } from '@/Composables/capitalize'
-import { trans } from 'laravel-vue-i18n'
 library.add(faUser, faCalendarAlt, faEnvelope, faPhone, faGlobe)
 
 
