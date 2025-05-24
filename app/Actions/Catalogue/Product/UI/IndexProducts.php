@@ -16,7 +16,7 @@ use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
@@ -46,42 +46,16 @@ class IndexProducts extends OrgAction
     use WithDepartmentSubNavigation;
     use WithFamilySubNavigation;
     use WithCollectionSubNavigation;
+    use WithCatalogueAuthorisation;
 
     private string $bucket;
     private bool $sales = true;
 
-    private Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent;
-    private Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer $higherParent;
+    private Shop|ProductCategory|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent;
+    private Shop|ProductCategory|Collection|ShopifyUser|Customer $higherParent;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
 
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
-
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
-
-    protected function getElementGroups(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, $bucket = null): array
+    protected function getElementGroups(Shop|ProductCategory|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, $bucket = null): array
     {
         return [
 
@@ -100,7 +74,7 @@ class IndexProducts extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Shop|ProductCategory|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -152,8 +126,6 @@ class IndexProducts extends OrgAction
                     );
                 }
             }
-        } elseif (class_basename($parent) == 'Organisation') {
-            $queryBuilder->where('products.organisation_id', $parent->id);
         } elseif (class_basename($parent) == 'ProductCategory') {
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('products.department_id', $parent->id);
@@ -231,8 +203,6 @@ class IndexProducts extends OrgAction
             $queryBuilder->where('shop_id', $parent->shop_id)
                 ->whereNotIn('products.id', $productIds)
                 ->where('products.state', ProductStateEnum::ACTIVE);
-        } elseif ($parent instanceof Group) {
-            $queryBuilder->where('products.group_id', $parent->id);
         } else {
             abort(419);
         }
@@ -277,7 +247,7 @@ class IndexProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|ProductCategory|Organisation|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false, string $bucket = null, $sales = true): Closure
+    public function tableStructure(Shop|ProductCategory|Collection|ShopifyUser|Customer|TiktokUser|WooCommerceUser $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false, string $bucket = null, $sales = true): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit, $bucket, $sales) {
             if ($prefix) {
@@ -310,23 +280,6 @@ class IndexProducts extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     match (class_basename($parent)) {
-                        'Organisation' => [
-                            'title'       => __("No products found"),
-                            'description' => $canEdit && $parent->catalogueStats->number_shops == 0 ? __(
-                                'Get started by creating a new shop. ✨'
-                            ) : '',
-                            'count'       => $parent->catalogueStats->number_products,
-                            'action'      => $canEdit && $parent->catalogueStats->number_shops == 0 ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new shop'),
-                                'label'   => __('shop'),
-                                'route'   => [
-                                    'name'       => 'grp.org.shops.create',
-                                    'parameters' => [$parent->slug]
-                                ]
-                            ] : null
-                        ],
                         'Shop' => [
                             'title' => match ($bucket) {
                                 'in_process' => __("There is no products in process"),
@@ -353,15 +306,7 @@ class IndexProducts extends OrgAction
             if (!($parent instanceof Shop && in_array($bucket, ['in_process', 'discontinued']))) {
                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             }
-            if ($parent instanceof Organisation) {
-                $table->column(
-                    key: 'shop_code',
-                    label: __('shop'),
-                    canBeHidden: false,
-                    sortable: true,
-                    searchable: true
-                );
-            }
+
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
@@ -370,12 +315,6 @@ class IndexProducts extends OrgAction
             } else {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-
-                if ($parent instanceof Group) {
-                    $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
-                }
-
 
 
                 if ($parent instanceof Collection || $parent instanceof ShopifyUser) {
@@ -455,9 +394,7 @@ class IndexProducts extends OrgAction
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
         $navigation = ProductsTabsEnum::navigation();
-        if ($this->parent instanceof Group) {
-            unset($navigation[ProductsTabsEnum::SALES->value]);
-        }
+
         $subNavigation = null;
         if ($this->parent instanceof ProductCategory) {
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -612,25 +549,6 @@ class IndexProducts extends OrgAction
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductsTabsEnum::SALES->value, sales: $this->sales));
     }
 
-
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = group();
-        $this->sales  = false;
-        $this->initialisationFromGroup($this->parent, $request)->withTab(ProductsTabsEnum::values());
-
-        return $this->handle(parent: group(), bucket: $this->bucket);
-    }
-
-    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(ProductsTabsEnum::values());
-
-        return $this->handle(parent: $organisation, bucket: $this->bucket);
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
@@ -866,17 +784,6 @@ class IndexProducts extends OrgAction
             'grp.org.shops.show.catalogue.collections.products.index' =>
             array_merge(
                 ShowCollection::make()->getBreadcrumbs('grp.org.shops.show.catalogue.collections.show', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.overview.catalogue.products.index' =>
-            array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,
