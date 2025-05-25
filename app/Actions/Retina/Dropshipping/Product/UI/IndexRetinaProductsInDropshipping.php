@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Product\UI;
 
-use App\Actions\Catalogue\Product\UI\IndexProducts as IndexUIProducts;
+use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory as IndexUIProducts;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
