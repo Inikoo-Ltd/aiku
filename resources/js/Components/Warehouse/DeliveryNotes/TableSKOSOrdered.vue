@@ -34,6 +34,7 @@ library.add(faArrowDown, faSkull)
 defineProps<{
     data: TableTS
     tab?: string
+    state: string
 }>()
 
 
@@ -147,20 +148,8 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
         <!-- Column: Reference -->
         <template #cell(quantity_picked)="{ item: itemValue, proxyItem }">
-            <div class="text-left">
-                <!-- <pre>{{ proxyItem }}</pre> -->
-    
-                <!-- <NumberWithButtonSave
-                    :modelValue="get(proxyItem, 'quantity_required', 1)"
-                    :bindToTarget="{ min: 1 }"
-                    @update:modelValue="(e: number) => (set(proxyItem, 'quantity_picked', e), debounceOnPickingQuantity(proxyItem.picking_route, e))"
-                    noUndoButton
-                    noSaveButton
-                    parentClass="w-min"
-                /> -->
-    
+            <div v-if="state === 'handling'" class="text-left">
                 <template v-for="(location, locIndex) in itemValue.locations" :key="location.location.id">
-                    <!-- <pre>{{ location }}</pre> -->
                     <Teleport v-if="isMounted" :to="`#row-${itemValue.id}`" :disabled="location.quantity > 0">
                         <div class="rounded p-1 flex justify-between gap-x-6 items-center even:bg-indigo-50">
     
@@ -169,16 +158,12 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                 <span v-if="location.code" class="block">
                                     <Link :href="generateLocationRoute(location)" class="secondaryLink">
                                         {{ location.code }}
-                                        <!-- <span v-tooltip="trans('Quantity in this location')" class="text-gray-400">({{ location.quantity }})</span> -->
                                     </Link>
                                     <span v-if="get(itemValue, ['pickings', location.location.id, 'quantity_picked'], 0)" v-tooltip="trans('Will be picked')" class="" >
                                         <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] mb-0.5 text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
                                     </span>
                                 </span>
-                                <span v-else class="text-gray-400 italic">({{ trans('No location code') }})</span>
-    
-                                <!-- <span v-if="pallet_stored_item.location?.code" v-tooltip="trans('Location code of the pallet')" class="text-gray-400"> [{{ pallet_stored_item.location?.code }}]</span> -->
-                                
+                                <span v-else class="text-gray-400 italic">({{ trans('No location code') }})</span>                                
     
                                 <div xxv-if="palletReturn.state === 'picking'"
                                     axxclick="() => pallet_stored_item.picked_quantity = pallet_stored_item.quantity_in_pallet"
@@ -189,86 +174,6 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                             </div>
     
                             <div class="flex items-center flex-nowrap gap-x-2">
-                                <!-- {{ state === 'picked' || state === 'dispatched' }} -->
-                                <!-- <ModalConfirmation
-                                    v-if="pallet_stored_item.all_items_returned && (state === 'picked' || state === 'dispatched') && !pallet_stored_item.is_pallet_returned"
-                                    :routeYes="{
-                                        name: 'grp.models.pallet.return',
-                                        parameters: {
-                                            pallet: pallet_stored_item.pallet_id
-                                        },
-                                        method: 'patch'
-                                    }"
-                                    :title="trans(`Return pallet ${pallet_stored_item.reference} to customer?`)"
-                                    :description="trans(`The pallet ${pallet_stored_item.reference} will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`)"
-                                >
-                                    <template #default="{ changeModel }">
-                                        <Button
-                                            @click="() => changeModel()"
-                                            :label="trans('Return pallet')"
-                                            size="xs"
-                                        />
-                                    </template>
-    
-                                    <template #btn-yes="{ isLoadingdelete, clickYes}">
-                                        <Button
-                                            :loading="isLoadingdelete"
-                                            @click="() => clickYes()"
-                                            :label="trans('Yes, return the pallet')"
-                                        />
-                                    </template>
-                                </ModalConfirmation> -->
-    
-                                <!-- <Tag
-                                    v-if="pallet_stored_item.is_pallet_returned"
-                                    v-tooltip="trans('Pallet was returned to customer')"
-                                    :label="trans('Pallet returned')"
-                                    :theme="8"
-                                    size="xs"
-                                    noHoverColor
-                                /> -->
-    
-                                <!-- <div v-if="palletReturn.state === 'in_process'" v-tooltip="trans('Available quantity')" class="text-base">
-                                    {{ pallet_stored_item.available_quantity }}
-                                </div> -->
-                                <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="trans('Quantity of Customer\'s SKU that should be picked')" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
-    
-                                <!-- Button: input number (in_process) -->
-                                <!-- <NumberWithButtonSave
-                                    v-if="palletReturn.state === 'in_process'"
-                                    key="in_process"
-                                    noUndoButton
-                                    isUseAxios
-                                    @onSuccess="(newVal: number, oldVal: number) => {
-                                        proxyItem.total_quantity_ordered += newVal - oldVal
-                                        pallet_stored_item.selected_quantity = newVal
-                                        emits('isStoredItemAdded', newVal > 0 ? true : false)
-                                        router.reload({
-                                            only: ['pageHead'],
-                                        })
-                                    }"
-                                    :modelValue="pallet_stored_item.selected_quantity"
-                                    saveOnForm
-                                    :routeSubmit="{
-                                        name: pallet_stored_item.syncRoute.name,
-                                        parameters: {
-                                            ...pallet_stored_item.syncRoute.parameters,
-                                            palletReturn: palletReturn.id
-                                        },
-                                        method: pallet_stored_item.syncRoute.method
-                                    }"
-                                    keySubmit="quantity_ordered"
-                                    :bindToTarget="{
-                                        step: 1,
-                                        min: 0,
-                                        max: pallet_stored_item.max_quantity
-                                    }"
-                                >
-                                </NumberWithButtonSave>
-    
-                                <div v-else-if="palletReturn.state === 'submitted' || palletReturn.state === 'confirmed'" class="flex flex-nowrap gap-x-1 items-center">
-                                    {{ locale.number(pallet_stored_item.selected_quantity) }}
-                                </div> -->
     
                                 <!-- Button: input number (picking) -->
                                 <template v-if="true" xxv-else-if="palletReturn.state === 'picking' && pallet_stored_item.state !== 'picked'">
@@ -324,26 +229,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                         </div>
                                     </div>
                                 </template>
-    
-                                <!-- <div xv-else class="flex flex-nowrap gap-x-1 items-center tabular-nums">
-                                    <Button
-                                        xv-if="palletReturn.state == 'picking' && pallet_stored_item.state == 'picked'"
-                                        @click="() => onUndoPick(pallet_stored_item.undoRoute, pallet_stored_item, `row${itemValue.rowIndex}.id${pallet_stored_item.id}`)"
-                                        icon="fal fa-undo-alt"
-                                        :label="trans('Undo pick')"
-                                        size="xs"
-                                        :loading="get(isLoadingUndoPick, [`row${itemValue.rowIndex}`, `id${pallet_stored_item.id}`], false)"
-                                        type="tertiary"
-                                    />
-                                    {{ locale.number(pallet_stored_item.picked_quantity) }}/{{ locale.number(pallet_stored_item.selected_quantity) }}
-                                    <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="trans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
-                                </div> -->
-    
-    
                             </div>
-                            <!-- {{ get(isLoadingUndoPick, [`row${value.rowIndex}.id${pallet_stored_item.id}`], '000') }} --  -->
-                            <!-- {{ pallet_stored_item.isLoadingUndo }} -->
-    
                         </div>
                     </Teleport>
                 </template>
@@ -372,24 +258,42 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                     </div>
                 </div>
             </div>
+
+            <div v-else>
+                {{ itemValue.quantity_picked }}
+            </div>
         </template>
 
 
         <template #cell(quantity_to_pick)="{ item: deliveryNote }">
-            {{ deliveryNote.quantity_to_pick }}
-            <ButtonWithLink
-                type="negative"
-                label="Set not picked"
-                icon="fas fa-skull"
-                size="xs"
-                :routeTarget="deliveryNote.not_picking_route"
-                :body="{
-                    quantity: deliveryNote.quantity_to_pick,
-                }"
-                :bindToLink="{
-                    preserveScroll: true,
-                }"
-            />
+            <template v-if="state === 'handling'">
+                <div v-if="!deliveryNote.is_completed || deliveryNote.quantity_not_picked === 0" >
+                    {{ deliveryNote.quantity_to_pick }}
+                    <ButtonWithLink
+                        v-if="!deliveryNote.is_completed"
+                        type="negative"
+                        label="Set not picked"
+                        icon="fas fa-skull"
+                        size="xs"
+                        :routeTarget="deliveryNote.not_picking_route"
+                        :body="{
+                            quantity: deliveryNote.quantity_to_pick,
+                        }"
+                        :bindToLink="{
+                            preserveScroll: true,
+                        }"
+                    />
+                </div>
+                <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
+                    <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
+                    {{ deliveryNote.quantity_not_picked }}
+                </div>
+            </template>
+
+            <div v-else>
+                {{ deliveryNote.quantity_to_pick }}
+            </div>
+
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
