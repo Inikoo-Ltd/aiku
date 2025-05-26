@@ -19,6 +19,7 @@ import { faCheckCircle } from "@fas"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '../NumberWithButtonSave.vue'
+import ToggleSwitch from "primevue/toggleswitch"
 library.add(faCheckCircle)
 
 const props = defineProps<{
@@ -62,7 +63,6 @@ const getPortfoliosList = async (url?: string) => {
             'filter[global]': queryPortfolio.value
         })
         const response = await axios.get(urlToFetch)
-        console.log('wwwwwwwwwww', response.data)
         portfoliosList.value = response.data.data
         portfoliosMeta.value = response?.data.meta || null
         portfoliosLinks.value = response?.data.links || null
@@ -94,6 +94,31 @@ const selectProduct = (item: any) => {
     }
 }
 
+const isAllSelected = computed(() => {
+    if (portfoliosList.value.length === 0) return false
+    return portfoliosList.value.length === selectedProduct.value.length &&
+        portfoliosList.value.every(item =>
+            selectedProduct.value.some(selected => selected.id === item.id)
+        )
+})
+
+const selectAllProducts = () => {
+    if (isAllSelected.value) {
+        // If all current page products are selected, deselect only current page products
+        const currentPageIds = portfoliosList.value.map(item => item.id)
+        selectedProduct.value = selectedProduct.value.filter(selected =>
+            !currentPageIds.includes(selected.id)
+        )
+    } else {
+        // If not all current page products are selected, add missing ones
+        const currentSelectedIds = selectedProduct.value.map(item => item.id)
+        const productsToAdd = portfoliosList.value.filter(item =>
+            !currentSelectedIds.includes(item.id)
+        )
+        selectedProduct.value = [...selectedProduct.value, ...productsToAdd]
+    }
+}
+
 onMounted(()=> {
     getPortfoliosList()
 })
@@ -118,7 +143,7 @@ onUnmounted(() => {
                 :placeholder="trans('Input to search portfolios')"
             />
         </div>
-        
+
         <div class="h-[500px] text-base font-normal">
             <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
                 <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
@@ -127,10 +152,13 @@ onUnmounted(() => {
 
             <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
                 <div class="flex justify-between items-center">
-                    <div class="font-semibold text-lg py-1">{{ trans("Products") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
-                    <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
-                        {{ trans('Clear selection') }} ({{ compSelectedProduct.length }})
-                        <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
+                        <div class="font-semibold text-lg py-1">{{ trans("Products") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                    <div class="flex gap-2">
+                        <div class="text-green-600">Select ({{portfoliosList.length}}) products</div><ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" />
+                        <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
+                            {{ trans('Clear selection') }} ({{ compSelectedProduct.length }})
+                            <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
+                        </div>
                     </div>
                 </div>
                 <div class="border-t border-gray-300 mb-1"></div>
@@ -217,7 +245,7 @@ onUnmounted(() => {
                         </li>
                     </TransitionGroup>
                 </div>
-                
+
                 <div class="mt-4">
                     <Button
                         @click="() => emits('submit', selectedProduct)"
@@ -229,7 +257,7 @@ onUnmounted(() => {
                         icon="fas fa-plus"
                         :loading="isLoadingSubmit"
                     />
-                    
+
                 </div>
             </div>
         </div>
