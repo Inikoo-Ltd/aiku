@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
@@ -225,8 +226,8 @@ class ShowCollection extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($collection))),
 
                 CollectionTabsEnum::PRODUCTS->value => $this->tab == CollectionTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInProductCategory::run($collection))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInProductCategory::run($collection))),
+                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))),
 
                 CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
                     fn () => CollectionsResource::collection(IndexCollection::run($collection))
@@ -248,7 +249,7 @@ class ShowCollection extends OrgAction
                 sales: false
             )
         )->table(
-            IndexProductsInProductCategory::make()->tableStructure(
+            IndexProductsInCollection::make()->tableStructure(
                 $collection,
                 prefix: CollectionTabsEnum::PRODUCTS->value,
             )

@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\CollectionCategory;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
@@ -27,10 +28,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreCollection extends OrgAction
 {
-    public function handle(Shop|CollectionCategory $parent, array $modelData): Collection
+    public function handle(Shop|CollectionCategory|ProductCategory $parent, array $modelData): Collection
     {
 
         if ($parent instanceof CollectionCategory) {
+            $shop = $parent->shop;
+        } elseif ($parent instanceof ProductCategory) {
             $shop = $parent->shop;
         } else {
             $shop = $parent;
