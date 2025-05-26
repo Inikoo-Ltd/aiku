@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -25,7 +26,15 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         data_set($modelData, 'packed_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKED->value);
 
-        return $this->update($deliveryNote, $modelData);
+        foreach ($deliveryNote->deliveryNoteItems as $item) {
+            StorePacking::make()->action($item, []);
+        }
+        
+        $deliveryNote = $this->update($deliveryNote, $modelData);
+
+        $deliveryNote->refresh();
+
+        return $deliveryNote;
     }
 
 

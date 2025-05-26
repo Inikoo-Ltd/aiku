@@ -54,7 +54,6 @@ class Packing extends Model
     protected $casts = [
         'data'   => 'array',
         'engine' => PackingEngineEnum::class,
-        'state'  => PackingStateEnum::class
     ];
 
     protected $guarded = [];
@@ -63,19 +62,19 @@ class Packing extends Model
         'data' => '{}',
     ];
 
-    public function picking(): BelongsTo
-    {
-        return $this->belongsTo(Picking::class);
-    }
-
     public function deliveryNoteItem(): BelongsTo
     {
         return $this->belongsTo(DeliveryNoteItem::class);
     }
 
+    public function deliveryNote(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryNote::class);
+    }
+
     public function packer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'packer_id');
+        return $this->belongsTo(User::class, 'packer_user_id');
     }
 
 
