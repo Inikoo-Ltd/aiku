@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\Picking;
 use Lorisleiva\Actions\ActionRequest;
@@ -17,14 +18,21 @@ class DeletePicking extends OrgAction
 {
     public function handle(Picking $picking): bool
     {
-        return $picking->delete();
+        $deliveryNoteItem = $picking->deliveryNoteItem;
+        $picking->delete();
+
+        $deliveryNoteItem->refresh();
+
+        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+        return true;
     }
 
-    public function asController(Picking $picking, ActionRequest $request): bool
+    public function asController(Picking $picking, ActionRequest $request)
     {
         $this->initialisationFromShop($picking->shop, $request);
 
-        return $this->handle($picking);
+        $this->handle($picking);
     }
 
     public function action(Picking $picking): bool
