@@ -127,7 +127,6 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
-
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -160,7 +159,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                     parentClass="w-min"
                 /> -->
     
-                <template v-for="(location, locIndex) in itemValue.locations" :key="location.id">
+                <template v-for="(location, locIndex) in itemValue.locations" :key="location.location.id">
                     <!-- <pre>{{ location }}</pre> -->
                     <Teleport v-if="isMounted" :to="`#row-${itemValue.id}`" :disabled="location.quantity > 0">
                         <div class="rounded p-1 flex justify-between gap-x-6 items-center even:bg-indigo-50">
@@ -172,7 +171,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                         {{ location.code }}
                                         <!-- <span v-tooltip="trans('Quantity in this location')" class="text-gray-400">({{ location.quantity }})</span> -->
                                     </Link>
-                                    <span v-if="get(itemValue, ['pickings', location.id, 'quantity_picked'], 0)" v-tooltip="trans('Will be picked')" class="" >
+                                    <span v-if="get(itemValue, ['pickings', location.location.id, 'quantity_picked'], 0)" v-tooltip="trans('Will be picked')" class="" >
                                         <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] mb-0.5 text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
                                     </span>
                                 </span>
@@ -282,17 +281,17 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                             @onError="(error: any) => {
                                                 proxyItem.errors = Object.values(error || {})
                                             }"
-                                            :modelValue="get(itemValue, ['pickings', location.id, 'quantity_picked'], 0)"
+                                            :modelValue="get(itemValue, ['pickings', location.location.id, 'quantity_picked'], 0)"
                                             @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                             saveOnForm
-                                            :routeSubmit=" itemValue.picking_route"
+                                            :routeSubmit="get(itemValue, ['pickings', location.location.id, 'quantity_picked'], 0) > 0 ? get(itemValue, ['pickings', location.location.id, 'update_route'], 0) : itemValue.picking_route"                                            
                                             :bindToTarget="{
                                                 step: 1,
                                                 min: 0,
                                                 max: Math.min(location.quantity, itemValue.quantity_required, itemValue.quantity_to_pick)
                                             }"
                                             :additionalData="{
-                                                location_id: location.id,
+                                                location_id: location.location.id,
                                             }"
                                             autoSave
                                         >
@@ -395,7 +394,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
         <template #cell(action)="{ item: deliveryNote }">
             <!-- <pre>
-                {{ data.data[0].pickings }}
+                {{ deliveryNote }}
             </pre> -->
         </template>
 

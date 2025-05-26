@@ -139,7 +139,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     <!-- {{ layout?.currentParams }} -->
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
-            :headLabel="trans('Add products to portfolios')"
+            :headLabel="trans('Add Family to portfolios')"
             :route-fetch="routes.fetch_families"
             :isLoadingSubmit
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"

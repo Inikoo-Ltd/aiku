@@ -76,6 +76,7 @@ const selectNextTemplate = () => {
 const onSaveWorkshop = (block) => {
   console.log("Saved block:", block)
 }
+
 </script>
 
 <template>

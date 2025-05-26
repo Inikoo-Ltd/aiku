@@ -9,9 +9,11 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +31,12 @@ class StartHandlingDeliveryNote extends OrgAction
 
         if (request()->user()->id != $deliveryNote->picker_user_id) {
             data_set($modelData, 'picker_user_id', request()->user()->id);
+        }
+
+        foreach ($deliveryNote->deliveryNoteItems as $item) {
+            UpdateDeliveryNoteItem::make()->action($item, [
+                'state' => DeliveryNoteItemStateEnum::HANDLING
+            ]);
         }
 
         return $this->update($deliveryNote, $modelData);
