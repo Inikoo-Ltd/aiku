@@ -112,7 +112,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
 
             <!-- Section: Horizontal label -->
             <component
-                :is="currentActiveHorizontal.route.name ? Link : 'div'" 
+                :is="currentActiveHorizontal.route.name ? Link : 'div'"
                 :href="route(currentActiveHorizontal.route.name, currentActiveHorizontal.route.parameters)"
                 @start="() => isLoadingVisitActiveHorizontal = true"
                 @finish="() => isLoadingVisitActiveHorizontal = false"
@@ -173,7 +173,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
                 </div>
             </Transition>
         </div>
-        
+
         <!-- Section: Sub Navigaiton -->
         <div class="flex flex-col gap-y-1 mb-1">
             <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="`${navIndex}`">
