@@ -109,7 +109,7 @@ class EditUser extends OrgAction
                     [
                         "label"   => __("Access"),
                         "title"   => __("access"),
-                        "icon"    => "fal fa-user-lock",
+                        "icon"    => "fal fa-door-closed",
                         "current" => true,
                         "fields"  => [
                             "status" => [
