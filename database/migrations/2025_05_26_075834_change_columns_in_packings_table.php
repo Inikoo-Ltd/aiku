@@ -16,6 +16,7 @@ return new class extends Migration
     {
         Schema::table('packings', function (Blueprint $table) {
             $table->renameColumn('quantity_packed', 'quantity');
+            $table->renameColumn('packer_id', 'packer_user_id');
 
             $table->dropForeign(['picking_id']);
 
@@ -33,6 +34,7 @@ return new class extends Migration
     {
         Schema::table('packings', function (Blueprint $table) {
             $table->renameColumn('quantity', 'quantity_packed');
+            $table->renameColumn('packer_user_id', 'packer_id');
             $table->unsignedBigInteger('picking_id')->nullable();
             $table->foreign('picking_id')->references('id')->on('pickings');
             $table->string('state')->default(PackingStateEnum::QUEUED->value)->index();
