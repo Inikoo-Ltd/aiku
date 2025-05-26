@@ -141,6 +141,7 @@ class ShowDeliveryNote extends OrgAction
                     'style'   => 'save',
                     'tooltip' => __('Unassigned'),
                     'label'   => __('Put in Queue'),
+                    'iconRight'    => 'fas fa-arrow-right',
                     'key'     => 'to-queue',
                 ]
             ],
