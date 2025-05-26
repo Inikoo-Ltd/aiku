@@ -38,11 +38,9 @@ library.add(
 	faArrowRight,
 	faListUl
 )
-import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { faListUl } from "@far"
 
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
-initialiseRetinaApp()
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
