@@ -20,6 +20,7 @@ import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
+import { debounce } from "lodash"
 
 library.add(
 	faRobot,
@@ -59,6 +60,7 @@ const props = defineProps<{
 	additionalData?: {
 		[key: string]: any
 	}
+	autoSave?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -129,6 +131,7 @@ const onSaveViaForm = async () => {
 		)
 	}
 }
+const debounceSaveViaForm = debounce(onSaveViaForm, 1000)
 
 const keyIconUndo = ref(0)
 
@@ -140,6 +143,9 @@ watch(
 	() => form.quantity,
 	(newVal: number) => {
 		emits("update:modelValue", newVal, onSaveViaForm)
+		if (props.autoSave) {
+			debounceSaveViaForm()
+		}
 	}
 )
 
@@ -226,6 +232,7 @@ const onClickPlusButton = () => {
 						:min="min || 0"
 						:max="max || undefined"
 						style="width: 100%"
+						:disabled="form.processing"
 						:inputStyle="{
 							padding: '0px',
 							width: bindToTarget?.fluid ? undefined : '50px',

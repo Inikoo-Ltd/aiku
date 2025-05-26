@@ -28,7 +28,8 @@ class PickingsResource extends JsonResource
                 'name'  => 'grp.models.picking.update',
                 'parameters' => [
                     'picking' => $this->id
-                ]
+                ],
+                'method' => 'patch'
             ],
         ];
     }

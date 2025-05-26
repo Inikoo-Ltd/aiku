@@ -58,15 +58,15 @@ class UpdatePicking extends OrgAction
         ];
     }
 
-    public function asController(Picking $picking, ActionRequest $request): Picking
+    public function asController(Picking $picking, ActionRequest $request)
     {
         $this->picking = $picking;
         $this->initialisationFromShop($picking->shop, $request);
 
-        return $this->handle($picking, $this->validatedData);
+        $this->handle($picking, $this->validatedData);
     }
 
-    public function action(Picking $picking, array $modelData): Picking
+    public function action(Picking $picking, array $modelData): Picking|bool
     {
         $this->picking = $picking;
         $this->initialisationFromShop($picking->shop, $modelData);

@@ -29,12 +29,13 @@ class DeliveryNoteItemsResource extends JsonResource
                 'message' => __('The required quantity has already been fully picked.')
             ];
         }
+
         return [
             'id'                  => $this->id,
             'state'               => $this->state,
             'state_icon'          => $this->state->stateIcon()[$this->state->value],
             'quantity_required'   => intVal($this->quantity_required),
-            'quantity_to_pick'    => intVal($this->quantity_required) - intVal($this->quantity_picked),
+            'quantity_to_pick'    => max(0, intval($this->quantity_required) - intval($this->quantity_picked)),
             'quantity_picked'     => intVal($this->quantity_picked),
             'quantity_not_picked' => intVal($this->quantity_not_picked),
             'quantity_packed'     => intVal($this->quantity_packed),
@@ -51,6 +52,13 @@ class DeliveryNoteItemsResource extends JsonResource
             'is_completed'        => $this->is_completed,
             'picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.picking.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ],
+            'picking_all_route'       => [
+                'name' => 'grp.models.delivery-note-item.picking_all.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
