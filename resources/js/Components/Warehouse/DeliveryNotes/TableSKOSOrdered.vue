@@ -18,14 +18,17 @@ import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Collapse } from "vue-collapsed"
 import { ref } from "vue"
-import { onMounted } from "vue"
+import { onMounted, reactive } from "vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown } from "@fal"
+import { faSkull } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faArrowDown)
+import axios from "axios"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+library.add(faArrowDown, faSkull)
 
 
 defineProps<{
@@ -99,6 +102,27 @@ const generateLocationRoute = (location: any) => {
     }
 
 }
+
+
+// Button: undo pick
+const isLoadingUndoPick = reactive({})
+const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadingKey: string) => {
+    try {
+        pallet_stored_item.isLoadingUndo = true
+        set(isLoadingUndoPick, loadingKey, true)
+        await axios[routeTarget.method || 'get'](
+            route(routeTarget.name, routeTarget.parameters)
+        )
+        pallet_stored_item.state = 'picking'
+        // console.log('qqqqq', pallet_stored_item)
+    } catch (error) {
+        console.error('hehehe', error)
+        
+    } finally {
+        set(isLoadingUndoPick, loadingKey, false)
+    }
+    
+}
 </script>
 
 <template>
@@ -114,7 +138,7 @@ const generateLocationRoute = (location: any) => {
             <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
                 {{ deliveryNote.org_stock_code }}
             </Link>
-            <pre>{{ deliveryNote.pickings }}</pre>
+            <!-- <pre>{{ deliveryNote }}</pre> -->
         </template>
 
         <!-- Column: Reference -->
@@ -140,34 +164,29 @@ const generateLocationRoute = (location: any) => {
                     <!-- <pre>{{ location }}</pre> -->
                     <Teleport v-if="isMounted" :to="`#row-${itemValue.id}`" :disabled="location.quantity > 0">
                         <div class="rounded p-1 flex justify-between gap-x-6 items-center even:bg-indigo-50">
-                            <!-- <Tag :label="pallet_stored_item.reference" stringToColor>
-                                <template #label>
-                                    <div class="">
-                                        {{ pallet_stored_item.reference }} ({{ pallet_stored_item.quantity }})
-                                    </div>
-                                </template>
-                            </Tag> -->
     
                             <!-- Location code -->
                             <div class="">
-                                <span v-if="location.code">
+                                <span v-if="location.code" class="block">
                                     <Link :href="generateLocationRoute(location)" class="secondaryLink">
-                                        {{ location.code }} <span v-tooltip="trans('Quantity in this location')" class="text-gray-400">({{ location.quantity }})</span>
+                                        {{ location.code }}
+                                        <!-- <span v-tooltip="trans('Quantity in this location')" class="text-gray-400">({{ location.quantity }})</span> -->
                                     </Link>
+                                    <span v-if="get(itemValue, ['pickings', location.id, 'quantity_picked'], 0)" v-tooltip="trans('Will be picked')" class="" >
+                                        <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] mb-0.5 text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
+                                    </span>
                                 </span>
                                 <span v-else class="text-gray-400 italic">({{ trans('No location code') }})</span>
     
-                                <!-- <span v-if="pallet_stored_item.location?.code" v-tooltip="trans('Location code of the pallet')" class="text-gray-400"> [{{ pallet_stored_item.location?.code }}]</span>
-                                <div  v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="trans('Will be picked')" class="pl-1 pb-1 inline" >
-                                    <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
-                                </div> -->
+                                <!-- <span v-if="pallet_stored_item.location?.code" v-tooltip="trans('Location code of the pallet')" class="text-gray-400"> [{{ pallet_stored_item.location?.code }}]</span> -->
+                                
     
-                                <!-- <div v-if="palletReturn.state === 'picking'"
-                                    @xxclick="() => pallet_stored_item.picked_quantity = pallet_stored_item.quantity_in_pallet"
-                                    v-tooltip="trans('Total Customer\'s SKU in this pallet')"
-                                    class="text-gray-400 tabular-nums xcursor-pointer xhover:text-gray-600">
-                                    {{ trans("Stocks in pallet") }}: {{ pallet_stored_item.quantity_in_pallet }}
-                                </div> -->
+                                <div xxv-if="palletReturn.state === 'picking'"
+                                    axxclick="() => pallet_stored_item.picked_quantity = pallet_stored_item.quantity_in_pallet"
+                                    v-tooltip="trans('Total stock in this location')"
+                                    class="text-gray-400 tabular-nums text-xs xcursor-pointer xhover:text-gray-600">
+                                    {{ trans("Stocks in location") }}: {{ location.quantity }}
+                                </div>
                             </div>
     
                             <div class="flex items-center flex-nowrap gap-x-2">
@@ -260,41 +279,22 @@ const generateLocationRoute = (location: any) => {
                                             v-if="location.quantity > 0"
                                             key="pickingpicked"
                                             noUndoButton
-                                            xisUseAxios
-                                            axonSuccess="(newVal: number, oldVal: number) => {
-                                                pallet_stored_item.state = 'picked',
-                                                pallet_stored_item.picked_quantity = newVal
-                                            }"
                                             @onError="(error: any) => {
                                                 proxyItem.errors = Object.values(error || {})
                                             }"
                                             :modelValue="get(itemValue, ['pickings', location.id, 'quantity_picked'], 0)"
-                                            @update:modelValue="() => proxyItem.errors = null"
+                                            @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                             saveOnForm
-                                            :routeSubmit=" itemValue.picking_route "
-                                            xxkeySubmit="
-                                                pallet_stored_item.pallet_return_item_id
-                                                    ? 'quantity_picked'
-                                                    : 'quantity_ordered'
-                                            "
+                                            :routeSubmit=" itemValue.picking_route"
                                             :bindToTarget="{
                                                 step: 1,
                                                 min: 0,
-                                                max: Math.min(location.quantity, itemValue.quantity_required)
+                                                max: Math.min(location.quantity, itemValue.quantity_required, itemValue.quantity_to_pick)
                                             }"
                                             :additionalData="{
                                                 location_id: location.id,
                                             }"
-                                            xxcolorTheme="
-                                                pallet_stored_item.selected_quantity == pallet_stored_item.picked_quantity
-                                                    ? '#374151'
-                                                    : pallet_stored_item.selected_quantity < pallet_stored_item.picked_quantity
-                                                        ? '#22c55e'
-                                                        : '#ff0000'
-                                            "
-                                            xxparentClass="''
-                                                // pallet_stored_item.error ? 'errorShake' : ''
-                                            "
+                                            autoSave
                                         >
                                             <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                                 <Button
@@ -305,7 +305,7 @@ const generateLocationRoute = (location: any) => {
                                                     )"
                                                     icon="fal fa-save"
                                                     :disabled="itemValue.quantity_required == itemValue.quantity_picked"
-                                                    :label="trans('pick')"
+                                                    :label="trans('Pick all')"
                                                     size="xs"
                                                     :xdisabled="!isDirty"
                                                     type="secondary"
@@ -314,6 +314,7 @@ const generateLocationRoute = (location: any) => {
                                                 />
                                             </template>
                                         </NumberWithButtonSave>
+
                                         <div v-else class="text-xs text-gray-500 italic text-center">
                                             No quantity in this location
                                         </div>
@@ -325,14 +326,14 @@ const generateLocationRoute = (location: any) => {
                                     </div>
                                 </template>
     
-                                <!-- <div v-else class="flex flex-nowrap gap-x-1 items-center tabular-nums">
+                                <!-- <div xv-else class="flex flex-nowrap gap-x-1 items-center tabular-nums">
                                     <Button
-                                        v-if="palletReturn.state == 'picking' && pallet_stored_item.state == 'picked'"
-                                        @click="() => onUndoPick(pallet_stored_item.undoRoute, pallet_stored_item, `row${value.rowIndex}.id${pallet_stored_item.id}`)"
+                                        xv-if="palletReturn.state == 'picking' && pallet_stored_item.state == 'picked'"
+                                        @click="() => onUndoPick(pallet_stored_item.undoRoute, pallet_stored_item, `row${itemValue.rowIndex}.id${pallet_stored_item.id}`)"
                                         icon="fal fa-undo-alt"
                                         :label="trans('Undo pick')"
                                         size="xs"
-                                        :loading="get(isLoadingUndoPick, [`row${value.rowIndex}`, `id${pallet_stored_item.id}`], false)"
+                                        :loading="get(isLoadingUndoPick, [`row${itemValue.rowIndex}`, `id${pallet_stored_item.id}`], false)"
                                         type="tertiary"
                                     />
                                     {{ locale.number(pallet_stored_item.picked_quantity) }}/{{ locale.number(pallet_stored_item.selected_quantity) }}
@@ -348,6 +349,7 @@ const generateLocationRoute = (location: any) => {
                     </Teleport>
                 </template>
     
+                <!-- Section: Open hidden locations -->
                 <div v-if="!itemValue.locations.every(location => {return location.quantity > 0})" class="">
                     <Collapse as="section" :when="get(proxyItem, ['is_open_collapsed'], false)" class="">
                         <div :id="`row-${itemValue.id}`">
@@ -373,6 +375,23 @@ const generateLocationRoute = (location: any) => {
             </div>
         </template>
 
+
+        <template #cell(quantity_to_pick)="{ item: deliveryNote }">
+            {{ deliveryNote.quantity_to_pick }}
+            <ButtonWithLink
+                type="negative"
+                label="Set not picked"
+                icon="fas fa-skull"
+                size="xs"
+                :routeTarget="deliveryNote.not_picking_route"
+                :body="{
+                    quantity: deliveryNote.quantity_to_pick,
+                }"
+                :bindToLink="{
+                    preserveScroll: true,
+                }"
+            />
+        </template>
 
         <template #cell(action)="{ item: deliveryNote }">
             <!-- <pre>
