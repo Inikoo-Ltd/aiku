@@ -164,7 +164,7 @@ class GetGroupOverview extends OrgAction
             ],
             [
                 'name'  => __('Products'),
-                'icon'  => 'fal fa-boxes',
+                'icon'  => 'fal fa-cube',
                 'route' => route('grp.overview.catalogue.products.index'),
                 'count' => $group->catalogueStats->number_products ?? 0
             ],

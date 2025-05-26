@@ -15,10 +15,8 @@ use App\Actions\OrgAction;
 use App\Enums\UI\Ordering\PurgeTabsEnum;
 use App\Http\Resources\Ordering\PurgedOrdersResource;
 use App\Http\Resources\Ordering\PurgeResource;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Purge;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -27,8 +25,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowPurge extends OrgAction
 {
-    private Organisation|Group|Shop $parent;
-
     public function handle(Purge $purge): Purge
     {
         return $purge;
@@ -36,14 +32,12 @@ class ShowPurge extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Purge $purge, ActionRequest $request): Purge
     {
-        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(PurgeTabsEnum::values());
         return $this->handle($purge);
     }
 
     public function htmlResponse(Purge $purge, ActionRequest $request): Response
     {
-        // dd($collection->stats);
         return Inertia::render(
             'Org/Ordering/Purge',
             [
@@ -90,15 +84,6 @@ class ShowPurge extends OrgAction
                     fn () => PurgedOrdersResource::collection(IndexPurgedOrders::run($purge))
                     : Inertia::lazy(fn () => PurgedOrdersResource::collection(IndexPurgedOrders::run($purge))),
 
-                // ProductTabsEnum::MAILSHOTS->value => $this->tab == ProductTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($product))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($product))),
-
-                /*
-                ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
-                    fn () => ImagesResource::collection(IndexImages::run($product))
-                    : Inertia::lazy(fn () => ImagesResource::collection(IndexImages::run($product))),
-                */
 
             ]
         )->table(IndexPurgedOrders::make()->tableStructure(prefix:PurgeTabsEnum::PURGED_ORDERS->value));

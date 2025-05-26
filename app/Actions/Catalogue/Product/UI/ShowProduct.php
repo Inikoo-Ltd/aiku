@@ -227,21 +227,12 @@ class ShowProduct extends OrgAction
                     fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
                     : Inertia::lazy(fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
 
-                // ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
-                //     fn () => CustomersResource::collection(IndexCustomers::run($product))
-                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
-
-                // ProductTabsEnum::MAILSHOTS->value => $this->tab == ProductTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($product))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($product))),
 
 
             ]
         )->table(IndexOrders::make()->tableStructure($product->asset, ProductTabsEnum::ORDERS->value))
         ->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
         ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value));
-        // ->table(IndexCustomers::make()->tableStructure($product))
-        // ->table(IndexMailshots::make()->tableStructure($product));
     }
 
     public function jsonResponse(Product $product): ProductsResource

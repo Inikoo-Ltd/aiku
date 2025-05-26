@@ -123,6 +123,8 @@ class FetchAuroraMailshot extends FetchAurora
             'fetched_at'        => now(),
             'last_fetched_at'   => now(),
         ];
+
+        dd($this->parsedData['mailshot'], $this->auroraModelData, );
     }
 
 

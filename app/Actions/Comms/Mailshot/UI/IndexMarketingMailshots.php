@@ -11,17 +11,13 @@ namespace App\Actions\Comms\Mailshot\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Http\Resources\Mail\MailshotResource;
 use App\Http\Resources\Mail\MarketingMailshotsResource;
-use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -38,42 +34,6 @@ class IndexMarketingMailshots extends OrgAction
     {
         return $this->handleMailshot(OutboxCodeEnum::MARKETING, $parent, $prefix);
     }
-
-    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
-    {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
-
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-
-            $table
-                ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
-                ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
-            if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
-            }
-            $table->column(key: 'sent', label: __('sent'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'hard_bounce', label: __('hard bounce'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'soft_bounce', label: __('soft bounce'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'delivered', label: __('delivered'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'opened', label: __('opened'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'clicked', label: __('clicked'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'spam', label: __('spam'), canBeHidden: false, sortable: true, searchable: true);
-        };
-    }
-
-    public function jsonResponse(LengthAwarePaginator $mailshots): AnonymousResourceCollection
-    {
-        return MailshotResource::collection($mailshots);
-    }
-
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {

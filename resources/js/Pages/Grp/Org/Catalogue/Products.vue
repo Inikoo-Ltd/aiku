@@ -26,7 +26,6 @@ const props = defineProps<{
     index?: {}
     sales?: {}
 }>()
-// console.log(props.tabs.current)
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 

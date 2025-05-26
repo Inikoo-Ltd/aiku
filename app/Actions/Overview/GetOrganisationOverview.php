@@ -147,7 +147,7 @@ class GetOrganisationOverview extends OrgAction
             [
                 'name'  => __('Products'),
                 'icon'  => 'fal fa-boxes',
-                'route' => '',
+                'route' => route('grp.org.overview.products.index', $organisation->slug),
                 'count' => $organisation->catalogueStats->number_products ?? 0
             ],
             [
