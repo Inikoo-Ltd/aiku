@@ -45,10 +45,11 @@ class DepartmentsResource extends JsonResource
             'shop_name'               => $this->shop_name,
             'code'                    => $this->code,
             'name'                    => $this->name,
-            'state'                   => $this->state,
-            'state_icon'              => $this->state ? $this->state->stateIcon()['icon'] ?? null : null,
-            'state_class'             => $this->state ? $this->state->stateIcon()['class'] ?? null : null,
-            'state_tooltip'           => $this->state ? $this->state->stateIcon()['tooltip'] ?? null : null,
+            'state'            => [
+                'label' => $this->state->labels()[$this->state->value],
+                'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
+                'class' => $this->state->stateIcon()[$this->state->value]['class']
+            ],
             'description'             => $this->description,
             'created_at'              => $this->created_at,
             'updated_at'              => $this->updated_at,
