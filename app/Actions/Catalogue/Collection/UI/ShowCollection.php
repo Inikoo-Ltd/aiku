@@ -12,6 +12,9 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
+use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
+use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
@@ -364,6 +367,96 @@ class ShowCollection extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.collections.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.collection.show' =>
+            array_merge(
+                ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.families.show.collection.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.families.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show' =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($this->parent, $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.families.show.collection.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.families.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.families.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.families.show.collection.show',
                             'parameters' => $routeParameters
                         ]
                     ],
