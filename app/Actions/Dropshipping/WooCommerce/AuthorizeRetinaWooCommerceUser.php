@@ -33,10 +33,8 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
             'app_name' => config('app.name'),
             'scope' => 'read_write',
             'user_id' => $modelData['name'],
-            'return_url' => route('retina.dropshipping.platform.dashboard'),
-            'callback_url' => route('retina.dropshipping.platform.wc.callback', [
-                'customer' => $customer->id
-            ])
+            'return_url' => route('retina.dropshipping.customer_sales_channels.index'),
+            'callback_url' => route('retina.dropshipping.platform.wc.callback')
         ];
 
         return $modelData['url'].$endpoint.'?'.http_build_query($params);
