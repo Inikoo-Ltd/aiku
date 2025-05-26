@@ -35,7 +35,7 @@ class HandleApiInventoryProductShopify extends OrgAction
             $client->request('POST', '/admin/api/2025-04/inventory_levels/set.json', [
                 'location_id' => $locationId,
                 'inventory_item_id' => Arr::get($variant, 'inventory_item_id'),
-                'available' => Arr::get($productVariants, 'available_quantity')
+                'available' => Arr::get($variant, 'available_quantity')
             ]);
         }
     }

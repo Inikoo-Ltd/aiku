@@ -34,6 +34,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'state'               => $this->state,
             'state_icon'          => $this->state->stateIcon()[$this->state->value],
             'quantity_required'   => intVal($this->quantity_required),
+            'quantity_to_pick'    => intVal($this->quantity_required) - intVal($this->quantity_picked),
             'quantity_picked'     => intVal($this->quantity_picked),
             'quantity_not_picked' => intVal($this->quantity_not_picked),
             'quantity_packed'     => intVal($this->quantity_packed),
@@ -41,7 +42,10 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_code'      => $this->org_stock_code,
             'org_stock_name'      => $this->org_stock_name,
             'locations'           => $orgStock->locationOrgstocks ? LocationOrgStocksResource::collection($orgStock->locationOrgstocks) : [],
-            'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
+            'pickings'            => $deliveryNoteItem->pickings 
+                ? $deliveryNoteItem->pickings->keyBy(fn($item) => $item->location_id ?? $item->location->id)
+                    ->map(fn($item) => new PickingsResource($item))
+                : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
             'is_completed'        => $this->is_completed,

@@ -56,6 +56,9 @@ const props = defineProps<{
 	parentClass?: string
 	isLoading?: boolean
 	readonly?: boolean
+	additionalData?: {
+		[key: string]: any
+	}
 }>()
 
 const emits = defineEmits<{
@@ -105,12 +108,24 @@ const onSaveViaForm = async () => {
 	} else {
 		form.transform((data) => ({
 			[props.keySubmit || "quantity"]: data.quantity,
+			...props.additionalData,
 		})).submit(
 			props.routeSubmit?.method || "post",
 			route(props.routeSubmit?.name, props.routeSubmit?.parameters),
 			{
 				preserveScroll: true,
-			}
+				onError: (errors) => {
+					emits("onError", errors)
+					notify({
+						title: trans("Something went wrong"),
+						text: "",
+						type: "error",
+					})
+				},
+				onSuccess: (response) => {
+					emits("onSuccess", form.quantity, formDefaultValue.value.quantity)
+				}
+			},
 		)
 	}
 }

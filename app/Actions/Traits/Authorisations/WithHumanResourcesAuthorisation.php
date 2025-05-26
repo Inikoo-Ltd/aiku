@@ -10,7 +10,6 @@ namespace App\Actions\Traits\Authorisations;
 
 use Lorisleiva\Actions\ActionRequest;
 
-
 trait WithHumanResourcesAuthorisation
 {
     public function authorize(ActionRequest $request): bool
