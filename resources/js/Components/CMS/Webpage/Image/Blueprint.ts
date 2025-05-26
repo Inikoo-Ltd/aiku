@@ -9,6 +9,7 @@ export default {
 					key: ["layout_type"],
 					label: "Layout",
 					type: "layout_type",
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["layout", "properties", "dimension"],
