@@ -10,6 +10,7 @@ namespace App\Models\Goods;
 
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
+use App\Models\Helpers\Tag;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAttachments;
@@ -68,6 +69,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Product> $outers
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, SupplierProduct> $supplierProducts
+ * @property-read Collection<int, Tag> $tags
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()
@@ -153,6 +155,15 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function barcode(): BelongsTo
     {
         return $this->belongsTo(Barcode::class);
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(
+            Tag::class,
+            'model',
+            'model_has_tags'
+        )->withTimestamps();
     }
 
     public function barcodes(): MorphToMany

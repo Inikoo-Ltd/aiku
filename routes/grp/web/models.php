@@ -147,6 +147,10 @@ use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\GoogleDrive\CallbackClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Helpers\Tag\AttachTagsToModel;
+use App\Actions\Helpers\Tag\DetachTagFromModel;
+use App\Actions\Helpers\Tag\StoreTag;
+use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
@@ -762,6 +766,17 @@ Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.
 
 Route::name('product_category.')->prefix('product_category/{productCategory:id}')->group(function () {
     Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
+});
+
+Route::name('tags.')->prefix('tags')->group(function () {
+    Route::post('/store', StoreTag::class)->name('store');
+    Route::patch('/{tag}/update', UpdateTag::class)->name('update');
+    Route::delete('/{tag}/delete', StoreTag::class)->name('delete');
+});
+
+Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
+    Route::post('tags/attach', [AttachTagsToModel::class, 'inTradeUnit'])->name('tags.attach');
+    Route::delete('/tags/{tag}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach')->withoutScopedBindings();
 });
 
 require __DIR__."/models/inventory/warehouse.php";
