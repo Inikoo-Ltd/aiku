@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Masters\MasterAsset\UI\IndexMasterAssets;
+use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
@@ -30,6 +31,10 @@ Route::get('/products', IndexMasterAssets::class)->name('products.index');
 Route::get('/departments', [IndexMasterDepartments::class, 'inGroup'])->name('departments.index');
 Route::get('/departments/{masterDepartment}', [ShowMasterDepartment::class, 'inGroup'])->name('departments.show');
 Route::get('departments/{masterDepartment}/blueprint', [ShowMasterDepartmentWorkshop::class,'inGroup'])->name('department.blueprint');
+
+Route::get('/departments/{masterDepartment}/sub-departments', [IndexMasterSubDepartments::class, 'inMasterDepartment'])->name('departments.sub_departments.index');
+Route::get('/departments/{masterDepartment}/sub-departments/create', CreateMasterSubDepartment::class)->name('departments.sub_departments.create');
+Route::get('/departments/{masterDepartment}/sub-departments/{masterSubDepartment}', [ShowMasterSubDepartment::class, 'inMasterDepartment'])->name('departments.sub_departments.show');
 
 Route::get('/families', [IndexMasterFamilies::class, 'inGroup'])->name('families.index');
 Route::get('/families/{masterFamily}', [ShowMasterFamily::class, 'inGroup'])->name('families.show');

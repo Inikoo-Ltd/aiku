@@ -11,9 +11,9 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -26,11 +26,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowMasterSubDepartment extends GrpAction
 {
-    use WithSubDepartmentSubNavigation;
+    use WithMasterSubDepartmentSubNavigation;
     use WithMastersAuthorisation;
 
 
-    private MasterShop $parent;
+    private MasterShop|MasterProductCategory $parent;
 
     public function handle(MasterProductCategory $masterSubDepartment): MasterProductCategory
     {
@@ -47,18 +47,33 @@ class ShowMasterSubDepartment extends GrpAction
         return $this->handle($masterSubDepartment);
     }
 
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterDepartment;
+        $group        = group();
+        $this->initialisation($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
+
+        return $this->handle($masterSubDepartment);
+    }
+
     public function htmlResponse(MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
     {
+        $subNavigation = false;
+
+        if ($this->parent instanceof MasterProductCategory) {
+            $subNavigation = $this->getMasterSubDepartmentSubNavigation($masterSubDepartment);
+        }
+
         return Inertia::render(
             'Org/Catalogue/Department',
             [
                 'title'       => __('Sub-department'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $masterSubDepartment,
-                    $this->parent,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                // 'breadcrumbs' => $this->getBreadcrumbs(
+                //     $masterSubDepartment,
+                //     $this->parent,
+                //     $request->route()->getName(),
+                //     $request->route()->originalParameters()
+                // ),
                 'navigation'  => [
                     'previous' => $this->getPrevious($masterSubDepartment, $request),
                     'next'     => $this->getNext($masterSubDepartment, $request),
@@ -88,6 +103,7 @@ class ShowMasterSubDepartment extends GrpAction
                             ]
                         ] : false
                     ],
+                    'subNavigation' => $subNavigation,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -160,7 +176,7 @@ class ShowMasterSubDepartment extends GrpAction
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show' =>
             array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs($parent, 'grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                (new ShowMasterDepartment())->getBreadcrumbs($parent, $masterSubDepartment, 'grp.org.shops.show.catalogue.departments.show', $routeParameters),
                 $headCrumb(
                     $masterSubDepartment,
                     [
