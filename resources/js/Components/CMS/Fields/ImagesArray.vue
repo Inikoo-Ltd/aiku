@@ -57,7 +57,7 @@ const removeImage = (index: number) => {
                 </div>
             </template>
         </draggable>
-        <div v-if="modelValue?.length < 4" class="my-2">
+        <div  class="my-2">
             <Button type="dashed" label="Add image" :icon="faPlus" full @click="addImage"></Button>
         </div>
     </div>
