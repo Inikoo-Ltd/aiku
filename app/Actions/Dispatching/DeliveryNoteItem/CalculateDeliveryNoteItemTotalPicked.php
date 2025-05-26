@@ -23,13 +23,18 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
-        $totalPicked = $deliveryNoteItem->pickings()->where('type', PickingTypeEnum::PICK)->sum('quantity');
-        $totalNotPicked = $deliveryNoteItem->pickings()->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
-        $isCompleted = false;
-        if ($totalPicked == $deliveryNoteItem->quantity_required) {
-            $isCompleted = true;
-        }
-        return $this->update($deliveryNoteItem, ['quantity_picked' => $totalPicked, 'quantity_not_picked' => $totalNotPicked, 'is_completed' => $isCompleted]);
+        $pickings = $deliveryNoteItem->pickings;
+
+        $totalPicked = $pickings->where('type', PickingTypeEnum::PICK)->sum('quantity');
+        $totalNotPicked = $pickings->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
+
+        $isCompleted = ((int) $totalPicked === (int) $deliveryNoteItem->quantity_required);
+
+        return $this->update($deliveryNoteItem, [
+            'quantity_picked' => $totalPicked,
+            'quantity_not_picked' => $totalNotPicked,
+            'is_completed' => $isCompleted,
+        ]);
     }
 
     public function action(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
