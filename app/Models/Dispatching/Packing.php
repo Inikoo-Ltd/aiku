@@ -9,7 +9,6 @@
 namespace App\Models\Dispatching;
 
 use App\Enums\Dispatching\Packing\PackingEngineEnum;
-use App\Enums\Dispatching\Packing\PackingStateEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
@@ -24,10 +23,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $shop_id
  * @property int $delivery_note_id
  * @property int $delivery_note_item_id
- * @property int|null $picking_id
- * @property PackingStateEnum $state
- * @property string|null $quantity_packed
- * @property int|null $packer_id
+ * @property string|null $quantity
+ * @property int|null $packer_user_id
  * @property PackingEngineEnum $engine
  * @property array<array-key, mixed> $data
  * @property string|null $queued_at
@@ -36,11 +33,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $done_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $packer
- * @property-read \App\Models\Dispatching\Picking|null $picking
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Packing newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Packing newQuery()

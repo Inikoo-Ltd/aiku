@@ -1,18 +1,18 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 26 May 2025 20:51:35 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 use App\Enums\Dispatching\Packing\PackingStateEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
+return new class () extends Migration {
+    public function up(): void
     {
         Schema::table('packings', function (Blueprint $table) {
             $table->renameColumn('quantity_packed', 'quantity');
@@ -25,12 +25,8 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
+
+    public function down(): void
     {
         Schema::table('packings', function (Blueprint $table) {
             $table->renameColumn('quantity', 'quantity_packed');

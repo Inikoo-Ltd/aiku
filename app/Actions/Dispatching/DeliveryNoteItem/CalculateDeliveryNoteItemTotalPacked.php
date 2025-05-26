@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 26-05-2025-16h-16m
@@ -12,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
-use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 
 class CalculateDeliveryNoteItemTotalPacked extends OrgAction
@@ -25,7 +25,7 @@ class CalculateDeliveryNoteItemTotalPacked extends OrgAction
     {
         $totalPacked = $deliveryNoteItem->packings()->sum('quantity');
         $state = $deliveryNoteItem->state;
-        
+
         if ($totalPacked == $deliveryNoteItem->quantity_picked) {
             $state = DeliveryNoteItemStateEnum::PACKED;
         }
