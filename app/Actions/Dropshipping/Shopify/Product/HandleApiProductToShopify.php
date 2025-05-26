@@ -81,7 +81,7 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
-            RequestApiStoreProductToShopify::dispatch($shopifyUser, $product, $portfolio, $body);
+            RequestApiStoreProductToShopify::dispatch($shopifyUser, $product, $portfolio, $body)->onQueue('urgent');
         }
     }
 

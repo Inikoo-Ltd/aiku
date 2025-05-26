@@ -64,7 +64,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, 'products');
     }
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource

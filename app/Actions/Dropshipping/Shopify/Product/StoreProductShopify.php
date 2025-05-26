@@ -82,7 +82,7 @@ class StoreProductShopify extends OrgAction
 
             HandleApiProductToShopify::dispatch($shopifyUser, [
                 'portfolios' => $portfolios
-            ]);
+            ])->onQueue('urgent');
         });
     }
 
