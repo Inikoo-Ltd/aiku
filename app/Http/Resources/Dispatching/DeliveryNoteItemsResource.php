@@ -76,6 +76,13 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method' => 'post'
             ],
+            'packing_route'       => [
+                'name' => 'grp.models.delivery-note-item.packing.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ],
             'pickers_list_route'   => [
                 'name'       => 'grp.json.employees.picker_users',
                 'parameters' => [
