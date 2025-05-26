@@ -289,8 +289,8 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
         <template #cell(quantity_to_pick)="{ item: deliveryNote }">
             <template v-if="state === 'handling'">
-                <div v-if="!deliveryNote.is_completed || deliveryNote.quantity_not_picked === 0" >
-                    {{ deliveryNote.quantity_to_pick }}
+                <div v-if="!deliveryNote.is_completed || deliveryNote.quantity_not_picked === 0" class="whitespace-nowrap space-x-2">
+                    <span class="mr-0.5">{{ deliveryNote.quantity_to_pick }}</span>
                     <ButtonWithLink
                         v-if="!deliveryNote.is_completed"
                         type="negative"
@@ -316,20 +316,24 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
-            <ButtonWithLink
-                v-if="deliveryNote.is_completed && (state === 'handling' || state === 'handling_blocked')"
-                :routeTarget="deliveryNote.packing_route"
-                :bindToLink="{
-                    preserveScroll: true,
-                    preserveState: true,
-                }"
-                :key="deliveryNote.is_packed"
-                :type="deliveryNote.is_packed ? 'positive' : 'secondary'"
-                :icon="deliveryNote.is_packed ? 'fal fa-check' : undefined"
-                size="xs"
-                :label="deliveryNote.is_packed ? trans('Packed') : trans('Pack')"
-                :disabled="deliveryNote.is_packed"
-            />
+            <template v-if="deliveryNote.is_completed && (state === 'handling' || state === 'handling_blocked')">
+                <ButtonWithLink
+                    v-if="!deliveryNote.is_packed"
+                    :routeTarget="deliveryNote.packing_route"
+                    :bindToLink="{
+                        preserveScroll: true,
+                        preserveState: true,
+                    }"
+                    type="secondary"
+                    size="xs"
+                    :label="trans('Pack')"
+                />
+
+                <div v-else class="whitespace-nowrap text-green-600">
+                    <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Packed") }}
+                </div>
+            </template>
         </template>
     </Table>
 </template>
