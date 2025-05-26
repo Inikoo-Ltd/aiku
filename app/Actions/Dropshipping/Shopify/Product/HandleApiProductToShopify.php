@@ -83,7 +83,7 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
-            RequestApiStoreProductToShopify::dispatch($shopifyUser, $product, $portfolio, $body);
+            RequestApiStoreProductToShopify::run($shopifyUser, $product, $portfolio, $body);
         }
     }
 
