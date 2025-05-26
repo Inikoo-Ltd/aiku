@@ -32,13 +32,13 @@ Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group
 });
 
 Route::prefix('woocommerce/{wooCommerceUser:id}')->name('webhooks.woo.')->group(function () {
-    Route::prefix('products')->as('products.')->group(function () {
-        Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
-    });
+    /*    Route::prefix('products')->as('products.')->group(function () {
+            Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
+        });*/
 
-    Route::prefix('orders')->as('orders.')->group(function () {
-        Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
-    });
+    /*    Route::prefix('orders')->as('orders.')->group(function () {
+            Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
+        });*/
 });
 
 Route::middleware('verify.shopify.webhook')->group(function () {
