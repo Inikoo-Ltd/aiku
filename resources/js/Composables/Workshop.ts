@@ -90,3 +90,43 @@ export const irisStyleVariables = (layoutColor: string[]) => {
     root.style.setProperty('--iris-color-primary', layoutColor[0])
     root.style.setProperty('--iris-color-secondary', layoutColor[2])
 }
+
+
+/* export const getVal = (base: any, path?: string[], screen = 'desktop') =>{
+      return  resolveResponsiveValue(base, screen, path);
+} */
+
+export const resolveResponsiveValue = (
+  base: any,
+  screen: 'mobile' | 'tablet' | 'desktop',
+  path?: string[]
+) => {
+  if (!base || typeof base !== 'object') return base;
+
+  const getValue = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return undefined;
+    return path ? path.reduce((acc, key) => acc?.[key], obj) : obj;
+  };
+
+  // ✅ NEW: If path is undefined and base has direct responsive keys (e.g., { mobile: '...', desktop: '...' }), just return base[screen]
+  const isResponsiveObject =
+    !path &&
+    ['mobile', 'tablet', 'desktop'].some(k => Object.prototype.hasOwnProperty.call(base, k));
+
+  if (isResponsiveObject) {
+    return base?.[screen] ?? base?.desktop ?? null;
+  }
+
+  // 1. Try current screen
+  const currentValue = getValue(base[screen]);
+  if (currentValue !== undefined) return currentValue;
+
+  // 2. Fallback to desktop
+  if (screen !== 'desktop') {
+    const desktopValue = getValue(base.desktop);
+    if (desktopValue !== undefined) return desktopValue;
+  }
+
+  // 3. Fallback to global
+  return getValue(base);
+};
