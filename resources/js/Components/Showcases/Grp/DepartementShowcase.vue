@@ -62,7 +62,7 @@ console.log(props)
                       </button> -->
                         <div class="flex-1 mx-4">
                             <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
-                                <Image v-if="data?.department?.data?.image" :src="data?.department?.data?.image" :imageCover="true"
+                                <Image v-if="data?.department?.image" :src="data?.department?.image" :imageCover="true"
                                        class="w-full h-40 object-cover rounded-t-lg" />
                                 <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
                                     <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
