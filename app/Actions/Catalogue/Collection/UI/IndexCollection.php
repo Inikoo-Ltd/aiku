@@ -19,7 +19,6 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\CollectionResource;
 use App\InertiaTable\InertiaTable;
@@ -119,13 +118,6 @@ class IndexCollection extends OrgAction
                 $table->name($prefix)->pageName($prefix . 'Page');
             }
 
-            // foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-            //     $table->elementGroup(
-            //         key: $key,
-            //         label: $elementGroup['label'],
-            //         elements: $elementGroup['elements']
-            //     );
-            // }
 
             $table
                 ->withGlobalSearch()
@@ -234,7 +226,7 @@ class IndexCollection extends OrgAction
                 'label'     => __('Collections')
             ];
             $model = '';
-            if($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $icon  = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
@@ -282,20 +274,24 @@ class IndexCollection extends OrgAction
 
         $actions = array_values(array_filter([
             ... (function () use ($request) {
-                if (!$this->canEdit) return [];
+                if (!$this->canEdit) {
+                    return [];
+                }
 
                 $routes = [
                     'grp.org.shops.show.catalogue.collections.index'                                      => 'grp.org.shops.show.catalogue.collections.create',
                     'grp.org.shops.show.catalogue.departments.show.collection.index'                     => 'grp.org.shops.show.catalogue.departments.show.collection.create',
                     'grp.org.shops.show.catalogue.departments.show.families.show.collection.index'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
-                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'=> 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
                     'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
                     'grp.org.shops.show.catalogue.families.show.collection.index'                        => 'grp.org.shops.show.catalogue.families.show.collection.create',
                 ];
 
                 $currentRoute = $request->route()->getName();
 
-                if (!isset($routes[$currentRoute])) return [];
+                if (!isset($routes[$currentRoute])) {
+                    return [];
+                }
 
                 return [[
                     'type'    => 'button',
@@ -476,7 +472,7 @@ class IndexCollection extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.families.show.collection.index' => array_merge(
-                ShowFamily::make()->getBreadcrumbs($this->parent,'grp.org.shops.show.catalogue.departments.show.families.show', $routeParameters),
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.families.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index',
@@ -506,7 +502,7 @@ class IndexCollection extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => array_merge(
-                ShowFamily::make()->getBreadcrumbs($this->parent,'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', $routeParameters),
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index',
@@ -522,7 +518,7 @@ class IndexCollection extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.families.show.collection.index' => array_merge(
-                ShowFamily::make()->getBreadcrumbs($this->parent,'grp.org.shops.show.catalogue.families.show', $routeParameters),
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.families.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.families.show.collection.index',

@@ -98,7 +98,7 @@ class CreateCollection extends OrgAction
         return $this->handle($shop, $request);
     }
 
-        public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): Response
+    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): Response
     {
         $this->parent = $department;
         $this->initialisationFromShop($shop, $request);

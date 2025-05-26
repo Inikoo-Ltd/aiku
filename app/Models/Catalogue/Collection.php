@@ -53,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $inCollections
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
+ * @property-read Model|\Eloquent $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $products
  * @property-read \App\Models\Catalogue\CollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Catalogue\Shop|null $shop

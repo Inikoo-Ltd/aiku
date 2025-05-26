@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
-use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
