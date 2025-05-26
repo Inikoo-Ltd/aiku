@@ -12,7 +12,6 @@ namespace App\Models\Catalogue;
 
 use App\Models\Goods\TradeUnit;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -40,11 +39,6 @@ class Tag extends Model
         return SlugOptions::create()
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug');
-    }
-
-    public function model(): MorphTo
-    {
-        return $this->morphTo();
     }
 
     public function tradeUnits(): MorphToMany

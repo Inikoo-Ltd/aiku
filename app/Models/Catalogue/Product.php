@@ -36,6 +36,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 
 /**
  *
@@ -258,5 +259,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasMany(BackInStockReminder::class);
     }
 
+    public function tradeUnitTagsViaTradeUnits(): LaravelCollection
+    {
+        return Tag::whereHas('tradeUnits', function ($query) {
+            $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
+        })->get();
+    }
 
 }
