@@ -12,6 +12,9 @@ return new class () extends Migration {
             $table->string('model_type');
             $table->unsignedBigInteger('model_id');
             $table->unsignedBigInteger('tag_id');
+            $table->timestampsTz();
+            $table->index(['model_type','model_id']);
+            $table->unique(['model_type', 'model_id', 'tag_id']);
         });
     }
 

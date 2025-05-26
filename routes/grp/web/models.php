@@ -32,6 +32,10 @@ use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Catalogue\Tag\AttachTagsToModel;
+use App\Actions\Catalogue\Tag\DetachTagFromModel;
+use App\Actions\Catalogue\Tag\StoreTag;
+use App\Actions\Catalogue\Tag\UpdateTag;
 use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
@@ -757,6 +761,17 @@ Route::name('invoice-category.')->prefix('invoice-category/')->group(function ()
 
 Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.mailshot.store');
 
+
+Route::name('tags.')->prefix('tags')->group(function () {
+    Route::post('/store', StoreTag::class)->name('store');
+    Route::patch('/{tag}/update', UpdateTag::class)->name('update');
+    Route::delete('/{tag}/delete', StoreTag::class)->name('delete');
+});
+
+Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
+    Route::post('tags/attach', [AttachTagsToModel::class, 'inTradeUnit'])->name('tags.attach');
+    Route::delete('/tags/{tag}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach')->withoutScopedBindings();
+});
 
 require __DIR__."/models/inventory/warehouse.php";
 require __DIR__."/models/inventory/location_org_stock.php";

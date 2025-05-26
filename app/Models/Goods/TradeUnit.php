@@ -9,6 +9,7 @@
 namespace App\Models\Goods;
 
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Tag;
 use App\Models\Helpers\Barcode;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
@@ -153,6 +154,15 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function barcode(): BelongsTo
     {
         return $this->belongsTo(Barcode::class);
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(
+            Tag::class,
+            'model',
+            'model_has_tags'
+        )->withTimestamps();
     }
 
     public function barcodes(): MorphToMany
