@@ -78,12 +78,12 @@ class StorePicking extends OrgAction
         }
     }
 
-    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): Picking
+    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request)
     {
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
-        return $this->handle($deliveryNoteItem, $this->validatedData);
+        $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
     public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking

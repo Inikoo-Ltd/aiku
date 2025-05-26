@@ -41,7 +41,10 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_code'      => $this->org_stock_code,
             'org_stock_name'      => $this->org_stock_name,
             'locations'           => $orgStock->locationOrgstocks ? LocationOrgStocksResource::collection($orgStock->locationOrgstocks) : [],
-            'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
+            'pickings'            => $deliveryNoteItem->pickings 
+                ? $deliveryNoteItem->pickings->keyBy(fn($item) => $item->location_id ?? $item->location->id)
+                    ->map(fn($item) => new PickingsResource($item))
+                : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
             'is_completed'        => $this->is_completed,
