@@ -9,9 +9,11 @@
 
 namespace App\Actions\Dispatching\Packing;
 
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPacked;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Packing\PackingEngineEnum;
 use App\Enums\Dispatching\Packing\PackingStateEnum;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use Illuminate\Validation\Rule;
@@ -24,45 +26,59 @@ class StorePacking extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    protected Picking $picking;
+    protected DeliveryNoteItem $deliveryNoteItem;
 
-    public function handle(Picking $picking, array $modelData): Packing
+    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Packing
     {
-        data_set($modelData, 'group_id', $picking->group_id);
-        data_set($modelData, 'organisation_id', $picking->organisation_id);
-        data_set($modelData, 'shop_id', $picking->shop_id);
-        data_set($modelData, 'delivery_note_id', $picking->delivery_note_id);
-        data_set($modelData, 'picking_id', $picking->id);
+        data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
+        data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
+        data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
+        data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
+        data_set($modelData, 'engine', PackingEngineEnum::AIKU);
 
-        return $picking->deliveryNoteItem->packings()->create($modelData);
+        $packing = $deliveryNoteItem->packings()->create($modelData);
+
+        CalculateDeliveryNoteItemTotalPacked::make()->action($deliveryNoteItem);
+
+        $packing->refresh();
+        
+        return $packing;
     }
 
     public function rules(): array
     {
         return [
-            'state'           => ['sometimes', Rule::enum(PackingStateEnum::class)],
-            'engine'          => ['sometimes', Rule::enum(PackingEngineEnum::class)],
-            'quantity_packed' => ['sometimes', 'numeric'],
-            'packer_id'       => [
-                'sometimes',
+            'quantity' => ['sometimes', 'numeric'],
+            'packer_user_id'       => [
+                'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
             ],
         ];
     }
 
-    public function asController(Picking $picking, ActionRequest $request): Packing
+    public function prepareForValidation(ActionRequest $request)
     {
-        $this->picking = $picking;
-        $this->initialisationFromShop($picking->shop, $request);
-
-        return $this->handle($picking, $this->validatedData);
+        if (!$request->has('packer_user_id')) {
+            $this->set('packer_user_id', $request->user()->id);
+        }
+        if (!$request->has('quantity')) {
+            $this->set('quantity', $this->deliveryNoteItem->quantity_picked);
+        }
     }
 
-    public function action(Picking $picking, array $modelData): Packing
+    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request)
     {
-        $this->picking = $picking;
-        $this->initialisationFromShop($picking->shop, $modelData);
+        $this->deliveryNoteItem = $deliveryNoteItem;
+        $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
-        return $this->handle($picking, $this->validatedData);
+        $this->handle($deliveryNoteItem, $this->validatedData);
+    }
+
+    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): Packing
+    {
+        $this->deliveryNoteItem = $deliveryNoteItem;
+        $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
+
+        return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 }

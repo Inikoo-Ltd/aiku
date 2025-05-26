@@ -17,6 +17,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPickerAssigned;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToSettled;
+use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\PickAllItem;
@@ -94,6 +95,7 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
 });
 
 Route::name('delivery-note-item.')->prefix('delivery-note-item/{deliveryNoteItem:id}')->group(function () {
+    Route::post('packing', StorePacking::class)->name('packing.store')->withoutScopedBindings();
     Route::post('picking', StorePicking::class)->name('picking.store')->withoutScopedBindings();
     Route::post('picking-all', PickAllItem::class)->name('picking_all.store')->withoutScopedBindings();
     Route::post('not-picking', StoreNotPickPicking::class)->name('not-picking.store')->withoutScopedBindings();

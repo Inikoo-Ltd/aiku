@@ -132,6 +132,10 @@ class ShowDeliveryNote extends OrgAction
 
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
 
+        $isSomeNotPicked = !$deliveryNote->deliveryNoteItems->every(
+            fn ($item) => $item->pickings->isNotEmpty() && $item->is_completed === true
+        );
+
         $actions = [];
 
         $actions = match ($deliveryNote->state) {
@@ -182,6 +186,21 @@ class ShowDeliveryNote extends OrgAction
                     ]
             ],
             DeliveryNoteStateEnum::HANDLING => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Set as packed'),
+                    'label'   => __('Set as packed'),
+                    'disabled' => $isSomeNotPicked,
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery-note.state.packed',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ],
                 [
                     'type'    => 'button',
                     'style'   => 'save',

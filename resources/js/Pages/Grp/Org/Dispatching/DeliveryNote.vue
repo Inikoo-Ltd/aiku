@@ -7,8 +7,8 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCube, faChair, faFolder } from '@fal'
-import { faArrowRight } from '@fas'
+import { faCube, faChair, faHandPaper, faFolder, faBoxCheck } from '@fal'
+import { faArrowRight, faCheck } from '@fas'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -35,7 +35,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { notify } from '@kyvg/vue3-notification'
 
 
-library.add(faFolder, faCube, faChair, faArrowRight)
+library.add(faFolder, faBoxCheck, faCube, faChair, faHandPaper, faArrowRight, faCheck)
 
 const props = defineProps<{
     title: string,

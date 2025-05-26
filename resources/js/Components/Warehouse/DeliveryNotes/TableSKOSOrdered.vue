@@ -151,7 +151,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
             <div v-if="state === 'handling'" class="text-left">
                 <template v-for="(location, locIndex) in itemValue.locations" :key="location.location.id">
                     <Teleport v-if="isMounted" :to="`#row-${itemValue.id}`" :disabled="location.quantity > 0">
-                        <div class="rounded p-1 flex justify-between gap-x-6 items-center even:bg-indigo-50">
+                        <div class="rounded p-1 flex justify-between gap-x-6 items-center even:bg-black/5">
     
                             <!-- Location code -->
                             <div class="">
@@ -220,6 +220,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                                     class="py-0"
                                                 /> -->
                                                 <ButtonWithLink
+                                                    v-tooltip="trans('Pick all required quantity in this location')"
                                                     icon="fal fa-save"
                                                     :disabled="itemValue.is_completed || itemValue.quantity_required == itemValue.quantity_picked"
                                                     :label="trans('Pick all')"
@@ -288,8 +289,8 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
         <template #cell(quantity_to_pick)="{ item: deliveryNote }">
             <template v-if="state === 'handling'">
-                <div v-if="!deliveryNote.is_completed || deliveryNote.quantity_not_picked === 0" >
-                    {{ deliveryNote.quantity_to_pick }}
+                <div v-if="!deliveryNote.is_completed || deliveryNote.quantity_not_picked === 0" class="whitespace-nowrap space-x-2">
+                    <span class="mr-0.5">{{ deliveryNote.quantity_to_pick }}</span>
                     <ButtonWithLink
                         v-if="!deliveryNote.is_completed"
                         type="negative"
@@ -315,7 +316,24 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
-        </template>
+            <template v-if="deliveryNote.is_completed && (state === 'handling' || state === 'handling_blocked')">
+                <ButtonWithLink
+                    v-if="!deliveryNote.is_packed"
+                    :routeTarget="deliveryNote.packing_route"
+                    :bindToLink="{
+                        preserveScroll: true,
+                        preserveState: true,
+                    }"
+                    type="secondary"
+                    size="xs"
+                    :label="trans('Pack')"
+                />
 
+                <div v-else class="whitespace-nowrap text-green-600">
+                    <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Packed") }}
+                </div>
+            </template>
+        </template>
     </Table>
 </template>

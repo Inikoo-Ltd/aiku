@@ -55,6 +55,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
             'is_completed'        => $this->is_completed,
+            'is_packed'           => $this->quantity_packed == $this->quantity_picked,
             'picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.picking.store',
                 'parameters' => [
@@ -71,6 +72,13 @@ class DeliveryNoteItemsResource extends JsonResource
             ],
             'not_picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.not-picking.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ],
+            'packing_route'       => [
+                'name' => 'grp.models.delivery-note-item.packing.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
