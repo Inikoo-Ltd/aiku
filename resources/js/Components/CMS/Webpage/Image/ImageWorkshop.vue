@@ -156,6 +156,13 @@ const getVal = (base: any, path?: string[]) =>{
                 ...getStyles(modelValue?.value?.layout?.properties, screenType),
                 ...getStyles(modelValue?.value?.images?.[index - 1]?.properties, screenType)
               }" :imgAttributes="{ ...modelValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }" />
+            <div class="flex justify-center">
+              <div v-if="modelValue?.value?.caption?.use_caption">
+                <span v-if="modelValue?.value?.images?.[index - 1]?.caption" :style="getStyles(modelValue?.value?.caption?.properties, screenType)">{{modelValue?.value?.images?.[index - 1]?.caption}}</span>
+                <span v-else class="text-gray-300 font-semibold">No caption</span>
+              </div>
+           
+            </div>
           </a>
           <div v-else class="block w-full h-full">
             <Image :src="modelValue?.value?.images?.[index - 1]?.source"
