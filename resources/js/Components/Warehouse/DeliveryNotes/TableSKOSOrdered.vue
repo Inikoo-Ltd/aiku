@@ -179,6 +179,8 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                 <template v-if="true" xxv-else-if="palletReturn.state === 'picking' && pallet_stored_item.state !== 'picked'">
                                     <div class="">
                                         <!-- Not isUseAxios due timeline state is not auto updated -->
+                                        <!-- {{ get(itemValue, ['pickings', location.location.id, 'quantity_picked'], 0) }} -->
+                                        <!-- <pre>{{ itemValue.pickings[location.location.id] }}</pre> -->
                                         <NumberWithButtonSave
                                             v-if="location.quantity > 0"
                                             key="pickingpicked"
@@ -199,10 +201,11 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                                 location_id: location.location.id,
                                             }"
                                             autoSave
+                                            isWithRefreshModel
+                                            :readonly="itemValue.is_completed || itemValue.quantity_required == itemValue.quantity_picked"
                                         >
                                             <template #save="{ isProcessing, isDirty, onSaveViaForm }">
-                                                <Button
-                                                    v-if="true"
+                                                <!-- <Button
                                                     @click="() => (
                                                         // pallet_stored_item.error = null,  // make slow a little bit
                                                         onSaveViaForm()
@@ -215,6 +218,24 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                                     type="secondary"
                                                     :loading="isProcessing"
                                                     class="py-0"
+                                                /> -->
+                                                <ButtonWithLink
+                                                    icon="fal fa-save"
+                                                    :disabled="itemValue.is_completed || itemValue.quantity_required == itemValue.quantity_picked"
+                                                    :label="trans('Pick all')"
+                                                    size="xs"
+                                                    type="secondary"
+                                                    :loading="isProcessing"
+                                                    class="py-0"
+                                                    :routeTarget="itemValue.picking_all_route"
+                                                    :bind-to-link="{
+                                                        preserveScroll: true,
+                                                        preserveState: true,
+                                                    }"
+                                                    :body="{
+                                                        location_id: location.location.id
+                                                    }"
+                                                    isWithError
                                                 />
                                             </template>
                                         </NumberWithButtonSave>
