@@ -73,7 +73,8 @@ const components: Record<string, Component> = {
     'timeline': Timeline,
     'step-1' : Step2Iris,
     'departments' : Department1Iris,
-     'carousel-1' : Carousel1Iris
+    'department-1' : Department1Iris,
+    'carousel-1' : Carousel1Iris
 }
 
 
