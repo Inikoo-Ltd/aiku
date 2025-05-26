@@ -33,7 +33,7 @@ class DeletePortfolio extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio): void
     {
         match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::SHOPIFY => DeleteShopifyUserHasProduct::run($portfolio->shopifyPortfolio),
+            PlatformTypeEnum::SHOPIFY => DeleteShopifyUserHasProduct::run($portfolio->shopifyPortfolio, true),
             default   => null
         };
 
