@@ -178,7 +178,7 @@ const getVal = (base: any, path?: string[]) =>{
       <div
         v-for="index in fieldValue?.value?.images?.length"
         :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
-        class="flex flex-col group relative p-2 hover:bg-white/40"
+        class="flex flex-col group relative p-2 hover:bg-white/40 h-full"
         :class="getColumnWidthClass(getVal(fieldValue?.value.layout_type), index - 1)"
       >
         <template v-if="fieldValue?.value?.images?.[index - 1]?.source">

@@ -34,7 +34,7 @@ class DeleteProductWebhooksShopify extends OrgAction
             ->firstOrFail();
 
         if ($shopifyUser->customer->is_dropshipping) {
-            DeletePortfolio::run($shopifyUser->customerSalesChannel, $product->product);
+            DeletePortfolio::run($shopifyUser->customerSalesChannel, $product->portfolio);
         } else {
             DeleteShopifyUserHasProduct::run($product);
         }

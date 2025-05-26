@@ -32,10 +32,8 @@ class DeletePortfolio extends OrgAction
             default   => null
         };
 
-        UpdatePortfolio::make()->action($portfolio, [
-            'status' => false,
-            'last_removed_at' => now()
-        ]);
+        $portfolio->stats()->delete();
+        $portfolio->delete();
     }
 
     public function authorize(ActionRequest $request): bool

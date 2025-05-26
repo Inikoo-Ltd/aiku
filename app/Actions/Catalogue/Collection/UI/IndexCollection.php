@@ -8,6 +8,9 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
+use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
+use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
@@ -276,6 +279,45 @@ class IndexCollection extends OrgAction
                         ]
                     ];
         }
+
+        $actions = array_values(array_filter([
+            ... (function () use ($request) {
+                if (!$this->canEdit) return [];
+
+                $routes = [
+                    'grp.org.shops.show.catalogue.collections.index'                                      => 'grp.org.shops.show.catalogue.collections.create',
+                    'grp.org.shops.show.catalogue.departments.show.collection.index'                     => 'grp.org.shops.show.catalogue.departments.show.collection.create',
+                    'grp.org.shops.show.catalogue.departments.show.families.show.collection.index'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
+                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'=> 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
+                    'grp.org.shops.show.catalogue.families.show.collection.index'                        => 'grp.org.shops.show.catalogue.families.show.collection.create',
+                ];
+
+                $currentRoute = $request->route()->getName();
+
+                if (!isset($routes[$currentRoute])) return [];
+
+                return [[
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new collection'),
+                    'label'   => __('collection'),
+                    'route'   => [
+                        'name'       => $routes[$currentRoute],
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ]];
+            })(),
+
+            class_basename($this->parent) === 'Collection' ? [
+                'type'     => 'button',
+                'style'    => 'secondary',
+                'key'      => 'attach-collection',
+                'icon'     => 'fal fa-plus',
+                'tooltip'  => __('Attach collection to this collection'),
+                'label'    => __('Attach collection'),
+            ] : false
+        ]));
         return Inertia::render(
             'Org/Catalogue/Collections',
             [
@@ -291,76 +333,7 @@ class IndexCollection extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'container'     => $container,
-                    'actions'       => [
-                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.collections.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new collection'),
-                            'label'   => __('collection'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.collections.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.collection.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new collection'),
-                            'label'   => __('collection'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new collection'),
-                            'label'   => __('collection'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new collection'),
-                            'label'   => __('collection'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new collection'),
-                            'label'   => __('collection'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.families.show.collection.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new collection'),
-                            'label'   => __('collection'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.families.show.collection.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                        class_basename($this->parent) == 'Collection' ? [
-                            'type'     => 'button',
-                            'style'    => 'secondary',
-                            'key'      => 'attach-collection',
-                            'icon'     => 'fal fa-plus',
-                            'tooltip'  => __('Attach collection to this collection'),
-                            'label'    => __('Attach collection'),
-                        ] : false
-                    ],
+                    'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'        => $routes,
@@ -484,6 +457,80 @@ class IndexCollection extends OrgAction
                     [
                         'name'       => $routeName,
                         'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.collection.index' => array_merge(
+                ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
+                        'parameters' => [
+                            $routeParameters['organisation'],
+                            $routeParameters['shop'],
+                            $routeParameters['department']
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.families.show.collection.index' => array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent,'grp.org.shops.show.catalogue.departments.show.families.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index',
+                        'parameters' => [
+                            $routeParameters['organisation'],
+                            $routeParameters['shop'],
+                            $routeParameters['department'],
+                            $routeParameters['family']
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($this->parent, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+                        'parameters' => [
+                            $routeParameters['organisation'],
+                            $routeParameters['shop'],
+                            $routeParameters['department'],
+                            $routeParameters['subDepartment']
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent,'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index',
+                        'parameters' => [
+                            $routeParameters['organisation'],
+                            $routeParameters['shop'],
+                            $routeParameters['department'],
+                            $routeParameters['subDepartment'],
+                            $routeParameters['family'],
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.families.show.collection.index' => array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent,'grp.org.shops.show.catalogue.families.show', $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.catalogue.families.show.collection.index',
+                        'parameters' => [
+                            $routeParameters['organisation'],
+                            $routeParameters['shop'],
+                            $routeParameters['family'],
+                        ]
                     ],
                     $suffix
                 )
