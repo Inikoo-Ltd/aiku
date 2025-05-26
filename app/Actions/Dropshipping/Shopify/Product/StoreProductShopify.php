@@ -8,9 +8,11 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
@@ -30,10 +32,7 @@ class StoreProductShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-
         DB::transaction(function () use ($shopifyUser, $modelData) {
-
-            $portfolios = [];
             $response = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-04/products.json');
 
             $products = collect(Arr::get($response, 'body.products', []));
@@ -68,13 +67,13 @@ class StoreProductShopify extends OrgAction
                     'product_id' => $product->id,
                     'portfolio_id' => $portfolio->id
                 ]);
-
-                $portfolios[] = $portfolio->id;
             }
 
-            HandleApiProductToShopify::dispatch($shopifyUser, [
-                'portfolios' => $portfolios
-            ]);
+            if ($shopifyUser->customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY) {
+                UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
+                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                ]);
+            }
         });
     }
 

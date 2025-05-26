@@ -22,6 +22,7 @@ use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Adawolfa\ISDOC\Schema\Invoice\Country;
+use Adawolfa\ISDOC\Schema\Invoice\Delivery;
 use Adawolfa\ISDOC\Schema\Invoice\InvoiceLine;
 use Adawolfa\ISDOC\Schema\Invoice\Item;
 use Adawolfa\ISDOC\Schema\Invoice\Party;
@@ -82,16 +83,16 @@ class ISDocInvoice extends OrgAction
 
 
         $customer        = $invoice->customer;
-        $customerAddress = $customer->address;
+        $invoiceAddress = $invoice->address;
         $customerParty   = new Party(
             new PartyIdentification($customer->id),
             new PartyName($customer->name),
             new PostalAddress(
-                $customerAddress->address_line_1 ?? '',
-                $customerAddress->address_line_2 ?? '',
-                $customerAddress->locality ?? '',
-                $customerAddress->postal_code ?? '',
-                new Country($customerAddress->country->code, $customerAddress->country->name)
+                $invoiceAddress->address_line_1 ?? '',
+                $invoiceAddress->address_line_2 ?? '',
+                $invoiceAddress->locality ?? '',
+                $invoiceAddress->postal_code ?? '',
+                new Country($invoiceAddress->country->code, $invoiceAddress->country->name)
             )
         );
 
@@ -103,7 +104,7 @@ class ISDocInvoice extends OrgAction
 
         if ($customer->taxNumber) {
             $customerParty->setPartyTaxScheme(
-                new PartyTaxScheme($customer->taxNumber->number, $customer->taxNumber->getType($customerAddress->country)->value)
+                new PartyTaxScheme($customer->taxNumber->number, $customer->taxNumber->getType($invoiceAddress->country)->value)
             );
         }
 
@@ -165,6 +166,26 @@ class ISDocInvoice extends OrgAction
                     '0',
                     '0',
                     new TaxCategory((string)($trTaxCategory->rate * 100)),
+                )
+            );
+        }
+
+        $deliveryAddress = $invoice?->deliveryAddress;
+
+        if ($deliveryAddress) {
+            $isDocInvoice->setDelivery(
+                new Delivery(
+                    new Party(
+                        new PartyIdentification($deliveryAddress->id),
+                        new PartyName($customer->company_name),
+                        new PostalAddress(
+                            $deliveryAddress->address_line_1,
+                            $deliveryAddress->address_line_2,
+                            $deliveryAddress->locality,
+                            $deliveryAddress->postal_code,
+                            new Country($deliveryAddress->country->code, $deliveryAddress->country->name)
+                        )
+                    )
                 )
             );
         }

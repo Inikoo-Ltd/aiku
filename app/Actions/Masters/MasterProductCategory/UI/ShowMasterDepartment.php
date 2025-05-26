@@ -10,9 +10,9 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -29,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowMasterDepartment extends GrpAction
 {
-    use WithDepartmentSubNavigation;
+    use WithMasterDepartmentSubNavigation;
     use WithMastersAuthorisation;
 
 
@@ -60,6 +60,11 @@ class ShowMasterDepartment extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
+        $subNavigation = false;
+
+        if ($this->parent instanceof Group) {
+            $subNavigation = $this->getMasterDepartmentSubNavigation($masterDepartment);
+        }
         return Inertia::render(
             'Org/Catalogue/Department',
             [
@@ -99,6 +104,7 @@ class ShowMasterDepartment extends GrpAction
                             ]
                         ] : false
                     ],
+                    'subNavigation' => $subNavigation,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

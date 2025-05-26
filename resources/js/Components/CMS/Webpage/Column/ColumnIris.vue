@@ -18,7 +18,7 @@ const props = defineProps<{
         :style="getStyles(fieldValue?.container?.properties,screenType)"
     >
         <!-- <pre>{{ fieldValue }}</pre> -->
-        <ColumnWebppage :fieldValue="fieldValue.column_1" />
-        <ColumnWebppage :fieldValue="fieldValue.column_2" />
+        <ColumnWebppage :fieldValue="fieldValue.column_1" :screenType="screenType" />
+        <ColumnWebppage :fieldValue="fieldValue.column_2" :screenType="screenType"/>
     </div>
 </template>

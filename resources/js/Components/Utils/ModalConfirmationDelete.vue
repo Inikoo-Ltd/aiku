@@ -135,7 +135,7 @@ const messageDelete = ref('')
                                         </DialogTitle>
                                         <div class="mt-2">
                                             <p class="text-sm text-gray-500">
-                                                {{ description || trans("The data will be permanently 😥 .This action cannot be undone.")}}
+                                                {{ description || trans("The data will be permanently delete 😥 .This action cannot be undone.")}}
                                             </p>
                                         </div>
                                       
@@ -168,7 +168,7 @@ const messageDelete = ref('')
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
                                                 :label="trans('cancel')"
-                                                
+                                                full
                                                 @click="() => (isOpenModal = false, emits('onNo'))"
                                             />
                                             <!-- <button type="button"

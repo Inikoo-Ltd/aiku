@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\CollectionCategory;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
@@ -27,10 +28,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreCollection extends OrgAction
 {
-    public function handle(Shop|CollectionCategory $parent, array $modelData): Collection
+    public function handle(Shop|CollectionCategory|ProductCategory $parent, array $modelData): Collection
     {
 
         if ($parent instanceof CollectionCategory) {
+            $shop = $parent->shop;
+        } elseif ($parent instanceof ProductCategory) {
             $shop = $parent->shop;
         } else {
             $shop = $parent;
@@ -39,7 +42,8 @@ class StoreCollection extends OrgAction
         data_set($modelData, 'shop_id', $shop->id);
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
-
+        data_set($modelData, 'parent_type', class_basename($parent));
+        data_set($modelData, 'parent_id', $parent->id);
 
         /** @var Collection $collection */
         $collection = $parent->collections()->create($modelData);
@@ -82,9 +86,9 @@ class StoreCollection extends OrgAction
             ];
     }
 
-    public function action(Shop|CollectionCategory $parent, array $modelData, int $hydratorsDelay = 0): Collection
+    public function action(Shop|CollectionCategory|ProductCategory $parent, array $modelData, int $hydratorsDelay = 0): Collection
     {
-        if ($parent instanceof CollectionCategory) {
+        if ($parent instanceof CollectionCategory || $parent instanceof ProductCategory) {
             $shop = $parent->shop;
         } else {
             $shop = $parent;
@@ -101,6 +105,12 @@ class StoreCollection extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
+    }
+
+    public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($productCategory->shop, $request);
+        return $this->handle($productCategory, $this->validatedData);
     }
 
     public function htmlResponse(Collection $collection, ActionRequest $request): RedirectResponse

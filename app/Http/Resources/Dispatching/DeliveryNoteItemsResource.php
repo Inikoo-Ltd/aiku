@@ -8,8 +8,8 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
-use App\Http\Resources\Inventory\LocationsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -30,11 +30,13 @@ class DeliveryNoteItemsResource extends JsonResource
                 'message' => __('The required quantity has already been fully picked.')
             ];
         }
+
         return [
             'id'                  => $this->id,
             'state'               => $this->state,
             'state_icon'          => $this->state->stateIcon()[$this->state->value],
             'quantity_required'   => intVal($this->quantity_required),
+            'quantity_to_pick'    => max(0, intval($this->quantity_required) - intval($this->quantity_picked)),
             'quantity_picked'     => intVal($this->quantity_picked),
             'quantity_not_picked' => intVal($this->quantity_not_picked),
             'quantity_packed'     => intVal($this->quantity_packed),
@@ -42,11 +44,33 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_code'      => $this->org_stock_code,
             'org_stock_name'      => $this->org_stock_name,
             'locations'           => $orgStock->locationOrgstocks ? LocationOrgStocksResource::collection($orgStock->locationOrgstocks) : [],
-            'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
+            'pickings'            => $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
+                                    ? $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
+                                        ->keyBy(function ($item) {
+                                            return $item->location_id 
+                                                ?? ($item->location->id ?? 'not-picked');
+                                        })
+                                        ->map(fn($item) => new PickingsResource($item))
+                                    : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
+            'is_completed'        => $this->is_completed,
             'picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.picking.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ],
+            'picking_all_route'       => [
+                'name' => 'grp.models.delivery-note-item.picking_all.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ],
+            'not_picking_route'       => [
+                'name' => 'grp.models.delivery-note-item.not-picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],

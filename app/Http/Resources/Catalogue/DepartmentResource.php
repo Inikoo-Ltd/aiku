@@ -59,6 +59,7 @@ class DepartmentResource extends JsonResource
             'type'             => $department->type,
             'show_in_website'  => $department->show_in_website,
             'url_master'       => $urlMaster,
+            'image'           => $department->imageSources(720, 480),
 
         ];
     }

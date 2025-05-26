@@ -163,6 +163,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -276,6 +277,8 @@ Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAd
 
 Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
 Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
+
+Route::post('master-product/{masterDepartment:id}/master-sub-departments/store', StoreMasterSubDepartment::class)->name('master_product.master_sub_departments.store')->withoutScopedBindings();
 
 Route::prefix('delivery-note/{deliveryNote:id}')->name('delivery_note.')->group(function () {
     Route::post('shipment', UpdateStockFamily::class)->name('update')->withoutScopedBindings();
@@ -761,6 +764,9 @@ Route::name('invoice-category.')->prefix('invoice-category/')->group(function ()
 
 Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.mailshot.store');
 
+Route::name('product_category.')->prefix('product_category/{productCategory:id}')->group(function () {
+    Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
+});
 
 Route::name('tags.')->prefix('tags')->group(function () {
     Route::post('/store', StoreTag::class)->name('store');

@@ -27,6 +27,7 @@ class HandleApiInventoryProductShopify extends OrgAction
     public function handle(ShopifyUser $shopifyUser, array $productVariants): void
     {
         $client = $shopifyUser->api()->getRestClient();
+
         $locations = $client->request('GET', '/admin/api/2025-04/locations.json');
         $locationId = Arr::get($locations, 'body.locations.0.id');
 
@@ -34,7 +35,7 @@ class HandleApiInventoryProductShopify extends OrgAction
             $client->request('POST', '/admin/api/2025-04/inventory_levels/set.json', [
                 'location_id' => $locationId,
                 'inventory_item_id' => Arr::get($variant, 'inventory_item_id'),
-                'available' => Arr::get($productVariants, 'available_quantity')
+                'available' => Arr::get($variant, 'available_quantity')
             ]);
         }
     }

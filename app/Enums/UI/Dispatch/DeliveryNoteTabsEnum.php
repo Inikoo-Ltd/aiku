@@ -8,7 +8,6 @@
 
 namespace App\Enums\UI\Dispatch;
 
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabsWithIndicator;
 use App\Models\Dispatching\DeliveryNote;
@@ -24,15 +23,6 @@ enum DeliveryNoteTabsEnum: string
 
     public function blueprint(DeliveryNote $parent): array
     {
-        $indicator = false;
-        if ($parent->state == DeliveryNoteStateEnum::QUEUED) {
-            foreach ($parent->deliveryNoteItems as $deliveryNoteItem) {
-                if (!$deliveryNoteItem->pickings || !$deliveryNoteItem->pickings->picker_id) {
-                    $indicator = true;
-                }
-            }
-        }
-
 
         return match ($this) {
             DeliveryNoteTabsEnum::ITEMS => [

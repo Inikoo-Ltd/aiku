@@ -20,7 +20,7 @@ class DeleteShopifyUserHasProduct extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(?ShopifyUserHasProduct $product): ShopifyUserHasProduct|null
+    public function handle(?ShopifyUserHasProduct $product, $forceDelete = false): ShopifyUserHasProduct|null|int
     {
         if (!$product) {
             return null;
@@ -28,6 +28,10 @@ class DeleteShopifyUserHasProduct extends OrgAction
 
         $shopifyUser = $product->shopifyUser;
         $shopifyUser->api()->getRestClient()->request('DELETE', '/admin/api/2025-04/products/'.$product->shopify_product_id.'.json');
+
+        if ($forceDelete) {
+            return $product->delete();
+        }
 
         return $this->update($product, ['shopify_product_id' => null]);
     }

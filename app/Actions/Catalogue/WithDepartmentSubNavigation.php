@@ -40,6 +40,18 @@ trait WithDepartmentSubNavigation
                 ]
             ],
             [
+                'label'    => __('Collections'),
+                'number'   => 0,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
+                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-album-collection'],
+                    'tooltip' => __('collections')
+                ]
+            ],
+            [
                 'label'    => __('Products'),
                 'number'   => $department->stats->number_current_products,
                 'route'     => [

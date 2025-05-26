@@ -57,7 +57,7 @@ const currentActiveHorizontal = computed(() => {
     return xxx
 })
 const currentIndexHorizontal = computed(() => {
-    return props.nav.horizontal_navigations.findIndex(mergeNav => mergeNav.key == layout.currentPlatform)
+    return props.nav.horizontal_navigations.findIndex(nav => nav.key == layout.currentPlatform)
 })
 
 const isSomeSubnavActive = () => {
@@ -77,11 +77,11 @@ const nextHorizontal = computed(() => {
 const isLoadingNavigation = ref<string | boolean>(false)
 const storageLayout = JSON.parse(localStorage.getItem(`layout_${layout.retina.type}`) || '{}')  // Get layout from localStorage
 const onClickArrow = (horizontalKey: string) => {
-    layout.currentPlatform = horizontalKey
-    localStorage.setItem(`layout_${layout.retina.type}`, JSON.stringify({
-        ...storageLayout,
-        currentPlatform: horizontalKey
-    }))
+    // layout.currentPlatform = horizontalKey
+    // localStorage.setItem(`layout_${layout.retina.type}`, JSON.stringify({
+    //     ...storageLayout,
+    //     currentPlatform: horizontalKey
+    // }))
     isLoadingNavigation.value = false
 }
 
@@ -112,7 +112,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
 
             <!-- Section: Horizontal label -->
             <component
-                :is="currentActiveHorizontal.route.name ? Link : 'div'" 
+                :is="currentActiveHorizontal.route.name ? Link : 'div'"
                 :href="route(currentActiveHorizontal.route.name, currentActiveHorizontal.route.parameters)"
                 @start="() => isLoadingVisitActiveHorizontal = true"
                 @finish="() => isLoadingVisitActiveHorizontal = false"
@@ -173,7 +173,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
                 </div>
             </Transition>
         </div>
-        
+
         <!-- Section: Sub Navigaiton -->
         <div class="flex flex-col gap-y-1 mb-1">
             <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="`${navIndex}`">

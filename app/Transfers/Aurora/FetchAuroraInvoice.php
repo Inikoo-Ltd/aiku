@@ -11,6 +11,8 @@ namespace App\Transfers\Aurora;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
@@ -194,9 +196,52 @@ class FetchAuroraInvoice extends FetchAurora
         ];
 
 
+
         if ($order) {
             $this->parsedData['invoice']['order_id'] = $order->id;
+
+            /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
+            $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)
+                ->where('state', DeliveryNoteStateEnum::DISPATCHED)->first();
+
+            if (!$deliveryNote) {
+                $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)
+                    ->where('state', DeliveryNoteStateEnum::FINALISED)->first();
+            }
+
+            if (!$deliveryNote) {
+                $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)
+                    ->where('state', DeliveryNoteStateEnum::PACKED)->first();
+            }
+
+            if ($deliveryNote) {
+                $address = $deliveryNote->address;
+
+            } else {
+                $address = $order->deliveryAddress;
+            }
+
+            if ($deliveryNote) {
+                $deliveryAddress = Arr::only($address->toArray(), [
+                    'address_line_1',
+                    'address_line_2',
+                    'sorting_code',
+                    'postal_code',
+                    'dependent_locality',
+                    'locality',
+                    'administrative_area',
+                    'country_id'
+                ]);
+                $this->parsedData['invoice']['delivery_address'] = new Address($deliveryAddress);
+
+
+            }
+
+
+
         }
+
+
 
 
         if ($this->auroraModelData->{'Invoice Category Key'}) {

@@ -127,7 +127,7 @@ trait IsDeliveryNotesIndex
     {
         $employee = request()->user()->employees()->first() ?? null;
         $pickerEmployee = null;
-        if($employee) {
+        if ($employee) {
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
         }
         return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee) {

@@ -10,8 +10,6 @@ namespace App\Actions\Traits\Authorisations;
 
 use Lorisleiva\Actions\ActionRequest;
 
-use function PHPUnit\Framework\stringStartsWith;
-
 trait WithHumanResourcesAuthorisation
 {
     public function authorize(ActionRequest $request): bool
@@ -20,7 +18,7 @@ trait WithHumanResourcesAuthorisation
             return true;
         }
 
-        if (stringStartsWith($request->route()->getName(), 'grp.overview.hr.')) {
+        if (str_starts_with($request->route()->getName(), 'grp.overview.hr.')) {
             return $request->user()->authTo("group-overview");
         }
 

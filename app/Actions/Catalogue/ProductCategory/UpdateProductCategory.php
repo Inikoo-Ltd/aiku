@@ -11,6 +11,8 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\UI\WithImageCatalogue;
+use Illuminate\Validation\Rules\File;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -28,12 +30,17 @@ class UpdateProductCategory extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithImageCatalogue;
     use WithProductCategoryHydrators;
 
     private ProductCategory $productCategory;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        $imageData = ['image' => Arr::pull($modelData, 'image')];
+        if ($imageData['image']) {
+            $this->processCatalogue($imageData, $productCategory);
+        }
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
@@ -102,6 +109,12 @@ class UpdateProductCategory extends OrgAction
             'department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'follow_master'     => ['sometimes', 'boolean'],
+            'image'       => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
 
         ];
 

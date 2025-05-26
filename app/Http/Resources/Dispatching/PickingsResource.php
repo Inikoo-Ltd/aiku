@@ -14,36 +14,23 @@ class PickingsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        // dd($this);
         return [
             'id'                  => $this->id,
-            'state'               => $this->state,
-            'status'              => $this->status,
             'not_picked_reason'   => $this->not_picked_reason,
             'not_picked_note'     => $this->not_picked_note,
-            'quantity_required'   => $this->quantity_required,
-            'quantity_picked'     => $this->quantity_picked,
+            'quantity_picked'     => (int) $this->quantity,
             'engine'              => $this->engine,
             'picker_name'         => $this->picker->contact_name,
-            'location_code'       => $this->location->code,
-            'location_id'         => $this->location->id,
+            'location_code'       => $this->location?->code,
+            'location_id'         => $this->location?->id,
             'update_route'        => [
                 'name'  => 'grp.models.picking.update',
                 'parameters' => [
                     'picking' => $this->id
-                ]
+                ],
+                'method' => 'patch'
             ],
-            'not_picked_route' => [
-                'name'  => 'grp.models.picking.not_picked',
-                'parameters' => [
-                    'picking' => $this->id
-                ]
-            ],
-            'set_done_route' => [
-                'name' => 'grp.models.picking.state.done',
-                'parameters' => [
-                    'picking' => $this->id
-                ]
-            ]
         ];
     }
 }

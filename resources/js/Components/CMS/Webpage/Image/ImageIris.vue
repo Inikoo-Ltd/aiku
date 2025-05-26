@@ -9,6 +9,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination, Navigation } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/autoplay'
+import { resolveResponsiveValue } from "@/Composables/Workshop"
 
 
 library.add(faCube, faStar, faImage, faPencil)
@@ -50,20 +51,54 @@ const getHref = (index: number) => {
 }
 
 const getColumnWidthClass = (layoutType: string, index: number) => {
+  const layout = props.fieldValue?.value?.layout_type || {}
+  const hasMobile = !!layout.mobile
+  const hasTablet = !!layout.tablet
+
   switch (layoutType) {
-    case "12": return index === 0 ? "sm:w-1/2 md:w-1/3" : "sm:w-1/2 md:w-2/3"
-    case "21": return index === 0 ? "sm:w-1/2 md:w-2/3" : "sm:w-1/2 md:w-1/3"
-    case "13": return index === 0 ? "md:w-1/4" : "md:w-3/4"
-    case "31": return index === 0 ? "sm:w-1/2 md:w-3/4" : "sm:w-1/2 md:w-1/4"
-    case "211": return index === 0 ? "md:w-1/2" : "md:w-1/4"
-    case "2": return "md:w-1/2"
-    case "3": return "md:w-1/3"
-    case "4": return "md:w-1/4"
-    default: return "w-full"
+    case "12":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-1/3" : "md:w-2/3"
+      ].filter(Boolean).join(" ")
+
+    case "21":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-2/3" : "md:w-1/3"
+      ].filter(Boolean).join(" ")
+
+    case "13":
+      return hasTablet ? "w-full" : index === 0 ? "md:w-1/4" : "md:w-3/4"
+
+    case "31":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-3/4" : "md:w-1/4"
+      ].filter(Boolean).join(" ")
+
+    case "211":
+      return hasTablet ? "w-full" : index === 0 ? "md:w-1/2" : "md:w-1/4"
+
+    case "2":
+      return hasMobile ? "w-1/2" : hasTablet ? "w-1/2" : "md:w-1/2"
+
+    case "3":
+      return hasTablet ? "w-full" : "md:w-1/3"
+
+    case "4":
+      return hasTablet ? "w-full" : "md:w-1/4"
+
+    case "6":
+      return hasTablet ? "w-full" : "md:w-1/6"
+
+    default:
+      return "w-full"
   }
 }
 
-const getImageSlots = (layoutType: string) => {
+
+/* const getImageSlots = (layoutType: string) => {
   switch (layoutType) {
     case "4": return 4
     case "3":
@@ -75,6 +110,10 @@ const getImageSlots = (layoutType: string) => {
     case "31": return 2
     default: return 1
   }
+} */
+
+const getVal = (base: any, path?: string[]) =>{
+      return  resolveResponsiveValue(base, props.screenType, path);
 }
 </script>
 
@@ -137,13 +176,13 @@ const getImageSlots = (layoutType: string) => {
     <!-- Desktop/Tablet Grid -->
     <div
       v-else
-      class="flex flex-wrap overflow-hidden"
+      class="flex flex-wrap"
     >
       <div
-        v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
+        v-for="index in fieldValue?.value?.images?.length"
         :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
-        class="group relative p-2 hover:bg-white/40 overflow-hidden"
-        :class="getColumnWidthClass(fieldValue?.value?.layout_type, index - 1)"
+        class="flex flex-col group relative p-2 hover:bg-white/40 h-full"
+        :class="getColumnWidthClass(getVal(fieldValue?.value.layout_type), index - 1)"
       >
         <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
           <a
@@ -165,6 +204,7 @@ const getImageSlots = (layoutType: string) => {
               :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
             />
           </a>
+
           <div v-else class="block w-full h-full">
             <Image
               :src="fieldValue?.value?.images?.[index - 1]?.source"
@@ -173,11 +213,17 @@ const getImageSlots = (layoutType: string) => {
               class="w-full h-full aspect-square object-cover rounded-lg"
               :style="{
                 ...getStyles(fieldValue?.value?.layout?.properties, screenType),
-                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType)
+                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType),
               }"
               :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
             />
           </div>
+
+          <div v-if="fieldValue?.value?.caption?.use_caption" class="flex justify-center">
+              <span v-if="fieldValue?.value?.images?.[index - 1]?.caption" :style="getStyles(fieldValue?.value?.caption?.properties, screenType)">{{fieldValue?.value?.images?.[index - 1]?.caption}}</span>
+              <span v-else class="text-gray-300 font-semibold">No caption</span>
+           
+            </div>
         </template>
       </div>
     </div>

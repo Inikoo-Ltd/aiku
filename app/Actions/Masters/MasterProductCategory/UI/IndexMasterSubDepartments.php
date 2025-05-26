@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterSubDepartmentsResource;
@@ -29,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexMasterSubDepartments extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
+    use WithMasterDepartmentSubNavigation;
 
     private MasterShop|MasterProductCategory $parent;
 
@@ -39,6 +41,15 @@ class IndexMasterSubDepartments extends GrpAction
         $this->initialisation($group, $request);
 
         return $this->handle(parent: $masterShop);
+    }
+
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterDepartment;
+        $group        = group();
+        $this->initialisation($group, $request);
+
+        return $this->handle(parent: $masterDepartment);
     }
 
     public function handle(MasterShop|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
@@ -110,6 +121,8 @@ class IndexMasterSubDepartments extends GrpAction
         $subNavigation = null;
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
+        } elseif ($this->parent instanceof MasterProductCategory) {
+            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
         }
         $title      = $this->parent->name;
         $model      = '';
@@ -132,13 +145,25 @@ class IndexMasterSubDepartments extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Sub Departments'),
+                'title'       => __('Master Sub Departments'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new master Sub-department'),
+                            'label'   => __('Sub-department'),
+                            'route'   => [
+                                'name'       => 'grp.masters.departments.sub_departments.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ],
+                    ],
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => MasterSubDepartmentsResource::collection($masterSubDepartments),
@@ -185,6 +210,17 @@ class IndexMasterSubDepartments extends GrpAction
                     $suffix
                 )
             ),
+            // 'grp.masters.departments.sub_departments.index' =>
+            // array_merge(
+            //     ShowMasterDepartment::make()->getBreadcrumbs($parent, , $routeName, $routeParameters),
+            //     $headCrumb(
+            //         [
+            //             'name'       => $routeName,
+            //             'parameters' => $routeParameters
+            //         ],
+            //         $suffix
+            //     )
+            // ),
 
 
             default => []

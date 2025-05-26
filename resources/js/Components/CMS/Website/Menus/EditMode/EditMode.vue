@@ -293,15 +293,15 @@ watch(() => props.modelValue, (newValue) => {
     </section>
 
     <!-- Dialogs -->
-    <Dialog v-model:visible="visibleNameDialog" modal header="Edit Name" :style="{ width: '25rem' }">
+    <Dialog v-model:visible="visibleNameDialog" modal header="Edit Name" :style="{ width: '25rem' }"  :contentStyle="{ overflowY: 'visible'}">
       <DialogEditName :data_form="nameValue" @on-save="onChangeName" />
     </Dialog>
 
-    <Dialog v-model:visible="visibleDialog" modal header="Edit Link" :style="{ width: '25rem' }">
+    <Dialog v-model:visible="visibleDialog" modal header="Edit Link" :style="{ width: '25rem' }"  :contentStyle="{ overflowY: 'visible'}">
       <DialogEditLink :modelValue="linkValue" @on-save="onChangeLink" />
     </Dialog>
 
-    <Dialog v-model:visible="visibleNavigation" modal header="Edit Link" :style="{ width: '25rem' }">
+    <Dialog v-model:visible="visibleNavigation" modal header="Edit Link" :style="{ width: '25rem' }"  :contentStyle="{ overflowY: 'visible'}">
       <DialogEditLink :modelValue="toRaw({ ...modelValue })" @on-save="onChangeNavigationLink" />
     </Dialog>
 
@@ -314,10 +314,11 @@ watch(() => props.modelValue, (newValue) => {
 </template>
 
 
-<style scoped>
+<style scoped lang="scss" >
 .ghost {
     opacity: 0.5;
     background-color: #e2e8f0;
     border: 2px dashed #4F46E5;
 }
+
 </style>

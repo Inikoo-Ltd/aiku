@@ -25,7 +25,8 @@ const onPickBlock = (block: any) => {
 const getWebBlockTypes = async () => {
 	try {
 		const { data } = await axios.get(route('grp.json.web-block-types.index'))
-		webBlockTypes.value = data
+		const setdata = data.data.filter((item)=>item.scope == 'webpage')
+		webBlockTypes.value = {data :setdata }
 	} catch (error) {
 		notify({
 			title: trans("Something went wrong"),
@@ -78,7 +79,7 @@ onMounted(() => {
 	</div>
 		
 	<Modal :isOpen="modelModalBlocklist" @onClose="modelModalBlocklist = false">
-		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes"  />
+		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes"   />
 	</Modal>
 </template>
 

@@ -11,6 +11,7 @@ namespace App\Models\Dispatching;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Models\Inventory\Location;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
@@ -37,9 +38,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property PickingTypeEnum|null $type
+ * @property string|null $last_picked_at
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read Location|null $location
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $picker
  * @property-read \App\Models\Catalogue\Shop $shop
@@ -77,7 +80,12 @@ class Picking extends Model
 
     public function picker(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'picker_id');
+        return $this->belongsTo(User::class, 'picker_user_id');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'location_id');
     }
 
 
