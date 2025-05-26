@@ -56,10 +56,6 @@ class StoreNotPickPicking extends OrgAction
         return [
             'not_picked_reason'  => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
             'not_picked_note'    => ['sometimes', 'string'],
-            'location_id'     => [
-                'required',
-                Rule::Exists('locations', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
-            ],
             'quantity' => ['sometimes', 'numeric'],
             'picker_user_id'       => [
                 'required',
