@@ -44,7 +44,7 @@ class StoreCollection extends OrgAction
         data_set($modelData, 'organisation_id', $shop->organisation_id);
         data_set($modelData, 'parent_type', class_basename($parent));
         data_set($modelData, 'parent_id', $parent->id);
-        
+
         /** @var Collection $collection */
         $collection = $parent->collections()->create($modelData);
 

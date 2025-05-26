@@ -12,7 +12,6 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,15 +28,12 @@ class HandleApiProductToShopify extends RetinaAction
      */
     public function handle(ShopifyUser $shopifyUser, array $attributes): void
     {
-        $shopifyReadyUploadProducts = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
-            ->whereIn('portfolio_id', Arr::get($attributes, 'portfolios'))->get();
-
         $portfolios = $shopifyUser
-            ->customer->portfolios()
-            ->whereIn('id', $shopifyReadyUploadProducts->pluck('portfolio_id')->toArray())
+            ->customerSalesChannel
+            ->portfolios()
+            ->where('status', true)
+            ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
-
-        $client = $shopifyUser->api()->getRestClient();
 
         $variants = [];
         $images = [];
