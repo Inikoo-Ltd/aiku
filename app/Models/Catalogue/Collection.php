@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -41,6 +42,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property string $parent_type
+ * @property int $parent_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\CollectionCategory> $collectionCategories
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
@@ -96,7 +99,10 @@ class Collection extends Model implements Auditable
             ->slugsShouldBeNoLongerThan(128);
     }
 
-
+    public function parent(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
     public function stats(): HasOne
     {
@@ -150,5 +156,4 @@ class Collection extends Model implements Auditable
     {
         return $this->morphOne(Webpage::class, 'model');
     }
-
 }

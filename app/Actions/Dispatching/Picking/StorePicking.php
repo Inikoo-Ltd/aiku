@@ -71,7 +71,7 @@ class StorePicking extends OrgAction
         ];
     }
 
-    public function prepareForValidation($request)
+    public function prepareForValidation(ActionRequest $request)
     {
         if (!$request->has('picker_user_id')) {
             $this->set('picker_user_id', $request->user()->id);

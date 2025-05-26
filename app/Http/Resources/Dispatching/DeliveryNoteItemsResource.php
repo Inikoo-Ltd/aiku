@@ -34,6 +34,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'state'               => $this->state,
             'state_icon'          => $this->state->stateIcon()[$this->state->value],
             'quantity_required'   => intVal($this->quantity_required),
+            'quantity_to_pick'    => intVal($this->quantity_required) - intVal($this->quantity_picked),
             'quantity_picked'     => intVal($this->quantity_picked),
             'quantity_not_picked' => intVal($this->quantity_not_picked),
             'quantity_packed'     => intVal($this->quantity_packed),
@@ -44,6 +45,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
+            'is_completed'        => $this->is_completed,
             'picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.picking.store',
                 'parameters' => [
