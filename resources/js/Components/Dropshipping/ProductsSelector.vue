@@ -251,7 +251,7 @@ onUnmounted(() => {
                         @click="() => emits('submit', selectedProduct)"
                         :disabled="selectedProduct.length < 1"
                         v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                        :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length} ${trans('products')}`"
+                        :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
                         type="primary"
                         full
                         icon="fas fa-plus"
