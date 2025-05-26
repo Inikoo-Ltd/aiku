@@ -111,6 +111,11 @@ class EditFamily extends OrgAction
                                     'label' => __('name'),
                                     'value' => $family->name
                                 ],
+                                "image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("Image"),
+                                    "value"   => $family->imageSources(320, 320),
+                                ],
                             ]
                         ]
 
