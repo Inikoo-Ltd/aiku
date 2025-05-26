@@ -42,14 +42,14 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     items?: {}
-    pickings: {}
+    pickings?: {}
     alert?: {
         status: string
         title?: string
         description?: string
     }
     delivery_note: DeliveryNote
-    notes: {
+    notes?: {
         note_list: {
             label: string
             note: string

@@ -22,21 +22,35 @@ const isModalGallery = ref(false)
 </script>
 
 <template>
-	<div class="container flex flex-wrap justify-between" :style="getStyles(fieldValue.container.properties)">
-		<!-- Image Section -->
-		<div class="imgBx relative w-1/2 transition-all duration-300">
-			<div class="absolute inset-0">
-				<img v-if="!fieldValue?.image?.source"
-					src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg" :alt="fieldValue?.image?.alt"
-					class="h-full w-full object-cover" />
-				<Image v-else :src="fieldValue?.image?.source" :imageCover=true :alt="fieldValue?.image?.alt"
-					:imgAttributes="fieldValue?.image?.attributes" :style="getStyles(fieldValue?.image?.properties)" />
-			</div>
+	<div
+		class="flex flex-col md:flex-row w-full rounded-lg overflow-hidden"
+		:style="getStyles(fieldValue.container.properties, screenType)"
+	>
+		<!-- Section 1: Image -->
+		<div
+			class="w-full h-64 sm:h-72 md:h-auto md:w-1/3 lg:w-1/2 bg-cover bg-center bg-no-repeat"
+		>
+			<img
+				v-if="!fieldValue?.image?.source"
+				src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg"
+				:alt="fieldValue?.image?.alt"
+				class="h-full w-full object-cover"
+			/>
+			<Image
+				v-else
+				:src="fieldValue?.image?.source"
+				:imageCover
+				:alt="fieldValue?.image?.alt"
+				:imgAttributes="fieldValue?.image?.attributes"
+				:style="getStyles(fieldValue?.image?.properties)"
+			/>
 		</div>
 
-		<!-- Details Section -->
-		<div class="details flex flex-col justify-center w-1/2 p-10">
-			<div v-html="fieldValue.text" />
+		<!-- Section 2: Content -->
+		<div
+			class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white bg-opacity-90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20"
+		>
+		<div v-html='fieldValue.text'/>
 		</div>
 	</div>
 </template>

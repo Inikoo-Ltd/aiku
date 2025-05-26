@@ -14,11 +14,12 @@ class PickingsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        // dd($this);
         return [
             'id'                  => $this->id,
             'not_picked_reason'   => $this->not_picked_reason,
             'not_picked_note'     => $this->not_picked_note,
-            'quantity_picked'     => $this->quantity_picked,
+            'quantity_picked'     => (int) $this->quantity,
             'engine'              => $this->engine,
             'picker_name'         => $this->picker->contact_name,
             'location_code'       => $this->location->code,
