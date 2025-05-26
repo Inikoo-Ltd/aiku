@@ -74,7 +74,10 @@ class StoreProductCategory extends OrgAction
             return $productCategory;
         });
 
-        $this->processCatalogue($imageData, $productCategory);
+        if ($imageData['image']) {
+            $this->processCatalogue($imageData, $productCategory);
+        }
+
         ProductCategoryRecordSearch::dispatch($productCategory);
         $this->productCategoryHydrators($productCategory);
         $this->masterProductCategoryUsageHydrators($productCategory, $productCategory->masterProductCategory);
