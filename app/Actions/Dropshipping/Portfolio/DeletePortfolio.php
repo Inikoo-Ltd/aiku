@@ -8,8 +8,13 @@
 
 namespace App\Actions\Dropshipping\Portfolio;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Shopify\Product\DeleteShopifyUserHasProduct;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -34,6 +39,12 @@ class DeletePortfolio extends OrgAction
 
         $portfolio->stats()->delete();
         $portfolio->delete();
+
+        GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
+        OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
+        ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
+        CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
+        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel)->delay($this->hydratorsDelay);
     }
 
     public function authorize(ActionRequest $request): bool
