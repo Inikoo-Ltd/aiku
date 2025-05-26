@@ -33,6 +33,7 @@ class HandleApiProductToShopify extends RetinaAction
             ->portfolios()
             ->where('status', true)
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
+            ->with(['item', 'item.productVariants'])
             ->get();
 
         $variants = [];
