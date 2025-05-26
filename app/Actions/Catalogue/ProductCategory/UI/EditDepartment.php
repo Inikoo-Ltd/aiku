@@ -115,7 +115,7 @@ class EditDepartment extends OrgAction
                                 "image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),
-                                    "value"   => $department->imageSources(320, 320),
+                                    "value"   => $department->imageSources(720, 480),
                                 ],
                             ]
                         ]
