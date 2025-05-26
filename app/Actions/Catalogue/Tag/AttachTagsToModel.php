@@ -10,7 +10,9 @@
 
 namespace App\Actions\Catalogue\Tag;
 
+use App\Actions\Catalogue\Tag\Hydrators\TagHydrateModels;
 use App\Actions\OrgAction;
+use App\Models\Catalogue\Tag;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -19,6 +21,15 @@ class AttachTagsToModel extends OrgAction
     public function handle(TradeUnit $model, array $modelData): void
     {
         $model->tags()->syncWithoutDetaching($modelData['tags_id']);
+
+        $model->refresh();
+
+        foreach ($modelData['tags_id'] as $tagId) {
+            $tag = Tag::find($tagId);
+            if ($tag) {
+                TagHydrateModels::dispatch($tag);
+            }
+        }
     }
 
     public function rules(): array

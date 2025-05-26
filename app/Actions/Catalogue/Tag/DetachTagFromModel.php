@@ -10,6 +10,7 @@
 
 namespace App\Actions\Catalogue\Tag;
 
+use App\Actions\Catalogue\Tag\Hydrators\TagHydrateModels;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Tag;
 use App\Models\Goods\TradeUnit;
@@ -20,6 +21,8 @@ class DetachTagFromModel extends OrgAction
     public function handle(TradeUnit $model, Tag $tag): void
     {
         $model->tags()->detach([$tag->id]);
+        $tag->refresh();
+        TagHydrateModels::dispatch($tag);
     }
 
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request)
