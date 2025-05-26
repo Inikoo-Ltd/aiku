@@ -23,6 +23,8 @@ class HandleApiProductToShopify extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $jobQueue = 'urgent';
+
     /**
      * @throws \Exception
      */
@@ -81,7 +83,7 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
-            RequestApiStoreProductToShopify::dispatch($shopifyUser, $product, $portfolio, $body)->onQueue('urgent');
+            RequestApiStoreProductToShopify::dispatch($shopifyUser, $product, $portfolio, $body);
         }
     }
 
