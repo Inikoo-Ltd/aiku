@@ -57,6 +57,13 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method' => 'post'
             ],
+            'picking_all_route'       => [
+                'name' => 'grp.models.delivery-note-item.picking_all.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method' => 'post'
+            ],
             'not_picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.not-picking.store',
                 'parameters' => [
