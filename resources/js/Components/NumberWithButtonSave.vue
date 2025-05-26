@@ -61,6 +61,7 @@ const props = defineProps<{
 		[key: string]: any
 	}
 	autoSave?: boolean
+	isWithRefreshModel?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -139,12 +140,22 @@ defineOptions({
 	inheritAttrs: false,
 })
 
-watch(
+const { stop, pause, resume } = watch(
 	() => form.quantity,
 	(newVal: number) => {
 		emits("update:modelValue", newVal, onSaveViaForm)
 		if (props.autoSave) {
 			debounceSaveViaForm()
+		}
+	}
+)
+
+watch(
+	() => props.modelValue,
+	async (newVal: number) => {
+		if (props.isWithRefreshModel) {
+			form.defaults('quantity', newVal)
+			form.reset()
 		}
 	}
 )
@@ -176,7 +187,7 @@ const onClickPlusButton = () => {
 <template>
 	<div class="relative w-full" :class="parentClass">
 		<div
-			v-if="!readonly"
+			v-if="true"
 			class="flex items-center justify-center border border-gray-300 rounded gap-y-1 px-1 py-0.5">
 			<!-- Button: Save -->
 			<button
@@ -209,7 +220,7 @@ const onClickPlusButton = () => {
 				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
 				<!-- Button: Minus -->
 				<div
-					@click.stop="() => onClickMinusButton()"
+					@click.stop="() => props.readonly ? null : onClickMinusButton()"
 					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
 					<FontAwesomeIcon
 						icon="fas fa-minus"
@@ -232,7 +243,7 @@ const onClickPlusButton = () => {
 						:min="min || 0"
 						:max="max || undefined"
 						style="width: 100%"
-						:disabled="form.processing"
+						:disabled="props.readonly || form.processing"
 						:inputStyle="{
 							padding: '0px',
 							width: bindToTarget?.fluid ? undefined : '50px',
@@ -246,7 +257,7 @@ const onClickPlusButton = () => {
 
 				<!-- Button: Plus -->
 				<div
-					@click.stop="() => onClickPlusButton()"
+					@click.stop="() => props.readonly ? null : onClickPlusButton()"
 					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
 					<FontAwesomeIcon icon="fas fa-plus" fixed-width aria-hidden="true" />
 				</div>
@@ -254,7 +265,7 @@ const onClickPlusButton = () => {
 
 			<!-- Button: Save -->
 			<button
-				v-if="!noSaveButton"
+				v-if="!noSaveButton && !props.readonly"
 				class="relative flex items-center justify-center px-1 py-0.5 text-sm"
 				:class="{ 'text-gray-400': !form.isDirty }"
 				:disabled="form.processing || !form.isDirty"
@@ -285,14 +296,13 @@ const onClickPlusButton = () => {
 			</button>
 			<slot></slot>
 		</div>
+
 		<div
-            v-if="readonly"
+            v-else
 			class="mx-1 text-center tabular-nums rounded-md"
 		>
 			<InputNumber
-				v-model="form.quantity"
-				@update:model-value="(e) => (form.quantity = e)"
-				@input="(e) => (form.quantity = e.value)"
+				:modelValue="form.quantity"
 				buttonLayout="horizontal"
 				:min="min || 0"
 				:max="max || undefined"
