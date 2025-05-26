@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -20,14 +21,17 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategory extends OrgAction
 {
     use WithNoStrictRules;
+    use WithImageCatalogue;
     use WithProductCategoryHydrators;
 
     /**
@@ -35,6 +39,7 @@ class StoreProductCategory extends OrgAction
      */
     public function handle(Shop|ProductCategory $parent, array $modelData): ProductCategory
     {
+        $imageData = ['image' => Arr::pull($modelData, 'image')];
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
@@ -69,6 +74,10 @@ class StoreProductCategory extends OrgAction
             return $productCategory;
         });
 
+        if ($imageData['image']) {
+            $this->processCatalogue($imageData, $productCategory);
+        }
+
         ProductCategoryRecordSearch::dispatch($productCategory);
         $this->productCategoryHydrators($productCategory);
         $this->masterProductCategoryUsageHydrators($productCategory, $productCategory->masterProductCategory);
@@ -94,6 +103,12 @@ class StoreProductCategory extends OrgAction
             ],
             'name'        => ['required', 'max:250', 'string'],
             'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image'       => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
             'state'       => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
             'description' => ['sometimes', 'required', 'max:1500'],
 

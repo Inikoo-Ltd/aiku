@@ -32,10 +32,7 @@ class StoreProductShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-
         DB::transaction(function () use ($shopifyUser, $modelData) {
-
-            $portfolios = [];
             $response = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-04/products.json');
 
             $products = collect(Arr::get($response, 'body.products', []));
@@ -70,8 +67,6 @@ class StoreProductShopify extends OrgAction
                     'product_id' => $product->id,
                     'portfolio_id' => $portfolio->id
                 ]);
-
-                $portfolios[] = $portfolio->id;
             }
 
             if ($shopifyUser->customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY) {
@@ -79,10 +74,6 @@ class StoreProductShopify extends OrgAction
                     'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
                 ]);
             }
-
-            HandleApiProductToShopify::dispatch($shopifyUser, [
-                'portfolios' => $portfolios
-            ]);
         });
     }
 

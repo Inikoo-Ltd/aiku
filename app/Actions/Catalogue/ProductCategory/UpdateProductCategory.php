@@ -38,7 +38,9 @@ class UpdateProductCategory extends OrgAction
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
-        $productCategory = $this->processCatalogue($imageData, $productCategory);
+        if ($imageData['image']) {
+            $this->processCatalogue($imageData, $productCategory);
+        }
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;

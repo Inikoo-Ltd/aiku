@@ -297,9 +297,6 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                         icon="fas fa-skull"
                         size="xs"
                         :routeTarget="deliveryNote.not_picking_route"
-                        :body="{
-                            quantity: deliveryNote.quantity_to_pick,
-                        }"
                         :bindToLink="{
                             preserveScroll: true,
                         }"
@@ -318,9 +315,6 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
-            <!-- <pre>
-                {{ deliveryNote }}
-            </pre> -->
         </template>
 
     </Table>

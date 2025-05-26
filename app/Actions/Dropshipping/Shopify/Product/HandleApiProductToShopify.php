@@ -38,9 +38,8 @@ class HandleApiProductToShopify extends RetinaAction
             ->with(['item', 'item.productVariants'])
             ->get();
 
-        $variants = [];
-        $images = [];
         foreach ($portfolios as $portfolio) {
+            $variants = [];
             $product = $portfolio->item;
             foreach ($product->productVariants as $variant) {
                 $existingOptions = Arr::pluck($variants, 'option1');
@@ -58,6 +57,7 @@ class HandleApiProductToShopify extends RetinaAction
             }
 
             try {
+                $images = [];
                 foreach ($product->images as $image) {
                     $images[] = [
                         "attachment" => $image->getBase64Image()
@@ -83,7 +83,7 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
-            RequestApiStoreProductToShopify::dispatch($shopifyUser, $product, $portfolio, $body);
+            RequestApiStoreProductToShopify::run($shopifyUser, $product, $portfolio, $body);
         }
     }
 

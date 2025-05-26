@@ -140,8 +140,13 @@ class CreateFamily extends OrgAction
                                     ],
                                     'description' => [
                                         'type'     => 'textEditor',
-                                        'label'    => __('name'),
+                                        'label'    => __('description'),
                                         'required' => true
+                                    ],
+                                    "image"         => [
+                                        "type"    => "image_crop_square",
+                                        "label"   => __("Image"),
+                                        "required" => false,
                                     ],
                                 ]
                             ]
