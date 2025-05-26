@@ -174,6 +174,7 @@ onBeforeUnmount(() => {
   transition: background 0.3s;
   box-shadow: 0 4px 0px #4F46E5;
   border: none;
+  z-index: 99;
 }
 
 .trapezoid-button:hover {

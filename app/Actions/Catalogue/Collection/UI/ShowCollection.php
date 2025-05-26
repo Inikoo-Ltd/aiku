@@ -8,9 +8,13 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
+use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
+use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
@@ -23,6 +27,7 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -34,7 +39,7 @@ class ShowCollection extends OrgAction
     use WithCollectionSubNavigation;
     use WithCatalogueAuthorisation;
 
-    private Organisation|Shop $parent;
+    private Organisation|Shop|ProductCategory $parent;
 
     public function handle(Collection $collection): Collection
     {
@@ -52,6 +57,46 @@ class ShowCollection extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+        return $this->handle($collection);
+    }
+
+    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $department;
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+
+        return $this->handle($collection);
+    }
+
+    public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+
+        return $this->handle($collection);
+    }
+
+    public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+
+        return $this->handle($collection);
+    }
+
+    public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+
+        return $this->handle($collection);
+    }
+
+    public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+
         return $this->handle($collection);
     }
 
@@ -225,8 +270,8 @@ class ShowCollection extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($collection))),
 
                 CollectionTabsEnum::PRODUCTS->value => $this->tab == CollectionTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInProductCategory::run($collection))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInProductCategory::run($collection))),
+                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))),
 
                 CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
                     fn () => CollectionsResource::collection(IndexCollection::run($collection))
@@ -248,7 +293,7 @@ class ShowCollection extends OrgAction
                 sales: false
             )
         )->table(
-            IndexProductsInProductCategory::make()->tableStructure(
+            IndexProductsInCollection::make()->tableStructure(
                 $collection,
                 prefix: CollectionTabsEnum::PRODUCTS->value,
             )
@@ -328,6 +373,96 @@ class ShowCollection extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.shops.show.catalogue.departments.show.collection.show' =>
+            array_merge(
+                ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.families.show.collection.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.families.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show' =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($this->parent, $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.families.show.collection.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.families.show', $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.families.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.families.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -374,6 +509,7 @@ class ShowCollection extends OrgAction
 
                 ]
             ],
+            default => null
         };
     }
 }

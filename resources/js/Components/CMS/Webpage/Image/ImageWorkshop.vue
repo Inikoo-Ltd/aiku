@@ -7,6 +7,7 @@ import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination, Navigation } from 'swiper/modules'
+import { resolveResponsiveValue } from "@/Composables/Workshop"
 import 'swiper/css'
 import 'swiper/css/autoplay'
 
@@ -50,18 +51,49 @@ const getHref = (index: number) => {
 }
 
 const getColumnWidthClass = (layoutType: string, index: number) => {
+  const layout = props.modelValue?.value?.layout_type || {}
+  const hasMobile = !!layout.mobile
+  const hasTablet = !!layout.tablet
+
   switch (layoutType) {
-    case "12": return index === 0 ? "sm:w-1/2 md:w-1/3" : "sm:w-1/2 md:w-2/3"
-    case "21": return index === 0 ? "sm:w-1/2 md:w-2/3" : "sm:w-1/2 md:w-1/3"
-    case "13": return index === 0 ? "md:w-1/4" : "md:w-3/4"
-    case "31": return index === 0 ? "sm:w-1/2 md:w-3/4" : "sm:w-1/2 md:w-1/4"
-    case "211": return index === 0 ? "md:w-1/2" : "md:w-1/4"
-    case "2": return "md:w-1/2"
-    case "3": return "md:w-1/3"
-    case "4": return "md:w-1/4"
-    default: return "w-full"
+    case "12":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-1/3" : "md:w-2/3"
+      ].filter(Boolean).join(" ")
+
+    case "21":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-2/3" : "md:w-1/3"
+      ].filter(Boolean).join(" ")
+
+    case "13":
+      return hasTablet ? "w-full" : index === 0 ? "md:w-1/4" : "md:w-3/4"
+
+    case "31":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-3/4" : "md:w-1/4"
+      ].filter(Boolean).join(" ")
+
+    case "211":
+      return hasTablet ? "w-full" : index === 0 ? "md:w-1/2" : "md:w-1/4"
+
+    case "2":
+      return hasMobile ? "w-1/2" : hasTablet ? "w-1/2" : "md:w-1/2"
+
+    case "3":
+      return hasTablet ? "w-full" : "md:w-1/3"
+
+    case "4":
+      return hasTablet ? "w-full" : "md:w-1/4"
+
+    default:
+      return "w-full"
   }
 }
+
 
 const getImageSlots = (layoutType: string) => {
   switch (layoutType) {
@@ -76,8 +108,12 @@ const getImageSlots = (layoutType: string) => {
     default: return 1
   }
 }
-</script>
 
+const getVal = (base: any, path?: string[]) =>{
+      return  resolveResponsiveValue(base, props.screenType, path);
+}
+
+</script>
 <template>
   <section :style="getStyles(modelValue?.container?.properties, screenType)" aria-label="Image Gallery Section">
     <!-- Mobile Carousel -->
@@ -101,12 +137,13 @@ const getImageSlots = (layoutType: string) => {
       </SwiperSlide>
     </Swiper>
 
+   
     <!-- Desktop/Tablet Grid -->
-    <div v-else class="flex flex-wrap overflow-hidden">
-      <div v-for="index in getImageSlots(modelValue?.value?.layout_type)"
+    <div v-else class="flex flex-wrap">
+      <div v-for="index in modelValue?.value?.images?.length"
         :key="`${index}-${modelValue?.value?.images?.[index - 1]?.source}`"
-           class="flex flex-col group relative p-2 hover:bg-white/40"
-        :class="getColumnWidthClass(modelValue?.value?.layout_type, index - 1)">
+           class="flex flex-col group relative p-2 hover:bg-white/40 h-full"
+        :class="getColumnWidthClass(getVal(modelValue?.value.layout_type), index - 1)">
         <template v-if="modelValue?.value?.images?.[index - 1]?.source">
           <a v-if="getHref(index - 1)" :href="getHref(index - 1)" target="_blank" rel="noopener noreferrer"
             class="block w-full h-full">

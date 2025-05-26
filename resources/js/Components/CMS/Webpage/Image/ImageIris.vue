@@ -9,6 +9,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination, Navigation } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/autoplay'
+import { resolveResponsiveValue } from "@/Composables/Workshop"
 
 
 library.add(faCube, faStar, faImage, faPencil)
@@ -50,18 +51,49 @@ const getHref = (index: number) => {
 }
 
 const getColumnWidthClass = (layoutType: string, index: number) => {
+  const layout = props.fieldValue?.value?.layout_type || {}
+  const hasMobile = !!layout.mobile
+  const hasTablet = !!layout.tablet
+
   switch (layoutType) {
-    case "12": return index === 0 ? "sm:w-1/2 md:w-1/3" : "sm:w-1/2 md:w-2/3"
-    case "21": return index === 0 ? "sm:w-1/2 md:w-2/3" : "sm:w-1/2 md:w-1/3"
-    case "13": return index === 0 ? "md:w-1/4" : "md:w-3/4"
-    case "31": return index === 0 ? "sm:w-1/2 md:w-3/4" : "sm:w-1/2 md:w-1/4"
-    case "211": return index === 0 ? "md:w-1/2" : "md:w-1/4"
-    case "2": return "md:w-1/2"
-    case "3": return "md:w-1/3"
-    case "4": return "md:w-1/4"
-    default: return "w-full"
+    case "12":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-1/3" : "md:w-2/3"
+      ].filter(Boolean).join(" ")
+
+    case "21":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-2/3" : "md:w-1/3"
+      ].filter(Boolean).join(" ")
+
+    case "13":
+      return hasTablet ? "w-full" : index === 0 ? "md:w-1/4" : "md:w-3/4"
+
+    case "31":
+      return [
+        hasMobile ? "w-1/2" : "sm:w-1/2",
+        hasTablet ? "" : index === 0 ? "md:w-3/4" : "md:w-1/4"
+      ].filter(Boolean).join(" ")
+
+    case "211":
+      return hasTablet ? "w-full" : index === 0 ? "md:w-1/2" : "md:w-1/4"
+
+    case "2":
+      return hasMobile ? "w-1/2" : hasTablet ? "w-1/2" : "md:w-1/2"
+
+    case "3":
+      return hasTablet ? "w-full" : "md:w-1/3"
+
+    case "4":
+      return hasTablet ? "w-full" : "md:w-1/4"
+
+    default:
+      return "w-full"
   }
 }
+
 
 const getImageSlots = (layoutType: string) => {
   switch (layoutType) {
@@ -75,6 +107,10 @@ const getImageSlots = (layoutType: string) => {
     case "31": return 2
     default: return 1
   }
+}
+
+const getVal = (base: any, path?: string[]) =>{
+      return  resolveResponsiveValue(base, props.screenType, path);
 }
 </script>
 
@@ -140,10 +176,10 @@ const getImageSlots = (layoutType: string) => {
       class="flex flex-wrap"
     >
       <div
-        v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
+        v-for="index in fieldValue?.value?.images?.length"
         :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
-        class="flex flex-col group relative p-2 hover:bg-white/40"
-        :class="getColumnWidthClass(fieldValue?.value?.layout_type, index - 1)"
+        class="flex flex-col group relative p-2 hover:bg-white/40 h-full"
+        :class="getColumnWidthClass(getVal(fieldValue?.value.layout_type), index - 1)"
       >
         <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
           <a
