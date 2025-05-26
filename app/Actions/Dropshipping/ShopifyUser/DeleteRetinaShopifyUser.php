@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\ShopifyUser;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -46,6 +47,8 @@ class DeleteRetinaShopifyUser extends OrgAction
                 'status' => CustomerSalesChannelStatusEnum::CLOSED
             ]);
         }
+
+        DeleteWebhooksFromShopify::run($shopifyUser);
 
         $shopifyUser->delete();
     }
