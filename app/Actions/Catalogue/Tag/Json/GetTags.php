@@ -26,8 +26,7 @@ class GetTags extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
+                $query->whereAnyWordStartWith('tags.name', $value);
             });
         });
 

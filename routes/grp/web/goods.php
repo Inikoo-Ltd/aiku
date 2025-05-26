@@ -6,6 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Tag\UI\CreateTag;
+use App\Actions\Catalogue\Tag\UI\EditTag;
+use App\Actions\Catalogue\Tag\UI\IndexTags;
 use App\Actions\Goods\Ingredient\UI\IndexIngredients;
 use App\Actions\Goods\Ingredient\UI\ShowIngredient;
 use App\Actions\Goods\Stock\ExportStocks;
@@ -105,6 +108,12 @@ Route::prefix('trade-units')->as('trade-units.')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');
     });
+});
+
+Route::name('tags.')->prefix('tags')->group(function () {
+    Route::get('/', IndexTags::class)->name('index');
+    Route::get('create', CreateTag::class)->name('create');
+    Route::get('/{tag}/edit', EditTag::class)->name('edit');
 });
 
 Route::prefix('ingredients')->as('ingredients.')->group(function () {
