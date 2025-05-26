@@ -112,6 +112,11 @@ class EditDepartment extends OrgAction
                                     'label' => __('Follow Master'),
                                     'value' => $department->follow_master
                                 ],
+                                "image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("Image"),
+                                    "value"   => $department->imageSources(320, 320),
+                                ],
                             ]
                         ]
 
