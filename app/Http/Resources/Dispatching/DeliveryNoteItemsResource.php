@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
@@ -43,10 +44,14 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_code'      => $this->org_stock_code,
             'org_stock_name'      => $this->org_stock_name,
             'locations'           => $orgStock->locationOrgstocks ? LocationOrgStocksResource::collection($orgStock->locationOrgstocks) : [],
-            'pickings'            => $deliveryNoteItem->pickings 
-                ? $deliveryNoteItem->pickings->keyBy(fn($item) => $item->location_id ?? $item->location->id)
-                    ->map(fn($item) => new PickingsResource($item))
-                : [],
+            'pickings'            => $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
+                                    ? $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
+                                        ->keyBy(function ($item) {
+                                            return $item->location_id 
+                                                ?? ($item->location->id ?? 'not-picked');
+                                        })
+                                        ->map(fn($item) => new PickingsResource($item))
+                                    : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
             'is_completed'        => $this->is_completed,

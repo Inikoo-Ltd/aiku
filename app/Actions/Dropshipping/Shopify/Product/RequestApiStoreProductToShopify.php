@@ -25,6 +25,8 @@ class RequestApiStoreProductToShopify extends RetinaAction implements ShouldBeUn
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $jobQueue = 'urgent';
+
     public function handle(ShopifyUser $shopifyUser, Product $product, Portfolio $portfolio, array $attributes): void
     {
         $client = $shopifyUser->api()->getRestClient();

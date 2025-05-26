@@ -158,6 +158,7 @@ const onUpdatePicker = () => {
                 @click="isModalToQueue = true"
                 :label="action.label"
                 :icon="action.icon"
+                :iconRight="action.iconRight"
                 :type="action.type"
             />
         </template>
