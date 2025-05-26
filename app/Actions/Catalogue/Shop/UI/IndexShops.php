@@ -8,7 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
-use App\Actions\Catalogue\Product\UI\IndexProducts;
+use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\OrgAction;
@@ -204,8 +204,8 @@ class IndexShops extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, ShopsTabsEnum::FAMILIES->value))),
 
                 ShopsTabsEnum::PRODUCTS->value => $this->tab == ShopsTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProducts::run($this->parent, ShopsTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProducts::run($this->parent, ShopsTabsEnum::PRODUCTS->value))),
+                    fn () => ProductsResource::collection(IndexProductsInProductCategory::run($this->parent, ShopsTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInProductCategory::run($this->parent, ShopsTabsEnum::PRODUCTS->value))),
 
 
             ]
@@ -225,8 +225,8 @@ class IndexShops extends OrgAction
                     canEdit: $this->canEdit
                 ),
             )
-            ->table(IndexProducts::make()->tableStructure(
-                parent: $this->parent,
+            ->table(IndexProductsInProductCategory::make()->tableStructure(
+                productCategory: $this->parent,
                 prefix: ShopsTabsEnum::PRODUCTS->value,
                 canEdit: $this->canEdit
             ));

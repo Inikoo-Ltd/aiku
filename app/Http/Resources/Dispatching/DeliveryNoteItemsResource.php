@@ -44,6 +44,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'pickings'            => $deliveryNoteItem->pickings ? PickingsResource::collection($deliveryNoteItem->pickings) : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
+            'is_completed'        => $this->is_completed,
             'picking_route'       => [
                 'name' => 'grp.models.delivery-note-item.picking.store',
                 'parameters' => [

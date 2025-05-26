@@ -13,7 +13,7 @@ namespace Tests\Feature;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
 use App\Actions\Comms\Email\StoreEmail;
-use App\Actions\Comms\Mailshot\HydrateMailshot;
+use App\Actions\Comms\Mailshot\HydrateMailshots;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
@@ -673,7 +673,7 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
 })->depends('update mailshot');
 
 test('mailshot hydrate', function (Mailshot $mailShot) {
-    HydrateMailshot::run($mailShot);
+    HydrateMailshots::run($mailShot);
     $this->artisan('hydrate:mailshots --slugs '.$mailShot->slug)->assertExitCode(0);
     expect($mailShot->stats->number_dispatched_emails)->toBe(0);
 })->depends('update mailshot');

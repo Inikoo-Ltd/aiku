@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavouritedInCategories;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
@@ -31,13 +32,15 @@ class HydrateProducts
 
     public function handle(Product $product): void
     {
-        ProductHydrateForSale::run($product);
-        ProductHydrateProductVariants::run($product);
-        ProductHydrateCustomersWhoFavourited::run($product);
-        ProductHydrateCustomersWhoFavouritedInCategories::run($product);
-        ProductHydrateCustomersWhoReminded::run($product);
-        ProductHydrateCustomersWhoRemindedInCategories::run($product);
-        ProductHydrateGrossWeightFromTradeUnits::run($product);
+        ProductHydrateAvailableQuantity::run($product);
+
+        //        ProductHydrateForSale::run($product);
+        //        ProductHydrateProductVariants::run($product);
+        //        ProductHydrateCustomersWhoFavourited::run($product);
+        //        ProductHydrateCustomersWhoFavouritedInCategories::run($product);
+        //        ProductHydrateCustomersWhoReminded::run($product);
+        //        ProductHydrateCustomersWhoRemindedInCategories::run($product);
+        //        ProductHydrateGrossWeightFromTradeUnits::run($product);
     }
 
 }

@@ -126,8 +126,8 @@ class CreateProduct extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexProducts::make()->getBreadcrumbs(
-                parent: $this->parent,
+            IndexProductsInProductCategory::make()->getBreadcrumbs(
+                productCategory: $this->parent,
                 routeName: preg_replace('/create$/', 'index', $routeName),
                 routeParameters: $routeParameters,
             ),

@@ -19,12 +19,12 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import { inject } from 'vue'
 
 import { faUserLock, faEnvelope, faShoePrints, faShoppingBag, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH, faCog, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode } from '@fal'
-import { faBrowser,faPowerOff } from '@fal'
+import { faBrowser,faPowerOff, faDoorClosed } from '@fal'
 import { faBan } from '@far'
 import { Head, usePage } from '@inertiajs/vue3'
 import axios from "axios";
 
-library.add(faBan, faEnvelope, faPowerOff, faShoePrints, faShoppingBag, faBrowser, faUserLock,faBell,faCopyright,faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint,faLanguage,faAddressBook,faTrashAlt, faSlidersH, faCog, faGoogle, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode)
+library.add(faBan, faEnvelope, faPowerOff, faShoePrints, faShoppingBag, faBrowser, faUserLock,faBell,faCopyright,faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint,faLanguage,faAddressBook,faTrashAlt, faSlidersH, faCog, faGoogle, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode, faDoorClosed)
 
 
 const props = defineProps<{

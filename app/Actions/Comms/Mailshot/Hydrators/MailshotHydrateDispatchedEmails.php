@@ -46,5 +46,6 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
         );
 
         $mailshot->stats()->update($stats);
+        MailshotHydrateCumulativeDispatchedEmails::run($mailshot);
     }
 }
