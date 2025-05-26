@@ -40,7 +40,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_try_send_total
  * @property int $number_deliveries_failure
  * @property int $number_deliveries_success
- * @property int $number_deliveries_total
  * @property int $number_delivered_open_failure
  * @property int $number_delivered_open_success
  * @property int $number_opened_interact_failure
