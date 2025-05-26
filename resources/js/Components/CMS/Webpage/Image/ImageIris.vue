@@ -89,13 +89,16 @@ const getColumnWidthClass = (layoutType: string, index: number) => {
     case "4":
       return hasTablet ? "w-full" : "md:w-1/4"
 
+    case "6":
+      return hasTablet ? "w-full" : "md:w-1/6"
+
     default:
       return "w-full"
   }
 }
 
 
-const getImageSlots = (layoutType: string) => {
+/* const getImageSlots = (layoutType: string) => {
   switch (layoutType) {
     case "4": return 4
     case "3":
@@ -107,7 +110,7 @@ const getImageSlots = (layoutType: string) => {
     case "31": return 2
     default: return 1
   }
-}
+} */
 
 const getVal = (base: any, path?: string[]) =>{
       return  resolveResponsiveValue(base, props.screenType, path);
