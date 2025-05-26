@@ -8,18 +8,25 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag;
+namespace App\Actions\Helpers\Tag;
 
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Tag;
+use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteTag extends OrgAction
+class UpdateTag extends OrgAction
 {
-    public function handle(Tag $tag): Tag
+    public function handle(Tag $tag, array $modelData): Tag
     {
-        $tag->delete();
+        $tag->update($modelData);
         return $tag;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['sometimes', 'nullable', 'string', 'max:255'],
+        ];
     }
 
     public function asController(Tag $tag, ActionRequest $request)

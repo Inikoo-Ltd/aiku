@@ -8,10 +8,10 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag;
+namespace App\Actions\Helpers\Tag;
 
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Tag;
+use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -20,8 +20,8 @@ class StoreTag extends OrgAction
     public function handle(Group $group, array $modelData): Tag
     {
         data_set($modelData, 'group_id', $group->id);
-        $tag = Tag::create($modelData);
-        return $tag;
+
+        return Tag::create($modelData);
     }
 
     public function rules(): array

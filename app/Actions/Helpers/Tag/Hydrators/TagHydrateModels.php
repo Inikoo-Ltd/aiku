@@ -8,9 +8,9 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag\Hydrators;
+namespace App\Actions\Helpers\Tag\Hydrators;
 
-use App\Models\Catalogue\Tag;
+use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class TagHydrateModels

@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag\UI;
+namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
@@ -28,18 +28,14 @@ class CreateTag extends OrgAction
         $this->parent = group();
         $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle(group(), $request);
+        return $this->handle($request);
     }
 
-    public function handle(Group $parent, ActionRequest $request): Response
+    public function handle(ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
             [
-                // 'breadcrumbs' => $this->getBreadcrumbs(
-                //     $request->route()->getName(),
-                //     $request->route()->originalParameters()
-                // ),
                 'title'    => __('new tag'),
                 'icon'     =>
                     [

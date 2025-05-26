@@ -8,12 +8,12 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag\Json;
+namespace App\Actions\Helpers\Tag\Json;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\TagsResource;
-use App\Models\Catalogue\Tag;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Tag;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;

@@ -8,12 +8,12 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag;
+namespace App\Actions\Helpers\Tag;
 
-use App\Actions\Catalogue\Tag\Hydrators\TagHydrateModels;
+use App\Actions\Helpers\Tag\Hydrators\TagHydrateModels;
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Tag;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachTagsToModel extends OrgAction

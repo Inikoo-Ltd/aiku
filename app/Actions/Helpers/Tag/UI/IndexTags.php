@@ -8,14 +8,14 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag\UI;
+namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Catalogue\Tag;
+use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -31,22 +31,17 @@ class IndexTags extends OrgAction
 {
     use WithGoodsAuthorisation;
 
-    private Group $parent;
-
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
+        $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->parent);
+        return $this->handle(group());
     }
 
 
     public function handle(Group|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
     {
-
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('tags.name', $value);
@@ -95,9 +90,9 @@ class IndexTags extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -114,41 +109,26 @@ class IndexTags extends OrgAction
     }
 
 
-
     public function jsonResponse(LengthAwarePaginator $tags): AnonymousResourceCollection
     {
         return TagsResource::collection($tags);
     }
 
 
-
     public function htmlResponse(LengthAwarePaginator $tags, ActionRequest $request): Response
     {
-        // $subNavigation = $this->getStocksSubNavigation();
-
-        // $title = match ($this->bucket) {
-        //     'active' => __('Active SKUs'),
-        //     'in_process' => __('In process SKUs'),
-        //     'discontinuing' => __('Discontinuing SKUs'),
-        //     'discontinued' => __('Discontinued SKUs'),
-        //     default => __('SKUs')
-        // };
-
         return Inertia::render(
             'Devel/Dummy',
             [
-                // 'breadcrumbs' => $this->getBreadcrumbs(
-                //     $request->route()->getName(),
-                //     $request->route()->originalParameters()
-                // ),
-                'title'       => __('Tags'),
-                'pageHead'    => [
-                    'title'         => __('Tags'),
-                    'iconRight'     => [
+
+                'title'    => __('Tags'),
+                'pageHead' => [
+                    'title'     => __('Tags'),
+                    'iconRight' => [
                         'icon'  => ['fal', 'fa-box'],
                         'title' => __('Tags')
                     ],
-                    'actions'       => [
+                    'actions'   => [
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -161,10 +141,10 @@ class IndexTags extends OrgAction
                         ] : false,
                     ],
                 ],
-                'data'        => TagsResource::collection($tags),
+                'data'     => TagsResource::collection($tags),
 
             ]
-        )->table($this->tableStructure(parent: $this->parent));
+        )->table($this->tableStructure());
     }
 
 }

@@ -6,9 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Catalogue\Tag\UI\CreateTag;
-use App\Actions\Catalogue\Tag\UI\EditTag;
-use App\Actions\Catalogue\Tag\UI\IndexTags;
 use App\Actions\Goods\Ingredient\UI\IndexIngredients;
 use App\Actions\Goods\Ingredient\UI\ShowIngredient;
 use App\Actions\Goods\Stock\ExportStocks;
@@ -25,6 +22,9 @@ use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnit;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
+use App\Actions\Helpers\Tag\UI\CreateTag;
+use App\Actions\Helpers\Tag\UI\EditTag;
+use App\Actions\Helpers\Tag\UI\IndexTags;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowGoodsDashboard::class)->name('dashboard');

@@ -8,11 +8,11 @@
  *
 */
 
-namespace App\Actions\Catalogue\Tag\UI;
+namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
-use App\Models\Catalogue\Tag;
+use App\Models\Helpers\Tag;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
