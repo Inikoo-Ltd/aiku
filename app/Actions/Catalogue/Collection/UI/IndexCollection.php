@@ -302,6 +302,56 @@ class IndexCollection extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
+                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.collection.index' ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new collection'),
+                            'label'   => __('collection'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index' ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new collection'),
+                            'label'   => __('collection'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new collection'),
+                            'label'   => __('collection'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new collection'),
+                            'label'   => __('collection'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.families.show.collection.index' ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new collection'),
+                            'label'   => __('collection'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.catalogue.families.show.collection.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
                         class_basename($this->parent) == 'Collection' ? [
                             'type'     => 'button',
                             'style'    => 'secondary',

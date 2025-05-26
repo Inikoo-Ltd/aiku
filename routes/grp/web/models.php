@@ -757,6 +757,9 @@ Route::name('invoice-category.')->prefix('invoice-category/')->group(function ()
 
 Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.mailshot.store');
 
+Route::name('product_category.')->prefix('product_category/{productCategory:id}')->group(function () {
+    Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
+});
 
 require __DIR__."/models/inventory/warehouse.php";
 require __DIR__."/models/inventory/location_org_stock.php";

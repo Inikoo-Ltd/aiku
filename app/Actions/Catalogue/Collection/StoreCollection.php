@@ -86,9 +86,9 @@ class StoreCollection extends OrgAction
             ];
     }
 
-    public function action(Shop|CollectionCategory $parent, array $modelData, int $hydratorsDelay = 0): Collection
+    public function action(Shop|CollectionCategory|ProductCategory $parent, array $modelData, int $hydratorsDelay = 0): Collection
     {
-        if ($parent instanceof CollectionCategory) {
+        if ($parent instanceof CollectionCategory || $parent instanceof ProductCategory) {
             $shop = $parent->shop;
         } else {
             $shop = $parent;
@@ -105,6 +105,12 @@ class StoreCollection extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
+    }
+
+    public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($productCategory->shop, $request);
+        return $this->handle($productCategory, $this->validatedData);
     }
 
     public function htmlResponse(Collection $collection, ActionRequest $request): RedirectResponse
