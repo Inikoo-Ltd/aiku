@@ -47,6 +47,10 @@ class StoreNotPickPicking extends OrgAction
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
 
+        $this->update($deliveryNoteItem, [
+            'is_completed' => true
+        ]);
+
         return $picking;
 
     }
