@@ -23,6 +23,8 @@ class HandleApiProductToShopify extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $jobQueue = 'urgent';
+
     /**
      * @throws \Exception
      */

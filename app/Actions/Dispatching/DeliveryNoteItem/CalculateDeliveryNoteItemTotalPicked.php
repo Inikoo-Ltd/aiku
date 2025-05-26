@@ -28,7 +28,11 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         $totalPicked = $pickings->where('type', PickingTypeEnum::PICK)->sum('quantity');
         $totalNotPicked = $pickings->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
 
-        $isCompleted = ((int) $totalPicked === (int) $deliveryNoteItem->quantity_required);
+        $isFullyPicked = ((int) $totalPicked === (int) $deliveryNoteItem->quantity_required);
+
+        $isMarkedAsUnpickable = ((int) $totalNotPicked === (int) $deliveryNoteItem->quantity_required - (int) $totalPicked);
+
+        $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
         return $this->update($deliveryNoteItem, [
             'quantity_picked' => $totalPicked,

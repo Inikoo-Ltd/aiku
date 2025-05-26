@@ -90,7 +90,7 @@ class IndexDeliveryNoteItems extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_required', label: __('Quantity Required'), canBeHidden: false, sortable: true, searchable: true);
-            if ($parent->state != DeliveryNoteStateEnum::QUEUED) {
+            if ($parent->state != DeliveryNoteStateEnum::QUEUED && $parent->state != DeliveryNoteStateEnum::UNASSIGNED) {
                 $table->column(key: 'quantity_picked', label: __('Quantity Picked'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'quantity_to_pick', label: __('Todo'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
