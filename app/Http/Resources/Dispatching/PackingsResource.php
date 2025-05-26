@@ -17,9 +17,7 @@ class PackingsResource extends JsonResource
     {
         return [
             'id'                  => $this->id,
-            'state'               => $this->state,
-            'picking'             => PickingsResource::make($this->picking),
-            'quantity_packed'     => $this->quantity_packed,
+            'quantity'            => $this->quantity,
             'engine'              => $this->engine,
             'packer'              => $this->packer->contact_name
         ];
