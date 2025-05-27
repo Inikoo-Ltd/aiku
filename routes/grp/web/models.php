@@ -143,12 +143,18 @@ use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
+use App\Actions\Helpers\Brand\DeleteBrand;
+use App\Actions\Helpers\Brand\DetachBrandFromModel;
+use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\GoogleDrive\CallbackClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Helpers\Tag\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
+use App\Actions\Helpers\Tag\DeleteTag;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
+use App\Actions\Helpers\Tag\StoreBrand;
 use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
@@ -773,9 +779,15 @@ Route::name('product_category.')->prefix('product_category/{productCategory:id}'
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inTradeUnit'])->name('tags.store');
     Route::patch('tags/{tag}/update', [UpdateTag::class, 'inTradeUnit'])->name('tags.update');
-    Route::delete('tags/{tag}/delete', [StoreTag::class, 'inTradeUnit'])->name('tags.delete');
+    Route::delete('tags/{tag}/delete', [DeleteTag::class, 'inTradeUnit'])->name('tags.delete');
     Route::post('tags/attach', [AttachTagsToModel::class, 'inTradeUnit'])->name('tags.attach');
-    Route::delete('tags/{tag}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach')->withoutScopedBindings();
+    Route::delete('tags/{tag}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
+
+    Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
+    Route::patch('brands/{brand}/update', [UpdateBrand::class, 'inTradeUnit'])->name('brands.update');
+    Route::delete('brands/{brand}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete');
+    Route::post('brands/attach', [AttachBrandToModel::class, 'inTradeUnit'])->name('brands.attach');
+    Route::delete('brands/{brand}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
 });
 
 require __DIR__."/models/inventory/warehouse.php";

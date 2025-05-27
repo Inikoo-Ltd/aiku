@@ -20,6 +20,42 @@ class GetTradeUnitShowcase
 
     public function handle(TradeUnit $tradeUnit): array
     {
+        $brandRoute = [
+            'store_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.store',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ]
+            ],
+            'update_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.update',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'patch'
+            ],
+            'destroy_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.destroy',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'delete'
+            ],
+            'attach_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.attach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'post'
+            ],
+            'detach_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.detach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'delete'
+            ],
+        ];
         $tagRoute = [
             'index_tag' => [
                 'name'       => 'grp.json.trade_units.tags.index',
@@ -64,6 +100,7 @@ class GetTradeUnitShowcase
         ];
 
         return [
+            'brand_routes' => $brandRoute,
             'tag_routes' => $tagRoute,
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
             'tags' =>  TagResource::collection($tradeUnit->tags)->toArray(request()),
