@@ -16,14 +16,13 @@ use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class GetTags extends OrgAction
 {
-    public function handle(TradeUnit $parent, $prefix = null): LengthAwarePaginator
+    public function handle(TradeUnit $parent, $prefix = null)
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -64,17 +63,15 @@ class GetTags extends OrgAction
             ]);
 
         return $queryBuilder->allowedSorts(['tag_name'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->allowedFilters([$globalSearch])->get();
     }
 
-    public function jsonResponse(LengthAwarePaginator $tags): AnonymousResourceCollection
+    public function jsonResponse($tags): AnonymousResourceCollection
     {
         return TagsResource::collection($tags);
     }
 
-    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request)
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
