@@ -37,10 +37,11 @@ class GetWebsiteWorkshopDepartment
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });
-        dd(DepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)));
+
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'departments'   => DepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
+            'layout'       => $website->unpublishedDepartmentSnapshot->layout ?? [],
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.department',
                 'parameters' => [
