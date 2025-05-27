@@ -206,6 +206,8 @@ class StoreCustomer extends OrgAction
             'state'                    => ['sometimes', Rule::enum(CustomerStateEnum::class)],
             'status'                   => ['sometimes', Rule::enum(CustomerStatusEnum::class)],
             'contact_name'             => ['nullable', 'string', 'max:255'],
+            'first_name'               => ['nullable', 'string', 'max:255'],
+            'last_name'                => ['nullable', 'string', 'max:255'],
             'company_name'             => ['nullable', 'string', 'max:255'],
             'email'                    => [
                 'nullable',
@@ -285,8 +287,17 @@ class StoreCustomer extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->get('contact_name') && !$this->get('company_name') && !$this->get('email')) {
-            $validator->errors()->add('company_name', 'At least one of contact_name, company_name or email must be provided');
+        if (!$this->get('company_name') && !$this->get('email')) {
+            $validator->errors()->add('company_name', 'At least one of company_name or email must be provided');
+        } 
+
+        if (!trim($this->get('contact_name'))) {
+            $firstName = trim($this->get('first_name'));
+            $lastName  = trim($this->get('last_name'));
+
+            if ($firstName || $lastName) {
+                $this->set('contact_name', trim($firstName . ' ' . $lastName));
+            }
         }
     }
 
