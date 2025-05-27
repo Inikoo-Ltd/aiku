@@ -93,10 +93,10 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 
 // Filter portfolios by type
 const filterList = [
-	{
-		label: trans("All"),
-		value: "all",
-	},
+    {
+        label: trans("Product"),
+        value: "product",
+    },
 	{
 		label: trans("Department"),
 		value: "department",
@@ -108,11 +108,7 @@ const filterList = [
 	{
 		label: trans("Family"),
 		value: "family",
-	},
-	{
-		label: trans("Product"),
-		value: "product",
-	},
+	}
 ]
 const selectedList = ref(filterList[0])
 
@@ -128,7 +124,7 @@ const onUploadToShopify = () => {
 			title: trans("No route defined"),
 			type: "error",
 		})
-		return 
+		return
 	}
 
 	router.post(route(props.routes.upload_route.name, props.routes.upload_route.parameters), {
@@ -160,7 +156,7 @@ const onUploadToShopify = () => {
 </script>
 
 <template>
-	
+
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #button-upload-to-shopify="{ action }">

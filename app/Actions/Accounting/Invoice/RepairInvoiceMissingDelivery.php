@@ -44,11 +44,11 @@ class RepairInvoiceMissingDelivery
     public function asCommand(Command $command): void
     {
 
-        $count = Invoice::withTrashed()->whereNull('delivery_address_id')->count();
+        $count = Invoice::whereNull('delivery_address_id')->count();
 
         $command->info("pending: $count");
 
-        Invoice::withTrashed()->whereNull('delivery_address_id')->orderBy('date')
+        Invoice::whereNull('delivery_address_id')->orderBy('date')
             ->chunk(1000, function ($invoices) {
                 foreach ($invoices as $invoice) {
                     $this->handle($invoice);

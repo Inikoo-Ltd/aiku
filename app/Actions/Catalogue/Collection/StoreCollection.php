@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
+use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\CollectionCategory;
@@ -23,15 +24,19 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreCollection extends OrgAction
 {
+    use WithImageCatalogue;
+
     public function handle(Shop|CollectionCategory|ProductCategory $parent, array $modelData): Collection
     {
-
+        $imageData = ['image' => Arr::pull($modelData, 'image')];
         if ($parent instanceof CollectionCategory) {
             $shop = $parent->shop;
         } elseif ($parent instanceof ProductCategory) {
@@ -52,6 +57,10 @@ class StoreCollection extends OrgAction
         $collection->stats()->create();
         $collection->salesIntervals()->create();
         $collection->orderingStats()->create();
+
+        if ($imageData['image']) {
+            $this->processCatalogue($imageData, $collection);
+        }
 
         CollectionRecordSearch::dispatch($collection);
         OrganisationHydrateCollections::dispatch($collection->organisation)->delay($this->hydratorsDelay);
@@ -83,6 +92,12 @@ class StoreCollection extends OrgAction
             ],
             'name'                 => ['required', 'max:250', 'string'],
             'image_id'             => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image'       => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
             'description'          => ['sometimes', 'required', 'max:1500'],
             ];
     }
@@ -118,7 +133,7 @@ class StoreCollection extends OrgAction
     {
         if($collection->parent instanceof ProductCategory) {
             if($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                return Redirect::route('grp.org.shops.show.catalogue.departments.show.collections.show', [
+                return Redirect::route('grp.org.shops.show.catalogue.departments.show.collection.show', [
                     'organisation'       => $collection->organisation->slug,
                     'shop'               => $collection->shop->slug,
                     'department'         => $collection->parent->slug,

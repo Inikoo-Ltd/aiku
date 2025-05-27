@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,7 +24,7 @@ class HandleApiProductToShopify extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public string $jobQueue = 'urgent';
+    //    public string $jobQueue = 'shopify';
 
     /**
      * @throws \Exception
@@ -35,13 +36,11 @@ class HandleApiProductToShopify extends RetinaAction
             ->portfolios()
             ->where('status', true)
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
-            ->with(['item', 'item.productVariants'])
             ->get();
 
         foreach ($portfolios as $portfolio) {
             $variants = [];
-            $product = $portfolio->item;
-            foreach ($product->productVariants as $variant) {
+            foreach ($portfolio->item->productVariants as $variant) {
                 $existingOptions = Arr::pluck($variants, 'option1');
 
                 if (!in_array($variant->name, $existingOptions)) {
@@ -58,7 +57,7 @@ class HandleApiProductToShopify extends RetinaAction
 
             try {
                 $images = [];
-                foreach ($product->images as $image) {
+                foreach ($portfolio->item->images as $image) {
                     $images[] = [
                         "attachment" => $image->getBase64Image()
                     ];
@@ -69,11 +68,11 @@ class HandleApiProductToShopify extends RetinaAction
 
             $body = [
                 "product" => [
-                    "id" => $product->id,
-                    "title" => $product->name,
-                    "body_html" => $product->description,
-                    "vendor" => $product->shop->name,
-                    "product_type" => $product->family?->name,
+                    "id" => $portfolio->item->id,
+                    "title" => $portfolio->item->name,
+                    "body_html" => $portfolio->item->description,
+                    "vendor" => $portfolio->item->shop->name,
+                    "product_type" => $portfolio->item->family?->name,
                     "images" => $images,
                     "variants" => $variants,
                     "options" => [
@@ -83,7 +82,31 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
-            RequestApiStoreProductToShopify::run($shopifyUser, $product, $portfolio, $body);
+            $client = $shopifyUser->api()->getRestClient();
+
+            $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+
+            if ($response['errors']) {
+                throw ValidationException::withMessages(['Internal server error, please wait a while']);
+            }
+
+            $productShopify = Arr::get($response, 'body.product');
+
+            $inventoryVariants = [];
+            foreach (Arr::get($productShopify, 'variants') as $variant) {
+                $variant['available_quantity'] = $portfolio->item->available_quantity;
+                $inventoryVariants[] = $variant;
+            }
+
+            HandleApiInventoryProductShopify::run($shopifyUser, $inventoryVariants);
+
+            $this->update($portfolio->shopifyPortfolio, [
+                'shopify_product_id' => Arr::get($productShopify, 'id')
+            ]);
+
+            $this->update($portfolio, [
+                'data' => []
+            ]);
         }
     }
 
