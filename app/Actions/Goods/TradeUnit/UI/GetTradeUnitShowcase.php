@@ -25,40 +25,40 @@ class GetTradeUnitShowcase
                         'indexJson' => [
                             'name'       => 'grp.json.trade_units.tags.index',
                             'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
+                                'tradeUnit' => $tradeUnit->id,
                             ]
                         ],
                         'store' => [
                             'name'       => 'grp.models.trade-unit.tags.store',
                             'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
+                                'tradeUnit' => $tradeUnit->id,
                             ]
                         ],
                         'update' => [
                             'name'       => 'grp.models.trade-unit.tags.update',
                             'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
+                                'tradeUnit' => $tradeUnit->id,
                             ],
                             'method'    => 'patch'
                         ],
                         'destroy' => [
                             'name'       => 'grp.models.trade-unit.tags.destroy',
                             'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
+                                'tradeUnit' => $tradeUnit->id,
                             ],
                             'method'    => 'delete'
                         ],
                         'attach' => [
                             'name'       => 'grp.models.trade-unit.tags.attach',
                             'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
+                                'tradeUnit' => $tradeUnit->id,
                             ],
                             'method'    => 'post'
                         ],
                         'detach' => [
                             'name'       => 'grp.models.trade-unit.tags.detach',
                             'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
+                                'tradeUnit' => $tradeUnit->id,
                             ],
                             'method'    => 'delete'
                         ],
