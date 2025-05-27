@@ -12,8 +12,10 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -34,7 +36,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
         $client = $shopifyUser->api()->getRestClient();
 
         $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
-
+        Log::info('right-after-upload-' .$portfolio->id);
         if ($response['errors']) {
             throw ValidationException::withMessages(['Internal server error, please wait a while']);
         }
@@ -47,15 +49,26 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             $inventoryVariants[] = $variant;
         }
 
-        HandleApiInventoryProductShopify::run($shopifyUser, $inventoryVariants);
+        HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
 
-        $this->update($portfolio->shopifyPortfolio, [
+        ShopifyUserHasProduct::updateOrCreate([
+            'shopify_user_id' => $shopifyUser->id,
+            'product_type' => $portfolio->item->getMorphClass(),
+            'product_id' => $portfolio->item->id,
+            'portfolio_id' => $portfolio->id
+        ], [
+            'shopify_user_id' => $shopifyUser->id,
+            'product_type' => $portfolio->item->getMorphClass(),
+            'product_id' => $portfolio->item->id,
+            'portfolio_id' => $portfolio->id,
             'shopify_product_id' => Arr::get($productShopify, 'id')
         ]);
 
         $this->update($portfolio, [
             'data' => []
         ]);
+
+        Log::info('end-dispatch-' .$portfolio->id);
     }
 
     public function rules(): array
@@ -64,7 +77,8 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             'portfolios' => ['required', 'array']
         ];
     }
-    public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): string
+
+    public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): int
     {
         return rand();
     }

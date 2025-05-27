@@ -40,24 +40,26 @@ class AttachTagsToModel extends OrgAction
     public function rules(): array
     {
         return [
-            'tags_id'   => ['required', 'array'],
+            'tags_id'   => ['sometimes', 'nullable', 'array'],
             'tags_id.*' => [
-                'required',
+                'sometimes', 'nullable',
                 'exists:tags,id',
                 function ($attribute, $value, $fail) {
-                    $exist = \DB::table('tags')
-                        ->where('group_id', $this->group->id);
-                    if ($this->parent instanceof TradeUnit) {
-                        $exist->where('scope', TagScopeEnum::PRODUCT_PROPERTY->value);
-                    } else {
-                        $exist->where('scope', TagScopeEnum::OTHER->value);
-                    }
-                    $exist = $exist->where('id', $value)
-                    ->pluck('user_id')
-                    ->toArray();
+                    if (!empty($value)) {
+                        $exist = \DB::table('tags')
+                            ->where('group_id', $this->group->id);
+                        if ($this->parent instanceof TradeUnit) {
+                            $exist->where('scope', TagScopeEnum::PRODUCT_PROPERTY->value);
+                        } else {
+                            $exist->where('scope', TagScopeEnum::OTHER->value);
+                        }
+                        $exist = $exist->where('id', $value)
+                        ->pluck('id')
+                        ->toArray();
 
-                    if (empty($exist)) {
-                        $fail('Tag with ID ' . $value . ' is not applicable for this model.');
+                        if (empty($exist)) {
+                            $fail('Tag with ID ' . $value . ' is not applicable for this model.');
+                        }
                     }
                 }
             ],

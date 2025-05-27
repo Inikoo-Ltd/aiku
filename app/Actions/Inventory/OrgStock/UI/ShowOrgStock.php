@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexProductsInOrgStock;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
@@ -15,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
+use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
@@ -95,13 +97,19 @@ class ShowOrgStock extends OrgAction
                     fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock))
                     : Inertia::lazy(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock))),
 
+                OrgStockTabsEnum::PRODUCTS->value => $this->tab == OrgStockTabsEnum::PRODUCTS->value ?
+                    fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock))),
+
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStock))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStock)))
 
 
             ]
-        )->table(IndexPurchaseOrders::make()->tableStructure($orgStock));
+        )
+        ->table(IndexProductsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::PRODUCTS->value))
+        ->table(IndexPurchaseOrders::make()->tableStructure($orgStock));
     }
 
 

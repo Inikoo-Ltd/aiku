@@ -22,6 +22,8 @@ import Button from '@/Components/Elements/Buttons/Button.vue';
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue';
 import TradeUnitShowcase from '@/Components/Goods/TradeUnitShowcase.vue';
 import { routeType } from '@/types/route'
+import TableProducts from '@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue';
+import TableStocks from '@/Components/Tables/Grp/Goods/TableStocks.vue';
 
 library.add( faInventory, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, );
 
@@ -46,6 +48,8 @@ const props = defineProps<{
         attach_tag: routeType
         detach_tag: routeType
     }
+    products?: {}
+    stocks?: {}
 
 }>()
 
@@ -58,6 +62,8 @@ const component = computed(() => {
         showcase: TradeUnitShowcase,
         history: ModelChangelog,
         attachments: TableAttachments,
+        products: TableProducts,
+        stocks: TableStocks
     };
     return components[currentTab.value];
 

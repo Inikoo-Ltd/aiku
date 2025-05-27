@@ -10,7 +10,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Http\Resources\Catalogue\TagResource;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,6 +20,42 @@ class GetTradeUnitShowcase
 
     public function handle(TradeUnit $tradeUnit): array
     {
+        $brandRoute = [
+            'store_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.store',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ]
+            ],
+            'update_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.update',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'patch'
+            ],
+            'delete_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.delete',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'delete'
+            ],
+            'attach_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.attach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'post'
+            ],
+            'detach_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.detach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'delete'
+            ],
+        ];
         $tagRoute = [
             'index_tag' => [
                 'name'       => 'grp.json.trade_units.tags.index',
@@ -40,8 +76,8 @@ class GetTradeUnitShowcase
                 ],
                 'method'    => 'patch'
             ],
-            'destroy_tag' => [
-                'name'       => 'grp.models.trade-unit.tags.destroy',
+            'delete_tag' => [
+                'name'       => 'grp.models.trade-unit.tags.delete',
                 'parameters' => [
                     'tradeUnit' => $tradeUnit->id,
                 ],
@@ -64,9 +100,10 @@ class GetTradeUnitShowcase
         ];
 
         return [
+            'brand_routes' => $brandRoute,
             'tag_routes' => $tagRoute,
-            'tags_selected' => $tradeUnit->tags->pluck('id')->toArray(),
-            'tags' =>  TagResource::collection($tradeUnit->tags)->toArray(request()),
+            'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
+            'tags' =>  TagsResource::collection($tradeUnit->tags)->toArray(request()),
         ];
     }
 }
