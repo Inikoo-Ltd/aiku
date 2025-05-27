@@ -41,7 +41,7 @@ const onChangeDepartment = (value: any) => {
   delete newDepartment.sub_departments
 
   if (layout.value?.data?.fieldValue) {
-    layout.value.data.fieldValue.layout = value;
+    layout.value.data.fieldValue.departement = value;
     layout.value.data.fieldValue.sub_departments = value.sub_departments || [];
   }
 
@@ -52,7 +52,7 @@ const onChangeDepartment = (value: any) => {
 const autosave = () => {
   const payload = toRaw(layout.value);
   // Hapus properti jika ada
-  delete payload.data?.fieldValue?.layout
+  delete payload.data?.fieldValue?.departement
   delete payload.data?.fieldValue?.sub_departments
   console.log('Autosaving layout:', payload);
 

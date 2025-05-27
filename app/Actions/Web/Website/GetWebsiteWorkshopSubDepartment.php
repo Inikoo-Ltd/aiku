@@ -38,11 +38,11 @@ class GetWebsiteWorkshopSubDepartment
         //     $blockType->data = $data;
         // });
 
-        $fammilies = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::FAMILY)->get();
+        $fammilies = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'families'   => FamilyWebsiteResource::collection($fammilies),
+            'sub_departements'   => SubDepartmentsResource::collection($fammilies),
             'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.sub_department',

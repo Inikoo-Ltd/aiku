@@ -7,7 +7,7 @@
  */
 
 namespace App\Http\Resources\Catalogue;
-
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -48,6 +48,9 @@ class SubDepartmentsResource extends JsonResource
             'description'       => $this->description,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
+            'families'         => $this->children && $this->children->where('type', ProductCategoryTypeEnum::FAMILY)->isNotEmpty()
+                                        ? FamilyResource::collection($this->children->where('type', ProductCategoryTypeEnum::FAMILY))
+                                        : [],
         ];
     }
 }
