@@ -69,10 +69,31 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'menu' => $layout
                 ]
             ]);
+        } elseif ($marginal == 'department') {
+            if (!$website->unpublishedDepartmentSnapshot) {
+                $departmentSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::DEPARTMENT,
+                        'layout' => []
+                    ]
+                );
 
+                $website->update(
+                    [
+                        'unpublished_department_snapshot_id' => $departmentSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
 
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout;
 
-
+            $this->update($website->unpublishedDepartmentSnapshot, [
+                'layout' => [
+                    'department' => $layout
+                ]
+            ]);
         }
 
         return $website;
@@ -121,6 +142,12 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'menu', $this->validatedData);
+    }
+
+    public function department(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'department', $this->validatedData);
     }
 
     public function action(Website $website, $marginal, $modelData): string
