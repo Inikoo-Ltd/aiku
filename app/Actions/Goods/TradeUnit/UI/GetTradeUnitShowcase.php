@@ -21,50 +21,50 @@ class GetTradeUnitShowcase
     public function handle(TradeUnit $tradeUnit): array
     {
         $tagRoute = [
-                        'indexJson' => [
-                            'name'       => 'grp.json.trade_units.tags.index',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->id,
-                            ]
-                        ],
-                        'store' => [
-                            'name'       => 'grp.models.trade-unit.tags.store',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->id,
-                            ]
-                        ],
-                        'update' => [
-                            'name'       => 'grp.models.trade-unit.tags.update',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->id,
-                            ],
-                            'method'    => 'patch'
-                        ],
-                        'destroy' => [
-                            'name'       => 'grp.models.trade-unit.tags.destroy',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->id,
-                            ],
-                            'method'    => 'delete'
-                        ],
-                        'attach' => [
-                            'name'       => 'grp.models.trade-unit.tags.attach',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->id,
-                            ],
-                            'method'    => 'post'
-                        ],
-                        'detach' => [
-                            'name'       => 'grp.models.trade-unit.tags.detach',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->id,
-                            ],
-                            'method'    => 'delete'
-                        ],
-                    ];
+            'index_tag' => [
+                'name'       => 'grp.json.trade_units.tags.index',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ]
+            ],
+            'store_tag' => [
+                'name'       => 'grp.models.trade-unit.tags.store',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ]
+            ],
+            'update_tag' => [
+                'name'       => 'grp.models.trade-unit.tags.update',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'patch'
+            ],
+            'destroy_tag' => [
+                'name'       => 'grp.models.trade-unit.tags.destroy',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'delete'
+            ],
+            'attach_tag' => [
+                'name'       => 'grp.models.trade-unit.tags.attach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'post'
+            ],
+            'detach_tag' => [
+                'name'       => 'grp.models.trade-unit.tags.detach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'    => 'delete'
+            ],
+        ];
 
         return [
-            'tagRoute' => $tagRoute,
+            'tag_routes' => $tagRoute,
             'tags_selected' => $tradeUnit->tags->pluck('id')->toArray(),
             'tags' =>  TagResource::collection($tradeUnit->tags),
         ];
