@@ -10,7 +10,6 @@
 
 namespace App\Models\Helpers;
 
-use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -26,7 +25,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shop_id
  * @property string $slug
  * @property string $name
- * @property TagScopeEnum $scope
+ * @property string $reference
  * @property array<array-key, mixed> $data
  * @property int $number_models
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -37,14 +36,13 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag query()
  * @mixin \Eloquent
  */
-class Tag extends Model
+class Brand extends Model
 {
     use HasSlug;
     protected $guarded = [];
 
     protected $casts = [
         'data'     => 'array',
-        'scope'    => TagScopeEnum::class,
     ];
 
     protected $attributes = [
@@ -59,13 +57,14 @@ class Tag extends Model
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-            ->generateSlugsFrom('name')
+            ->generateSlugsFrom('reference')
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate();
     }
 
+
     public function tradeUnits(): MorphToMany
     {
-        return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_tags');
+        return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_brands');
     }
 }
