@@ -8,11 +8,15 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
+use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
+use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Models\Goods\TradeUnit;
@@ -43,7 +47,7 @@ class ShowTradeUnit extends GrpAction
 
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
-
+// dd(StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))->resolve());
         return Inertia::render(
             'Goods/TradeUnit',
             [
@@ -113,8 +117,19 @@ class ShowTradeUnit extends GrpAction
                     fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),
 
+                    TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
+                    fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))),
+
+                    TradeUnitTabsEnum::STOCKS->value => $this->tab == TradeUnitTabsEnum::STOCKS->value ?
+                    fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
+
             ]
-        )->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value));
+        )
+        ->table(IndexProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::PRODUCTS->value))
+        ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
+        ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value));
     }
 
 
