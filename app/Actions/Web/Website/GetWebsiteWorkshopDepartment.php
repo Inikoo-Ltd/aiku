@@ -38,6 +38,12 @@ class GetWebsiteWorkshopDepartment
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
+            'autosaveRoute' => [
+                'name'       => 'grp.models.website.autosave.department',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ],
         ];
     }
 }
