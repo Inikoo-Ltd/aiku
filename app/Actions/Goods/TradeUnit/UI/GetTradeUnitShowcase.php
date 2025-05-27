@@ -56,6 +56,7 @@ class GetTradeUnitShowcase
                 'name'       => 'grp.models.trade-unit.brands.detach',
                 'parameters' => [
                     'tradeUnit' => $tradeUnit->id,
+                    'brand' => $tradeUnit->brand()?->id,
                 ],
                 'method'    => 'delete'
             ],
