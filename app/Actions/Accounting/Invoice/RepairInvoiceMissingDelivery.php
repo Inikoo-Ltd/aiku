@@ -13,7 +13,6 @@ use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
-
 class RepairInvoiceMissingDelivery
 {
     use WithActionUpdate;
@@ -21,18 +20,18 @@ class RepairInvoiceMissingDelivery
     protected function handle(Invoice $invoice): void
     {
 
-        if($invoice->source_id){
+        if ($invoice->source_id) {
             $sourceData   = explode(':', $invoice->source_id);
 
-            $org=match ($sourceData[0]){
-                '1'=>'aw',
-                '2'=>'sk',
-                '3'=>'es',
-                '4'=>'aroma',
-                default=>'',
+            $org = match ($sourceData[0]) {
+                '1' => 'aw',
+                '2' => 'sk',
+                '3' => 'es',
+                '4' => 'aroma',
+                default => '',
             };
 
-            $signature='fetch:invoices  '.$org.' -s '.$sourceData[1];
+            $signature = 'fetch:invoices  '.$org.' -s '.$sourceData[1];
             print "$signature\n";
             Artisan::call($signature);
         }

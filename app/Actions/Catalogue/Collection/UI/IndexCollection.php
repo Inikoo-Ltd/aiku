@@ -416,7 +416,7 @@ class IndexCollection extends OrgAction
         return $this->handle(parent: $subDepartment);
     }
 
-    public function getBreadcrumbs(Group|Shop|Organisation|Collection|ProductCategory $parent,string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|Shop|Organisation|Collection|ProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

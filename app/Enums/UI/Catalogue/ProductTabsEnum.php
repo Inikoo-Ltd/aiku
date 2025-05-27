@@ -16,10 +16,10 @@ enum ProductTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE   = 'showcase';
+    case SHOWCASE = 'showcase';
 
 
-    case SALES      = 'sales';
+    case SALES = 'sales';
 
 
     case VARIATIONS = 'variations';
@@ -27,13 +27,12 @@ enum ProductTabsEnum: string
 
     case HISTORY = 'history';
 
-    case IMAGES   = 'images';
-    case PARTS    = 'parts';
-    // case CUSTOMERS  = 'customers';
-    case ORDERS     = 'orders';
-    // case MAILSHOTS  = 'mailshots';
-    case FAVOURITES          = 'favourites';
-    case REMINDERS           = 'reminders';
+    case IMAGES = 'images';
+    case STOCKS = 'stocks';
+    case TRADE_UNITS = 'trade_units';
+    case ORDERS = 'orders';
+    case FAVOURITES = 'favourites';
+    case REMINDERS = 'reminders';
 
 
     public function blueprint(): array
@@ -57,20 +56,6 @@ enum ProductTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            // ProductTabsEnum::CUSTOMERS => [
-            //     'title' => __('customers'),
-            //     'icon'  => 'fal fa-user',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-
-            // ],
-            // ProductTabsEnum::MAILSHOTS => [
-            //     'title' => __('mailshots'),
-            //     'icon'  => 'fal fa-bullhorn',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-
-            // ],
             ProductTabsEnum::HISTORY => [
                 'title' => __('history'),
                 'icon'  => 'fal fa-clock',
@@ -78,11 +63,15 @@ enum ProductTabsEnum: string
                 'align' => 'right',
             ],
 
-            ProductTabsEnum::PARTS => [
+            ProductTabsEnum::STOCKS => [
                 'title' => __('parts'),
                 'icon'  => 'fal fa-box',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+            ProductTabsEnum::TRADE_UNITS => [
+                'title' => __('Trade units'),
+                'icon'  => 'fal fa-atom'
             ],
             ProductTabsEnum::IMAGES => [
                 'title' => __('images'),

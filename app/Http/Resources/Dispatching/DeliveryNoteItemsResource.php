@@ -32,7 +32,7 @@ class DeliveryNoteItemsResource extends JsonResource
             ];
         }
         $pickingLocations = $orgStock->locationOrgstocks->where('type', LocationStockTypeEnum::PICKING);
-        
+
         return [
             'id'                  => $this->id,
             'state'               => $this->state,

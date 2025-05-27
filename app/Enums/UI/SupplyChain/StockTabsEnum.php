@@ -17,20 +17,20 @@ enum StockTabsEnum: string
     use HasTabs;
 
 
-    case SHOWCASE           = 'showcase';
-    case SALES              = 'sales';
+    case SHOWCASE = 'showcase';
+    case SALES = 'sales';
 
-    case HISTORY             = 'history';
-    case IMAGES              = 'images';
-    case ATTACHMENTS         = 'attachments';
-    case FEEDBACKS              = 'feedbacks';
+    case TRADE_UNITS = 'trade_units';
 
+    case HISTORY = 'history';
+    case IMAGES = 'images';
+    case ATTACHMENTS = 'attachments';
+    case FEEDBACKS = 'feedbacks';
 
 
     public function blueprint(): array
     {
         return match ($this) {
-
             StockTabsEnum::SALES => [
                 'title' => __('sales'),
                 'icon'  => 'fal fa-dollar-sign',
@@ -66,6 +66,13 @@ enum StockTabsEnum: string
             StockTabsEnum::SHOWCASE => [
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+
+            StockTabsEnum::TRADE_UNITS => [
+                'type'  => 'icon',
+                'align' => 'right',
+                'title' => __('trade units'),
+                'icon'  => 'fal fa-cubes',
             ],
         };
     }

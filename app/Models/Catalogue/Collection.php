@@ -51,7 +51,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
  * @property-read Group $group
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $inCollections
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent

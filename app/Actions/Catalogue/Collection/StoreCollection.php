@@ -131,8 +131,8 @@ class StoreCollection extends OrgAction
 
     public function htmlResponse(Collection $collection, ActionRequest $request): RedirectResponse
     {
-        if($collection->parent instanceof ProductCategory) {
-            if($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($collection->parent instanceof ProductCategory) {
+            if ($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 return Redirect::route('grp.org.shops.show.catalogue.departments.show.collection.show', [
                     'organisation'       => $collection->organisation->slug,
                     'shop'               => $collection->shop->slug,
