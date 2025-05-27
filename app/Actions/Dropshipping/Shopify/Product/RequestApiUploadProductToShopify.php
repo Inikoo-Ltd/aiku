@@ -43,12 +43,27 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
         try {
             $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
         } catch (\Exception $e) {
-            $response = [
-                'errors' => true,
-                'body' => [
-                    'errors' => $e->getMessage()
-                ]
-            ];
+            $products = $client->request('GET', '/admin/api/2024-04/products.json', [
+                'title' => $body['title'],
+                'limit' => 1
+            ]);
+
+            Log::info(json_encode($products));
+
+            if (!empty(Arr::get($products, 'body.products'))) {
+                $response = [
+                    'body' => [
+                        'product' => Arr::first(Arr::get($products, 'body.products.0'))
+                    ]
+                ];
+            } else {
+                $response = [
+                    'body' => [
+                        'product' => []
+                    ],
+                    'errors' => true
+                ];
+            }
         }
 
         Log::info('right-after-upload-' .$portfolio->id);
