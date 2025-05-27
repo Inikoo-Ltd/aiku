@@ -32,6 +32,10 @@ class CollectionResource extends JsonResource
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,
+            'number_departments' => $this->number_departments,
+            'number_families' => $this->number_families,
+            'number_products' => $this->number_products,
+            'number_collections' => $this->number_collections,
 
         ];
     }

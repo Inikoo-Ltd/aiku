@@ -8,7 +8,9 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetCollectionShowcase
@@ -18,7 +20,52 @@ class GetCollectionShowcase
     public function handle(Collection $collection): array
     {
         // dd($collection);
+        $parentRoute = null;
+
+        if($collection->parent) {
+            if($collection->parent instanceof ProductCategory) {
+                if($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                    $parentRoute = [
+                        'name' => 'grp.org.shops.show.catalogue.departments.show',
+                        'parameters' => [
+                            'organisation' => $collection->parent->shop->organisation->slug,
+                            'shop'         => $collection->parent->shop->slug,
+                            'department'   => $collection->parent->slug
+                        ],
+                        'method' => 'get'
+                    ];
+                } elseif ($collection->parent->type == ProductCategoryTypeEnum::FAMILY) { 
+                    $parentRoute = [
+                        'name' => 'grp.org.shops.show.catalogue.families.show',
+                        'parameters' => [
+                            'organisation' => $collection->parent->shop->organisation->slug,
+                            'shop'         => $collection->parent->shop->slug,
+                            'family'       => $collection->parent->slug
+                        ],
+                        'method' => 'get'
+                    ];
+                } elseif ($collection->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $parentRoute = [
+                        'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                        'parameters' => [
+                            'organisation' => $collection->parent->shop->organisation->slug,
+                            'shop'         => $collection->parent->shop->slug,
+                            'department'      => $collection->parent->department->slug,
+                            'subDepartment'  => $collection->parent->slug
+                        ],
+                        'method' => 'get'
+                    ];
+                }
+            }
+        }
+        
         return [
+            'parent'      => $collection->parent ? [
+                'id'   => $collection->parent->id,
+                'name' => $collection->parent->name,
+                'slug' => $collection->parent->slug,
+                'route' => $parentRoute
+            ] : [],
             'description' => $collection->description,
             'stats'       => [
                 [
