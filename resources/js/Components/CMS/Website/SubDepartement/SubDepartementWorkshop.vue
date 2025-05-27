@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
-import { faStar, faCircle, faChevronLeft, faChevronRight } from "@fas"
+import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, watch, computed, provide, inject, toRaw } from "vue"
 import Modal from '@/Components/Utils/Modal.vue'
@@ -12,15 +12,16 @@ import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
+import SideMenuSubDepartementWorkshop from "./SideMenuSubDepartementWorkshop.vue"
 
-library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight)
+library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
 const props = defineProps<{
   data: {
     web_block_types: any;
     autosaveRoute: routeType;
     layout: any;
-    sub_departments: any[];
+    family: any[];
   }
 }>()
 
@@ -29,7 +30,7 @@ const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 
 // Make layout editable
-const layout = ref(props.data.layout);
+const layout = ref(null);
 
 const onPickTemplate = (template: any) => {
   isModalOpen.value = false;
@@ -95,8 +96,8 @@ provide("currentView", currentView);
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate" :dataList="data.departments" @onChangeDepartment="onChangeDepartment"/>
+      <!-- <SideMenuSubDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
+        @set-up-template="onPickTemplate" :dataList="data.family" @onChangeDepartment="onChangeDepartment"/> -->
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
@@ -115,3 +116,11 @@ provide("currentView", currentView);
     </div>
   </div>
 </template>
+
+
+<style scoped>
+.selected-bg {
+  background-color: v-bind('layoutTheme?.app?.theme[0]') !important;
+  color: v-bind('layoutTheme?.app?.theme[1]') !important;
+}
+</style>
