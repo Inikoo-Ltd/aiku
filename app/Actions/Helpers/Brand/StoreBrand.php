@@ -11,18 +11,26 @@
 namespace App\Actions\Helpers\Brand;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\UI\WithLogo;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreBrand extends OrgAction
 {
+    use WithLogo;
     public function handle(Group|TradeUnit $parent, array $modelData): Brand
     {
 
         $brand = Brand::create($modelData);
 
+        $image = Arr::pull($modelData, 'image', null);
+        if ($image) {
+            $brand = $this->processWebsiteLogo(['image' => $image ], $brand);
+        }
         AttachBrandToModel::make()->handle(
             $parent,
             [
@@ -38,6 +46,12 @@ class StoreBrand extends OrgAction
         return [
             'name' => ['required', 'string', 'max:255'],
             'reference' => ['required', 'string', 'max:255'],
+            'image'                    => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
         ];
     }
 

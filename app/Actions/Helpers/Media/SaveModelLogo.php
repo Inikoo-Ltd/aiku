@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Models\Helpers\Brand;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\Concerns\AsAction;
 use stdClass;
@@ -17,10 +18,10 @@ class SaveModelLogo
     use AsAction;
 
     public function handle(
-        Website $model,
+        Website|Brand $model,
         array $imageData,
         string $scope = 'image'
-    ): Website {
+    ): Website|Brand {
         $oldImage = $model->logo;
 
         $checksum = md5_file($imageData['path']);

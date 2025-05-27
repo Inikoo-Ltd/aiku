@@ -338,7 +338,7 @@ const onEditBrand = () => {
                                 name: props.data.tag_routes.delete_tag.name,
                                 parameters: {
                                     ...props.data.tag_routes.delete_tag.parameters,
-                                    tag: tag.slug,
+                                    tag: tag.id,
                                 }
                             }"
                             :title="trans('Are you sure you want to delete tag') + ` ${tag.name}?`"
@@ -561,7 +561,7 @@ const onEditBrand = () => {
                             <span class="text-red-500">*</span> {{ trans('Reference') }}
                         </label>
                         <div class="mt-1">
-                            <PureInput :modelValue="selectedBrandToUpdate.reference" @update:modelValue="(e) => set(selectedBrandToUpdate, ['reference'], e)" placeholder="1-16 characters" />
+                            <PureInput :modelValue="selectedBrandToUpdate?.reference" @update:modelValue="(e) => set(selectedBrandToUpdate, ['reference'], e)" placeholder="1-16 characters" />
                         </div>
                     </div>
 
@@ -570,7 +570,7 @@ const onEditBrand = () => {
                             <span class="text-red-500">*</span> {{ trans('Name') }}
                         </label>
                         <div class="mt-1">
-                            <PureInput :modelValue="selectedBrandToUpdate.name" @update:modelValue="(e) => set(selectedBrandToUpdate, ['name'], e)" placeholder="1-64 characters" />
+                            <PureInput :modelValue="selectedBrandToUpdate?.name" @update:modelValue="(e) => set(selectedBrandToUpdate, ['name'], e)" placeholder="1-64 characters" />
                         </div>
                     </div>
 
