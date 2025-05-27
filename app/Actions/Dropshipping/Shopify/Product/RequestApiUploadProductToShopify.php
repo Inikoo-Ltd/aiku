@@ -35,7 +35,9 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
      */
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): void
     {
-        $client = $shopifyUser->api()->getRestClient();
+        $shopifyUser->api()->getOptions()->setGuzzleOptions([
+            'http_errors' => false
+        ]);
 
         try {
             $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
