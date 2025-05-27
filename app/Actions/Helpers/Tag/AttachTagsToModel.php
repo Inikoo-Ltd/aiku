@@ -22,7 +22,7 @@ class AttachTagsToModel extends OrgAction
     protected TradeUnit $parent;
     public function handle(TradeUnit $model, array $modelData): void
     {
-        $model->tags()->syncWithoutDetaching($modelData['tags_id']);
+        $model->tags()->sync($modelData['tags_id']);
 
         $model->refresh();
 
