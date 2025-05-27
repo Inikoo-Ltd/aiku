@@ -345,7 +345,7 @@ test('UI Index Newsletter Mailshots', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'newsletter')
+                    ->where('title', 'Newsletters')
                     ->etc()
             )
             ->has('data')
@@ -400,7 +400,7 @@ test('UI Index Newsletter Overview', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'newsletter')
+                    ->where('title', 'Newsletters')
                     ->etc()
             )
             ->has('data')
