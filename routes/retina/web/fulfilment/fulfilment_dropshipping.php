@@ -10,6 +10,7 @@ use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
+use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
@@ -47,7 +48,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
     Route::prefix('wc-user')->as('wc.')->group(function () {
         Route::post('authorize', AuthorizeRetinaWooCommerceUser::class)->name('authorize');
-        Route::get('callback', [AuthorizeRetinaWooCommerceUser::class, 'handleCallback'])->name('callback');
+        Route::get('callback', CallbackRetinaWooCommerceUser::class)->name('callback');
         Route::post('/', StoreWooCommerceUser::class)->name('store');
         Route::delete('/', DeleteRetinaShopifyUser::class)->name('delete');
     });
