@@ -66,6 +66,6 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
     }
     public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): string
     {
-        return $portfolio->id;
+        return rand();
     }
 }

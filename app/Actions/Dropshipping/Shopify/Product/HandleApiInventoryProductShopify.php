@@ -42,7 +42,7 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
             ]);
 
             if (Arr::get($response, 'status') !== 200) {
-                \Sentry\captureMessage(Arr::get($response, 'body.errors', 'Unknown error'));
+                \Sentry\captureMessage(Arr::get($response, 'body', 'Unknown error'));
             }
         }
     }
