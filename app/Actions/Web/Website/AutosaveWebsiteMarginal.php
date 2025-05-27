@@ -94,8 +94,82 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'department' => $layout
                 ]
             ]);
-        }
+        } elseif ($marginal == 'sub_department') {
+            if (!$website->unpublishedSubDepartmentSnapshot) {
+                $subDepartmentSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::SUB_DEPARTMENT,
+                        'layout' => []
+                    ]
+                );
 
+                $website->update(
+                    [
+                        'unpublished_sub_department_snapshot_id' => $subDepartmentSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSubDepartmentSnapshot->layout;
+
+            $this->update($website->unpublishedSubDepartmentSnapshot, [
+                'layout' => [
+                    'sub_department' => $layout
+                ]
+            ]);
+        } elseif ($marginal == 'family') {
+            if (!$website->unpublishedFamilySnapshot) {
+                $familySnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::FAMILY,
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_family_snapshot_id' => $familySnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilySnapshot->layout;
+
+            $this->update($website->unpublishedFamilySnapshot, [
+                'layout' => [
+                    'family' => $layout
+                ]
+            ]);
+        } elseif ($marginal == 'product') {
+            if (!$website->unpublishedProductSnapshot) {
+                $productSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::PRODUCT,
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_product_snapshot_id' => $productSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductSnapshot->layout;
+
+            $this->update($website->unpublishedProductSnapshot, [
+                'layout' => [
+                    'product' => $layout
+                ]
+            ]);
+        }
         return $website;
     }
 
@@ -148,6 +222,24 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'department', $this->validatedData);
+    }
+
+    public function subDepartment(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'sub_department', $this->validatedData);
+    }
+
+    public function family(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'family', $this->validatedData);
+    }
+
+    public function product(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'product', $this->validatedData);
     }
 
     public function action(Website $website, $marginal, $modelData): string

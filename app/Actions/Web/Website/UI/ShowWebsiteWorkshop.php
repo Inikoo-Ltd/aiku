@@ -16,6 +16,7 @@ use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
+use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartment;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
 use App\Models\Catalogue\Shop;
@@ -113,6 +114,15 @@ class ShowWebsiteWorkshop extends OrgAction
                     );
         }
 
+        // if (!blank($departments)) {
+        //     $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
+        //             ?
+        //             fn () => GetWebsiteWorkshopSubDepartment::run($website, $subDepartment)
+        //             : Inertia::lazy(
+        //                 fn () => GetWebsiteWorkshopSubDepartment::run($website, $subDepartment)
+        //             );
+        // }
+
         $publishRoute = [
                 'method'     => 'patch',
                 'name'       => 'grp.models.website.update',
@@ -126,6 +136,30 @@ class ShowWebsiteWorkshop extends OrgAction
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.department',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.sub_department',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::FAMILY->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.family',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.product',
                 'parameters' => [
                     'website' => $website->id
                 ]

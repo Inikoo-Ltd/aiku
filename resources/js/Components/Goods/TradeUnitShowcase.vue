@@ -22,6 +22,14 @@ library.add(faPlus)
 
 const props = defineProps<{
     data: {
+        brand_routes: {
+            index_brand: routeType
+            store_brand: routeType
+            update_brand: routeType
+            delete_brand: routeType
+            attach_brand: routeType
+            detach_brand: routeType
+        }
         tag_routes: {
             index_tag: routeType
             store_tag: routeType
@@ -35,7 +43,7 @@ const props = defineProps<{
     }
 }>()
 
-console.log('props', props.data.tag_routes)
+console.log('props brand route', props.data.brand_routes)
 
 // Section: modal create new tag
 const isModalTag = ref(false)
@@ -143,6 +151,9 @@ watch(() => props.data.tags_selected_id, (newTags) => {
         tags_id: props.data.tags_selected_id,
     })
 })
+watch(() => props.data.tags, (newTags) => {
+    optionsList.value = newTags
+})
 
 
 // Section: update tag
@@ -186,13 +197,96 @@ const onEditTag = () => {
     )
 }
 
-watch(() => props.data.tags, (newTags) => {
-    optionsList.value = newTags
-})
+
+// Section: modal create new brand
+const isModalBrand = ref(false)
+// const _multiselect_tags = ref(null)
+const newBrandName = ref('')
+const newBrandReference = ref('')
+const isLoadingCreateBrand = ref(false)
+const onCreateNewBrand = () => {
+    router.post(
+        route(props.data.brand_routes.store_brand.name, props.data.brand_routes.store_brand.parameters),
+        {
+            name: newBrandName.value,
+            reference: newBrandReference.value,
+        },
+        {
+            onStart: () => {
+                isLoadingCreateBrand.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully created new brand") + ': ' + newBrandName.value,
+                    type: "success",
+                })
+                isModalBrand.value = false
+                newBrandName.value = ''
+                newBrandReference.value = ''
+                // selectedTags.value.push(response.data.id)
+            },
+            onFinish: () => {
+                isLoadingCreateBrand.value = false
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error",
+                })
+            }
+        }
+    )
+}
+
+
+// Section: update brand
+const brandiddddddd = ref(null)
+const isModalUpdateBrand = ref(false)
+const isLoadingUpdateBrand = ref(false)
+const selectedBrandToUpdate = ref<any>(null)
+const onEditBrand = () => {
+    router[props.data.tag_routes.update_tag.method || 'patch'](
+        route(props.data.tag_routes.update_tag.name, {
+            ...props.data.tag_routes.update_tag.parameters,
+            tag: selectedBrandToUpdate.value?.slug,
+        }),
+        {
+            name: selectedBrandToUpdate.value?.name,
+        },
+        {
+            onStart: () => {
+                isLoadingUpdateBrand.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Successfully update tag name."),
+                    type: "success",
+                })
+                isModalUpdateBrand.value = false
+                selectedBrandToUpdate.value = null
+            },
+            onFinish: () => {
+                isLoadingUpdateBrand.value = false
+            },
+            onError: (error) => {
+                console.error('Error editing tag:', error)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message || trans('Failed to update tag'),
+                    type: "error",
+                })
+            }
+        }
+    )
+}
 </script>
 
 <template>
-    <div>
+
+    <div class="grid grid-cols-2">
 
 
         <div class="w-full max-w-md px-8 py-4">
@@ -256,19 +350,71 @@ watch(() => props.data.tags, (newTags) => {
             </div>
         </div>
 
-        
-        <!-- <pre>{{ data.tags }}</pre> -->
-        <!-- selected id: {{ props.data.tags_selected_id }}
-        <pre>{{ optionsList }}</pre> -->
+        <div class="w-full max-w-md px-8 py-4 flex gap-x-3 ">
+            <div>
+                Brand:
+            </div>
+
+            <div class="w-full">
+                <PureMultiselectInfiniteScroll
+                    v-model="brandiddddddd"
+                    :fetchRoute="props.data.brand_routes.index_brand"
+                    :placeholder="trans('Select brand')"
+                    valueProp="id"
+                    required
+                    aoptionsList="(options) => dataServiceList = options"
+                >
+                    <template #singlelabel="{ value }">
+                        <div class="w-full text-left pl-4">{{ value.name }} </div>
+                    </template>
+                    <template #option="{ option, isSelected, isPointed }">
+                        <div class="">
+                            {{ option.name }}
+                            <div @click="selectedBrandToUpdate = option" class="text-gray-400 hover:text-gray-700">
+                                <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #afterlist>
+                        <div class="w-full p-2 border-t border-gray-300">
+                            <Button
+                                @click="() => (isModalBrand = true)"
+                                label="Add new brand"
+                                icon="fas fa-plus"
+                                full
+                                type="secondary"
+                            />
+                        </div>
+                    </template>
+                </PureMultiselectInfiniteScroll>
+                
+                <ModalConfirmationDelete
+                    :routeDelete="{
+                        name: props.data.tag_routes.delete_tag.name,
+                        parameters: {
+                            ...props.data.tag_routes.delete_tag.parameters,
+                        }
+                    }"
+                    :title="trans('Are you sure you want to unselect brand?')"
+                    isFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <div @click="changeModel" class="ml-auto w-fit text-xs text-red-500 hover:underline cursor-pointer">
+                            <FontAwesomeIcon icon="fal fa-trash-alt" class="" fixed-width aria-hidden="true" />
+                            Remove brand
+                        </div>
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
+        </div>
+
 
         <!-- Modal: create new tag -->
         <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new tag') }}</h2>
-                    <!-- <p class="text-xs leading-5 text-gray-400">
-                        {{ trans('Information about payment from customer') }}
-                    </p> -->
                 </div>
 
                 <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
@@ -291,11 +437,6 @@ watch(() => props.data.tags, (newTags) => {
                         :loading="isLoadingCreateTag"
                         full
                     />
-
-                    <!-- <Transition name="spin-to-down">
-                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
-                            errorPaymentMethod }}</p>
-                    </Transition> -->
                 </div>
             </div>
         </Modal>
@@ -305,9 +446,6 @@ watch(() => props.data.tags, (newTags) => {
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit tag') }}</h2>
-                    <!-- <p class="text-xs leading-5 text-gray-400">
-                        {{ trans('Information about payment from customer') }}
-                    </p> -->
                 </div>
 
                 <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
@@ -330,15 +468,80 @@ watch(() => props.data.tags, (newTags) => {
                         :loading="isLoadingUpdateTag"
                         full
                     />
-
-                    <!-- <Transition name="spin-to-down">
-                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
-                            errorPaymentMethod }}</p>
-                    </Transition> -->
                 </div>
             </div>
         </Modal>
 
-        {{ selectedUpdateTag }}
+        
+        <!-- Modal: create new brand -->
+        <Modal :isOpen="isModalBrand" @onClose="isModalBrand = false" width="w-[600px]">
+            <div class="isolate bg-white px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
+                </div>
+
+                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                    <div class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Reference') }}
+                        </label>
+                        <div class="mt-1">
+                            <PureInput v-model="newBrandReference" placeholder="1-16 characters" />
+                        </div>
+                    </div>
+
+                    <div class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Name') }}
+                        </label>
+                        <div class="mt-1">
+                            <PureInput v-model="newBrandName" placeholder="1-64 characters" />
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-6 mb-4 relative">
+                    <Button
+                        @click="() => onCreateNewBrand()"
+                        label="Create"
+                        :disabled="!newBrandName"
+                        :loading="isLoadingCreateBrand"
+                        full
+                    />
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Modal: Edit brand -->
+        <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
+            <div class="isolate bg-white px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit tag') }}</h2>
+                </div>
+
+                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                    <div class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Name') }}
+                        </label>
+                        <div class="mt-1">
+                            <PureInput :modelValue="selectedUpdateTag?.name" @update:modelValue="(e) => set(selectedUpdateTag, ['name'], e)" placeholder="1-64 characters" />
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-6 mb-4 relative">
+                    <Button
+                        @click="() => onEditTag()"
+                        label="Update tag"
+                        :disabled="!selectedUpdateTag?.name"
+                        :loading="isLoadingUpdateTag"
+                        full
+                    />
+                </div>
+            </div>
+        </Modal>
     </div>
 </template>

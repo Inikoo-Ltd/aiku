@@ -1,6 +1,7 @@
 <?php
 
 
+use App\Actions\Dropshipping\Shopify\Product\RequestApiUploadProductToShopify;
 use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
 
@@ -298,7 +299,7 @@ return [
     |
     */
 
-    'api_init' => null,
+    'api_init' => RequestApiUploadProductToShopify::shopifyApiClosure(),
 
     /*
     |--------------------------------------------------------------------------
