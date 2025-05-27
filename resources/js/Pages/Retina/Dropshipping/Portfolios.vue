@@ -91,6 +91,31 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 const selectedData = reactive({
 	products: [] as number[],
 })
+
+// Filter portfolios by type
+const filterList = [
+	{
+		label: trans("All"),
+		value: "all",
+	},
+	{
+		label: trans("Department"),
+		value: "department",
+	},
+	{
+		label: trans("Sub-department"),
+		value: "sub_department",
+	},
+	{
+		label: trans("Family"),
+		value: "family",
+	},
+	{
+		label: trans("Product"),
+		value: "product",
+	},
+]
+const selectedList = ref(filterList[0])
 </script>
 
 <template>
@@ -153,10 +178,28 @@ const selectedData = reactive({
 	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
             :headLabel="trans('Add products to portfolios')"
-            :route-fetch="props.routes.itemRoute"
+            :route-fetch="{
+				name: props.routes.itemRoute.name,
+				parameters: {
+					...props.routes.itemRoute.parameters,
+					'filter[type]': selectedList.value,
+				},
+			}"
+			:label_result="selectedList.label"
             :isLoadingSubmit
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
         >
+			<template #afterInput>
+				<div class="flex gap-2 text-sm font-semibold text-gray-500 mt-2 max-w-sm">
+					<div v-for="list in filterList"
+						@click="selectedList = list"
+						class="whitespace-nowrap py-2 px-3 cursor-pointer rounded border "
+						:class="selectedList.value === list.value ? 'bg-gray-700 text-white border-gray-400' : 'border-gray-300 hover:bg-gray-200'"
+					>
+						{{ list.label}}
+					</div>
+				</div>
+			</template>
         </ProductsSelector>
     </Modal>
 </template>
