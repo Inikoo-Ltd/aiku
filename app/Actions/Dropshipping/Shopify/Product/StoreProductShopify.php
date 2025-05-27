@@ -55,18 +55,11 @@ class StoreProductShopify extends OrgAction
                     ];
                 }
 
-                $portfolio = StorePortfolio::run(
+                StorePortfolio::run(
                     $shopifyUser->customerSalesChannel,
                     $product,
                     $modelData
                 );
-
-                $shopifyUser->products()->attach($product, [
-                    'shopify_user_id' => $shopifyUser->id,
-                    'product_type' => class_basename($product),
-                    'product_id' => $product->id,
-                    'portfolio_id' => $portfolio->id
-                ]);
             }
 
             if ($shopifyUser->customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY) {

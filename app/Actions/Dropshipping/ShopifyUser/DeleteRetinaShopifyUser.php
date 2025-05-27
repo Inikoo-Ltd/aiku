@@ -35,6 +35,8 @@ class DeleteRetinaShopifyUser extends OrgAction
 
         $deletedSuffix = 'deleted-' . $randomNumber;
 
+        DeleteWebhooksFromShopify::dispatch($shopifyUser);
+
         $this->update($shopifyUser, [
             'name' => $shopifyUser->name . $deletedSuffix,
             'slug' => $shopifyUser->slug . $deletedSuffix,
@@ -47,8 +49,6 @@ class DeleteRetinaShopifyUser extends OrgAction
                 'status' => CustomerSalesChannelStatusEnum::CLOSED
             ]);
         }
-
-        DeleteWebhooksFromShopify::run($shopifyUser);
 
         $shopifyUser->delete();
     }
