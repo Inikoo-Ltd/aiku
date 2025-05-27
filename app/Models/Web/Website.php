@@ -93,6 +93,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_menu_snapshot_id
  * @property int|null $live_menu_snapshot_id
  * @property string|null $published_menu_checksum
+ * @property int|null $unpublished_department_snapshot_id
+ * @property int|null $live_department_snapshot_id
+ * @property string|null $published_department_checksum
+ * @property int|null $unpublished_sub_department_snapshot_id
+ * @property int|null $live_sub_department_snapshot_id
+ * @property string|null $published_sub_department_checksum
+ * @property int|null $unpublished_family_snapshot_id
+ * @property int|null $live_family_snapshot_id
+ * @property string|null $published_family_checksum
+ * @property int|null $unpublished_product_snapshot_id
+ * @property int|null $live_product_snapshot_id
+ * @property string|null $published_product_checksum
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks

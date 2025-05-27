@@ -62,7 +62,7 @@ class GetProductCategoryShowcase
             $data = [
                 'family' => FamilyResource::make($productCategory),
             ];
-            if($routeName == 'grp.org.shops.show.catalogue.families.show'){
+            if ($routeName == 'grp.org.shops.show.catalogue.families.show') {
                 $data['routeList'] = [
                     'collectionRoute' => [
                         'name' => 'grp.org.shops.show.catalogue.families.show.collection.create',
@@ -113,9 +113,9 @@ class GetProductCategoryShowcase
                 'method'     => 'delete'
             ],
         ];
-        
 
-        
+
+
 
         return $data;
     }

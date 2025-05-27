@@ -45,7 +45,7 @@ class StartHandlingDeliveryNote extends OrgAction
 
     public function prepareForValidation()
     {
-        if(!$this->asAction) {
+        if (!$this->asAction) {
             $employee = $this->user->employees()->first();
             if ($employee) {
                 $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();

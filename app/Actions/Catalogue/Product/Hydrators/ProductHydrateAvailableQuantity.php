@@ -39,7 +39,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             $quantityInStock = $orgStock->quantity_in_locations;
 
             $productToOrgStockRatio = $orgStock->pivot->quantity;
-            if (!$productToOrgStockRatio || $productToOrgStockRatio==0) {
+            if (!$productToOrgStockRatio || $productToOrgStockRatio == 0) {
                 continue;
             }
 

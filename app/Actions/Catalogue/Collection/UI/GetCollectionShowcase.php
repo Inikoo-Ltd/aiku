@@ -22,9 +22,9 @@ class GetCollectionShowcase
         // dd($collection);
         $parentRoute = null;
 
-        if($collection->parent) {
-            if($collection->parent instanceof ProductCategory) {
-                if($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($collection->parent) {
+            if ($collection->parent instanceof ProductCategory) {
+                if ($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                     $parentRoute = [
                         'name' => 'grp.org.shops.show.catalogue.departments.show',
                         'parameters' => [
@@ -34,7 +34,7 @@ class GetCollectionShowcase
                         ],
                         'method' => 'get'
                     ];
-                } elseif ($collection->parent->type == ProductCategoryTypeEnum::FAMILY) { 
+                } elseif ($collection->parent->type == ProductCategoryTypeEnum::FAMILY) {
                     $parentRoute = [
                         'name' => 'grp.org.shops.show.catalogue.families.show',
                         'parameters' => [
@@ -58,7 +58,7 @@ class GetCollectionShowcase
                 }
             }
         }
-        
+
         return [
             'parent'      => $collection->parent ? [
                 'id'   => $collection->parent->id,

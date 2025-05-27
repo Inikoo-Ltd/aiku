@@ -75,7 +75,7 @@ class StorePicking extends OrgAction
 
     public function prepareForValidation(ActionRequest $request)
     {
-        if(!$this->asAction) {
+        if (!$this->asAction) {
             if (!$request->has('picker_user_id')) {
                 $this->set('picker_user_id', $this->user->id);
             }
@@ -109,7 +109,7 @@ class StorePicking extends OrgAction
         $deliveryNoteItem = DeliveryNoteItem::findOrFail($command->argument('deliveryNoteItem'));
 
         $this->deliveryNoteItem = $deliveryNoteItem;
-        
+
         $data = [
             'location_id'     => (int) $command->argument('locationId'),
             'picker_user_id'  => (int) $command->argument('userId'),

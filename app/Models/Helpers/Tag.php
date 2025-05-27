@@ -26,7 +26,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shop_id
  * @property string $slug
  * @property string $name
- * @property string $scope
+ * @property TagScopeEnum $scope
  * @property array<array-key, mixed> $data
  * @property int $number_models
  * @property \Illuminate\Support\Carbon|null $created_at
