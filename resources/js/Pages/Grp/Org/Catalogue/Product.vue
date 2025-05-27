@@ -25,6 +25,8 @@ import TableProductBackInStockReminders from "@/Components/Tables/Grp/Org/Catalo
 
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import TableTradeUnits from '@/Components/Tables/Grp/Goods/TableTradeUnits.vue'
+import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue'
 
 library.add(
     faFolder,
@@ -56,6 +58,8 @@ const props = defineProps<{
     showcase?: {}
     service: {}
     rental: {}
+    trade_units?: {}
+    stocks?: {}
 }>()
 
 
@@ -73,7 +77,9 @@ const component = computed(() => {
         rental: ProductRental,
         history: ModelChangelog,
         favourites: TableProductFavourites,
-        reminders: TableProductBackInStockReminders
+        reminders: TableProductBackInStockReminders,
+        trade_units: TableTradeUnits,
+        stocks: TableOrgStocks
 
     }
 
