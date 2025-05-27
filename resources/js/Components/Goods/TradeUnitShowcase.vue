@@ -4,7 +4,7 @@ import MultiSelect from 'primevue/multiselect';
 import { ref } from 'vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
-import { router } from '@inertiajs/vue3'
+import { router, useForm } from '@inertiajs/vue3'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus } from "@fas"
@@ -15,6 +15,8 @@ import { notify } from '@kyvg/vue3-notification'
 import Tag from '../Tag.vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import axios from 'axios'
+import { set } from 'lodash'
+import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -23,7 +25,7 @@ const props = defineProps<{
             index_tag: routeType
             store_tag: routeType
             update_tag: routeType
-            destroy_tag: routeType
+            delete_tag: routeType
             attach_tag: routeType
             detach_tag: routeType
         }
@@ -32,6 +34,9 @@ const props = defineProps<{
     }
 }>()
 
+console.log('props', props.data.tag_routes)
+
+// Section: modal create new tag
 const isModalTag = ref(false)
 const _multiselect_tags = ref(null)
 const newTagName = ref('')
@@ -70,7 +75,7 @@ const onCreateNewTag = () => {
     )
 }
 
-
+// Section: fetch index tag
 const isLoadingMultiselect = ref<string | boolean>(false)
 const optionsList = ref<any[]>([])
 const fetchProductList = async (url?: string) => {
@@ -96,12 +101,13 @@ const fetchProductList = async (url?: string) => {
     isLoadingMultiselect.value = false
 }
 
-const onUpdateTags = () => {
-    router.post(
+// Section: manage attach-detach tag
+const formSelectedTags = useForm({
+    tags_id: props.data.tags_selected_id,
+})
+const onManageTags = () => {
+    formSelectedTags.post(
         route(props.data.tag_routes.attach_tag.name, props.data.tag_routes.attach_tag.parameters),
-        {
-            tags_id: props.data.tags_selected_id,
-        },
         {
             onStart: () => {
                 isLoadingCreateTag.value = true
@@ -109,20 +115,66 @@ const onUpdateTags = () => {
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully created new tag") + ': ' + newTagName.value,
+                    text: trans("Successfully update tag for this unit"),
                     type: "success",
                 })
                 isModalTag.value = false
                 newTagName.value = ''
                 // selectedTags.value.push(response.data.id)
+                formSelectedTags.defaults({
+                    tags_id: props.data.tags_selected_id,
+                })
             },
             onFinish: () => {
                 isLoadingCreateTag.value = false
             },
             onError: (error) => {
+                console.error('Error managing tags:', error)
                 notify({
                     title: trans("Something went wrong"),
-                    text: error.message,
+                    text: error.message || trans('Failed to manage tags'),
+                    type: "error",
+                })
+            }
+        }
+    )
+}
+
+
+// Section: update tag
+const isModalUpdateTag = ref(false)
+const isLoadingUpdateTag = ref(false)
+const selectedUpdateTag = ref<any>(null)
+const onEditTag = () => {
+    router[props.data.tag_routes.update_tag.method || 'patch'](
+        route(props.data.tag_routes.update_tag.name, {
+            ...props.data.tag_routes.update_tag.parameters,
+            tag: selectedUpdateTag.value?.slug,
+        }),
+        {
+            name: selectedUpdateTag.value?.name,
+        },
+        {
+            onStart: () => {
+                isLoadingUpdateTag.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Successfully update tag name."),
+                    type: "success",
+                })
+                isModalUpdateTag.value = false
+                selectedUpdateTag.value = null
+            },
+            onFinish: () => {
+                isLoadingUpdateTag.value = false
+            },
+            onError: (error) => {
+                console.error('Error editing tag:', error)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message || trans('Failed to update tag'),
                     type: "error",
                 })
             }
@@ -135,12 +187,31 @@ const onUpdateTags = () => {
     <div>
 
 
-        <div class="w-full max-w-md px-4">
+        <div class="w-full max-w-md px-8 py-4">
             <div for="">
                 Tags:
             </div>
-            <div class="flex flex-wrap mb-2 gap-x-2">
-                <Tag v-for="tag in data.tags" :label="tag.name" stringToColor>
+            <div class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
+                <Tag v-for="tag in data.tags" :label="tag.name" @click.self="() => (isModalUpdateTag = true, selectedUpdateTag = {...tag})" stringToColor class="cursor-pointer">
+                    <template #closeButton>
+                        <ModalConfirmationDelete
+                            :routeDelete="{
+                                name: props.data.tag_routes.delete_tag.name,
+                                parameters: {
+                                    ...props.data.tag_routes.delete_tag.parameters,
+                                    tag: tag.slug,
+                                }
+                            }"
+                            :title="trans('Are you sure you want to delete tag') + ` ${tag.name}?`"
+                            isFullLoading
+                        >
+                            <template #default="{ isOpenModal, changeModel }">
+                                <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-sm">
+                                    <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
+                                </div>
+                            </template>
+                        </ModalConfirmationDelete>
+                    </template>
                 </Tag>
             </div>
 
@@ -170,10 +241,10 @@ const onUpdateTags = () => {
                     </div>
                     </template>
                 </PureMultiselectInfiniteScroll> -->
-                
+                {{ formSelectedTags.isDirty }}
                 <MultiSelect
                     ref="_multiselect_tags"
-                    v-model="props.data.tags_selected_id"
+                    v-model="formSelectedTags.tags_id"
                     :options="optionsList.length ? optionsList : props.data.tags"
                     :optionLabel="optionsList.length ? 'tag_name' : 'name'"
                     optionValue="id"
@@ -181,7 +252,7 @@ const onUpdateTags = () => {
                     :maxSelectedLabels="3"
                     class="w-full md:w-80"
                     @show="() => optionsList.length ? null : fetchProductList()"
-                    @hide="() => (onUpdateTags())"
+                    @hide="() => (formSelectedTags.isDirty ? onManageTags() : null)"
                 >
                     <template #footer="{ value, options }">
                         <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
@@ -200,8 +271,8 @@ const onUpdateTags = () => {
 
         
         <!-- <pre>{{ data.tags }}</pre> -->
-        selected id: {{ props.data.tags_selected_id }}
-        <pre>{{ optionsList }}</pre>
+        <!-- selected id: {{ props.data.tags_selected_id }}
+        <pre>{{ optionsList }}</pre> -->
 
         <!-- Modal: create new tag -->
         <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
@@ -241,5 +312,46 @@ const onUpdateTags = () => {
                 </div>
             </div>
         </Modal>
+
+        <!-- Modal: manage tag -->
+        <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
+            <div class="isolate bg-white px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit tag') }}</h2>
+                    <!-- <p class="text-xs leading-5 text-gray-400">
+                        {{ trans('Information about payment from customer') }}
+                    </p> -->
+                </div>
+
+                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                    <div class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Name') }}
+                        </label>
+                        <div class="mt-1">
+                            <PureInput :modelValue="selectedUpdateTag?.name" @update:modelValue="(e) => set(selectedUpdateTag, ['name'], e)" placeholder="1-64 characters" />
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-6 mb-4 relative">
+                    <Button
+                        @click="() => onEditTag()"
+                        label="Update tag"
+                        :disabled="!selectedUpdateTag?.name"
+                        :loading="isLoadingUpdateTag"
+                        full
+                    />
+
+                    <!-- <Transition name="spin-to-down">
+                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
+                            errorPaymentMethod }}</p>
+                    </Transition> -->
+                </div>
+            </div>
+        </Modal>
+
+        {{ selectedUpdateTag }}
     </div>
 </template>
