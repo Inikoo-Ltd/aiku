@@ -13,6 +13,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\ShopifyUserHasProduct;
+use Closure;
+use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
+use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -32,9 +35,21 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
      */
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): void
     {
-        $client = $shopifyUser->api()->getRestClient();
+        $shopifyUser->api()->getOptions()->setGuzzleOptions([
+            'http_errors' => false
+        ]);
 
-        $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+        try {
+            $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+        } catch (\Exception $e) {
+            $response = [
+                'errors' => true,
+                'body' => [
+                    'errors' => $e->getMessage()
+                ]
+            ];
+        }
+
         Log::info('right-after-upload-' .$portfolio->id);
 
         if ($response['errors']) {
@@ -85,5 +100,24 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
     public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): int
     {
         return rand();
+    }
+
+    public static function shopifyApiClosure(): Closure
+    {
+        return function (Options $opts) {
+            $ts = config('shopify-app.api_time_store');
+            $ls = config('shopify-app.api_limit_store');
+            $sd = config('shopify-app.api_deferrer');
+
+            // Custom Guzzle options
+            $opts->setGuzzleOptions(['timeout' => 90.0]);
+
+            return new BasicShopifyAPI(
+                $opts,
+                new $ts(),
+                new $ls(),
+                new $sd()
+            );
+        };
     }
 }

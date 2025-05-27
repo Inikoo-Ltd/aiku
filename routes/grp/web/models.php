@@ -785,16 +785,16 @@ Route::name('product_category.')->prefix('product_category/{productCategory:id}'
 
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inTradeUnit'])->name('tags.store');
-    Route::patch('tags/{tag}/update', [UpdateTag::class, 'inTradeUnit'])->name('tags.update');
-    Route::delete('tags/{tag}/delete', [DeleteTag::class, 'inTradeUnit'])->name('tags.delete');
+    Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inTradeUnit'])->name('tags.update');
+    Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inTradeUnit'])->name('tags.delete');
     Route::post('tags/attach', [AttachTagsToModel::class, 'inTradeUnit'])->name('tags.attach');
-    Route::delete('tags/{tag}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
+    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
 
     Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
-    Route::patch('brands/{brand}/update', [UpdateBrand::class, 'inTradeUnit'])->name('brands.update');
-    Route::delete('brands/{brand}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete');
+    Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete');
+    Route::patch('brands/{brand:id}/update', [UpdateBrand::class, 'inTradeUnit'])->name('brands.update');
     Route::post('brands/attach', [AttachBrandToModel::class, 'inTradeUnit'])->name('brands.attach');
-    Route::delete('brands/{brand}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
+    Route::delete('brands/{brand:id}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
 });
 
 require __DIR__."/models/inventory/warehouse.php";
