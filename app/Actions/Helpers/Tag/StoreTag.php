@@ -32,7 +32,16 @@ class StoreTag extends OrgAction
 
         data_set($modelData, 'group_id', $group->id);
 
-        return Tag::create($modelData);
+        $tag = Tag::create($modelData);
+
+        AttachTagsToModel::make()->handle(
+            $parent,
+            [
+                'tags_id' => [$tag->id]
+            ]
+        );
+
+        return $tag;
     }
 
     public function rules(): array
