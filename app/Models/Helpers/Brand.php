@@ -42,6 +42,7 @@ class Brand extends Model
     use HasSlug;
     use HasImage;
     protected $guarded = [];
+    public $timestamps = false;
 
     public function getRouteKeyName(): string
     {

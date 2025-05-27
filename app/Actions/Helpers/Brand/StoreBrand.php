@@ -26,7 +26,7 @@ class StoreBrand extends OrgAction
         AttachBrandToModel::make()->handle(
             $parent,
             [
-                'brand_id' => [$brand->id]
+                'brand_id' => $brand->id
             ],
         );
 

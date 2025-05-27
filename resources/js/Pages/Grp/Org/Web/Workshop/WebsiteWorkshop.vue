@@ -11,6 +11,7 @@ import WorkshopProduct from "@/Components/CMS/Website/Product/ProductWorkshop.vu
 import CategoryWorkshop from '@/Components/CMS/Website/Family/CategoryWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import DepartmentWorkshop from '@/Components/CMS/Website/Departement/DepartementWorkshop.vue'
+import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartement/SubDepartementWorkshop.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -40,7 +41,8 @@ const component = computed(() => {
         website_layout: LayoutWorkshop,
         family: CategoryWorkshop,
         product: WorkshopProduct,
-        department: DepartmentWorkshop
+        department: DepartmentWorkshop,
+        sub_department : SubDepartementWorkshop
     }
     return components[currentTab.value]
 })
