@@ -22,6 +22,7 @@ library.add(faPlus)
 
 const props = defineProps<{
     data: {
+        brand: {}
         brand_routes: {
             index_brand: routeType
             store_brand: routeType
@@ -164,7 +165,7 @@ const onEditTag = () => {
     router[props.data.tag_routes.update_tag.method || 'patch'](
         route(props.data.tag_routes.update_tag.name, {
             ...props.data.tag_routes.update_tag.parameters,
-            tag: selectedUpdateTag.value?.slug,
+            tag: selectedUpdateTag.value?.id,
         }),
         {
             name: selectedUpdateTag.value?.name,
@@ -240,19 +241,55 @@ const onCreateNewBrand = () => {
     )
 }
 
+// Section: attach brand
+const isLoadingAttachBrand = ref(false)
+const onAttachBrand = (brandId: number) => {
+    router.post(
+        route(props.data.brand_routes.attach_brand.name, props.data.brand_routes.attach_brand.parameters),
+        {
+            brand_id: brandId,
+        },
+        {
+            onStart: () => {
+                isLoadingAttachBrand.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully change brand for this unit"),
+                    type: "success",
+                })
+            },
+            onFinish: () => {
+                isLoadingAttachBrand.value = false
+            },
+            onError: (error) => {
+                console.error('Error managing brand:', error)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message || trans('Failed to change the brand'),
+                    type: "error",
+                })
+            }
+        }
+    )
+}
 
-// Section: update brand
-const brandiddddddd = ref(null)
+
+// Section: edit brand
 const isModalUpdateBrand = ref(false)
 const isLoadingUpdateBrand = ref(false)
 const selectedBrandToUpdate = ref<any>(null)
 const onEditBrand = () => {
-    router[props.data.tag_routes.update_tag.method || 'patch'](
-        route(props.data.tag_routes.update_tag.name, {
-            ...props.data.tag_routes.update_tag.parameters,
-            tag: selectedBrandToUpdate.value?.slug,
+    console.log('=---', props.data.brand_routes.update_brand.name)
+    console.log('=---', props.data.brand_routes.update_brand.parameters, selectedBrandToUpdate.value?.id)
+    router[props.data.brand_routes.update_brand.method || 'patch'](
+        route(props.data.brand_routes.update_brand.name, {
+            ...props.data.brand_routes.update_brand.parameters,
+            brand: selectedBrandToUpdate.value?.id,
         }),
         {
+            reference: selectedBrandToUpdate.value?.reference,
             name: selectedBrandToUpdate.value?.name,
         },
         {
@@ -262,7 +299,7 @@ const onEditBrand = () => {
             onSuccess: () => {
                 notify({
                     title: trans("Success!"),
-                    text: trans("Successfully update tag name."),
+                    text: trans("Successfully update brand name."),
                     type: "success",
                 })
                 isModalUpdateBrand.value = false
@@ -272,10 +309,10 @@ const onEditBrand = () => {
                 isLoadingUpdateBrand.value = false
             },
             onError: (error) => {
-                console.error('Error editing tag:', error)
+                console.error('Error editing brand:', error)
                 notify({
                     title: trans("Something went wrong"),
-                    text: error.message || trans('Failed to update tag'),
+                    text: error.message || trans('Failed to update brand'),
                     type: "error",
                 })
             }
@@ -301,15 +338,15 @@ const onEditBrand = () => {
                                 name: props.data.tag_routes.delete_tag.name,
                                 parameters: {
                                     ...props.data.tag_routes.delete_tag.parameters,
-                                    tag: tag.slug,
+                                    tag: tag.id,
                                 }
                             }"
                             :title="trans('Are you sure you want to delete tag') + ` ${tag.name}?`"
                             isFullLoading
                         >
                             <template #default="{ isOpenModal, changeModel }">
-                                <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-sm">
-                                    <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
+                                <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                                    <FontAwesomeIcon icon='fal fa-trash-alt' class='text-xs' aria-hidden='true' />
                                 </div>
                             </template>
                         </ModalConfirmationDelete>
@@ -350,28 +387,50 @@ const onEditBrand = () => {
             </div>
         </div>
 
-        <div class="w-full max-w-md px-8 py-4 flex gap-x-3 ">
+        <div class="w-full max-w-md px-8 py-4 gap-x-3 ">
             <div>
-                Brand:
+                {{ trans("Brand") }}:
             </div>
 
             <div class="w-full">
                 <PureMultiselectInfiniteScroll
-                    v-model="brandiddddddd"
+                    :modelValue="data.brand?.id"
+                    @update:modelValue="(e) => (set(data, ['brand', 'id'], e), onAttachBrand(e))"
                     :fetchRoute="props.data.brand_routes.index_brand"
                     :placeholder="trans('Select brand')"
                     valueProp="id"
                     required
                     aoptionsList="(options) => dataServiceList = options"
+                    :initOptions="data.brand ? [data.brand] : undefined"
                 >
                     <template #singlelabel="{ value }">
                         <div class="w-full text-left pl-4">{{ value.name }} </div>
                     </template>
                     <template #option="{ option, isSelected, isPointed }">
-                        <div class="">
+                        <div class="flex justify-between w-full">
                             {{ option.name }}
-                            <div @click="selectedBrandToUpdate = option" class="text-gray-400 hover:text-gray-700">
-                                <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                            <div class="flex gap-x-2">
+                                <ModalConfirmationDelete
+                                    :routeDelete="{
+                                        name: props.data.brand_routes.delete_brand.name,
+                                        parameters: {
+                                            ...props.data.brand_routes.delete_brand.parameters,
+                                            brand: option.id,
+                                        }
+                                    }"
+                                    :title="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                                    isFullLoading
+                                >
+                                    <template #default="{ isOpenModal, changeModel }">
+                                        <div @click.stop="changeModel" class="cursor-pointer px-1 text-red-400 hover:text-red-600 rounded-sm">
+                                            <FontAwesomeIcon icon='fal fa-trash-alt' class='' aria-hidden='true' />
+                                        </div>
+                                    </template>
+                                </ModalConfirmationDelete>
+
+                                <div @click.stop="(selectedBrandToUpdate = option, isModalUpdateBrand = true)" class="text-gray-400 hover:text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -390,19 +449,18 @@ const onEditBrand = () => {
                 </PureMultiselectInfiniteScroll>
                 
                 <ModalConfirmationDelete
-                    :routeDelete="{
-                        name: props.data.tag_routes.delete_tag.name,
-                        parameters: {
-                            ...props.data.tag_routes.delete_tag.parameters,
-                        }
-                    }"
+                    v-if="data?.brand?.id"
+                    :routeDelete="props.data.brand_routes.detach_brand"
                     :title="trans('Are you sure you want to unselect brand?')"
+                    :description="trans('This will remove the brand from this unit, but not delete it.')"
                     isFullLoading
+                    noLabel="Unselect"
+                    noIcon="fal fa-times"
                 >
                     <template #default="{ isOpenModal, changeModel }">
                         <div @click="changeModel" class="ml-auto w-fit text-xs text-red-500 hover:underline cursor-pointer">
-                            <FontAwesomeIcon icon="fal fa-trash-alt" class="" fixed-width aria-hidden="true" />
-                            Remove brand
+                            <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
+                            {{ trans("Unselect brand") }}
                         </div>
                     </template>
                 </ModalConfirmationDelete>
@@ -514,19 +572,28 @@ const onEditBrand = () => {
         </Modal>
 
         <!-- Modal: Edit brand -->
-        <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
+        <Modal :isOpen="isModalUpdateBrand" @onClose="isModalUpdateBrand = false" width="w-[600px]">
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
-                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit tag') }}</h2>
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
                 </div>
 
                 <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     <div class="col-span-2">
                         <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Reference') }}
+                        </label>
+                        <div class="mt-1">
+                            <PureInput :modelValue="selectedBrandToUpdate?.reference" @update:modelValue="(e) => set(selectedBrandToUpdate, ['reference'], e)" placeholder="1-16 characters" />
+                        </div>
+                    </div>
+
+                    <div class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans('Name') }}
                         </label>
                         <div class="mt-1">
-                            <PureInput :modelValue="selectedUpdateTag?.name" @update:modelValue="(e) => set(selectedUpdateTag, ['name'], e)" placeholder="1-64 characters" />
+                            <PureInput :modelValue="selectedBrandToUpdate?.name" @update:modelValue="(e) => set(selectedBrandToUpdate, ['name'], e)" placeholder="1-64 characters" />
                         </div>
                     </div>
 
@@ -534,14 +601,17 @@ const onEditBrand = () => {
 
                 <div class="mt-6 mb-4 relative">
                     <Button
-                        @click="() => onEditTag()"
-                        label="Update tag"
-                        :disabled="!selectedUpdateTag?.name"
-                        :loading="isLoadingUpdateTag"
+                        @click="() => onEditBrand()"
+                        label="Edit Brand"
+                        :disabled="!selectedBrandToUpdate?.reference || !selectedBrandToUpdate?.name"
+                        :loading="isLoadingCreateBrand"
                         full
                     />
                 </div>
             </div>
         </Modal>
+
+        {{ data.brand }}
+
     </div>
 </template>

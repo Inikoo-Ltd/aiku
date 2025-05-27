@@ -17,11 +17,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteBrand extends OrgAction
 {
-    public function handle(Brand $brand): Brand
+    public function handle(Brand $brand): bool
     {
         $brand->tradeUnits()->detach();
         $brand->delete();
-        return $brand;
+        return true;
     }
 
     public function inTradeUnit(TradeUnit $tradeUnit, Brand $brand, ActionRequest $request)

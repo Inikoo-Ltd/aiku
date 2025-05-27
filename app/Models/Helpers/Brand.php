@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -37,7 +38,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag query()
  * @mixin \Eloquent
  */
-class Brand extends Model
+class Brand extends Model implements HasMedia
 {
     use HasSlug;
     use HasImage;

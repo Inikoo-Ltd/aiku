@@ -791,8 +791,8 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
 
     Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
-    Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete');
-    Route::patch('brands/{brand:id}/update', [UpdateBrand::class, 'inTradeUnit'])->name('brands.update');
+    Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete')->withoutScopedBindings();
+    Route::patch('brands/{brand:id}/update', [UpdateBrand::class, 'inTradeUnit'])->name('brands.update')->withoutScopedBindings();
     Route::post('brands/attach', [AttachBrandToModel::class, 'inTradeUnit'])->name('brands.attach');
     Route::delete('brands/{brand:id}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
 });
