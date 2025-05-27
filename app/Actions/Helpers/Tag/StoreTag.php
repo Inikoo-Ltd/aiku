@@ -38,7 +38,7 @@ class StoreTag extends OrgAction
             $parent,
             [
                 'tags_id' => [$tag->id]
-            ]
+            ],
         );
 
         return $tag;
@@ -47,7 +47,7 @@ class StoreTag extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:tags,name'],
         ];
     }
 
