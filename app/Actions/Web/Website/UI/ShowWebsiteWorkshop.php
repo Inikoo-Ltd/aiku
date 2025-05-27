@@ -113,6 +113,25 @@ class ShowWebsiteWorkshop extends OrgAction
                     );
         }
 
+        $publishRoute = [
+                'method'     => 'patch',
+                'name'       => 'grp.models.website.update',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+
+        if ($this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT->value) 
+        {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.department',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Web/Workshop/WebsiteWorkshop',
             [
@@ -146,13 +165,7 @@ class ShowWebsiteWorkshop extends OrgAction
                             'style' => 'primary',
                             'icon'  => ["fas", "fa-save"],
                             'label' => __('publish'),
-                            'route' => [
-                                'method'     => 'patch',
-                                'name'       => 'grp.models.website.update',
-                                'parameters' => [
-                                    'website' => $website->id
-                                ]
-                            ]
+                            'route' => $publishRoute
                         ]
                     ],
                 ],

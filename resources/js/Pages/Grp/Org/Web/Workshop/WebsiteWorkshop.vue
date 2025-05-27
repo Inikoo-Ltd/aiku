@@ -48,7 +48,7 @@ const component = computed(() => {
 
 const onPublish = (routeData) => {
 
-    router.patch(
+    router.post(
         route(routeData.name, routeData.parameters),
         { layout: props[props.tabs?.current].layout },
         {
