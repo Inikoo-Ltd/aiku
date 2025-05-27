@@ -13,6 +13,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
 import SideMenuSubDepartementWorkshop from "./SideMenuSubDepartementWorkshop.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -31,11 +32,12 @@ const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 
 // Make layout editable
-const layout = ref(null);
+const layout = ref(props.data.layout);
 
 const onPickTemplate = (template: any) => {
   isModalOpen.value = false;
   layout.value = template;
+  layout.value.data.fieldValue = {}
   autosave()
 };
 
@@ -44,13 +46,14 @@ const onChangeDepartment = (value: any) => {
   delete newDepartment.families
 
 
+  if (!layout.value.data.fieldValue || Array.isArray(layout.value.data.fieldValue)) {
+    layout.value.data.fieldValue = {}
+  }
+
   if (layout.value?.data?.fieldValue) {
     layout.value.data.fieldValue.sub_departements = value;
     layout.value.data.fieldValue.families = value.families || [];
   }
-
-  console.log(layout)
-
 };
 
 
@@ -58,11 +61,11 @@ const onChangeDepartment = (value: any) => {
 const autosave = () => {
   const payload = toRaw(layout.value);
   // Hapus properti jika ada
-  delete payload.data?.fieldValue?.layout
-  delete payload.data?.fieldValue?.sub_departments
-  console.log('Autosaving layout:', payload);
+  delete payload.data?.fieldValue?.families
+  delete payload.data?.fieldValue?.sub_departements
 
- /*  router.patch(
+
+  router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
     {
@@ -88,7 +91,7 @@ const autosave = () => {
         })
       }
     }
-  ) */
+  )
 }
 
 console.log('props.data.layout', props)

@@ -1,20 +1,30 @@
-
 export default {
-	blueprint: [
-		{
-			key: [ "container", "properties", "background"],
-			name: "Background",
-			type: "background",
-		},
-		{
-			key: [ "container", "properties", "padding"],
-			name: "Padding",
-			type: "padding",
-		},
-		{
-			key: ["container", "properties", "margin"],
-			name: "Margin",
-			type: "margin",
-		},
-	],
+    blueprint: [
+        {
+            name: "Layout",
+            key: ["container", "properties"],
+            replaceForm: [
+                {
+                    key: ["background"],
+                    label: "Background",
+                    type: "background",
+                    useIn : ["desktop", "tablet", "mobile"],
+                },
+                {
+                    key: ["padding"],
+                    label: "Padding",
+                    type: "padding",
+                    props_data: {},
+                    useIn : ["desktop", "tablet", "mobile"],
+                },
+                {
+                    key: ["margin"],
+                    label: "Margin",
+                    type: "margin",
+                    props_data: {},
+                    useIn : ["desktop", "tablet", "mobile"],
+                },
+            ],
+        },
+    ],
 }
