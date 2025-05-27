@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 27-05-2025-13h-40m
@@ -8,31 +9,14 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
-use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
-use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
-use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
-use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
-use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
-use App\Http\Resources\Inventory\OrgStocksResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
-use App\Models\Inventory\OrgStockFamily;
-use App\Models\Inventory\Warehouse;
-use App\Models\Procurement\OrgAgent;
-use App\Models\Procurement\OrgPartner;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgStocksInProduct extends OrgAction
