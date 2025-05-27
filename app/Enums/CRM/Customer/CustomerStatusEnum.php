@@ -15,6 +15,7 @@ enum CustomerStatusEnum: string
 {
     use EnumHelperTrait;
 
+    case PRE_REGISTRATION = 'pre_registration';
     case PENDING_APPROVAL = 'pending_approval';
     case APPROVED         = 'approved';
     case REJECTED         = 'rejected';
@@ -27,6 +28,7 @@ enum CustomerStatusEnum: string
             'approved'         => __('Approved'),
             'rejected'         => __('Rejected'),
             'banned'           => __('Banned'),
+            'pre_registration' => __('Pre Registration'),
         ];
     }
 
@@ -57,6 +59,12 @@ enum CustomerStatusEnum: string
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',
             ],
+            'pre_registration' => [
+                'tooltip' => __('Pre Registration'),
+                'icon'    => 'fal fa-user-clock',
+                'class'   => 'text-blue-500',
+                'color'   => 'blue',
+            ],
         ];
     }
 
@@ -69,6 +77,7 @@ enum CustomerStatusEnum: string
             'approved'         => $stats->number_customers_status_approved,
             'rejected'         => $stats->number_customers_status_rejected,
             'banned'           => $stats->number_customers_status_banned,
+            'pre_registration' => $stats->number_customers_status_pre_registration,
         ];
     }
 }
