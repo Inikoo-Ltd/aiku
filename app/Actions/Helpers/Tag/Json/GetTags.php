@@ -49,9 +49,8 @@ class GetTags extends OrgAction
             ->leftJoin('shops', 'tags.shop_id', '=', 'shops.id');
 
         $queryBuilder
-            ->defaultSort('model_has_tags.id')
+            ->defaultSort('tags.id')
             ->select([
-                'model_has_tags.id',
                 'tags.id as tags_id',
                 'tags.name as tag_name',
                 'tags.slug as tag_slug',
