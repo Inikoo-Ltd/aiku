@@ -16,7 +16,6 @@ use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -37,8 +36,9 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
 
         $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
         Log::info('right-after-upload-' .$portfolio->id);
+
         if ($response['errors']) {
-            throw ValidationException::withMessages(['Internal server error, please wait a while']);
+            \Sentry\captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
         }
 
         $productShopify = Arr::get($response, 'body.product');
@@ -51,21 +51,25 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
 
         HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
 
-        ShopifyUserHasProduct::updateOrCreate([
-            'shopify_user_id' => $shopifyUser->id,
-            'product_type' => $portfolio->item->getMorphClass(),
-            'product_id' => $portfolio->item->id,
-            'portfolio_id' => $portfolio->id
-        ], [
-            'shopify_user_id' => $shopifyUser->id,
-            'product_type' => $portfolio->item->getMorphClass(),
-            'product_id' => $portfolio->item->id,
-            'portfolio_id' => $portfolio->id,
-            'shopify_product_id' => Arr::get($productShopify, 'id')
-        ]);
+        if (Arr::get($productShopify, 'id')) {
+            ShopifyUserHasProduct::updateOrCreate([
+                'shopify_user_id' => $shopifyUser->id,
+                'product_type' => $portfolio->item->getMorphClass(),
+                'product_id' => $portfolio->item->id,
+                'portfolio_id' => $portfolio->id
+            ], [
+                'shopify_user_id' => $shopifyUser->id,
+                'product_type' => $portfolio->item->getMorphClass(),
+                'product_id' => $portfolio->item->id,
+                'portfolio_id' => $portfolio->id,
+                'shopify_product_id' => Arr::get($productShopify, 'id')
+            ]);
+        }
 
         $this->update($portfolio, [
-            'data' => []
+            'data' => [
+                'api_response' => Arr::get($response, 'body')
+            ]
         ]);
 
         Log::info('end-dispatch-' .$portfolio->id);
