@@ -28,6 +28,7 @@ const props = defineProps<{
     family?: {}
     settings: {}
     department: {}
+    sub_department: {}
 }>()
 
 console.log(props)
