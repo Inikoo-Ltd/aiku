@@ -14,6 +14,7 @@ import PureInput from '../Pure/PureInput.vue'
 import { notify } from '@kyvg/vue3-notification'
 import Tag from '../Tag.vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
+import axios from 'axios'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -27,18 +28,9 @@ const props = defineProps<{
             detach_tag: routeType
         }
         tags: {}[]
-        tags_selected: number[]
+        tags_selected_id: number[]
     }
 }>()
-
-const selectedTags = ref([1, 2, 3, 4])
-const cities = ref([
-    { name: 'New York', code: 'NY' },
-    { name: 'Rome', code: 'RM' },
-    { name: 'London', code: 'LDN' },
-    { name: 'Istanbul', code: 'IST' },
-    { name: 'Paris', code: 'PRS' }
-]);
 
 const isModalTag = ref(false)
 const _multiselect_tags = ref(null)
@@ -58,7 +50,67 @@ const onCreateNewTag = () => {
                 notify({
                     title: trans("Success"),
                     text: trans("Successfully created new tag") + ': ' + newTagName.value,
+                    type: "success",
+                })
+                isModalTag.value = false
+                newTagName.value = ''
+                // selectedTags.value.push(response.data.id)
+            },
+            onFinish: () => {
+                isLoadingCreateTag.value = false
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
                     type: "error",
+                })
+            }
+        }
+    )
+}
+
+
+const isLoadingMultiselect = ref<string | boolean>(false)
+const optionsList = ref<any[]>([])
+const fetchProductList = async (url?: string) => {
+    isLoadingMultiselect.value = true
+
+    const urlToFetch = url || route(props.data.tag_routes.index_tag.name, props.data.tag_routes.index_tag.parameters)
+
+    try {
+        const xxx = await axios.get(urlToFetch)
+        
+        optionsList.value = [...optionsList.value, ...xxx?.data?.data]
+
+        console.log('fetch xxx', xxx)
+
+    } catch  {
+        // console.log(error)
+        notify({
+            title: trans('Something went wrong.'),
+            text: trans('Failed to fetch product list'),
+            type: 'error',
+        })
+    }
+    isLoadingMultiselect.value = false
+}
+
+const onUpdateTags = () => {
+    router.post(
+        route(props.data.tag_routes.attach_tag.name, props.data.tag_routes.attach_tag.parameters),
+        {
+            tags_id: props.data.tags_selected_id,
+        },
+        {
+            onStart: () => {
+                isLoadingCreateTag.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully created new tag") + ': ' + newTagName.value,
+                    type: "success",
                 })
                 isModalTag.value = false
                 newTagName.value = ''
@@ -81,56 +133,77 @@ const onCreateNewTag = () => {
 
 <template>
     <div>
-        <!-- <pre>{{ data.tags }}</pre> -->
 
-        <MultiSelect
-            ref="_multiselect_tags"
-            v-model="selectedTags"
-            :options="cities"
-            optionLabel="name"
-            placeholder="Select Cities"
-            :maxSelectedLabels="3"
-            class="w-full md:w-80"
-        >
-            <template #footer="{ value, options }">
-                <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
-                    <Button
-                        @click="() => (isModalTag = true, _multiselect_tags?.hide())"
-                        label="Create new tag"
-                        icon="fas fa-plus"
-                        full
-                        type="secondary"
-                    />
-                </div>
-            </template>
-        </MultiSelect>
 
-        
-
-        <div class="w-full max-w-md qwezxc">
-
-            <PureMultiselectInfiniteScroll
-                xv-model="formAddService.service_id"
-                :fetchRoute="props.data.tag_routes.index_tag"
-                :placeholder="trans('Select Services')"
-                valueProp="id"
-                aoptionsList="(options) => dataServiceList = options"
-            >
-                <template #singlelabel="{ value }">
-                    <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(value.currency_code, value.price) }}/{{ value.unit }})</span></div>
-                </template>
-
-                <template #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.name }} </div>
-                </template>
-            </PureMultiselectInfiniteScroll>
-
-            <div class="flex flex-wrap">
-                <Tag v-for="tag in data.tags.data" :label="tag.name">
+        <div class="w-full max-w-md px-4">
+            <div for="">
+                Tags:
+            </div>
+            <div class="flex flex-wrap mb-2 gap-x-2">
+                <Tag v-for="tag in data.tags" :label="tag.name" stringToColor>
                 </Tag>
+            </div>
+
+            <div class="w-full max-w-64">
+                <!-- <PureMultiselectInfiniteScroll
+                    xv-model="formAddService.service_id"
+                    :fetchRoute="props.data.tag_routes.index_tag"
+                    :placeholder="trans('Select Services')"
+                    valueProp="id"
+                    aoptionsList="(options) => dataServiceList = options"
+                >
+                    <template #singlelabel="{ value }">
+                        <div class="w-full text-left pl-4">{{ value.tag_name }}</div>
+                    </template>
+                    <template #option="{ option, isSelected, isPointed }">
+                        <div class="">{{ option.tag_name }} </div>
+                    </template>
+                    <template #afterlist>
+                        <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
+                        <Button
+                            @click="() => (isModalTag = true, _multiselect_tags?.hide())"
+                            label="Create new tag"
+                            icon="fas fa-plus"
+                            full
+                            type="secondary"
+                        />
+                    </div>
+                    </template>
+                </PureMultiselectInfiniteScroll> -->
+                
+                <MultiSelect
+                    ref="_multiselect_tags"
+                    v-model="props.data.tags_selected_id"
+                    :options="optionsList.length ? optionsList : props.data.tags"
+                    :optionLabel="optionsList.length ? 'tag_name' : 'name'"
+                    optionValue="id"
+                    placeholder="Select Tags"
+                    :maxSelectedLabels="3"
+                    class="w-full md:w-80"
+                    @show="() => optionsList.length ? null : fetchProductList()"
+                    @hide="() => (onUpdateTags())"
+                >
+                    <template #footer="{ value, options }">
+                        <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
+                            <Button
+                                @click="() => (isModalTag = true, _multiselect_tags?.hide())"
+                                label="Create new tag"
+                                icon="fas fa-plus"
+                                full
+                                type="secondary"
+                            />
+                        </div>
+                    </template>
+                </MultiSelect>
             </div>
         </div>
 
+        
+        <!-- <pre>{{ data.tags }}</pre> -->
+        selected id: {{ props.data.tags_selected_id }}
+        <pre>{{ optionsList }}</pre>
+
+        <!-- Modal: create new tag -->
         <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
