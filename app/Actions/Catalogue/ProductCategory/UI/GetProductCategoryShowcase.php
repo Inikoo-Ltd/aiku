@@ -21,6 +21,8 @@ class GetProductCategoryShowcase
 
     public function handle(ProductCategory $productCategory): array
     {
+        $routeName = request()->route()->getName();
+
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
 
             $data = [
@@ -28,15 +30,78 @@ class GetProductCategoryShowcase
                 'subDepartments' => $productCategory?->children ? SubDepartmentResource::collection($productCategory?->children)->toArray(request()) : [],
                 'families'   => FamilyResource::collection($productCategory->getFamilies())->toArray(request()),
             ];
+            $data['routeList'] = [
+                'collectionRoute' => [
+                    'name' => 'grp.org.shops.show.catalogue.departments.show.collection.create',
+                    'parameters' => [
+                        'organisation' => $productCategory->organisation->slug,
+                        'shop'         => $productCategory->shop->slug,
+                        'department'   => $productCategory->slug,
+                    ],
+                    'method' => 'get'
+                ]
+            ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $data = [
                 'subDepartment' => SubDepartmentResource::make($productCategory->department)->toArray(request()),
                 'families'   => FamilyResource::collection($productCategory->getFamilies())->toArray(request()),
             ];
+            $data['routeList'] = [
+                'collectionRoute' => [
+                    'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                    'parameters' => [
+                        'organisation' => $productCategory->organisation->slug,
+                        'shop'         => $productCategory->shop?->slug,
+                        'department'   => $productCategory->department->slug,
+                        'subDepartment' => $productCategory->slug,
+                    ],
+                    'method' => 'get'
+                ]
+            ];
         } else {
             $data = [
                 'family' => FamilyResource::make($productCategory),
             ];
+            if($routeName == 'grp.org.shops.show.catalogue.families.show'){
+                $data['routeList'] = [
+                    'collectionRoute' => [
+                        'name' => 'grp.org.shops.show.catalogue.families.show.collection.create',
+                        'parameters' => [
+                            'organisation' => $productCategory->organisation->slug,
+                            'shop'         => $productCategory->shop?->slug,
+                            'family' => $productCategory->slug,
+                        ],
+                        'method' => 'get'
+                    ]
+                ];
+            } elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.families.show') {
+                $data['routeList'] = [
+                    'collectionRoute' => [
+                        'name' => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
+                        'parameters' => [
+                            'organisation' => $productCategory->organisation->slug,
+                            'shop'         => $productCategory->shop->slug,
+                            'department'   => $productCategory->department->slug,
+                            'family'       => $productCategory->slug,
+                        ],
+                        'method' => 'get'
+                    ]
+                ];
+            } elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show') {
+                $data['routeList'] = [
+                    'collectionRoute' => [
+                        'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.families.show.collection.create',
+                        'parameters' => [
+                            'organisation' => $productCategory->organisation->slug,
+                            'shop'         => $productCategory->shop?->slug,
+                            'department'   => $productCategory->department->slug,
+                            'subDepartment' => $productCategory->subDepartment?->slug,
+                            'family'       => $productCategory->slug,
+                        ],
+                        'method' => 'get'
+                    ]
+                ];
+            }
         }
 
         $data['routes'] = [
@@ -48,6 +113,9 @@ class GetProductCategoryShowcase
                 'method'     => 'delete'
             ],
         ];
+        
+
+        
 
         return $data;
     }

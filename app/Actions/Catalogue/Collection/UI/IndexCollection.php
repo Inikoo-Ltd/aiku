@@ -318,6 +318,7 @@ class IndexCollection extends OrgAction
             'Org/Catalogue/Collections',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -408,7 +409,7 @@ class IndexCollection extends OrgAction
         return $this->handle(parent: $subDepartment);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|Shop|Organisation|Collection|ProductCategory $parent,string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -472,7 +473,7 @@ class IndexCollection extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.families.show.collection.index' => array_merge(
-                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.families.show', $routeParameters),
+                ShowFamily::make()->getBreadcrumbs($parent, 'grp.org.shops.show.catalogue.departments.show.families.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index',
@@ -487,7 +488,7 @@ class IndexCollection extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
@@ -502,7 +503,7 @@ class IndexCollection extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => array_merge(
-                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', $routeParameters),
+                ShowFamily::make()->getBreadcrumbs($parent, 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index',
@@ -518,7 +519,7 @@ class IndexCollection extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.families.show.collection.index' => array_merge(
-                ShowFamily::make()->getBreadcrumbs($this->parent, 'grp.org.shops.show.catalogue.families.show', $routeParameters),
+                ShowFamily::make()->getBreadcrumbs($parent, 'grp.org.shops.show.catalogue.families.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.families.show.collection.index',
