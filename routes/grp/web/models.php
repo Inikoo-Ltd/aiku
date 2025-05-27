@@ -603,6 +603,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/header', [AutosaveWebsiteMarginal::class, 'header'])->name('autosave.header');
     Route::patch('autosave/footer', [AutosaveWebsiteMarginal::class, 'footer'])->name('autosave.footer');
     Route::patch('autosave/menu', [AutosaveWebsiteMarginal::class, 'menu'])->name('autosave.menu');
+    Route::patch('autosave/department', [AutosaveWebsiteMarginal::class, 'department'])->name('autosave.department');
 
     Route::post('publish/menu', [PublishWebsiteMarginal::class, 'menu'])->name('publish.menu');
 

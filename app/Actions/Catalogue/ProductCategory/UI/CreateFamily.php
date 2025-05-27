@@ -139,7 +139,7 @@ class CreateFamily extends OrgAction
                                         'required' => true
                                     ],
                                     'description' => [
-                                        'type'     => 'textEditor',
+                                        'type'     => 'textarea',
                                         'label'    => __('description'),
                                         'required' => true
                                     ],

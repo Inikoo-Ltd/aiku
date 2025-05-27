@@ -37,6 +37,8 @@ class PublishWebsiteMarginal extends OrgAction
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFooterSnapshot->layout;
         } elseif ($marginal == 'menu') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+        } elseif ($marginal == 'department') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout;
         }
 
         $firstCommit = true;
