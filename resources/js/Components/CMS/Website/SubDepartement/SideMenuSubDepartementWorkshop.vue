@@ -23,6 +23,8 @@ import {
 import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
+import DepartementListTree from "../Departement/DepartementListTree.vue"
+import SubDepartementListTree from "./SubDepartementListTree.vue"
 /* import DepartementListTree from "./DepartementListTree.vue" */
 
 library.add(
@@ -108,15 +110,14 @@ const onPickBlock = (value: object) => {
       <!-- Scrollable Panels -->
       <TabPanels class="overflow-auto flex-grow bg-gray-50">
         <TabPanel class="p-4">
-          dsf
-         <!--  <WebBlockListDnd
+          <WebBlockListDnd
             :webBlockTypes="webBlockTypes"
             @pick-block="onPickBlock"
             :selectedWeblock="data?.code"
-          /> -->
+          />
         </TabPanel>
         <TabPanel v-if="data" class="p-4">
-         <!--  <DepartementListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" /> -->
+          <SubDepartementListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
         </TabPanel>
         <TabPanel v-if="data" class="p-4">
           <SideEditor 

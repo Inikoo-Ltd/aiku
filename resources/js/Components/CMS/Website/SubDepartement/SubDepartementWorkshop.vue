@@ -21,10 +21,11 @@ const props = defineProps<{
     web_block_types: any;
     autosaveRoute: routeType;
     layout: any;
-    family: any[];
+    sub_departements: any[];
   }
 }>()
 
+console.log(props.data)
 const layoutTheme = inject('layout', layoutStructure)
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
@@ -40,12 +41,15 @@ const onPickTemplate = (template: any) => {
 
 const onChangeDepartment = (value: any) => {
   const newDepartment = {...value};
-  delete newDepartment.sub_departments
+  delete newDepartment.families
+
 
   if (layout.value?.data?.fieldValue) {
-    layout.value.data.fieldValue.layout = value;
-    layout.value.data.fieldValue.sub_departments = value.sub_departments || [];
+    layout.value.data.fieldValue.sub_departements = value;
+    layout.value.data.fieldValue.families = value.families || [];
   }
+
+  console.log(layout)
 
 };
 
@@ -87,6 +91,7 @@ const autosave = () => {
   ) */
 }
 
+console.log('props.data.layout', props)
 
 
 const currentView = ref("desktop");
@@ -97,7 +102,7 @@ provide("currentView", currentView);
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
       <SideMenuSubDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate" :dataList="data.family" @onChangeDepartment="onChangeDepartment"/>
+        @set-up-template="onPickTemplate" :dataList="data.sub_departements" @onChangeDepartment="onChangeDepartment"/>
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">

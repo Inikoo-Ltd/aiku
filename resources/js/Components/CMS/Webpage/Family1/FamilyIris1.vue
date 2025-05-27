@@ -21,17 +21,17 @@ const props = defineProps<{
 }>()
 
 
-/* const maxDisplay = 10
-const visibleFamilies = ref(props.fieldValue.family.slice(0, maxDisplay)) */
-
 console.log(props)
 </script>
 
 <template>
-  <div v-if="props.fieldValue.family && props.fieldValue.family.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 p-3">
-    <div v-for="(family, index) in props.fieldValue.family" :key="index">
-      <Family1Render :data="family" />
+  <div v-if="props.fieldValue.families && props.fieldValue.families.length" class="px-4 py-10">
+    <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
+    <div class="flex gap-4 overflow-x-auto scrollbar-hide">
+      <div v-for="(item, index) in props.fieldValue.families" :key="index">
+        <Family1Render :data="item" />
+      </div>
     </div>
   </div>
- <EmptyState v-else :data="{title:'Empty Families'}" />
+   <EmptyState v-else :data="{title:'Empty Families'}" />
 </template>

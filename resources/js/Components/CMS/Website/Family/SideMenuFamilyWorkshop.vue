@@ -23,6 +23,7 @@ import {
 import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
+import FamilyListTree from "@/Components/CMS/Website/Family/FamilyListTree.vue"
 /* import DepartementListTree from "./DepartementListTree.vue" */
 
 library.add(
@@ -81,7 +82,7 @@ const onPickBlock = (value: object) => {
 }
 
 
-
+console.log('props.data', props)
 
 </script>
 
@@ -115,7 +116,7 @@ const onPickBlock = (value: object) => {
           />
         </TabPanel>
         <TabPanel v-if="data" class="p-4">
-         <!--  <DepartementListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" /> -->
+          <FamilyListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
         </TabPanel>
         <TabPanel v-if="data" class="p-4">
           <SideEditor 

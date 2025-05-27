@@ -12,6 +12,7 @@ import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
+import SideMenuFamilyWorkshop from "./SideMenuFamilyWorkshop.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight)
 
@@ -95,8 +96,8 @@ provide("currentView", currentView);
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate" :dataList="data.departments" @onChangeDepartment="onChangeDepartment"/>
+      <SideMenuFamilyWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
+        @set-up-template="onPickTemplate" :dataList="data.sub_departments" @onChangeDepartment="onChangeDepartment"/>
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
