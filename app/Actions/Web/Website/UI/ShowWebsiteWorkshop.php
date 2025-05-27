@@ -16,6 +16,7 @@ use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -60,7 +61,13 @@ class ShowWebsiteWorkshop extends OrgAction
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
         $product    = $website->shop->products()->first();
-        $departments = $website->shop->departments();
+        $departments = $website->shop->productCategories()
+            ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+            ->where('state', 'active')
+            ->with(['children' => function ($query) {
+                $query->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
+            }])
+            ->get();
         $department     = $departments->first();
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
@@ -68,6 +75,7 @@ class ShowWebsiteWorkshop extends OrgAction
         if ($this->scope instanceof Fulfilment) {
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::DEPARTMENT->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
         }
 
@@ -99,9 +107,9 @@ class ShowWebsiteWorkshop extends OrgAction
         if (!blank($departments)) {
             $tabs[WebsiteWorkshopTabsEnum::DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT->value
                     ?
-                    fn () => GetWebsiteWorkshopDepartment::run($website, $departments)
+                    fn () => GetWebsiteWorkshopDepartment::run($website, $department)
                     : Inertia::lazy(
-                        fn () => GetWebsiteWorkshopDepartment::run($website, $departments)
+                        fn () => GetWebsiteWorkshopDepartment::run($website, $department)
                     );
         }
 

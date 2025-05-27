@@ -29,9 +29,9 @@ class DepartmentWebsiteResource extends JsonResource
     {
         return [
             'slug'               => $this->slug,
-            'shop_slug'          => $this->shop_slug,
-            'shop_code'          => $this->shop_code,
-            'shop_name'          => $this->shop_name,
+            'shop_slug'          => $this->shop->slug,
+            'shop_code'          => $this->shop->code,
+            'shop_name'          => $this->shop->name,
             'code'               => $this->code,
             'name'               => $this->name,
             'state'              => [
@@ -42,9 +42,9 @@ class DepartmentWebsiteResource extends JsonResource
             'description'       => $this->description,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
-            'current_families'  => $this->stats->number_families ?? 0,
-            'current_products'  => $this->stats->number_products ?? 0,
             'follow_master'    =>  $this->follow_master
+            // 'current_families'  => $this->stats->number_families ?? 0,
+            // 'current_products'  => $this->stats->number_products ?? 0,
         ];
     }
 }
