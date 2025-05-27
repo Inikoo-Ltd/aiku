@@ -53,7 +53,7 @@ class IndexCollection extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Collection::class);
-
+        $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
         $queryBuilder
             ->defaultSort('collections.code')
             ->select([
@@ -64,6 +64,10 @@ class IndexCollection extends OrgAction
                 'collections.created_at',
                 'collections.updated_at',
                 'collections.slug',
+                'collection_stats.number_departments',
+                'collection_stats.number_families',
+                'collection_stats.number_products',
+                'collection_stats.number_collections'
             ]);
 
         if ($parent instanceof Group) {
@@ -167,7 +171,10 @@ class IndexCollection extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'description', label: __('Description'), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'number_departments', label: __('Departments'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'number_collections', label: __('Collections'), canBeHidden: false, sortable: false, searchable: false);
             if ($parent instanceof Collection) {
                 $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
             }

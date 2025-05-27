@@ -35,11 +35,15 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
         $locationId = Arr::get($locations, 'body.locations.0.id');
 
         foreach ($productVariants as $variant) {
-            $client->request('POST', '/admin/api/2025-04/inventory_levels/set.json', [
+            $response = $client->request('POST', '/admin/api/2025-04/inventory_levels/set.json', [
                 'location_id' => $locationId,
                 'inventory_item_id' => Arr::get($variant, 'inventory_item_id'),
-                'available' => Arr::get($variant, 'available_quantity')
+                'available' => Arr::get($variant, 'available_quantity', 100)
             ]);
+
+            if (Arr::get($response, 'status') !== 200) {
+                \Sentry\captureMessage(Arr::get($response, 'body.errors', 'Unknown error'));
+            }
         }
     }
 }

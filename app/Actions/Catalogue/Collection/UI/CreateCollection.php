@@ -67,7 +67,12 @@ class CreateCollection extends OrgAction
                                         'type'     => 'textEditor',
                                         'label'    => __('description'),
                                         'required' => false,
-                                    ]
+                                    ],
+                                        "image"         => [
+                                        "type"    => "image_crop_square",
+                                        "label"   => __("Image"),
+                                        "required" => false,
+                                    ],
 
                                 ]
                             ]

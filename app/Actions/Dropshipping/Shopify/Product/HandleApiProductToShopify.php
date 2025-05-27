@@ -13,7 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,8 +22,6 @@ class HandleApiProductToShopify extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
-
-    //    public string $jobQueue = 'shopify';
 
     /**
      * @throws \Exception
@@ -82,31 +79,7 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
-            $client = $shopifyUser->api()->getRestClient();
-
-            $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
-
-            if ($response['errors']) {
-                throw ValidationException::withMessages(['Internal server error, please wait a while']);
-            }
-
-            $productShopify = Arr::get($response, 'body.product');
-
-            $inventoryVariants = [];
-            foreach (Arr::get($productShopify, 'variants') as $variant) {
-                $variant['available_quantity'] = $portfolio->item->available_quantity;
-                $inventoryVariants[] = $variant;
-            }
-
-            HandleApiInventoryProductShopify::run($shopifyUser, $inventoryVariants);
-
-            $this->update($portfolio->shopifyPortfolio, [
-                'shopify_product_id' => Arr::get($productShopify, 'id')
-            ]);
-
-            $this->update($portfolio, [
-                'data' => []
-            ]);
+            RequestApiUploadProductToShopify::dispatch($shopifyUser, $portfolio, $body);
         }
     }
 

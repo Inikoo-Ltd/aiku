@@ -98,11 +98,17 @@ class ShowTradeUnit extends GrpAction
                             'method'    => 'delete'
                         ]
                     ],
+
                     'tabs' => [
                         'current'    => $this->tab,
                         'navigation' => TradeUnitTabsEnum::navigation()
 
                     ],
+
+                    TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
+                    fn () => GetTradeUnitShowcase::run($tradeUnit)
+                    : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
+
                     TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),

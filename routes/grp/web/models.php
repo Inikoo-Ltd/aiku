@@ -769,7 +769,7 @@ Route::name('product_category.')->prefix('product_category/{productCategory:id}'
 });
 
 
-Route::name('trade-units.')->prefix('trade-units/{tradeUnit}')->group(function () {
+Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inTradeUnit'])->name('tags.store');
     Route::patch('tags/{tag}/update', [UpdateTag::class, 'inTradeUnit'])->name('tags.update');
     Route::delete('tags/{tag}/delete', [StoreTag::class, 'inTradeUnit'])->name('tags.delete');
