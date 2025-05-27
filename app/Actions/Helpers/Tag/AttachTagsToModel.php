@@ -20,10 +20,13 @@ use Lorisleiva\Actions\ActionRequest;
 class AttachTagsToModel extends OrgAction
 {
     protected TradeUnit $parent;
-    public function handle(TradeUnit $model, array $modelData): void
+    public function handle(TradeUnit $model, array $modelData, $replace = false): void
     {
-        $model->tags()->sync($modelData['tags_id']);
-
+        if ($replace) {
+            $model->tags()->sync($modelData['tags_id']);
+        } else {
+            $model->tags()->syncWithoutDetaching($modelData['tags_id']);
+        }
         $model->refresh();
 
         foreach ($modelData['tags_id'] as $tagId) {
@@ -66,7 +69,7 @@ class AttachTagsToModel extends OrgAction
         $this->parent = $tradeUnit;
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        $this->handle($tradeUnit, $this->validatedData);
+        $this->handle($tradeUnit, $this->validatedData, true);
     }
 
 
