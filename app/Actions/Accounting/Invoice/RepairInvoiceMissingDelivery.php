@@ -32,7 +32,8 @@ class RepairInvoiceMissingDelivery
                 default=>'',
             };
 
-            $signature='fetch:invoices -s '.$org.' -s '.$sourceData[1];
+            $signature='fetch:invoices  '.$org.' -s '.$sourceData[1];
+            print "$signature\n";
             Artisan::call($signature);
         }
 

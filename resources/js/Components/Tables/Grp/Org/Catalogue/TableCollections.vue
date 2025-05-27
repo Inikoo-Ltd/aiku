@@ -63,7 +63,7 @@ function collectionRoute(collection: {}) {
         case "grp.org.shops.show.catalogue.families.show.collection.index":
             return route(
                 "grp.org.shops.show.catalogue.families.show.collection.show",
-                [route().params["organisation"], route().params['shop'], route().params['family'],  ollection.slug])
+                [route().params["organisation"], route().params['shop'], route().params['family'],  collection.slug])
     }
 }
 
