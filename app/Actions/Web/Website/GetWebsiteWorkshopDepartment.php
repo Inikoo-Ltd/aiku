@@ -42,7 +42,7 @@ class GetWebsiteWorkshopDepartment
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'departments'   => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
-            'department'    => Arr::get($website->unpublishedDepartmentSnapshot, 'layout.department', []),
+            'layout'    => Arr::get($website->unpublishedDepartmentSnapshot, 'layout.department', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.department',
                 'parameters' => [

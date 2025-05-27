@@ -65,7 +65,8 @@ class StocksResource extends JsonResource
             'revenue_grp_currency_lm'  => $this->revenue_grp_currency_lm,
             'revenue_grp_currency_lw'  => $this->revenue_grp_currency_1w,
             'revenue_grp_currency_ld'  => $this->revenue_grp_currency_ld,
-            'grp_currency'             => $this->grp_currency_code
+            'grp_currency'             => $this->grp_currency_code,
+            'state'                    => $this->state,
         ];
     }
 }

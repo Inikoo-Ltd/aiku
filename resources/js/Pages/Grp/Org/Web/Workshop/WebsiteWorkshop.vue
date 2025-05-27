@@ -26,14 +26,13 @@ const props = defineProps<{
     website_layout: {}
     family?: {}
     settings: {}
-    department : {}
+    department: {}
 }>()
 
 console.log(props)
 
 let currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
-const template = ref(toRaw(props.settings.length == 0 ? {} : props.settings?.catalogue_template))
 const loadingPublish = ref(false)
 
 const component = computed(() => {
@@ -41,23 +40,24 @@ const component = computed(() => {
         website_layout: LayoutWorkshop,
         family: CategoryWorkshop,
         product: WorkshopProduct,
-        department : DepartmentWorkshop
+        department: DepartmentWorkshop
     }
     return components[currentTab.value]
 })
 
 
 const onPublish = (routeData) => {
-     router.patch(
-         route(routeData.name, routeData.parameters),
-          {catalogue_template : template.value},
-         {
-             preserveScroll: true,
-             onStart: () => { loadingPublish.value = true },
-             onSuccess: () => { console.log('done') },
-             onError: errors => { console.log(errors) },
-             onFinish: () => { loadingPublish.value = false },
-         })
+
+    router.patch(
+        route(routeData.name, routeData.parameters),
+        { layout: props[props.tabs?.current].layout },
+        {
+            preserveScroll: true,
+            onStart: () => { loadingPublish.value = true },
+            onSuccess: () => { console.log('done') },
+            onError: errors => { console.log(errors) },
+            onFinish: () => { loadingPublish.value = false },
+        })
 }
 
 </script>
@@ -65,11 +65,12 @@ const onPublish = (routeData) => {
 
 <template>
     <PageHeading :data="pageHead">
-        <template  #button-publish="{ action }">
-            <Button v-if="currentTab != 'website_layout'" v-bind="action" @click="()=>onPublish(action.route)" :loading="loadingPublish" />
-            <div v-else ></div>
+        <template #button-publish="{ action }">
+            <Button v-if="currentTab != 'website_layout'" v-bind="action" @click="() => onPublish(action.route)"
+                :loading="loadingPublish" />
+            <div v-else></div>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" v-model="template" />
+    <component :is="component" :data="props[currentTab]" />
 </template>

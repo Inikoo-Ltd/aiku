@@ -10,6 +10,7 @@ namespace App\Models\Goods;
 
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
+use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -155,6 +157,11 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function barcode(): BelongsTo
     {
         return $this->belongsTo(Barcode::class);
+    }
+
+    public function brand(): MorphOne
+    {
+        return $this->morphOne(Brand::class, 'model');
     }
 
     public function tags(): MorphToMany

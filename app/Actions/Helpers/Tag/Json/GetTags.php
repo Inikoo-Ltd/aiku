@@ -38,10 +38,6 @@ class GetTags extends OrgAction
             $queryBuilder->where('tags.scope', TagScopeEnum::OTHER);
         }
 
-        $queryBuilder->join('model_has_tags', 'model_has_tags.tag_id', '=', 'tags.id')
-                ->where('model_has_tags.model_type', class_basename($parent))
-                ->where('model_has_tags.model_id', $parent->id);
-
         $queryBuilder
             ->leftJoin('groups', 'tags.group_id', '=', 'groups.id')
             ->leftJoin('organisations', 'tags.organisation_id', '=', 'organisations.id')
@@ -50,9 +46,9 @@ class GetTags extends OrgAction
         $queryBuilder
             ->defaultSort('tags.id')
             ->select([
-                'tags.id as tags_id',
-                'tags.name as tag_name',
-                'tags.slug as tag_slug',
+                'tags.id',
+                'tags.name',
+                'tags.slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'groups.name as group_name',
