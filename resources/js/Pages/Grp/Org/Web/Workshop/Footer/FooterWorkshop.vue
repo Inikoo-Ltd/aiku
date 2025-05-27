@@ -24,9 +24,10 @@ import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIcons, faMoneyBill, faUpload, faDownload, faThLarge } from '@fas';
+import { faIcons, faMoneyBill, faUpload, faThLarge } from '@fas';
 import { faLineColumns, faLowVision } from '@far';
-import { faBoothCurtain, faExternalLink } from '@fal';
+import { faExternalLink } from '@fal';
+import { faEye } from '@fad';
 import { library } from '@fortawesome/fontawesome-svg-core'
 
 
@@ -251,9 +252,9 @@ watch(currentView, (newValue) => {
                     <div class="flex justify-between bg-slate-200 border border-b-gray-300">
                         <div class="flex">
                             <ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
-                            <div class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'"
+                            <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600" v-tooltip="trans('Open preview in new tab')"
                                 @click="openFullScreenPreview">
-                                <FontAwesomeIcon :icon='faLowVision' aria-hidden='true' />
+						        <FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
