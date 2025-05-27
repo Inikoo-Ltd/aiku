@@ -53,7 +53,7 @@ class AttachTagsToModel extends OrgAction
                         $exist->where('scope', TagScopeEnum::OTHER->value);
                     }
                     $exist = $exist->where('id', $value)
-                    ->pluck('user_id')
+                    ->pluck('id')
                     ->toArray();
 
                     if (empty($exist)) {

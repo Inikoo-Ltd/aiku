@@ -185,6 +185,7 @@ const _multiselectRef = ref()
                 <div v-if="isComponentLoading === 'fetchProduct'" class="py-2 flex justify-center text-xl">
                     <LoadingIcon />
                 </div>
+                <slot name="afterlist" />
             </template>
         </Multiselect>
     <!-- </div> -->
