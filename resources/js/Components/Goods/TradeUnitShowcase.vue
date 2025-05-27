@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { routeType } from '@/types/route'
 import MultiSelect from 'primevue/multiselect';
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
 import { router, useForm } from '@inertiajs/vue3'
@@ -17,6 +17,7 @@ import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll
 import axios from 'axios'
 import { set } from 'lodash'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -86,7 +87,7 @@ const fetchProductList = async (url?: string) => {
     try {
         const xxx = await axios.get(urlToFetch)
         
-        optionsList.value = [...optionsList.value, ...xxx?.data?.data]
+        optionsList.value = xxx?.data?.data
 
         console.log('fetch xxx', xxx)
 
@@ -121,9 +122,6 @@ const onManageTags = () => {
                 isModalTag.value = false
                 newTagName.value = ''
                 // selectedTags.value.push(response.data.id)
-                formSelectedTags.defaults({
-                    tags_id: props.data.tags_selected_id,
-                })
             },
             onFinish: () => {
                 isLoadingCreateTag.value = false
@@ -139,6 +137,12 @@ const onManageTags = () => {
         }
     )
 }
+watch(() => props.data.tags_selected_id, (newTags) => {
+    formSelectedTags.tags_id = newTags
+    formSelectedTags.defaults({
+        tags_id: props.data.tags_selected_id,
+    })
+})
 
 
 // Section: update tag
@@ -181,6 +185,10 @@ const onEditTag = () => {
         }
     )
 }
+
+watch(() => props.data.tags, (newTags) => {
+    optionsList.value = newTags
+})
 </script>
 
 <template>
@@ -192,7 +200,7 @@ const onEditTag = () => {
                 Tags:
             </div>
             <div class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
-                <Tag v-for="tag in data.tags" :label="tag.name" @click.self="() => (isModalUpdateTag = true, selectedUpdateTag = {...tag})" stringToColor class="cursor-pointer">
+                <Tag v-for="tag in data.tags" :key="tag.id" :label="tag.name" @click.self="() => (isModalUpdateTag = true, selectedUpdateTag = {...tag})" stringToColor style="cursor: pointer">
                     <template #closeButton>
                         <ModalConfirmationDelete
                             :routeDelete="{
@@ -216,45 +224,24 @@ const onEditTag = () => {
             </div>
 
             <div class="w-full max-w-64">
-                <!-- <PureMultiselectInfiniteScroll
-                    xv-model="formAddService.service_id"
-                    :fetchRoute="props.data.tag_routes.index_tag"
-                    :placeholder="trans('Select Services')"
-                    valueProp="id"
-                    aoptionsList="(options) => dataServiceList = options"
-                >
-                    <template #singlelabel="{ value }">
-                        <div class="w-full text-left pl-4">{{ value.tag_name }}</div>
-                    </template>
-                    <template #option="{ option, isSelected, isPointed }">
-                        <div class="">{{ option.tag_name }} </div>
-                    </template>
-                    <template #afterlist>
-                        <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
-                        <Button
-                            @click="() => (isModalTag = true, _multiselect_tags?.hide())"
-                            label="Create new tag"
-                            icon="fas fa-plus"
-                            full
-                            type="secondary"
-                        />
-                    </div>
-                    </template>
-                </PureMultiselectInfiniteScroll> -->
-                {{ formSelectedTags.isDirty }}
                 <MultiSelect
                     ref="_multiselect_tags"
                     v-model="formSelectedTags.tags_id"
                     :options="optionsList.length ? optionsList : props.data.tags"
-                    :optionLabel="optionsList.length ? 'tag_name' : 'name'"
+                    optionLabel="name"
                     optionValue="id"
                     placeholder="Select Tags"
                     :maxSelectedLabels="3"
+                    filter
                     class="w-full md:w-80"
-                    @show="() => optionsList.length ? null : fetchProductList()"
+                    @show="() => fetchProductList()"
                     @hide="() => (formSelectedTags.isDirty ? onManageTags() : null)"
                 >
                     <template #footer="{ value, options }">
+                        <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
+                            <LoadingIcon></LoadingIcon>
+                        </div>
+
                         <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
                             <Button
                                 @click="() => (isModalTag = true, _multiselect_tags?.hide())"
@@ -313,7 +300,7 @@ const onEditTag = () => {
             </div>
         </Modal>
 
-        <!-- Modal: manage tag -->
+        <!-- Modal: Edit tag -->
         <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
