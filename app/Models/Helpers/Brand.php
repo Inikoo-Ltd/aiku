@@ -11,6 +11,7 @@
 namespace App\Models\Helpers;
 
 use App\Models\Goods\TradeUnit;
+use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\Sluggable\HasSlug;
@@ -39,15 +40,8 @@ use Spatie\Sluggable\SlugOptions;
 class Brand extends Model
 {
     use HasSlug;
+    use HasImage;
     protected $guarded = [];
-
-    protected $casts = [
-        'data'     => 'array',
-    ];
-
-    protected $attributes = [
-        'data'     => '{}',
-    ];
 
     public function getRouteKeyName(): string
     {
@@ -61,7 +55,6 @@ class Brand extends Model
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate();
     }
-
 
     public function tradeUnits(): MorphToMany
     {

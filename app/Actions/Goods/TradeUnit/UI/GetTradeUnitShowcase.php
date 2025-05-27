@@ -21,6 +21,10 @@ class GetTradeUnitShowcase
     public function handle(TradeUnit $tradeUnit): array
     {
         $brandRoute = [
+            'index_brand' => [
+                'name'       => 'grp.json.brands.index',
+                'parameters' => []
+            ],
             'store_brand' => [
                 'name'       => 'grp.models.trade-unit.brands.store',
                 'parameters' => [
@@ -101,6 +105,7 @@ class GetTradeUnitShowcase
 
         return [
             'brand_routes' => $brandRoute,
+            'brand' => $tradeUnit->brand(),
             'tag_routes' => $tagRoute,
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
             'tags' =>  TagsResource::collection($tradeUnit->tags)->toArray(request()),
