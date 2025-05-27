@@ -49,22 +49,21 @@ class GetTags extends OrgAction
             ->leftJoin('shops', 'tags.shop_id', '=', 'shops.id');
 
         $queryBuilder
-            ->defaultSort('model_has_tags.id')
+            ->defaultSort('tags.id')
             ->select([
-                'model_has_tags.id',
                 'tags.id as tags_id',
-                'tags.name as tags_name',
-                'tags.slug as tags_slug',
+                'tags.name as tag_name',
+                'tags.slug as tag_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'groups.name as group_name',
                 'groups.slug as group_slug',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
-                'tags.created_at as tags_created_at',
+                'tags.created_at as tag_created_at',
             ]);
 
-        return $queryBuilder->allowedSorts(['tags_name'])
+        return $queryBuilder->allowedSorts(['tag_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

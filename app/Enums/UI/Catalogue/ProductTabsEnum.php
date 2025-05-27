@@ -64,7 +64,7 @@ enum ProductTabsEnum: string
             ],
 
             ProductTabsEnum::STOCKS => [
-                'title' => __('parts'),
+                'title' => __('SKUs'),
                 'icon'  => 'fal fa-box',
                 'type'  => 'icon',
                 'align' => 'right',

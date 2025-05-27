@@ -13,6 +13,7 @@ use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\DepartmentWebsiteResource;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
+use App\Http\Resources\Catalogue\WebsiteDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlockType;
@@ -40,7 +41,7 @@ class GetWebsiteWorkshopDepartment
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'departments'   => DepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
+            'departments'   => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
             'department'    => Arr::get($website->unpublishedDepartmentSnapshot, 'layout.department', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.department',
