@@ -19,6 +19,7 @@ class DeleteTag extends OrgAction
 {
     public function handle(Tag $tag): Tag
     {
+        $tag->tradeUnits()->detach();
         $tag->delete();
         return $tag;
     }

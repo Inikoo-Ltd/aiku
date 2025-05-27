@@ -19,6 +19,7 @@ class DeleteBrand extends OrgAction
 {
     public function handle(Brand $brand): Brand
     {
+        $brand->tradeUnits()->detach();
         $brand->delete();
         return $brand;
     }
