@@ -41,6 +41,6 @@ class DeleteProductWebhooksShopify extends OrgAction
     {
         $this->initialisation($shopifyUser->organisation, $request);
 
-        $this->handle($shopifyUser, $this->validatedData);
+        $this->handle($shopifyUser, $request->all());
     }
 }
