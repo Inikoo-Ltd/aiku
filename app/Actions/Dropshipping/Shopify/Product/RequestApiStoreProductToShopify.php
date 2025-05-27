@@ -41,7 +41,7 @@ class RequestApiStoreProductToShopify extends RetinaAction implements ShouldBeUn
 
         $inventoryVariants = [];
         foreach (Arr::get($productShopify, 'variants') as $variant) {
-            $variant['available_quantity'] = $product->available_quantity;
+            $variant['available_quantity'] = $portfolio->item->available_quantity;
             $inventoryVariants[] = $variant;
         }
 

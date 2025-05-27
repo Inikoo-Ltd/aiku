@@ -768,15 +768,13 @@ Route::name('product_category.')->prefix('product_category/{productCategory:id}'
     Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
 });
 
-Route::name('tags.')->prefix('tags')->group(function () {
-    Route::post('/store', StoreTag::class)->name('store');
-    Route::patch('/{tag}/update', UpdateTag::class)->name('update');
-    Route::delete('/{tag}/delete', StoreTag::class)->name('delete');
-});
 
-Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
+Route::name('trade-units.')->prefix('trade-units/{tradeUnit}')->group(function () {
+    Route::post('tags/store', [StoreTag::class, 'inTradeUnit'])->name('tags.store');
+    Route::patch('tags/{tag}/update', [UpdateTag::class, 'inTradeUnit'])->name('tags.update');
+    Route::delete('tags/{tag}/delete', [StoreTag::class, 'inTradeUnit'])->name('tags.delete');
     Route::post('tags/attach', [AttachTagsToModel::class, 'inTradeUnit'])->name('tags.attach');
-    Route::delete('/tags/{tag}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach')->withoutScopedBindings();
+    Route::delete('tags/{tag}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach')->withoutScopedBindings();
 });
 
 require __DIR__."/models/inventory/warehouse.php";

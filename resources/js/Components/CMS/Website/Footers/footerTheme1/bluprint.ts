@@ -141,6 +141,6 @@ export default {
 			key: ["paymentData","data"],
 			name: "Payment",
 			type: "payment_templates",
-		},	
+		},
 	],
 }

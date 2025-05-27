@@ -124,8 +124,6 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 
 
 <template>
-
-    <!-- <pre>{{ routes }}</pre> -->
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
@@ -136,7 +134,6 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 
-    <!-- {{ layout?.currentParams }} -->
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
             :headLabel="trans('Add Family to portfolios')"

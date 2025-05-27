@@ -28,6 +28,7 @@ const props = defineProps<{
     headLabel?: string
     submitLabel?: string
     withQuantity?: boolean
+    label_result?: string
 }>()
 
 
@@ -129,6 +130,10 @@ onUnmounted(() => {
     portfoliosLinks.value = null
     queryPortfolio.value = ''
 })
+
+watch(() => props.routeFetch, () => {
+    debounceGetPortfoliosList()
+})
 </script>
 
 <template>
@@ -142,6 +147,10 @@ onUnmounted(() => {
                 @update:modelValue="() => debounceGetPortfoliosList()"
                 :placeholder="trans('Input to search portfolios')"
             />
+
+            <slot name="afterInput">
+
+            </slot>
         </div>
 
         <div class="h-[500px] text-base font-normal">
@@ -152,7 +161,7 @@ onUnmounted(() => {
 
             <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
                 <div class="flex justify-between items-center">
-                        <div class="font-semibold text-lg py-1">{{ trans("Products") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                    <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     <div class="flex gap-2">
                         <div class="text-green-600">Select ({{portfoliosList.length}}) products</div><ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" />
                         <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
