@@ -96,8 +96,8 @@ provide("currentView", currentView);
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <!-- <SideMenuSubDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate" :dataList="data.family" @onChangeDepartment="onChangeDepartment"/> -->
+      <SideMenuSubDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
+        @set-up-template="onPickTemplate" :dataList="data.family" @onChangeDepartment="onChangeDepartment"/>
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
