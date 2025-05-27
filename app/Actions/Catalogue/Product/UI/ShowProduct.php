@@ -14,12 +14,16 @@ use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\CRM\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -226,12 +230,22 @@ class ShowProduct extends OrgAction
                     ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
                     fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
                     : Inertia::lazy(fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
+                    
+                    ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
+                    
+                    ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
+                    fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
+                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
 
 
             ]
         )->table(IndexOrders::make()->tableStructure($product->asset, ProductTabsEnum::ORDERS->value))
         ->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
+        ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
+        ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
         ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value));
     }
 
