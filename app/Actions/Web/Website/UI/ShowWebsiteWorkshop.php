@@ -61,7 +61,13 @@ class ShowWebsiteWorkshop extends OrgAction
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
         $product    = $website->shop->products()->first();
-        $departments = $website->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('state', 'active')->with('children')->get();
+        $departments = $website->shop->productCategories()
+            ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+            ->where('state', 'active')
+            ->with(['children' => function ($query) {
+                $query->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
+            }])
+            ->get();
         $department     = $departments->first();
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
