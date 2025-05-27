@@ -10,8 +10,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Helpers\Tag\Json\GetTags;
-use App\Http\Resources\Catalogue\TagsResource;
+use App\Http\Resources\Catalogue\TagResource;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -66,7 +65,8 @@ class GetTradeUnitShowcase
 
         return [
             'tagRoute' => $tagRoute,
-            'tags' =>  TagsResource::collection(GetTags::run($tradeUnit)),
+            'tags_selected' => $tradeUnit->tags->pluck('id')->toArray(),
+            'tags' =>  TagResource::collection($tradeUnit->tags),
         ];
     }
 }
