@@ -26,12 +26,12 @@ class GetFamilies extends OrgAction
     use WithCatalogueAuthorisation;
     private Shop $parent;
 
-    public function asController(Shop $shop, Collection $collection, ActionRequest $request): LengthAwarePaginator
+    public function asController(Shop $shop, Collection $scope, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent: $shop, collection: $collection);
+        return $this->handle(parent: $shop, collection: $scope);
     }
 
     public function handle(Shop $parent, Collection $collection, $prefix = null): LengthAwarePaginator

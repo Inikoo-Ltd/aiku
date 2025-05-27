@@ -11,6 +11,7 @@ namespace App\Models\Catalogue;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\Webpage;
@@ -75,6 +76,7 @@ class Collection extends Model implements Auditable
     use HasUniversalSearch;
     use HasHistory;
     use InShop;
+    use HasImage;
 
     protected $guarded = [];
 

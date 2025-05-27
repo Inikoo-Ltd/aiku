@@ -66,6 +66,7 @@ class GetCollectionShowcase
                 'slug' => $collection->parent->slug,
                 'route' => $parentRoute
             ] : [],
+            'image'           => $collection->imageSources(720, 480),
             'description' => $collection->description,
             'stats'       => [
                 [
