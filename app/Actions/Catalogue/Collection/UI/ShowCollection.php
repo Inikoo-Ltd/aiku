@@ -19,6 +19,7 @@ use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\CollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionResource;
 use App\Http\Resources\Catalogue\CollectionsResource;
@@ -101,6 +102,43 @@ class ShowCollection extends OrgAction
 
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
+        $title = $collection->code;
+        $model = __('collection');
+        $icon = [
+            'icon'  => ['fal', 'fa-cube'],
+            'title' => __('collection')
+        ];
+        $afterTitle = null;
+        $iconRight = null;
+        $container = null;
+
+        if ($this->parent instanceof ProductCategory) {
+            $title = $this->parent->name;
+            $iconRight    = [
+                'icon' => 'fal fa-album-collection',
+            ];
+            $afterTitle = [
+                'label'     => __('Collection: :name', ['name' => $collection->name]),
+            ];
+            $model = '';
+            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $icon  = [
+                    'icon'  => ['fal', 'fa-folder-tree'],
+                    'title' => __('department')
+                ];
+            } elseif ($this->parent->type == ProductCategoryTypeEnum::FAMILY) {
+                $icon  = [
+                    'icon'  => ['fal', 'fa-folder'],
+                    'title' => __('family')
+                ];
+            } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $icon  = [
+                    'icon'  => ['fal', 'fa-dot-circle'],
+                    'title' => __('sub department')
+                ];
+            }
+        }
+
         return Inertia::render(
             'Org/Catalogue/Collection',
             [
@@ -114,13 +152,12 @@ class ShowCollection extends OrgAction
                     'next'     => $this->getNext($collection, $request),
                 ],
                 'pageHead'    => [
-                    'title'     => $collection->code,
-                    'model'     => __('collection'),
-                    'icon'      =>
-                        [
-                            'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('collection')
-                        ],
+                    'title'         => $title,
+                    'icon'          => $icon,
+                    'model'         => $model,
+                    'afterTitle'    => $afterTitle,
+                    'iconRight'     => $iconRight,
+                    'container'     => $container,
                     'actions' => [
                         $collection->webpage ?
                         [
