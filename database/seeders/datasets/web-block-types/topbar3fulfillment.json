@@ -2,9 +2,8 @@
 	"scope": "website",
 	"slug": "top-bar-3-fulfilment",
 	"code": "top-bar-3-fulfilment",
-	"name": "Topbar Awesome [fulfilment]",
+	"name": "Topbar Awesome",
 	"component": "topbar",
-	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",
@@ -28,11 +27,7 @@
 				"visible": "all"
 			},
 			"login": {
-				"link": {
-					"type" : "external",
-					"href": "/app",
-					"target" : "_self"
-				},
+				"link": null,
 				"text": "Login",
 				"visible": "logout",
 				"container": {
@@ -111,67 +106,8 @@
 					}
 				}
 			},
-			"profile": {
-				"link": null,
-				"text": "<strong>{{name}}<strong>",
-				"visible": "login",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(10, 10, 10, 1)"
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						}
-					}
-				}
-			},
-			"logout": {
-				"link": null,
-				"text": "Log out",
-				"visible": "login",
-				"container": {
-					"properties": {
-						"text": {
-							"color": "rgba(10, 10, 10, 1)",
-							"fontFamily": "Inter, sans-serif"
-						},
-						"padding": {
-							"top": {
-								"value": 5
-							},
-							"left": {
-								"value": 20
-							},
-							"unit": "px",
-							"right": {
-								"value": 20
-							},
-							"bottom": {
-								"value": 5
-							}
-						}
-					}
-				}
-			},
 			"register": {
-				"link": {
-					"type" : "external",
-					"href": "/app/register",
-					"target" : "_self"
-				},
+				"link": null,
 				"text": "Register",
 				"visible": "logout",
 				"container": {
@@ -245,6 +181,60 @@
 							"color": "rgba(10, 10, 10, 0)",
 							"image": {
 								"original": null
+							}
+						}
+					}
+				}
+			},
+			"profile": {
+				"link": null,
+				"text": "<strong>{{name}}<strong>",
+				"visible": "login",
+				"container": {
+					"properties": {
+						"text": {
+							"color": "rgba(10, 10, 10, 1)"
+						},
+						"padding": {
+							"top": {
+								"value": 5
+							},
+							"left": {
+								"value": 20
+							},
+							"unit": "px",
+							"right": {
+								"value": 20
+							},
+							"bottom": {
+								"value": 5
+							}
+						}
+					}
+				}
+			},
+			"logout": {
+				"link": null,
+				"text": "Log out",
+				"visible": "login",
+				"container": {
+					"properties": {
+						"text": {
+							"color": "rgba(10, 10, 10, 1)"
+						},
+						"padding": {
+							"top": {
+								"value": 5
+							},
+							"left": {
+								"value": 20
+							},
+							"unit": "px",
+							"right": {
+								"value": 20
+							},
+							"bottom": {
+								"value": 5
 							}
 						}
 					}
