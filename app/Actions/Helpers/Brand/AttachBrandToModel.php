@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Helpers\Tag;
+namespace App\Actions\Helpers\Brand;
 
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
@@ -28,7 +28,7 @@ class AttachBrandToModel extends OrgAction
     {
         return [
             'brand_id' => [
-                'required',
+                'sometimes', 'nullable',
                 'exists:brands,id',
             ],
         ];

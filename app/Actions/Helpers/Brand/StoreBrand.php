@@ -8,18 +8,17 @@
  *
 */
 
-namespace App\Actions\Helpers\Tag;
+namespace App\Actions\Helpers\Brand;
 
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
-use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreBrand extends OrgAction
 {
-    public function handle(Group|TradeUnit $parent, array $modelData): Tag
+    public function handle(Group|TradeUnit $parent, array $modelData): Brand
     {
 
         $brand = Brand::create($modelData);
