@@ -29,6 +29,7 @@ use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
+use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
@@ -89,3 +90,4 @@ Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.pr
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 
 Route::get('trade-units/{tradeUnit}/tags', [GetTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
+Route::get('brands', GetBrands::class)->name('brands.index');
