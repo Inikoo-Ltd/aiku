@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Dispatching;
 
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
@@ -30,7 +31,8 @@ class DeliveryNoteItemsResource extends JsonResource
                 'message' => __('The required quantity has already been fully picked.')
             ];
         }
-
+        $pickingLocations = $orgStock->locationOrgstocks->where('type', LocationStockTypeEnum::PICKING);
+        
         return [
             'id'                  => $this->id,
             'state'               => $this->state,
@@ -43,7 +45,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_dispatched' => intVal($this->quantity_dispatched),
             'org_stock_code'      => $this->org_stock_code,
             'org_stock_name'      => $this->org_stock_name,
-            'locations'           => $orgStock->locationOrgstocks ? LocationOrgStocksResource::collection($orgStock->locationOrgstocks) : [],
+            'locations'           => $pickingLocations->isNotEmpty() ? LocationOrgStocksResource::collection($pickingLocations) : [],
             'pickings'            => $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
                                     ? $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
                                         ->keyBy(function ($item) {
