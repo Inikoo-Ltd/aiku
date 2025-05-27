@@ -43,14 +43,6 @@ class Brand extends Model
     use HasImage;
     protected $guarded = [];
 
-    protected $casts = [
-        'data'     => 'array',
-    ];
-
-    protected $attributes = [
-        'data'     => '{}',
-    ];
-
     public function getRouteKeyName(): string
     {
         return 'slug';
