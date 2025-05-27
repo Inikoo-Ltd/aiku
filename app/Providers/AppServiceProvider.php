@@ -39,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
             $lsClass = config('shopify-app.api_limit_store');
             $sdClass = config('shopify-app.api_deferrer');
 
+            $opts->setGuzzleOptions(['timeout' => 90.0]);
+
             return new BasicShopifyAPI(
                 $opts,
                 new $tsClass(),
