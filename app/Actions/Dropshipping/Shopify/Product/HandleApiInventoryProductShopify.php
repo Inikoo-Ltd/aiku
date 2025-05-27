@@ -46,4 +46,9 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
             }
         }
     }
+
+    public function getJobUniqueId(ShopifyUser $shopifyUser, array $productVariants): int
+    {
+        return rand();
+    }
 }

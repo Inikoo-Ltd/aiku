@@ -65,7 +65,6 @@ class GetTags extends OrgAction
 
         return $queryBuilder->allowedSorts(['tag_name'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
