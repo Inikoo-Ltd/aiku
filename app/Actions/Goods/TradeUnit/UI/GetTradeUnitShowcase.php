@@ -10,7 +10,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Http\Resources\Catalogue\TagResource;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -103,7 +103,7 @@ class GetTradeUnitShowcase
             'brand_routes' => $brandRoute,
             'tag_routes' => $tagRoute,
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
-            'tags' =>  TagResource::collection($tradeUnit->tags)->toArray(request()),
+            'tags' =>  TagsResource::collection($tradeUnit->tags)->toArray(request()),
         ];
     }
 }

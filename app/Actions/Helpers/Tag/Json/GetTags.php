@@ -46,9 +46,9 @@ class GetTags extends OrgAction
         $queryBuilder
             ->defaultSort('tags.id')
             ->select([
-                'tags.id as tags_id',
-                'tags.name as tag_name',
-                'tags.slug as tag_slug',
+                'tags.id',
+                'tags.name',
+                'tags.slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'groups.name as group_name',
