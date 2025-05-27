@@ -12,6 +12,7 @@ namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,6 +34,12 @@ class EditTag extends OrgAction
         return $this->handle($tag);
     }
 
+    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): Tag
+    {
+        $this->initialisationFromGroup($tag->group, $request);
+
+        return $this->handle($tag);
+    }
 
     public function htmlResponse(Tag $tag, ActionRequest $request): Response
     {

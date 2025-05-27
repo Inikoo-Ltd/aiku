@@ -11,6 +11,7 @@
 namespace App\Actions\Helpers\Tag;
 
 use App\Actions\OrgAction;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -29,12 +30,12 @@ class UpdateTag extends OrgAction
         ];
     }
 
-    public function asController(Tag $tag, ActionRequest $request)
+    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request)
     {
-        $group = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        return $this->handle($tag, $this->validatedData);
+        $this->handle($tag, $this->validatedData);
     }
+
 
 }

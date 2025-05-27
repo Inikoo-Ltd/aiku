@@ -107,14 +107,16 @@ Route::prefix('trade-units')->as('trade-units.')->group(function () {
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');
+
+        Route::name('tags.')->prefix('tags')->group(function () {
+            Route::get('/', [IndexTags::class, 'inTradeUnit'])->name('index');
+            Route::get('create', [CreateTag::class, 'inTradeUnit'])->name('create');
+            Route::get('/{tag}/edit', [EditTag::class, 'inTradeUnit'])->name('edit');
+        });
     });
+
 });
 
-Route::name('tags.')->prefix('tags')->group(function () {
-    Route::get('/', IndexTags::class)->name('index');
-    Route::get('create', CreateTag::class)->name('create');
-    Route::get('/{tag}/edit', EditTag::class)->name('edit');
-});
 
 Route::prefix('ingredients')->as('ingredients.')->group(function () {
     Route::get('/', IndexIngredients::class)->name('index');

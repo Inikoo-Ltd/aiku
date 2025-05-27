@@ -12,7 +12,7 @@ namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
-use App\Models\SysAdmin\Group;
+use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,18 +21,28 @@ class CreateTag extends OrgAction
 {
     use WithGoodsEditAuthorisation;
 
-    private Group $parent;
+    protected TradeUnit $parent;
 
-    public function asController(ActionRequest $request): Response
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
-        $this->parent = group();
-        $this->initialisationFromGroup(group(), $request);
+        $this->parent = $tradeUnit;
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        return $this->handle($request);
+        return $this->handle($tradeUnit, $request);
     }
 
-    public function handle(ActionRequest $request): Response
+    public function handle(TradeUnit $parent, ActionRequest $request): Response
     {
+        $route = [];
+
+        if ($parent instanceof TradeUnit) {
+            $route = [
+                'name'       => 'grp.models.trade-units.tags.store',
+                'parameters' => [
+                    $parent->slug,
+                ]
+            ];
+        }
         return Inertia::render(
             'CreateModel',
             [
@@ -69,10 +79,7 @@ class CreateTag extends OrgAction
                             ]
                         ]
                     ],
-                    'route' => [
-                        'name'      => 'grp.models.tags.store',
-                        'parameters' => []
-                    ]
+                    'route' => $route,
                 ],
 
             ]
