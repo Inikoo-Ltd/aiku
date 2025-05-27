@@ -18,6 +18,7 @@ enum WebsiteWorkshopTabsEnum: string
 
     case WEBSITE_LAYOUT = 'website_layout';
     case DEPARTMENT     = 'department';
+    case SUB_DEPARTMENT     = 'sub_department';
     case FAMILY         = 'family';
     case PRODUCT        = 'product';
 
@@ -27,6 +28,10 @@ enum WebsiteWorkshopTabsEnum: string
             WebsiteWorkshopTabsEnum::DEPARTMENT => [
                 'title' => __('department page'),
                 'icon'  => 'fal fa-th',
+            ],
+            WebsiteWorkshopTabsEnum::SUB_DEPARTMENT => [
+                'title' => __('sub-department page'),
+                'icon'  => 'fal fa-folder-tree',
             ],
             WebsiteWorkshopTabsEnum::FAMILY => [
                 'title' => __('families page'),

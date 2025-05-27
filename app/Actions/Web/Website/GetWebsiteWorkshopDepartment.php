@@ -10,32 +10,34 @@ namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentWebsiteResource;
+use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetWebsiteWorkshopDepartment
 {
     use AsObject;
 
-    public function handle(Website $website, Collection $departments): array
+    public function handle(Website $website, ProductCategory $department): array
     {
-        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get();
+        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::SUB_DEPARTMENT->value)->get();
 
-        $webBlockTypes->each(function ($blockType) use ($website, $departments) {
+        $webBlockTypes->each(function ($blockType) use ($website, $department) {
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
             $fieldValue['settings'] = Arr::get($website->settings, 'catalogue_template.department');
-            $fieldValue['departments'] = DepartmentWebsiteResource::collection($departments);
+            $fieldValue['department'] = DepartmentWebsiteResource::make($department);
+            $fieldValue['sub_departments'] = SubDepartmentsResource::collection($department->children);
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });
 
         return [
-            'web_block_types' => WebBlockTypesResource::collection($webBlockTypes)
+            'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
         ];
     }
 }
