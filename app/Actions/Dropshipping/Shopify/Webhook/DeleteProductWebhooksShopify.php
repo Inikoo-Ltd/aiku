@@ -33,7 +33,7 @@ class DeleteProductWebhooksShopify extends OrgAction
             ->first();
 
         if ($product) {
-            DeleteShopifyUserHasProduct::run($product);
+            DeleteShopifyUserHasProduct::run($product, false, true);
         }
     }
 
