@@ -11,6 +11,7 @@
 namespace App\Actions\Helpers\Tag\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
@@ -31,6 +32,12 @@ class GetTags extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Tag::class);
+
+        if ($parent instanceof TradeUnit) {
+            $queryBuilder->where('tags.scope', TagScopeEnum::PRODUCT_PROPERTY);
+        } else {
+            $queryBuilder->where('tags.scope', TagScopeEnum::OTHER);
+        }
 
         $queryBuilder->join('model_has_tags', 'model_has_tags.tag_id', '=', 'tags.id')
                 ->where('model_has_tags.model_type', class_basename($parent))

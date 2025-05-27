@@ -15,6 +15,7 @@ use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -29,6 +30,7 @@ class StorePicking extends OrgAction
     use WithAttributes;
 
     protected DeliveryNoteItem $deliveryNoteItem;
+    protected User $user;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
@@ -73,21 +75,26 @@ class StorePicking extends OrgAction
 
     public function prepareForValidation(ActionRequest $request)
     {
-        if (!$request->has('picker_user_id')) {
-            $this->set('picker_user_id', $request->user()->id);
+        if(!$this->asAction) {
+            if (!$request->has('picker_user_id')) {
+                $this->set('picker_user_id', $this->user->id);
+            }
         }
     }
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request)
     {
+        $this->user = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
+    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
     {
+        $this->asAction = true;
+        $this->user = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
@@ -102,7 +109,7 @@ class StorePicking extends OrgAction
         $deliveryNoteItem = DeliveryNoteItem::findOrFail($command->argument('deliveryNoteItem'));
 
         $this->deliveryNoteItem = $deliveryNoteItem;
-
+        
         $data = [
             'location_id'     => (int) $command->argument('locationId'),
             'picker_user_id'  => (int) $command->argument('userId'),

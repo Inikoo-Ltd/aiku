@@ -23,6 +23,7 @@ import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCirc
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeading, faHeart, faLowVision, faSignIn } from '@far'
+import { faEye } from '@fad'
 
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
@@ -332,9 +333,10 @@ watch(currentView, (newValue) => {
                 <div class="flex justify-between max-w-7xl mx-auto bg-slate-200 border border-b-gray-300 pr-6">
                     <div class="flex">
                         <ScreenView  @screenView="(e) => {currentView = e}" v-model="currentView" />
-                        <div class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'"
+                        <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600" title="Desktop view"
+                            v-tooltip="trans('Open preview in new tab')"
                             @click="openFullScreenPreview">
-                            <FontAwesomeIcon :icon='faLowVision' aria-hidden='true' />
+                            <FontAwesomeIcon :icon="faEye" class="" fixed-width aria-hidden="true" />
                         </div>
                     </div>
 
