@@ -13,6 +13,10 @@ import { remove as loRemove } from 'lodash-es'
 import { routeType } from '@/types/route'
 import { ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { faSeedling }  from '@fal'
+import { library } from '@fortawesome/fontawesome-svg-core'
+
+library.add(faSeedling)
 
 defineProps<{
     data: object,
