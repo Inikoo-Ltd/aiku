@@ -1,0 +1,172 @@
+<script setup lang="ts">
+import { routeType } from '@/types/route'
+import MultiSelect from 'primevue/multiselect';
+import { ref } from 'vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import { trans } from 'laravel-vue-i18n'
+import { router } from '@inertiajs/vue3'
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faPlus } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Button from '../Elements/Buttons/Button.vue'
+import PureInput from '../Pure/PureInput.vue'
+import { notify } from '@kyvg/vue3-notification'
+import Tag from '../Tag.vue'
+import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
+library.add(faPlus)
+
+const props = defineProps<{
+    data: {
+        tag_routes: {
+            index_tag: routeType
+            store_tag: routeType
+            update_tag: routeType
+            destroy_tag: routeType
+            attach_tag: routeType
+            detach_tag: routeType
+        }
+        tags: {}[]
+        tags_selected: number[]
+    }
+}>()
+
+const selectedTags = ref([1, 2, 3, 4])
+const cities = ref([
+    { name: 'New York', code: 'NY' },
+    { name: 'Rome', code: 'RM' },
+    { name: 'London', code: 'LDN' },
+    { name: 'Istanbul', code: 'IST' },
+    { name: 'Paris', code: 'PRS' }
+]);
+
+const isModalTag = ref(false)
+const _multiselect_tags = ref(null)
+const newTagName = ref('')
+const isLoadingCreateTag = ref(false)
+const onCreateNewTag = () => {
+    router.post(
+        route(props.data.tag_routes.store_tag.name, props.data.tag_routes.store_tag.parameters),
+        {
+            name: newTagName.value,
+        },
+        {
+            onStart: () => {
+                isLoadingCreateTag.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully created new tag") + ': ' + newTagName.value,
+                    type: "error",
+                })
+                isModalTag.value = false
+                newTagName.value = ''
+                // selectedTags.value.push(response.data.id)
+            },
+            onFinish: () => {
+                isLoadingCreateTag.value = false
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error",
+                })
+            }
+        }
+    )
+}
+</script>
+
+<template>
+    <div>
+        <!-- <pre>{{ data.tags }}</pre> -->
+
+        <MultiSelect
+            ref="_multiselect_tags"
+            v-model="selectedTags"
+            :options="cities"
+            optionLabel="name"
+            placeholder="Select Cities"
+            :maxSelectedLabels="3"
+            class="w-full md:w-80"
+        >
+            <template #footer="{ value, options }">
+                <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
+                    <Button
+                        @click="() => (isModalTag = true, _multiselect_tags?.hide())"
+                        label="Create new tag"
+                        icon="fas fa-plus"
+                        full
+                        type="secondary"
+                    />
+                </div>
+            </template>
+        </MultiSelect>
+
+        
+
+        <div class="w-full max-w-md qwezxc">
+
+            <PureMultiselectInfiniteScroll
+                xv-model="formAddService.service_id"
+                :fetchRoute="props.data.tag_routes.index_tag"
+                :placeholder="trans('Select Services')"
+                valueProp="id"
+                aoptionsList="(options) => dataServiceList = options"
+            >
+                <template #singlelabel="{ value }">
+                    <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.currencyFormat(value.currency_code, value.price) }}/{{ value.unit }})</span></div>
+                </template>
+
+                <template #option="{ option, isSelected, isPointed }">
+                    <div class="">{{ option.name }} </div>
+                </template>
+            </PureMultiselectInfiniteScroll>
+
+            <div class="flex flex-wrap">
+                <Tag v-for="tag in data.tags.data" :label="tag.name">
+                </Tag>
+            </div>
+        </div>
+
+        <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
+            <div class="isolate bg-white px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new tag') }}</h2>
+                    <!-- <p class="text-xs leading-5 text-gray-400">
+                        {{ trans('Information about payment from customer') }}
+                    </p> -->
+                </div>
+
+                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                    <div class="col-span-2">
+                        <label for="first-name" class="block text-sm font-medium leading-6">
+                            <span class="text-red-500">*</span> {{ trans('Name') }}
+                        </label>
+                        <div class="mt-1">
+                            <PureInput v-model="newTagName" placeholder="1-64 characters" />
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-6 mb-4 relative">
+                    <Button
+                        @click="() => onCreateNewTag()"
+                        label="Submit"
+                        :disabled="!newTagName"
+                        :loading="isLoadingCreateTag"
+                        full
+                    />
+
+                    <!-- <Transition name="spin-to-down">
+                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
+                            errorPaymentMethod }}</p>
+                    </Transition> -->
+                </div>
+            </div>
+        </Modal>
+    </div>
+</template>
