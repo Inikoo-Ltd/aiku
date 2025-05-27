@@ -20,7 +20,7 @@ class AttachBrandToModel extends OrgAction
 
     public function handle(TradeUnit $model, array $modelData): void
     {
-        $model->brands()->attach($modelData['brand_id']);
+        $model->brands()->sync($modelData['brand_id']);
         $model->refresh();
     }
 
