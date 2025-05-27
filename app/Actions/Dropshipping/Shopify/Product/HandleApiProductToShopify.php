@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -79,6 +80,7 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
+            Log::info('before-dispatch-' .$portfolio->id);
             RequestApiUploadProductToShopify::dispatch($shopifyUser, $portfolio, $body);
         }
     }
