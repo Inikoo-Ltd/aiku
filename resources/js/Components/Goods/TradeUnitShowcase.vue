@@ -345,8 +345,8 @@ const onEditBrand = () => {
                             isFullLoading
                         >
                             <template #default="{ isOpenModal, changeModel }">
-                                <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-sm">
-                                    <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
+                                <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                                    <FontAwesomeIcon icon='fal fa-trash-alt' class='text-xs' aria-hidden='true' />
                                 </div>
                             </template>
                         </ModalConfirmationDelete>
@@ -387,9 +387,9 @@ const onEditBrand = () => {
             </div>
         </div>
 
-        <div class="w-full max-w-md px-8 py-4 flex gap-x-3 ">
+        <div class="w-full max-w-md px-8 py-4 gap-x-3 ">
             <div>
-                Brand:
+                {{ trans("Brand") }}:
             </div>
 
             <div class="w-full">
@@ -409,8 +409,28 @@ const onEditBrand = () => {
                     <template #option="{ option, isSelected, isPointed }">
                         <div class="flex justify-between w-full">
                             {{ option.name }}
-                            <div @click.stop="(selectedBrandToUpdate = option, isModalUpdateBrand = true)" class="text-gray-400 hover:text-gray-500">
-                                <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                            <div class="flex gap-x-2">
+                                <ModalConfirmationDelete
+                                    :routeDelete="{
+                                        name: props.data.brand_routes.delete_brand.name,
+                                        parameters: {
+                                            ...props.data.brand_routes.delete_brand.parameters,
+                                            brand: option.id,
+                                        }
+                                    }"
+                                    :title="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                                    isFullLoading
+                                >
+                                    <template #default="{ isOpenModal, changeModel }">
+                                        <div @click.stop="changeModel" class="cursor-pointer px-1 text-red-400 hover:text-red-600 rounded-sm">
+                                            <FontAwesomeIcon icon='fal fa-trash-alt' class='' aria-hidden='true' />
+                                        </div>
+                                    </template>
+                                </ModalConfirmationDelete>
+
+                                <div @click.stop="(selectedBrandToUpdate = option, isModalUpdateBrand = true)" class="text-gray-400 hover:text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -432,12 +452,15 @@ const onEditBrand = () => {
                     v-if="data?.brand?.id"
                     :routeDelete="props.data.brand_routes.detach_brand"
                     :title="trans('Are you sure you want to unselect brand?')"
+                    :description="trans('This will remove the brand from this unit, but not delete it.')"
                     isFullLoading
+                    noLabel="Unselect"
+                    noIcon="fal fa-times"
                 >
                     <template #default="{ isOpenModal, changeModel }">
                         <div @click="changeModel" class="ml-auto w-fit text-xs text-red-500 hover:underline cursor-pointer">
                             <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
-                            Remove brand
+                            {{ trans("Unselect brand") }}
                         </div>
                     </template>
                 </ModalConfirmationDelete>

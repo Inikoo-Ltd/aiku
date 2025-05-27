@@ -20,6 +20,7 @@ const props = defineProps<{
     icon?: Icon
     yesLabel?: string
     noLabel?: string
+    noIcon?: string
     routeDelete?: routeType
     isFullLoading?: boolean
     isWithMessage?: boolean
@@ -156,9 +157,9 @@ const messageDelete = ref('')
                                                 :loading="isLoadingdelete"
                                                 @click="() => (onClickDelete(), emits('onYes'))"
                                                 type="red"
-                                                :label="trans('Delete')"
+                                                :label="props.noLabel ?? trans('Delete')"
                                                 :disabled="isWithMessage ? !messageDelete : false"
-                                                icon="far fa-trash-alt"
+                                                :icon="props.noIcon ?? 'far fa-trash-alt'"
                                             />
         
                                             <!-- <button type="button"
