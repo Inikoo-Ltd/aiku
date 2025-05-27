@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { getStyles } from "@/Composables/styles";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-
+import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { faGalaxy, faTimesCircle } from "@fas";
+import { getStyles } from "@/Composables/styles"
 import {
   faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse,
   faTruck, faTag, faPhone, faInfoCircle
@@ -34,32 +34,26 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>();
 
-const items = [
-  { icon: faTimesCircle, label: 'Soy Wax Candles' },
-  { icon: faTimesCircle, label: 'Dinner Candles' },
-  { icon: faTimesCircle, label: 'Tea Light Candles' },
-  { icon: faTimesCircle, label: 'Gemstone Candles' },
-  { icon: faTimesCircle, label: 'Aromatherapy Candles' },
-  { icon: faTimesCircle, label: 'Scented Candles' },
-  { icon: faTimesCircle, label: 'Spell Candles' },
-  { icon: faTimesCircle, label: 'Candle Holders' },
-  { icon: faTimesCircle, label: 'White Label Candles' },
-  { icon: faTimesCircle, label: 'Candles Starters' },
-];
+
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-12">
+  <div class="mx-auto px-4 py-12" :style="getStyles(fieldValue.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Sub-department:</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <button
-        v-for="item in items"
-        :key="item.label"
-        class="flex items-center gap-2 border rounded-xl px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all"
-      >
-        <FontAwesomeIcon :icon="item.icon" class="text-lg" />
-        {{ item.label }}
-      </button>
+
+    <div v-if="fieldValue.sub_departments?.length">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <button v-for="item in fieldValue.sub_departments" :key="item.code"
+          class="flex items-center gap-2 border rounded-xl px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all">
+          <FontAwesomeIcon :icon="item.icon || faCircle" class="text-lg" />
+          {{ item.name }}
+        </button>
+      </div>
+    </div>
+
+    <div v-else class="text-center text-gray-500 py-6">
+      <EmptyState :data="{
+        title:'No Sub-departments Available', description:'Please check back later or contact support.' }" />
     </div>
   </div>
 </template>

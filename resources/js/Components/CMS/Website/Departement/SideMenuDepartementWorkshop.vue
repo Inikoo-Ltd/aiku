@@ -21,9 +21,9 @@ import {
 	faPaintBrushAlt,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
-import { notify } from "@kyvg/vue3-notification"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
+import DepartementListTree from "./DepartementListTree.vue"
 
 library.add(
 	faChevronRight,
@@ -45,6 +45,7 @@ const props = defineProps<{
 			fieldValue: Object
 		}
 	}
+  dataList: Array<any>
 	autosaveRoute: routeType
 	webBlockTypes: {
 		data: Array<any>
@@ -53,7 +54,8 @@ const props = defineProps<{
 
 const emits = defineEmits<{
     (e: 'setUpTemplate', value: string | number): void
-
+    (e: 'onChangeDepartment', value: object): void
+    (e: 'autoSave'): void
 }>()
 
 const selectedTab = ref(props.data ? 1 : 0)
@@ -109,17 +111,17 @@ const onPickBlock = (value: object) => {
           <WebBlockListDnd
             :webBlockTypes="webBlockTypes"
             @pick-block="onPickBlock"
-            :selectedWeblock="''"
+            :selectedWeblock="data?.code"
           />
         </TabPanel>
         <TabPanel v-if="data" class="p-4">
-          <pre>{{ data.data.fieldValue }}</pre>
+          <DepartementListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
         </TabPanel>
         <TabPanel v-if="data" class="p-4">
           <SideEditor 
             v-model="data.data.fieldValue" 
             :blueprint="getBlueprint(data.code)"
-            @update:modelValue="(e) => { data.data.fieldValue = e }"
+            @update:modelValue="(e) => { data.data.fieldValue = e, emits('autoSave') }"
             :uploadImageRoute="null" 
           />
         </TabPanel>

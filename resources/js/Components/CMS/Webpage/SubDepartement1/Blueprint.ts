@@ -24,13 +24,6 @@ export default {
                     props_data: {},
                     useIn : ["desktop", "tablet", "mobile"],
                 },
-                {
-                    key: ["border"],
-                    label: "Border",
-                    type: "border",
-                    props_data: {},
-                    useIn : ["desktop", "tablet", "mobile"],
-                },
             ],
         },
     ],
