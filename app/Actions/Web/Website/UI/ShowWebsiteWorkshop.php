@@ -16,6 +16,7 @@ use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
+use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartment;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
 use App\Models\Catalogue\Shop;
@@ -112,6 +113,15 @@ class ShowWebsiteWorkshop extends OrgAction
                         fn () => GetWebsiteWorkshopDepartment::run($website, $department)
                     );
         }
+
+        // if (!blank($departments)) {
+        //     $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
+        //             ?
+        //             fn () => GetWebsiteWorkshopSubDepartment::run($website, $subDepartment)
+        //             : Inertia::lazy(
+        //                 fn () => GetWebsiteWorkshopSubDepartment::run($website, $subDepartment)
+        //             );
+        // }
 
         $publishRoute = [
                 'method'     => 'patch',
