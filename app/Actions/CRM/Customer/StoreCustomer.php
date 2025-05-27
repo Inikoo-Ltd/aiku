@@ -289,7 +289,7 @@ class StoreCustomer extends OrgAction
     {
         if (!$this->get('company_name') && !$this->get('email')) {
             $validator->errors()->add('company_name', 'At least one of company_name or email must be provided');
-        } 
+        }
 
         if (!trim($this->get('contact_name'))) {
             $firstName = trim($this->get('first_name'));

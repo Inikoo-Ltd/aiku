@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 27-05-2025-14h-14m
@@ -8,24 +9,13 @@
 
 namespace App\Actions\Goods\Stock\UI;
 
-use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
-use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
-use App\Enums\Goods\Stock\StockStateEnum;
-use App\Http\Resources\Goods\StocksResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\Stock;
-use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStocksInTradeUnit extends OrgAction

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 27-05-2025-13h-55m
@@ -8,15 +9,9 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Services\QueryBuilder;
 use Closure;

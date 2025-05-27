@@ -47,7 +47,7 @@ class ShowTradeUnit extends GrpAction
 
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
-// dd(StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))->resolve());
+        // dd(StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))->resolve());
         return Inertia::render(
             'Goods/TradeUnit',
             [
