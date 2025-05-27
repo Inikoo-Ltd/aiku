@@ -98,47 +98,17 @@ class ShowTradeUnit extends GrpAction
                             'method'    => 'delete'
                         ]
                     ],
-                    'tagRoute' => [
-                        'store' => [
-                            'name'       => 'grp.models.trade-unit.tags.store',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
-                            ]
-                        ],
-                        'update' => [
-                            'name'       => 'grp.models.trade-unit.tags.update',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
-                            ],
-                            'method'    => 'patch'
-                        ],
-                        'destroy' => [
-                            'name'       => 'grp.models.trade-unit.tags.destroy',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
-                            ],
-                            'method'    => 'delete'
-                        ],
-                        'attach' => [
-                            'name'       => 'grp.models.trade-unit.tags.attach',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
-                            ],
-                            'method'    => 'post'
-                        ],
-                        'detach' => [
-                            'name'       => 'grp.models.trade-unit.tags.detach',
-                            'parameters' => [
-                                'tradeUnit' => $tradeUnit->slug,
-                            ],
-                            'method'    => 'delete'
-                        ],
-                    ],
+
                     'tabs' => [
                         'current'    => $this->tab,
                         'navigation' => TradeUnitTabsEnum::navigation()
 
                     ],
+
+                    TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
+                    fn () => GetTradeUnitShowcase::run($tradeUnit)
+                    : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
+
                     TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),

@@ -32,6 +32,7 @@ import ButtonIris from '@/Components/CMS/Webpage/Button/ButtonIris.vue'
 import ColumnIris from '@/Components/CMS/Webpage/Column/ColumnIris.vue'
 import DisclosureIris from '@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue'
 import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
+import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
@@ -74,7 +75,8 @@ const components: Record<string, Component> = {
     'step-1' : Step2Iris,
     'departments' : Department1Iris,
     'department-1' : Department1Iris,
-    'carousel-1' : Carousel1Iris
+    'carousel-1' : Carousel1Iris,
+    'sub-department-1' : SubDepartments1Iris,
 }
 
 

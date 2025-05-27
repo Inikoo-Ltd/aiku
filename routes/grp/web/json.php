@@ -88,4 +88,4 @@ Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransa
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 
-Route::get('trade-units/{tradeUnit:id}/tags', [GetTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
+Route::get('trade-units/{tradeUnit}/tags', [GetTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
