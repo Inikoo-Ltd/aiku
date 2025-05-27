@@ -12,12 +12,11 @@ namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -31,16 +30,15 @@ class IndexTags extends OrgAction
 {
     use WithGoodsAuthorisation;
 
-
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup($tag->group, $request);
 
-        return $this->handle(group());
+        return $this->handle($tradeUnit, $tag);
     }
 
 
-    public function handle(Group|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
+    public function handle(TradeUnit $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -54,12 +52,10 @@ class IndexTags extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Tag::class);
 
-        if ($parent instanceof Group) {
-            $queryBuilder->where('tags.group_id', $parent->id);
-        } elseif ($parent instanceof Organisation) {
-            $queryBuilder->where('tags.organisation_id', $parent->id);
-        } elseif ($parent instanceof Shop) {
-            $queryBuilder->where('tags.shop_id', $parent->id);
+        if ($parent instanceof TradeUnit) {
+            $queryBuilder->where('tags.scope', TagScopeEnum::PRODUCT_PROPERTY);
+        } else {
+            $queryBuilder->where('tags.scope', TagScopeEnum::OTHER);
         }
 
 
@@ -75,6 +71,7 @@ class IndexTags extends OrgAction
                 'tags.id as tags_id',
                 'tags.name as tags_name',
                 'tags.slug as tags_slug',
+                'tags.scope as tags_scope',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'groups.name as group_name',

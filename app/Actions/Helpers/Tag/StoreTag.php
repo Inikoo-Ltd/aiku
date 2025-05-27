@@ -11,14 +11,25 @@
 namespace App\Actions\Helpers\Tag;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTag extends OrgAction
 {
-    public function handle(Group $group, array $modelData): Tag
+    public function handle(Group|TradeUnit $parent, array $modelData): Tag
     {
+
+        if ($parent instanceof TradeUnit) {
+            $group = $parent->group;
+            data_set($modelData, 'scope', TagScopeEnum::PRODUCT_PROPERTY);
+        } else {
+            $group = $parent;
+            data_set($modelData, 'scope', TagScopeEnum::OTHER);
+        }
+
         data_set($modelData, 'group_id', $group->id);
 
         return Tag::create($modelData);
@@ -31,12 +42,11 @@ class StoreTag extends OrgAction
         ];
     }
 
-    public function asController(ActionRequest $request)
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request)
     {
-        $group = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        $this->handle($group, $this->validatedData);
+        $this->handle($tradeUnit, $this->validatedData);
     }
 
 }

@@ -10,6 +10,7 @@
 
 namespace App\Models\Helpers;
 
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -43,6 +44,7 @@ class Tag extends Model
 
     protected $casts = [
         'data'     => 'array',
+        'scope'    => TagScopeEnum::class,
     ];
 
     protected $attributes = [
