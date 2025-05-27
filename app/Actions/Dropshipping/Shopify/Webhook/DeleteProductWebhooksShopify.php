@@ -26,14 +26,14 @@ class DeleteProductWebhooksShopify extends OrgAction
 
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $productId = Arr::get($modelData, 'product_id');
+        $productId = Arr::get($modelData, 'id');
 
         $product = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
             ->where("shopify_product_id", $productId)
             ->first();
 
         if ($product) {
-            DeleteShopifyUserHasProduct::run($product);
+            DeleteShopifyUserHasProduct::run($product, false, true);
         }
     }
 
@@ -41,6 +41,6 @@ class DeleteProductWebhooksShopify extends OrgAction
     {
         $this->initialisation($shopifyUser->organisation, $request);
 
-        $this->handle($shopifyUser, $this->validatedData);
+        $this->handle($shopifyUser, $request->all());
     }
 }
