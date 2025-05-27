@@ -612,6 +612,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/department', [AutosaveWebsiteMarginal::class, 'department'])->name('autosave.department');
 
     Route::post('publish/menu', [PublishWebsiteMarginal::class, 'menu'])->name('publish.menu');
+    Route::post('publish/department', [PublishWebsiteMarginal::class, 'department'])->name('publish.department');
 
     Route::patch('/settings/update', PublishWebsiteProductTemplate::class)->name('settings.update');
 

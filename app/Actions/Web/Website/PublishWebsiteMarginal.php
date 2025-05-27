@@ -29,7 +29,7 @@ class PublishWebsiteMarginal extends OrgAction
     public function handle(Website $website, string $marginal, array $modelData): Website
     {
         $this->marginal =  $marginal;
-
+        // dd($modelData);
         $layout = Arr::get($modelData, 'layout', []);
         if ($marginal == 'header') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout;
@@ -76,7 +76,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer','menu'])) {
+        if (in_array($marginal, ['header', 'footer','menu', 'department'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,
@@ -131,6 +131,12 @@ class PublishWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'footer', $this->validatedData);
+    }
+
+    public function department(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'department', $this->validatedData);
     }
 
     public function theme(Website $website, ActionRequest $request): void
