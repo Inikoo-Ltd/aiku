@@ -33,8 +33,10 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(TelescopeServiceProvider::class);
         }
 
-        $this->app->singleton(BasicShopifyAPI::class, function () {
-            $opts    = app(Options::class);
+        $this->app->singleton('shopify.api', function () {
+            $opts = new Options();
+            $opts->setGuzzleOptions(['timeout' => 90.0]);
+
             $tsClass = config('shopify-app.api_time_store');
             $lsClass = config('shopify-app.api_limit_store');
             $sdClass = config('shopify-app.api_deferrer');
