@@ -522,7 +522,7 @@ watch(filterBlock, (newValue) => {
 				<!-- Section: Screenview -->
 				<div class="flex">
 					<ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
-					<div class="py-1 px-2 cursor-pointer" v-tooltip="'Preview'" @click="openFullScreenPreview">
+					<div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600" v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview">
 						<FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
 					</div>
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'fullScreeen'" @click="fullScreeen = !fullScreeen">
