@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\CollectionCategory;
 use App\Models\Catalogue\ProductCategory;
@@ -115,15 +116,37 @@ class StoreCollection extends OrgAction
 
     public function htmlResponse(Collection $collection, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.org.shops.show.catalogue.collections.show', [
-            'organisation'       => $collection->organisation->slug,
-            'shop'               => $collection->shop->slug,
-            'collection'         => $collection->slug,
-        ]);
-
-
-
-
+        if($collection->parent instanceof ProductCategory) {
+            if($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                return Redirect::route('grp.org.shops.show.catalogue.departments.show.collections.show', [
+                    'organisation'       => $collection->organisation->slug,
+                    'shop'               => $collection->shop->slug,
+                    'department'         => $collection->parent->slug,
+                    'collection'         => $collection->slug,
+                ]);
+            } elseif ($collection->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                return Redirect::route('grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show', [
+                    'organisation'       => $collection->organisation->slug,
+                    'shop'               => $collection->shop->slug,
+                    'department'         => $collection->parent->department->slug,
+                    'subDepartment'      => $collection->parent->slug,
+                    'collection'         => $collection->slug,
+                ]);
+            } else {
+                return Redirect::route('grp.org.shops.show.catalogue.families.show.collection.show', [
+                    'organisation'       => $collection->organisation->slug,
+                    'shop'               => $collection->shop->slug,
+                    'family'             => $collection->parent->slug,
+                    'collection'         => $collection->slug,
+                ]);
+            }
+        } else {
+            return Redirect::route('grp.org.shops.show.catalogue.collections.show', [
+                'organisation'       => $collection->organisation->slug,
+                'shop'               => $collection->shop->slug,
+                'collection'         => $collection->slug,
+            ]);
+        }
     }
 
 
