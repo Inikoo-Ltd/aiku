@@ -66,7 +66,7 @@ class GetTradeUnitShowcase
         return [
             'tag_routes' => $tagRoute,
             'tags_selected' => $tradeUnit->tags->pluck('id')->toArray(),
-            'tags' =>  TagResource::collection($tradeUnit->tags),
+            'tags' =>  TagResource::collection($tradeUnit->tags)->toArray(request()),
         ];
     }
 }
