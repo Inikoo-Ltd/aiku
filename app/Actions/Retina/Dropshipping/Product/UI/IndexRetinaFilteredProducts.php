@@ -34,21 +34,21 @@ class IndexRetinaFilteredProducts extends RetinaAction
                 case 'department':
                     // Find products that belong to departments matching the search term
                     $query->whereHas('department', function ($query) use ($value) {
-                        $query->whereAnyWordStartWith('product_categories.name', 'LIKE', '%' . $value . '%');
+                        $query->whereAnyWordStartWith('product_categories.name', $value);
                     });
                     break;
 
                 case 'family':
                     // Find products that belong to families matching the search term
                     $query->whereHas('family', function ($query) use ($value) {
-                        $query->whereAnyWordStartWith('product_categories.name', 'LIKE', '%' . $value . '%');
+                        $query->whereAnyWordStartWith('product_categories.name', $value);
                     });
                     break;
 
                 case 'sub_department':
                     // Find products that belong to sub-departments matching the search term
                     $query->whereHas('subDepartment', function ($query) use ($value) {
-                        $query->whereAnyWordStartWith('product_categories.name', 'LIKE', '%' . $value . '%');
+                        $query->whereAnyWordStartWith('product_categories.name', $value);
                     });
                     break;
 
