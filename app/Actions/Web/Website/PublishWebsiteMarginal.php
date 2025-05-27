@@ -39,6 +39,12 @@ class PublishWebsiteMarginal extends OrgAction
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
         } elseif ($marginal == 'department') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout;
+        } elseif ($marginal == 'sub_department') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSubDepartmentSnapshot->layout;
+        } elseif ($marginal == 'family') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilySnapshot->layout;
+        } elseif ($marginal == 'product') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductSnapshot->layout;
         }
 
         $firstCommit = true;
@@ -76,7 +82,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer','menu', 'department'])) {
+        if (in_array($marginal, ['header', 'footer','menu', 'department', 'sub_department', 'family', 'product'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,
@@ -137,6 +143,24 @@ class PublishWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'department', $this->validatedData);
+    }
+
+    public function subDepartment(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'sub_department', $this->validatedData);
+    }
+
+    public function family(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'family', $this->validatedData);
+    }
+
+    public function product(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'product', $this->validatedData);
     }
 
     public function theme(Website $website, ActionRequest $request): void

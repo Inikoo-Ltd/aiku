@@ -41,8 +41,15 @@ class GetWebsiteWorkshopFamily
         });
 
         return [
+            'layout'    => Arr::get($website->unpublishedDepartmentSnapshot, 'layout.family', []),
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'website'         => $website->settings
+            'website'         => $website->settings,
+            'autosaveRoute' => [
+                'name'       => 'grp.models.website.autosave.family',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ],
         ];
     }
 
