@@ -34,8 +34,8 @@ class GetTradeUnitShowcase
                 ],
                 'method'    => 'patch'
             ],
-            'destroy_brand' => [
-                'name'       => 'grp.models.trade-unit.brands.destroy',
+            'delete_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.delete',
                 'parameters' => [
                     'tradeUnit' => $tradeUnit->id,
                 ],
@@ -76,8 +76,8 @@ class GetTradeUnitShowcase
                 ],
                 'method'    => 'patch'
             ],
-            'destroy_tag' => [
-                'name'       => 'grp.models.trade-unit.tags.destroy',
+            'delete_tag' => [
+                'name'       => 'grp.models.trade-unit.tags.delete',
                 'parameters' => [
                     'tradeUnit' => $tradeUnit->id,
                 ],
