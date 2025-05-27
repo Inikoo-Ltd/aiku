@@ -11,15 +11,18 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class HandleApiInventoryProductShopify extends OrgAction
+class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUnique
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+
+    public string $jobQueue = 'shopify';
 
     /**
      * @throws \Exception

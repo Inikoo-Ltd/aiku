@@ -31,10 +31,6 @@ class DeleteShopifyUserHasProduct extends OrgAction
             $shopifyUser->api()->getRestClient()->request('DELETE', '/admin/api/2025-04/products/'.$product->shopify_product_id.'.json');
         }
 
-        if ($forceDelete) {
-            return $product->delete();
-        }
-
-        return $this->update($product, ['shopify_product_id' => null]);
+        return $product->delete();
     }
 }

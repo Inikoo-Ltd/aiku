@@ -44,6 +44,8 @@ const props = defineProps<{
 	routes: {
 		syncAllRoute: routeType
 		addPortfolioRoute: routeType
+		upload_route?: routeType
+		itemRoute: routeType
 	}
 }>()
 
@@ -61,6 +63,7 @@ const props = defineProps<{
 // 	return components[currentTab.value]
 // })
 
+// Section: Add portfolios
 const isOpenModalPortfolios = ref(false)
 const isLoadingSubmit = ref(false)
 const onSubmitAddItem = async (idProduct: number[]) => {
@@ -88,16 +91,12 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     })
 }
 
-const selectedData = reactive({
-	products: [] as number[],
-})
-
 // Filter portfolios by type
 const filterList = [
-	{
-		label: trans("All"),
-		value: "all",
-	},
+    {
+        label: trans("Product"),
+        value: "product",
+    },
 	{
 		label: trans("Department"),
 		value: "department",
@@ -109,35 +108,65 @@ const filterList = [
 	{
 		label: trans("Family"),
 		value: "family",
-	},
-	{
-		label: trans("Product"),
-		value: "product",
-	},
+	}
 ]
 const selectedList = ref(filterList[0])
+
+
+// Section: Upload to Shopify
+const selectedData = reactive({
+	products: [] as number[],
+})
+const isLoadingUpload = ref(false)
+const onUploadToShopify = () => {
+	if (!props.routes.upload_route?.name) {
+		notify({
+			title: trans("No route defined"),
+			type: "error",
+		})
+		return
+	}
+
+	router.post(route(props.routes.upload_route.name, props.routes.upload_route.parameters), {
+		portfolios: selectedData.products,
+	}, {
+		preserveScroll: true,
+		onBefore: () => isLoadingUpload.value = true,
+		onError: (error) => {
+			notify({
+				title: trans("Something went wrong"),
+				text: "",
+				type: "error",
+			})
+		},
+		onSuccess: () => {
+			selectedData.products = []
+			router.reload({ only: ['pageHead', 'products'] })
+			notify({
+				title: trans("Success!"),
+				text: trans("Portfolios successfully uploaded to Shopify"),
+				type: "success",
+			})
+		},
+		onFinish: () => {
+			isLoadingUpload.value = false
+		}
+	})
+}
 </script>
 
 <template>
-<!-- {{ selectedData.products }} -->
+
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #button-upload-to-shopify="{ action }">
-			<!-- <pre>{{ action }}</pre> -->
-			<ButtonWithLink
-				:routeTarget="action.route"
-				method="post"
+			<Button
+				@click="onUploadToShopify()"
 				:style="action.style"
-				:body="{
-					portfolios: selectedData.products,
-				}"
 				:label="action.label"
+				:loading="isLoadingUpload"
 				:disabled="!selectedData.products.length"
-				@success="() => selectedData.products = []"
-				:bindToLink="{
-					preserveScroll: true,
-				}"
-				isWithError
+				v-tooltip="!selectedData.products.length ? trans('Select at least one product to upload') : ''"
 			/>
 		</template>
 
