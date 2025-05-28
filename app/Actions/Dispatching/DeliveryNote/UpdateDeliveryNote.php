@@ -76,7 +76,8 @@ class UpdateDeliveryNote extends OrgAction
             'picker_id' => ['sometimes'],
             'packer_id' => ['sometimes'],
             'picker_user_id' => ['sometimes'],
-            'packer_user_id' => ['sometimes']
+            'packer_user_id' => ['sometimes'],
+            'parcels' => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {

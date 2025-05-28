@@ -24,6 +24,8 @@ use App\Actions\Dispatching\Picking\PickAllItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\Shipment\DetachShipmentFromDeliveryNote;
+use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
@@ -80,6 +82,8 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
 Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
+    Route::patch('shipment', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
+    Route::delete('/detach-shipment/{shipment:id}', DetachShipmentFromDeliveryNote::class)->name('shipment.detach')->withoutScopedBindings();
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
