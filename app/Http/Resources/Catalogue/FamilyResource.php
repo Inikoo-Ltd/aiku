@@ -16,7 +16,7 @@ class FamilyResource extends JsonResource
     public function toArray($request): array
     {
         /** @var ProductCategory $family */
-        $family = $this;
+        $family = $this->resource;
 
 
         return [
@@ -37,7 +37,8 @@ class FamilyResource extends JsonResource
             'created_at'      => $family->created_at,
             'updated_at'      => $family->updated_at,
             'type'            => $family->type,
-            'follow_master'   => $family->follow_master
+            'follow_master'   => $family->follow_master,
+            'products' => ProductResource::collection($family->getProducts())->toArray(request())
         ];
     }
 }
