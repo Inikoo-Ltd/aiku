@@ -175,6 +175,10 @@ class IndexRetinaPortfolios extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
+                'currentStep' => match ($this->customerSalesChannel->platform->type) {
+                    PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('shopify_product_id')->count() === 0 ? 1 : 2,
+                    default => 1
+                },
                 'products' => DropshippingPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));
