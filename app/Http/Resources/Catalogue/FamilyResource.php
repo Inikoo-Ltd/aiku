@@ -26,7 +26,12 @@ class FamilyResource extends JsonResource
             'code'            => $family->code,
             'show_in_website' => $family->show_in_website,
             'name'            => $family->name,
-            'state'           => $family->state,
+            'state' => [
+                        'value' => $family->state->value ?? null,
+                        'label' => $family->state->labels()[$family->state->value] ?? ucfirst($family->state->value),
+                        'icon'  => $family->state->stateIcon()[$family->state->value]['icon'] ?? null,
+                        'class' => $family->state->stateIcon()[$family->state->value]['class'] ?? null,
+                    ],
             'description'     => $family->description,
             'image'           => $family->imageSources(720, 480),
             'created_at'      => $family->created_at,

@@ -234,7 +234,7 @@ test('UI edit family in department', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
+            ->has('formData.blueprint.0.fields', 3)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
@@ -438,7 +438,7 @@ test('UI edit sub department in department', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
+            ->has('formData.blueprint.0.fields', 3)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);
