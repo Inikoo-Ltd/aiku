@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -34,11 +35,17 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
         $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
-        return $this->update($deliveryNoteItem, [
+        $deliveryNoteItem =  $this->update($deliveryNoteItem, [
             'quantity_picked' => $totalPicked,
             'quantity_not_picked' => $totalNotPicked,
             'is_completed' => $isCompleted,
         ]);
+
+        $deliveryNoteItem->refresh();
+
+        CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
+
+        return $deliveryNoteItem;
     }
 
     public function action(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
