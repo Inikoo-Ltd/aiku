@@ -22,7 +22,6 @@ trait WithImageSeo
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */
             $image = Arr::pull($modelData, 'image');
-            // data_forget($modelData, 'image');
             $imageData = [
                 'path'         => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
