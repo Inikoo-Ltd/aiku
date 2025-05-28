@@ -40,10 +40,10 @@ const emits = defineEmits<{
                         leave-from-class="translate-y-0 opacity-100" leave-to-class="translate-y-1 opacity-0">
                         <PopoverPanel v-slot="{ close }"
                             class="bg-white shadow mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
-                            <div @click="() => { model.height.unit = 'px', emits('update:modelValue',model), close() }" class="px-4 py-1.5 cursor-pointer"
+                            <div @click="() => { model.height.unit = 'px', emits('update:modelValue',{...model, width: { value: 100, unit: '%' } }), close() }" class="px-4 py-1.5 cursor-pointer"
                                 :class="model?.height.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px
                             </div>
-                            <div @click="() => { model.height.unit = '%', emits('update:modelValue',model), close() }" class="px-4 py-1.5 cursor-pointer"
+                            <div @click="() => { model.height.unit = '%', emits('update:modelValue',{...model, width: { value: 100, unit: '%' } }), close() }" class="px-4 py-1.5 cursor-pointer"
                                 :class="model?.height.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
                         </PopoverPanel>
                     </transition>
@@ -58,7 +58,7 @@ const emits = defineEmits<{
                             fixed-width aria-hidden='true' />
                         <Slider
                             :modelValue="get(model, 'height.value', 0)"
-                            @update:modelValue="(newVal) => (set(model, 'height.value', newVal), emits('update:modelValue',model))"
+                            @update:modelValue="(newVal) => (set(model, 'height.value', newVal), emits('update:modelValue',{...model, width: { value: 100, unit: '%' } }))"
                             class="w-full"
                             :max="300"
                         />
@@ -67,7 +67,7 @@ const emits = defineEmits<{
                     <div class="col-span-2">
                         <InputNumber
                             :modelValue="get(model, 'height.value', 0)"
-                            @update:modelValue="(newVal) => (set(model, 'height.value', newVal), emits('update:modelValue',model))"
+                            @update:modelValue="(newVal) => (set(model, 'height.value', newVal), emits('update:modelValue',{...model, width: { value: 100, unit: '%' } }))"
                             :suffix="model?.height?.unit ? model?.height.unit : '%'"
                             fluid
                             size="small"

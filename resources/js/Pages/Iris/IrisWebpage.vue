@@ -26,7 +26,7 @@ defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
 
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
-
+const currentUrl = ref('')
 
 
 const checkScreenType = () => {
@@ -40,6 +40,7 @@ const checkScreenType = () => {
 
 onMounted(() => {
   // Inject structured data script
+  currentUrl.value = window.location.href
   const script = document.createElement('script')
   script.type = 'application/ld+json'
 
@@ -67,21 +68,22 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
+console.log(props.meta)
 </script>
 
 <template>
   <Head>
     <title>{{ meta.meta_title }}</title>
     <meta name="description" :content="meta.meta_description">
+    <meta property="og:title" :content="meta.meta_title" />
+    <meta property="og:url" :content="currentUrl" />
+   <!--  <meta property="og:image" content="https://ia.media-imdb.com/images/rock.jpg" /> -->
+    <meta property="og:description" :content="meta.meta_description" />
   </Head>
 
 
   <div class="bg-white">
-
-
-      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks" :key="'block' + web_block_data.id"
-        class="w-full">
-
+      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks" :key="'block' + web_block_data.id" class="w-full">
         <component
           :screenType="screenType"
           :is="getIrisComponent(web_block_data.type)"
