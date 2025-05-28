@@ -48,7 +48,7 @@
     "laravel/pennant": "^1.13",
     "laravel/sanctum": "^4",
     "laravel/scout": "^10.0",
-    "laravel/socialite": "^5",
+    "laravel/socialite": "*",
     "laravel/tinker": "^2",
     "league/flysystem-aws-s3-v3": "^3.0",
     "lorisleiva/laravel-actions": "^2.4",

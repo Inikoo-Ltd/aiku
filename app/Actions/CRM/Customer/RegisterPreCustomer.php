@@ -45,16 +45,14 @@ class RegisterPreCustomer extends OrgAction
             'is_root'      => false,
         ]);
 
-        dd($webUser);
-
 
         // SendCustomerWelcomeEmail::run($customer);
 
         // SendNewCustomerNotification::run($customer);
 
-        // ShopHydrateCrmStats::run($shop);
+        ShopHydrateCrmStats::run($shop);
 
-        // auth('retina')->login($webUser);
+        auth('retina')->login($webUser);
 
         return $customer;
     }
@@ -77,6 +75,7 @@ class RegisterPreCustomer extends OrgAction
                     ]
                 ),
             ],
+            'google_id'        => ['sometimes', 'string', 'max:255', 'regex:/^\d{21}$/'],
             'contact_address'    => ['required', new ValidAddress()],
             'password'           =>
                 [

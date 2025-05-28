@@ -27,6 +27,34 @@ Route::middleware('guest:retina')->group(function () {
 
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
     Route::post('login', RetinaLogin::class)->name('login.store');
+
+    Route::get('/login/google', function () {
+        return Socialite::driver('google')->scopes(['email', 'profile'])->redirect();
+    })->name('login.google');
+
+    Route::get('/auth/google/callback', function () {
+        $googleUser = Socialite::driver('google')->user();
+        Log::info('Google User Data: ', [
+            'id' => $googleUser->id,
+            'name' => $googleUser->name,
+            'email' => $googleUser->email,
+            'avatar' => $googleUser->avatar,
+        ]);
+        // dd($googleUser);
+        // Find or create user
+        // $user = User::updateOrCreate([
+        //     'email' => $googleUser->email,
+        // ], [
+        //     'name' => $googleUser->name,
+        //     'google_id' => $googleUser->id,
+        //     'avatar' => $googleUser->avatar,
+        // ]);
+
+        // Auth::login($user);
+
+        return redirect('/dashboard');
+    });
+
     Route::get('register', ShowRetinaRegister::class)->name('register');
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
     Route::post('ds/{shop:id}/register', RegisterRetinaDropshippingCustomer::class)->name('ds.register.store');
