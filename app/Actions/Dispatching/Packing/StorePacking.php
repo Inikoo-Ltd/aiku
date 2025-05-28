@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Enums\Dispatching\Packing\PackingEngineEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Packing;
+use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,6 +26,7 @@ class StorePacking extends OrgAction
     use WithAttributes;
 
     protected DeliveryNoteItem $deliveryNoteItem;
+    protected User $user;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Packing
     {
@@ -57,7 +59,7 @@ class StorePacking extends OrgAction
     public function prepareForValidation(ActionRequest $request)
     {
         if (!$request->has('packer_user_id')) {
-            $this->set('packer_user_id', $request->user()->id);
+            $this->set('packer_user_id', $this->user->id);
         }
         if (!$request->has('quantity')) {
             $this->set('quantity', $this->deliveryNoteItem->quantity_picked);
@@ -66,14 +68,16 @@ class StorePacking extends OrgAction
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request)
     {
+        $this->user = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): Packing
+    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Packing
     {
+        $this->user = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 

@@ -17,6 +17,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -31,6 +32,7 @@ class StoreNotPickPicking extends OrgAction
     use WithActionUpdate;
 
     private DeliveryNoteItem $deliveryNoteItem;
+    protected User $user;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
@@ -72,7 +74,7 @@ class StoreNotPickPicking extends OrgAction
                 ]);
         }
         if (!$request->has('picker_user_id')) {
-            $this->set('picker_user_id', $request->user()->id);
+            $this->set('picker_user_id', $this->user->id);
         }
         if (!$request->has('quantity')) {
             $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
@@ -82,14 +84,16 @@ class StoreNotPickPicking extends OrgAction
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): Picking
     {
+        $this->user = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
+    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
     {
+        $this->user = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
