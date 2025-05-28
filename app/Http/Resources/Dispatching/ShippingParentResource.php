@@ -25,8 +25,8 @@ class ShippingParentResource extends JsonResource
         /** @var DeliveryNote|PalletReturn $parent */
         $parent = $this;
 
-        $customer = $parent instanceof DeliveryNote ? $parent->customer : $parent->fulfilmentCustomer->customer;
-        $shop     = $parent instanceof DeliveryNote ? $parent->shop : $parent->fulfilment->shop;
+        $customer = $parent->resource instanceof DeliveryNote ? $parent->customer : $parent->fulfilmentCustomer->customer;
+        $shop     = $parent->resource instanceof DeliveryNote ? $parent->shop : $parent->fulfilment->shop;
 
         $shopContactName = $shop->contact_name;
         if (!$shop->contact_name) {

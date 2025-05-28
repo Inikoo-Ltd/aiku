@@ -117,7 +117,7 @@ trait WithFamilySubNavigation
 
             [
                 'label'    => __('Collections'),
-                'number'   => 0,
+                'number'   => $family->stats->number_collections,
                 'route'     => $collectionRoute,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-album-collection'],

@@ -7,6 +7,7 @@
  */
 
 namespace App\Http\Resources\Catalogue;
+
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 

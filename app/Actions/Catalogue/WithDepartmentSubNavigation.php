@@ -53,7 +53,7 @@ trait WithDepartmentSubNavigation
             ],
             [
                 'label'    => __('Collections'),
-                'number'   => 0,
+                'number'   => $department->stats->number_collections,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
                     'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
@@ -73,6 +73,18 @@ trait WithDepartmentSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],
                     'tooltip' => __('products')
+                ]
+            ],
+            [
+                'label'    => __('Collections'),
+                'number'   => 0,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
+                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-album-collection'],
+                    'tooltip' => __('collections')
                 ]
             ],
         ];

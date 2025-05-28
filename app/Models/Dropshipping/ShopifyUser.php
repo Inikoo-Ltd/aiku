@@ -8,6 +8,7 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Actions\Dropshipping\ShopifyUser\Traits\WithInitShopifyClient;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
@@ -109,6 +110,7 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     use InCustomer;
     use ShopModel;
     use SoftDeletes;
+    use WithInitShopifyClient;
 
     protected $casts = [
         'data'      => 'array',
