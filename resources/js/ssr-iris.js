@@ -45,7 +45,7 @@ createServer(
       {
         page,
         render : renderToString,
-        title  : (title) => `${title} - ${appName}`,
+        title  : (title) => `${title}`,
         resolve: name => {
           const pages = import.meta.glob(
             "./Pages/Iris/**/*.vue",
