@@ -48,8 +48,8 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             $body = [
                 "product" => [
                     "id" => $portfolio->item->id,
-                    "title" => $portfolio->item->name,
-                    "body_html" => $portfolio->item->description,
+                    "title" => $portfolio->customer_product_name,
+                    "body_html" => $portfolio->customer_description,
                     "vendor" => $portfolio->item->shop->name,
                     "product_type" => $portfolio->item->family?->name,
                     "images" => $images,
@@ -69,15 +69,21 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             $productShopify = [];
             $client = $shopifyUser->getShopifyClient();
 
-            $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
-            if ($response['errors']) {
-                UpdatePortfolio::run($portfolio, [
-                    'errors_response' => Arr::get($response, 'body.errors')
-                ]);
+            $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
 
-                \Sentry::captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
+            if (count($availableProducts) === 0) {
+                $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+                if ($response['errors']) {
+                    UpdatePortfolio::run($portfolio, [
+                        'errors_response' => Arr::get($response, 'body.errors')
+                    ]);
+
+                    \Sentry::captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
+                } else {
+                    $productShopify = Arr::get($response, 'body.product');
+                }
             } else {
-                $productShopify = Arr::get($response, 'body.product');
+                $productShopify = Arr::get($availableProducts, '0');
             }
 
             $inventoryVariants = [];
@@ -86,7 +92,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
                 $inventoryVariants[] = $variant;
             }
 
-            HandleApiInventoryProductShopify::run($shopifyUser, $inventoryVariants);
+            HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
 
             UpdatePortfolio::run($portfolio, [
                 'shopify_product_id' => Arr::get($productShopify, 'id')

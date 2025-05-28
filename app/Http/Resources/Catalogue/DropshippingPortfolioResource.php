@@ -85,7 +85,6 @@ class DropshippingPortfolioResource extends JsonResource
             'currency_code'             => $this->item?->currency?->code,
             'name'                      => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
             'quantity_left'             => $quantity,
-            'platform_product_id'       => $this->platform_product_id,
             'weight'                    => $weight,
             'price'                     => $price,
             'image'                     => $image,

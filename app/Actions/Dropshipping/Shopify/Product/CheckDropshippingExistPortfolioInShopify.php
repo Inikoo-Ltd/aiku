@@ -13,6 +13,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Gnikyt\BasicShopifyAPI\ResponseAccess;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -28,38 +29,15 @@ class CheckDropshippingExistPortfolioInShopify
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio): array|null|ResponseAccess
     {
         try {
-            $query = '
-            query($identifier: ProductIdentifierInput!) {
-                product: productByIdentifier(identifier: $identifier) {
-                    id
-                    handle
-                    title
-                }
-        }
-        ';
-
-            $variables = [
-                'identifier' => [
-                    'customId' => [
-                        'namespace' => 'custom',
-                        'key' => 'id',
-                        'value' => (string) $portfolio->id
-                    ]
-                ]
-            ];
-
-            $response = $shopifyUser->getShopifyClient()->request('POST', '/admin/api/2025-04/graphql.json', [
-                'json' => [
-                    'query' => $query,
-                    'variables' => $variables
-                ]
+            $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2025-04/products.json', [
+                'handle' => Str::slug($portfolio->customer_product_name ?? $portfolio->item_name)
             ]);
 
             if (Arr::get($response, 'errors')) {
                 throw new \Exception(Arr::get($response, 'errors'));
             }
 
-            return Arr::get($response, 'body.products.0', []);
+            return Arr::get($response, 'body.products', []);
         } catch (\Exception $e) {
             \Sentry::captureMessage('Error in CheckExistPortfolioInShopify: ' . $e->getMessage(), 'error');
 
