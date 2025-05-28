@@ -50,7 +50,7 @@ onMounted(() => {
             </template>
         </Column>
 
-        <Column field="price" header="price" style="max-width: 125px;">
+        <Column field="price" header="Price" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -64,6 +64,14 @@ onMounted(() => {
                         :inputStyle="{textAlign: 'right'}"
                     />
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'price'], undefined)" />
+                </div>
+            </template>
+        </Column>
+
+        <Column field="shopify_handle" header="Handled" style="max-width: 100px;">
+            <template #body="{ data }">
+                <div class="whitespace-nowrap relative pr-2">
+                    {{ data.shopify_handle ?? '-' }}
                 </div>
             </template>
         </Column>

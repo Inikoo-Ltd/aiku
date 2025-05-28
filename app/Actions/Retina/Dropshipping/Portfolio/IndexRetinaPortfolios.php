@@ -175,10 +175,12 @@ class IndexRetinaPortfolios extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'currentStep' => match ($this->customerSalesChannel->platform->type) {
-                    PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('shopify_product_id')->count() === 0 ? 1 : 2,
-                    default => 1
-                },
+                'step' => [
+                    'current' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('shopify_product_id')->count() === 0 ? 1 : 2,
+                        default => 1
+                    }
+                ],
                 'platform_user_id' => $this->customerSalesChannel->user->id,
                 'products' => DropshippingPortfolioResource::collection($portfolios)
             ]

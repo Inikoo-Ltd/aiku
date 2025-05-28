@@ -35,7 +35,7 @@ onMounted(() => {
         const xxx = window.Echo.private(`shopify.${props.platid}.upload-product.${element.id}`).listen(
             ".shopify-upload-progress",
             (eventData) => {
-                console.log('poppppppp', element.id, eventData)
+                // console.log('poppppppp', element.id, eventData)
                 if(eventData.errors_response) {
                     set(props.progressToUploadToShopify, [element.id], 'error')
                     setTimeout(() => {
@@ -49,7 +49,7 @@ onMounted(() => {
             }
         );
 
-        console.log('xxx', xxx)
+        // console.log('xxx', xxx)
     });
     
 })
