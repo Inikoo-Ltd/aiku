@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -55,6 +56,7 @@ class StoreProductShopify extends OrgAction
                     ];
                 }
 
+                data_set($modelData, 'shopify_handle', Str::slug($product->name));
                 StorePortfolio::run(
                     $shopifyUser->customerSalesChannel,
                     $product,

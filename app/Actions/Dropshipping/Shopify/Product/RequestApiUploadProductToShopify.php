@@ -37,9 +37,11 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
         DB::transaction(function () use ($shopifyUser, $portfolio, $body) {
             try {
                 $images = [];
-                foreach ($portfolio->item->images as $image) {
+                // $portfolio->item->images
+                foreach ([1, 2, 3, 4, 5, 6, 7] as $image) {
                     $images[] = [
-                        "attachment" => $image->getBase64Image()
+                        "attachment" => json_decode(file_get_contents(storage_path('media/base64.json')), true)['file']
+                        //"attachment" => $image->getBase64Image()
                     ];
                 }
             } catch (\Exception $e) {
@@ -73,15 +75,19 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
 
             if (count($availableProducts) === 0) {
-                $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
-                if ($response['errors']) {
-                    UpdatePortfolio::run($portfolio, [
-                        'errors_response' => Arr::get($response, 'body.errors')
-                    ]);
+                try {
+                    $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+                    if ($response['errors']) {
+                        UpdatePortfolio::run($portfolio, [
+                            'errors_response' => Arr::get($response, 'body.errors')
+                        ]);
 
-                    \Sentry::captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
-                } else {
-                    $productShopify = Arr::get($response, 'body.product');
+                        \Sentry::captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
+                    } else {
+                        $productShopify = Arr::get($response, 'body.product');
+                    }
+                } catch (\Exception $e) {
+                    \Sentry::captureMessage($e->getMessage());
                 }
             } else {
                 $productShopify = Arr::get($availableProducts, '0');
