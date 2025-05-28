@@ -16,7 +16,6 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
 {
@@ -38,39 +37,7 @@ class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            try {
-                $images = [];
-                foreach ($portfolio->item->images as $image) {
-                    $images[] = [
-                        "attachment" => $image->getBase64Image()
-                    ];
-                }
-            } catch (\Exception $e) {
-                Sentry::captureException($e);
-            }
-
-            $body = [
-                "product" => [
-                    "id" => $portfolio->item->id,
-                    "title" => $portfolio->item->name,
-                    "body_html" => $portfolio->item->description,
-                    "vendor" => $portfolio->item->shop->name,
-                    "product_type" => $portfolio->item->family?->name,
-                    "images" => $images,
-                    "variants" => [
-                        [
-                            "price" => $portfolio->item->price,
-                            "sku" => $portfolio->id,
-                            "inventory_management" => "shopify",
-                            "inventory_policy" => "deny",
-                            "weight" => $portfolio->item->weight,
-                            "weight_unit" => "g"
-                        ]
-                    ]
-                ]
-            ];
-
-            RequestApiUploadProductToShopify::run($shopifyUser, $portfolio, $body);
+            RequestApiUploadProductToShopify::run($shopifyUser, $portfolio);
         }
     }
 
