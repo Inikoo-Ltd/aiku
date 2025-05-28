@@ -8,9 +8,10 @@
 
 namespace App\Events;
 
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -23,33 +24,30 @@ class UploadProductToShopifyProgressEvent implements ShouldBroadcastNow
 
 
     public ShopifyUser $shopifyUser;
-    public int $totalProduct;
-    public int $uploadedProduct;
+    public Portfolio $portfolio;
 
-    public function __construct(ShopifyUser $shopifyUser, int $totalProduct, int $uploadedProduct)
+    public function __construct(ShopifyUser $shopifyUser, Portfolio $portfolio)
     {
         $this->shopifyUser     = $shopifyUser;
-        $this->totalProduct    = $totalProduct;
-        $this->uploadedProduct = $uploadedProduct;
+        $this->portfolio     = $portfolio;
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PresenceChannel('shopify.upload-product.' . $this->shopifyUser->id)
+            new PrivateChannel("shopify.{$this->shopifyUser->id}.upload-product.{$this->portfolio->id}")
         ];
     }
 
     public function broadcastWith(): array
     {
         return [
-            'total_products'    => $this->totalProduct,
-            'uploaded_products' => $this->uploadedProduct
+            'portfolio'    => $this->portfolio->id
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'action-progress';
+        return 'shopify-upload-progress';
     }
 }
