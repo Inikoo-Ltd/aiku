@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
+use App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
@@ -158,6 +160,13 @@ class IndexShops extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $shops, ActionRequest $request): Response
     {
+        $productIndex = null;
+
+        if($this->parent instanceof Group) {
+            $productIndex = IndexProductsInGroup::class;
+        } elseif ($this->parent instanceof Organisation) {
+            $productIndex = IndexProductsInOrganisation::class;
+        }
         return Inertia::render(
             'Org/Catalogue/Shops',
             [
@@ -204,9 +213,9 @@ class IndexShops extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, ShopsTabsEnum::FAMILIES->value))),
 
                 ShopsTabsEnum::PRODUCTS->value => $this->tab == ShopsTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInProductCategory::run($this->parent, ShopsTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInProductCategory::run($this->parent, ShopsTabsEnum::PRODUCTS->value))),
-
+                    fn () => ProductsResource::collection($productIndex::run($this->parent, ShopsTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection($productIndex::run($this->parent, ShopsTabsEnum::PRODUCTS->value))),
+                //TODO: Wrong index
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: 'shops'))
@@ -225,10 +234,9 @@ class IndexShops extends OrgAction
                     canEdit: $this->canEdit
                 ),
             )
-            ->table(IndexProductsInProductCategory::make()->tableStructure(
-                productCategory: $this->parent,
-                prefix: ShopsTabsEnum::PRODUCTS->value,
-                canEdit: $this->canEdit
+            ->table($productIndex::make()->tableStructure(
+                $this->parent,
+                ShopsTabsEnum::PRODUCTS->value,
             ));
     }
 
