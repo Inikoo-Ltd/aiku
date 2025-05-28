@@ -98,7 +98,8 @@ class StorePortfolio extends OrgAction
                 ),
             ],
             'status'        => 'sometimes|boolean',
-            'last_added_at' => 'sometimes|date',
+            'shopify_handle'        => 'sometimes|string',
+            'last_added_at' => 'sometimes|date'
         ];
 
         if (!$this->strict) {

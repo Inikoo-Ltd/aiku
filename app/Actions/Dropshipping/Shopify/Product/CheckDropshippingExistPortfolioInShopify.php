@@ -13,7 +13,6 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Gnikyt\BasicShopifyAPI\ResponseAccess;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -30,7 +29,8 @@ class CheckDropshippingExistPortfolioInShopify
     {
         try {
             $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2025-04/products.json', [
-                'handle' => Str::slug($portfolio->customer_product_name ?? $portfolio->item_name)
+                'handle' => $portfolio->shopify_handle,
+                'limit' => 1
             ]);
 
             if (Arr::get($response, 'errors')) {

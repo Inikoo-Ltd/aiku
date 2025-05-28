@@ -72,14 +72,20 @@ console.log(props.meta)
 </script>
 
 <template>
-  <Head>
-    <title>{{ meta.meta_title }}</title>
-    <meta name="description" :content="meta.meta_description">
+ <Head>
+  <title>{{ meta.meta_title }}</title>
+  <meta name="description" :content="meta.meta_description" />
+
+    <meta property="og:type" content="website" />
     <meta property="og:title" :content="meta.meta_title" />
-    <meta property="og:url" :content="currentUrl" />
-   <!--  <meta property="og:image" content="https://ia.media-imdb.com/images/rock.jpg" /> -->
     <meta property="og:description" :content="meta.meta_description" />
-  </Head>
+    <meta property="og:url" :content="currentUrl" />
+    <meta property="og:image" :content="meta?.image?.original || ''" />
+    <meta property="og:image:alt" :content="meta.meta_title" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" :content="meta.meta_title" />>
+</Head>
+
 
 
   <div class="bg-white">

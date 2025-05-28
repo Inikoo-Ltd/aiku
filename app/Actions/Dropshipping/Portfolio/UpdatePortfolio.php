@@ -82,6 +82,7 @@ class UpdatePortfolio extends OrgAction
             'customer_price'       => 'sometimes',
             'customer_description'       => 'sometimes|string|nullable',
             'shopify_product_id'       => 'sometimes|string',
+            'shopify_handle'       => 'sometimes|string',
             'errors_response'       => 'sometimes|array'
         ];
 
