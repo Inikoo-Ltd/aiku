@@ -53,9 +53,15 @@ const props = defineProps<{
 	routes: {
 		syncAllRoute: routeType
 		addPortfolioRoute: routeType
-		upload_route?: routeType
+		bulk_upload: routeType
 		itemRoute: routeType
 		updatePortfolioRoute: routeType
+	}
+	platform_user_id: {
+
+	}
+	step: {
+		current: number
 	}
 }>()
 
@@ -124,13 +130,14 @@ const filterList = [
 const selectedList = ref(filterList[0])
 
 
-// Section: Upload to Shopify
+// Step 1: Submit
 const selectedData = reactive({
 	products: [] as number[],
 })
 const isLoadingUpload = ref(false)
+const progressToUploadToShopify = ref({})
 const onUploadToShopify = () => {
-	if (!props.routes.upload_route?.name) {
+	if (!props.routes.bulk_upload?.name) {
 		notify({
 			title: trans("No route defined"),
 			type: "error",
@@ -138,7 +145,7 @@ const onUploadToShopify = () => {
 		return
 	}
 
-	router.post(route(props.routes.upload_route.name, props.routes.upload_route.parameters), {
+	router.post(route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters), {
 		portfolios: selectedData.products,
 	}, {
 		preserveScroll: true,
@@ -158,6 +165,7 @@ const onUploadToShopify = () => {
 				text: trans("Portfolios successfully uploaded to Shopify"),
 				type: "success",
 			})
+			props.step.current = 1
 		},
 		onFinish: () => {
 			isLoadingUpload.value = false
@@ -165,8 +173,6 @@ const onUploadToShopify = () => {
 	})
 }
 
-const currentStep = ref(2)
-const selectedProducts = ref()
 
 const portfoliosList = ref([])
 const stepLoading = ref(false)
@@ -185,12 +191,14 @@ const fetchIndexUnuploadedPortfolios = async () => {
 	stepLoading.value = false
 }
 
-watch(currentStep, async (newStep) => {
+watch(() => props.step.current, async (newStep, oldStep) => {
+	// console.log('Step changed to:', oldStep, newStep)
 	if (newStep === 1 || newStep === 2) {
 		fetchIndexUnuploadedPortfolios()
 	}
 })
 
+// Step 2: Update portfolios
 const listState = ref({})
 const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, section: string) => {
 	set(listState.value, [portfolio.id, section], 'loading')
@@ -212,12 +220,46 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 	setTimeout(() => {
 		set(listState.value, [portfolio.id, section], null)
 	}, 3000);
+}
 
+// Step 3: bulk upload to Shopify
+const selectedPortfoliosToSync = ref()
+const bulkUpload = () => {
+	router[props.routes.bulk_upload.method || 'post'](
+		route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters),
+		{
+			portfolios: selectedPortfoliosToSync.value.map((product: any) => product.id),
+		},
+		{
+			preserveScroll: true,
+			onBefore: () => isLoadingUpload.value = true,
+			onStart: () => {
+				
+			},
+			onSuccess: () => {
+				selectedPortfoliosToSync.value.forEach((product) => {
+					set(progressToUploadToShopify.value, [product.id], 'loading')
+				})
+				selectedPortfoliosToSync.value = []
+				notify({
+					title: trans("Success!"),
+					text: trans("Successfully uploaded portfolios"),
+					type: "success",
+				})
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message || trans("An error occurred while uploading portfolios"),
+					type: "error",
+				})
+			}
+		}
+	)
 }
 </script>
 
 <template>
-
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #button-upload-to-shopify="{ action }">
@@ -233,7 +275,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 		<template v-if="props.products?.data?.length" #other>
 			<Button
-				@click="() => (isOpenModalPortfolios = true, currentStep > 0 ? fetchIndexUnuploadedPortfolios() : null)"
+				@click="() => (isOpenModalPortfolios = true, step.current > 0 ? fetchIndexUnuploadedPortfolios() : null)"
 				:label="trans('Add portfolio')"
 				:icon="'fas fa-plus'"
 			/>
@@ -265,68 +307,16 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
-	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
-		<div v-if="currentStep == 2" class="flex justify-between">
+	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto">
+		<div v-if="step.current === 0" class="flex justify-between">
 			<div class="relative">
-				<Button
-					v-if="currentStep == 2"
-					@click="currentStep = 1"
-					:label="trans('Edit products')"
-					:icon="faArrowLeft"
-					type="tertiary"
-				/>
 			</div>
+			
 
 			<div class="relative">
 				<Button
-					v-if="currentStep == 2 && selectedProducts?.length"
-					aclick="currentStep = 2"
-					:label="trans('Remove portfolios') + ' (' + selectedProducts.length + ')'"
-					xicon="faUpload"
-					type="delete"
-				/>
-				
-				<Button
-					v-if="currentStep == 2 && selectedProducts?.length"
-					aclick="currentStep = 2"
-					:label="trans('Sync to Shopify') + ' (' + selectedProducts.length + ')'"
-					:icon="faUpload"
-					type="secondary"
-				/>
-			</div>
-		</div>
-
-		<div v-if="currentStep == 1" class="flex justify-between">
-			<div class="relative">
-				<Button
-					v-if="currentStep == 1"
-					@click="currentStep = 0"
-					:label="trans('Add portfolios')"
-					:icon="faArrowLeft"
-					type="tertiary"
-				/>
-			</div>
-
-			<div class="relative">
-
-				<Button
-					v-if="currentStep == 1"
-					@click="currentStep = 2"
-					:label="trans('Sync to Shopify')"
-					:iconRight="faArrowRight"
-					type="tertiary"
-				/>
-			</div>
-		</div>
-		
-		<div v-if="currentStep === 0" class="flex justify-between">
-			<div class="relative">
-			</div>
-
-			<div class="relative">
-				<Button
-					v-if="currentStep == 0"
-					@click="currentStep = 1"
+					v-if="step.current == 0"
+					@click="step.current = 1"
 					:label="trans('Skip to edit products')"
 					:iconRight="faArrowRight"
 					type="tertiary"
@@ -334,10 +324,77 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 			</div>
 		</div>
 
+		<div v-if="step.current == 1" class="grid grid-cols-4">
+			<div class="relative">
+				<Button
+					v-if="step.current == 1"
+					@click="step.current = 0"
+					:label="trans('Add portfolios')"
+					:icon="faArrowLeft"
+					type="tertiary"
+				/>
+			</div>
+
+			<div class="text-center col-span-2">
+				<div class="font-bold text-2xl">{{ trans("Edit portfolios") }}</div>
+				<div class="text-gray-500 text-sm italic tracking-wide">
+					{{ trans("Edit the portfolios before syncing them to Shopify if needed") }}
+				</div>
+			</div>
+
+			<div class="relative text-right">
+				<Button
+					v-if="step.current == 1"
+					@click="step.current = 2"
+					:label="trans('Sync to Shopify')"
+					:iconRight="faArrowRight"
+					type="tertiary"
+				/>
+			</div>
+		</div>
+		
+
+		<div v-if="step.current == 2" class="grid grid-cols-4">
+			<div class="relative">
+				<Button
+					v-if="step.current == 2"
+					@click="step.current = 1"
+					:label="trans('Edit products')"
+					:icon="faArrowLeft"
+					type="tertiary"
+				/>
+			</div>
+
+			<div class="text-center col-span-2">
+				<div class="font-bold text-2xl">{{ trans("Sync to Shopify") }}</div>
+				<div class="text-gray-500 text-sm italic tracking-wide">
+					{{ trans("You can select them via checkbox to bulk syncing or sync 1 by 1.") }}
+				</div>
+			</div>
+
+			<div class="relative space-x-2 space-y-1 text-right">
+				<Button
+					v-if="step.current == 2 && selectedPortfoliosToSync?.length"
+					aclick="step.current = 2"
+					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync.length + ')'"
+					xicon="faUpload"
+					type="delete"
+				/>
+				
+				<Button
+					v-if="step.current == 2 && selectedPortfoliosToSync?.length"
+					@click="() => bulkUpload()"
+					:label="trans('Sync to Shopify') + ' (' + selectedPortfoliosToSync.length + ')'"
+					:icon="faUpload"
+					type="secondary"
+				/>
+			</div>
+		</div>
+
 		<!-- 1: Select Product -->
         <KeepAlive>
 			<ProductsSelector
-				v-if="currentStep === 0"
+				v-if="step.current === 0"
 				:headLabel="trans('Add products to portfolios')"
 				:route-fetch="{
 					name: props.routes.itemRoute.name,
@@ -367,7 +424,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 		<!-- 2: Edit Product -->
 		<KeepAlive>
-			<div v-if="currentStep === 1">
+			<div v-if="step.current === 1">
 				<div class="relative px-4 h-[600px] mt-4 overflow-y-auto mb-4">
 					<div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
 						<LoadingIcon />
@@ -389,17 +446,17 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 					/>
 				</div>
 
-				<Button
-					@click="currentStep = 2"
+				<!-- <Button
+					@click="step.current = 2"
 					label="Submit & Go next step"
 					full
-				/>
+				/> -->
 			</div>
 		</KeepAlive>
 
 		<!-- 3: Upload product to Shopify -->
 		<KeepAlive>
-			<div v-if="currentStep === 2">
+			<div v-if="step.current === 2">
 				<div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
 					<div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
 						<LoadingIcon />
@@ -409,9 +466,11 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 						v-else-if="portfoliosList?.length"
 						:portfolios="portfoliosList"
 						:listState
-						v-model="selectedProducts"
+						:platid="props.platform_user_id"
+						v-model="selectedPortfoliosToSync"
 						@updateSelectedProducts="updateSelectedProducts"
 						amounted="() => fetchIndexUnuploadedPortfolios()"
+						:progressToUploadToShopify
 					/>
 
 					<EmptyState
@@ -423,11 +482,11 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 				</div>
 
-				<Button
-					@click="currentStep = 2"
+				<!-- <Button
+					@click="step.current = 2"
 					label="Submit & close"
 					full
-				/>
+				/> -->
 			</div>
 		</KeepAlive>
     </Modal>

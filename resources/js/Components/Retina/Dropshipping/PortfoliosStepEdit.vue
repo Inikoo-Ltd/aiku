@@ -23,9 +23,9 @@ onMounted(() => {
 
 <template>
     <DataTable :value="portfolios" tableStyle="min-width: 50rem">
-        <Column field="code" header="Code" style="max-width: 70px;">
+        <Column field="code" header="Code" style="max-width: 90px;">
             <template #body="{ data }">
-                <div class="white relative pr-2">
+                <div v-tooltip="data.code" class="truncate relative pr-2">
                     {{ data.code }}
                 </div>
             </template>
@@ -50,7 +50,7 @@ onMounted(() => {
             </template>
         </Column>
 
-        <Column field="price" header="price" style="max-width: 125px;">
+        <Column field="price" header="Price" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -68,7 +68,15 @@ onMounted(() => {
             </template>
         </Column>
 
-        <Column field="description" header="description">
+        <Column field="shopify_handle" header="Handled" style="max-width: 100px;">
+            <template #body="{ data }">
+                <div class="whitespace-nowrap relative pr-2">
+                    {{ data.shopify_handle ?? '-' }}
+                </div>
+            </template>
+        </Column>
+
+        <Column field="description" header="Description">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <textarea

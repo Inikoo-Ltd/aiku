@@ -57,6 +57,7 @@ const portfoliosList = ref<Portfolio[]>([])
 const portfoliosMeta = ref()
 const portfoliosLinks = ref()
 const getPortfoliosList = async (url?: string) => {
+    // console.log('getPortfoliosList', url)
     isLoadingFetch.value = true
     try {
         const urlToFetch = url || route(props.routeFetch.name, {
@@ -121,6 +122,7 @@ const selectAllProducts = () => {
 }
 
 onMounted(()=> {
+    // console.log('Mounted ProductsSelector')
     getPortfoliosList()
 })
 
