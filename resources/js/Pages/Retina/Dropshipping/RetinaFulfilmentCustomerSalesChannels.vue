@@ -5,7 +5,8 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Table } from '@/types/Table'
 import RetinaTableFulfilmentCustomerSalesChannels from "@/Components/Tables/Retina/RetinaTableFulfilmentCustomerSalesChannels.vue"
-
+import {library} from "@fortawesome/fontawesome-svg-core";
+import {faUnlink} from "@fal";
 
 defineProps<{
 	data: Table
@@ -17,6 +18,8 @@ defineProps<{
 	}
 
 }>()
+
+library.add(faUnlink)
 
 </script>
 
