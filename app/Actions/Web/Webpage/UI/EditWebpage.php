@@ -125,6 +125,15 @@ class EditWebpage extends OrgAction
                             'label'  => __('SEO (Settings)'),
                             'icon'   => 'fab fa-google',
                             'fields' => [
+                                "seo_image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("logo"),
+                                    "value"   => $webpage?->imageSources(1200, 1200, 'seoImage'),
+                                    'options' => [
+                                        "minAspectRatio" => 1,
+                                        "maxAspectRatio" => 12 / 4,
+                                    ]
+                                ],
                                 'google_search' => [
                                     'type'     => 'googleSearch',
                                     'domain'    => $webpage->website->domain . '/',

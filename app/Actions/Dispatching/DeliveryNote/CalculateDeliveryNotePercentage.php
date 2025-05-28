@@ -21,9 +21,9 @@ class CalculateDeliveryNotePercentage extends OrgAction
         $pickingPercentage = 0;
         $packingPercentage = 0;
 
-        $pickingRequired = $deliveryNote->deliveryNoteItems()->sum('required_quantity');
-        $pickingPicked = $deliveryNote->deliveryNoteItems()->sum('picked_quantity');
-        $packingPacked = $deliveryNote->deliveryNoteItems()->sum('packed_quantity');
+        $pickingRequired = $deliveryNote->deliveryNoteItems()->sum('quantity_required');
+        $pickingPicked = $deliveryNote->deliveryNoteItems()->sum('quantity_picked');
+        $packingPacked = $deliveryNote->deliveryNoteItems()->sum('quantity_packed');
 
         // Picking percentage: picked vs required
         if ($pickingRequired > 0) {

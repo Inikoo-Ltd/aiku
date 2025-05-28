@@ -377,7 +377,7 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
 test('Set Delivery Note state to Packed', function (Picking $picking) {
     $deliveryNote = $picking->deliveryNote;
     $deliveryNoteItem = $picking->deliveryNoteItem;
-    
+
     $packedDeliveryNote = SetDeliveryNoteStateAsPacked::make()->action($deliveryNote, $this->user);
 
     $packedDeliveryNote->refresh();

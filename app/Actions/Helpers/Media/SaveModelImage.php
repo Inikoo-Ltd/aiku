@@ -20,6 +20,7 @@ use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Web\WebBlockType;
+use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 use stdClass;
 
@@ -28,10 +29,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage $model,
         array $imageData,
-        string $scope = 'image'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory {
+        string $scope = 'image',
+        string $foreignkeyMedia = 'image_id'
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);
@@ -58,7 +60,7 @@ class SaveModelImage
 
 
         if ($media) {
-            $model->updateQuietly(['image_id' => $media->id]);
+            $model->updateQuietly([$foreignkeyMedia => $media->id]);
 
             $model->images()->sync(
                 [
