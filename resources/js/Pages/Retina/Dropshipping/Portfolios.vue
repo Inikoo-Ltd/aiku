@@ -22,14 +22,14 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
-import { Column, DataTable, InputNumber } from "primevue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { get, set } from "lodash"
-import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
+import { set } from "lodash"
 import PortfoliosStepEdit from "@/Components/Retina/Dropshipping/PortfoliosStepEdit.vue"
+import PortfoliosStepSyncShopify from "@/Components/Retina/Dropshipping/PortfoliosStepSyncShopify.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
 library.add(faSyncAlt)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
@@ -169,21 +169,25 @@ const currentStep = ref(2)
 const selectedProducts = ref()
 
 const portfoliosList = ref([])
-const stepLoading = ref(null)
+const stepLoading = ref(false)
+
+const fetchIndexUnuploadedPortfolios = async () => {
+	stepLoading.value = true
+	const data = await axios.get(
+		route('retina.dropshipping.customer_sales_channels.portfolios.index',
+			{
+				...route().params,
+				'filter[unupload]': 'true',
+			}
+		)
+	)
+	portfoliosList.value = data.data.data
+	stepLoading.value = false
+}
+
 watch(currentStep, async (newStep) => {
 	if (newStep === 1 || newStep === 2) {
-		stepLoading.value = newStep
-		const data = await axios.get(
-			route('retina.dropshipping.customer_sales_channels.portfolios.index',
-				{
-					...route().params,
-					'filter[unupload]': 'true',
-				}
-			)
-		)
-		portfoliosList.value = data.data.data
-		stepLoading.value = null
-		console.log('data watch', portfoliosList.value)
+		fetchIndexUnuploadedPortfolios()
 	}
 })
 
@@ -229,7 +233,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 		<template v-if="props.products?.data?.length" #other>
 			<Button
-				@click="isOpenModalPortfolios = true"
+				@click="() => (isOpenModalPortfolios = true, currentStep > 0 ? fetchIndexUnuploadedPortfolios() : null)"
 				:label="trans('Add portfolio')"
 				:icon="'fas fa-plus'"
 			/>
@@ -262,15 +266,8 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
 	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
-		<div class="flex justify-between">
+		<div v-if="currentStep == 2" class="flex justify-between">
 			<div class="relative">
-				<Button
-					v-if="currentStep == 1"
-					@click="currentStep = 0"
-					:label="trans('Add portfolios')"
-					:icon="faArrowLeft"
-					type="tertiary"
-				/>
 				<Button
 					v-if="currentStep == 2"
 					@click="currentStep = 1"
@@ -281,22 +278,6 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 			</div>
 
 			<div class="relative">
-				<Button
-					v-if="currentStep == 0"
-					@click="currentStep = 1"
-					:label="trans('Skip to edit products')"
-					:iconRight="faArrowRight"
-					type="tertiary"
-				/>
-
-				<Button
-					v-if="currentStep == 1"
-					@click="currentStep = 2"
-					:label="trans('Sync to Shopify')"
-					:iconRight="faArrowRight"
-					type="tertiary"
-				/>
-
 				<Button
 					v-if="currentStep == 2 && selectedProducts?.length"
 					aclick="currentStep = 2"
@@ -311,6 +292,44 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 					:label="trans('Sync to Shopify') + ' (' + selectedProducts.length + ')'"
 					:icon="faUpload"
 					type="secondary"
+				/>
+			</div>
+		</div>
+
+		<div v-if="currentStep == 1" class="flex justify-between">
+			<div class="relative">
+				<Button
+					v-if="currentStep == 1"
+					@click="currentStep = 0"
+					:label="trans('Add portfolios')"
+					:icon="faArrowLeft"
+					type="tertiary"
+				/>
+			</div>
+
+			<div class="relative">
+
+				<Button
+					v-if="currentStep == 1"
+					@click="currentStep = 2"
+					:label="trans('Sync to Shopify')"
+					:iconRight="faArrowRight"
+					type="tertiary"
+				/>
+			</div>
+		</div>
+		
+		<div v-if="currentStep === 0" class="flex justify-between">
+			<div class="relative">
+			</div>
+
+			<div class="relative">
+				<Button
+					v-if="currentStep == 0"
+					@click="currentStep = 1"
+					:label="trans('Skip to edit products')"
+					:iconRight="faArrowRight"
+					type="tertiary"
 				/>
 			</div>
 		</div>
@@ -350,73 +369,24 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 		<KeepAlive>
 			<div v-if="currentStep === 1">
 				<div class="relative px-4 h-[600px] mt-4 overflow-y-auto mb-4">
-					<DataTable v-if="stepLoading != 1" :value="portfoliosList" tableStyle="min-width: 50rem">
-						<Column field="code" header="Code" style="max-width: 70px;">
-							<template #body="{ data }">
-								<div class="white relative pr-2">
-									{{ data.code }}
-								</div>
-							</template>
-						</Column>
-
-						<Column field="category" header="Category" style="max-width: 200px;">
-					
-						</Column>
-
-						<Column field="name" header="Name">
-							<template #body="{ data }">
-								<div class="whitespace-nowrap relative pr-2">
-									<textarea
-										v-model="data.name"
-										:placeholder="trans('No description')"
-										class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-										@blur="(e) => updateSelectedProducts(data, {customer_product_name: data.name}, 'name')"
-									>
-									</textarea>
-									<ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'name'], null)" />
-								</div>
-							</template>
-						</Column>
-
-						<Column field="price" header="price" style="max-width: 125px;">
-							<template #body="{ data }">
-								<div class="whitespace-nowrap relative pr-2">
-									<!-- <pre>{{ data }}</pre> -->
-									<InputNumber
-										v-model="data.price"
-										@update:model-value="() => updateSelectedProducts(data, {customer_price: data.price}, 'price')"
-										mode="currency"
-										:placeholder="data.price"
-										:currency="data.currency_code"
-										locale="en-GB"
-										fluid
-										:inputStyle="{textAlign: 'right'}"
-									/>
-									<ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'price'], null)" />
-								</div>
-							</template>
-						</Column>
-
-						<Column field="description" header="description">
-							<template #body="{ data }">
-								<div class="whitespace-nowrap relative pr-2">
-									<textarea
-										v-model="data.description"
-										class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-										:placeholder="trans('No description')"
-										@blur="(e) => updateSelectedProducts(data, {customer_description: data.description}, 'description')"
-									>
-									</textarea>
-									<ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], null)" />
-
-								</div>
-							</template>
-						</Column>
-					</DataTable>
-
-					<div v-else class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
+					<div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
 						<LoadingIcon />
 					</div>
+
+					<PortfoliosStepEdit
+						v-else-if="portfoliosList?.length"
+						:portfolios="portfoliosList"
+						@updateSelectedProducts="updateSelectedProducts"
+						:listState
+						amounted="() => fetchIndexUnuploadedPortfolios()"
+					/>
+
+					<EmptyState
+						v-else
+						:data="{
+							title: trans('No portfolios selected'),
+						}"
+					/>
 				</div>
 
 				<Button
@@ -431,50 +401,26 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 		<KeepAlive>
 			<div v-if="currentStep === 2">
 				<div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
-					<DataTable v-if="stepLoading != 2" v-model:selection="selectedProducts" :value="portfoliosList" tableStyle="min-width: 50rem">
-						<Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-						
-						<Column field="code" header="Code" style="max-width: 70px;">
-
-						</Column>
-
-						<Column field="category" header="Category" style="max-width: 200px;">
-					
-						</Column>
-
-						<Column field="name" header="Name">
-							<!-- <template #body="{ data }">
-								<div class="whitespace-nowrap">
-									<textarea :value="data.name" class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent">
-									</textarea>
-								</div>
-							</template> -->
-						</Column>
-
-						<Column field="price" header="Price" style="max-width: 125px;">
-							<template #body="{ data }">
-								<div class="whitespace-nowrap">
-									{{ locale.currencyFormat(data.currency_code, data.price) }}
-									<!-- <pre>{{ data }}</pre> -->
-									<!-- <InputNumber
-										v-model="data.price"
-										mode="currency"
-										:placeholder="data.price"
-										:currency="data.currency_code"
-										locale="en-GB"
-										fluid
-										:inputStyle="{textAlign: 'right'}"
-									/> -->
-								</div>
-							</template>
-						</Column>
-
-						<Column field="description" header="description"></Column>
-					</DataTable>
-
-					<div v-else class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
+					<div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
 						<LoadingIcon />
 					</div>
+					
+					<PortfoliosStepSyncShopify
+						v-else-if="portfoliosList?.length"
+						:portfolios="portfoliosList"
+						:listState
+						v-model="selectedProducts"
+						@updateSelectedProducts="updateSelectedProducts"
+						amounted="() => fetchIndexUnuploadedPortfolios()"
+					/>
+
+					<EmptyState
+						v-else
+						:data="{
+							title: trans('No portfolios selected'),
+						}"
+					/>
+
 				</div>
 
 				<Button
