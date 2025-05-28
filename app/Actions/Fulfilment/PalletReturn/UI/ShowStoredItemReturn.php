@@ -222,11 +222,27 @@ class ShowStoredItemReturn extends OrgAction
                     ]
                 ],
                 'stored_items_count'    => $palletReturn->storedItems()->count(),
-                'shipment_route'    => [
-                    'name'       => 'grp.models.pallet-return.shipment_from_fulfilment.store',
-                    'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
+                'shipments' => [
+                    'submit_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment_from_fulfilment.store',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+
+                    'fetch_route' => [
+                        'name'       => 'grp.json.shippers.index',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ]
+                    ],
+
+                    'delete_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment.detach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
                 ],
 
                 PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?

@@ -103,13 +103,6 @@ class ShowWarehousePalletReturn extends OrgAction
                     'actions' => $actions
                 ],
 
-                'shipment_route' => [
-                    'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
-                    'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
-                ],
-
                 'interest'  => [
                     'pallets_storage' => $palletReturn->fulfilmentCustomer->pallets_storage,
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
@@ -174,6 +167,28 @@ class ShowWarehousePalletReturn extends OrgAction
                 ],
 
                 'can_edit_transactions' => true,
+                'shipments' => [
+                    'submit_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+
+                    'fetch_route' => [
+                        'name'       => 'grp.json.shippers.index',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ]
+                    ],
+
+                    'delete_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment.detach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+                ],
 
 
 
