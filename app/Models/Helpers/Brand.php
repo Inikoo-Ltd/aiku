@@ -22,20 +22,18 @@ use Spatie\Sluggable\SlugOptions;
  *
  *
  * @property int $id
- * @property int $group_id
- * @property int $organisation_id
- * @property int|null $shop_id
  * @property string $slug
- * @property string $name
  * @property string $reference
- * @property array<array-key, mixed> $data
+ * @property string $name
  * @property int $number_models
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $image_id
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Brand newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Brand newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Brand query()
  * @mixin \Eloquent
  */
 class Brand extends Model implements HasMedia
