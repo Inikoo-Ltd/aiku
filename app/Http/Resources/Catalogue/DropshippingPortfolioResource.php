@@ -70,7 +70,7 @@ class DropshippingPortfolioResource extends JsonResource
                     'method' => 'post',
                     'name'       => 'retina.models.dropshipping.shopify.single_upload',
                     'parameters' => [
-                        'customerSalesChannel' => $this->customerSalesChannel->user->id,
+                        'shopifyUser' => $this->customerSalesChannel->user->id,
                         'portfolio' => $this->id
                     ]
                 ],
