@@ -31,11 +31,10 @@ class DeleteRetinaShopifyUser extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser): void
     {
-        $randomNumber = random_int(00, 99);
-
-        $deletedSuffix = 'deleted-' . $randomNumber;
-
         DeleteWebhooksFromShopify::dispatch($shopifyUser);
+
+        $randomNumber = random_int(00, 99);
+        $deletedSuffix = 'deleted-' . $randomNumber;
 
         $this->update($shopifyUser, [
             'name' => $shopifyUser->name . $deletedSuffix,

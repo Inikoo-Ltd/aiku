@@ -83,7 +83,7 @@ const onCreateStoreShopify = () => {
                 });
             },
             onSuccess: () => {
-                window.open(props.type_shopify.connectRoute?.url + "?shop=" + websiteInput.value + props.type_shopify.shopify_url, "_blank");
+                // window.open(props.type_shopify.connectRoute?.url + "?shop=" + websiteInput.value + props.type_shopify.shopify_url, "_blank");
 
                 isModalOpen.value = false;
                 websiteInput.value = null;

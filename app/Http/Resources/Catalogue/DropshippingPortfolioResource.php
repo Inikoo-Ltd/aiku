@@ -53,7 +53,7 @@ class DropshippingPortfolioResource extends JsonResource
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
             $weight = $this->item->gross_weight;
-            $price = $this->item->price;
+            $price = $this->customer_price ?? $this->item->price;
             $image = $this->item->imageSources(64, 64);
             $category = $department . $this->item->family?->name;
         }
@@ -62,7 +62,7 @@ class DropshippingPortfolioResource extends JsonResource
         $platformProductId = [];
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
             $platformProductId = [
-                'platform_product_id' => $this->shopifyPortfolio?->shopify_product_id
+                'platform_product_id' => $this->shopify_product_id
             ];
 
             $shopifyUploadRoute = [
@@ -83,7 +83,7 @@ class DropshippingPortfolioResource extends JsonResource
             'slug'                      => $this->item?->slug,
             'code'                      => $this->item?->code ?? $this->item_code,
             'currency_code'             => $this->item?->currency?->code,
-            'name'                      => $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'name'                      => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
             'quantity_left'             => $quantity,
             'platform_product_id'       => $this->platform_product_id,
             'weight'                    => $weight,

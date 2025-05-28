@@ -18,9 +18,11 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Symfony\Component\HttpFoundation\Response;
 
 class StoreShopifyUser extends RetinaAction
 {
@@ -28,7 +30,7 @@ class StoreShopifyUser extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer, $modelData): void
+    public function handle(Customer $customer, $modelData): ShopifyUser
     {
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
 
@@ -62,7 +64,14 @@ class StoreShopifyUser extends RetinaAction
             'customer_sales_channel_id' => $customerSalesChannel->id,
         ]);
 
+        return $shopifyUser;
+    }
 
+    public function htmlResponse(ShopifyUser $shopifyUser): Response
+    {
+        return Inertia::location(route('pupil.authenticate', [
+            'shop' => $shopifyUser->name
+        ]));
     }
 
     public function rules(): array
@@ -88,10 +97,10 @@ class StoreShopifyUser extends RetinaAction
         $this->set('name', $shopifyFullName);
     }
 
-    public function asController(ActionRequest $request): void
+    public function asController(ActionRequest $request): ShopifyUser
     {
         $this->initialisation($request);
 
-        $this->handle($this->customer, $this->validatedData);
+        return $this->handle($this->customer, $this->validatedData);
     }
 }
