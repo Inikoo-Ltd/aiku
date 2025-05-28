@@ -28,6 +28,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
     use WithActionUpdate;
 
     public string $jobQueue = 'shopify';
+    public int $jobBackoff = 5;
 
     /**
      * @throws \Exception
@@ -37,12 +38,17 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
         DB::transaction(function () use ($shopifyUser, $portfolio, $body) {
             try {
                 $images = [];
-                // $portfolio->item->images
-                foreach ([1, 2, 3, 4, 5, 6, 7] as $image) {
+                $count = 0;
+                foreach ($portfolio->item->images as $image) {
+                    if ($count >= 3) {
+                        break;
+                    }
+
                     $images[] = [
-                        "attachment" => json_decode(file_get_contents(storage_path('media/base64.json')), true)['file']
-                        //"attachment" => $image->getBase64Image()
+                        "attachment" => $image->getBase64Image()
                     ];
+
+                    $count++;
                 }
             } catch (\Exception $e) {
                 Sentry::captureException($e);
@@ -71,10 +77,9 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
 
             $productShopify = [];
             $client = $shopifyUser->getShopifyClient();
-
             $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
 
-            if (count($availableProducts) === 0) {
+            if (count($availableProducts) <= 0) {
                 try {
                     $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
                     if ($response['errors']) {
