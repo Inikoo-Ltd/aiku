@@ -157,6 +157,17 @@ class UpdateProductCategory extends OrgAction
         return $this->handle($productCategory, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
+    public function inSubDepartment(ProductCategory $productCategory, ActionRequest $request): ProductCategory
+    {
+        $this->productCategory = $productCategory;
+        $this->initialisationFromShop($productCategory->shop, $request);
+
+        return $this->handle($productCategory, modelData: $this->validatedData);
+    }
+
     public function jsonResponse(ProductCategory $productCategory): DepartmentsResource
     {
         return new DepartmentsResource($productCategory);
