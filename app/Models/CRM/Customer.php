@@ -122,6 +122,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $approved_at
  * @property numeric $amount_in_basket
  * @property int|null $current_order_in_basket_id
+ * @property string|null $first_name
+ * @property string|null $last_name
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments

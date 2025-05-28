@@ -121,9 +121,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read Snapshot|null $unpublishedDepartmentSnapshot
+ * @property-read Snapshot|null $unpublishedFamilySnapshot
  * @property-read Snapshot|null $unpublishedFooterSnapshot
  * @property-read Snapshot|null $unpublishedHeaderSnapshot
  * @property-read Snapshot|null $unpublishedMenuSnapshot
+ * @property-read Snapshot|null $unpublishedProductSnapshot
+ * @property-read Snapshot|null $unpublishedSubDepartmentSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
  * @property-read Collection<int, \App\Models\Web\Webpage> $webpages
