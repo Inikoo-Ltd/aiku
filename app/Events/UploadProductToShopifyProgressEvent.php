@@ -42,7 +42,7 @@ class UploadProductToShopifyProgressEvent implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'portfolio'    => $this->portfolio->id
+            'portfolio'    => $this->portfolio
         ];
     }
 
