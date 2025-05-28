@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -97,11 +98,13 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             UpdatePortfolio::run($portfolio, [
                 'shopify_product_id' => Arr::get($productShopify, 'id')
             ]);
+
+            UploadProductToShopifyProgressEvent::dispatch();
         });
     }
 
-    public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): int
+    public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio): string|int
     {
-        return rand();
+        return $portfolio->id . rand();
     }
 }
