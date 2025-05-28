@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -30,10 +31,16 @@ class CalculateDeliveryNoteItemTotalPacked extends OrgAction
             $state = DeliveryNoteItemStateEnum::PACKED;
         }
 
-        return $this->update($deliveryNoteItem, [
+        $deliveryNoteItem = $this->update($deliveryNoteItem, [
             'quantity_packed' => $totalPacked,
             'state' => $state
         ]);
+
+        $deliveryNoteItem->refresh();
+
+        CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
+
+        return $deliveryNoteItem;
     }
 
     public function action(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
