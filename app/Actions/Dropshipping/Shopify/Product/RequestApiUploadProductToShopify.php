@@ -99,7 +99,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
                 'shopify_product_id' => Arr::get($productShopify, 'id')
             ]);
 
-            UploadProductToShopifyProgressEvent::dispatch();
+            UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $portfolio);
         });
     }
 
