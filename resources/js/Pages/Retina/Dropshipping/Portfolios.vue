@@ -29,6 +29,7 @@ import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { get, set } from "lodash"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
+import PortfoliosStepEdit from "@/Components/Retina/Dropshipping/PortfoliosStepEdit.vue"
 library.add(faSyncAlt)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
@@ -95,7 +96,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 text: trans("Successfully added portfolios"),
                 type: "success"
             })
-            isOpenModalPortfolios.value = false
+            // isOpenModalPortfolios.value = false
         },
         onFinish: () => isLoadingSubmit.value = false
     })
@@ -258,7 +259,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 		</div>
 	</div>
 
-	<!-- <RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData /> -->
+	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
 	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
 		<div class="flex justify-between">
