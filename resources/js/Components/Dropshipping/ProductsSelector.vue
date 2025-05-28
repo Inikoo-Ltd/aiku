@@ -159,7 +159,7 @@ watch(() => props.routeFetch, () => {
                 <div class="border-t border-gray-300 mb-1"></div>
             </div> -->
 
-            <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
+            <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
                 <div class="flex justify-between items-center">
                     <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     <div class="flex gap-2">

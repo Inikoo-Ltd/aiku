@@ -150,10 +150,10 @@ class IndexRetinaPortfolios extends RetinaAction
                         'name' => 'retina.models.portfolio.delete',
                         'parameters' => []
                     ],
-                    'listPortfolioUnUploadedRoute' => [
-                        'name' => 'retina.models.portfolio.delete',
-                        'parameters' => []
-                    ]
+                    // 'listPortfolioUnUploadedRoute' => [
+                    //     'name' => 'retina.models.portfolio.delete',
+                    //     'parameters' => []
+                    // ]
                 ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',

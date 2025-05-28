@@ -23,7 +23,7 @@ class UpdateRetinaPortfolio extends RetinaAction
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
-        return UpdatePortfolio::run($portfolio, $modelData);
+        return UpdatePortfolio::make()->action($portfolio, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -36,6 +36,6 @@ class UpdateRetinaPortfolio extends RetinaAction
         $this->portfolio = $portfolio;
         $this->initialisation($request);
 
-        return $this->handle($portfolio, $this->validatedData);
+        return $this->handle($portfolio, $request->all());
     }
 }
