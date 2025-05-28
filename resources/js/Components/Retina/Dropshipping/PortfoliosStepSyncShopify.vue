@@ -120,7 +120,6 @@ onMounted(() => {
                         <ButtonWithLink
                             :routeTarget="data.delete_portfolio"
                             label="Remove"
-                            icon="fal fa-upload"
                             type="delete"
                             size="xs"
                             @success="() => portfolios.splice(portfolios.indexOf(data), 1)"
