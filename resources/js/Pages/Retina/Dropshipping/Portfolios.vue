@@ -53,9 +53,12 @@ const props = defineProps<{
 	routes: {
 		syncAllRoute: routeType
 		addPortfolioRoute: routeType
-		upload_route?: routeType
+		bulk_upload: routeType
 		itemRoute: routeType
 		updatePortfolioRoute: routeType
+	}
+	platform_user_id: {
+
 	}
 }>()
 
@@ -129,6 +132,7 @@ const selectedData = reactive({
 	products: [] as number[],
 })
 const isLoadingUpload = ref(false)
+const progressToUploadToShopify = ref({})
 const onUploadToShopify = () => {
 	if (!props.routes.upload_route?.name) {
 		notify({
@@ -212,7 +216,41 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 	setTimeout(() => {
 		set(listState.value, [portfolio.id, section], null)
 	}, 3000);
+}
 
+// Step 3: bulk upload to Shopify
+const bulkUpload = () => {
+	router[props.routes.bulk_upload.method || 'post'](
+		route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters),
+		{
+			portfolios: selectedProducts.value.map((product: any) => product.id),
+		},
+		{
+			preserveScroll: true,
+			onBefore: () => isLoadingUpload.value = true,
+			onStart: () => {
+				
+			},
+			onSuccess: () => {
+				selectedProducts.value.forEach((product) => {
+					set(progressToUploadToShopify.value, [product.id], 'loading')
+				})
+				selectedProducts.value = []
+				notify({
+					title: trans("Success!"),
+					text: trans("Successfully uploaded portfolios"),
+					type: "success",
+				})
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message || trans("An error occurred while uploading portfolios"),
+					type: "error",
+				})
+			}
+		}
+	)
 }
 </script>
 
@@ -265,33 +303,18 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
-	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
-		<div v-if="currentStep == 2" class="flex justify-between">
+	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto">
+		<div v-if="currentStep === 0" class="flex justify-between">
 			<div class="relative">
-				<Button
-					v-if="currentStep == 2"
-					@click="currentStep = 1"
-					:label="trans('Edit products')"
-					:icon="faArrowLeft"
-					type="tertiary"
-				/>
 			</div>
 
 			<div class="relative">
 				<Button
-					v-if="currentStep == 2 && selectedProducts?.length"
-					aclick="currentStep = 2"
-					:label="trans('Remove portfolios') + ' (' + selectedProducts.length + ')'"
-					xicon="faUpload"
-					type="delete"
-				/>
-				
-				<Button
-					v-if="currentStep == 2 && selectedProducts?.length"
-					aclick="currentStep = 2"
-					:label="trans('Sync to Shopify') + ' (' + selectedProducts.length + ')'"
-					:icon="faUpload"
-					type="secondary"
+					v-if="currentStep == 0"
+					@click="currentStep = 1"
+					:label="trans('Skip to edit products')"
+					:iconRight="faArrowRight"
+					type="tertiary"
 				/>
 			</div>
 		</div>
@@ -308,7 +331,6 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 			</div>
 
 			<div class="relative">
-
 				<Button
 					v-if="currentStep == 1"
 					@click="currentStep = 2"
@@ -319,17 +341,33 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 			</div>
 		</div>
 		
-		<div v-if="currentStep === 0" class="flex justify-between">
-			<div class="relative">
-			</div>
 
+		<div v-if="currentStep == 2" class="flex justify-between">
 			<div class="relative">
 				<Button
-					v-if="currentStep == 0"
+					v-if="currentStep == 2"
 					@click="currentStep = 1"
-					:label="trans('Skip to edit products')"
-					:iconRight="faArrowRight"
+					:label="trans('Edit products')"
+					:icon="faArrowLeft"
 					type="tertiary"
+				/>
+			</div>
+
+			<div class="relative space-x-2">
+				<Button
+					v-if="currentStep == 2 && selectedProducts?.length"
+					aclick="currentStep = 2"
+					:label="trans('Remove portfolios') + ' (' + selectedProducts.length + ')'"
+					xicon="faUpload"
+					type="delete"
+				/>
+				
+				<Button
+					v-if="currentStep == 2 && selectedProducts?.length"
+					@click="() => bulkUpload()"
+					:label="trans('Sync to Shopify') + ' (' + selectedProducts.length + ')'"
+					:icon="faUpload"
+					type="secondary"
 				/>
 			</div>
 		</div>
@@ -409,9 +447,11 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 						v-else-if="portfoliosList?.length"
 						:portfolios="portfoliosList"
 						:listState
+						:platid="props.platform_user_id"
 						v-model="selectedProducts"
 						@updateSelectedProducts="updateSelectedProducts"
 						amounted="() => fetchIndexUnuploadedPortfolios()"
+						:progressToUploadToShopify
 					/>
 
 					<EmptyState

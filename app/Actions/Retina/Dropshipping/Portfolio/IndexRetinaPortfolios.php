@@ -120,7 +120,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
                 'routes'    => [
-                    'upload_route'  => $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
+                    'bulk_upload'  => $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
                         'name'       => 'retina.models.dropshipping.shopify.batch_upload',
                         'parameters' => [
                             'shopifyUser' => $this->customerSalesChannel->user->id

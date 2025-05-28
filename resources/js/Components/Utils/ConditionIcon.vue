@@ -6,7 +6,7 @@ import LoadingIcon from "./LoadingIcon.vue"
 library.add(faCheck, faTimes)
 
 const props = defineProps<{
-    state?: string
+    state?: string | null
 }>()
     
 </script>
