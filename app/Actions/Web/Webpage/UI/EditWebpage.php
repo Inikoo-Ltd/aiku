@@ -57,7 +57,6 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        // dump($webpage->toArray());
         $redirectUrlArr = Arr::pluck($webpage->website->redirects->toArray(), 'redirect');
         return Inertia::render(
             'EditModel',
@@ -127,7 +126,7 @@ class EditWebpage extends OrgAction
                             'fields' => [
                                 "seo_image"         => [
                                     "type"    => "image_crop_square",
-                                    "label"   => __("logo"),
+                                    "label"   => __("image"),
                                     "value"   => $webpage?->imageSources(1200, 1200, 'seoImage'),
                                     'options' => [
                                         "minAspectRatio" => 1,

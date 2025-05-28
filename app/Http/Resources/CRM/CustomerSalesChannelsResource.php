@@ -12,6 +12,7 @@ namespace App\Http\Resources\CRM;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -33,6 +34,14 @@ class CustomerSalesChannelsResource extends JsonResource
         $platform = Platform::find($this->platform_id);
 
         $customerSalesChannels = CustomerSalesChannel::find($this->id);
+        $status = 'connected';
+        if ($customerSalesChannels->user instanceof ShopifyUser) {
+            $settings = $customerSalesChannels->user->settings ?? [];
+            if (empty($settings) && empty($settings['webhook'])) {
+                $status = 'not-connected';
+            }
+        }
+
         return [
             'slug'              => $this->slug,
             'id'                => $this->id,
@@ -47,6 +56,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'platform_name'     => $platform?->name,
             'platform_image'    => $this->getPlatformLogo($customerSalesChannels),
             'name'              => $this->name ?? $this->reference,
+            'connection'        => $status,
             'unlink_route' => [
                 'method' => 'delete',
                 'name' => 'retina.models.customer_sales_channel.unlink',

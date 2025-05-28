@@ -41,6 +41,7 @@ class UpdateWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
+        // dd($webpage->id);
         $currentSeoData = Arr::get($modelData, 'seo_data');
 
         $oldSeoData = $webpage->seo_data;
@@ -73,11 +74,12 @@ class UpdateWebpage extends OrgAction
 
             $source = $webpage->imageSources(1200, 1200, 'seoImage');
 
-            data_set($oldSeoData, 'image', $source);
-            data_set($modelData, 'seo_data', $oldSeoData);
-        } else {
-            data_set($oldSeoData, 'image', Arr::get($oldSeoData, 'image', ''));
-            data_set($modelData, 'seo_data', $oldSeoData);
+            if (!Arr::get($modelData, 'seo_data')) {
+                data_set($oldSeoData, 'image', $source);
+                data_set($modelData, 'seo_data', $oldSeoData);
+            } else {
+                data_set($modelData, 'seo_data.image', $source);
+            }
         }
 
 
