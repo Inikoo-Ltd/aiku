@@ -310,7 +310,7 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
 
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
-    Route::patch('', UpdateProductCategory::class)->name('update');
+    Route::patch('', [UpdateProductCategory::class, 'inSubDepartment'])->name('update');
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
 });
 Route::prefix('sub-department/{subDepartment}')->name('sub-department.')->group(function () {
