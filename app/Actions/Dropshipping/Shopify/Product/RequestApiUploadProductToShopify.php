@@ -36,7 +36,8 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): void
     {
         $api = $shopifyUser->api();
-        $api->getOptions()->setGuzzleOptions(['timeout' => 90.0]);
+        $api->getOptions()->setGuzzleOptions(['timeout' => 90.0, 'max_retry_attempts' => 0,
+            'default_retry_multiplier' => 0.0,]);
 
         $client = $api->getRestClient();
 
@@ -44,7 +45,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
         } catch (\Exception $e) {
             $products = $client->request('GET', '/admin/api/2024-04/products.json', [
-                'title' => $body['title'],
+                'title' => Arr::get($body, 'product.title'),
                 'limit' => 1
             ]);
 

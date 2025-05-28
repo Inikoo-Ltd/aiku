@@ -208,7 +208,6 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
     Route::post('wc-products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
 
-    Route::post('shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::delete('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
     Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
 
@@ -219,6 +218,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
+    Route::post('{shopifyUser:id}/shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
 
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();

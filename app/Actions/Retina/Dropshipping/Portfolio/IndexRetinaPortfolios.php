@@ -104,20 +104,20 @@ class IndexRetinaPortfolios extends RetinaAction
                             'style' => 'create',
                             'key'   => 'upload-to-shopify',
                             'label' => 'Upload Products to ' . $this->customerSalesChannel->platform->name,
-                            // 'route' => [
-                            //     'name'       => 'retina.models.customer_sales_channel.shopify.batch_upload',
-                            //     'parameters' => [
-                            //         'customerSalesChannel' => $this->customerSalesChannel->id
-                            //     ]
-                            // ]
+                             'route' => [
+                                 'name'       => 'retina.models.dropshipping.shopify.batch_upload',
+                                 'parameters' => [
+                                     'shopifyUser' => $this->customerSalesChannel->user->id
+                                 ]
+                             ]
                         ] : [],
                     ]
                 ],
                 'routes'    => [
                     'upload_route'  => $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
-                        'name'       => 'retina.models.customer_sales_channel.shopify.batch_upload',
+                        'name'       => 'retina.models.dropshipping.shopify.batch_upload',
                         'parameters' => [
-                            'customerSalesChannel' => $this->customerSalesChannel->id
+                            'shopifyUser' => $this->customerSalesChannel->user->id
                         ]
                     ] : null,
                     'itemRoute' => [

@@ -10,13 +10,14 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class HandleApiProductToShopify extends RetinaAction
 {
@@ -37,22 +38,6 @@ class HandleApiProductToShopify extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            $variants = [];
-            foreach ($portfolio->item->productVariants as $variant) {
-                $existingOptions = Arr::pluck($variants, 'option1');
-
-                if (!in_array($variant->name, $existingOptions)) {
-                    $variants[] = [
-                        "option1" => $variant->name,
-                        "price" => $variant->price,
-                        "barcode" => $variant->slug,
-                        "weight" => $variant->gross_weight / 1000,
-                        "weight_unit" => "kg",
-                        "inventory_management" => "shopify"
-                    ];
-                }
-            }
-
             try {
                 $images = [];
                 foreach ($portfolio->item->images as $image) {
@@ -61,7 +46,7 @@ class HandleApiProductToShopify extends RetinaAction
                     ];
                 }
             } catch (\Exception $e) {
-                // do nothing
+                Sentry::captureException($e);
             }
 
             $body = [
@@ -71,12 +56,7 @@ class HandleApiProductToShopify extends RetinaAction
                     "body_html" => $portfolio->item->description,
                     "vendor" => $portfolio->item->shop->name,
                     "product_type" => $portfolio->item->family?->name,
-                    "images" => $images,
-                    "variants" => $variants,
-                    "options" => [
-                        "name" => "Variants",
-                        "values" => Arr::pluck($variants, "option1")
-                    ]
+                    "images" => $images
                 ]
             ];
 
@@ -88,14 +68,13 @@ class HandleApiProductToShopify extends RetinaAction
     public function rules(): array
     {
         return [
-            'portfolios' => ['required', 'array']
+            'portfolios' => ['required', 'array'],
+            'portfolios.*' => ['required', 'integer', Rule::exists('portfolios', 'id')],
         ];
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
+    public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
     {
-        /** @var ShopifyUser $shopifyUser */
-        $shopifyUser = $customerSalesChannel->user;
         $this->initialisation($request);
 
         $this->handle($shopifyUser, $this->validatedData);
