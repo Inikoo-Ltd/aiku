@@ -26,6 +26,7 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         data_set($modelData, 'packed_at', now());
+        data_set($modelData, 'packer_user_id', $this->user->id);
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKED->value);
 
         foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
