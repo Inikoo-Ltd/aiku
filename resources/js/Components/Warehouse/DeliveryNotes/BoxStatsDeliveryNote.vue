@@ -57,6 +57,9 @@ const props = defineProps<{
 			combined_label_url?: string
 		}[]
 	}
+	shipments: {
+		delete_route: routeType
+	}
 	routes: {
 		pickers_list: routeType
 		packers_list: routeType
