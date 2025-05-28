@@ -132,7 +132,6 @@ const props = defineProps<{
 		code: string
 	}[]
 	stored_items_count?: number
-	shipment_route: routeType
 	shipments: {
 		fetch_route: routeType
 		submit_route: routeType
