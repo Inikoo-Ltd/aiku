@@ -28,6 +28,18 @@ trait WithDepartmentSubNavigation
                 ]
             ],
             [
+                'label'    => __('Sub-departments'),
+                'number'   => $department->stats->number_sub_departments,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-dot-circle'],
+                    'tooltip' => __('sub-departments')
+                ]
+            ],
+            [
                 'label'    => __('Families'),
                 'number'   => $department->stats->number_current_families,
                 'route'     => [
@@ -61,18 +73,6 @@ trait WithDepartmentSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],
                     'tooltip' => __('products')
-                ]
-            ],
-            [
-                'label'    => __('Sub-departments'),
-                'number'   => $department->stats->number_sub_departments,
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
-                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-dot-circle'],
-                    'tooltip' => __('sub-departments')
                 ]
             ],
         ];
