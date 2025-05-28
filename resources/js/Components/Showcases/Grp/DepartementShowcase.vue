@@ -7,7 +7,14 @@ import Image from "@/Components/Image.vue";
 import Message from "primevue/message";
 import { Link } from "@inertiajs/vue3";
 import { routeType } from "@/types/route";
+import { trans } from "laravel-vue-i18n";
+import { ref } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAlbum, faAlbumCollection } from "@fal";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 
+
+library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
@@ -31,13 +38,17 @@ const goToNext = () => {
     console.log("Next clicked");
 };
 
+const links = ref([
+  { label: trans("Create Collection"), route_target: props.data.routeList.collectionRoute, icon: faAlbumCollection },
+]);
+
 console.log(props)
 
 </script>
 
 <template>
     <div class="px-4 pb-8 m-5">
-
+        
         <Message v-if="data.department?.url_master" severity="success" closable>
             <template #icon>
                 <FontAwesomeIcon :icon="faInfoCircle" />
@@ -86,8 +97,20 @@ console.log(props)
                 </div>
 
             </div>
-
-          <!--   <SetVisibleList :title="'Family List'" :list_data="data.families?.data" :disabled="true" /> -->
+            
+            <div class="bg-white flex justify-end">
+                <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
+                    <div v-for="(item, index) in links" :key="index" class="p-2">
+                        <ButtonWithLink
+                        :routeTarget="item.route_target"
+                        full
+                        :icon="item.icon"
+                        :label="item.label"
+                        type="secondary"
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -6,6 +6,13 @@ import { faInfoCircle } from "@fas";
 import Image from "@/Components/Image.vue";
 import Message from "primevue/message";
 import { Link } from "@inertiajs/vue3";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { trans } from "laravel-vue-i18n";
+import { ref } from "vue";
+import { faAlbum, faAlbumCollection } from "@fal";
+
+library.add(faAlbumCollection);
 
 const props = defineProps<{
   data: {
@@ -24,6 +31,11 @@ const props = defineProps<{
 const product = props.data.data
 
 console.log(props.data)
+
+const links = ref([
+  { label: trans("Create Collection"), route_target: props.data.routeList.collectionRoute, icon: faAlbumCollection },
+]);
+
 </script>
 
 <template>
@@ -64,6 +76,19 @@ console.log(props.data)
                         <div class="text-md">
                             <span class="text-gray-400">{{ data.family.data?.description || "No description" }}</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+              <div class="bg-white flex justify-end">
+                <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
+                    <div v-for="(item, index) in links" :key="index" class="p-2">
+                        <ButtonWithLink
+                        :routeTarget="item.route_target"
+                        full
+                        :icon="item.icon"
+                        :label="item.label"
+                        type="secondary"
+                        />
                     </div>
                 </div>
             </div>
