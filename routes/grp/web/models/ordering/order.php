@@ -82,7 +82,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
 Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
-    Route::patch('shipment', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
+    Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
     Route::delete('/detach-shipment/{shipment:id}', DetachShipmentFromDeliveryNote::class)->name('shipment.detach')->withoutScopedBindings();
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
