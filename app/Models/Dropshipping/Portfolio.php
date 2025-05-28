@@ -51,6 +51,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation

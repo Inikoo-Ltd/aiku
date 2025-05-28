@@ -150,10 +150,10 @@ class IndexRetinaPortfolios extends RetinaAction
                         'name' => 'retina.models.portfolio.delete',
                         'parameters' => []
                     ],
-                    'listPortfolioUnUploadedRoute' => [
-                        'name' => 'retina.models.portfolio.delete',
-                        'parameters' => []
-                    ]
+                    // 'listPortfolioUnUploadedRoute' => [
+                    //     'name' => 'retina.models.portfolio.delete',
+                    //     'parameters' => []
+                    // ]
                 ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
@@ -175,6 +175,10 @@ class IndexRetinaPortfolios extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
+                'currentStep' => match ($this->customerSalesChannel->platform->type) {
+                    PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('shopify_product_id')->count() === 0 ? 1 : 2,
+                    default => 1
+                },
                 'products' => DropshippingPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));
