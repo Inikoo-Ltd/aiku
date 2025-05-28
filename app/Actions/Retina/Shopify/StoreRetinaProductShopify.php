@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Shopify;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
-use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -36,9 +35,7 @@ class StoreRetinaProductShopify extends RetinaAction
         DB::transaction(function () use ($shopifyUser, $modelData) {
             foreach (Arr::get($modelData, 'items') as $productId) {
                 $product = Product::find($productId);
-                $portfolio = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $product, []);
-
-                HandleApiProductToShopify::run($shopifyUser, [$portfolio->id]);
+                StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $product, []);
             }
         });
 
@@ -46,10 +43,7 @@ class StoreRetinaProductShopify extends RetinaAction
             return;
         }
 
-
-
         CustomerSalesChannelsHydratePortfolios::dispatch($shopifyUser->customerSalesChannel);
-
     }
 
     public function rules(): array

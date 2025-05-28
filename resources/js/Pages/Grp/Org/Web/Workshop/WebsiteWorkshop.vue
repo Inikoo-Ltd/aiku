@@ -8,7 +8,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import LayoutWorkshop from "@/Components/CMS/Website/Layout/LayoutWorkshop.vue"
 import WorkshopProduct from "@/Components/CMS/Website/Product/ProductWorkshop.vue"
-import CategoryWorkshop from '@/Components/CMS/Website/Family/CategoryWorkshop.vue'
+import FamilyWorkshop from '@/Components/CMS/Website/Family/FamilyWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import DepartmentWorkshop from '@/Components/CMS/Website/Departement/DepartementWorkshop.vue'
 import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartement/SubDepartementWorkshop.vue'
@@ -40,7 +40,7 @@ const loadingPublish = ref(false)
 const component = computed(() => {
     const components = {
         website_layout: LayoutWorkshop,
-        family: CategoryWorkshop,
+        family: FamilyWorkshop,
         product: WorkshopProduct,
         department: DepartmentWorkshop,
         sub_department : SubDepartementWorkshop

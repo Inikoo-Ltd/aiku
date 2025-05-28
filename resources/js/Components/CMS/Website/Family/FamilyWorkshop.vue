@@ -30,9 +30,9 @@ const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 
 // Make layout editable
-const layout = ref(props.data.layout);
+/* const layout = ref(props.data.layout); */
 
-const onPickTemplate = (template: any) => {
+/* const onPickTemplate = (template: any) => {
   isModalOpen.value = false;
   layout.value = template;
   autosave()
@@ -47,13 +47,12 @@ const onChangeDepartment = (value: any) => {
     layout.value.data.fieldValue.sub_departments = value.sub_departments || [];
   }
 
-};
+}; */
 
 
 
 const autosave = () => {
   const payload = toRaw(layout.value);
-  // Hapus properti jika ada
   delete payload.data?.fieldValue?.layout
   delete payload.data?.fieldValue?.sub_departments
   console.log('Autosaving layout:', payload);
@@ -95,14 +94,13 @@ provide("currentView", currentView);
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+   <!--  <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
       <SideMenuFamilyWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
         @set-up-template="onPickTemplate" :dataList="data.sub_departments" @onChangeDepartment="onChangeDepartment"/>
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
       <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-        <!--  <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" /> -->
         <div class="py-1 px-2 cursor-pointer lg:block hidden" :class="['selected-bg']" v-tooltip="'Desktop view'">
           <FontAwesomeIcon icon='fas fa-desktop' class='' fixed-width aria-hidden='true' />
         </div>
@@ -113,6 +111,6 @@ provide("currentView", currentView);
       <div v-else>
         <EmptyState />
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
