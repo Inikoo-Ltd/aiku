@@ -13,7 +13,7 @@ use Sentry;
 
 trait WithInitShopifyClient
 {
-    public function getShopifyClient(): RestRequester
+    public function getShopifyClient(): RestRequester|null
     {
         try {
             $api = $this->api();
@@ -24,7 +24,7 @@ trait WithInitShopifyClient
         } catch (\Exception $e) {
             Sentry::captureMessage($e->getMessage());
 
-            throw new \Exception($e->getMessage(), $e->getCode());
+            return null;
         }
     }
 }

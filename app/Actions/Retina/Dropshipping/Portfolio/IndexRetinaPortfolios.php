@@ -23,12 +23,17 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
     private CustomerSalesChannel $customerSalesChannel;
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
+        $unUploadedFilter = AllowedFilter::callback('unupload', function ($query, $value) {
+            $query->whereNull('shopify_product_id');
+        });
+
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
         $query->where('status', true);
@@ -45,7 +50,8 @@ class IndexRetinaPortfolios extends RetinaAction
             $query->where('item_type', class_basename(Product::class));
         }
 
-        return $query->withPaginator($prefix, tableName: request()->route()->getName())
+        return $query->allowedFilters([$unUploadedFilter])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
@@ -135,6 +141,18 @@ class IndexRetinaPortfolios extends RetinaAction
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
+                    ],
+                    'updatePortfolioRoute' => [
+                        'name' => 'retina.models.portfolio.update',
+                        'parameters' => []
+                    ],
+                    'deletePortfolioRoute' => [
+                        'name' => 'retina.models.portfolio.delete',
+                        'parameters' => []
+                    ],
+                    'listPortfolioUnUploadedRoute' => [
+                        'name' => 'retina.models.portfolio.delete',
+                        'parameters' => []
                     ]
                 ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [

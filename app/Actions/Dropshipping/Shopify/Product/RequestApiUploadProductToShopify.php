@@ -12,13 +12,8 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\ShopifyUserHasProduct;
-use Closure;
-use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
-use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -35,45 +30,19 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
      */
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): void
     {
-        $api = $shopifyUser->api();
-        $api->getOptions()->setGuzzleOptions(['timeout' => 90.0, 'max_retry_attempts' => 0,
-            'default_retry_multiplier' => 0.0,]);
+        $productShopify = [];
+        $client = $shopifyUser->getShopifyClient();
 
-        $client = $api->getRestClient();
-
-        try {
-            $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
-        } catch (\Exception $e) {
-            $products = $client->request('GET', '/admin/api/2024-04/products.json', [
-                'title' => Arr::get($body, 'product.title'),
-                'limit' => 1
+        $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+        if ($response['errors']) {
+            $this->update($portfolio, [
+                'errors_response' => Arr::get($response, 'body.errors')
             ]);
 
-            Log::info(json_encode($products));
-
-            if (!empty(Arr::get($products, 'body.products'))) {
-                $response = [
-                    'body' => [
-                        'product' => Arr::first(Arr::get($products, 'body.products.0'))
-                    ]
-                ];
-            } else {
-                $response = [
-                    'body' => [
-                        'product' => []
-                    ],
-                    'errors' => true
-                ];
-            }
+            \Sentry::captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
+        } else {
+            $productShopify = Arr::get($response, 'body.product');
         }
-
-        Log::info('right-after-upload-' .$portfolio->id);
-
-        if ($response['errors']) {
-            \Sentry\captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
-        }
-
-        $productShopify = Arr::get($response, 'body.product');
 
         $inventoryVariants = [];
         foreach (Arr::get($productShopify, 'variants') as $variant) {
@@ -83,58 +52,13 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
 
         HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
 
-        if (Arr::get($productShopify, 'id')) {
-            ShopifyUserHasProduct::updateOrCreate([
-                'shopify_user_id' => $shopifyUser->id,
-                'product_type' => $portfolio->item->getMorphClass(),
-                'product_id' => $portfolio->item->id,
-                'portfolio_id' => $portfolio->id
-            ], [
-                'shopify_user_id' => $shopifyUser->id,
-                'product_type' => $portfolio->item->getMorphClass(),
-                'product_id' => $portfolio->item->id,
-                'portfolio_id' => $portfolio->id,
-                'shopify_product_id' => Arr::get($productShopify, 'id')
-            ]);
-        }
-
         $this->update($portfolio, [
-            'data' => [
-                'api_response' => Arr::get($response, 'body')
-            ]
+            'shopify_product_id' => Arr::get($productShopify, 'id')
         ]);
-
-        Log::info('end-dispatch-' .$portfolio->id);
-    }
-
-    public function rules(): array
-    {
-        return [
-            'portfolios' => ['required', 'array']
-        ];
     }
 
     public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): int
     {
         return rand();
-    }
-
-    public static function shopifyApiClosure(): Closure
-    {
-        return function (Options $opts) {
-            $ts = config('shopify-app.api_time_store');
-            $ls = config('shopify-app.api_limit_store');
-            $sd = config('shopify-app.api_deferrer');
-
-            // Custom Guzzle options
-            $opts->setGuzzleOptions(['timeout' => 90.0]);
-
-            return new BasicShopifyAPI(
-                $opts,
-                new $ts(),
-                new $ls(),
-                new $sd()
-            );
-        };
     }
 }

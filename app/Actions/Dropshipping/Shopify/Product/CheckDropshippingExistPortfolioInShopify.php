@@ -11,7 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
-use GuzzleHttp\Promise\PromiseInterface;
+use Gnikyt\BasicShopifyAPI\ResponseAccess;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -25,12 +25,34 @@ class CheckDropshippingExistPortfolioInShopify
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio): PromiseInterface|null
+    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio): array|null|ResponseAccess
     {
         try {
-            $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2024-04/products.json', [
-                'sku' => $portfolio->id,
-                'limit' => 1
+            $query = '
+            query($identifier: ProductIdentifierInput!) {
+                product: productByIdentifier(identifier: $identifier) {
+                    id
+                    handle
+                    title
+                }
+        }
+        ';
+
+            $variables = [
+                'identifier' => [
+                    'customId' => [
+                        'namespace' => 'custom',
+                        'key' => 'id',
+                        'value' => (string) $portfolio->id
+                    ]
+                ]
+            ];
+
+            $response = $shopifyUser->getShopifyClient()->request('POST', '/admin/api/2025-04/graphql.json', [
+                'json' => [
+                    'query' => $query,
+                    'variables' => $variables
+                ]
             ]);
 
             if (Arr::get($response, 'errors')) {

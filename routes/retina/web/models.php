@@ -10,7 +10,8 @@ use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
-use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
+use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfoliosToShopify;
+use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfolioToShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
@@ -36,6 +37,7 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -218,7 +220,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
-    Route::post('{shopifyUser:id}/shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+    Route::post('{shopifyUser:id}/shopify-batch-upload', SyncroniseDropshippingPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+    Route::post('{shopifyUser:id}/shopify-single-upload/{portfolio:id}', SyncroniseDropshippingPortfolioToShopify::class)->name('shopify.single_upload')->withoutScopedBindings();
 
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
@@ -246,6 +249,7 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 });
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
+Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
 
 Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');

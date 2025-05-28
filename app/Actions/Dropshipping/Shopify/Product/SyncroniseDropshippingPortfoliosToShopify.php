@@ -12,14 +12,13 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class HandleApiProductToShopify extends RetinaAction
+class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -34,6 +33,7 @@ class HandleApiProductToShopify extends RetinaAction
             ->customerSalesChannel
             ->portfolios()
             ->where('status', true)
+            ->whereNull('shopify_product_id')
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
@@ -60,8 +60,7 @@ class HandleApiProductToShopify extends RetinaAction
                 ]
             ];
 
-            Log::info('before-dispatch-' .$portfolio->id);
-            RequestApiUploadProductToShopify::run($shopifyUser, $portfolio, $body);
+            RequestApiUploadProductToShopify::dispatch($shopifyUser, $portfolio, $body);
         }
     }
 

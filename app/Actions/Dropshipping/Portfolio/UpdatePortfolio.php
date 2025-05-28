@@ -78,6 +78,11 @@ class UpdatePortfolio extends OrgAction
             'item_type'       => 'sometimes|string',
             'item_name'       => 'sometimes|string',
             'item_code'       => 'sometimes|string',
+            'customer_product_name'       => 'sometimes|string',
+            'customer_price'       => 'sometimes|string',
+            'customer_description'       => 'sometimes|string',
+            'shopify_product_id'       => 'sometimes|string',
+            'errors_response'       => 'sometimes|array'
         ];
 
         if (!$this->strict) {
