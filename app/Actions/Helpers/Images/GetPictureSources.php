@@ -32,6 +32,10 @@ class GetPictureSources
             $sources['webp'] = GetImgProxyUrl::run($image->extension('webp'));
         }
 
+        if (in_array('png', config('img-proxy.formats'))) {
+            $sources['png'] = GetImgProxyUrl::run($image->extension('png'));
+        }
+
 
         if ($image->getWidth() or $image->getHeight()) {
             $image_2x = $image->resize(
@@ -45,6 +49,10 @@ class GetPictureSources
 
             if (Arr::has($sources, 'webp')) {
                 $sources['webp_2x']     = GetImgProxyUrl::run($image_2x->extension('webp'));
+            }
+
+            if (Arr::has($sources, 'png')) {
+                $sources['png_2x']     = GetImgProxyUrl::run($image_2x->extension('png'));
             }
 
             $sources['original_2x'] = GetImgProxyUrl::run($image_2x->extension(null));
