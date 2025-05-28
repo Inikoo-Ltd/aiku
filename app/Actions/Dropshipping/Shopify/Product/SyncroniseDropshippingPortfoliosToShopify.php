@@ -56,11 +56,21 @@ class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
                     "body_html" => $portfolio->item->description,
                     "vendor" => $portfolio->item->shop->name,
                     "product_type" => $portfolio->item->family?->name,
-                    "images" => $images
+                    "images" => $images,
+                    "variants" => [
+                        [
+                            "price" => $portfolio->item->price,
+                            "sku" => $portfolio->id,
+                            "inventory_management" => "shopify",
+                            "inventory_policy" => "deny",
+                            "weight" => $portfolio->item->weight,
+                            "weight_unit" => "g"
+                        ]
+                    ]
                 ]
             ];
 
-            RequestApiUploadProductToShopify::dispatch($shopifyUser, $portfolio, $body);
+            RequestApiUploadProductToShopify::run($shopifyUser, $portfolio, $body);
         }
     }
 

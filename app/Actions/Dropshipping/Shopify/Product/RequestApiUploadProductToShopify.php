@@ -50,7 +50,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             $inventoryVariants[] = $variant;
         }
 
-        HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
+        HandleApiInventoryProductShopify::run($shopifyUser, $inventoryVariants);
 
         $this->update($portfolio, [
             'shopify_product_id' => Arr::get($productShopify, 'id')
