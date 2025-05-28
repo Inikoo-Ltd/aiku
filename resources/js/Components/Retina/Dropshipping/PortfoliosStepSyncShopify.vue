@@ -103,7 +103,7 @@ onMounted(() => {
         <Column field="price" header="Price" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap">
-                    {{ data.id }}
+                    {{ data.price }}
                 </div>
             </template>
         </Column>
