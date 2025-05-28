@@ -58,10 +58,22 @@ class DropshippingPortfolioResource extends JsonResource
             $category = $department . $this->item->family?->name;
         }
 
+        $shopifyUploadRoute = [];
         $platformProductId = [];
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
             $platformProductId = [
                 'platform_product_id' => $this->shopifyPortfolio?->shopify_product_id
+            ];
+
+            $shopifyUploadRoute = [
+                'shopify_upload_portfolio' => [
+                    'method' => 'post',
+                    'name'       => 'retina.models.dropshipping.shopify.single_upload',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->user->id,
+                        'portfolio' => $this->id
+                    ]
+                ],
             ];
         }
 
@@ -91,6 +103,7 @@ class DropshippingPortfolioResource extends JsonResource
                     'portfolio' => $this->id
                 ]
             ],
+            ...$shopifyUploadRoute,
         ];
     }
 }

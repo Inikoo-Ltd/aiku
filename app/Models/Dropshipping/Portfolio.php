@@ -124,4 +124,9 @@ class Portfolio extends Model implements Auditable
         return $this->belongsTo(Platform::class);
     }
 
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
 }
