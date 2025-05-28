@@ -116,10 +116,14 @@ onMounted(() => {
                     <ConditionIcon v-if="get(props.progressToUploadToShopify, [data.id], null)" :state="get(props.progressToUploadToShopify, [data.id], undefined)" class="text-xl mx-auto" />
 
                     <template v-else>
-                        <Button
+
+                        <ButtonWithLink
+                            :routeTarget="data.delete_portfolio"
                             label="Remove"
+                            icon="fal fa-upload"
                             type="delete"
                             size="xs"
+                            @success="() => portfolios.splice(portfolios.indexOf(data), 1)"
                         />
 
                         <ButtonWithLink
