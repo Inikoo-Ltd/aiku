@@ -107,6 +107,11 @@ class EditDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $department->name
                                 ],
+                                'description' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description'),
+                                    'value' => $department->description
+                                ],
                                 'follow_master' => [
                                     'type'  => 'toggle',
                                     'label' => __('Follow Master'),
