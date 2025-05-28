@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
 use App\Actions\Web\ExternalLink\CheckExternalLinkStatus;
 use App\Actions\Web\WebBlock\DeleteWebBlock;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\SourceOrganisationService;
@@ -67,6 +68,14 @@ class FetchAuroraWebBlocks
      */
     public function handle(SourceOrganisationService $organisationSource, Webpage $webpage, $reset = false, $dbSuffix = ''): Webpage
     {
+
+        $shop = $webpage->shop;
+        if ($shop->type == ShopTypeEnum::FULFILMENT || $shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return $webpage;
+        }
+
+
+
         $this->dbSuffix = $dbSuffix;
 
         $this->organisationSource = $organisationSource;

@@ -68,6 +68,7 @@ class GetCollectionShowcase
             ] : [],
             'image'           => $collection->imageSources(720, 480),
             'description' => $collection->description,
+            'name'        => $collection->name,
             'stats'       => [
                 [
                     'label' => __('Department'),

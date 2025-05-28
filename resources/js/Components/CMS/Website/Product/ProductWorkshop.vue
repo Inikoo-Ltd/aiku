@@ -36,7 +36,7 @@ const optionsToogle = ref([
   { name: 'Membership', value: 'member' }
 ])
 
-const initializeTemplate = () => {
+/* const initializeTemplate = () => {
   if (!props.modelValue.product) {
     props.modelValue.product = {
       code: props.data.web_block_types.data[0].code,
@@ -52,7 +52,7 @@ const initializeTemplate = () => {
   usedTemplates.value = props.data.web_block_types.data.find(
     (template) => template.code === props.modelValue.product.code
   ) || props.data.web_block_types.data[0]
-}
+} */
 
 const selectPreviousTemplate = () => {
   const index = props.data.web_block_types.data.findIndex(
@@ -71,12 +71,12 @@ const selectNextTemplate = () => {
     usedTemplates.value = props.data.web_block_types.data[index + 1]
   }
 }
-
+/* 
 onMounted(() => {
   initializeTemplate()
-})
+}) */
 
-watch(
+/* watch(
   () => props.modelValue?.product?.code,
   (code) => {
     if (code) {
@@ -85,12 +85,11 @@ watch(
       )
     }
   }
-)
+) */
 </script>
 
 <template>
   <div class="h-[79vh] grid overflow-hidden grid-cols-4">
-    <!-- Sidebar -->
     <div class="col-span-1 flex flex-col border-r border-gray-300 shadow-lg relative overflow-auto">
       <div class="px-4 py-3 rounded-t-lg shadow">
         <div class="flex items-center">
@@ -158,7 +157,6 @@ watch(
       </div>
     </div>
 
-    <!-- Preview Area -->
     <div class="bg-gray-100 h-full col-span-3 rounded-lg shadow-lg">
       <div class="bg-gray-100 px-6 py-6 h-[79vh] rounded-lg overflow-auto">
         <div :class="usedTemplates?.code ? 'bg-white shadow-md rounded-lg' : ''">

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCube, faChair, faHandPaper, faFolder, faBoxCheck, faPrint } from '@fal'
+import { faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint } from '@fal'
 import { faArrowRight, faCheck } from '@fas'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -38,7 +38,7 @@ import { get, set } from 'lodash'
 import PureInput from '@/Components/Pure/PureInput.vue'
 
 
-library.add(faFolder, faBoxCheck, faPrint, faCube, faChair, faHandPaper, faArrowRight, faCheck)
+library.add(faFolder, faBoxCheck, faPrint, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck)
 
 const props = defineProps<{
     title: string,
@@ -226,7 +226,7 @@ provide("listError", listError.value)
     <PageHeading :data="pageHead">
         <template #otherBefore>
             <Button 
-				v-if="delivery_note_state.value == 'packed'"
+				v-if="delivery_note_state.value == 'packed' && !(box_stats?.shipments?.length)"
 				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
 				v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
 				:label="trans('Shipment')"
@@ -287,6 +287,7 @@ provide("listError", listError.value)
         :routes
         :deliveryNote="delivery_note"
         :updateRoute="routes.update"
+        :shipments
     />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />

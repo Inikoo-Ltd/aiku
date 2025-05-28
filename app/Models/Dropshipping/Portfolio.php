@@ -43,6 +43,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $item_code no normal field used for improve performance on UI search
  * @property string|null $item_name no normal field used for improve performance on UI search
  * @property int|null $customer_sales_channel_id
+ * @property string|null $customer_product_name
+ * @property string|null $customer_price
+ * @property string|null $customer_description
+ * @property string|null $shopify_product_id
+ * @property string|null $errors_response
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
