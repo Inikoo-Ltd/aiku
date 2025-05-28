@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreProductShopify extends OrgAction
+class StorePortfolioShopify extends OrgAction
 {
     use AsAction;
     use WithAttributes;
