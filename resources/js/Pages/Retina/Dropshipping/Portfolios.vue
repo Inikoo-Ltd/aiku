@@ -373,13 +373,21 @@ const bulkUpload = () => {
 			</div>
 
 			<div class="relative space-x-2 space-y-1 text-right">
-				<Button
+				<!-- <Button
 					v-if="step.current == 2 && selectedPortfoliosToSync?.length"
 					aclick="step.current = 2"
 					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync.length + ')'"
 					xicon="faUpload"
 					type="delete"
 				/>
+
+				<ButtonWithLink
+					:routeTarget="data.delete_portfolio"
+					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync.length + ')'"
+					type="delete"
+					size="xs"
+					@success="() => portfolios.splice(portfolios.indexOf(data), 1)"
+				/> -->
 				
 				<Button
 					v-if="step.current == 2 && selectedPortfoliosToSync?.length"
