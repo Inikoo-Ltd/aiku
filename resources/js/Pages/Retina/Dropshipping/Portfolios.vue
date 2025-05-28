@@ -29,6 +29,7 @@ import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { get, set } from "lodash"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
+import PortfoliosStepEdit from "@/Components/Retina/Dropshipping/PortfoliosStepEdit.vue"
 library.add(faSyncAlt)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
@@ -95,7 +96,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 text: trans("Successfully added portfolios"),
                 type: "success"
             })
-            isOpenModalPortfolios.value = false
+            // isOpenModalPortfolios.value = false
         },
         onFinish: () => isLoadingSubmit.value = false
     })
@@ -189,7 +190,7 @@ watch(currentStep, async (newStep) => {
 const listState = ref({})
 const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, section: string) => {
 	set(listState.value, [portfolio.id, section], 'loading')
-
+	
 
 	try {
 		const data = await axios[props.routes.updatePortfolioRoute.method || 'patch'](
@@ -258,7 +259,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 		</div>
 	</div>
 
-    <RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
+	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
 	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
 		<div class="flex justify-between">
@@ -303,7 +304,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 					xicon="faUpload"
 					type="delete"
 				/>
-
+				
 				<Button
 					v-if="currentStep == 2 && selectedProducts?.length"
 					aclick="currentStep = 2"
@@ -359,7 +360,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 						</Column>
 
 						<Column field="category" header="Category" style="max-width: 200px;">
-
+					
 						</Column>
 
 						<Column field="name" header="Name">
@@ -432,13 +433,13 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 				<div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
 					<DataTable v-if="stepLoading != 2" v-model:selection="selectedProducts" :value="portfoliosList" tableStyle="min-width: 50rem">
 						<Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-
+						
 						<Column field="code" header="Code" style="max-width: 70px;">
 
 						</Column>
 
 						<Column field="category" header="Category" style="max-width: 200px;">
-
+					
 						</Column>
 
 						<Column field="name" header="Name">
