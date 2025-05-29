@@ -49,6 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\Helpers\Language $language
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SupplyChain\SupplierUserStats|null $stats
  * @property-read \App\Models\SupplyChain\Supplier $supplier
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
@@ -111,7 +112,7 @@ class SupplierUser extends Authenticatable implements HasMedia, Auditable
             ->generateSlugsFrom(function () {
                 $slug = $this->username;
 
-                return preg_replace('/@/', '_at_', $slug);
+                return str_replace('@', '_at_', $slug);
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug')

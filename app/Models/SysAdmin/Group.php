@@ -227,6 +227,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\SysAdmin\GroupSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
  * @property-read LaravelCollection<int, ShippingZone> $shippingZones

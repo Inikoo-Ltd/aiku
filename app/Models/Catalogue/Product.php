@@ -102,6 +102,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Portfolio|null $portfolio
  * @property-read LaravelCollection<int, Product> $productVariants
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment

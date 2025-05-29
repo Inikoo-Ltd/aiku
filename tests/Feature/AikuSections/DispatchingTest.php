@@ -232,7 +232,7 @@ test('create more delivery note item', function (DeliveryNote $deliveryNote) {
     $deliveryNote->refresh();
     expect($deliveryNoteItem->delivery_note_id)->toBe($deliveryNoteData['delivery_note_id'])
         ->and($deliveryNote->deliveryNoteItems()->count())->toBe(2);
-    
+
     return $deliveryNoteItem;
 })->depends('create second delivery note');
 
@@ -381,7 +381,7 @@ test('Set Delivery Note state to Packed', function (Picking $picking) {
     $packedDeliveryNote = SetDeliveryNoteStateAsPacked::make()->action($deliveryNote, $this->user);
 
     $packedDeliveryNote->refresh();
-    $deliveryNoteItem->refresh();   
+    $deliveryNoteItem->refresh();
 
     expect($packedDeliveryNote)->toBeInstanceOf(DeliveryNote::class)
         ->and($packedDeliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED);

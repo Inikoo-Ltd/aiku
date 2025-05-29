@@ -73,6 +73,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Stock> $stocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries

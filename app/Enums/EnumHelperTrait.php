@@ -19,7 +19,7 @@ trait EnumHelperTrait
 
     public function snake(): string
     {
-        return preg_replace('/-/', '_', $this->value);
+        return str_replace('-', '_', $this->value);
     }
 
     public static function shortLabels(): array

@@ -63,6 +63,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, OrgSupplier> $orgSuppliers
  * @property-read Organisation $organisation
  * @property-read Collection<int, PurchaseOrder> $purchaseOrders
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SupplyChain\AgentStats|null $stats
  * @property-read Collection<int, StockDelivery> $stockDeliveries
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierProduct> $supplierProducts
