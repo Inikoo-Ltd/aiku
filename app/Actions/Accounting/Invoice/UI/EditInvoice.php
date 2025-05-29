@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -21,42 +20,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditInvoice extends OrgAction
 {
-    private Organisation|Fulfilment|FulfilmentCustomer|Shop $parent;
-
     public function handle(Invoice $invoice): Invoice
     {
         return $invoice;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-        } elseif ($this->parent instanceof Shop) {
-            //todo think about it
-            return false;
-        } elseif ($this->parent instanceof Fulfilment) {
-            return $request->user()->authTo(
-                [
-                    "fulfilment-shop.{$this->fulfilment->id}.view",
-                    "accounting.{$this->fulfilment->organisation_id}.view"
-                ]
-            );
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            return $request->user()->authTo(
-                [
-                    "fulfilment-shop.{$this->fulfilment->id}.view",
-                    "accounting.{$this->fulfilment->organisation_id}.view"
-                ]
-            );
-        }
-
-        return false;
-    }
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
-        $this->parent = $invoice->shop;
         $this->initialisationFromShop($invoice->shop, $request);
 
         return $this->handle($invoice);
@@ -65,7 +36,6 @@ class EditInvoice extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Invoice $invoice, ActionRequest $request): Invoice
     {
-        $this->parent = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($invoice);
@@ -73,7 +43,6 @@ class EditInvoice extends OrgAction
 
     public function inOrganisation(Organisation $organisation, Invoice $invoice, ActionRequest $request): Invoice
     {
-        $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
         return $this->handle($invoice);
