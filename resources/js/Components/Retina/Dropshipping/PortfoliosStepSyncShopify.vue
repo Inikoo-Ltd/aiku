@@ -5,15 +5,20 @@ import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { trans } from 'laravel-vue-i18n'
 import { get, set } from 'lodash'
-import { Column, DataTable } from 'primevue'
+import { Column, DataTable, IconField, InputIcon, InputText } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSearch } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faSearch)
 
 const model = defineModel<{}[]>()
 const props = defineProps<{
     portfolios: {}[]
     listState: { [key: string]: { [key: string]: string } }
-    platid: number
     progressToUploadToShopify: {
         [key: string]: string|null
     }
@@ -26,7 +31,7 @@ const emits = defineEmits<{
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', layoutStructure)
-console.log('layout', layout.user?.id)
+// console.log('layout', layout.user?.id)
 
 const disabledRowId = ref([])
 onMounted(() => {
@@ -70,6 +75,8 @@ onMounted(() => {
 //         model.value = [];
 //     }
 // };
+
+const valueTableFilter = ref({})
 </script>
 
 <template>
@@ -82,6 +89,21 @@ onMounted(() => {
         aselect-all-change="selectAllChangeHook"
         arow-unselect="rowUnselectHook"
     >
+        <template #header>
+            <div class="flex justify-end">
+                <IconField>
+                    <InputIcon>
+                        <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
+                    </InputIcon>
+                    <InputText
+                        :modelValue="get(valueTableFilter, 'global.value', '')"
+                        @update:model-value="(e) => (console.log(e), set(valueTableFilter, ['global', 'value'], e))"
+                        :placeholder="trans('Search in table')"
+                    />
+                </IconField>
+            </div>
+        </template>
+
         <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
         
         <Column field="code" header="Code" style="max-width: 90px;">
@@ -103,7 +125,7 @@ onMounted(() => {
         <Column field="price" header="Price" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap">
-                    {{ data.price }}
+                    {{ locale.currencyFormat(data.currency_code, data.price) }}
                 </div>
             </template>
         </Column>

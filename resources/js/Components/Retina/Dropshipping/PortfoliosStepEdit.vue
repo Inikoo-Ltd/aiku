@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
-import { get } from 'lodash'
-import { Column, DataTable, InputNumber } from 'primevue'
-import { onMounted } from 'vue'
+import { get, set } from 'lodash'
+import { Column, DataTable, IconField, InputIcon, InputNumber, InputText } from 'primevue'
+import { onMounted, ref } from 'vue'
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSearch } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faSearch)
 
 const props = defineProps<{
     portfolios: {}[]
@@ -19,10 +24,31 @@ const emits = defineEmits<{
 onMounted(() => {
     emits('mounted')
 })
+
+
+const valueTableFilter = ref({})
 </script>
 
 <template>
-    <DataTable :value="portfolios" tableStyle="min-width: 50rem">
+    <DataTable :value="portfolios" tableStyle="min-width: 50rem"
+        :globalFilterFields="['code', 'name', 'category', 'price', 'description']"
+        v-model:filters="valueTableFilter"
+    >
+        <template #header>
+            <div class="flex justify-end">
+                <IconField>
+                    <InputIcon>
+                        <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
+                    </InputIcon>
+                    <InputText
+                        :modelValue="get(valueTableFilter, 'global.value', '')"
+                        @update:model-value="(e) => (console.log(e), set(valueTableFilter, ['global', 'value'], e))"
+                        :placeholder="trans('Search in table')"
+                    />
+                </IconField>
+            </div>
+        </template>
+        
         <Column field="code" header="Code" style="max-width: 90px;">
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="truncate relative pr-2">
