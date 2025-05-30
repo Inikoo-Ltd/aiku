@@ -219,6 +219,7 @@ use App\Actions\Web\Banner\UpdateBannerState;
 use App\Actions\Web\Banner\UpdateUnpublishedBannerSnapshot;
 use App\Actions\Web\Banner\UploadImagesToBanner;
 use App\Actions\Web\ModelHasContent\StoreModelHasContent;
+use App\Actions\Web\ModelHasContent\UpdateModelHasContent;
 use App\Actions\Web\ModelHasWebBlocks\BulkUpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
@@ -785,6 +786,10 @@ Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.
 Route::name('product_category.')->prefix('product_category/{productCategory:id}')->group(function () {
     Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
     Route::post('content', [StoreModelHasContent::class, 'inProductCategory'])->name('content.store');
+});
+
+Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
+    Route::patch('update', UpdateModelHasContent::class)->name('update');
 });
 
 
