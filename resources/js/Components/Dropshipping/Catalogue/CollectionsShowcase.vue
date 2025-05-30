@@ -1,14 +1,15 @@
 <script setup lang='ts'>
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faDollarSign } from '@fal'
+import { faDollarSign, faImage } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { Link } from '@inertiajs/vue3'
 import Image from "@/Components/Image.vue";
 import CountUp from 'vue-countup-v3'
-library.add(faDollarSign)
+import { trans } from 'laravel-vue-i18n'
+library.add(faDollarSign, faImage)
 
 const props = defineProps<{
     data: {
@@ -38,8 +39,11 @@ const locale = inject('locale', aikuLocaleStructure)
                                 <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
                                     <Image v-if="data.image" :src="data.image" :imageCover="true"
                                             class="w-full h-40 object-cover rounded-t-lg" />
-                                    <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
+                                    <div v-else class="flex flex-col justify-center items-center bg-gray-100 w-full h-48">
                                         <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
+                                        <div class="text-gray-500 text-sm">
+                                            {{ trans("No image") }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -58,7 +62,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
         <div class="border-l-4 border-l-indigo-500 border border-gray-300 max-w-lg px-2 py-2.5 mb-10">
             <div class="text-sm text-gray-400 block">Parent</div>
-            <Link :href="route(data.parent.route.name, data.parent.route.parameters)" class="primaryLink"> 
+            <Link :href="data?.parent?.route?.name ? route(data.parent.route.name, data.parent.route.parameters) : '#'" class="primaryLink"> 
                     {{ data.parent.name }}
             </Link>
         </div>

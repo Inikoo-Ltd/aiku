@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToDispatched;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPickerAssigned;
@@ -94,7 +95,7 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
         Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
-        Route::patch('settled', UpdateDeliveryNoteStateToSettled::class)->name('settled');
+        Route::patch('dispatched', UpdateDeliveryNoteStateToDispatched::class)->name('dispatched');
     });
 });
 

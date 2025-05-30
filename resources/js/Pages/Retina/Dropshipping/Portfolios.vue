@@ -182,7 +182,7 @@ const fetchIndexUnuploadedPortfolios = async () => {
 	const data = await axios.get(
 		route('retina.dropshipping.customer_sales_channels.portfolios.index',
 			{
-				...route().params,
+				customerSalesChannel: route().params.customerSalesChannel,
 				'filter[unupload]': 'true',
 			}
 		)
@@ -474,7 +474,7 @@ const bulkUpload = () => {
 						v-else-if="portfoliosList?.length"
 						:portfolios="portfoliosList"
 						:listState
-						:platid="props.platform_user_id"
+						xxplatid="props.platform_user_id"
 						v-model="selectedPortfoliosToSync"
 						@updateSelectedProducts="updateSelectedProducts"
 						amounted="() => fetchIndexUnuploadedPortfolios()"
