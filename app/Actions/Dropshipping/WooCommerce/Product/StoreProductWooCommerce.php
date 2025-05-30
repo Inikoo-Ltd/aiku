@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class StoreProductWooCommerce extends RetinaAction
 {
@@ -49,19 +50,22 @@ class StoreProductWooCommerce extends RetinaAction
                 $product = $this->findProductById($productId);
 
                 if (!$product) {
-                    throw new \Exception("Product with ID {$productId} not found");
+                    Sentry::captureMessage("Product with ID {$productId} not found");
                 }
 
                 // Validate required fields
                 if (empty(Arr::get($product, 'name')) || empty(Arr::get($product, 'price'))) {
-                    throw new \Exception('Product name and regular price are required');
+                    Sentry::captureMessage("Product name and regular price are required");
                 }
 
                 $images = [];
-                foreach ($product->images as $image) {
-                    $images[] = [
-                        'src' => GetImgProxyUrl::run($image->getImage())
-                    ];
+
+                if (app()->isProduction()) {
+                    foreach ($product->images as $image) {
+                        $images[] = [
+                            'src' => GetImgProxyUrl::run($image->getImage())
+                        ];
+                    }
                 }
 
                 // Create product data array for WooCommerce API
@@ -86,7 +90,7 @@ class StoreProductWooCommerce extends RetinaAction
 
                 $wooCommerceUser->products()->attach($product->id, [
                     'woo_commerce_user_id' => $wooCommerceUser->id,
-//                    'product_type' => class_basename($product),
+                    'product_type' => class_basename($product),
                     'product_id' => $product->id,
                     'portfolio_id' => $portfolio->id,
                     'woo_commerce_product_id' => Arr::get($result, 'id')
@@ -94,12 +98,14 @@ class StoreProductWooCommerce extends RetinaAction
 
                 $successCount++;
 
-                UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $totalProducts, $successCount);
+                UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
             } catch (\Exception $e) {
                 $failedProducts[] = [
                     'id' => $productId,
                     'error' => $e->getMessage()
                 ];
+
+                Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
                 Log::info(json_encode($failedProducts));
             }
@@ -112,7 +118,7 @@ class StoreProductWooCommerce extends RetinaAction
         ];
     }
 
-    private function mapProductStateToWooCommerce($status)
+    private function mapProductStateToWooCommerce($status): string
     {
         $stateMap = [
             ProductStatusEnum::FOR_SALE->value => 'publish',

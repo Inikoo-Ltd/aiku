@@ -8,9 +8,10 @@
 
 namespace App\Events;
 
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -23,33 +24,31 @@ class UploadProductToWooCommerceProgressEvent implements ShouldBroadcastNow
 
 
     public WooCommerceUser $wooCommerceUser;
-    public int $totalProduct;
-    public int $uploadedProduct;
+    public Portfolio $portfolio;
 
-    public function __construct(WooCommerceUser $wooCommerceUser, int $totalProduct, int $uploadedProduct)
+    public function __construct(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
         $this->wooCommerceUser = $wooCommerceUser;
-        $this->totalProduct    = $totalProduct;
-        $this->uploadedProduct = $uploadedProduct;
+        $this->portfolio       = $portfolio;
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PresenceChannel('woo-commerce.upload-product.' . $this->wooCommerceUser->id)
+            new PrivateChannel("shopify.{$this->wooCommerceUser->id}.upload-product.{$this->portfolio->id}")
+
         ];
     }
 
     public function broadcastWith(): array
     {
         return [
-            'total_products'    => $this->totalProduct,
-            'uploaded_products' => $this->uploadedProduct
+            'portfolio' => $this->portfolio,
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'action-progress';
+        return 'woo-upload-progress';
     }
 }

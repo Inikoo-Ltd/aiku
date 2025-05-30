@@ -19,7 +19,7 @@ const emits = defineEmits<{
     (e: "updateSelectedProducts", portfolio: {}, dataToSend: {}, keyToConditionicon: string ): void,
     (e: "mounted"): void
 }>()
-    
+
 
 onMounted(() => {
     emits('mounted')
@@ -35,7 +35,10 @@ const valueTableFilter = ref({})
         v-model:filters="valueTableFilter"
     >
         <template #header>
-            <div class="flex justify-end">
+            <div class="flex justify-between items-center">
+                <div class="text-xl">
+                    Total: <span class="font-bold">{{ portfolios.length }}</span>
+                </div>
                 <IconField>
                     <InputIcon>
                         <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
@@ -48,7 +51,7 @@ const valueTableFilter = ref({})
                 </IconField>
             </div>
         </template>
-        
+
         <Column field="code" header="Code" style="max-width: 90px;">
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="truncate relative pr-2">
@@ -58,7 +61,7 @@ const valueTableFilter = ref({})
         </Column>
 
         <Column field="category" header="Category" style="max-width: 200px;">
-    
+
         </Column>
 
         <Column field="name" header="Name">
@@ -94,10 +97,10 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <!-- <Column field="shopify_handle" header="Handled" style="max-width: 100px;">
+        <!-- <Column field="platform_handle" header="Handled" style="max-width: 100px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
-                    {{ data.shopify_handle ?? '-' }}
+                    {{ data.platform_handle ?? '-' }}
                 </div>
             </template>
         </Column> -->

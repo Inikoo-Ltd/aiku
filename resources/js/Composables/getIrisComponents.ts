@@ -38,6 +38,7 @@ import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
+import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 
 
 const components: Record<string, Component> = {
@@ -71,6 +72,7 @@ const components: Record<string, Component> = {
     'disclosure': DisclosureIris,
     'family-1' : FamilyIris1,
     'product-1' : ProductIris1,
+    'products-1' : Products1Iris,
     'timeline': Timeline,
     'step-1' : Step2Iris,
     'departments' : Department1Iris,

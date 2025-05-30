@@ -29,7 +29,7 @@ class CheckDropshippingExistPortfolioInShopify
     {
         try {
             $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2025-04/products.json', [
-                'handle' => $portfolio->shopify_handle,
+                'handle' => $portfolio->platform_handle,
                 'limit' => 1
             ]);
 

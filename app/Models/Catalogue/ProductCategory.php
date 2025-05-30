@@ -18,6 +18,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
+use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -153,6 +154,12 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
     }
+
+    public function contents(): MorphMany
+    {
+        return $this->morphMany(ModelHasContent::class, 'model');
+    }
+
 
     public function stats(): HasOne
     {

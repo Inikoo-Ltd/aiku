@@ -31,7 +31,7 @@ class IndexRetinaPortfolios extends RetinaAction
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $unUploadedFilter = AllowedFilter::callback('unupload', function ($query, $value) {
-            $query->whereNull('shopify_product_id');
+            $query->whereNull('platform_product_id');
         });
 
         $query = QueryBuilder::for(Portfolio::class);
@@ -141,7 +141,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ],
-                        'method' => 'delete'
+                        'method' => 'post'
                     ],
                     // 'listPortfolioUnUploadedRoute' => [
                     //     'name' => 'retina.models.portfolio.delete',
@@ -170,7 +170,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'step' => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
-                        PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('shopify_product_id')->count() === 0 ? 0 : 1,
+                        PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
                         default => 0
                     }
                 ],

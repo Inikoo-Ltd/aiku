@@ -6,38 +6,35 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Shopify\Product;
+namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\RetinaAction;
-use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
+class SyncronisePortfoliosToWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
-    use WithActionUpdate;
 
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, array $attributes): void
+    public function handle(WooCommerceUser $wooCommerceUser, array $attributes = [])
     {
-        $portfolios = $shopifyUser
+        $portfolios = $wooCommerceUser
             ->customerSalesChannel
             ->portfolios()
             ->where('status', true)
-            ->whereNull('platform_product_id')
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            RequestApiUploadProductToShopify::dispatch($shopifyUser, $portfolio);
+            RequestApiUploadProductWooCommerce::dispatch($portfolio);
         }
     }
 
@@ -49,10 +46,10 @@ class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
         ];
     }
 
-    public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
+    public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request)
     {
         $this->initialisation($request);
 
-        $this->handle($shopifyUser, $this->validatedData);
+        $this->handle($wooCommerceUser, $this->validatedData);
     }
 }

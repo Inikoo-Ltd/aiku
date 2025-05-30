@@ -119,12 +119,12 @@ console.log('props.data', props)
           <FamilyListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
         </TabPanel>
         <TabPanel v-if="data" class="p-4">
-          <SideEditor 
+          <!-- <SideEditor 
             v-model="data.data.fieldValue" 
             :blueprint="getBlueprint(data.code)"
             @update:modelValue="(e) => { data.data.fieldValue = e, emits('autoSave') }"
             :uploadImageRoute="null" 
-          />
+          /> -->
         </TabPanel>
       </TabPanels>
     </TabGroup>

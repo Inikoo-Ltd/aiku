@@ -18,7 +18,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="w-[260px]">
+  <div>
     <!-- Card Gambar -->
     <div class="relative w-full bg-white rounded-2xl shadow-md overflow-hidden">
       <div class="w-full h-64">

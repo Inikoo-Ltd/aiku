@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Shopify\Webhook\DeleteProductWebhooksShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
+use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
@@ -31,14 +32,20 @@ Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group
     });
 });
 
-Route::prefix('woocommerce/{wooCommerceUser:id}')->name('webhooks.woo.')->group(function () {
-    /*    Route::prefix('products')->as('products.')->group(function () {
-            Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
-        });*/
+Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
+    Route::post('wc-user-callback', CallbackRetinaWooCommerceUser::class)->name('callback');
 
-    /*    Route::prefix('orders')->as('orders.')->group(function () {
+    Route::prefix('{wooCommerceUser:id}')->group(function () {
+        Route::prefix('products')->as('products.')->group(function () {
+            // TODO
+            Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
+        });
+
+        Route::prefix('orders')->as('orders.')->group(function () {
+            // TODO
             Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
-        });*/
+        });
+    });
 });
 
 Route::middleware('verify.shopify.webhook')->group(function () {
