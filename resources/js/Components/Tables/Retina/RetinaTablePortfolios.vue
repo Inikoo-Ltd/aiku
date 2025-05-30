@@ -65,8 +65,8 @@ const onUnchecked = (itemId: number) => {
 		:resource="data"
 		:name="tab"
 		class="mt-5"
-		isCheckBox
-		:disabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'"
+		xxisCheckBox
+		xxdisabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'"
 		@onChecked="(item) => {
 			console.log('onChecked', item)
 			props.selectedData.products.push(item.id)
