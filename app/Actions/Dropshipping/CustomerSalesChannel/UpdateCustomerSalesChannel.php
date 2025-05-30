@@ -31,6 +31,8 @@ class UpdateCustomerSalesChannel extends OrgAction
 
         if ($cardExist && $portfolioExist) {
             data_set($modelData, 'state', CustomerSalesChannelStateEnum::READY);
+        } elseif (!$cardExist) {
+            data_set($modelData, 'state', CustomerSalesChannelStateEnum::CARD_SAVED);
         }
 
         return $this->update($customerSalesChannel, $modelData);
