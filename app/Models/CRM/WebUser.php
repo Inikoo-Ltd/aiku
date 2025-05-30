@@ -78,6 +78,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\CRM\WebUserPasswordReset> $passwordResets
  * @property-read Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read \App\Models\CRM\WebUserStats|null $stats
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
@@ -151,7 +152,7 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
             ->generateSlugsFrom(function () {
                 $slug = $this->username;
 
-                return preg_replace('/@/', '_at_', $slug);
+                return str_replace('@', '_at_', $slug);
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug')

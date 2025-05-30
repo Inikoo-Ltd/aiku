@@ -6,7 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
 use App\Actions\UI\Notification\IndexNotification;
+use App\Models\SysAdmin\Group;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -42,6 +44,16 @@ Route::middleware(["auth"])->group(function () {
             echo "</table>";
         });
     }
+
+
+    // TODO VERY TEMPORARY WE NEED DELETE
+    \Illuminate\Support\Facades\Route::get('artisan-seed', function () {
+        foreach (Group::all() as $group) {
+            SeedWebBlockTypes::run($group);
+
+            return 'ok';
+        }
+    });
 
 
     Route::get('/notifications', IndexNotification::class)->name('notifications');

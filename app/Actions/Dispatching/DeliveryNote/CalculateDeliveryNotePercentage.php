@@ -46,7 +46,7 @@ class CalculateDeliveryNotePercentage extends OrgAction
 
         return $deliveryNote;
     }
-    
+
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);

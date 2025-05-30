@@ -58,6 +58,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, OrgStockFamily> $orgStockFamilies
  * @property-read \App\Models\Goods\StockFamilySalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Goods\StockFamilyStats|null $stats
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, \App\Models\Goods\StockFamilyTimeSeries> $timeSeries

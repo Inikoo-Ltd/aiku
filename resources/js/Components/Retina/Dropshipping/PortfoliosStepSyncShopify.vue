@@ -103,7 +103,7 @@ onMounted(() => {
         <Column field="price" header="Price" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap">
-                    {{ data.id }}
+                    {{ data.price }}
                 </div>
             </template>
         </Column>
@@ -116,10 +116,13 @@ onMounted(() => {
                     <ConditionIcon v-if="get(props.progressToUploadToShopify, [data.id], null)" :state="get(props.progressToUploadToShopify, [data.id], undefined)" class="text-xl mx-auto" />
 
                     <template v-else>
-                        <Button
+
+                        <ButtonWithLink
+                            :routeTarget="data.delete_portfolio"
                             label="Remove"
                             type="delete"
                             size="xs"
+                            @success="() => portfolios.splice(portfolios.indexOf(data), 1)"
                         />
 
                         <ButtonWithLink
