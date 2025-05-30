@@ -62,7 +62,7 @@ class DropshippingPortfolioResource extends JsonResource
         $wooUploadRoute = [];
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
             $shopifyUploadRoute = [
-                'shopify_upload_portfolio' => [
+                'platform_upload_portfolio' => [
                     'method' => 'post',
                     'name'       => 'retina.models.dropshipping.shopify.single_upload',
                     'parameters' => [
@@ -75,11 +75,11 @@ class DropshippingPortfolioResource extends JsonResource
 
         if ($this->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
             $wooUploadRoute = [
-                'woo_upload_portfolio' => [
+                'platform_upload_portfolio' => [
                     'method' => 'post',
                     'name'       => 'retina.models.dropshipping.woo.single_upload',
                     'parameters' => [
-                        'shopifyUser' => $this->customerSalesChannel->user->id,
+                        'wooCommerceUser' => $this->customerSalesChannel->user->id,
                         'portfolio' => $this->id
                     ]
                 ],

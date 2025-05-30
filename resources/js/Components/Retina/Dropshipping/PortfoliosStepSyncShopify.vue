@@ -22,8 +22,27 @@ const props = defineProps<{
     progressToUploadToShopify: {
         [key: string]: string|null
     }
-    platid: string
+    platform_data: {
+        id: number
+        code: string
+        type: string
+        name: string
+    }
 }>()
+
+const selectSocketi = (porto: {}) => {
+    if (props.platform_data.type === 'shopify') {
+        return {
+            event: `shopify.${props.platform_data.id}.upload-product.${porto.id}`,
+            action: '.shopify-upload-progress'
+        }
+    } else if (props.platform_data.type === 'woocommerce') {
+        return {
+            event: `woo.${props.platform_data.id}.upload-product.${porto.id}`,
+            action: '.woo-upload-progress'
+        }
+    }
+}
 
 const emits = defineEmits<{
     (e: "updateSelectedProducts", portfolio: {}, dataToSend: {}, keyToConditionicon: string ): void,
@@ -39,10 +58,10 @@ const disabledRowId = ref([])
 onMounted(() => {
     emits('mounted')
     props.portfolios.forEach(porto => {
-        const xxx = window.Echo.private(`shopify.${props.platid}.upload-product.${porto.id}`).listen(
-            ".shopify-upload-progress",
+        const xxx = window.Echo.private(selectSocketi(porto)?.event).listen(
+            selectSocketi(porto)?.action,
             (eventData) => {
-                // console.log('poppppppp', porto.id, eventData)
+                console.log('poppppppp', porto.id, eventData)
                 if(eventData.errors_response) {
                     set(props.progressToUploadToShopify, [porto.id], 'error')
                     setTimeout(() => {
@@ -163,7 +182,7 @@ const valueTableFilter = ref({})
                         />
 
                         <ButtonWithLink
-                            :routeTarget="data.shopify_upload_portfolio"
+                            :routeTarget="data.platform_upload_portfolio"
                             label="Upload"
                             icon="fal fa-upload"
                             type="positive"

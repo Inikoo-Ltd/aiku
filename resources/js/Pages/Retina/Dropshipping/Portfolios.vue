@@ -569,12 +569,12 @@ const bulkDelete = () => {
 						v-else-if="portfoliosList?.length"
 						:portfolios="portfoliosList"
 						:listState
-						:platid="props.platform_user_id"
 						v-model="selectedPortfoliosToSync"
 						@updateSelectedProducts="updateSelectedProducts"
 						@portfolioDeleted="(portfolio) => portfoliosList.splice(portfoliosList.indexOf(portfolio), 1)"
 						amounted="() => fetchIndexUnuploadedPortfolios()"
 						:progressToUploadToShopify
+						:platform_data
 					/>
 
 					<EmptyState

@@ -225,8 +225,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{shopifyUser:id}/shopify-batch-upload', SyncroniseDropshippingPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::post('{shopifyUser:id}/shopify-single-upload/{portfolio:id}', SyncroniseDropshippingPortfolioToShopify::class)->name('shopify.single_upload')->withoutScopedBindings();
 
-    Route::post('{wooCommerceUser:id}/shopify-batch-upload', SyncronisePortfoliosToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
-    Route::post('{wooCommerceUser:id}/shopify-single-upload/{portfolio:id}', SyncronisePortfolioToWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-batch-upload', SyncronisePortfoliosToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', SyncronisePortfolioToWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();
 
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
