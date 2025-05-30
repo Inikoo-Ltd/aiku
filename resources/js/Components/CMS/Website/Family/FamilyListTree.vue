@@ -32,6 +32,8 @@ function toggle(index: number) {
   emits('changeDepartment', props.dataList.data[index]);
 }
 
+console.log('sdsd',props)
+
 </script>
 
 <template>
