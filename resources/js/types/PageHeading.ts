@@ -45,4 +45,13 @@ export interface PageHeading {
     title: string,
     subNavigation?: any
     wrapped_actions: Action[]
+    parentTag?: ParentTag[] | ParentTag
+}
+
+
+interface ParentTag {
+    label: string
+    route: routeType
+    icon: string | string[]
+    tooltip: string
 }

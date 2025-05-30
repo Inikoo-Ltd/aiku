@@ -215,6 +215,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
 
     Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
+    Route::delete('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
@@ -249,7 +250,6 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
     Route::post('{paymentAccount:id}', StoreRetinaTopUp::class)->name('store')->withoutScopedBindings();
 });
 
-Route::delete('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
 

@@ -72,37 +72,36 @@ const setError = (e) => {
         v-bind="bindToLink"
         :class="full ? 'w-full' : ''"
     >
-        <!-- Don't use v-bind make 'style' return empty object -->
-        <Button
-            :style="props.style"
-            :size="props.size"
-            :icon="props.icon"
-            :iconRight="props.iconRight"
-            :action="props.action"
-            :label="props.label"
-            :full="props.full"
-            :capitalize="props.capitalize"
-            :tooltip="props.tooltip"
-            :loading="isLoadingVisit || props.loading"
-            :type="props.type"
-            :disabled="props.disabled"
-            :noHover="props.noHover"
-        >
-            <template #loading>
-                <slot name="loading" />
-            </template>
-
-            <template #icon>
-                <slot name="icon" />
-            </template>
-
-            <template #label>
-                <slot name="label" />
-            </template>
-
-            <template #iconRight>
-                <slot name="iconRight" />
-            </template>
-        </Button>
+        <slot name="default" :isLoadingVisit >
+            <!-- Don't use v-bind make 'style' return empty object -->
+            <Button
+                :style="props.style"
+                :size="props.size"
+                :icon="props.icon"
+                :iconRight="props.iconRight"
+                :action="props.action"
+                :label="props.label"
+                :full="props.full"
+                :capitalize="props.capitalize"
+                :tooltip="props.tooltip"
+                :loading="isLoadingVisit || props.loading"
+                :type="props.type"
+                :disabled="props.disabled"
+                :noHover="props.noHover"
+            >
+                <template #loading>
+                    <slot name="loading" />
+                </template>
+                <template #icon>
+                    <slot name="icon" />
+                </template>
+                <template #label>
+                    <slot name="label" />
+                </template>
+                <template #iconRight>
+                    <slot name="iconRight" />
+                </template>
+            </Button>
+        </slot>
     </component>
 </template>
