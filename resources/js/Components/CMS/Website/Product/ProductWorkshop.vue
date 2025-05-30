@@ -1,173 +1,123 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue"
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
-import SelectButton from 'primevue/selectbutton'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { getIrisComponent } from "@/Composables/getIrisComponents"
-
-import { faRocketLaunch, faChevronLeft, faChevronRight } from '@far'
+import { faCube, faLink } from "@fal"
+import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { ref, watch, computed, provide, inject, toRaw } from "vue"
+import Modal from '@/Components/Utils/Modal.vue'
+import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
+import { getIrisComponent } from "@/Composables/getIrisComponents"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
+import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
+import { layoutStructure } from '@/Composables/useLayoutStructure';
+import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
-library.add(faRocketLaunch, faChevronLeft, faChevronRight)
+import SideMenuProductWorkshop from "./SideMenuProductWorkshop.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
+import { notify } from "@kyvg/vue3-notification"
+
+library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
 const props = defineProps<{
-  modelValue: any
   data: {
-    updateRoute: routeType
-    web_block_types: {
-      data: Array<any>
-    }
+    web_block_types: any;
+    autosaveRoute: routeType;
+    layout: any;
+    families: any[];
   }
 }>()
 
-const emits = defineEmits(['update:modelValue', 'autoSave'])
+const layoutTheme = inject('layout', layoutStructure)
+const isModalOpen = ref(false);
+const isLoadingSave = ref(false);
 
-const op = ref()
-const comment = ref('')
-const isLoading = ref(false)
+// Make layout editable
+const layout = ref(null);
 
-const usedTemplates = ref<any>(null)
+const onPickTemplate = (template: any) => {
+  isModalOpen.value = false;
+  layout.value = template;
+  autosave()
+};
 
-const mode = ref({ name: 'Logged In', value: 'login' })
-const optionsToogle = ref([
-  { name: 'Logged Out', value: 'logout' },
-  { name: 'Logged In', value: 'login' },
-  { name: 'Membership', value: 'member' }
-])
+const onChangeDepartment = (value: any) => {
+  const newDepartment = {...value};
+  delete newDepartment.sub_departments
 
-/* const initializeTemplate = () => {
-  if (!props.modelValue.product) {
-    props.modelValue.product = {
-      code: props.data.web_block_types.data[0].code,
-      setting: {
-        faqs: true,
-        product_specs: true,
-        customer_review: true,
-        payments_and_policy: true
+  if (layout.value?.data?.fieldValue) {
+    layout.value.data.fieldValue.layout = value;
+    layout.value.data.fieldValue.sub_departments = value.sub_departments || [];
+  }
+
+};
+
+
+
+const autosave = () => {
+  const payload = toRaw(layout.value);
+  delete payload.data?.fieldValue?.layout
+  delete payload.data?.fieldValue?.sub_departments
+  console.log('Autosaving layout:', payload);
+
+  router.patch(
+    route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
+    { layout: payload },
+    {
+      onStart: () => {
+        isLoadingSave.value = true
+      },
+      onFinish: () => {
+        isLoadingSave.value = false
+      },
+      onSuccess: () => {
+        props.data.layout = payload;
+        notify({
+          title: 'Autosave Successful',
+          text: 'Your changes have been saved.',
+          type: 'success',
+        })
+      },
+      onError: (errors) => {
+        notify({
+          title: 'Autosave Failed',
+          text: errors?.message || 'Unknown error occurred.',
+          type: 'error',
+        })
       }
     }
-  }
-
-  usedTemplates.value = props.data.web_block_types.data.find(
-    (template) => template.code === props.modelValue.product.code
-  ) || props.data.web_block_types.data[0]
-} */
-
-const selectPreviousTemplate = () => {
-  const index = props.data.web_block_types.data.findIndex(
-    (item) => item.code === usedTemplates.value?.code
   )
-  if (index > 0) {
-    usedTemplates.value = props.data.web_block_types.data[index - 1]
-  }
 }
 
-const selectNextTemplate = () => {
-  const index = props.data.web_block_types.data.findIndex(
-    (item) => item.code === usedTemplates.value?.code
-  )
-  if (index < props.data.web_block_types.data.length - 1) {
-    usedTemplates.value = props.data.web_block_types.data[index + 1]
-  }
-}
-/* 
-onMounted(() => {
-  initializeTemplate()
-}) */
 
-/* watch(
-  () => props.modelValue?.product?.code,
-  (code) => {
-    if (code) {
-      usedTemplates.value = props.data.web_block_types.data.find(
-        (template) => template.code === code
-      )
-    }
-  }
-) */
+
+const currentView = ref("desktop");
+provide("currentView", currentView);
 </script>
 
 <template>
-  <div class="h-[79vh] grid overflow-hidden grid-cols-4">
-    <div class="col-span-1 flex flex-col border-r border-gray-300 shadow-lg relative overflow-auto">
-      <div class="px-4 py-3 rounded-t-lg shadow">
-        <div class="flex items-center">
-          <font-awesome-icon :icon="['fas', 'chevron-left']"
-            class="px-4 cursor-pointer text-gray-600 hover:text-gray-800 transition duration-200"
-            @click="selectPreviousTemplate" />
-
-          <PureMultiselect
-            :options="data.web_block_types.data"
-            label="code"
-            :object="true"
-            :valueProp="'code'"
-            :model-value="usedTemplates"
-            @update:model-value="(value) => { console.log(value) }"
-            :required="true"
-            class="mx-2 focus:ring-2 focus:ring-blue-500"
-          />
-
-          <font-awesome-icon :icon="['fas', 'chevron-right']"
-            class="px-4 cursor-pointer text-gray-600 hover:text-gray-800 transition duration-200"
-            @click="selectNextTemplate" />
-        </div>
-      </div>
-
-      <div class="px-4 py-5 flex-grow">
-        <div class="flex justify-center mb-6">
-          <SelectButton v-model="mode" :options="optionsToogle" optionLabel="name" aria-labelledby="multiple" />
-        </div>
-
-        <div class="px-8">
-          <template v-if="modelValue?.product?.setting">
-            <div class="py-5 border-t border-gray-300">
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-lg font-semibold">Show FAQs</span>
-                <ToggleSwitch v-model="modelValue.product.setting.faqs" />
-              </div>
-              <p class="text-xs text-gray-500">Toggle to show or hide frequently asked questions for your product.</p>
-            </div>
-
-            <div class="py-5 border-t border-gray-300">
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-lg font-semibold">Product Specification</span>
-                <ToggleSwitch v-model="modelValue.product.setting.product_specs" />
-              </div>
-              <p class="text-xs text-gray-500">Toggle to show or hide product specifications for your product.</p>
-            </div>
-
-            <div class="py-5 border-t border-gray-300">
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-lg font-semibold">Customer Reviews</span>
-                <ToggleSwitch v-model="modelValue.product.setting.customer_review" />
-              </div>
-              <p class="text-xs text-gray-500">Toggle to show or hide customer reviews for your product.</p>
-            </div>
-
-            <div class="py-5 border-t border-gray-300">
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-lg font-semibold">Payments & Policy</span>
-                <ToggleSwitch v-model="modelValue.product.setting.payments_and_policy" />
-              </div>
-              <p class="text-xs text-gray-500">Toggle to show or hide payment and policy information for your product.</p>
-            </div>
-          </template>
-        </div>
-      </div>
+  <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
+    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+      <SideMenuProductWorkshop 
+        :data="layout" 
+        :webBlockTypes="data.web_block_types" 
+        @auto-save="autosave"
+        @set-up-template="onPickTemplate" 
+        :dataList="data.families" 
+        @onChangeDepartment="onChangeDepartment"/>
     </div>
 
-    <div class="bg-gray-100 h-full col-span-3 rounded-lg shadow-lg">
-      <div class="bg-gray-100 px-6 py-6 h-[79vh] rounded-lg overflow-auto">
-        <div :class="usedTemplates?.code ? 'bg-white shadow-md rounded-lg' : ''">
-          <section v-if="usedTemplates?.code">
-            <component :is="getIrisComponent(usedTemplates.code)" :fieldValue="usedTemplates.data?.fieldValue" />
-          </section>
+    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
+      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+        <div class="py-1 px-2 cursor-pointer lg:block hidden" :class="['selected-bg']" v-tooltip="'Desktop view'">
+          <FontAwesomeIcon icon='fas fa-desktop' class='' fixed-width aria-hidden='true' />
         </div>
+      </div>
+      <div v-if="layout?.code" class="relative flex-1 overflow-auto">
+        <component class="w-full" :is="getIrisComponent(layout.code)" :fieldValue="layout.data.fieldValue" />
+      </div>
+      <div v-else>
+        <EmptyState />
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-</style>

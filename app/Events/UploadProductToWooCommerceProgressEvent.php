@@ -35,7 +35,7 @@ class UploadProductToWooCommerceProgressEvent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("shopify.{$this->wooCommerceUser->id}.upload-product.{$this->portfolio->id}")
+            new PrivateChannel("woo.{$this->wooCommerceUser->id}.upload-product.{$this->portfolio->id}")
 
         ];
     }

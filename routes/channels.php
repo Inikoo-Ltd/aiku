@@ -19,6 +19,10 @@ Broadcast::channel('shopify.{shopifyUserId}.upload-product.{portfolioId}', funct
     return true;
 });
 
+Broadcast::channel('woo.{wooCommerceUserId}.upload-product.{portfolioId}', function (int|string $wooCommerceUserId, int|string $portfolioId) {
+    return true;
+});
+
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });
