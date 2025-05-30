@@ -86,7 +86,7 @@ const locale = inject('locale', aikuLocaleStructure)
 // Section: Add portfolios
 const isOpenModalPortfolios = ref(false)
 const isLoadingSubmit = ref(false)
-const onSubmitAddItem = async (idProduct: number[]) => {
+const onSubmitAddPortfolios = async (idProduct: number[]) => {
     router.post(route(props.routes.addPortfolioRoute.name, props.routes.addPortfolioRoute.parameters), {
         items: idProduct
     }, {
@@ -105,6 +105,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 text: trans("Successfully added portfolios"),
                 type: "success"
             })
+			step.value.current = 1
             // isOpenModalPortfolios.value = false
         },
         onFinish: () => isLoadingSubmit.value = false
@@ -485,7 +486,7 @@ const bulkDelete = () => {
 				:valueToRefetch="selectedList.value"
 				:label_result="selectedList.label"
 				:isLoadingSubmit
-				@submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
+				@submit="(products: {}[]) => onSubmitAddPortfolios(products.map((product: any) => product.id))"
 				class="px-4"
 			>
 				<template #header>
