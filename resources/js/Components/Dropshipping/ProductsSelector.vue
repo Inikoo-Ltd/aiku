@@ -20,15 +20,18 @@ import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '../NumberWithButtonSave.vue'
 import ToggleSwitch from "primevue/toggleswitch"
+import LoadingIcon from '../Utils/LoadingIcon.vue'
 library.add(faCheckCircle)
 
 const props = defineProps<{
     routeFetch: routeType
     isLoadingSubmit?: boolean
+    isLoadingComponent?: boolean
     headLabel?: string
     submitLabel?: string
     withQuantity?: boolean
     label_result?: string
+    valueToRefetch?: string
 }>()
 
 
@@ -79,7 +82,7 @@ const getPortfoliosList = async (url?: string) => {
         })
     }
 }
-const debounceGetPortfoliosList = debounce(() => getPortfoliosList(), 500)
+const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
 
 
 // Section: On select product
@@ -122,7 +125,7 @@ const selectAllProducts = () => {
 }
 
 onMounted(()=> {
-    // console.log('Mounted ProductsSelector')
+    console.log('Mounted ProductsSelector')
     getPortfoliosList()
 })
 
@@ -133,142 +136,143 @@ onUnmounted(() => {
     queryPortfolio.value = ''
 })
 
-watch(() => props.routeFetch, () => {
-    debounceGetPortfoliosList()
+watch(() => props.valueToRefetch, (newVal, oldVal) => {
+    console.log('xxx', oldVal, newVal)
+    getPortfoliosList()
 })
 </script>
 
 <template>
-    <div class="">
-        <div class="mx-auto text-center text-2xl font-semibold pb-4">
-            {{ headLabel ?? trans("Add products") }}
-        </div>
-        <div class="mb-2">
-            <PureInput
-                v-model="queryPortfolio"
-                @update:modelValue="() => debounceGetPortfoliosList()"
-                :placeholder="trans('Input to search portfolios')"
-            />
+    <div>
+        <slot name="header">
+            <div class="mx-auto text-center text-2xl font-semibold pb-4">
+                {{ headLabel ?? trans("Add products") }}
+            </div>
+        </slot>
 
-            <slot name="afterInput">
+        <div class="relative isolate">
+            <div v-if="isLoadingSubmit" class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
+                <LoadingIcon />
+            </div>
 
-            </slot>
-        </div>
-
-        <div class="h-[500px] text-base font-normal">
-            <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
-                <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
-                <div class="border-t border-gray-300 mb-1"></div>
-            </div> -->
-
-            <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
-                <div class="flex justify-between items-center">
-                    <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
-                    <div class="flex gap-2">
-                        <div class="text-green-600">Select ({{portfoliosList.length}}) products</div><ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" />
-                        <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
-                            {{ trans('Clear selection') }} ({{ compSelectedProduct.length }})
-                            <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
+            <div class="mb-2">
+                <PureInput
+                    v-model="queryPortfolio"
+                    @update:modelValue="() => debounceGetPortfoliosList()"
+                    :placeholder="trans('Input to search portfolios')"
+                />
+                <slot name="afterInput">
+                </slot>
+            </div>
+            <div class="h-[500px] text-base font-normal">
+                <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
+                    <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
+                    <div class="border-t border-gray-300 mb-1"></div>
+                </div> -->
+                <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
+                    <div class="flex justify-between items-center">
+                        <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                        <div class="flex gap-2">
+                            <div class="text-green-600">Select ({{portfoliosList.length}}) products</div><ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" />
+                            <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
+                                {{ trans('Clear selection') }} ({{ compSelectedProduct.length }})
+                                <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="border-t border-gray-300 mb-1"></div>
-                <div class="h-[400px] overflow-auto py-2 relative">
-                    <!-- Products list -->
-                    <div class="grid grid-cols-3 gap-3 pb-2">
-                        <template v-if="!isLoadingFetch">
-                            <template v-if="portfoliosList.length > 0">
-                                <div
-                                    v-for="(item, index) in portfoliosList"
-                                    :key="index"
-                                    @click="() => selectProduct(item)"
-                                    class="relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
-                                    :class="compSelectedProduct.includes(item.id)
-                                        ? 'bg-indigo-100 border-indigo-300'
-                                        : 'bg-white hover:bg-gray-200 border-gray-300'"
-                                >
-                                    <Transition name="slide-to-right">
-                                        <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)" icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500" fixed-width aria-hidden="true" />
-                                    </Transition>
-                                    <slot name="product" :item="item">
-                                        <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
-                                        <div class="flex flex-col justify-between">
-                                            <div class="w-fit" xclick="() => selectProduct(item)">
-                                                <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                                <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
-                                                <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
-                                                <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                    <div class="border-t border-gray-300 mb-1"></div>
+                    <div class="h-[400px] overflow-auto py-2 relative">
+                        <!-- Products list -->
+                        <div class="grid grid-cols-3 gap-3 pb-2">
+                            <template v-if="!isLoadingFetch">
+                                <template v-if="portfoliosList.length > 0">
+                                    <div
+                                        v-for="(item, index) in portfoliosList"
+                                        :key="index"
+                                        @click="() => selectProduct(item)"
+                                        class="relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
+                                        :class="compSelectedProduct.includes(item.id)
+                                            ? 'bg-indigo-100 border-indigo-300'
+                                            : 'bg-white hover:bg-gray-200 border-gray-300'"
+                                    >
+                                        <Transition name="slide-to-right">
+                                            <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)" icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500" fixed-width aria-hidden="true" />
+                                        </Transition>
+                                        <slot name="product" :item="item">
+                                            <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
+                                            <div class="flex flex-col justify-between">
+                                                <div class="w-fit" xclick="() => selectProduct(item)">
+                                                    <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                                                    <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                                    <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                                                    <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                                                </div>
+                                                <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                                    {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
+                                                </div>
+                                                <NumberWithButtonSave
+                                                    v-if="withQuantity"
+                                                    :modelValue="get(item, 'quantity_selected', 1)"
+                                                    :bindToTarget="{ min: 1 }"
+                                                    @update:modelValue="(e: number) => (set(item, 'quantity_selected', e), selectedProduct.includes(item) ? '' : selectedProduct?.push(item))"
+                                                    noUndoButton
+                                                    noSaveButton
+                                                    parentClass="w-min"
+                                                />
                                             </div>
-                                            <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
-                                                {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
-                                            </div>
-                                            <NumberWithButtonSave
-                                                v-if="withQuantity"
-                                                :modelValue="get(item, 'quantity_selected', 1)"
-                                                :bindToTarget="{ min: 1 }"
-                                                @update:modelValue="(e: number) => (set(item, 'quantity_selected', e), selectedProduct.includes(item) ? '' : selectedProduct?.push(item))"
-                                                noUndoButton
-                                                noSaveButton
-                                                parentClass="w-min"
-                                            />
-                                        </div>
-                                    </slot>
+                                        </slot>
+                                    </div>
+                                </template>
+                                <div v-else class="text-center text-gray-500 col-span-3">
+                                    {{ trans("No products found") }}
                                 </div>
                             </template>
-                            <div v-else class="text-center text-gray-500 col-span-3">
-                                {{ trans("No products found") }}
+                            <div
+                                v-else
+                                v-for="(item, index) in 6"
+                                :key="index"
+                                class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
+                            >
                             </div>
-                        </template>
-
-                        <div
-                            v-else
-                            v-for="(item, index) in 6"
-                            :key="index"
-                            class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
-                        >
                         </div>
+                        <!-- Pagination -->
+                        <Pagination
+                            v-if="portfoliosMeta"
+                            :on-click="getPortfoliosList"
+                            :has-data="true"
+                            :meta="portfoliosMeta"
+                            xexportLinks="queryBuilderProps.exportLinks"
+                            :per-page-options="[]"
+                            xon-per-page-change="onPerPageChange"
+                        />
+                        <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
+                            <li
+                                v-for="product in selectedProduct"
+                                :key="product.id"
+                            >
+                                <Tag
+                                    :label="product.name"
+                                    closeButton
+                                    noHoverColor
+                                    @onClose="() => {
+                                        selectProduct(product)
+                                    }"
+                                />
+                            </li>
+                        </TransitionGroup>
                     </div>
-
-                    <!-- Pagination -->
-                    <Pagination
-                        v-if="portfoliosMeta"
-                        :on-click="getPortfoliosList"
-                        :has-data="true"
-                        :meta="portfoliosMeta"
-                        xexportLinks="queryBuilderProps.exportLinks"
-                        :per-page-options="[]"
-                        xon-per-page-change="onPerPageChange"
-                    />
-
-                    <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
-                        <li
-                            v-for="product in selectedProduct"
-                            :key="product.id"
-                        >
-                            <Tag
-                                :label="product.name"
-                                closeButton
-                                noHoverColor
-                                @onClose="() => {
-                                    selectProduct(product)
-                                }"
-                            />
-                        </li>
-                    </TransitionGroup>
-                </div>
-
-                <div class="mt-4">
-                    <Button
-                        @click="() => emits('submit', selectedProduct)"
-                        :disabled="selectedProduct.length < 1"
-                        v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                        :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
-                        type="primary"
-                        full
-                        icon="fas fa-plus"
-                        :loading="isLoadingSubmit"
-                    />
-
+                    <div class="mt-4">
+                        <Button
+                            @click="() => emits('submit', selectedProduct)"
+                            :disabled="selectedProduct.length < 1"
+                            v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                            :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
+                            type="primary"
+                            full
+                            icon="fas fa-plus"
+                            :loading="isLoadingSubmit"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
