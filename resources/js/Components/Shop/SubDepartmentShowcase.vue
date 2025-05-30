@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faUnlink, faThLarge, faBars, faSeedling, faCheck } from "@fal"
+import { faUnlink, faThLarge, faBars, faSeedling, faCheck, faFolderTree } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
@@ -12,13 +12,20 @@ import Image from '../Image.vue'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Icon from "@/Components/Icon.vue"
-import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
 const props = defineProps<{
   data: {
-    department: {}
+    subDepartment: {
+      slug: string
+      image_id: ImageTS | string | null
+      code: string
+      name: string
+      state: string
+      created_at: string
+      updated_at: string
+    }
     families: {
       id: number
       name: string
@@ -65,72 +72,138 @@ const onDetachFamily = (slug: string) => {
 </script>
 
 <template>
-  <div class="w-1/3 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="bg-white rounded-2xl shadow p-6">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-6 border-b pb-3">
-        <h2 class="text-xl font-bold text-gray-800">
-          {{ trans("Family list") }} ({{ data.families.length }})
-        </h2>
-      </div>
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-      <!-- Disclosure List -->
-      <div v-if="data.families?.length" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-        <Disclosure v-for="family in data.families" :key="family.id" v-slot="{ open }">
-          <div class="border border-gray-100 rounded-lg overflow-hidden">
-            <DisclosureButton
-              class="w-full flex items-center gap-4 p-3 bg-gray-50 hover:bg-gray-100 transition text-left"
+    <!-- Sub Department Detail -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border border-gray-300 flex items-center justify-center">
+          <Image
+            v-if="data.subDepartment.image_id"
+            :src="data.subDepartment.image_id"
+            :alt="data.subDepartment.name"
+            class="w-full h-full object-cover"
+            imageCover
+          />
+          <FontAwesomeIcon v-else :icon="faFolderTree" class="text-gray-400 w-10 h-10" />
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">
+            {{ data.subDepartment.name }}
+          </h1>
+          <p class="text-sm text-gray-500">Code: {{ data.subDepartment.code }}</p>
+          <p class="text-sm text-gray-500">
+            Status:
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+              :class="{
+                'bg-green-100 text-green-700': data.subDepartment.state === 'active',
+                'bg-gray-100 text-gray-600': data.subDepartment.state !== 'active',
+              }"
             >
-              <Image :src="family.image" :alt="family.name" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" imageCover />
-              <div class="flex-1 min-w-0">
-                <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2">
-                  <span class="block truncate w-40 sm:w-48 md:w-56">
-                    {{ family.name }}
-                  </span>
-                  <Icon v-if="family.state" :data="family.state" :title="family.state.label" />
-                </h3>
-                <p class="text-sm text-gray-500 truncate">{{ family.code }}</p>
-              </div>
-              <Button
-                @click.stop="onDetachFamily(family.slug)"
-                label="Unlink"
-                type="negative"
-                icon="fal fa-unlink"
-                size="xs"
-                :loading="isLoadingDelete.includes(family.slug)"
+              {{ data.subDepartment.state }}
+            </span>
+          </p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-400 mt-2 sm:mt-0">
+        Created at: {{ new Date(data.subDepartment.created_at).toLocaleDateString() }}
+      </p>
+    </div>
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 border-b pb-3">
+      <h2 class="text-xl font-bold text-gray-800">
+        {{ trans("Family list") }} ({{ data.families.length }})
+      </h2>
+    </div>
+
+    <!-- Families Grid -->
+    <div
+      v-if="data.families?.length"
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+    >
+      <div
+        v-for="family in data.families"
+        :key="family.id"
+        class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col relative"
+      >
+        <!-- Badge -->
+        <span class="absolute -top-3 left-0 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
+          Family
+        </span>
+
+        <!-- Header -->
+        <div class="flex items-start gap-3 mb-3 border-b pb-2">
+          <Image
+            :src="family.image"
+            :alt="family.name"
+            class="w-10 h-10 rounded-lg object-cover"
+            imageCover
+          />
+          <div class="flex-1 min-w-0">
+            <h3 class="text-base font-semibold text-gray-900 leading-tight">
+              {{ family.name }}
+              <Icon
+                v-if="family.state"
+                :data="family.state"
+                :title="family.state.label"
+                class="ml-1"
               />
-            </DisclosureButton>
-
-            <DisclosurePanel class="bg-white border-t border-gray-100 p-4 space-y-3">
-              <div v-if="family.products?.length">
-                <div
-                  v-for="product in family.products"
-                  :key="product.id"
-                  class="flex items-center gap-4 py-1"
-                >
-                  <Image
-                    :src="product.images.source"
-                    :alt="product.name"
-                    class="w-10 h-10 rounded-lg object-cover"
-                    imageCover
-                  />
-                  <div class="text-sm text-gray-700 font-medium">{{ product.name }}</div>
-                </div>
-              </div>
-              <div v-else class="text-sm text-gray-400 italic">
-                No products available under this family.
-              </div>
-            </DisclosurePanel>
+            </h3>
+            <p class="text-xs text-gray-500">Code: {{ family.code }}</p>
+            <p class="text-xs text-gray-500">
+              {{ family.products?.length || 0 }} product{{ family.products?.length === 1 ? '' : 's' }}
+            </p>
           </div>
-        </Disclosure>
-      </div>
+          <Button
+            @click.stop="onDetachFamily(family.slug)"
+            label=""
+            type="negative"
+            icon="fal fa-unlink"
+            size="xs"
+            :loading="isLoadingDelete.includes(family.slug)"
+          />
+        </div>
 
-      <div v-else class="mx-auto max-w-2xl px-4 py-20 text-center">
-        <EmptyState :data="{
-          title: 'No families',
-          description: 'This subdepartment has no families'
-        }" />
+        <!-- Product List -->
+        <div
+          class="bg-gray-50 border rounded-md mt-3 px-3 py-2 overflow-y-auto max-h-60 space-y-2 custom-scroll"
+        >
+          <template v-if="family.products?.length">
+            <div
+              v-for="product in family.products"
+              :key="product.id"
+              class="flex items-start gap-3 border-b py-1"
+            >
+              <FontAwesomeIcon :icon="['fal', 'seedling']" class="text-green-500 w-4 h-4 mt-1" />
+              <div class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
+                <Image
+                  :src="product.image?.source"
+                  :alt="product.name"
+                  class="w-full h-full object-cover"
+                  imageCover
+                />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-700 leading-tight truncate">{{ product.name }}</p>
+                <p class="text-xs text-gray-500">Code: {{ product.id }}</p>
+              </div>
+            </div>
+          </template>
+          <div v-else class="text-xs text-gray-400 italic text-center">
+            No products available.
+          </div>
+        </div>
       </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="mx-auto max-w-2xl px-4 py-20 text-center">
+      <EmptyState :data="{
+        title: 'No families',
+        description: 'This subdepartment has no families'
+      }" />
     </div>
   </div>
 </template>

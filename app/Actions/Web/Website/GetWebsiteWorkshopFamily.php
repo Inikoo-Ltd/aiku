@@ -25,7 +25,7 @@ class GetWebsiteWorkshopFamily
     public function handle(Website $website): array
     {
 
-        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
+        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::LIST_PRODUCTS->value)->get();
 
         $products = $website->shop->products()->where('state', ProductStateEnum::ACTIVE)->get();
         $families = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::FAMILY)->get();

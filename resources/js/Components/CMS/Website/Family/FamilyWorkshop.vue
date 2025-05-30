@@ -13,6 +13,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
 import SideMenuFamilyWorkshop from "./SideMenuFamilyWorkshop.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight)
 
@@ -30,9 +31,9 @@ const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 
 // Make layout editable
-/* const layout = ref(props.data.layout); */
+const layout = ref(null);
 
-/* const onPickTemplate = (template: any) => {
+const onPickTemplate = (template: any) => {
   isModalOpen.value = false;
   layout.value = template;
   autosave()
@@ -47,7 +48,7 @@ const onChangeDepartment = (value: any) => {
     layout.value.data.fieldValue.sub_departments = value.sub_departments || [];
   }
 
-}; */
+};
 
 
 
@@ -94,9 +95,14 @@ provide("currentView", currentView);
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-   <!--  <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuFamilyWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate" :dataList="data.sub_departments" @onChangeDepartment="onChangeDepartment"/>
+    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+      <SideMenuFamilyWorkshop 
+        :data="layout" 
+        :webBlockTypes="data.web_block_types" 
+        @auto-save="autosave"
+        @set-up-template="onPickTemplate" 
+        :dataList="data.sub_departments" 
+        @onChangeDepartment="onChangeDepartment"/>
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
@@ -111,6 +117,6 @@ provide("currentView", currentView);
       <div v-else>
         <EmptyState />
       </div>
-    </div> -->
+    </div>
   </div>
 </template>
