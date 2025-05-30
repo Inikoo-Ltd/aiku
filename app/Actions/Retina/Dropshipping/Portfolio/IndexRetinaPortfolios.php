@@ -137,8 +137,10 @@ class IndexRetinaPortfolios extends RetinaAction
                         'parameters' => []
                     ],
                     'batchDeletePortfolioRoute' => [
-                        'name' => 'retina.models.portfolio.batch.delete',
-                        'parameters' => [],
+                        'name' => 'retina.models.customer_sales_channel.portfolio.batch.delete',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ],
                         'method' => 'delete'
                     ],
                     // 'listPortfolioUnUploadedRoute' => [

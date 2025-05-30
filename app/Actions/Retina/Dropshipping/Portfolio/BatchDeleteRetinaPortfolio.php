@@ -30,7 +30,9 @@ class BatchDeleteRetinaPortfolio extends RetinaAction
         foreach (Arr::get($modelData, 'portfolios') as $portfolioId) {
             $portfolio = Portfolio::find($portfolioId);
 
-            DeletePortfolio::run($customerSalesChannel, $portfolio);
+            if ($portfolio) {
+                DeletePortfolio::run($customerSalesChannel, $portfolio);
+            }
         }
     }
 
