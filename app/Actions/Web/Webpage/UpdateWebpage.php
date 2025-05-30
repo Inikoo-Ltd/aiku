@@ -41,7 +41,6 @@ class UpdateWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
-        // dd($webpage->id);
         $currentSeoData = Arr::get($modelData, 'seo_data');
 
         $oldSeoData = $webpage->seo_data;
@@ -96,7 +95,7 @@ class UpdateWebpage extends OrgAction
         }
 
 
-        WebpageRecordSearch::run($webpage);
+        WebpageRecordSearch::dispatch($webpage);
 
         return $webpage;
     }
