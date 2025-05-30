@@ -80,7 +80,7 @@ console.log(props.meta)
     <meta property="og:title" :content="meta.meta_title" />
     <meta property="og:description" :content="meta.meta_description" />
     <meta property="og:url" :content="currentUrl" />
-    <meta property="og:image" :content="meta?.image?.original || ''" />
+    <meta property="og:image" :content="meta?.image?.png" />
     <meta property="og:image:alt" :content="meta.meta_title" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" :content="meta.meta_title" />>
