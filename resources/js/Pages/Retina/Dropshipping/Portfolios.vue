@@ -310,15 +310,19 @@ const bulkUpload = () => {
 
 	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto py-43">
 		<!-- Head: step 0 -->
-		<div v-if="step.current === 0" class="flex justify-between">
+		<div v-if="step.current === 0" class="grid grid-cols-4 mb-4">
 			<div class="relative">
 			</div>
 			
+			<div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
+				{{ trans('Add products to portfolios') }}
+			</div>
 
-			<div class="relative">
+			<div class="relative text-right">
 				<Button
 					v-if="step.current == 0"
 					@click="step.current = 1"
+					:disabled="isLoadingSubmit"
 					:label="trans('Skip to edit products')"
 					:iconRight="faArrowRight"
 					type="tertiary"
@@ -346,13 +350,13 @@ const bulkUpload = () => {
 			</div>
 
 			<div class="relative text-right">
-				<Button
+				<!-- <Button
 					v-if="step.current == 1"
 					@click="step.current = 2"
 					:label="trans('Sync to Shopify')"
 					:iconRight="faArrowRight"
 					type="tertiary"
-				/>
+				/> -->
 			</div>
 		</div>
 		
@@ -377,19 +381,15 @@ const bulkUpload = () => {
 			</div>
 
 			<div class="relative space-x-2 space-y-1 text-right">
-				<!-- <Button
-					v-if="selectedPortfoliosToSync?.length"
-					aclick="step.current = 2"
-					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync.length + ')'"
-					xicon="faUpload"
-					type="delete"
-				/> -->
-
 				<ButtonWithLink
 					v-if="selectedPortfoliosToSync?.length"
-					:routeTarget="routes.batchDeletePortfolioRoute"
-					:body="{
-						portfolios: selectedPortfoliosToSync.map((product: any) => product.id),
+					:routeTarget="{
+						name: routes.batchDeletePortfolioRoute.name,
+						parameters: routes.batchDeletePortfolioRoute.parameters,
+						method: routes.batchDeletePortfolioRoute.method,
+						body: {
+							portfolios: selectedPortfoliosToSync.map((product: any) => product.id),
+						},
 					}"
 					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
 					type="delete"
@@ -404,12 +404,11 @@ const bulkUpload = () => {
 					:icon="faUpload"
 					size="s"
 					type="positive"
-
 				/>
 			</div>
 		</div>
 
-		<!-- 1: Select Product -->
+		<!-- 0: Select Product -->
         <KeepAlive>
 			<ProductsSelector
 				v-if="step.current === 0"
@@ -421,11 +420,17 @@ const bulkUpload = () => {
 						'filter[type]': selectedList.value,
 					},
 				}"
+				:valueToRefetch="selectedList.value"
 				:label_result="selectedList.label"
 				:isLoadingSubmit
 				@submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
 				class="px-4"
 			>
+				<template #header>
+					<div>
+					</div>
+				</template>
+
 				<template #afterInput>
 					<div class="flex gap-2 text-sm font-semibold text-gray-500 mt-2 max-w-sm">
 						<div v-for="list in filterList"
@@ -440,7 +445,7 @@ const bulkUpload = () => {
 			</ProductsSelector>
 		</KeepAlive>
 
-		<!-- 2: Edit Product -->
+		<!-- 1: Edit Product -->
 		<KeepAlive>
 			<div v-if="step.current === 1">
 				<div class="relative px-4 h-[600px] mt-4 overflow-y-auto mb-4">
@@ -462,17 +467,23 @@ const bulkUpload = () => {
 							title: trans('No portfolios selected'),
 						}"
 					/>
+
 				</div>
 
-				<!-- <Button
-					@click="step.current = 2"
-					label="Submit & Go next step"
-					full
-				/> -->
+				<div v-if="portfoliosList?.length" class="border-t border-gray-300 pt-4 w-full">
+					<Button
+						v-if="step.current == 1"
+						@click="step.current = 2"
+						:label="trans('Sync to Shopify')"
+						full
+						:iconRight="faArrowRight"
+						type="primary"
+					/>
+				</div>
 			</div>
 		</KeepAlive>
 
-		<!-- 3: Upload product to Shopify -->
+		<!-- 2: Upload product to Shopify -->
 		<KeepAlive>
 			<div v-if="step.current === 2">
 				<div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
@@ -500,11 +511,15 @@ const bulkUpload = () => {
 
 				</div>
 
-				<!-- <Button
-					@click="step.current = 2"
-					label="Submit & close"
-					full
-				/> -->
+				<div class="border-t border-gray-300 pt-4 w-full">
+					<Button
+						@click="isOpenModalPortfolios = false"
+						:label="trans('Done & close')"
+						full
+						xxiconRight="faArrowRight"
+						type="tertiary"
+					/>
+				</div>
 			</div>
 		</KeepAlive>
     </Modal>
