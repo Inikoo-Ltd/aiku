@@ -68,13 +68,13 @@ onMounted(() => {
             </template>
         </Column>
 
-        <Column field="shopify_handle" header="Handled" style="max-width: 100px;">
+        <!-- <Column field="shopify_handle" header="Handled" style="max-width: 100px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     {{ data.shopify_handle ?? '-' }}
                 </div>
             </template>
-        </Column>
+        </Column> -->
 
         <Column field="description" header="Description">
             <template #body="{ data }">
