@@ -66,6 +66,8 @@ const props = defineProps<{
 	}
 }>()
 
+const step = ref(props.step)
+
 const locale = inject('locale', aikuLocaleStructure)
 
 // const onCancelOrder = () => {
@@ -84,7 +86,7 @@ const locale = inject('locale', aikuLocaleStructure)
 // Section: Add portfolios
 const isOpenModalPortfolios = ref(false)
 const isLoadingSubmit = ref(false)
-const onSubmitAddItem = async (idProduct: number[]) => {
+const onSubmitAddPortfolios = async (idProduct: number[]) => {
     router.post(route(props.routes.addPortfolioRoute.name, props.routes.addPortfolioRoute.parameters), {
         items: idProduct
     }, {
@@ -103,6 +105,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 text: trans("Successfully added portfolios"),
                 type: "success"
             })
+			step.value.current = 1
             // isOpenModalPortfolios.value = false
         },
         onFinish: () => isLoadingSubmit.value = false
@@ -166,7 +169,7 @@ const onUploadToShopify = () => {
 				text: trans("Portfolios successfully uploaded to Shopify"),
 				type: "success",
 			})
-			props.step.current = 1
+			step.value.current = 1
 		},
 		onFinish: () => {
 			isLoadingUpload.value = false
@@ -192,7 +195,7 @@ const fetchIndexUnuploadedPortfolios = async () => {
 	stepLoading.value = false
 }
 
-watch(() => props.step.current, async (newStep, oldStep) => {
+watch(() => step.value.current, async (newStep, oldStep) => {
 	// console.log('Step changed to:', oldStep, newStep)
 	if (newStep === 1 || newStep === 2) {
 		fetchIndexUnuploadedPortfolios()
@@ -224,6 +227,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 }
 
 // Step 3: bulk upload to Shopify
+const isLoadingBulkDeleteUpload = ref(false)
 const selectedPortfoliosToSync = ref()
 const bulkUpload = () => {
 	router[props.routes.bulk_upload.method || 'post'](
@@ -235,7 +239,7 @@ const bulkUpload = () => {
 			preserveScroll: true,
 			onBefore: () => isLoadingUpload.value = true,
 			onStart: () => {
-				
+				isLoadingBulkDeleteUpload.value = true
 			},
 			onSuccess: () => {
 				selectedPortfoliosToSync.value.forEach((product) => {
@@ -247,6 +251,48 @@ const bulkUpload = () => {
 					text: trans("Successfully uploaded portfolios"),
 					type: "success",
 				})
+			},
+			onFinish: () => {
+				isLoadingBulkDeleteUpload.value = false
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message || trans("An error occurred while uploading portfolios"),
+					type: "error",
+				})
+			}
+		}
+	)
+}
+const bulkDelete = () => {
+	router[props.routes.batchDeletePortfolioRoute.method || 'post'](
+		route(props.routes.batchDeletePortfolioRoute.name, props.routes.batchDeletePortfolioRoute.parameters),
+		{
+			portfolios: selectedPortfoliosToSync.value.map((product: any) => product.id),
+		},
+		{
+			preserveScroll: true,
+			// onBefore: () => isLoadingUpload.value = true,
+			onStart: () => {
+				isLoadingBulkDeleteUpload.value = true
+			},
+			onSuccess: () => {
+				// selectedPortfoliosToSync.value.forEach((product) => {
+				// 	set(progressToUploadToShopify.value, [product.id], 'loading')
+				// })
+				portfoliosList.value = portfoliosList.value.filter(
+					(portfolio) => !selectedPortfoliosToSync.value.some((p: any) => p.id === portfolio.id)
+				)
+				selectedPortfoliosToSync.value = []
+				notify({
+					title: trans("Success!"),
+					text: trans("Deleted portfolios successfully"),
+					type: "success",
+				})
+			},
+			onFinish: () => {
+				isLoadingBulkDeleteUpload.value = false
 			},
 			onError: (error) => {
 				notify({
@@ -381,22 +427,38 @@ const bulkUpload = () => {
 			</div>
 
 			<div class="relative space-x-2 space-y-1 text-right">
-				<ButtonWithLink
+				<!-- Button: bulk remove -->
+				<!-- <ButtonWithLink
 					v-if="selectedPortfoliosToSync?.length"
 					:routeTarget="{
 						name: routes.batchDeletePortfolioRoute.name,
 						parameters: routes.batchDeletePortfolioRoute.parameters,
 						method: routes.batchDeletePortfolioRoute.method,
 						body: {
-							portfolios: selectedPortfoliosToSync.map((product: any) => product.id),
+							portfolios: compSelectedPortfoliosToSyncId,
 						},
 					}"
 					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
 					type="delete"
 					size="s"
-					@success="() => selectedPortfoliosToSync = []"
+					isWithError
+					@success="() => {
+						selectedPortfoliosToSync = []
+						fetchIndexUnuploadedPortfolios()
+					}"
+				/> -->
+
+				<!-- Button: bulk upload -->
+				<Button
+					v-if="selectedPortfoliosToSync?.length"
+					@click="() => bulkDelete()"
+					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
+					type="delete"
+					size="s"
+					:loading="isLoadingBulkDeleteUpload"
 				/>
 				
+				<!-- Button: bulk upload -->
 				<Button
 					v-if="selectedPortfoliosToSync?.length"
 					@click="() => bulkUpload()"
@@ -404,6 +466,7 @@ const bulkUpload = () => {
 					:icon="faUpload"
 					size="s"
 					type="positive"
+					:loading="isLoadingBulkDeleteUpload"
 				/>
 			</div>
 		</div>
@@ -423,7 +486,7 @@ const bulkUpload = () => {
 				:valueToRefetch="selectedList.value"
 				:label_result="selectedList.label"
 				:isLoadingSubmit
-				@submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
+				@submit="(products: {}[]) => onSubmitAddPortfolios(products.map((product: any) => product.id))"
 				class="px-4"
 			>
 				<template #header>
@@ -498,6 +561,7 @@ const bulkUpload = () => {
 						xxplatid="props.platform_user_id"
 						v-model="selectedPortfoliosToSync"
 						@updateSelectedProducts="updateSelectedProducts"
+						@portfolioDeleted="(portfolio) => portfoliosList.splice(portfoliosList.indexOf(portfolio), 1)"
 						amounted="() => fetchIndexUnuploadedPortfolios()"
 						:progressToUploadToShopify
 					/>

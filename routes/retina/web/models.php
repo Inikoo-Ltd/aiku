@@ -215,7 +215,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
 
     Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
-    Route::delete('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
+    Route::post('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {

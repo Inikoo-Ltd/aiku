@@ -33,8 +33,6 @@ class StoreWooCommerceUser extends OrgAction
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'name', Arr::get($modelData, 'name'));
-        data_set($modelData, 'settings.credentials.consumer_key', Arr::pull($modelData, 'consumer_key'));
-        data_set($modelData, 'settings.credentials.consumer_secret', Arr::pull($modelData, 'consumer_secret'));
         data_set($modelData, 'settings.credentials.store_url', Arr::pull($modelData, 'store_url'));
         data_set($modelData, 'platform_id', $platform->id);
 
@@ -44,7 +42,10 @@ class StoreWooCommerceUser extends OrgAction
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
             'platform_user_type' => class_basename($wooCommerceUser),
             'platform_user_id' => $wooCommerceUser->id,
+            'reference' => $wooCommerceUser->name,
+            'name' => $wooCommerceUser->name
         ]);
+
         $wooCommerceUser->update([
             'customer_sales_channel_id' => $customerSalesChannel->id,
         ]);

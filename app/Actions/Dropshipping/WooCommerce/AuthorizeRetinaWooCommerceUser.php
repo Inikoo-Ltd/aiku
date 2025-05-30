@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,16 +29,19 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
 
     public function handle(Customer $customer, $modelData): string
     {
+        data_set($modelData, 'store_url', Arr::pull($modelData, 'url'));
+        $wooCommerceUser = StoreWooCommerceUser::run($customer, $modelData);
+
         $endpoint = '/wc-auth/v1/authorize';
         $params = [
             'app_name' => config('app.name'),
             'scope' => 'read_write',
-            'user_id' => $modelData['name'],
+            'user_id' => $wooCommerceUser->id,
             'return_url' => route('retina.dropshipping.customer_sales_channels.index'),
-            'callback_url' => route('retina.dropshipping.platform.wc.callback')
+            'callback_url' => route('webhooks.woo.callback')
         ];
 
-        return $modelData['url'].$endpoint.'?'.http_build_query($params);
+        return Arr::get($wooCommerceUser, 'settings.credentials.store_url').$endpoint.'?'.http_build_query($params);
     }
 
     public function jsonResponse(string $url): string
