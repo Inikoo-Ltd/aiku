@@ -94,7 +94,7 @@ class GetProductCategoryShowcase
                         'method' => 'get'
                     ]
                 ];
-            }  elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show') {
+            } elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show') {
                 $data['routeList'] = [
                     'collectionRoute' => [
                         'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',

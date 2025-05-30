@@ -7,14 +7,10 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
-use App\Http\Resources\Catalogue\FamilyWebsiteResource;
 use App\Http\Resources\Catalogue\ProductsResource;
-use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -27,7 +23,6 @@ class GetWebsiteWorkshopFamily
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::LIST_PRODUCTS->value)->get();
 
-        // $products = $website->shop->products()->where('state', ProductStateEnum::ACTIVE)->get();
         $families = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::FAMILY)->get();
 
         return [

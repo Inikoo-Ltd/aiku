@@ -62,14 +62,7 @@ class ShowWebsiteWorkshop extends OrgAction
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
         $product    = $website->shop->products()->first();
-        // $departments = $website->shop->productCategories()
-        //     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
-        //     ->where('state', 'active')
-        //     ->with(['children' => function ($query) {
-        //         $query->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
-        //     }])
-        //     ->get();
-        // $department     = $departments->first();
+
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
 
@@ -101,7 +94,7 @@ class ShowWebsiteWorkshop extends OrgAction
                 : Inertia::lazy(
                     fn () => GetWebsiteWorkshopFamily::run($website)
                 );
-    
+
 
         $tabs[WebsiteWorkshopTabsEnum::DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT->value
                 ?

@@ -58,10 +58,10 @@ class SeedWebBlockTypes
             }
 
 
-            $code=Arr::get($webBlockTypeData, 'code');
+            $code = Arr::get($webBlockTypeData, 'code');
 
 
-            $webBlockType = $group->webBlockTypes()->where('code',$code )->first();
+            $webBlockType = $group->webBlockTypes()->where('code', $code)->first();
             if ($webBlockType) {
 
 

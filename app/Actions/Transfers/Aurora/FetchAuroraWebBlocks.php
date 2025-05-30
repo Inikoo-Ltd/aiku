@@ -223,17 +223,17 @@ class FetchAuroraWebBlocks
                 $layout       = $this->processProductData($auroraBlock);
 
 
-                $fieldValue=Arr::get($webBlockType->data,'fieldValue');
+                $fieldValue = Arr::get($webBlockType->data, 'fieldValue');
 
                 data_set($layout, 'data.fieldValue', $fieldValue);
 
 
                 /** @var Product $product */
-                $product=$webpage->model;
+                $product = $webpage->model;
 
                 $product->update(
                     [
-                        'description'=>Arr::get($layout,'data.fieldValue.value.text')
+                        'description' => Arr::get($layout, 'data.fieldValue.value.text')
                     ]
                 );
 
