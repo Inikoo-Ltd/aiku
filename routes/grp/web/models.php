@@ -218,6 +218,7 @@ use App\Actions\Web\Banner\UpdateBanner;
 use App\Actions\Web\Banner\UpdateBannerState;
 use App\Actions\Web\Banner\UpdateUnpublishedBannerSnapshot;
 use App\Actions\Web\Banner\UploadImagesToBanner;
+use App\Actions\Web\ModelHasContent\StoreModelHasContent;
 use App\Actions\Web\ModelHasWebBlocks\BulkUpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
@@ -411,6 +412,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
+    Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
 });
 
 
@@ -782,6 +784,7 @@ Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.
 
 Route::name('product_category.')->prefix('product_category/{productCategory:id}')->group(function () {
     Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
+    Route::post('content', [StoreModelHasContent::class, 'inProductCategory'])->name('content.store');
 });
 
 

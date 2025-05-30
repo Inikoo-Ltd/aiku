@@ -26,7 +26,8 @@ const props = defineProps<{
 
 const emits = defineEmits<{
     (e: "updateSelectedProducts", portfolio: {}, dataToSend: {}, keyToConditionicon: string ): void,
-    (e: "mounted"): void
+    (e: "mounted"): void,
+    (e: "portfolioDeleted", value: {}): void,
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -90,7 +91,11 @@ const valueTableFilter = ref({})
         arow-unselect="rowUnselectHook"
     >
         <template #header>
-            <div class="flex justify-end">
+            <div class="flex justify-between items-center">
+                <div class="text-xl">
+                    Total: <span class="font-bold">{{ portfolios.length }}</span>
+                </div>
+
                 <IconField>
                     <InputIcon>
                         <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
@@ -144,7 +149,7 @@ const valueTableFilter = ref({})
                             label="Remove"
                             type="delete"
                             size="xs"
-                            @success="() => portfolios.splice(portfolios.indexOf(data), 1)"
+                            @success="() => emits('portfolioDeleted', data)"
                         />
 
                         <ButtonWithLink

@@ -125,7 +125,6 @@ const selectAllProducts = () => {
 }
 
 onMounted(()=> {
-    console.log('Mounted ProductsSelector')
     getPortfoliosList()
 })
 

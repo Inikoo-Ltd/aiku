@@ -35,7 +35,10 @@ const valueTableFilter = ref({})
         v-model:filters="valueTableFilter"
     >
         <template #header>
-            <div class="flex justify-end">
+            <div class="flex justify-between items-center">
+                <div class="text-xl">
+                    Total: <span class="font-bold">{{ portfolios.length }}</span>
+                </div>
                 <IconField>
                     <InputIcon>
                         <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />

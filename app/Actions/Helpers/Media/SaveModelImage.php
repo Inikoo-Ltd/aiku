@@ -20,6 +20,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Web\ModelHasContent;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -30,11 +31,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent $model,
         array $imageData,
         string $scope = 'image',
         string $foreignkeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);
