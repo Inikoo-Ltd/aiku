@@ -28,17 +28,18 @@ const props = defineProps<{
         type: string
         name: string
     }
+    platid: number
 }>()
 
 const selectSocketi = (porto: {}) => {
     if (props.platform_data.type === 'shopify') {
         return {
-            event: `shopify.${props.platform_data.id}.upload-product.${porto.id}`,
+            event: `shopify.${props.platid}.upload-product.${porto.id}`,
             action: '.shopify-upload-progress'
         }
     } else if (props.platform_data.type === 'woocommerce') {
         return {
-            event: `woo.${props.platform_data.id}.upload-product.${porto.id}`,
+            event: `woo.${props.platid}.upload-product.${porto.id}`,
             action: '.woo-upload-progress'
         }
     }
@@ -58,6 +59,7 @@ const disabledRowId = ref([])
 onMounted(() => {
     emits('mounted')
     props.portfolios.forEach(porto => {
+        console.log('porto', selectSocketi(porto))
         const xxx = window.Echo.private(selectSocketi(porto)?.event).listen(
             selectSocketi(porto)?.action,
             (eventData) => {
@@ -75,7 +77,7 @@ onMounted(() => {
             }
         );
 
-        // console.log('xxx', xxx)
+        console.log('xxx', xxx)
     });
 
 })

@@ -15,6 +15,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class UploadProductToWooCommerceProgressEvent implements ShouldBroadcastNow
 {
@@ -42,6 +43,11 @@ class UploadProductToWooCommerceProgressEvent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        Log::info('Broadcasting WooCommerce upload progress', [
+            'wooCommerceUserId' => $this->wooCommerceUser->id,
+            'portfolioId'       => $this->portfolio->id,
+        ]);
+
         return [
             'portfolio' => $this->portfolio,
         ];

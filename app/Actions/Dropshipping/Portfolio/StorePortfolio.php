@@ -52,7 +52,7 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'item_name', $item->name);
         data_set($modelData, 'customer_product_name', $item->name);
         data_set($modelData, 'customer_price', $item->price);
-        data_set($modelData, 'customer_description', $item->description);
+        // data_set($modelData, 'customer_description', $item->description);
 
         $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
             /** @var Portfolio $portfolio */

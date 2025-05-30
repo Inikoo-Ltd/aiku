@@ -58,9 +58,7 @@ const props = defineProps<{
 		updatePortfolioRoute: routeType
 		batchDeletePortfolioRoute: routeType
 	}
-	platform_user_id: {
-
-	}
+	platform_user_id: number
 	step: {
 		current: number
 	}
@@ -575,6 +573,7 @@ const bulkDelete = () => {
 						amounted="() => fetchIndexUnuploadedPortfolios()"
 						:progressToUploadToShopify
 						:platform_data
+						:platid="props.platform_user_id"
 					/>
 
 					<EmptyState
