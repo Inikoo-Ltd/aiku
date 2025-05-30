@@ -8,8 +8,10 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
@@ -47,6 +49,11 @@ class CallbackRetinaWooCommerceUser extends OrgAction
         $wooCommerceUser->refresh();
 
         $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
+
+        UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
+            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+        ]);
+
         return $this->update($wooCommerceUser, [
             'settings' => array_merge($wooCommerceUser->settings, [
                 'webhooks' => $webhooks

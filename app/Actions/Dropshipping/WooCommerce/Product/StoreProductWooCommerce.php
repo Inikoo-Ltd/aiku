@@ -58,10 +58,13 @@ class StoreProductWooCommerce extends RetinaAction
                 }
 
                 $images = [];
-                foreach ($product->images as $image) {
-                    $images[] = [
-                        'src' => GetImgProxyUrl::run($image->getImage())
-                    ];
+
+                if (app()->isProduction()) {
+                    foreach ($product->images as $image) {
+                        $images[] = [
+                            'src' => GetImgProxyUrl::run($image->getImage())
+                        ];
+                    }
                 }
 
                 // Create product data array for WooCommerce API
@@ -86,7 +89,7 @@ class StoreProductWooCommerce extends RetinaAction
 
                 $wooCommerceUser->products()->attach($product->id, [
                     'woo_commerce_user_id' => $wooCommerceUser->id,
-//                    'product_type' => class_basename($product),
+                    'product_type' => class_basename($product),
                     'product_id' => $product->id,
                     'portfolio_id' => $portfolio->id,
                     'woo_commerce_product_id' => Arr::get($result, 'id')
