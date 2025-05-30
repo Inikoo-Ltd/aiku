@@ -103,21 +103,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'pageHead'    => [
                     'title'   => $title,
                     'model'   =>  $platformName,
-                    'icon'    => 'fal fa-cube',
-                    'actions' => [
-                        $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'key'   => 'upload-to-shopify',
-                            'label' => 'Upload Products to ' . $this->customerSalesChannel->platform->name,
-                             'route' => [
-                                 'name'       => 'retina.models.dropshipping.shopify.batch_upload',
-                                 'parameters' => [
-                                     'shopifyUser' => $this->customerSalesChannel->user->id
-                                 ]
-                             ]
-                        ] : [],
-                    ]
+                    'icon'    => 'fal fa-cube'
                 ],
                 'routes'    => [
                     'bulk_upload'  => $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
@@ -150,6 +136,10 @@ class IndexRetinaPortfolios extends RetinaAction
                         'name' => 'retina.models.portfolio.delete',
                         'parameters' => []
                     ],
+                    'batchDeletePortfolioRoute' => [
+                        'name' => 'retina.models.portfolio.batch.delete',
+                        'parameters' => []
+                    ],
                     // 'listPortfolioUnUploadedRoute' => [
                     //     'name' => 'retina.models.portfolio.delete',
                     //     'parameters' => []
@@ -177,11 +167,11 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'step' => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
-                        PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('shopify_product_id')->count() === 0 ? 1 : 2,
-                        default => 1
+                        PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('shopify_product_id')->count() === 0 ? 0 : 1,
+                        default => 0
                     }
                 ],
-                'platform_user_id' => $this->customerSalesChannel->user->id,
+                'platform_user_id' => $this->customerSalesChannel->user?->id,
                 'products' => DropshippingPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));

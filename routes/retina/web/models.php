@@ -36,6 +36,7 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
+use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
@@ -248,6 +249,7 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
     Route::post('{paymentAccount:id}', StoreRetinaTopUp::class)->name('store')->withoutScopedBindings();
 });
 
+Route::delete('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
 

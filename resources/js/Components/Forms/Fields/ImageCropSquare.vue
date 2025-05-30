@@ -37,7 +37,6 @@ const props = defineProps<{
             },
         }
     }
-    options: Object
 }>()
 
 console.log(props)
@@ -73,10 +72,11 @@ const dataURLtoBlob = (dataurl) => {
 
 const isOpenModalCrop = ref(false)
 const _cropper = ref(null)
-const submitCrop = () => {
+const submitCrop = async () => {
     props.form.errors[props.fieldName] = null
-    const { coordinates, canvas, } = _cropper.value?.getResult()
-    const imageDataURL = canvas.toDataURL();
+    const { coordinates, canvas, } = await _cropper.value?.getResult()
+    const imageDataURL = await canvas.toDataURL();
+    // console.log('imageDataURL', imageDataURL, coordinates, canvas)
     imgAfterCrop.value = {
         original: imageDataURL
     }
