@@ -537,7 +537,7 @@ const bulkDelete = () => {
 					<Button
 						v-if="step.current == 1"
 						@click="step.current = 2"
-						:label="trans('Sync to Shopify')"
+						:label="trans('Next step (sync to Shopify)')"
 						full
 						:iconRight="faArrowRight"
 						type="primary"

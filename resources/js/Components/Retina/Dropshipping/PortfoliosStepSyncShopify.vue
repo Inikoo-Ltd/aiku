@@ -38,20 +38,20 @@ const layout = inject('layout', layoutStructure)
 const disabledRowId = ref([])
 onMounted(() => {
     emits('mounted')
-    props.portfolios.forEach(element => {
-        const xxx = window.Echo.private(`shopify.${props.platid}.upload-product.${element.id}`).listen(
+    props.portfolios.forEach(porto => {
+        const xxx = window.Echo.private(`shopify.${props.platid}.upload-product.${porto.id}`).listen(
             ".shopify-upload-progress",
             (eventData) => {
-                console.log('poppppppp', element.id, eventData)
+                // console.log('poppppppp', porto.id, eventData)
                 if(eventData.errors_response) {
-                    set(props.progressToUploadToShopify, [element.id], 'error')
+                    set(props.progressToUploadToShopify, [porto.id], 'error')
                     setTimeout(() => {
-                        set(props.progressToUploadToShopify, [element.id], null)
+                        set(props.progressToUploadToShopify, [porto.id], null)
                     }, 3000);
 
                 } else {
-                    set(props.progressToUploadToShopify, [element.id], 'success')
-                    disabledRowId.value.push(element.id)
+                    set(props.progressToUploadToShopify, [porto.id], 'success')
+                    disabledRowId.value.push(porto.id)
                 }
             }
         );
