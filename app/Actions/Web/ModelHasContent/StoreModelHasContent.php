@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 30-05-2025-13h-15m
@@ -9,20 +10,11 @@
 namespace App\Actions\Web\ModelHasContent;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\UI\WithImageCatalogue;
-use App\Actions\Traits\UI\WithImageSeo;
-use App\Actions\Web\WebBlock\StoreWebBlock;
-use App\Actions\Web\Webpage\ReorderWebBlocks;
-use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Web\ModelHasContent\ModelHasContentTypeEnum;
-use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\ModelHasContent;
-use App\Models\Web\WebBlockType;
-use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,7 +26,7 @@ class StoreModelHasContent extends OrgAction
     public function handle(Product|ProductCategory $parent, array $modelData): ModelHasContent
     {
         $imageData = [];
-        if(Arr::exists($modelData, 'image')){
+        if (Arr::exists($modelData, 'image')) {
             $imageData = ['image' => Arr::pull($modelData, 'image')]; //TODO: image handling
         }
 
