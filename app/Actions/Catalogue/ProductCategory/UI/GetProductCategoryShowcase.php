@@ -43,7 +43,7 @@ class GetProductCategoryShowcase
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $data = [
-                'subDepartment' => SubDepartmentResource::make($productCategory->department)->toArray(request()),
+                'subDepartment' => SubDepartmentResource::make($productCategory)->toArray(request()),
                 'families'   => FamilyResource::collection($productCategory->getFamilies())->toArray(request()),
             ];
             $data['routeList'] = [
@@ -56,6 +56,13 @@ class GetProductCategoryShowcase
                         'subDepartment' => $productCategory->slug,
                     ],
                     'method' => 'get'
+                ],
+                'moveProductRoute' => [
+                    'name' => 'grp.models.product.move_family',
+                    'parameters' => [
+                        //add product id
+                    ],
+                    'method' => 'patch'
                 ]
             ];
         } else {
