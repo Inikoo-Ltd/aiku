@@ -24,8 +24,8 @@ const props = defineProps<{
 <template>
     <div :style="getStyles(fieldValue?.container?.properties,screenType)">
         <SliderLandscape v-if="fieldValue?.compiled_layout?.type === 'landscape'" :data="fieldValue.compiled_layout"
-            :production="true" />
-        <SliderSquare v-else-if="fieldValue?.compiled_layout?.type === 'square'" :data="fieldValue.compiled_layout" :production="true" />
+            :production="true" :view="screenType"/>
+        <SliderSquare v-else-if="fieldValue?.compiled_layout?.type === 'square'" :data="fieldValue.compiled_layout" :production="true" :view="screenType" />
         <div v-else class="py-4 w-full bg-gray-100 text-center text-gray-400 italic">
             {{ trans("Banner is empty") }}
         </div>
