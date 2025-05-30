@@ -16,8 +16,8 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\ShopifyUserHasProduct;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -49,8 +49,8 @@ class StoreOrderFromShopify extends OrgAction
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
         }
 
-        $shopifyUserHasProductExists = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
-            ->whereIn('shopify_product_id', $shopifyProducts->pluck('product_id'))->exists();
+        $shopifyUserHasProductExists = $shopifyUser->customerSalesChannel->portfolios()
+            ->whereIn('platform_product_id', $shopifyProducts->pluck('product_id'))->exists();
 
         if ($shopifyUserHasProductExists) {
             $order = StoreOrder::make()->action($shopifyUser->customer, [
@@ -64,13 +64,13 @@ class StoreOrderFromShopify extends OrgAction
             ], false);
 
             foreach ($shopifyProducts as $shopifyProduct) {
-                /** @var ShopifyUserHasProduct $shopifyUserHasProduct */
-                $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
-                    ->where('shopify_product_id', $shopifyProduct['product_id'])->first();
+                /** @var Portfolio $shopifyUserHasProduct */
+                $shopifyUserHasProduct = $shopifyUser->customerSalesChannel->portfolios()
+                    ->where('platform_product_id', $shopifyProduct['product_id'])->first();
 
                 if ($shopifyUserHasProduct) {
                     /** @var \App\Models\Catalogue\Product $product */
-                    $product = $shopifyUserHasProduct->product;
+                    $product = $shopifyUserHasProduct->item;
                     if (!$product) {
                         \Sentry\captureMessage('ShopifyUserHasProduct ' . $shopifyUserHasProduct->id . ' does not have a product');
                         continue;
