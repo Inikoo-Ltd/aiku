@@ -50,7 +50,8 @@ class IndexRetinaPortfolios extends RetinaAction
             $query->where('item_type', class_basename(Product::class));
         }
 
-        return $query->allowedFilters([$unUploadedFilter])
+        return $query->defaultSort('-id')
+            ->allowedFilters([$unUploadedFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -120,10 +121,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                     // 'syncAllRoute' => $syncAllRoute,
                     'addPortfolioRoute' => [
-                        'name' => match ($this->customerSalesChannel->platform->type) {
-                            PlatformTypeEnum::WOOCOMMERCE => 'retina.models.customer_sales_channel.woo.product.store',
-                            default => 'retina.models.customer_sales_channel.customer.product.store'
-                        },
+                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
@@ -170,11 +168,12 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'step' => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
-                        PlatformTypeEnum::SHOPIFY => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
+                        PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
                         default => 0
                     }
                 ],
                 'platform_user_id' => $this->customerSalesChannel->user?->id,
+                'platform_type' => $this->customerSalesChannel->platform->type,
                 'products' => DropshippingPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));

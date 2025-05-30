@@ -93,14 +93,14 @@ class ShowFamily extends OrgAction
             ] : false
         ]);
     }
-    
+
 
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
         $parentTag = [];
 
-        if($this->parent instanceof ProductCategory) {
-            if($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($this->parent instanceof ProductCategory) {
+            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $parentTag = [
                         [
                             'label' => $family->department->name,
@@ -124,7 +124,7 @@ class ShowFamily extends OrgAction
                 ];
             }
         }
-        
+
         return Inertia::render(
             'Org/Catalogue/Family',
             [
