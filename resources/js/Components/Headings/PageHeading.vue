@@ -59,20 +59,33 @@ const layout = inject('layout', layoutStructure)
         <div class="flex items-end gap-x-3">
 
             <!-- Section: Main Title -->
-            <div :class="data?.parentTag?.length ? '-mt-1.5' : ''">
-                <div v-if="data?.parentTag?.length" class="flex gap-x-2">
-                    <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route">
+            <div :class="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length ? '-mt-1.5' : ''">
+                <template v-if="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length">
+                    <div v-if="data?.parentTag?.length" class="flex gap-x-2">
+                        <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route">
+                            <template #default="{ isLoadingVisit }">
+                                <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-sm select-none px-1 py-0.5 text-xxs w-fit font-medium border"
+                                    :class="`bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-500`"
+                                >
+                                    <LoadingIcon v-if="isLoadingVisit" />
+                                    <FontAwesomeIcon v-else :icon="tag.icon" class="" fixed-width aria-hidden="true" />
+                                    {{ tag.label}}
+                                </div>
+                            </template>
+                        </ButtonWithLink>
+                    </div>
+                    <ButtonWithLink v-else-if="Object.keys(data?.parentTag || {}).length" :routeTarget="data?.parentTag?.route">
                         <template #default="{ isLoadingVisit }">
                             <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-sm select-none px-1 py-0.5 text-xxs w-fit font-medium border"
                                 :class="`bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-500`"
                             >
                                 <LoadingIcon v-if="isLoadingVisit" />
-                                <FontAwesomeIcon v-else :icon="tag.icon" class="" fixed-width aria-hidden="true" />
-                                {{ tag.label}}
+                                <FontAwesomeIcon v-else :icon="data?.parentTag?.icon" class="" fixed-width aria-hidden="true" />
+                                {{ data?.parentTag?.label}}
                             </div>
                         </template>
                     </ButtonWithLink>
-                </div>
+                </template>
 
                 <div class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight ">
                     <div v-if="data.container" class="text-slate-500 text-lg">
