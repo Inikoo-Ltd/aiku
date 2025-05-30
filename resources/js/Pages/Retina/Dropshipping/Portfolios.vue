@@ -383,9 +383,13 @@ const bulkUpload = () => {
 			<div class="relative space-x-2 space-y-1 text-right">
 				<ButtonWithLink
 					v-if="selectedPortfoliosToSync?.length"
-					:routeTarget="routes.batchDeletePortfolioRoute"
-					:body="{
-						portfolios: selectedPortfoliosToSync.map((product: any) => product.id),
+					:routeTarget="{
+						name: routes.batchDeletePortfolioRoute.name,
+						parameters: routes.batchDeletePortfolioRoute.parameters,
+						method: routes.batchDeletePortfolioRoute.method,
+						body: {
+							portfolios: selectedPortfoliosToSync.map((product: any) => product.id),
+						},
 					}"
 					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
 					type="delete"
