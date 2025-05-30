@@ -48,6 +48,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $customer_description
  * @property string|null $shopify_product_id
  * @property string|null $errors_response
+ * @property string|null $shopify_handle
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer

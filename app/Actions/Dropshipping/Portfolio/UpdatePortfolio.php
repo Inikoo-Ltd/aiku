@@ -17,6 +17,8 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -30,6 +32,14 @@ class UpdatePortfolio extends OrgAction
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
+        if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'shopify_handle')) {
+            data_set(
+                $modelData,
+                'shopify_handle',
+                Str::slug(Arr::get($modelData, 'customer_product_name'))
+            );
+        }
+
         $portfolio = $this->update($portfolio, $modelData, ['data']);
 
 

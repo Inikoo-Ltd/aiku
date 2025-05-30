@@ -200,6 +200,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
  * @property-read SenderEmail|null $senderEmail
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas

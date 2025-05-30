@@ -21,14 +21,8 @@ use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Http\Resources\Accounting\DeletedInvoicesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
-use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -47,9 +41,9 @@ class IndexDeletedInvoices extends OrgAction
     use WithInvoicesSubNavigation;
 
 
-    private Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|Shop|InvoiceCategory $parent;
+    private Group|Organisation|Fulfilment|Shop $parent;
 
-    public function handle(Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|Shop|Order|InvoiceCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Fulfilment|Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -69,14 +63,6 @@ class IndexDeletedInvoices extends OrgAction
             $queryBuilder->where('invoices.shop_id', $parent->id);
         } elseif ($parent instanceof Fulfilment) {
             $queryBuilder->where('invoices.shop_id', $parent->shop->id);
-        } elseif ($parent instanceof FulfilmentCustomer) {
-            $queryBuilder->where('invoices.customer_id', $parent->customer->id);
-        } elseif ($parent instanceof Customer) {
-            $queryBuilder->where('invoices.customer_id', $parent->id);
-        } elseif ($parent instanceof CustomerClient) {
-            $queryBuilder->where('invoices.customer_client_id', $parent->id);
-        } elseif ($parent instanceof Order) {
-            $queryBuilder->where('invoices.order_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $queryBuilder->where('invoices.group_id', $parent->id);
         } else {
@@ -116,7 +102,6 @@ class IndexDeletedInvoices extends OrgAction
                 ->addSelect('shops.name as shop_name', 'shops.code as shop_code', 'shops.slug as shop_slug');
             $queryBuilder->leftjoin('organisations', 'invoices.organisation_id', '=', 'organisations.id')
                 ->addSelect('organisations.name as organisation_name', 'organisations.code as organisation_code', 'organisations.slug as organisation_slug');
-
         }
 
 
@@ -134,7 +119,7 @@ class IndexDeletedInvoices extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Fulfilment|Customer|CustomerClient|FulfilmentCustomer|Shop|Order|InvoiceCategory $parent, $prefix = null): Closure
+    public function tableStructure(Group|Organisation|Fulfilment|Shop $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix, $parent) {
             if ($prefix) {
@@ -145,21 +130,18 @@ class IndexDeletedInvoices extends OrgAction
 
             $table->betweenDates(['date']);
 
-            $noResults = __("No invoices found");
-            if ($parent instanceof Customer) {
-                $stats     = $parent->stats;
-                $noResults = __("Customer hasn't been invoiced");
-            } elseif ($parent instanceof CustomerClient) {
-                $stats     = $parent->stats;
-                $noResults = __("This customer client hasn't been invoiced");
-            } elseif ($parent instanceof Group) {
+            if ($parent instanceof Group) {
                 $stats     = $parent->orderingStats;
-                $noResults = __("This group hasn't been invoiced");
-            } elseif ($parent instanceof InvoiceCategory) {
-                $stats     = $parent->stats;
-                $noResults = __("This invoice category hasn't been invoiced");
+                $noResults = __("This group don't have any deleted invoices");
+            } elseif ($parent instanceof Fulfilment) {
+                $stats     = $parent->shop->orderingStats;
+                $noResults = __("This shop don't have any deleted invoices");
+            } elseif ($parent instanceof Shop) {
+                $stats     = $parent->orderingStats;
+                $noResults = __("This shop don't have any deleted invoices");
             } else {
-                $stats = $parent->salesStats;
+                $noResults = __("This organisation don't have any deleted invoices");
+                $stats     = $parent->orderingStats;
             }
 
             $table
@@ -167,7 +149,7 @@ class IndexDeletedInvoices extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => $noResults,
-                        'count' => $stats->number_invoices ?? 0,
+                        'count' => $stats->number_deleted_invoices ?? 0,
                     ]
                 );
 
@@ -206,19 +188,7 @@ class IndexDeletedInvoices extends OrgAction
     {
         $subNavigation = [];
 
-        if ($this->parent instanceof CustomerClient) {
-            /** @var CustomerSalesChannel $customerSalesChannel */
-            $customerSalesChannel = $request->route()->parameter('customerSalesChannel');
-            $subNavigation       = $this->getCustomerClientSubNavigation($this->parent, $customerSalesChannel);
-        } elseif ($this->parent instanceof Customer) {
-            if ($this->parent->is_dropshipping) {
-                $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
-            } else {
-                $subNavigation = $this->getCustomerSubNavigation($this->parent, $request);
-            }
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
-            $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        } elseif ($this->parent instanceof Shop || $this->parent instanceof Fulfilment || $this->parent instanceof Organisation) {
+        if ($this->parent instanceof Shop || $this->parent instanceof Fulfilment || $this->parent instanceof Organisation) {
             $subNavigation = $this->getInvoicesNavigation($this->parent);
         }
 
@@ -235,45 +205,7 @@ class IndexDeletedInvoices extends OrgAction
         $model      = null;
         $actions    = null;
 
-        if ($this->parent instanceof FulfilmentCustomer) {
-            $icon       = ['fal', 'fa-user'];
-            $title      = $this->parent->customer->name;
-            $iconRight  = [
-                'icon' => 'fal fa-file-invoice-dollar',
-            ];
-            $afterTitle = [
-                'label' => __('deleted invoices')
-            ];
-        } elseif ($this->parent instanceof CustomerClient) {
-            $iconRight  = $icon;
-            $afterTitle = [
-                'label' => $title
-            ];
-
-            $title = $this->parent->name;
-            $model = __('customer client');
-            $icon  = [
-                'icon'  => ['fal', 'fa-folder'],
-                'title' => __('customer client')
-            ];
-        } elseif ($this->parent instanceof Customer) {
-            $iconRight  = $icon;
-            $afterTitle = [
-                'label' => $title
-            ];
-            $title      = $this->parent->name;
-            $icon       = [
-                'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
-            ];
-        } elseif ($this->parent instanceof InvoiceCategory) {
-            $model = __('Invoices');
-            $title = $this->parent->name;
-            $icon  = [
-                'icon'  => ['fal', 'fa-file-invoice-dollar'],
-                'title' => __('invoice category')
-            ];
-        } elseif ($this->parent instanceof Organisation) {
+        if ($this->parent instanceof Organisation) {
             $afterTitle = [
                 'label' => __('In organisation').': '.$this->parent->name
             ];
@@ -330,7 +262,6 @@ class IndexDeletedInvoices extends OrgAction
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
@@ -341,7 +272,6 @@ class IndexDeletedInvoices extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
@@ -351,7 +281,6 @@ class IndexDeletedInvoices extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
-
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -360,12 +289,11 @@ class IndexDeletedInvoices extends OrgAction
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
-
         $this->parent = group();
         $this->initialisationFromGroup(group(), $request);
+
         return $this->handle(group());
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -383,6 +311,7 @@ class IndexDeletedInvoices extends OrgAction
                 ]
             ];
         };
+
         return match ($routeName) {
             'grp.org.shops.show.dashboard.invoices.deleted.index' =>
             array_merge(

@@ -58,13 +58,14 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
                 "product" => [
                     "id" => $portfolio->item->id,
                     "title" => $portfolio->customer_product_name,
+                    "handle" => $portfolio->shopify_handle,
                     "body_html" => $portfolio->customer_description,
                     "vendor" => $portfolio->item->shop->name,
                     "product_type" => $portfolio->item->family?->name,
                     "images" => $images,
                     "variants" => [
                         [
-                            "price" => $portfolio->item->price,
+                            "price" => number_format($portfolio->customer_price, 2, '.', ''),
                             "sku" => $portfolio->id,
                             "inventory_management" => "shopify",
                             "inventory_policy" => "deny",
@@ -93,6 +94,9 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
                     }
                 } catch (\Exception $e) {
                     \Sentry::captureMessage($e->getMessage());
+
+                    $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
+                    $productShopify = Arr::get($availableProducts, '0');
                 }
             } else {
                 $productShopify = Arr::get($availableProducts, '0');
