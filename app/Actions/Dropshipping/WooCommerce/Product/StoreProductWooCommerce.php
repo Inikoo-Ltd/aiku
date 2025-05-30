@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class StoreProductWooCommerce extends RetinaAction
 {
@@ -49,12 +50,12 @@ class StoreProductWooCommerce extends RetinaAction
                 $product = $this->findProductById($productId);
 
                 if (!$product) {
-                    throw new \Exception("Product with ID {$productId} not found");
+                    Sentry::captureMessage("Product with ID {$productId} not found");
                 }
 
                 // Validate required fields
                 if (empty(Arr::get($product, 'name')) || empty(Arr::get($product, 'price'))) {
-                    throw new \Exception('Product name and regular price are required');
+                    Sentry::captureMessage("Product name and regular price are required");
                 }
 
                 $images = [];
@@ -97,12 +98,14 @@ class StoreProductWooCommerce extends RetinaAction
 
                 $successCount++;
 
-                UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $totalProducts, $successCount);
+                UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
             } catch (\Exception $e) {
                 $failedProducts[] = [
                     'id' => $productId,
                     'error' => $e->getMessage()
                 ];
+
+                Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
                 Log::info(json_encode($failedProducts));
             }
@@ -115,7 +118,7 @@ class StoreProductWooCommerce extends RetinaAction
         ];
     }
 
-    private function mapProductStateToWooCommerce($status)
+    private function mapProductStateToWooCommerce($status): string
     {
         $stateMap = [
             ProductStatusEnum::FOR_SALE->value => 'publish',

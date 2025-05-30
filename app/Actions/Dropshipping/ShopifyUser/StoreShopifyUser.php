@@ -18,11 +18,9 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Symfony\Component\HttpFoundation\Response;
 
 class StoreShopifyUser extends RetinaAction
 {
@@ -67,11 +65,11 @@ class StoreShopifyUser extends RetinaAction
         return $shopifyUser;
     }
 
-    public function htmlResponse(ShopifyUser $shopifyUser): Response
+    public function jsonResponse(ShopifyUser $shopifyUser): string
     {
-        return Inertia::location(route('pupil.authenticate', [
+        return route('pupil.authenticate', [
             'shop' => $shopifyUser->name
-        ]));
+        ]);
     }
 
     public function rules(): array
