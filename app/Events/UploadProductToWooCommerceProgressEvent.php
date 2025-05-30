@@ -35,6 +35,7 @@ class UploadProductToWooCommerceProgressEvent implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
+        Log::info('Broadcasting WooCommerce upload progress', $this->portfolio);
         return [
             new PrivateChannel("woo.{$this->wooCommerceUser->id}.upload-product.{$this->portfolio->id}")
 
