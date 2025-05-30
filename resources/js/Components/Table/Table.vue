@@ -679,6 +679,11 @@ const onSelectCheckbox = async (item : Any) => {
 
 }
 
+// Check props.isCheckbox to improve performance
+const compIsAllChecked = props.isCheckBox ? computed(() => {
+    return compResourceData.value.length > 0 &&
+        compResourceData.value.every((row: Record<string, any>) => selectRow[row.id] === true);
+}) : false
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
 }, {deep: true})
@@ -925,14 +930,14 @@ const isLoading = ref<string | boolean>(false)
                             <thead class="bg-gray-50">
                                 <tr class="border-t border-gray-200 divide-x divide-gray-200">
                                     <div v-if="isCheckBox"
-                                        @xxclick="() => onClickSelectAll(Object.values(selectRow).every((value) => value === true))"
+                                        @click="() => onClickSelectAll(compIsAllChecked)"
                                         class="py-1.5 cursor-pointer">
-                                        <!-- <FontAwesomeIcon
-                                            v-if="Object.values(selectRow).every((value) => value === true)"
+                                        <FontAwesomeIcon
+                                            v-if="compIsAllChecked"
                                             icon='fal fa-check-square' class='mx-auto block h-5 my-auto' fixed-width
                                             aria-hidden='true' />
                                         <FontAwesomeIcon v-else icon='fal fa-square' class='mx-auto block h-5 my-auto'
-                                            fixed-width aria-hidden='true' /> -->
+                                            fixed-width aria-hidden='true' />
                                     </div>
 
                                     <slot v-for="column in queryBuilderProps.columns" :name="`header(${column.key})`" :header="column">

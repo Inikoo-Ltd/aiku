@@ -33,7 +33,7 @@ class GetWebsiteWorkshopProduct
             'layout' => Arr::get($website->unpublishedProductSnapshot, 'layout.product', []),
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.product',
+                'name' => 'grp.models.website.autosave.product',
                 'parameters' => [
                     'website' => $website->id
                 ]
@@ -41,12 +41,12 @@ class GetWebsiteWorkshopProduct
         ];
         $updateRoute = [
             'updateRoute' => [
-                'name'       => 'grp.models.website.settings.update',
+                'name' => 'grp.models.website.settings.update',
                 'parameters' => [
                     'website' => $website->id
                 ]
             ]
-                ];
+        ];
 
         return array_merge($propsValue, $updateRoute);
     }
