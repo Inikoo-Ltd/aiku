@@ -313,6 +313,10 @@ class IndexFamilies extends OrgAction
 
                 $createRoute = "grp.org.shops.show.catalogue.departments.show.families.create";
 
+                if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
+                }
+
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $title = $this->parent->name;
                 $model = '';
@@ -375,6 +379,7 @@ class IndexFamilies extends OrgAction
             'Org/Catalogue/Families',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -387,7 +392,7 @@ class IndexFamilies extends OrgAction
                     'iconRight'     => $iconRight,
                     'actions'       => [
                         $this->canEdit ? (
-                            class_basename($this->parent) == 'ProductCategory' && $this->parent->type != ProductCategoryTypeEnum::SUB_DEPARTMENT ? [
+                            class_basename($this->parent) == 'ProductCategory' ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new family'),
@@ -427,7 +432,7 @@ class IndexFamilies extends OrgAction
         ->table($this->tableStructure(parent: $this->parent, modelOperations:null, canEdit:false, prefix:ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -469,7 +474,7 @@ class IndexFamilies extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',

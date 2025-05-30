@@ -27,13 +27,13 @@ class GetWebsiteWorkshopFamily
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
 
-        $products = $website->shop->products()->where('state', ProductStateEnum::ACTIVE)->get();
+        // $products = $website->shop->products()->where('state', ProductStateEnum::ACTIVE)->get();
         $families = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::FAMILY)->get();
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'families'   => FamiliesResource::collection($families),
-            'products'   => ProductsResource::collection($products),
+            // 'products'   => ProductsResource::collection($products),
             'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.family', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.family',

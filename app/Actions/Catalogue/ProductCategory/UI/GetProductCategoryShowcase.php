@@ -87,6 +87,20 @@ class GetProductCategoryShowcase
                         'method' => 'get'
                     ]
                 ];
+            }  elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show') {
+                $data['routeList'] = [
+                    'collectionRoute' => [
+                        'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
+                        'parameters' => [
+                            'organisation' => $productCategory->organisation->slug,
+                            'shop'         => $productCategory->shop->slug,
+                            'department'   => $productCategory->parent->parent->slug,
+                            'subDepartment'   => $productCategory->parent->slug,
+                            'family'       => $productCategory->slug,
+                        ],
+                        'method' => 'get'
+                    ]
+                ];
             } elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show') {
                 $data['routeList'] = [
                     'collectionRoute' => [
