@@ -29,7 +29,7 @@ class DeleteProductWebhooksShopify extends OrgAction
         $productId = Arr::get($modelData, 'id');
 
         $portfolio = Portfolio::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)
-            ->where("shopify_product_id", $productId)
+            ->where("platform_product_id", $productId)
             ->first();
 
         if ($portfolio) {

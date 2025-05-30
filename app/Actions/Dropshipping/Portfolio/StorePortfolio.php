@@ -98,7 +98,7 @@ class StorePortfolio extends OrgAction
                 ),
             ],
             'status'        => 'sometimes|boolean',
-            'shopify_handle'        => 'sometimes|string',
+            'platform_handle'        => 'sometimes|string',
             'last_added_at' => 'sometimes|date'
         ];
 

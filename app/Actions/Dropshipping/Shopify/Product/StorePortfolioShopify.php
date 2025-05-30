@@ -56,7 +56,7 @@ class StorePortfolioShopify extends OrgAction
                     ];
                 }
 
-                data_set($modelData, 'shopify_handle', Str::slug($product->name));
+                data_set($modelData, 'platform_handle', Str::slug($product->name));
                 StorePortfolio::run(
                     $shopifyUser->customerSalesChannel,
                     $product,

@@ -62,7 +62,7 @@ class DropshippingPortfolioResource extends JsonResource
         $platformProductId = [];
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
             $platformProductId = [
-                'platform_product_id' => $this->shopify_product_id
+                'platform_product_id' => $this->platform_product_id
             ];
 
             $shopifyUploadRoute = [
@@ -83,7 +83,7 @@ class DropshippingPortfolioResource extends JsonResource
             'slug'                      => $this->item?->slug,
             'code'                      => $this->item?->code ?? $this->item_code,
             'currency_code'             => $this->item?->currency?->code,
-            'handle'                    => $this->shopify_handle,
+            'handle'                    => $this->platform_handle,
             'name'                      => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
             'description'               => $this->customer_description ?? $this->item?->description ?? $this->item_description,
             'quantity_left'             => $quantity,

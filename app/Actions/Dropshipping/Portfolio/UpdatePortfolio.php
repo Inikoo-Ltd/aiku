@@ -32,10 +32,10 @@ class UpdatePortfolio extends OrgAction
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
-        if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'shopify_handle')) {
+        if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'platform_handle')) {
             data_set(
                 $modelData,
-                'shopify_handle',
+                'platform_handle',
                 Str::slug(Arr::get($modelData, 'customer_product_name'))
             );
         }
@@ -91,8 +91,8 @@ class UpdatePortfolio extends OrgAction
             'customer_product_name'       => 'sometimes|string',
             'customer_price'       => 'sometimes',
             'customer_description'       => 'sometimes|string|nullable',
-            'shopify_product_id'       => 'sometimes|string',
-            'shopify_handle'       => 'sometimes|string',
+            'platform_product_id'       => 'sometimes|string',
+            'platform_handle'       => 'sometimes|string',
             'errors_response'       => 'sometimes|array'
         ];
 

@@ -58,7 +58,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
                 "product" => [
                     "id" => $portfolio->item->id,
                     "title" => $portfolio->customer_product_name,
-                    "handle" => $portfolio->shopify_handle,
+                    "handle" => $portfolio->platform_handle,
                     "body_html" => $portfolio->customer_description,
                     "vendor" => $portfolio->item->shop->name,
                     "product_type" => $portfolio->item->family?->name,
@@ -111,7 +111,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
 
             UpdatePortfolio::run($portfolio, [
-                'shopify_product_id' => Arr::get($productShopify, 'id')
+                'platform_product_id' => Arr::get($productShopify, 'id')
             ]);
 
             UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $portfolio);

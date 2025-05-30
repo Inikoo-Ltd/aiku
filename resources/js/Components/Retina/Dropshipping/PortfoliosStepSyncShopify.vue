@@ -22,6 +22,7 @@ const props = defineProps<{
     progressToUploadToShopify: {
         [key: string]: string|null
     }
+    platid: string
 }>()
 
 const emits = defineEmits<{
@@ -41,7 +42,7 @@ onMounted(() => {
         const xxx = window.Echo.private(`shopify.${props.platid}.upload-product.${element.id}`).listen(
             ".shopify-upload-progress",
             (eventData) => {
-                // console.log('poppppppp', element.id, eventData)
+                console.log('poppppppp', element.id, eventData)
                 if(eventData.errors_response) {
                     set(props.progressToUploadToShopify, [element.id], 'error')
                     setTimeout(() => {
@@ -57,9 +58,9 @@ onMounted(() => {
 
         // console.log('xxx', xxx)
     });
-    
+
 })
-    
+
 
 // PrimeVue trick
 // const isSelectedAll = ref(false);
@@ -110,18 +111,18 @@ const valueTableFilter = ref({})
         </template>
 
         <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-        
+
         <Column field="code" header="Code" style="max-width: 90px;">
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="whitespace-nowrap truncate">
                     {{ data.code }}
-                    
+
                 </div>
             </template>
         </Column>
 
         <Column field="category" header="Category" style="max-width: 200px;">
-    
+
         </Column>
 
         <Column field="name" header="Name">

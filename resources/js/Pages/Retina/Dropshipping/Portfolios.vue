@@ -206,7 +206,7 @@ watch(() => step.value.current, async (newStep, oldStep) => {
 const listState = ref({})
 const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, section: string) => {
 	set(listState.value, [portfolio.id, section], 'loading')
-	
+
 
 	try {
 		const data = await axios[props.routes.updatePortfolioRoute.method || 'patch'](
@@ -359,7 +359,7 @@ const bulkDelete = () => {
 		<div v-if="step.current === 0" class="grid grid-cols-4 mb-4">
 			<div class="relative">
 			</div>
-			
+
 			<div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
 				{{ trans('Add products to portfolios') }}
 			</div>
@@ -405,7 +405,7 @@ const bulkDelete = () => {
 				/> -->
 			</div>
 		</div>
-		
+
 
 		<!-- Head: step 2 -->
 		<div v-if="step.current == 2" class="grid grid-cols-4">
@@ -457,7 +457,7 @@ const bulkDelete = () => {
 					size="s"
 					:loading="isLoadingBulkDeleteUpload"
 				/>
-				
+
 				<!-- Button: bulk upload -->
 				<Button
 					v-if="selectedPortfoliosToSync?.length"
@@ -553,12 +553,12 @@ const bulkDelete = () => {
 					<div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
 						<LoadingIcon />
 					</div>
-					
+
 					<PortfoliosStepSyncShopify
 						v-else-if="portfoliosList?.length"
 						:portfolios="portfoliosList"
 						:listState
-						xxplatid="props.platform_user_id"
+						:platid="props.platform_user_id"
 						v-model="selectedPortfoliosToSync"
 						@updateSelectedProducts="updateSelectedProducts"
 						@portfolioDeleted="(portfolio) => portfoliosList.splice(portfoliosList.indexOf(portfolio), 1)"
