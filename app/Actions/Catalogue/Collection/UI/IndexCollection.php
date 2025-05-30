@@ -342,6 +342,49 @@ class IndexCollection extends OrgAction
                 ],
                 'routes'        => $routes,
                 'data'          => CollectionResource::collection($collections),
+                'formData' => [
+                    'fullLayout' => true,
+                    'blueprint'  => [
+                        [
+                            'title'  => __('New Collection'),
+                            'fields' => [
+                                'code' => [
+                                    'type'       => 'input',
+                                    'label'      => __('code'),
+                                    'required'   => true
+                                ],
+                                'name' => [
+                                    'type'     => 'input',
+                                    'label'    => __('name'),
+                                    'required' => true,
+                                ],
+                                'description' => [
+                                    'type'     => 'textarea',
+                                    'label'    => __('description'),
+                                    'required' => false,
+                                ],
+                                    "image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("Image"),
+                                    "required" => false,
+                                ],
+
+                            ]
+                        ]
+                    ],
+                    'route' => $this->parent instanceof Shop ? [
+                        'name'       => 'grp.models.org.catalogue.collections.store',
+                        'parameters' => [
+                            'organisation' => $this->parent->organisation_id,
+                            'shop'         => $this->parent->id,
+                        ]
+                    ] : [
+                        'name'       => 'grp.models.product_category.collection.store',
+                        'parameters' => [
+                            'productCategory'         => $this->parent->id,
+                        ]
+                    ]
+                ],
             ]
         )->table($this->tableStructure($this->parent));
     }
