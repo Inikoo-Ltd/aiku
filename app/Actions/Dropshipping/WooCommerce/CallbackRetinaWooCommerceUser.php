@@ -8,14 +8,9 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -33,62 +28,47 @@ class CallbackRetinaWooCommerceUser extends OrgAction
 
     public $commandSignature = 'retina:ds:callback-woo {customer} {store_url} {consumer_key} {consumer_secret}';
 
-    public function handle(Customer $customer, $modelData): CustomerSalesChannel
+    public function handle(WooCommerceUser $wooCommerceUser, array $modelData): WooCommerceUser
     {
-        $name = Arr::get($modelData, 'name');
         $consumerKey = Arr::get($modelData, 'consumer_key');
         $consumerSecret = Arr::get($modelData, 'consumer_secret');
-        $storeUrl = Arr::get($modelData, 'store_url');
 
         /** @var WooCommerceUser $wooCommerceUser */
-        $wooCommerceUser = StoreWooCommerceUser::run($customer, [
-            'name' => $name,
-            'store_url' => $storeUrl,
-            'consumer_key' => $consumerKey,
-            'consumer_secret' => $consumerSecret
+        $wooCommerceUser = UpdateWooCommerceUser::run($wooCommerceUser, [
+            'settings' => [
+                'credentials' => [
+                    'consumer_key' => $consumerKey,
+                    'consumer_secret' => $consumerSecret,
+                    'store_url' => Arr::get($wooCommerceUser->settings, 'credentials.store_url')
+                ]
+            ]
         ]);
 
-        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
-        $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
-            'platform_user_type' => $wooCommerceUser->getMorphClass(),
-            'platform_user_id' => $wooCommerceUser->id,
-            'reference' => $name
-        ]);
+        $wooCommerceUser->refresh();
 
         $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
-        $this->update($wooCommerceUser, [
-            'customer_sales_channel_id' => $customerSalesChannel->id,
-            'settings.webhooks' => $webhooks
+        return $this->update($wooCommerceUser, [
+            'settings' => array_merge($wooCommerceUser->settings, [
+                'webhooks' => $webhooks
+            ])
         ]);
-
-        return $customerSalesChannel;
     }
 
-    public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
+    public function htmlResponse(WooCommerceUser $wooCommerceUser): Response
     {
-        $routeName = match ($customerSalesChannel->customer->is_fulfilment) {
+        $routeName = match ($wooCommerceUser->customer->is_fulfilment) {
             true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
             default => 'retina.dropshipping.customer_sales_channels.show'
         };
 
         return Inertia::location(route($routeName, [
-            'customerSalesChannel' => $customerSalesChannel->slug
+            'customerSalesChannel' => $wooCommerceUser->customerSalesChannel->slug
         ]));
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction || $request->user() instanceof WebUser) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
     public function rules(): array
     {
         return [
-            'store_url' => ['required', 'string'],
             'consumer_key' => ['required', 'string'],
             'consumer_secret' => ['required', 'string']
         ];
@@ -96,10 +76,10 @@ class CallbackRetinaWooCommerceUser extends OrgAction
 
     public function asController(ActionRequest $request): string
     {
-        $customer = $request->user()->customer;
-        $this->initialisationFromShop($customer->shop, $request);
+        $wooCommerceUser = WooCommerceUser::findOrFail($request->get('user_id'));
+        $this->initialisationFromShop($wooCommerceUser->customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        return $this->handle($wooCommerceUser, $this->validatedData);
     }
 
     public function asCommand(Command $command): void
