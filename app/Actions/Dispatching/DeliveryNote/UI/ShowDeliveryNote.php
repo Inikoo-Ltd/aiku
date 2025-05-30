@@ -230,12 +230,12 @@ class ShowDeliveryNote extends OrgAction
                 [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('Settled'),
-                    'label'   => __('Settled'),
+                    'tooltip' => __('Dispatch'),
+                    'label'   => __('Dispatch'),
                     'key'     => 'action',
                     'route'   => [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.delivery-note.state.settled',
+                        'name'       => 'grp.models.delivery-note.state.dispatched',
                         'parameters' => [
                             'deliveryNote' => $deliveryNote->id
                         ]

@@ -14,13 +14,13 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateDeliveryNoteStateToSettled extends OrgAction
+class UpdateDeliveryNoteStateToDispatched extends OrgAction
 {
     use WithActionUpdate;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        data_set($modelData, 'settled_at', now());
+        data_set($modelData, 'dispatched_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
 
         return $this->update($deliveryNote, $modelData);
