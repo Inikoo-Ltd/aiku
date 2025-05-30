@@ -151,7 +151,7 @@ const valueTableFilter = ref({})
                             :routeTarget="data.shopify_upload_portfolio"
                             label="Upload"
                             icon="fal fa-upload"
-                            type="secondary"
+                            type="positive"
                             size="xs"
                             @success="() => set(props.progressToUploadToShopify, [data.id], 'loading')"
                         />

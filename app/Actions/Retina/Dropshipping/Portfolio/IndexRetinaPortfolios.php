@@ -138,7 +138,8 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                     'batchDeletePortfolioRoute' => [
                         'name' => 'retina.models.portfolio.batch.delete',
-                        'parameters' => []
+                        'parameters' => [],
+                        'method' => 'delete'
                     ],
                     // 'listPortfolioUnUploadedRoute' => [
                     //     'name' => 'retina.models.portfolio.delete',

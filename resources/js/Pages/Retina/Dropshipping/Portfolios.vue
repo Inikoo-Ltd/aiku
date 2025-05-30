@@ -56,6 +56,7 @@ const props = defineProps<{
 		bulk_upload: routeType
 		itemRoute: routeType
 		updatePortfolioRoute: routeType
+		batchDeletePortfolioRoute: routeType
 	}
 	platform_user_id: {
 
@@ -307,7 +308,8 @@ const bulkUpload = () => {
 
 	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
-	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto">
+	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto py-43">
+		<!-- Head: step 0 -->
 		<div v-if="step.current === 0" class="flex justify-between">
 			<div class="relative">
 			</div>
@@ -324,6 +326,7 @@ const bulkUpload = () => {
 			</div>
 		</div>
 
+		<!-- Head: step 1 -->
 		<div v-if="step.current == 1" class="grid grid-cols-4">
 			<div class="relative">
 				<Button
@@ -354,6 +357,7 @@ const bulkUpload = () => {
 		</div>
 		
 
+		<!-- Head: step 2 -->
 		<div v-if="step.current == 2" class="grid grid-cols-4">
 			<div class="relative">
 				<Button
@@ -374,27 +378,33 @@ const bulkUpload = () => {
 
 			<div class="relative space-x-2 space-y-1 text-right">
 				<!-- <Button
-					v-if="step.current == 2 && selectedPortfoliosToSync?.length"
+					v-if="selectedPortfoliosToSync?.length"
 					aclick="step.current = 2"
 					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync.length + ')'"
 					xicon="faUpload"
 					type="delete"
-				/>
+				/> -->
 
 				<ButtonWithLink
-					:routeTarget="data.delete_portfolio"
-					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync.length + ')'"
+					v-if="selectedPortfoliosToSync?.length"
+					:routeTarget="routes.batchDeletePortfolioRoute"
+					:body="{
+						portfolios: selectedPortfoliosToSync.map((product: any) => product.id),
+					}"
+					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
 					type="delete"
-					size="xs"
-					@success="() => portfolios.splice(portfolios.indexOf(data), 1)"
-				/> -->
+					size="s"
+					@success="() => selectedPortfoliosToSync = []"
+				/>
 				
 				<Button
-					v-if="step.current == 2 && selectedPortfoliosToSync?.length"
+					v-if="selectedPortfoliosToSync?.length"
 					@click="() => bulkUpload()"
-					:label="trans('Sync to Shopify') + ' (' + selectedPortfoliosToSync.length + ')'"
+					:label="trans('Sync to Shopify') + ' (' + selectedPortfoliosToSync?.length + ')'"
 					:icon="faUpload"
-					type="secondary"
+					size="s"
+					type="positive"
+
 				/>
 			</div>
 		</div>
