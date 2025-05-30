@@ -67,30 +67,35 @@ const layout = inject("layout", layoutStructure);
 const isModalOpen = ref<string | boolean>(false);
 const websiteInput = ref<string | null>(null);
 const isLoading = ref<string | boolean>(false);
-const onCreateStoreShopify = () => {
-    router[props.type_shopify.createRoute.method || "post"](
-        route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
-        {
-            name: websiteInput.value
-        },
-        {
-            onStart: () => isLoading.value = true,
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error,
-                    type: "error"
-                });
-            },
-            onSuccess: () => {
-                // window.open(props.type_shopify.connectRoute?.url + "?shop=" + websiteInput.value + props.type_shopify.shopify_url, "_blank");
+const errorShopify = ref('')
+const onCreateStoreShopify = async () => {
+    errorShopify.value = ''
+    isLoading.value = true
+    try {
+        const data = await axios['post'](
+            route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
+            {
+                name: websiteInput.value
+            }
+        )
+        // console.log("dazzta", data)
+        isModalOpen.value = false;
+        websiteInput.value = null;
+        router.reload({
+            only: ['total_channels']
+        });
+        window.open(data.data, "_blank");
 
-                isModalOpen.value = false;
-                websiteInput.value = null;
-            },
-            onFinish: () => isLoading.value = false
-        }
-    );
+    } catch (error) {
+        errorShopify.value = error.response?.data?.message
+        notify({
+            title: trans("Something went wrong"),
+            text: error.response?.data?.message,
+            type: "error"
+        });
+    }
+    isLoading.value = false
+
 };
 
 // Section: Woocommerce
@@ -204,7 +209,7 @@ const onSubmitWoocommerce = async () => {
 
     <!-- Modal: Shopify -->
     <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
-        <div class="h-40">
+        <div class="h-fit">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
                     {{ trans("Select your store name") }}
@@ -215,11 +220,23 @@ const onSubmitWoocommerce = async () => {
                 </div>
             </div>
 
-            <PureInputWithAddOn v-model="websiteInput" :leftAddOn="{
-                icon: 'fal fa-globe'
-            }" :rightAddOn="{
+            <PureInputWithAddOn
+                v-model="websiteInput"
+                @update:model-value="() => errorShopify = ''"
+                :leftAddOn="{
+                    icon: 'fal fa-globe'
+                }"
+                :rightAddOn="{
                     label: shopify_url
-                }" @keydown.enter="() => onCreateStoreShopify()" />
+                }"
+                @keydown.enter="() => onCreateStoreShopify()"
+            />
+
+            <Transition name="slide-to-right">
+                <div v-if="errorShopify" class="text-red-500 italic text-sm mt-2">
+                    *{{ errorShopify }}
+                </div>
+            </Transition>
 
             <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6" />
         </div>
