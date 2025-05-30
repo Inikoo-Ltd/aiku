@@ -59,16 +59,25 @@ class DropshippingPortfolioResource extends JsonResource
         }
 
         $shopifyUploadRoute = [];
-        $platformProductId = [];
+        $wooUploadRoute = [];
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $platformProductId = [
-                'platform_product_id' => $this->platform_product_id
-            ];
-
             $shopifyUploadRoute = [
                 'shopify_upload_portfolio' => [
                     'method' => 'post',
                     'name'       => 'retina.models.dropshipping.shopify.single_upload',
+                    'parameters' => [
+                        'shopifyUser' => $this->customerSalesChannel->user->id,
+                        'portfolio' => $this->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($this->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
+            $wooUploadRoute = [
+                'woo_upload_portfolio' => [
+                    'method' => 'post',
+                    'name'       => 'retina.models.dropshipping.woo.single_upload',
                     'parameters' => [
                         'shopifyUser' => $this->customerSalesChannel->user->id,
                         'portfolio' => $this->id
@@ -93,7 +102,7 @@ class DropshippingPortfolioResource extends JsonResource
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
-            ...$platformProductId,
+            'platform_product_id' => $this->platform_product_id,
             'category' => $category,
             'platform' => $this->platform->type,
             'delete_portfolio' => [
@@ -105,6 +114,7 @@ class DropshippingPortfolioResource extends JsonResource
                 ]
             ],
             ...$shopifyUploadRoute,
+            ...$wooUploadRoute,
         ];
     }
 }
