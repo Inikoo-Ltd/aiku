@@ -46,7 +46,7 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     return $webpage;
                 }
 
-                try {
+            //    try {
                     if ($webpage->is_fixed) {
                         data_forget($webpageData, 'webpage.code');
                         data_forget($webpageData, 'webpage.url');
@@ -70,6 +70,7 @@ class FetchAuroraWebpages extends FetchAuroraAction
                         $lastPublishedAt = Carbon::parse($lastPublishedAt);
                     }
 
+
                     $webpage = UpdateWebpage::make()->action(
                         webpage: $webpage,
                         modelData: $webpageData['webpage'],
@@ -78,7 +79,9 @@ class FetchAuroraWebpages extends FetchAuroraAction
                         audit: false
                     );
 
+
                     if (in_array('web_blocks', $this->with)) {
+
                         FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
                         $currentPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
                         if ($currentPublishedAt) {
@@ -95,11 +98,11 @@ class FetchAuroraWebpages extends FetchAuroraAction
                         }
                     }
                     $this->recordChange($organisationSource, $webpage->wasChanged());
-                } catch (Exception $e) {
-                    $this->recordError($organisationSource, $e, $webpageData['webpage'], 'Webpage', 'update');
-
-                    return null;
-                }
+//                } catch (Exception $e) {
+//                    $this->recordError($organisationSource, $e, $webpageData['webpage'], 'Webpage', 'update');
+//
+//                    return null;
+//                }
             } else {
                 if (Arr::get($webpageData, 'is_home_logout')) {
                     return null;

@@ -86,8 +86,11 @@ class FetchAuroraWebBlocks
         }
 
         $oldMigrationsChecksum = $webpage->webBlocks()->get()->pluck('migration_checksum', 'migration_checksum')->toArray();
+
         if (isset($webpage->migration_data)) {
             $migrationTypes = ['both', 'loggedIn', 'loggedOut'];
+
+
 
             $allMigrationsDataByType = [];
             foreach ($migrationTypes as $type) {
@@ -118,6 +121,7 @@ class FetchAuroraWebBlocks
                     }
                 }
             }
+
 
             $this->processMigrationsData($migrationsData, $oldMigrationsChecksum);
         }
@@ -184,7 +188,7 @@ class FetchAuroraWebBlocks
 
 
 
-        //     print "***>>".$auroraBlock["type"]."<<<***\n";
+        //print "***>>".$auroraBlock["type"]."<<<***\n";
 
         switch ($auroraBlock["type"]) {
             case "images":
@@ -215,9 +219,25 @@ class FetchAuroraWebBlocks
                 $layout       = $this->processIFrameData($auroraBlock);
                 break;
             case "product":
-                $webBlockType = $group->webBlockTypes()->where("slug", "product")->first();
+                $webBlockType = $group->webBlockTypes()->where("slug", "product-1")->first();
                 $layout       = $this->processProductData($auroraBlock);
-                $models[]     = Product::find($webpage->model_id);
+
+
+                $fieldValue=Arr::get($webBlockType->data,'fieldValue');
+
+                data_set($layout, 'data.fieldValue', $fieldValue);
+
+
+                /** @var Product $product */
+                $product=$webpage->model;
+
+                $product->update(
+                    [
+                        'description'=>Arr::get($layout,'data.fieldValue.value.text')
+                    ]
+                );
+
+                $models[]     = $product;
                 break;
 
             case "category_products":
