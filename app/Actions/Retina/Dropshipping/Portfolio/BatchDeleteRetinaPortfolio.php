@@ -23,7 +23,7 @@ class BatchDeleteRetinaPortfolio extends RetinaAction
     use WithActionUpdate;
 
 
-    private Portfolio $portfolio;
+    private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
@@ -36,7 +36,7 @@ class BatchDeleteRetinaPortfolio extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->portfolio->customer_id == $this->customer->id;
+        return $this->customerSalesChannel->customer_id == $this->customer->id;
     }
 
     public function rules(): array
@@ -49,6 +49,7 @@ class BatchDeleteRetinaPortfolio extends RetinaAction
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
 
         $this->handle($customerSalesChannel, $this->validatedData);
