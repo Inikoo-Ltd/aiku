@@ -107,12 +107,21 @@ class IndexRetinaPortfolios extends RetinaAction
                     'icon'    => 'fal fa-cube'
                 ],
                 'routes'    => [
-                    'bulk_upload'  => $this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL ? [
-                        'name'       => 'retina.models.dropshipping.shopify.batch_upload',
-                        'parameters' => [
-                            'shopifyUser' => $this->customerSalesChannel->user->id
-                        ]
-                    ] : null,
+                    'bulk_upload'  => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name'       => 'retina.models.dropshipping.shopify.batch_upload',
+                            'parameters' => [
+                                'shopifyUser' => $this->customerSalesChannel->user->id
+                            ]
+                        ],
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name'       => 'retina.models.dropshipping.woo.batch_upload',
+                            'parameters' => [
+                                'wooCommerceUser' => $this->customerSalesChannel->user->id
+                            ]
+                        ],
+                        default => false
+                    },
                     'itemRoute' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
                         'parameters' => [
