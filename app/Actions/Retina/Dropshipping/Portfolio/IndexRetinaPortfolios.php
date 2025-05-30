@@ -50,7 +50,8 @@ class IndexRetinaPortfolios extends RetinaAction
             $query->where('item_type', class_basename(Product::class));
         }
 
-        return $query->allowedFilters([$unUploadedFilter])
+        return $query->defaultSort('-id')
+            ->allowedFilters([$unUploadedFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

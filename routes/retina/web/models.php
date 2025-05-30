@@ -15,7 +15,6 @@ use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfolioToSh
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
-use App\Actions\Dropshipping\WooCommerce\Product\StoreProductWooCommerce;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
@@ -209,7 +208,6 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('shopify-sync-all-stored-items', SyncRetinaStoredItemsFromApiProductsShopify::class)->name('shopify_sync_all_stored_items');
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
-    Route::post('wc-products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
 
     Route::delete('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
     Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');

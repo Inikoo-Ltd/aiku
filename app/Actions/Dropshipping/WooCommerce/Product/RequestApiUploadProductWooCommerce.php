@@ -47,7 +47,7 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
             $wooCommerceProduct = [
                 'name' => $portfolio->customer_product_name,
                 'type' => 'simple',
-                'regular_price' => (string) $portfolio->customer_price,
+                'regular_price' => (string)$portfolio->customer_price,
                 'description' => $portfolio->customer_description,
                 'short_description' => $portfolio->customer_description,
                 'categories' => $portfolio->item->family?->name,
@@ -61,14 +61,8 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
 
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
-            // $portfolio = UpdatePortfolio::make()->action($portfolio, []);
-
-            $wooCommerceUser->products()->attach($product->id, [
-                'woo_commerce_user_id' => $wooCommerceUser->id,
-                'product_type' => class_basename($product),
-                'product_id' => $product->id,
-                'portfolio_id' => $portfolio->id,
-                'woo_commerce_product_id' => Arr::get($result, 'id')
+            $portfolio = UpdatePortfolio::make()->action($portfolio, [
+                'platform_product_id' => Arr::get($result, 'id')
             ]);
 
             UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
