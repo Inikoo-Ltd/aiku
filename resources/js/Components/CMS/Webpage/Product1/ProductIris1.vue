@@ -16,6 +16,7 @@ const props = defineProps<{
     modelValue: any
 	webpageData?: any
 	blockData?: Object
+    fieldValue: {}
 }>()
 
 console.log('poprs',props)
@@ -102,6 +103,8 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
 </script>
 
 <template>
+    <pre>{{ fieldValue }}</pre>
+    <pre>{{ modelValue }}</pre>
     <div id="app" class="mx-auto max-w-5xl py-8 text-gray-800 overflow-hidden">
         <div class="grid grid-cols-5 gap-x-10 mb-12">
             <!-- Left Column (3/5) -->
