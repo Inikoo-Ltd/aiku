@@ -16,7 +16,7 @@ const products = [
     stock: 41,
     inStock: true,
     memberOnly: true,
-    image: 'https://bubblzzeg.com/cdn/shop/products/Bubblzz-BubblegumBathbomb.jpg?v=1597828707&width=360'
+    image: ''
   },
   {
     title: 'Macrame Soft Chandelier - Black',
@@ -29,7 +29,7 @@ const products = [
     stock: 41,
     inStock: true,
     memberOnly: true,
-    image: 'https://bubblzzeg.com/cdn/shop/products/Bubblzz-BubblegumBathbomb.jpg?v=1597828707&width=360'
+    image: ''
   },
   {
     title: 'Macrame Large Drop Chandelier - Natural',
@@ -42,7 +42,7 @@ const products = [
     stock: 41,
     inStock: true,
     memberOnly: true,
-    image: 'https://bubblzzeg.com/cdn/shop/products/Bubblzz-BubblegumBathbomb.jpg?v=1597828707&width=360'
+    image: ''
   },
   {
     title: 'Macrame Large Drop Chandelier - Black',
@@ -56,7 +56,7 @@ const products = [
     inStock: false,
     bestseller : true,
     memberOnly: true,
-    image: 'https://bubblzzeg.com/cdn/shop/products/Bubblzz-BubblegumBathbomb.jpg?v=1597828707&width=360'
+    image: ''
   },
 ]
 </script>
