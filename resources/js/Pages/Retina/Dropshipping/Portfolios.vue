@@ -66,6 +66,8 @@ const props = defineProps<{
 	}
 }>()
 
+const step = ref(props.step)
+
 const locale = inject('locale', aikuLocaleStructure)
 
 // const onCancelOrder = () => {
@@ -166,7 +168,7 @@ const onUploadToShopify = () => {
 				text: trans("Portfolios successfully uploaded to Shopify"),
 				type: "success",
 			})
-			props.step.current = 1
+			step.value.current = 1
 		},
 		onFinish: () => {
 			isLoadingUpload.value = false
@@ -192,7 +194,7 @@ const fetchIndexUnuploadedPortfolios = async () => {
 	stepLoading.value = false
 }
 
-watch(() => props.step.current, async (newStep, oldStep) => {
+watch(() => step.value.current, async (newStep, oldStep) => {
 	// console.log('Step changed to:', oldStep, newStep)
 	if (newStep === 1 || newStep === 2) {
 		fetchIndexUnuploadedPortfolios()
@@ -394,7 +396,7 @@ const bulkUpload = () => {
 					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
 					type="delete"
 					size="s"
-					@success="() => selectedPortfoliosToSync = []"
+					@success="() => console.log('qqqqqqqqq')"
 				/>
 				
 				<Button
@@ -498,6 +500,7 @@ const bulkUpload = () => {
 						xxplatid="props.platform_user_id"
 						v-model="selectedPortfoliosToSync"
 						@updateSelectedProducts="updateSelectedProducts"
+						@portfolioDeleted="(portfolio) => portfoliosList.splice(portfoliosList.indexOf(portfolio), 1)"
 						amounted="() => fetchIndexUnuploadedPortfolios()"
 						:progressToUploadToShopify
 					/>
