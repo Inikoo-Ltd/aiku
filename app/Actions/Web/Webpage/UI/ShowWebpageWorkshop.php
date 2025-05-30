@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\WebpageResource;
+use App\Http\Resources\Web\WebpageWorkshopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -27,7 +28,6 @@ class ShowWebpageWorkshop extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
-        $this->scope = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $webpage;
@@ -36,7 +36,6 @@ class ShowWebpageWorkshop extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
-        $this->scope = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $webpage;
@@ -86,7 +85,8 @@ class ShowWebpageWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'webpage'     => WebpageResource::make($webpage)->getArray(),
+                'webpage'     => WebpageWorkshopResource::make($webpage)->getArray(),
+
 
                 'webBlockTypes' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get()
