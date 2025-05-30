@@ -119,6 +119,16 @@ class ShowFamily extends OrgAction
                         'title' => __('department')
                     ],
                     'actions' => $this->getActions($family, $request),
+                    'parentTag' => [
+                        [
+                            'label' => $family->department->name,
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'icon'  => 'fal fa-folder-tree'
+                        ]
+                    ],
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
 
