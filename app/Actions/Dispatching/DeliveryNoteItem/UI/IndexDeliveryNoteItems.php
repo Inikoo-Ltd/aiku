@@ -94,7 +94,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 $table->column(key: 'quantity_picked', label: __('Quantity Picked'), canBeHidden: false, sortable: true, searchable: true);
                 if ($parent->state == DeliveryNoteStateEnum::HANDLING) {
                     $table->column(key: 'quantity_to_pick', label: __('Todo'), canBeHidden: false, sortable: true, searchable: true);
-                } elseif ($parent->state == DeliveryNoteStateEnum::PACKED) {
+                } elseif ($parent->state == DeliveryNoteStateEnum::PACKED || $parent->state == DeliveryNoteStateEnum::DISPATCHED || $parent->state == DeliveryNoteStateEnum::FINALISED) {
                     $table->column(key: 'quantity_packed', label: __('Quantity Packed'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
