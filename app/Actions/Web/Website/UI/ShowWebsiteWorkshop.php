@@ -95,15 +95,13 @@ class ShowWebsiteWorkshop extends OrgAction
                         fn () => GetWebsiteWorkshopProduct::run($website, $product)
                     );
         }
-
-        // if (!blank($department)) {
-        //     $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
-        //             ?
-        //             fn () => GetWebsiteWorkshopFamily::run($website, $department)
-        //             : Inertia::lazy(
-        //                 fn () => GetWebsiteWorkshopFamily::run($website, $department)
-        //             );
-        // }
+        $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
+                ?
+                fn () => GetWebsiteWorkshopFamily::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopFamily::run($website)
+                );
+    
 
         $tabs[WebsiteWorkshopTabsEnum::DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT->value
                 ?

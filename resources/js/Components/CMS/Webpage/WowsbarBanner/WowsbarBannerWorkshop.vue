@@ -20,6 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImages, faPlus } from "@fas"
 import Image from "@/Components/Image.vue"
 import Paginator from "primevue/paginator"
+import { faPencil } from "@far"
 
 library.add(faPresentation, faLink, faExternalLink, faSpinnerThird)
 
@@ -220,13 +221,13 @@ onMounted(() => {
 			<SliderLandscape
 				v-if="data.type == 'landscape'"
 				:data="data.compiled_layout"
-				:production="true" />
-			<SliderSquare v-else :data="data.compiled_layout" :production="true" />
+				:production="true" :view="screenType"/>
+			<SliderSquare v-else :data="data.compiled_layout" :production="true":view="screenType" />
 
 			<!-- Icon: Edit -->
 			<div class="absolute top-2 right-2 flex space-x-2 z-10">
 				<Button
-					:icon="['far', 'fa-pencil']"
+					:icon="faPencil"
 					type="tertiary"
 					size="xs"
 					@click="
