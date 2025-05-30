@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
-import { faStar, faCircle, faChevronLeft, faChevronRight } from "@fas"
+import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, watch, computed, provide, inject, toRaw } from "vue"
 import Modal from '@/Components/Utils/Modal.vue'
@@ -14,15 +14,16 @@ import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
 import SideMenuFamilyWorkshop from "./SideMenuFamilyWorkshop.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
+import { notify } from "@kyvg/vue3-notification"
 
-library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight)
+library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
 const props = defineProps<{
   data: {
     web_block_types: any;
     autosaveRoute: routeType;
     layout: any;
-    sub_departments: any[];
+    families: any[];
   }
 }>()
 
@@ -58,7 +59,7 @@ const autosave = () => {
   delete payload.data?.fieldValue?.sub_departments
   console.log('Autosaving layout:', payload);
 
- /*  router.patch(
+  router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
     {
@@ -84,7 +85,7 @@ const autosave = () => {
         })
       }
     }
-  ) */
+  )
 }
 
 
@@ -101,7 +102,7 @@ provide("currentView", currentView);
         :webBlockTypes="data.web_block_types" 
         @auto-save="autosave"
         @set-up-template="onPickTemplate" 
-        :dataList="data.sub_departments" 
+        :dataList="data.families" 
         @onChangeDepartment="onChangeDepartment"/>
     </div>
 

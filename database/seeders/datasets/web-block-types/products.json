@@ -1,7 +1,7 @@
 {
 	"scope": "webpage",
-	"slug": "products",
-	"code": "products",
+	"slug": "products-1",
+	"code": "products-1",
 	"name": "List products",
 	"category" : "list_products",
 	"icon": ["fal", "cube"],

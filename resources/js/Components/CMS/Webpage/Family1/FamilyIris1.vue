@@ -6,6 +6,7 @@ import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Family1Render from './Family1Render.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
 const props = defineProps<{
@@ -20,18 +21,19 @@ const props = defineProps<{
   blockData?: Object
 }>()
 
-
 console.log(props)
 </script>
 
 <template>
   <div v-if="props.fieldValue.families && props.fieldValue.families.length" class="px-4 py-10">
     <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
-    <div class="flex gap-4 overflow-x-auto scrollbar-hide">
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       <div v-for="(item, index) in props.fieldValue.families" :key="index">
         <Family1Render :data="item" />
       </div>
     </div>
   </div>
-   <EmptyState v-else :data="{title:'Empty Families'}" />
+
+  <EmptyState v-else :data="{ title: 'Empty Families' }" />
 </template>
