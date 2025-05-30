@@ -24,6 +24,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Http\Resources\Platform\PlatformsResource;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
@@ -173,7 +174,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     }
                 ],
                 'platform_user_id' => $this->customerSalesChannel->user?->id,
-                'platform_type' => $this->customerSalesChannel->platform->type,
+                'platform_data' => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products' => DropshippingPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));

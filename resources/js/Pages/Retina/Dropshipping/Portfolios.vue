@@ -64,6 +64,12 @@ const props = defineProps<{
 	step: {
 		current: number
 	}
+	platform_data: {
+		id: number
+		code: string
+		name: string
+		type: string
+	}
 }>()
 
 const step = ref(props.step)
@@ -166,7 +172,8 @@ const onUploadToShopify = () => {
 			router.reload({ only: ['pageHead', 'products'] })
 			notify({
 				title: trans("Success!"),
-				text: trans("Portfolios successfully uploaded to Shopify"),
+				// text: trans("Portfolios successfully uploaded to Shopify"),
+				text: `Portfolios successfully uploaded to ${props.platform_data.name}`,
 				type: "success",
 			})
 			step.value.current = 1
@@ -391,7 +398,8 @@ const bulkDelete = () => {
 			<div class="text-center col-span-2">
 				<div class="font-bold text-2xl">{{ trans("Edit portfolios") }}</div>
 				<div class="text-gray-500 text-sm italic tracking-wide">
-					{{ trans("Edit the portfolios before syncing them to Shopify if needed") }}
+					<!-- {{ trans("Edit the portfolios before syncing them to Shopify if needed") }} -->
+					{{ `Edit the portfolios before syncing them to ${platform_data.name} if needed` }}
 				</div>
 			</div>
 
@@ -420,7 +428,8 @@ const bulkDelete = () => {
 			</div>
 
 			<div class="text-center col-span-2">
-				<div class="font-bold text-2xl">{{ trans("Sync to Shopify") }}</div>
+				<!-- <div class="font-bold text-2xl">{{ trans("Sync to Shopify") }}</div> -->
+				<div class="font-bold text-2xl">{{ `Sync to ${platform_data.name}` }}</div>
 				<div class="text-gray-500 text-sm italic tracking-wide">
 					{{ trans("You can select them via checkbox to bulk syncing or sync 1 by 1.") }}
 				</div>
@@ -462,7 +471,8 @@ const bulkDelete = () => {
 				<Button
 					v-if="selectedPortfoliosToSync?.length"
 					@click="() => bulkUpload()"
-					:label="trans('Sync to Shopify') + ' (' + selectedPortfoliosToSync?.length + ')'"
+					xlabel="trans('Sync to Shopify') + ' (' + selectedPortfoliosToSync?.length + ')'"
+					:label="`Sync to ${platform_data} (${selectedPortfoliosToSync?.length})`"
 					:icon="faUpload"
 					size="s"
 					type="positive"
@@ -537,7 +547,8 @@ const bulkDelete = () => {
 					<Button
 						v-if="step.current == 1"
 						@click="step.current = 2"
-						:label="trans('Next step (sync to Shopify)')"
+						xlabel="trans('Next step (sync to Shopify)')"
+						:label="`Next step (sync to ${platform_data.name})`"
 						full
 						:iconRight="faArrowRight"
 						type="primary"

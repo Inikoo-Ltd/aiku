@@ -136,9 +136,18 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="description" header="Description"></Column>
+        <Column field="description" header="Description">
+            <template #body="{ data }">
+                <div v-if="data.description" v-html="data.description" class="h-fit max-h-32 overflow-y-auto shadow border border-gray-300 px-1 rounded">
+                    
+                </div>
+                <div v-else class="text-gray-400 italic text-sm">
+                    (No description)
+                </div>
+            </template>
+        </Column>
 
-        <Column field="description" header="Action" style="text-align: right;">
+        <Column field="action" header="Action" style="text-align: right;">
             <template #body="{ data }">
                 <div class="flex gap-x-2 gap-y-1 flex-wrap justify-end">
                     <ConditionIcon v-if="get(props.progressToUploadToShopify, [data.id], null)" :state="get(props.progressToUploadToShopify, [data.id], undefined)" class="text-xl mx-auto" />
