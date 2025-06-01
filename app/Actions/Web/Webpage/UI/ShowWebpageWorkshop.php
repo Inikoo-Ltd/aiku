@@ -11,7 +11,6 @@ namespace App\Actions\Web\Webpage\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\WebBlockTypesResource;
-use App\Http\Resources\Web\WebpageResource;
 use App\Http\Resources\Web\WebpageWorkshopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;

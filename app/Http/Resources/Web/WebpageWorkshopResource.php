@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 30 May 2025 16:59:28 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -7,10 +8,6 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Web\WebBlock\GetBanner;
-use App\Actions\Web\WebBlock\GetWebBlockDepartments;
-use App\Actions\Web\WebBlock\GetWebBlockFamilies;
-use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\Webpage\UI\IndexChangesWebpages;
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
 use App\Enums\Web\Webpage\WebpageTypeEnum;

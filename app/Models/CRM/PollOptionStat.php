@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_customers_trade_state_many
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_customers_status_pre_registration
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOptionStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOptionStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOptionStat query()

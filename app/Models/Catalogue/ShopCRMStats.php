@@ -82,6 +82,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_web_users_auth_type_aurora
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_customers_status_pre_registration
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static Builder<static>|ShopCRMStats newModelQuery()
  * @method static Builder<static>|ShopCRMStats newQuery()
