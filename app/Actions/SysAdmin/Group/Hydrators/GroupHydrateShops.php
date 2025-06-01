@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 06 Jun 2024 14:48:46 Central European Summer Time, Plane Malaga - Abu Dhabi
+ * Created: Thu, 06 Jun 2024 14:48:46 Central European Summer Time, Plane Malaga-Abu Dhabi
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -59,6 +59,23 @@ class GroupHydrateShops implements ShouldBeUnique
                 models: Shop::class,
                 where: function ($q) use ($group) {
                     $q->where('group_id', $group->id);
+                }
+            )
+        );
+
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'current_shops',
+                field: 'type',
+                enum: ShopTypeEnum::class,
+                models: Shop::class,
+                where: function ($q) use ($group) {
+                    $q->where('group_id', $group->id)
+                        ->whereIn('state', [
+                            ShopStateEnum::OPEN,
+                            ShopStateEnum::CLOSING_DOWN,
+                        ]);
                 }
             )
         );

@@ -12,10 +12,10 @@ use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class OrganisationHydrateShopTypeDeliveryNotes implements ShouldBeUnique
@@ -32,37 +32,26 @@ class OrganisationHydrateShopTypeDeliveryNotes implements ShouldBeUnique
 
     public function handle(Organisation $organisation, ShopTypeEnum $shopTypeEnum): void
     {
-        $shopsIds = $organisation->shops()
-            ->where('shops.type', $shopTypeEnum->value)
-            ->pluck('id');
 
-        $stats = $this->getDeliveryNotesStats($organisation);
+        if ($shopTypeEnum == ShopTypeEnum::FULFILMENT) {
+            return;
+        }
 
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'type',
-                enum: DeliveryNoteTypeEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($organisation, $shopsIds) {
-                    $q->where('organisation_id', $organisation->id)->whereIn('shop_id', $shopsIds);
-                }
-            )
-        );
+        $stats = [];
 
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'state',
-                enum: DeliveryNoteStateEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($organisation, $shopsIds) {
-                    $q->where('organisation_id', $organisation->id)->whereIn('shop_id', $shopsIds);
-                }
-            )
-        );
+
+
+        $count = DeliveryNote::selectRaw("delivery_notes.state, count(*) as total")
+            ->leftJoin('shops', 'shops.id', '=', 'delivery_notes.shop_id')
+           ->where('shops.type', $shopTypeEnum->value)
+            ->where('delivery_notes.organisation_id', $organisation->id)
+            ->groupBy('delivery_notes.state')
+            ->pluck('total', 'delivery_notes.state')->all();
+        foreach (DeliveryNoteStateEnum::cases() as $case) {
+
+            $stats["number_".$shopTypeEnum->snake()."_shop_delivery_notes_state_".$case->snake()] = Arr::get($count, $case->value, 0);
+        }
+
 
         $organisation->orderingStats()->update($stats);
     }

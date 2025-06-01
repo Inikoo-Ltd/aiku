@@ -5,18 +5,19 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { capitalize } from "@/Composables/capitalize"
-import Tabs from '@/Components/Navigation/Tabs.vue'
-import { computed, ref } from 'vue'
-import type { Component } from 'vue'
-import { useTabChange } from '@/Composables/tab-change'
+import { Head } from "@inertiajs/vue3";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { capitalize } from "@/Composables/capitalize";
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import { computed, ref } from "vue";
+import type { Component } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
 
-import { faHandsHelping, faBan, faCheckCircle, faList } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import DispatchDashboard from '@/Components/Warehouse/DispatchDashboard.vue'
-library.add(faHandsHelping, faBan, faCheckCircle, faList)
+import { faHandsHelping, faBan, faCheckCircle, faList, faCheck } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue";
+
+library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck);
 
 
 const props = defineProps<{
@@ -43,18 +44,18 @@ const props = defineProps<{
             }[]
         }
     }
-}>()
+}>();
 
 
-let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component: Component = computed(() => {
     const components = {
-        ['dashboard' as string]: DispatchDashboard,
-    }
+        ["dashboard" as string]: DispatchDashboard
+    };
 
-    return components[currentTab.value]
-})
+    return components[currentTab.value];
+});
 
 </script>
 

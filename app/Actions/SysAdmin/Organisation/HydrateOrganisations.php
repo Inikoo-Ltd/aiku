@@ -87,6 +87,7 @@ class HydrateOrganisations extends HydrateModel
 
     public function handle(Organisation $organisation): void
     {
+
         OrganisationHydrateAudits::run($organisation);
         OrganisationHydrateEmployees::run($organisation);
         OrganisationHydrateShops::run($organisation);
@@ -159,7 +160,10 @@ class HydrateOrganisations extends HydrateModel
 
 
             foreach (ShopTypeEnum::cases() as $type) {
-                OrganisationHydrateShopTypeDeliveryNotes::run($organisation, $type);
+                if ($type != ShopTypeEnum::FULFILMENT) {
+                    OrganisationHydrateShopTypeDeliveryNotes::run($organisation, $type);
+                }
+
             }
 
 

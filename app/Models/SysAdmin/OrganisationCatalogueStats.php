@@ -152,6 +152,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_products_with_variants_trade_config_force_offline
  * @property int $number_products_with_variants_trade_config_force_out_of_stock
  * @property int $number_products_with_variants_trade_config_force_for_sale
+ * @property int $number_current_shops_type_b2b
+ * @property int $number_current_shops_type_b2c
+ * @property int $number_current_shops_type_fulfilment
+ * @property int $number_current_shops_type_dropshipping
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCatalogueStats newModelQuery()
  * @method static Builder<static>|OrganisationCatalogueStats newQuery()
