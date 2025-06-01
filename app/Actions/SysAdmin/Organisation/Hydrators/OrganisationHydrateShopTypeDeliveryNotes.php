@@ -2,14 +2,15 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 15 Sept 2024 21:29:12 Malaysia Time, Taipei, Taiwan
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sun, 01 Jun 2025 09:58:36 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -17,21 +18,26 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
+class OrganisationHydrateShopTypeDeliveryNotes implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 
-    public function getJobUniqueId(Organisation $organisation): string
+    public function getJobUniqueId(Organisation $organisation, ShopTypeEnum $shopTypeEnum): string
     {
-        return $organisation->id;
+        return $organisation->id.'_'.$shopTypeEnum->value;
     }
 
-    public function handle(Organisation $organisation): void
-    {
 
-        $stats = [];
+    public function handle(Organisation $organisation, ShopTypeEnum $shopTypeEnum): void
+    {
+        $shopsIds = $organisation->shops()
+            ->where('shops.type', $shopTypeEnum->value)
+            ->pluck('id');
+
+        $stats = $this->getDeliveryNotesStats($organisation);
+
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
@@ -39,8 +45,8 @@ class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
                 field: 'type',
                 enum: DeliveryNoteTypeEnum::class,
                 models: DeliveryNote::class,
-                where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
+                where: function ($q) use ($organisation, $shopsIds) {
+                    $q->where('organisation_id', $organisation->id)->whereIn('shop_id', $shopsIds);
                 }
             )
         );
@@ -52,8 +58,8 @@ class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
                 field: 'state',
                 enum: DeliveryNoteStateEnum::class,
                 models: DeliveryNote::class,
-                where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
+                where: function ($q) use ($organisation, $shopsIds) {
+                    $q->where('organisation_id', $organisation->id)->whereIn('shop_id', $shopsIds);
                 }
             )
         );
