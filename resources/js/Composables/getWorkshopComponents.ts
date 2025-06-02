@@ -51,6 +51,7 @@ export const getComponent = (componentName: string) => {
         'cta2': CTA2,
         'cta3': CTA3,
         'family-1': FamilyIris1,
+        'families-1': FamilyIris1,
         "iframe": Iframe,
         'images': ImageWorkshop,
         "overview_aurora": Overview,
