@@ -28,7 +28,12 @@ class DuplicateModelHasWebBlock extends OrgAction
 
     public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
     {
-        $position = $modelHasWebBlocks->position + 1;
+        $position = null;
+        if($modelHasWebBlocks->webpage_id == $webpage->id){
+            $position = $modelHasWebBlocks->position + 1;
+        } else {
+            $position = Arr::pull($modelData, 'position', $webpage->modelHasWebBlocks()->max('position') + 1);
+        }
         $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
 
         if (!$webBlocks->isEmpty()) {
@@ -52,11 +57,11 @@ class DuplicateModelHasWebBlock extends OrgAction
         /** @var ModelHasWebBlocks $modelHasWebBlockCopy */
         $modelHasWebBlockCopy = $webpage->modelHasWebBlocks()->create(
             [
-                'group_id'        => $modelHasWebBlocks->group_id,
-                'organisation_id' => $modelHasWebBlocks->organisation_id,
-                'shop_id'         => $modelHasWebBlocks->shop_id,
-                'website_id'      => $modelHasWebBlocks->website_id,
-                'webpage_id'      => $modelHasWebBlocks->webpage_id,
+                'group_id'        => $webpage->group_id,
+                'organisation_id' => $webpage->organisation_id,
+                'shop_id'         => $webpage->shop_id,
+                'website_id'      => $webpage->website_id,
+                'webpage_id'      => $webpage->id,
                 'position'        => $position,
                 'model_id'        => $modelHasWebBlocks->model_id,
                 'model_type'      => $modelHasWebBlocks->model_type,
