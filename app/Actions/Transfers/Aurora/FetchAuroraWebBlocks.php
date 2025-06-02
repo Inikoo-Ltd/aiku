@@ -303,7 +303,7 @@ class FetchAuroraWebBlocks
                 $layout = $this->processProductsData($auroraBlock);
                 break;
 
-            case "category_categories":
+            case "category_categories_XX":
                 $webBlockType = $group->webBlockTypes()->where("slug", "department")->first();
                 $layout       = $this->processDepartmentData($webpage, $auroraBlock);
                 break;
@@ -415,7 +415,7 @@ class FetchAuroraWebBlocks
             || $code == "family"
             || $code == "department"
         ) {
-            if ($code == "family") {
+            if ($code == "family_XX") {
                 $items  = $layout['data']["fieldValue"]["value"]["items"];
                 $addOns = [];
                 foreach ($items as $item) {
@@ -428,7 +428,7 @@ class FetchAuroraWebBlocks
                 }
                 data_set($layout, "data.fieldValue.value.addOns", $addOns);
                 unset($layout['data']["fieldValue"]["value"]["items"]);
-            } elseif ($code == "department") {
+            } elseif ($code == "department_XX") {
                 $sections = $layout['data']["fieldValue"]["value"]["sections"];
                 foreach ($sections as $sectionPosition => $section) {
                     $items = $section['items'];
@@ -483,7 +483,7 @@ class FetchAuroraWebBlocks
                     $imageSource = $this->processImage($webBlock, $imageRawData, $webpage);
                     data_set($layout, 'data.fieldValue.button.container.properties.background.image', $imageSource);
                 }
-            } elseif ($code == "overview_aurora") {
+            } elseif ($code == "overview_aurora_XX") {
                 $imagesAurora = Arr::get($layout, 'data.fieldValue.images');
                 if ($imagesAurora) {
                     $imgSources = [];

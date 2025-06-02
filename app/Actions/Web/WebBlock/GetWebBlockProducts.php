@@ -28,14 +28,13 @@ class GetWebBlockProducts
         }
 
 
-        $families = DB::table('proucts')
+        $families = DB::table('products')
             ->leftJoin('webpages', function ($join) {
                 $join->on('products.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'Product');
             })
             ->select(['products.code', 'name', 'image_id', 'url', 'title'])
             ->where($field, $webpage->model_id)
-            ->where('show_in_website', true)
             ->get();
 
 

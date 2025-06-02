@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -33,32 +34,36 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
     protected function processSubDepartmentWebpages(Webpage $webpage, Command $command): void
     {
+        foreach ($webpage->webBlocks as $webblock) {
+            print $webblock->webBlockType->code."\n";
+        }
+
 
         /** @var ProductCategory $subDepartment */
         $subDepartment = $webpage->model;
 
-        $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
-
-        if ($productsWebBlock == 0) {
-            $command->error('Webpage '.$webpage->code.' Products Web Block not found');
-            $this->createWebBlock($webpage, 'products-1', $subDepartment);
-        } elseif ($productsWebBlock > 1) {
-            $command->error('Webpage '.$webpage->code.' MORE than 1 Products Web Block found');
-        } else {
-            $command->info('Webpage '.$webpage->code.' Products Web Block found');
-        }
-
-
         $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
 
-        if ($productsWebBlock == 0) {
+        if (count($productsWebBlock) == 0) {
             $command->error('Webpage '.$webpage->code.' Families Web Block not found');
             $this->createWebBlock($webpage, 'families-1', $subDepartment);
-        } elseif ($productsWebBlock > 1) {
+        } elseif (count($productsWebBlock) > 1) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 Families Web Block found');
-        } else {
-            $command->info('Webpage '.$webpage->code.' Families Web Block found');
         }
+
+        $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
+
+        if (count($productsWebBlock) == 0) {
+            $command->error('Webpage '.$webpage->code.' Products Web Block not found');
+            $this->createWebBlock($webpage, 'products-1', $subDepartment);
+        } elseif (count($productsWebBlock) > 1) {
+            $command->error('Webpage '.$webpage->code.' MORE than 1 Products Web Block found');
+        }
+
+
+
+
+        UpdateWebpageContent::run($webpage);
 
     }
 
@@ -67,7 +72,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('model_type', 'ProductCategory')->get();
+        $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'sub_department')->get();
 
 
         foreach ($webpagesID as $webpageID) {

@@ -104,21 +104,22 @@ class StoreWebpage extends OrgAction
             );
 
 
-            if (!$this->strict) {
+            if ($this->strict) {
                 $model = $webpage->model;
                 if ($model instanceof Product) {
                     $this->createWebBlock($webpage, 'product-1', $model);
                 } elseif ($model instanceof ProductCategory) {
                     if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                        $this->createWebBlock($webpage, 'families-1', $model);
-                        $this->createWebBlock($webpage, 'products-1', $model);
+                        $webpage = $this->createWebBlock($webpage, 'families-1', $model);
+                        $webpage = $this->createWebBlock($webpage, 'products-1', $model);
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                        $this->createWebBlock($webpage, 'sub-departments-1', $model);
+                        $webpage = $this->createWebBlock($webpage, 'sub-departments-1', $model);
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                        $this->createWebBlock($webpage, 'family-1', $model);
-                        $this->createWebBlock($webpage, 'products-1', $model);
+                        $webpage = $this->createWebBlock($webpage, 'family-1', $model);
+                        $webpage = $this->createWebBlock($webpage, 'products-1', $model);
                     }
                 }
+
             }
 
 
