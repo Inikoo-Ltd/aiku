@@ -10,17 +10,10 @@
 
 namespace App\Actions\CRM\Customer;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
-use App\Actions\Comms\Email\SendCustomerWelcomeEmail;
-use App\Actions\Comms\Email\SendNewCustomerNotification;
 use App\Actions\CRM\WebUser\StoreWebUser;
-use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\WithLogRequest;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Rules\IUnique;
@@ -32,37 +25,28 @@ class StorePreRegisterCustomer extends OrgAction
     /**
      * @throws \Throwable
      */
-    use WithLogRequest;
     public function handle(Shop $shop, array $modelData): Customer
     {
-
-        // $isWithGoogle = Arr::pull($modelData, 'is_with_google', false);
-        // if ($isWithGoogle) {
-        //     $googleId = Arr::pull($modelData, 'google_id');
-        //     if ($googleId) {
-        //         data_set($modelData, 'google_id', $googleId);
-        //     }
-        // }
 
         data_set($modelData, 'registered_at', now());
         data_set($modelData, 'status', CustomerStatusEnum::PRE_REGISTRATION);
         data_set($modelData, 'state', CustomerStateEnum::REGISTERED);
 
-        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $modelData['is_dropshipping'] = true;
-        } elseif ($shop->type == ShopTypeEnum::FULFILMENT) {
-            $modelData['is_fulfilment'] = true;
-        }
-
-        data_set($modelData, 'location', $this->getLocation(request()->ip()));
-
 
         data_set($modelData, 'shop_id', $shop->id);
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
-        data_set($modelData, 'reference', GetSerialReference::run(container: $shop, modelType: SerialReferenceModelEnum::CUSTOMER));
 
-        $customer = Customer::create($modelData);
+        $googleUser = Arr::pull($modelData, 'google_user', []);
+        if ($googleUser) {
+            data_set($modelData, 'google_id', Arr::get($googleUser, 'id'));
+            data_set($modelData, 'email', Arr::get($googleUser, 'email'));
+            data_set($modelData, 'google_avatar', Arr::get($googleUser, 'avatar'));
+            data_set($modelData, 'contact_name', Arr::get($googleUser, 'name'));
+            data_set($modelData, 'name', Arr::get($googleUser, 'name'));
+        }
+
+        $customer = StoreCustomer::make()->action($shop, $modelData);
 
         $password = Str::random(15);
         $webUser = StoreWebUser::make()->action($customer, [
@@ -85,7 +69,6 @@ class StorePreRegisterCustomer extends OrgAction
     }
 
 
-
     public function rules(): array
     {
         return [
@@ -102,8 +85,11 @@ class StorePreRegisterCustomer extends OrgAction
                     ]
                 ),
             ],
-            'google_id'        => ['sometimes', 'string', 'max:255', 'regex:/^\d{21}$/'],
-            'is_with_google'      => ['sometimes', 'boolean'],
+            'google_user'        => ['sometimes', 'array'],
+            'google_user.id'     => ['sometimes', 'string', 'max:255'],
+            'google_user.email'  => ['sometimes', 'email', 'max:255'],
+            'google_user.name'   => ['sometimes', 'string', 'max:255'],
+            'google_user.avatar' => ['sometimes', 'string', 'max:255'],
         ];
     }
 

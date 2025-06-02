@@ -8,9 +8,10 @@
  *
 */
 
-namespace App\Actions\UI\Global;
+namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\CRM\Customer\StorePreRegisterCustomer;
+use App\Actions\RetinaAction;
 use App\Models\Catalogue\Shop;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -18,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class PreRegisterCustomer
+class PreRegisterRetinaDropshippingCustomer extends RetinaAction
 {
     /**
      * @throws \Throwable
@@ -66,10 +67,7 @@ class PreRegisterCustomer
      */
     public function asController(Shop $shop, ActionRequest $request)
     {
-        $this->shop = $shop;
-        $this->fillFromRequest($request);
-        $this->validatedData = $this->validateAttributes();
-
+        $this->registerDropshippingInitialisation($shop, $request);
         $this->handle($shop, $this->validatedData);
     }
 }
