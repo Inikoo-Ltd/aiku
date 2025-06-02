@@ -33,6 +33,16 @@ class StoreProductCategoryWebpage extends OrgAction
                 'model_type'    => class_basename($productCategory),
                 'model_id'     => $productCategory->id
             ];
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $webpageData = [
+                'title' => $productCategory->name,
+                'code'  => $productCategory->code,
+                'url'   => strtolower($productCategory->code),
+                'sub_type'   => WebpageSubTypeEnum::SUB_DEPARTMENT,
+                'type'      => WebpageTypeEnum::CATALOGUE,
+                'model_type'    => class_basename($productCategory),
+                'model_id'     => $productCategory->id
+            ];
         } else {
             $webpageData = [
                 'title' => $productCategory->name,
