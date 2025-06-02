@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -64,6 +65,17 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
 
         UpdateWebpageContent::run($webpage);
+
+        if ($webpage->is_dirty) {
+            $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
+            PublishWebpage::make()->action(
+                $webpage,
+                [
+                    'comment' => 'publish after upgrade',
+                ]
+            );
+        }
+
 
     }
 

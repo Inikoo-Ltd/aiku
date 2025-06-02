@@ -27,8 +27,6 @@ class GetProductCategoryShowcase
 
             $data = [
                 'department' => DepartmentResource::make($productCategory)->toArray(request()),
-                'subDepartments' => $productCategory?->children ? SubDepartmentResource::collection($productCategory?->children)->toArray(request()) : [],
-                'families'   => FamilyResource::collection($productCategory->getFamilies())->toArray(request()),
             ];
             $data['routeList'] = [
                 'collectionRoute' => [

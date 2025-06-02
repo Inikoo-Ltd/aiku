@@ -9,6 +9,9 @@
 namespace App\Actions\Maintenance;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;
@@ -77,6 +80,29 @@ class RepairMissingFixedWebBlocksInProductsWebpages
                 $webBlockUpdateData
             );
         }
+
+        $webpage->refresh();
+        UpdateWebpageContent::run($webpage);
+        foreach ($webpage->webBlocks as $webBlock) {
+            print $webBlock->webBlockType->code."\n";
+        }
+        print "=========\n";
+
+        if ($webpage->is_dirty) {
+            if (in_array($product->state, [
+                ProductStateEnum::ACTIVE,
+                ProductStateEnum::DISCONTINUING
+            ])) {
+                $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'publish after upgrade',
+                    ]
+                );
+            }
+        }
+
     }
 
     public string $commandSignature = 'repair:missing_fixed_web_blocks_in_products_webpages';

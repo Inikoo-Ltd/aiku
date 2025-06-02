@@ -56,9 +56,8 @@ const props = defineProps<{
     families?: object;
     customers?: object;
     mailshots?: object;
-    history: object;
-    department: object
-    showcase: object
+    history?: object;
+    showcase?: object
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -78,7 +77,6 @@ const component = computed(() => {
 
 });
 
-console.log(props);
 
 </script>
 

@@ -9,6 +9,9 @@
 namespace App\Actions\Maintenance;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlockType;
@@ -65,7 +68,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $command->error('Webpage '.$webpage->code.' MORE than 1 overview_aurora Web Block found');
 
             foreach ($countFamilyWebBlock as $webBlockData) {
-                $layout       = json_decode($webBlockData->layout, true);
+                $layout = json_decode($webBlockData->layout, true);
                 $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
 
                 $description = '';
@@ -102,14 +105,37 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         if (count($countFamilyWebBlock) == 0) {
             $this->createWebBlock($webpage, 'products-1', $family);
         }
+
+        $webpage->refresh();
+        UpdateWebpageContent::run($webpage);
+        foreach ($webpage->webBlocks as $webBlock) {
+            print $webBlock->webBlockType->code."\n";
+        }
+        print "=========\n";
+
+        if ($webpage->is_dirty) {
+            if (in_array($family->state, [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])) {
+                $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'publish after upgrade',
+                    ]
+                );
+            }
+        }
+
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_family_webpages';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('model_type', 'ProductCategory')->get();
+        $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'family')->get();
 
 
         foreach ($webpagesID as $webpageID) {

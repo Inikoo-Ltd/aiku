@@ -9,11 +9,14 @@
 namespace App\Actions\Maintenance;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class RepairMissingFixedWebBlocksInDepartmentsWebpages
@@ -40,8 +43,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $department = $webpage->model;
 
 
-
-
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'department');
         if (count($countFamilyWebBlock) > 0) {
             foreach ($countFamilyWebBlock as $webBlockData) {
@@ -59,24 +60,75 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-departments-1');
 
         if (count($countFamilyWebBlock) == 0) {
-
             $this->createWebBlock($webpage, 'sub-departments-1', $department);
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
+
+        if (count($countFamilyWebBlock) > 0) {
+
+            foreach ($countFamilyWebBlock as $webBlockData) {
+                $layout       = json_decode($webBlockData->layout, true);
+                $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
+
+                $description = '';
+                foreach ($descriptions as $descriptionData) {
+                    $text = Arr::get($descriptionData, 'text');
+                    if ($text) {
+                        $description .= $text.' ';
+                    }
+                }
+                $description = trim($description);
+
+
+                if ($description) {
+                    $command->line('D: '.$department->id.' Department description updated');
+                    $department->update(['description' => $description]);
+                }
+
+                DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
+                DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
+                DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
+            };
+        }
+
+
 
         $webpage->refresh();
-        //        foreach($webpage->webBlocks as $webblock) {
-        //            print $webblock->webBlockType->code . "\n";
-        //        }
-        //        exit;
+        UpdateWebpageContent::run($webpage);
+        foreach ($webpage->webBlocks as $webBlock) {
+            print $webBlock->webBlockType->code."\n";
+        }
+        print "=========\n";
+
+
+        if ($webpage->is_dirty) {
+            if (in_array($department->state, [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])) {
+                $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'publish after upgrade',
+                    ]
+                );
+            }
+        }
+
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_department_webpages';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('model_type', 'ProductCategory')->get();
+        $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'department')->get();
 
 
         foreach ($webpagesID as $webpageID) {
