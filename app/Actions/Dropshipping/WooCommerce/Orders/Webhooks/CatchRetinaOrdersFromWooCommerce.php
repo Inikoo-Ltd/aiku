@@ -9,7 +9,7 @@
 namespace App\Actions\Dropshipping\WooCommerce\Orders\Webhooks;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
-use App\Actions\Dropshipping\Shopify\Fulfilment\StoreFulfilmentFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Fulfilment\StoreFulfilmentFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Orders\StoreOrderFromWooCommerce;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\SubmitOrder;

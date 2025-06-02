@@ -6,7 +6,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Dropshipping\Shopify\Fulfilment;
+namespace App\Actions\Dropshipping\WooCommerce\Fulfilment;
 
 use App\Actions\Dropshipping\WooCommerce\Fulfilment\StoreWooCommerceOrderFulfilment;
 use App\Actions\Fulfilment\PalletReturn\CancelPalletReturn;
