@@ -33,7 +33,7 @@ class ShowFinishPreRetinaRegister
 
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             return Inertia::render(
-                'Auth/DropshipRegister',
+                'Auth/DropshipFinishRegistration',
                 [
                 'countriesAddressData' => GetAddressData::run(),
                 'polls' => $pollsResource,
@@ -42,7 +42,29 @@ class ShowFinishPreRetinaRegister
                     'parameters' => [
                         'shop' => $shop->id
                     ]
-                ]
+                ],
+                'email' => '$request->user()?->email',
+                'timeline'  => [  // TODO
+                    "subscribe" => [
+                        "label" => "Subscribe",
+                        "tooltip" => "Subscribe to our newsletter",
+                        "key" => "subscribe",
+                        "timestamp" => null
+                    ],
+                    "finish" => [
+                        "label" => "Finish Registration",
+                        "tooltip" => "Finish Registration",
+                        "key" => "finish",
+                        "timestamp" => null
+                    ],
+                    "complete" => [
+                        "label" => "Complete Registration",
+                        "tooltip" => "Complete Registration",
+                        "key" => "complete",
+                        "timestamp" => null
+                    ],
+                ],
+                'current_timeline'  => 'finish',
             ]
             );
         }

@@ -1,0 +1,378 @@
+<script setup lang="ts">
+import { useForm } from "@inertiajs/vue3"
+import { ref, onMounted, nextTick, watch, computed } from "vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+// import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
+import { trans } from "laravel-vue-i18n"
+import Multiselect from "@vueform/multiselect"
+import Address from "@/Components/Forms/Fields/Address.vue"
+import FulfilmentCustomer from "@/Pages/Grp/Org/Fulfilment/FulfilmentCustomer.vue"
+import CustomerDataForm from "@/Components/CustomerDataForm.vue"
+import Textarea from "primevue/textarea"
+import Select from "primevue/select"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import InputText from "primevue/inputtext"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faEnvelope } from "@far"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
+import Timeline from "@/Components/Utils/Timeline.vue"
+
+library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
+
+// Set default layout
+// defineOptions({ layout: RetinaShowIris })
+const props = defineProps<{
+	countriesAddressData: [],
+	polls: [],
+	registerRoute: {
+		name: string,
+		parameters: string,
+	},
+	email: string
+	timeline: {}
+	current_timeline: string
+}>()
+
+// di <script setup lang="ts">
+const initialPollReplies = props.polls.map((poll) => ({
+	id: poll.id,
+	type: poll.type,
+	label: poll.label,
+	answer: poll.type === "option" ? null : "",
+}))
+
+// Define form using Inertia's useForm
+const form = useForm({
+	contact_name: "",
+	email: props.email || "",
+	phone: "",
+	company_name: "",
+	website: "",
+	password: "",
+	password_confirmation: "",
+	contact_address: {},
+	poll_replies: initialPollReplies,
+})
+
+// Define reactive variables
+const isLoading = ref(false)
+
+const submit = () => {
+	isLoading.value = true
+
+	if (form.password == form.password_confirmation) {
+		form.post(route(props.registerRoute.name, props.registerRoute.parameters), {
+			onError: () => {
+				isLoading.value = false
+			},
+			onFinish: () => {
+				/* form.reset(); */
+			},
+		})
+	} else {
+		form.setError("password", "password not match")
+	}
+}
+
+const interestsList = ref([
+	{ label: "Pallets Storage", value: "pallets_storage" },
+	{ label: "Dropshipping", value: "dropshipping" },
+	{ label: "Space (Parking)", value: "rental_space" },
+])
+
+const addressFieldData = {
+	type: "address",
+	label: "Address",
+	value: {
+		address_line_1: null,
+		address_line_2: null,
+		sorting_code: null,
+		postal_code: null,
+		locality: null,
+		dependent_locality: null,
+		administrative_area: null,
+		country_code: null,
+		country_id: 48,
+	},
+	options: props.countriesAddressData,
+}
+
+// Autofocus first PureInput on mount
+onMounted(async () => {
+	await nextTick()
+	document.getElementById("contact_name")?.focus()
+})
+
+const simplePolls = computed(() =>
+	props.polls.map(({ name, label, options }) => ({ name, label, options }))
+)
+
+const initialPolls: Record<string, string | null> = {}
+simplePolls.value.forEach((poll) => {
+	initialPolls[poll.name] = poll.options.length > 1 ? null : ""
+})
+
+</script>
+
+<template>
+	
+	<div class="pt-8">
+		<Timeline
+			:options="timeline"
+			:state="current_timeline"
+			:slidesPerView="3"
+		/>
+
+		<div class="max-w-2xl mx-auto my-8">
+			<!-- Card container -->
+			<div class="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
+				<!-- Card header -->
+				<div class="px-6 py-4 border-b border-gray-200">
+					<h2 class="text-xl font-semibold text-gray-800">Registration form</h2>
+				</div>
+				<form @submit.prevent="submit" class="space-y-12 px-14 py-10">
+					<div class="text-xl font-semibold flex justify-center">
+						{{ trans("Join Our Dropship – Register Now!") }}
+					</div>
+					<div class="border-b border-gray-900/10 pb-12">
+						<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+							<!-- First Name -->
+							<div class="sm:col-span-6">
+								<label
+									for="name"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>{{ trans("Name") }}</label
+								>
+								<div class="mt-2">
+									<IconField>
+										<InputIcon>
+											<FontAwesomeIcon :icon="faUser" />
+										</InputIcon>
+										<InputText
+											v-model="form.contact_name"
+											id="contact_name"
+											name="contact_name"
+											class="w-full"
+											required />
+									</IconField>
+									<p
+										v-if="form.errors.contact_name"
+										class="text-sm text-red-600 mt-1">
+										{{ form.errors.contact_name }}
+									</p>
+								</div>
+							</div>
+
+							<!-- Email -->
+							<div class="sm:col-span-3">
+								<label
+									for="email"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>{{ trans("Email") }}</label
+								>
+								<div class="mt-2">
+									<!-- make IconField full-width -->
+									<IconField class="w-full">
+										<InputIcon>
+											<FontAwesomeIcon :icon="faEnvelope" />
+										</InputIcon>
+
+										<!-- and make the input itself full-width -->
+										<InputText
+											v-model="form.email"
+											type="email"
+											id="email"
+											name="email"
+											class="w-full"
+											disabled
+											required />
+									</IconField>
+
+									<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
+										{{ form.errors.email }}
+									</p>
+								</div>
+							</div>
+
+							<div class="sm:col-span-3">
+								<label
+									for="phone-number"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>{{ trans("Phone Number") }}</label
+								>
+								<div class="mt-2">
+									<IconField class="w-full">
+										<InputIcon>
+											<FontAwesomeIcon :icon="faPhone" />
+										</InputIcon>
+										<InputText
+											v-model="form.phone"
+											type="text"
+											id="phone-number"
+											name="phone"
+											class="w-full"
+											required />
+									</IconField>
+									<p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
+										{{ form.errors.phone }}
+									</p>
+								</div>
+							</div>
+							<!-- Business Name -->
+							<div class="sm:col-span-6">
+								<label
+									for="business-name"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>{{ trans("Business Name") }}</label
+								>
+								<div class="mt-2">
+									<IconField class="w-full">
+										<InputIcon>
+											<FontAwesomeIcon :icon="faBuilding" />
+										</InputIcon>
+										<InputText
+											v-model="form.company_name"
+											type="text"
+											id="business-name"
+											name="company_name"
+											class="w-full" />
+									</IconField>
+									<p
+										v-if="form.errors.company_name"
+										class="text-sm text-red-600 mt-1">
+										{{ form.errors.company_name }}
+									</p>
+								</div>
+							</div>
+							<!-- Website -->
+							<div class="sm:col-span-6">
+								<label
+									for="website"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>{{ trans("Website") }}</label
+								>
+								<div class="mt-2">
+									<IconField class="w-full">
+										<InputIcon>
+											<FontAwesomeIcon :icon="faGlobe" />
+										</InputIcon>
+										<InputText v-model="form.website" class="w-full" />
+									</IconField>
+									<p v-if="form.errors.website" class="text-sm text-red-600 mt-1">
+										{{ form.errors.website }}
+									</p>
+								</div>
+							</div>
+							<div class="sm:col-span-6">
+								<hr />
+							</div>
+							<div class="sm:col-span-6">
+								<label
+									for="address"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>{{ trans("Country") }}</label
+								>
+								<Address
+									v-model="form[contact_address]"
+									fieldName="contact_address"
+									:form="form"
+									:options="{ countriesAddressData: countriesAddressData }"
+									:fieldData="addressFieldData" />
+							</div>
+							<div class="sm:col-span-6">
+								<hr />
+							</div>
+							<div
+								v-for="(pollReply, idx) in form.poll_replies"
+								:key="pollReply.id"
+								class="sm:col-span-6">
+								<label class="block text-sm font-medium text-gray-700 capitalize">
+									{{ pollReply.label }}
+								</label>
+								<Select
+									v-if="pollReply.type === 'option'"
+									v-model="form.poll_replies[idx].answer"
+									:options="props.polls[idx].options"
+									optionLabel="label"
+									optionValue="id"
+									:placeholder="`Please Choose One`"
+									class="mt-2 w-full" />
+								<Textarea
+									v-else
+									v-model="form.poll_replies[idx].answer"
+									rows="5"
+									cols="30"
+									placeholder="Your answer…"
+									class="mt-2 w-full border rounded-md p-2" />
+								<p
+									v-if="form.errors[`poll_replies.${idx}`]"
+									class="mt-1 text-sm text-red-600">
+									{{ form.errors[`poll_replies.${idx}`] }}
+								</p>
+							</div>
+							<div class="sm:col-span-6">
+								<hr />
+							</div>
+							<!-- Password -->
+							<div class="sm:col-span-3">
+								<label
+									for="password"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>Password</label
+								>
+								<div class="mt-2 password">
+									<PureInput
+										v-model="form.password"
+										@update:modelValue="(e) => form.clearErrors('password')"
+										:type="'password'"
+										required />
+									<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
+										{{ form.errors.password }}
+									</p>
+								</div>
+							</div>
+							<!-- Retype Password -->
+							<div class="sm:col-span-3">
+								<label
+									for="password-confirmation"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>Retype Password</label
+								>
+								<div class="mt-2 password">
+									<PureInput
+										v-model="form.password_confirmation"
+										:type="'password'"
+										required />
+									<p
+										v-if="form.errors.password_confirmation"
+										class="text-sm text-red-600 mt-1">
+										{{ form.errors.password_confirmation }}
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- Submit Button -->
+					<div class="flex justify-end">
+						<button
+							type="submit"
+							class="w-full inline-flex justify-center items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+							<span v-if="isLoading" class="loader mr-2"></span>
+							{{ trans("Finish Registration") }}
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</template>
+
+<style scoped lang="scss">
+.password {
+	.p-PureInputtext {
+		width: 100% !important;
+	}
+}
+</style>
