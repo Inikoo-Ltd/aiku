@@ -114,7 +114,9 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
         foreach ($webpagesID as $webpageID) {
             $webpage = Webpage::find($webpageID->id);
-            $this->handle($webpage, $command);
+            if($webpage) {
+                $this->handle($webpage, $command);
+            }
         }
     }
 
