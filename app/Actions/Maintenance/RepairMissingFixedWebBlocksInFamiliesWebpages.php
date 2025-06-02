@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 30 May 2025 12:12:10 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Mon, 02 Jun 2025 09:47:28 Central Indonesia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -20,23 +20,21 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
-class RepairMissingFixedWebBlocksInCatalogueWebpages
+class RepairMissingFixedWebBlocksInFamiliesWebpages
 {
     use WithActionUpdate;
+    use WithRepairWebpages;
 
 
     protected function handle(Webpage $webpage, Command $command): void
     {
-        if ($webpage->model_type == 'Product') {
-            $this->processProductWebpages($webpage, $command);
+        if ($webpage->model_type == 'ProductCategory') {
+            /** @var ProductCategory $model */
+            $model = $webpage->model;
+            if ($model->type == ProductCategoryTypeEnum::FAMILY) {
+                $this->processFamilyWebpages($webpage, $command);
+            }
         }
-        //        if ($webpage->model_type == 'ProductCategory') {
-        //            /** @var ProductCategory $model */
-        //            $model = $webpage->model;
-        //            if ($model->type == ProductCategoryTypeEnum::FAMILY) {
-        //                $this->processFamilyWebpages($webpage, $command);
-        //            }
-        //        }
     }
 
     protected function getWebpageBlocksByType(Webpage $webpage, string $type): \Illuminate\Support\Collection
@@ -66,60 +64,24 @@ class RepairMissingFixedWebBlocksInCatalogueWebpages
 
     protected function processProductWebpages(Webpage $webpage, Command $command): void
     {
-        $webBlocksData  = $this->getWebpageBlocksByType($webpage, 'product');
+        $webBlocksData  = $this->getWebpageBlocksByType($webpage, 'products-1');
         $WebBlocksCount = count($webBlocksData);
 
-        /** @var Product $product */
-        $product = $webpage->model;
+        /** @var ProductCategory $family */
+        $family = $webpage->model;
 
-        if (!$product->is_main) {
-            // Delete Webpage
-            return;
-        }
 
 
         if ($WebBlocksCount == 0) {
-            $webBlocksDataNew = $this->getWebpageBlocksByType($webpage, 'product-1');
+            $webBlocksDataNew = $this->getWebpageBlocksByType($webpage, 'products-1');
             if (count($webBlocksDataNew) == 0) {
                 $command->error('Webpage '.$webpage->code.' Product Web Block not found');
 
+                $this->createWebBlock($webpage, 'product-1',$family);
 
-                $webBlockType = WebBlockType::where('code', 'product-1')->first();
-
-                $newLayout = [];
-                data_set($newLayout, 'data.fieldValue', Arr::get($webBlockType->data, 'fieldValue', []));
-
-                $models   = [];
-                $models[] = $product;
-                $webBlock = StoreWebBlock::make()->action(
-                    $webBlockType,
-                    [
-                        "layout" => $newLayout,
-                        "models" => $models,
-                    ],
-                    strict: false
-                );
-
-                $modelHasWebBlocksData = [
-                    'show_logged_in'  => true,
-                    'show_logged_out' => true,
-                    "group_id"        => $webpage->group_id,
-                    "organisation_id" => $webpage->organisation_id,
-                    "shop_id"         => $webpage->shop_id,
-                    "website_id"      => $webpage->website_id,
-                    "webpage_id"      => $webpage->id,
-                    "position"        => 1,
-                    "model_id"        => $webpage->id,
-                    "model_type"      => class_basename(Webpage::class),
-                    "web_block_id"    => $webBlock->id,
-                    'show'            => true
-                ];
-
-
-                $webpage->modelHasWebBlocks()->create($modelHasWebBlocksData);
             }
         } elseif ($WebBlocksCount > 1) {
-            $command->error('Webpage '.$webpage->code.' More than oneProduct Web Block  found');
+            $command->error('Webpage '.$webpage->code.' More than one products-1 Web Block  found');
         } else {
             $layout      = json_decode($webBlocksData[0]->layout, true);
             $description = Arr::get($layout, 'data.fieldValue.value.text');
