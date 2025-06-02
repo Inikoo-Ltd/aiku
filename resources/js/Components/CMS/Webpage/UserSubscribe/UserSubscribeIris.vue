@@ -60,12 +60,12 @@ const onSubmitSubscribe = async () => {
 
 				<Transition>
 					<div v-if="currentState != 'success'" class="flex flex-col items-start">
-						<form @submit.prevent="(e) => onSubmitSubscribe()" class="mt-6 sm:flex sm:max-w-lg sm:items-center sm:w-full mx-auto">
+						<form @submit.prevent="(e) => onSubmitSubscribe()" class="mt-6 sm:flex sm:justify-center sm:max-w-lg sm:items-center sm:w-full mx-auto">
 							<label for="email-address" class="sr-only">
 								Email address
 							</label>
 
-							<div class="relative">
+							<div class="relative w-full">
 								<input
 									type="email"
 									v-model="inputEmail"
@@ -73,7 +73,7 @@ const onSubmitSubscribe = async () => {
 									id="email-address"
 									autocomplete="email"
 									required
-									class="pl-9 text-gray-700 flex-1 w-full min-w-0 rounded-md bg-white px-3 py-1.5 text-base  outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:w-64 sm:text-sm/6 xl:w-full"
+									class="pl-9 text-gray-700 flex-1 w-full min-w-0 rounded-md bg-white px-3 py-1.5 text-base  outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
 									:placeholder="fieldValue?.value?.input?.placeholder"
 									:disabled="isLoadingSubmit"
 								/>
