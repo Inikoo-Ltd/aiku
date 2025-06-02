@@ -9,6 +9,7 @@ import { set } from "lodash"
 import { ref } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faCheck, faEnvelope, faCheckCircle)
 
@@ -33,24 +34,16 @@ const onSubmitSubscribe = async () => {
 	errorMessage.value = ""
 	currentState.value = ""
 
-	try {
-		await axios.post(
-			window.origin + '/global/register-pre-customer/awf',
-			{
-				email: inputEmail.value,
-				preview: true
-			},
-		)
-		
+	setTimeout(() => {
 		inputEmail.value = ""
 		currentState.value = 'success'
-	} catch (error) {
-		console.error('Subscription failed', error)
-		currentState.value = 'error'
-		errorMessage.value = error?.email || 'An error occurred while subscribing.'
-	}
+		isLoadingSubmit.value = false
+	}, 1000)
 
-	isLoadingSubmit.value = false
+		// console.error('Subscription failed', error)
+		// currentState.value = 'error'
+		// errorMessage.value = error?.email || 'An error occurred while subscribing.'
+
 }
 </script>
 

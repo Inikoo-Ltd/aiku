@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles"
 import { router } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { inject, ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
@@ -9,6 +9,7 @@ import { faCheck, faEnvelope } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 library.add(faCheck, faEnvelope, faCheckCircle)
 
 
@@ -17,6 +18,9 @@ const props = defineProps<{
 	theme?: any
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
+
+const layout = inject('layout', retinaLayoutStructure)
+// console.log('layozzut', layout?.iris?.website?.slug)
 
 const isLoadingSubmit = ref(false)
 const currentState = ref("")
@@ -29,7 +33,7 @@ const onSubmitSubscribe = async () => {
 
 	try {
 		await axios.post(
-			window.origin + '/global/register-pre-customer/awf',
+			window.origin + '/app/register-pre-customer/' + layout?.iris?.website?.id,
 			{
 				email: inputEmail.value,
 			},
@@ -39,7 +43,7 @@ const onSubmitSubscribe = async () => {
 		currentState.value = 'success'
 	} catch (error) {
 		currentState.value = 'error'
-		errorMessage.value = error?.email || 'An error occurred while subscribing.'
+		errorMessage.value = error?.errors?.email || 'An error occurred while subscribing.'
 	}
 
 	isLoadingSubmit.value = false
