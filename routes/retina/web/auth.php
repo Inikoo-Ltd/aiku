@@ -10,12 +10,14 @@ use App\Actions\CRM\Customer\StorePreRegisterCustomer;
 use App\Actions\CRM\WebUser\Retina\LogoutRetina;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
+use App\Actions\CRM\WebUser\Retina\UI\ShowFinishPreRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaPrepareAccount;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
+use App\Actions\Retina\SysAdmin\FinishPreRegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\PreRegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
@@ -30,13 +32,13 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
     Route::post('login', RetinaLogin::class)->name('login.store');
 
-    Route::post('/register-pre-customer/{shop:slug}', PreRegisterRetinaDropshippingCustomer::class)->name('register_pre_customer.store');
+    Route::post('ds/register-pre-customer/{shop:id}', PreRegisterRetinaDropshippingCustomer::class)->name('ds.register_pre_customer.store');
 
-    Route::get('/{shop:slug}/login/google', function (Shop $shop) {
+    Route::get('ds/{shop:slug}/login/google', function (Shop $shop) {
         return Socialite::driver('google')->with(['shop' => $shop])->scopes(['email', 'profile'])->redirect();
-    })->name('login.google');
+    })->name('ds.login_google');
 
-    Route::get('/auth/google/callback', function (Request $request) {
+    Route::get('ds/auth/google/callback', function (Request $request) {
         $googleUser = Socialite::driver('google')->user();
         $shop = $request->input('shop');
 
@@ -48,12 +50,17 @@ Route::middleware('guest:retina')->group(function () {
         ]);
 
         return redirect()->route('iris.iris_webpage');
-    });
+    })->name('ds.login_google_callback');
 
 
     Route::get('register', ShowRetinaRegister::class)->name('register');
+
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
+
+    Route::get('ds/finish-pre-register', ShowFinishPreRetinaRegister::class)->name('ds.finish_pre_register');
     Route::post('ds/{shop:id}/register', RegisterRetinaDropshippingCustomer::class)->name('ds.register.store');
+
+    Route::post('ds/{shop:id}/finish-pre-register', FinishPreRegisterRetinaDropshippingCustomer::class)->name('ds.finish_pre_register.store');
 
     Route::get('rp', ShowRetinaResetWebUserPassword::class)->name('reset-password.show');
     Route::get('reset-password-send', ShowForgotPasswordForm::class)->name('reset-password.edit');
