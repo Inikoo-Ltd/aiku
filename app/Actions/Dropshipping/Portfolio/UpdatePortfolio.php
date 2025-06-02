@@ -81,6 +81,7 @@ class UpdatePortfolio extends OrgAction
                     ]
                 ),
             ],
+            'selling_price'   => ['sometimes', 'numeric', 'min:0'],
             'status'          => 'sometimes|boolean',
             'last_added_at'   => 'sometimes|date',
             'last_removed_at' => 'sometimes|date',

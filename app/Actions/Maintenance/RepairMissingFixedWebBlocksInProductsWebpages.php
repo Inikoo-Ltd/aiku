@@ -9,7 +9,6 @@
 namespace App\Actions\Maintenance;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\WebBlock\StoreWebBlock;
 use App\Models\Catalogue\Product;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;

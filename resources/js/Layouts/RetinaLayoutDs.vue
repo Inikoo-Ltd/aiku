@@ -54,7 +54,7 @@ const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
 const sidebarOpen = ref(false)
 
-console.log("Layout Ds")
+console.log("Layout Ds", layout.iris.is_logged_in)
 </script>
 
 <template>
@@ -116,7 +116,7 @@ console.log("Layout Ds")
 							style="max-width: calc(1280px - 200px)"
 						/>
 
-						<Link :href="route('retina.top_up.dashboard')" class="flex items-center gap-x-2 text-indigo-600">
+						<Link v-if="layout.iris?.is_logged_in" :href="route('retina.top_up.dashboard')" class="flex items-center gap-x-2 text-indigo-600">
 							<FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" />
 							<span class="font-semibold tabular-nums">
 								{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0)}}

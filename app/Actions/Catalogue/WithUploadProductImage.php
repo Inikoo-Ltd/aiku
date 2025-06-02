@@ -24,7 +24,7 @@ trait WithUploadProductImage
     public function handle(Product $model, string $scope, array $modelData): array
     {
         $medias = [];
-        
+
         foreach ($modelData['images'] as $imageFile) {
 
             $imageData = [

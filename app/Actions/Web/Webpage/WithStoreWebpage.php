@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 02 Jun 2025 10:10:19 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -11,7 +12,6 @@ use App\Actions\Web\WebBlock\StoreWebBlock;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
@@ -22,7 +22,7 @@ trait WithStoreWebpage
     {
         $webBlockType = WebBlockType::where('code', $webBlockCode)->first();
 
-        if(!$webBlockType){
+        if (!$webBlockType) {
             return;
         }
 
