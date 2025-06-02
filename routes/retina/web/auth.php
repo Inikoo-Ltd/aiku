@@ -16,7 +16,6 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
-use App\Actions\Retina\SysAdmin\PreRegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
@@ -29,27 +28,6 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
     Route::post('login', RetinaLogin::class)->name('login.store');
 
-    Route::get('/login/google', function () {
-        return Socialite::driver('google')->scopes(['email', 'profile'])->redirect();
-    })->name('login.google');
-
-    Route::get('/auth/google/callback', function () {
-        $googleUser = Socialite::driver('google')->user();
-        session(['subscribe_with_google' => [
-            'id' => $googleUser->id,
-            'name' => $googleUser->name,
-            'email' => $googleUser->email,
-            'avatar' => $googleUser->avatar,
-        ]]);
-
-        // To forget only the specific session data
-        // session()->forget('subscribe_with_google');
-
-        // Or to flush the entire session
-        return redirect()->route('iris.iris_webpage');
-    });
-
-    Route::post('register-pre-customer', PreRegisterRetinaDropshippingCustomer::class)->name('register-pre-customer.store');
     Route::get('register', ShowRetinaRegister::class)->name('register');
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
     Route::post('ds/{shop:id}/register', RegisterRetinaDropshippingCustomer::class)->name('ds.register.store');

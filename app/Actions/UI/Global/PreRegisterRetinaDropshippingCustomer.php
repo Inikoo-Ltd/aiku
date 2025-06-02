@@ -8,21 +8,26 @@
  *
 */
 
-namespace App\Actions\Retina\SysAdmin;
+namespace App\Actions\UI\Global;
 
 use App\Actions\CRM\Customer\StorePreRegisterCustomer;
-use App\Actions\RetinaAction;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Rules\IUnique;
-use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class PreRegisterRetinaDropshippingCustomer extends RetinaAction
+class PreRegisterRetinaDropshippingCustomer
 {
     /**
      * @throws \Throwable
      */
+    use AsAction;
+    use WithAttributes;
+
+    protected Shop $shop;
+
     public function handle(Shop $shop, array $modelData): Customer
     {
         return StorePreRegisterCustomer::make()->action($shop, $modelData);
@@ -31,11 +36,6 @@ class PreRegisterRetinaDropshippingCustomer extends RetinaAction
     public function authorize(ActionRequest $request): bool
     {
         return true;
-    }
-
-    public function htmlResponse(): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-    {
-        return Inertia::location(route('retina.login.show'));
     }
 
     public function rules(): array
@@ -62,7 +62,10 @@ class PreRegisterRetinaDropshippingCustomer extends RetinaAction
      */
     public function asController(Shop $shop, ActionRequest $request): Customer
     {
-        $this->registerDropshippingInitialisation($shop, $request);
+        $this->shop = $shop;
+        $this->fillFromRequest($request);
+        $this->validatedData = $this->validateAttributes();
+
         return $this->handle($shop, $this->validatedData);
     }
 }

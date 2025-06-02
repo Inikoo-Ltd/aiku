@@ -26,6 +26,11 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->configureRateLimiting();
 
+        Route::middleware('web-global')
+            ->name('global.')
+            ->prefix('global')
+            ->group(base_path('routes/global/root.php'));
+
         Route::middleware('pupil')
             ->domain('pupil.'.config('app.domain'))
             ->name('pupil.')
