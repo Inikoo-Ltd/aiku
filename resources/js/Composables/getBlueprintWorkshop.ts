@@ -37,6 +37,7 @@ import DepartementBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint
 import Timeline2Bluprint from '@/Components/CMS/Webpage/Step1/Blueprint'
 import Carousel1Blueprint from '@/Components/CMS/Webpage/Carousel-1/Blueprint'
 import SubDepartement1Blueprint from '@/Components/CMS/Webpage/SubDepartement1/Blueprint'
+import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 
 export const getBlueprint = (componentName: string) => {
     const components: Component = {
@@ -76,6 +77,7 @@ export const getBlueprint = (componentName: string) => {
         'step-1' : Timeline2Bluprint.blueprint,
         'carousel-1' : Carousel1Blueprint.blueprint,
         'sub-department-1' : SubDepartement1Blueprint.blueprint,
+		"user-subscribe": UserSubscribe.blueprint,
     }
     return components[componentName] ?? []
 }

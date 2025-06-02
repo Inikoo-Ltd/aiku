@@ -39,6 +39,8 @@ import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 
+import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
+
 
 const components: Record<string, Component> = {
     'footer-1': Footer1Iris,
@@ -77,6 +79,8 @@ const components: Record<string, Component> = {
     'department-1' : Department1Iris,
     'carousel-1' : Carousel1Iris,
     'sub-department-1' : SubDepartments1Iris,
+    "user-subscribe": UserSubscribeIris,
+    
 }
 
 
