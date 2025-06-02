@@ -20,20 +20,19 @@ class GetWebBlockFamilies
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $departments = DB::table('product_categories')
+        $families = DB::table('product_categories')
             ->leftJoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
             ->select(['product_categories.code', 'name', 'image_id', 'url', 'title'])
-
-            ->where('department_id', $webpage->model_id)
+            ->where($webpage->sub_type == 'department' ? 'department_id' : 'sub_department_id', $webpage->model_id)
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->where('show_in_website', true)
             ->get();
 
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($departments)->toArray(request()));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
 
         return $webBlock;
     }
