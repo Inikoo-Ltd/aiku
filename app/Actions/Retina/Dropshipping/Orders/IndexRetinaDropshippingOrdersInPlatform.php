@@ -26,7 +26,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
-
     private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
