@@ -94,5 +94,5 @@ export const getBluprintPermissions = (componentName: string) => {
 		"department-1": false,
 		"products-1": false,
 	}
-	return components[componentName] ?? []
+	return components[componentName] ?? true
 }

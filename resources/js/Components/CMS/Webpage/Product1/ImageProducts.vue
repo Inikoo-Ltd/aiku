@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronCircleLeft, faChevronCircleRight } from '@fal' // pastikan path ini benar
 
 import { ulid } from 'ulid'
+import Image from '@/Components/Image.vue'
 
 const props = defineProps<{
     images: string[]
@@ -52,7 +53,7 @@ onMounted(async () => {
           class="flex justify-center items-center"
         >
           <div class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg">
-            <img :src="image" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
+            <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
           </div>
         </SwiperSlide>
       </Swiper>
@@ -87,7 +88,7 @@ onMounted(async () => {
         :key="index"
         class="cursor-pointer rounded overflow-hidden border border-gray-300"
       >
-        <img :src="image" :alt="`Thumbnail ${index + 1}`" class="w-full h-20 object-cover" />
+        <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`" class="w-full h-20 object-cover" />
       </SwiperSlide>
     </Swiper>
   </div>

@@ -20,6 +20,7 @@ import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import { router } from "@inertiajs/vue3"
 import { useLocaleStore } from "@/Stores/locale"
+import ImageProducts from "@/Components/CMS/Webpage/Product1/ImageProducts.vue"
 library.add(faCircle, faTrash, falTrash, faEdit, faPlay)
 
 const props = defineProps<{
@@ -153,6 +154,7 @@ const isModalGallery = ref(false)
 			<div class="relative">
 				<div class="h-full rounded-lg md:shadow">
 					<!-- Section: Gallery (primary and list) -->
+					<!--  <ImageProducts  :images="modelValue.product.images.data" /> -->
 					<TabGroup
 						as="div"
 						class="grid grid-cols-2 md:grid-cols-1 p-0 md:p-2.5 gap-x-3 h-full"
