@@ -49,7 +49,6 @@ class DropshippingPortfolioResource extends JsonResource
             if ($department = $this->item->department) {
                 $department =  $department->name . ', ';
             }
-
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
             $weight = $this->item->gross_weight;
@@ -57,7 +56,10 @@ class DropshippingPortfolioResource extends JsonResource
             $image = $this->item->imageSources(64, 64);
             $category = $department . $this->item->family?->name;
         }
-
+            $VAT = $price * 0.2;
+            $priceVAT = $price + $VAT;
+            $costPrice = $price - $VAT;
+        
         $shopifyUploadRoute = [];
         $wooUploadRoute = [];
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
@@ -98,6 +100,9 @@ class DropshippingPortfolioResource extends JsonResource
             'quantity_left'             => $quantity,
             'weight'                    => $weight,
             'price'                     => $price,
+            'vat_price'                => $priceVAT,
+            'cost_price'                => $costPrice,
+            'selling_price'             => $this->selling_price,
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
