@@ -30,7 +30,7 @@ class StorePreRegisterCustomer extends OrgAction
 
         data_set($modelData, 'registered_at', now());
         data_set($modelData, 'status', CustomerStatusEnum::PRE_REGISTRATION);
-        data_set($modelData, 'state', CustomerStateEnum::REGISTERED);
+        data_set($modelData, 'state', CustomerStateEnum::IN_PROCESS);
 
 
         data_set($modelData, 'shop_id', $shop->id);
