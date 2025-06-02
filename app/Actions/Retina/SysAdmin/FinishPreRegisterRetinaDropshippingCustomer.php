@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
-use App\Actions\CRM\Customer\StorePreRegisterCustomer;
+use App\Actions\CRM\Customer\FinishPreRegisterCustomer;
 use App\Actions\RetinaAction;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -40,7 +40,7 @@ class FinishPreRegisterRetinaDropshippingCustomer extends RetinaAction
         if (Arr::get($modelData, 'preview', false)) {
             return;
         }
-        // StorePreRegisterCustomer::make()->action($shop, $modelData);
+        FinishPreRegisterCustomer::make()->action($webUser, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
