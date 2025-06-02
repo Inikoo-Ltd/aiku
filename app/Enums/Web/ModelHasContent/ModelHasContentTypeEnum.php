@@ -16,6 +16,7 @@ enum ModelHasContentTypeEnum: string
     use EnumHelperTrait;
 
     case FAQ = 'faq';
+    case TAG = 'tag';
     case INFORMATION = 'information';
     case REVIEW = 'review';
 
@@ -23,6 +24,7 @@ enum ModelHasContentTypeEnum: string
     {
         return [
             'faq'         => __('frequently asked questions'),
+            'tag' => __('tag'),
             'information' => __('information'),
             'review'      => __('review'),
         ];

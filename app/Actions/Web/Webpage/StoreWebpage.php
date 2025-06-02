@@ -16,11 +16,14 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\Website;
 use App\Models\Web\Webpage;
@@ -37,6 +40,7 @@ class StoreWebpage extends OrgAction
 {
     use AsAction;
     use WithNoStrictRules;
+    use WithStoreWebpage;
 
     private Website $website;
 
@@ -99,6 +103,25 @@ class StoreWebpage extends OrgAction
                 ]
             );
 
+
+            if (!$this->strict) {
+                $model = $webpage->model;
+                if ($model instanceof Product) {
+                    $this->createWebBlock($webpage, 'product-1', $model);
+                } elseif ($model instanceof ProductCategory) {
+                    if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                        $this->createWebBlock($webpage, 'families-1', $model);
+                        $this->createWebBlock($webpage, 'products-1', $model);
+                    } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                        $this->createWebBlock($webpage, 'sub-departments-1', $model);
+                    } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
+                        $this->createWebBlock($webpage, 'family-1', $model);
+                        $this->createWebBlock($webpage, 'products-1', $model);
+                    }
+                }
+            }
+
+
             return $webpage;
         });
 
@@ -113,7 +136,7 @@ class StoreWebpage extends OrgAction
         return $webpage;
     }
 
-    public function htmlResponse(Webpage $webpage)
+    public function htmlResponse(Webpage $webpage): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
     {
         return Inertia::location(route('grp.org.fulfilments.show.web.webpages.show', [
             'organisation' => $this->fulfilment->organisation->slug,
@@ -139,7 +162,7 @@ class StoreWebpage extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'url'         => [
+            'url'                => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -156,7 +179,7 @@ class StoreWebpage extends OrgAction
                     ]
                 ),
             ],
-            'code'        => [
+            'code'               => [
                 'required',
                 'ascii',
                 'max:64',
@@ -168,16 +191,16 @@ class StoreWebpage extends OrgAction
                     ]
                 ),
             ],
-            'sub_type'    => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
-            'type'        => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
-            'state'       => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'is_fixed'    => ['sometimes', 'boolean'],
-            'ready_at'    => ['sometimes', 'date'],
-            'live_at'     => ['sometimes', 'date'],
-            'model_type'  => ['sometimes', 'string'],
-            'model_id'    => ['sometimes', 'integer'],
-            'title'       => ['required', 'string'],
-            'description' => ['sometimes', 'string'],
+            'sub_type'           => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
+            'type'               => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
+            'state'              => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            'is_fixed'           => ['sometimes', 'boolean'],
+            'ready_at'           => ['sometimes', 'date'],
+            'live_at'            => ['sometimes', 'date'],
+            'model_type'         => ['sometimes', 'string'],
+            'model_id'           => ['sometimes', 'integer'],
+            'title'              => ['required', 'string'],
+            'description'        => ['sometimes', 'string'],
             'seo_structure_type' => ['sometimes', Rule::enum(WebpageSeoStructureTypeEnum::class)],
 
 
@@ -210,6 +233,9 @@ class StoreWebpage extends OrgAction
         return $rules;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function inFulfilment(Fulfilment $fulfilment, Website $website, ActionRequest $request): Webpage
     {
         $this->parent  = $website;

@@ -79,7 +79,11 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="price" header="Price" style="max-width: 125px;">
+        <Column field="quantity_left" header="Stock" style="max-width: 200px;">
+
+        </Column>
+
+        <Column field="price" header="Price (Exc VAT)" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -91,12 +95,12 @@ const valueTableFilter = ref({})
                         locale="en-GB"
                         fluid
                         :inputStyle="{textAlign: 'right'}"
+                        disabled="true"
                     />
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'price'], undefined)" />
                 </div>
             </template>
         </Column>
-
         <!-- <Column field="platform_handle" header="Handled" style="max-width: 100px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
@@ -116,6 +120,24 @@ const valueTableFilter = ref({})
                     >
                     </textarea>
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], undefined)" />
+                </div>
+            </template>
+        </Column>
+
+        <Column field="selling_price" header="Selling Price" style="max-width: 200px;">
+            <template #body="{ data }">
+                <div class="whitespace-nowrap relative pr-2">
+                    <InputNumber
+                        v-model="data.selling_price"
+                        @update:model-value="() => emits('updateSelectedProducts', data, {selling_price: data.selling_price}, 'selling_price')"
+                        mode="currency"
+                        :placeholder="data.selling_price"
+                        :currency="data.currency_code"
+                        locale="en-GB"
+                        fluid
+                        :inputStyle="{textAlign: 'right'}"
+                    />
+                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'selling_price'], undefined)" />
                 </div>
             </template>
         </Column>

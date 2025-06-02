@@ -33,6 +33,8 @@ trait WithGetWebpageWebBlocks
                 $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
             } elseif (in_array($webBlockType, ['product','product-1'])) {
                 $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
+            } elseif (in_array($webBlockType, ['families-1'])) {
+                $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
             } else {
                 $parsedWebBlocks[$key] = $webBlock;
             }

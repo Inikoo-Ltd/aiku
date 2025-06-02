@@ -30,6 +30,7 @@ class ShowSubDepartment extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithSubDepartmentSubNavigation;
+    use WithWebpageActions;
 
 
     private Organisation|Shop|ProductCategory $parent;
@@ -80,6 +81,7 @@ class ShowSubDepartment extends OrgAction
                         'title' => __('Sub-department')
                     ],
                     'actions'       => [
+                        $this->getWebpageActions($subDepartment),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',

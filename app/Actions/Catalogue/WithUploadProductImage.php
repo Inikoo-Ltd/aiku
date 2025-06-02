@@ -21,7 +21,7 @@ trait WithUploadProductImage
     use WithWebAuthorisation;
     use WithAttachMediaToModel;
 
-    public function handle(Product $model, string $scope, array $modelData): Collection
+    public function handle(Product $model, string $scope, array $modelData): array
     {
         $medias = [];
 
@@ -40,8 +40,7 @@ trait WithUploadProductImage
 
         }
 
-
-        return collect($medias);
+        return $medias;
     }
 
     public function rules(): array
@@ -52,8 +51,8 @@ trait WithUploadProductImage
         ];
     }
 
-    public function jsonResponse($medias): AnonymousResourceCollection
-    {
-        return ImageResource::collection($medias);
-    }
+    // public function jsonResponse($medias): AnonymousResourceCollection
+    // {
+    //     return ImageResource::collection($medias);
+    // }
 }

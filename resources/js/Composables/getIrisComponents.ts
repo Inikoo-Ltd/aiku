@@ -71,6 +71,7 @@ const components: Record<string, Component> = {
     'column-layout-2': ColumnIris,
     'disclosure': DisclosureIris,
     'family-1' : FamilyIris1,
+    'families-1' : FamilyIris1,
     'product-1' : ProductIris1,
     'products-1' : Products1Iris,
     'timeline': Timeline,
@@ -79,6 +80,7 @@ const components: Record<string, Component> = {
     'department-1' : Department1Iris,
     'carousel-1' : Carousel1Iris,
     'sub-department-1' : SubDepartments1Iris,
+    'sub-departments-1' : SubDepartments1Iris,
 }
 
 
