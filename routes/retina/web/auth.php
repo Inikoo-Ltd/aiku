@@ -16,6 +16,7 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
+use App\Actions\Retina\SysAdmin\PreRegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
@@ -34,27 +35,21 @@ Route::middleware('guest:retina')->group(function () {
 
     Route::get('/auth/google/callback', function () {
         $googleUser = Socialite::driver('google')->user();
-        Log::info('Google User Data: ', [
+        session(['subscribe_with_google' => [
             'id' => $googleUser->id,
             'name' => $googleUser->name,
             'email' => $googleUser->email,
             'avatar' => $googleUser->avatar,
-        ]);
-        // dd($googleUser);
-        // Find or create user
-        // $user = User::updateOrCreate([
-        //     'email' => $googleUser->email,
-        // ], [
-        //     'name' => $googleUser->name,
-        //     'google_id' => $googleUser->id,
-        //     'avatar' => $googleUser->avatar,
-        // ]);
+        ]]);
 
-        // Auth::login($user);
+        // To forget only the specific session data
+        // session()->forget('subscribe_with_google');
 
-        return redirect('/dashboard');
+        // Or to flush the entire session
+        return redirect()->route('iris.iris_webpage');
     });
 
+    Route::post('register-pre-customer', PreRegisterRetinaDropshippingCustomer::class)->name('register-pre-customer.store');
     Route::get('register', ShowRetinaRegister::class)->name('register');
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
     Route::post('ds/{shop:id}/register', RegisterRetinaDropshippingCustomer::class)->name('ds.register.store');
