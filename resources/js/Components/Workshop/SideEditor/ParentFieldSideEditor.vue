@@ -44,7 +44,7 @@ const side_editor_block_id = inject('side_editor_block_id', () => { console.log(
 
 const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     const setValue = setFormValue(modelValue.value || {}, fieldKeys, newVal)
-    console.log('value from set ', setValue)
+    // console.log('value from set ', setValue)
     emits('update:modelValue', setValue);
     /* onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor') */
 }

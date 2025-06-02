@@ -22,7 +22,7 @@ import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { debounce } from 'lodash';
-import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
+import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 /* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
@@ -35,7 +35,7 @@ import { faEye } from "@fad"
 import { useLiveUsers } from "@/Stores/active-users"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars)
+library.add(faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars, faBars)
 
 const props = defineProps<{
 	title: string
