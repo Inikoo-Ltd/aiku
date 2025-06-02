@@ -83,14 +83,14 @@ const valueTableFilter = ref({})
 
         </Column>
 
-        <Column field="vat_price" header="Price (Inc VAT)" style="max-width: 125px;">
+        <Column field="price" header="Price (Exc VAT)" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
-                        v-model="data.vat_price"
+                        v-model="data.price"
                         @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'price')"
                         mode="currency"
-                        :placeholder="data.vat_price"
+                        :placeholder="data.price"
                         :currency="data.currency_code"
                         locale="en-GB"
                         fluid

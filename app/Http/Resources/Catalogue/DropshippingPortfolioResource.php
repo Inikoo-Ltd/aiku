@@ -58,7 +58,6 @@ class DropshippingPortfolioResource extends JsonResource
         }
             $VAT = $price * 0.2;
             $priceVAT = $price + $VAT;
-            $costPrice = $price - $VAT;
         
         $shopifyUploadRoute = [];
         $wooUploadRoute = [];
@@ -100,8 +99,6 @@ class DropshippingPortfolioResource extends JsonResource
             'quantity_left'             => $quantity,
             'weight'                    => $weight,
             'price'                     => $price,
-            'vat_price'                => $priceVAT,
-            'cost_price'                => $costPrice,
             'selling_price'             => $this->selling_price,
             'image'                     => $image,
             'type'                      => $this->item_type,
