@@ -12,6 +12,7 @@ namespace App\Http\Resources\Catalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property string $slug
@@ -58,6 +59,8 @@ class WebsiteDepartmentsResource extends JsonResource
             'number_current_families' => $this->number_current_families,
             'number_current_products' => $this->number_current_products,
             'sales'                   => $this->sales_all,
+            'images'                  => ImageResource::collection($this->images),
+            'image_thumbnail'         => $this->imageSources(720, 480),
             'invoices'                => $this->invoices_all,
             'organisation_name'       => $this->organisation_name,
             'organisation_slug'       => $this->organisation_slug,

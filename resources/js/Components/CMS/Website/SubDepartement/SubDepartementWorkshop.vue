@@ -103,19 +103,19 @@ provide("currentView", currentView);
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-auto border">
       <SideMenuSubDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
         @set-up-template="onPickTemplate" :dataList="data.sub_departements" @onChangeDepartment="onChangeDepartment"/>
     </div>
 
-    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
+    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
       <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
         <!--  <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" /> -->
         <div class="py-1 px-2 cursor-pointer lg:block hidden" :class="['selected-bg']" v-tooltip="'Desktop view'">
           <FontAwesomeIcon icon='fas fa-desktop' class='' fixed-width aria-hidden='true' />
         </div>
       </div>
-      <div v-if="layout?.code" class="relative flex-1 overflow-hidden">
+      <div v-if="layout?.code" class="relative flex-1 overflow-auto">
         <component class="w-full" :is="getIrisComponent(layout.code)" :fieldValue="layout.data.fieldValue" />
       </div>
       <div v-else>
