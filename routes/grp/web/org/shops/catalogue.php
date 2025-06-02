@@ -145,6 +145,7 @@ Route::name("departments.")->prefix('departments')
                     Route::prefix('family')->name('.family.')->group(function () {
                         Route::get('index', [IndexFamilies::class, 'inSubDepartmentInDepartment'])->name('index');
                         Route::get('create', [CreateFamily::class, 'inSubDepartmentInDepartment'])->name('create');
+                        Route::get('{family}/edit', [EditFamily::class, 'inSubDepartment'])->name('edit');
                         Route::prefix('{family}')->name('show')->group(function () {
                             Route::get('', [ShowFamily::class, 'inSubDepartment']);
                             Route::prefix('collection')->name('.collection.')->group(function () {
