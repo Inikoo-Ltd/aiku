@@ -11,6 +11,8 @@ import BrowserView from '@/Components/Pure/BrowserView.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHome, faSignIn } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { ref } from 'vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 library.add(faHome, faSignIn)
 
 const props = defineProps<{
@@ -37,6 +39,7 @@ const iframeSrc =
 	]
 )
 
+const isIframeLoading = ref(true)
 </script>
 
 <template>
@@ -54,12 +57,19 @@ const iframeSrc =
 
             >
                 <template #page v-if="data.layout.web_blocks?.length">
-                    <iframe
-						ref="_iframe"
-						:src="iframeSrc"
-						:title="props.title"
-                        class="w-full h-full"
-					/>
+                    <div class="relative w-full h-full">
+                        <div v-if="isIframeLoading"
+                            class="absolute inset-0 flex items-center justify-center bg-white">
+                            <LoadingIcon class="w-24 h-24 text-6xl" />
+                        </div>
+                        <iframe
+                            ref="_iframe"
+                            :src="iframeSrc"
+                            :title="props.title"
+                            class="w-full h-full"
+                            @load="isIframeLoading = false"
+                        />
+                    </div>
                    <!--  <template v-if="data.layout.web_blocks?.length">
                         <div class="px-10">
                             <div v-for="(activityItem, activityItemIdx) in data.layout.web_blocks"
