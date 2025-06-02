@@ -31,22 +31,31 @@ const onSubmitSubscribe = async () => {
 	errorMessage.value = ""
 	currentState.value = ""
 
-	try {
-		await axios.post(
-			window.origin + '/app/register-pre-customer/' + layout?.iris?.website?.id,
-			{
-				email: inputEmail.value,
-			},
-		)
-		
-		inputEmail.value = ""
-		currentState.value = 'success'
-	} catch (error) {
-		currentState.value = 'error'
-		errorMessage.value = error?.errors?.email || 'An error occurred while subscribing.'
+	if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
+		setTimeout(() => {
+			inputEmail.value = ""
+			currentState.value = 'success'
+			isLoadingSubmit.value = false
+		}, 700)
+	} else {  // If in Iris or Retina
+		try {
+			await axios.post(
+				window.origin + '/app/ds/register-pre-customer/' + layout?.iris?.website?.id,
+				{
+					email: inputEmail.value,
+				},
+			)
+			
+			inputEmail.value = ""
+			currentState.value = 'success'
+		} catch (error) {
+			currentState.value = 'error'
+			errorMessage.value = error?.errors?.email || 'An error occurred while subscribing.'
+		}
+	
+		isLoadingSubmit.value = false
 	}
 
-	isLoadingSubmit.value = false
 }
 </script>
 
