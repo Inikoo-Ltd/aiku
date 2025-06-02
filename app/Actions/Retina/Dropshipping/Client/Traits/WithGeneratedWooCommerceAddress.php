@@ -13,30 +13,30 @@ use Illuminate\Support\Arr;
 
 trait WithGeneratedWooCommerceAddress
 {
-    public function getAttributes(array $customer, array $address = []): array
+    public function getAttributes(array $data): array
     {
-        $country = Country::where('code', Arr::get($address, 'country'))->first();
+        $country = Country::where('code', Arr::get($data, 'country'))->first();
 
-        if (!blank($address)) {
+        if (!blank($data)) {
             $address = [
                 'address' => [
-                    'address_line_1'      => Arr::get($address, 'address_1'),
-                    'address_line_2'      => Arr::get($address, 'address_2'),
+                    'address_line_1'      => Arr::get($data, 'address_1'),
+                    'address_line_2'      => Arr::get($data, 'address_2'),
                     'sorting_code'        => null,
-                    'postal_code'         => Arr::get($address, 'postcode'),
+                    'postal_code'         => Arr::get($data, 'postcode'),
                     'dependent_locality'  => null,
-                    'locality'            => Arr::get($address, 'city'),
-                    'administrative_area' => Arr::get($address, 'province'),
-                    'country_code'        => Arr::get($address, 'country'),
+                    'locality'            => Arr::get($data, 'city'),
+                    'administrative_area' => Arr::get($data, 'state'),
+                    'country_code'        => Arr::get($data, 'country'),
                     'country_id'          => $country->id
                 ]
             ];
         }
 
         return [
-            'contact_name' => Arr::get($customer, 'first_name') . ' ' . Arr::get($customer, 'last_name'),
-            'email' => Arr::get($customer, 'email'),
-            'phone' => Arr::get($customer, 'phone'),
+            'contact_name' => Arr::get($data, 'first_name') . ' ' . Arr::get($data, 'last_name'),
+            'email' => Arr::get($data, 'email') ?? '',
+            'phone' => Arr::get($data, 'phone'),
             ...$address
         ];
     }

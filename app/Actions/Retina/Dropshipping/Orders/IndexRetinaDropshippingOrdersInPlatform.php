@@ -26,6 +26,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
+
+    private CustomerSalesChannel $customerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -77,6 +80,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->platform = $customerSalesChannel->platform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
         return $this->handle($customerSalesChannel);
     }
@@ -99,6 +103,17 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
                     'icon'       => 'fal fa-shopping-cart',
                     'title'   => __('Orders'),
                     'model'   =>  $platformName,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('catch'),
+                            'route' => [
+                                'name'       => 'retina.models.dropshipping.woocommerce.orders.catch',
+                                'parameters' => [$this->customerSalesChannel->user->id]
+                            ],
+                        ]
+                    ]
                 ],
 
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),

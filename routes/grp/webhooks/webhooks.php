@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
+use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
@@ -43,6 +44,7 @@ Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
 
         Route::prefix('orders')->as('orders.')->group(function () {
             // TODO
+            Route::post('catch', CatchRetinaOrdersFromWooCommerce::class)->name('catch');
             Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
         });
     });

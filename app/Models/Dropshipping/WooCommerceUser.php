@@ -85,13 +85,13 @@ class WooCommerceUser extends Model
     {
         return $this->belongsToMany(Product::class, 'wc_user_has_products')
             ->withTimestamps();
-    }
+    } //UNUSED
 
     public function orders(): BelongsToMany
     {
         return $this->belongsToMany(Order::class, 'wc_user_has_orders')
             ->withTimestamps();
-    }
+    } //UNUSED
 
     public function customerSalesChannel(): BelongsTo
     {
