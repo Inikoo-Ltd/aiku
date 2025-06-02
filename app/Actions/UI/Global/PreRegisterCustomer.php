@@ -30,7 +30,7 @@ class PreRegisterCustomer
 
     public function handle(Shop $shop, array $modelData)
     {
-        if (Arr::get($modelData, 'preview')) {
+        if (Arr::get($modelData, 'preview', false)) {
             return;
         }
         StorePreRegisterCustomer::make()->action($shop, $modelData);
