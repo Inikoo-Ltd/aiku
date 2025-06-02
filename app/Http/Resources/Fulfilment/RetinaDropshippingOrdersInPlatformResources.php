@@ -53,6 +53,7 @@ class RetinaDropshippingOrdersInPlatformResources extends JsonResource
             'state'                    => $this->state,
             'total_amount'             => $this->total_amount,
             'number_item_transactions' => $this->number_item_transactions,
+            'client_name'              => $this->client_name,
             ...$stateIcons
         ];
     }
