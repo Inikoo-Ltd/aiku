@@ -44,30 +44,30 @@ class StoreOrderFromWooCommerce extends OrgAction
         $customer = Arr::get($modelData, 'shipping');
         $customerClient = $wooCommerceUser->customer?->clients()->where('phone', Arr::get($customer, 'phone'))->first();
 
-        $products = collect($modelData['line_items']);
+        $wooProducts = collect($modelData['line_items']);
 
         if (!$customerClient) {
             $customerClient = StoreCustomerClient::make()->action($wooCommerceUser->customerSalesChannel, $deliveryAttributes);
         }
 
         $wooCommerceUserHasProductExists = $wooCommerceUser->customerSalesChannel->portfolios()
-            ->whereIn('platform_product_id', $products->pluck('product_id'))->exists();
+            ->whereIn('platform_product_id', $wooProducts->pluck('product_id'))->exists();
 
         if ($wooCommerceUserHasProductExists) {
             $order = StoreOrder::make()->action($wooCommerceUser->customer, [
                 'customer_client_id' => $customerClient->id,
                 'platform_id' => $wooCommerceUser->platform_id,
                 'customer_sales_channel_id' => $wooCommerceUser->customer_sales_channel_id,
-                'date' => $modelData['created_at'],
+                'date' => $modelData['date_created'],
                 'delivery_address' => new Address($deliveryAddress),
                 'billing_address' => new Address($billingAddress),
                 'data' => $modelData
             ], false);
 
-            foreach ($products as $product) {
+            foreach ($wooProducts as $wooProduct) {
                 /** @var Portfolio $wooCommerceUserHasProduct */
                 $wooCommerceUserHasProduct = $wooCommerceUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $product['product_id'])->first();
+                    ->where('platform_product_id', $wooProduct['product_id'])->first();
 
                 if ($wooCommerceUserHasProduct) {
                     /** @var \App\Models\Catalogue\Product $product */
@@ -88,7 +88,7 @@ class StoreOrderFromWooCommerce extends OrgAction
                         order: $order,
                         historicAsset: $historicAsset,
                         modelData: [
-                            'quantity_ordered' => $product['quantity'],
+                            'quantity_ordered' => $wooProduct['quantity'],
                         ]
                     );
                 }

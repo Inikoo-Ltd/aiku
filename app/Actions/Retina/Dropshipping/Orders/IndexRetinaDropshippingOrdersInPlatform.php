@@ -48,6 +48,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('order_stats', 'orders.id', '=', 'order_stats.order_id');
+        $query->leftJoin('customer_clients', 'customer_clients.id', '=', 'orders.customer_client_id');
 
         $query->select(
             'orders.id',
@@ -59,6 +60,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             'orders.date',
             'orders.total_amount',
             'currencies.code as currency_code',
+            'customer_clients.name as client_name',
         );
         return $query->defaultSort('id')
             ->allowedSorts(['id'])

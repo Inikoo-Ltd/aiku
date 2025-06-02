@@ -30,13 +30,14 @@ class CatchRetinaOrdersFromWooCommerce extends OrgAction
     {
         DB::transaction(function () use ($wooCommerceUser) {
             $response = $wooCommerceUser->getWooCommerceOrders();
-            dd($response);
             foreach ($response as $order) {
-                if ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
-                    StoreFulfilmentFromWooCommerce::run($wooCommerceUser, $order);
-                } elseif ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::DROPSHIPPING) {
-                    StoreOrderFromWooCommerce::run($wooCommerceUser, $order);
-                }
+                if (!empty(array_filter($order['billing'])) && !empty(array_filter($order['shipping']))) {
+                    if ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
+                        StoreFulfilmentFromWooCommerce::run($wooCommerceUser, $order);
+                    } elseif ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::DROPSHIPPING) {
+                        StoreOrderFromWooCommerce::run($wooCommerceUser, $order);
+                    }
+                }                
             }
         });
     }
