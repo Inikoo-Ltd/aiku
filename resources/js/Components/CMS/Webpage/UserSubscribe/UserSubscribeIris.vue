@@ -8,6 +8,7 @@ import { faCheckCircle } from "@fas"
 import { faCheck, faEnvelope } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
+import axios from "axios"
 library.add(faCheck, faEnvelope, faCheckCircle)
 
 
@@ -17,50 +18,31 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
-const emits = defineEmits<{
-	(e: "update:modelValue", value: any): void
-	(e: "autoSave"): void
-}>()
-
-const getBackgroundStyle = (bg: any): Record<string, string> => {
-	if (bg && bg.type === "color" && bg.color) {
-		return { backgroundColor: bg.color }
-	} else if (bg && bg.type === "image" && bg.image?.original) {
-		return { backgroundImage: `url(${bg.image.original})` }
-	}
-	return {}
-}
-
 const isLoadingSubmit = ref(false)
 const currentState = ref("")
 const inputEmail = ref("")
 const errorMessage = ref("")
 const onSubmitSubscribe = async () => {
-	router.post(
-		route('retina.register-pre-customer.store'),
-		{
-			email: inputEmail.value,
-		},
-		{	
-			onStart: () => {
-				isLoadingSubmit.value = true
-				errorMessage.value = ""
-				currentState.value = ""
+	isLoadingSubmit.value = true
+	errorMessage.value = ""
+	currentState.value = ""
+
+	try {
+		await axios.post(
+			window.origin + '/global/register-pre-customer/awf',
+			{
+				email: inputEmail.value,
 			},
-			onSuccess: () => {
-				inputEmail.value = ""
-				currentState.value = 'success'
-			},
-			onError: (error) => {
-				console.error('Subscription failed', error)
-				currentState.value = 'error'
-				errorMessage.value = error.message || 'An error occurred while subscribing.'
-			},
-			onFinish: () => {
-				isLoadingSubmit.value = false
-			}
-		}
-	)
+		)
+		
+		inputEmail.value = ""
+		currentState.value = 'success'
+	} catch (error) {
+		currentState.value = 'error'
+		errorMessage.value = error?.email || 'An error occurred while subscribing.'
+	}
+
+	isLoadingSubmit.value = false
 }
 </script>
 
@@ -78,7 +60,7 @@ const onSubmitSubscribe = async () => {
 
 				<Transition>
 					<div v-if="currentState != 'success'" class="flex flex-col items-start">
-						<form @submit.prevent="(e) => onSubmitSubscribe" class="mt-6 sm:flex sm:max-w-lg sm:items-center sm:w-full mx-auto">
+						<form @submit.prevent="(e) => onSubmitSubscribe()" class="mt-6 sm:flex sm:max-w-lg sm:items-center sm:w-full mx-auto">
 							<label for="email-address" class="sr-only">
 								Email address
 							</label>

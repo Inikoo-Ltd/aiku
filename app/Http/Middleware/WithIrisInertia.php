@@ -56,7 +56,7 @@ trait WithIrisInertia
                 'name'             => $webUser?->contact_name,
                 'username'         => $webUser?->username,
                 'email'            => $webUser?->email,
-                'favourites_count' => $webUser?->customer->stats->number_favourites,
+                'favourites_count' => $webUser?->customer?->stats?->number_favourites,
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ]
