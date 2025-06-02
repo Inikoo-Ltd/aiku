@@ -240,7 +240,7 @@ class FetchAuroraWebBlocks
                 $models[]     = $product;
                 break;
 
-            case "category_products":
+            case "category_products_XX":
                 $webBlockType = $group->webBlockTypes()->where("slug", "family")->first();
                 $models[]     = ProductCategory::find($webpage->model_id);
                 $layout       = $this->processFamilyData($webpage, $auroraBlock);
@@ -308,9 +308,12 @@ class FetchAuroraWebBlocks
                 $layout       = $this->processDepartmentData($webpage, $auroraBlock);
                 break;
 
-            case "blackboard":
+            case "blackboard_XX":
                 $webBlockType = $group->webBlockTypes()->where("slug", "overview-aurora")->first();
                 $layout       = $this->processOverviewData($webBlockType, $webpage, $auroraBlock);
+
+
+
                 break;
             case "button":
                 $webBlockType = $group->webBlockTypes()->where("slug", "cta-aurora-1")->first();

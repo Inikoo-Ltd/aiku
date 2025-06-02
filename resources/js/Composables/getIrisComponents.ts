@@ -80,6 +80,7 @@ const components: Record<string, Component> = {
     'department-1' : Department1Iris,
     'carousel-1' : Carousel1Iris,
     'sub-department-1' : SubDepartments1Iris,
+    'sub-departments-1' : SubDepartments1Iris,
 }
 
 

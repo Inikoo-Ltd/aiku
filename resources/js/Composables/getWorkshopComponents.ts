@@ -37,7 +37,7 @@ import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
 import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iris.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
-import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
+import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -55,8 +55,8 @@ export const getComponent = (componentName: string) => {
         "iframe": Iframe,
         'images': ImageWorkshop,
         "overview_aurora": Overview,
-        'product-1': ProductIris1,
-        'product': ProductIris1,
+        'product-1': ProductWorkshop1,
+        'product': ProductWorkshop1,
         'products': ProductList,
         "script": Script,
         'text': Text,
