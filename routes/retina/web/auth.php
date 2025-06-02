@@ -30,7 +30,7 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
     Route::post('login', RetinaLogin::class)->name('login.store');
 
-    Route::post('/register-pre-customer/{shop:slug}', PreRegisterRetinaDropshippingCustomer::class)->name('register-pre-customer.store');
+    Route::post('/register-pre-customer/{shop:slug}', PreRegisterRetinaDropshippingCustomer::class)->name('register_pre_customer.store');
 
     Route::get('/{shop:slug}/login/google', function (Shop $shop) {
         return Socialite::driver('google')->with(['shop' => $shop])->scopes(['email', 'profile'])->redirect();
