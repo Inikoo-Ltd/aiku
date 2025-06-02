@@ -19,7 +19,6 @@ const props = defineProps<{
     fieldValue: {}
 }>()
 
-console.log('poprs',props)
 const product = ref({
     title: '8x Monkey Bath Bomb 90g - Guava & Strawberry',
     code: 'BKB-07',
@@ -103,8 +102,6 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
 </script>
 
 <template>
-   <!--  <pre>{{ fieldValue }}</pre>
-    <pre>{{ modelValue }}</pre> -->
     <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6">
         <div class="grid grid-cols-5 gap-x-10 mb-12">
             <!-- Left Column (3/5) -->
