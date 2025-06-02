@@ -138,6 +138,14 @@ class Kernel extends HttpKernel
             BindGroupInstance::class,
             SetLocale::class,
         ],
+        'web-global' => [
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+            SubstituteBindings::class,
+        ],
         'aiku-public' => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
