@@ -13,6 +13,7 @@ use App\Actions\Web\WebBlock\StoreWebBlock;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
@@ -37,83 +38,82 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
     }
 
-    protected function getWebpageBlocksByType(Webpage $webpage, string $type): \Illuminate\Support\Collection
-    {
-        return DB::table('model_has_web_blocks')
-            ->select(['web_blocks.layout', 'web_blocks.id', 'web_block_types.code as type'])
-            ->leftJoin('web_blocks', 'web_blocks.id', '=', 'model_has_web_blocks.web_block_id')
-            ->leftJoin('web_block_types', 'web_block_types.id', '=', 'web_blocks.web_block_type_id')
-            ->where('web_block_types.code', $type)
-            ->where('model_has_web_blocks.model_type', 'Webpage')
-            ->where('model_has_web_blocks.model_id', $webpage->id)->get();
-    }
-
 
     protected function processFamilyWebpages(Webpage $webpage, Command $command): void
     {
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'family');
-
-        if ($countFamilyWebBlock == 0) {
-            $command->error('Webpage '.$webpage->code.' Family Web Block not found');
-        } elseif ($countFamilyWebBlock > 1) {
-            $command->v('Webpage '.$webpage->code.' MORE than 1 Family Web Block found');
-        } else {
-            $command->info('Webpage '.$webpage->code.' Family Web Block found');
-        }
-    }
-
-    protected function processProductWebpages(Webpage $webpage, Command $command): void
-    {
-        $webBlocksData  = $this->getWebpageBlocksByType($webpage, 'products-1');
-        $WebBlocksCount = count($webBlocksData);
-
         /** @var ProductCategory $family */
         $family = $webpage->model;
 
 
+        //        foreach($webpage->webBlocks as $webblock) {
+        //            print $webblock->webBlockType->code . "\n";
+        //        }
+        //        exit;
 
-        if ($WebBlocksCount == 0) {
-            $webBlocksDataNew = $this->getWebpageBlocksByType($webpage, 'products-1');
-            if (count($webBlocksDataNew) == 0) {
-                $command->error('Webpage '.$webpage->code.' Product Web Block not found');
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'family');
+        if (count($countFamilyWebBlock) > 0) {
+            foreach ($countFamilyWebBlock as $webBlockData) {
+                DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
+                DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
 
-                $this->createWebBlock($webpage, 'product-1',$family);
+                DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
+                DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
 
-            }
-        } elseif ($WebBlocksCount > 1) {
-            $command->error('Webpage '.$webpage->code.' More than one products-1 Web Block  found');
-        } else {
-            $layout      = json_decode($webBlocksData[0]->layout, true);
-            $description = Arr::get($layout, 'data.fieldValue.value.text');
+                DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
+            };
+        }
 
-            if ($description) {
-                //$command->line('P: '.$product->id.' Product description updated');
-                $product->update(['description' => $description]);
-            }
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
 
-            $webBlockType = WebBlockType::where('code', 'product-1')->first();
+        if (count($countFamilyWebBlock) > 0) {
+            $command->error('Webpage '.$webpage->code.' MORE than 1 overview_aurora Web Block found');
 
-            $webBlock = WebBlock::find($webBlocksData[0]->id);
+            foreach ($countFamilyWebBlock as $webBlockData) {
+                $layout       = json_decode($webBlockData->layout, true);
+                $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
 
-            $newLayout = [];
-            data_set($newLayout, 'data.fieldValue', Arr::get($webBlockType->data, 'fieldValue', []));
-            $webBlockUpdateData = [
-                'web_block_type_id' => $webBlockType->id,
-                'layout'            => $newLayout
-            ];
+                $description = '';
+                foreach ($descriptions as $descriptionData) {
+                    $text = Arr::get($descriptionData, 'text');
+                    if ($text) {
+                        $description .= $text.' ';
+                    }
+                }
+                $description = trim($description);
+
+                if ($description) {
+                    $command->line('F: '.$family->id.' Family description updated');
+                    $family->update(['description' => $description]);
+                }
+
+                DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
+                DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
+                DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
+            };
+        }
 
 
-            $webBlock->update(
-                $webBlockUpdateData
-            );
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'family-1', $family);
+        }
+
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'products-1', $family);
         }
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_catalogue_webpages';
+
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_family_webpages';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])->get();
+        $webpagesID = DB::table('webpages')->select('id')->where('model_type', 'ProductCategory')->get();
 
 
         foreach ($webpagesID as $webpageID) {

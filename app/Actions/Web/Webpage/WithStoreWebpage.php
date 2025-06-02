@@ -18,12 +18,12 @@ use Illuminate\Support\Arr;
 
 trait WithStoreWebpage
 {
-    protected function createWebBlock(Webpage $webpage, string $webBlockCode, Product|ProductCategory|Collection $model): ?WebBlock
+    protected function createWebBlock(Webpage $webpage, string $webBlockCode, Product|ProductCategory|Collection $model): void
     {
         $webBlockType = WebBlockType::where('code', $webBlockCode)->first();
 
         if(!$webBlockType){
-            return null;
+            return;
         }
 
         $newLayout = [];
@@ -56,6 +56,6 @@ trait WithStoreWebpage
         ];
 
 
-        return $webpage->modelHasWebBlocks()->create($modelHasWebBlocksData);
+        $webpage->modelHasWebBlocks()->create($modelHasWebBlocksData);
     }
 }
