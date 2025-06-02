@@ -12,13 +12,13 @@ namespace App\Actions\UI\Global;
 
 use App\Actions\CRM\Customer\StorePreRegisterCustomer;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class PreRegisterRetinaDropshippingCustomer
+class PreRegisterCustomer
 {
     /**
      * @throws \Throwable
@@ -28,9 +28,12 @@ class PreRegisterRetinaDropshippingCustomer
 
     protected Shop $shop;
 
-    public function handle(Shop $shop, array $modelData): Customer
+    public function handle(Shop $shop, array $modelData)
     {
-        return StorePreRegisterCustomer::make()->action($shop, $modelData);
+        if (Arr::get($modelData, 'preview', false)) {
+            return;
+        }
+        StorePreRegisterCustomer::make()->action($shop, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -54,18 +57,19 @@ class PreRegisterRetinaDropshippingCustomer
                     ]
                 ),
             ],
+            'preview'                => ['sometimes', 'boolean'],
         ];
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(Shop $shop, ActionRequest $request): Customer
+    public function asController(Shop $shop, ActionRequest $request)
     {
         $this->shop = $shop;
         $this->fillFromRequest($request);
         $this->validatedData = $this->validateAttributes();
 
-        return $this->handle($shop, $this->validatedData);
+        $this->handle($shop, $this->validatedData);
     }
 }

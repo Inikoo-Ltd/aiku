@@ -1,9 +1,13 @@
 <?php
 
-use App\Actions\UI\Global\PreRegisterRetinaDropshippingCustomer;
+use App\Actions\UI\Global\PreRegisterCustomer;
 use Laravel\Socialite\Facades\Socialite;
 
-Route::post('/register-pre-customer/{shop:slug}', PreRegisterRetinaDropshippingCustomer::class)->name('register-pre-customer.store');
+Route::get('/ping', function () {
+    return 'pong';
+})->name('global.test');
+
+Route::post('/register-pre-customer/{shop:slug}', PreRegisterCustomer::class)->name('register-pre-customer.store');
 
 Route::get('/login/google', function () {
     return Socialite::driver('google')->scopes(['email', 'profile'])->redirect();
