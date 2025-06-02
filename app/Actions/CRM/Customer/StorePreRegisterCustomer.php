@@ -16,25 +16,23 @@ use App\Actions\Comms\Email\SendNewCustomerNotification;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
-use App\Actions\Utils\GetLocationFromIp;
+use App\Actions\SysAdmin\WithLogRequest;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Country;
 use App\Rules\IUnique;
-use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 
 class StorePreRegisterCustomer extends OrgAction
 {
     /**
      * @throws \Throwable
      */
+    use WithLogRequest;
     public function handle(Shop $shop, array $modelData): Customer
     {
 
@@ -56,7 +54,7 @@ class StorePreRegisterCustomer extends OrgAction
             $modelData['is_fulfilment'] = true;
         }
 
-        data_set($modelData, 'location', GetLocationFromIp::run(request()->ip()));
+        data_set($modelData, 'location', $this->getLocation(request()->ip()));
 
 
         data_set($modelData, 'shop_id', $shop->id);
@@ -64,7 +62,6 @@ class StorePreRegisterCustomer extends OrgAction
         data_set($modelData, 'organisation_id', $shop->organisation_id);
         data_set($modelData, 'reference', GetSerialReference::run(container: $shop, modelType: SerialReferenceModelEnum::CUSTOMER));
 
-        
         $customer = Customer::create($modelData);
 
         $password = Str::random(15);
@@ -127,16 +124,6 @@ class StorePreRegisterCustomer extends OrgAction
     public function asCommand($command)
     {
         $f = Shop::find(13);
-
-        // $country = Country::where('code', 'ID')->first();
-        // $addressData = [
-        //     'address_line_1'        => 'Jl. Raya Kuta No. 123',
-        //     'address_line_2'        => null,
-        //     'postal_code'           => '80361',
-        //     'locality'              => 'Kuta',
-        //     'country_code'          => $country->code,
-        //     'country_id'            => $country->id
-        // ];
 
         $this->handle($f, [
             'email'     => 'preTest@gmail.com',
