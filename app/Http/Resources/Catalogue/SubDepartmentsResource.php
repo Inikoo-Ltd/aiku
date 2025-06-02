@@ -10,6 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property string $slug
@@ -39,6 +40,8 @@ class SubDepartmentsResource extends JsonResource
             'department_slug'    => $this->department_slug,
             'department_code'    => $this->department_code,
             'department_name'    => $this->department_name,
+            'images'                  => ImageResource::collection($this->images),
+            'image_thumbnail'         => $this->imageSources(720, 480),
             'state'              => [
                 'label' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],

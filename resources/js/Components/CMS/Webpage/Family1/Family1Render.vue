@@ -22,17 +22,9 @@ defineProps<{
     <!-- Card Gambar -->
     <div class="relative w-full bg-white rounded-2xl shadow-md overflow-hidden">
       <div class="w-full h-64">
-        <Image
-          v-if="data.image"
-          :src="data.image"
-          alt="Product"
-          class="w-full h-full object-cover"
-        />
-        <div
-          v-else
-          class="w-full h-full flex items-center justify-center bg-gray-100"
-        >
-          <FontAwesomeIcon :icon="faImage" class="w-6 h-6 text-gray-400" />
+        <Image v-if="data.image" :src="data.image" :alt="data.name" />
+        <div v-else class="w-full h-full flex items-center justify-center bg-gray-100">
+          <FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
         </div>
       </div>
     </div>
