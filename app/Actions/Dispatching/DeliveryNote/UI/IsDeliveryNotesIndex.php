@@ -127,7 +127,7 @@ trait IsDeliveryNotesIndex
     public function tableStructure($parent, $prefix = null, $bucket = 'all'): Closure
     {
         $employee = null;
-        if(!request()->user() instanceof WebUser) {
+        if (!request()->user() instanceof WebUser) {
             $employee = request()->user()->employees()->first() ?? null;
         }
         $pickerEmployee = null;

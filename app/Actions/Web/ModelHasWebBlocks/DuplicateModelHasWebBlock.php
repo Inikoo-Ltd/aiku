@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 02-06-2025-16h-33m
@@ -29,7 +30,7 @@ class DuplicateModelHasWebBlock extends OrgAction
     public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
     {
         $position = null;
-        if($modelHasWebBlocks->webpage_id == $webpage->id){
+        if ($modelHasWebBlocks->webpage_id == $webpage->id) {
             $position = $modelHasWebBlocks->position + 1;
         } else {
             $position = Arr::pull($modelData, 'position', $webpage->modelHasWebBlocks()->max('position') + 1);

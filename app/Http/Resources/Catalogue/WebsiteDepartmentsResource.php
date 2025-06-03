@@ -9,7 +9,6 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;

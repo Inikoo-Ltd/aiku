@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 03-06-2025-11h-46m
@@ -8,9 +9,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\ProductCategory;
 
 /**
@@ -46,7 +45,7 @@ class WorkshopSubDepartmentsResource extends JsonResource
             'families_route'    => [
                 'name' => 'grp.json.workshop.families.index',
                 'parameters' => [
-                    'subDepartment' => $this->slug 
+                    'subDepartment' => $this->slug
                 ]
             ]
         ];

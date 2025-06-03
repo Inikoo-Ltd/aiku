@@ -37,7 +37,7 @@ class CatchRetinaOrdersFromWooCommerce extends OrgAction
                     } elseif ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::DROPSHIPPING) {
                         StoreOrderFromWooCommerce::run($wooCommerceUser, $order);
                     }
-                }                
+                }
             }
         });
     }

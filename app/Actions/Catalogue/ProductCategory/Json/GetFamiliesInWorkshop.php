@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 03-06-2025-11h-47m
@@ -11,11 +12,8 @@ namespace App\Actions\Catalogue\ProductCategory\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\Catalogue\WorkshopFamiliesResource;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 03-06-2025-11h-44m
@@ -6,26 +7,20 @@
  * copyright 2025
 */
 
-namespace App\Actions\Catalogue\ProductCategory\UI;
+namespace App\Actions\Catalogue\ProductCategory\Json;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\Http\Resources\Catalogue\WorkshopSubDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 

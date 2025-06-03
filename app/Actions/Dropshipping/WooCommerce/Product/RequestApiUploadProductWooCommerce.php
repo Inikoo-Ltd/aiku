@@ -61,7 +61,7 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
             ];
 
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
-            
+
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
             ]);

@@ -73,7 +73,7 @@ class StoreProduct extends OrgAction
 
             if ($parent->type == ProductCategoryTypeEnum::FAMILY) {
                 data_set($modelData, 'family_id', $parent->id);
-                if($parent->subDepartment) {
+                if ($parent->subDepartment) {
                     data_set($modelData, 'sub_department_id', $parent->subDepartment->id);
                 }
             }

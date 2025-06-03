@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 02-06-2025-15h-25m
@@ -9,13 +10,9 @@
 namespace App\Actions\Maintenance;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateCustomerClients;
-use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
@@ -26,7 +23,7 @@ class RepairMissingSubDepartmentInProduct
 
     public function handle(Product $product): void
     {
-        if($product->family && $product->family->subDepartment && !$product->subDepartment){
+        if ($product->family && $product->family->subDepartment && !$product->subDepartment) {
             $product = $this->update($product, ['sub_department_id' => $product->family->subDepartment->id]);
             $product->refresh();
             SubDepartmentHydrateProducts::run($product->subDepartment);
@@ -38,7 +35,7 @@ class RepairMissingSubDepartmentInProduct
 
     public function asCommand(Command $command): void
     {
-        if($command->argument('productCategory')) {
+        if ($command->argument('productCategory')) {
             $productCategory = ProductCategory::find($command->argument('productCategory'));
             $products = $productCategory->getProducts()->whereNull('sub_department_id');
             foreach ($products as $product) {
@@ -46,11 +43,11 @@ class RepairMissingSubDepartmentInProduct
             }
         } else {
             $count = Product::whereNotNull('family_id')->whereNull('sub_department_id')->count();
-    
+
             $bar = $command->getOutput()->createProgressBar($count);
             $bar->setFormat('debug');
             $bar->start();
-    
+
             Product::orderBy('id')->whereNotNull('family_id')->whereNull('sub_department_id')
                 ->chunk(100, function (Collection $models) use ($bar) {
                     foreach ($models as $model) {
