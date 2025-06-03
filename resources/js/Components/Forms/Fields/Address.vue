@@ -48,7 +48,10 @@ const handleChange = () => props.form.clearErrors();
                     :placeholder="props.fieldData.placeholder ?? 'Select a country'"
                     :canDeselect="false"
                     :canClear="false"
+                    name="country_id"
+                    id="country_id"
                 />
+                
                 <div v-if="form.errors[fieldName] || form.recentlySuccessful"
                     class="absolute inset-y-2/4 right-0 pr-3 flex items-center pointer-events-none bg-red-500">
                     <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]"
@@ -73,7 +76,7 @@ const handleChange = () => props.form.clearErrors();
                             :options="administrativeAreas(addressValues['country_id'])" :label="'name'" :value-prop="'name'"
                             v-model="addressValues['administrative_area']" />
                         <input v-else v-model="addressValues['administrative_area']" type="text" name="administrative_area"
-                            id="administrative_area" autocomplete="password"
+                            id="administrative_area"
                             class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
                     </div>
                     <div v-else>
@@ -82,7 +85,7 @@ const handleChange = () => props.form.clearErrors();
                             <span v-if="form.errors[addressField]" class="mt-2 text-sm text-red-600">{{ form.errors[addressField] }}</span>
                         </label>
                         <input @input="handleChange()" v-model="addressValues[addressField]" type="text"
-                            name="address_line_2" :id="`${addressField}`" autocomplete="password"
+                            name="address_line_2" :id="`${addressField}`"
                             class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
                     </div>
                 </div>
