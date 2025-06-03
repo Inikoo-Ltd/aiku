@@ -71,6 +71,10 @@ class WebsiteDepartmentsResource extends JsonResource
                     'shop'         => $this->shop->slug,
                     'department'   => $this->slug
                 ]
+            ],
+            'update_sub_department_route' => [
+                'name' => 'grp.models.sub-department.update',
+                'parameters' => []
             ]
         ];
     }
