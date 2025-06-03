@@ -65,10 +65,8 @@ class WebsiteDepartmentsResource extends JsonResource
             'organisation_name'       => $this->organisation_name,
             'organisation_slug'       => $this->organisation_slug,
             'sub_departments_route'   => [
-                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                'name' => 'grp.json.workshop.sub_departments.index',
                 'parameters' => [
-                    'organisation' => $this->organisation->slug,
-                    'shop'         => $this->shop->slug,
                     'department'   => $this->slug
                 ]
             ],
