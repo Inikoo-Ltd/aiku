@@ -18,6 +18,7 @@ use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
 use App\Models\CRM\WebUser;
 use App\Rules\ValidAddress;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -128,9 +129,10 @@ class FinishPreRegisterRetinaCustomer extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function asController(Shop $shop, ActionRequest $request)
+    public function asController(Shop $shop, ActionRequest $request): RedirectResponse
     {
         $this->registerDropshippingInitialisation($shop, $request);
         $this->handle(request()->user(), $this->validatedData);
+        return redirect()->route('retina.dashboard.show');
     }
 }

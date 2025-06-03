@@ -36,11 +36,11 @@ class RetinaAuthenticate extends Middleware
             return $next($request);
         }
 
-        $notAllowedRoutes = [$redirectRoute, 'finish_pre_register.store'];
+        $notAllowedRoutes = [$redirectRoute, 'retina.finish_pre_register.store'];
 
         if ($customer &&
         $customer->status == CustomerStatusEnum::PRE_REGISTRATION &&
-        $request->route()->getName() !== $redirectRoute) {
+        !in_array($currentRoute, $notAllowedRoutes)) {
             return redirect()->route($redirectRoute);
         } elseif ($customer->status != CustomerStatusEnum::PRE_REGISTRATION && in_array($currentRoute, $notAllowedRoutes)) {
             return abort(404);

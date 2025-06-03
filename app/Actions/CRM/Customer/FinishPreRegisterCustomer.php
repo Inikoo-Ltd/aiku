@@ -39,8 +39,8 @@ class FinishPreRegisterCustomer extends OrgAction
             data_set($modelData, 'status', CustomerStatusEnum::PENDING_APPROVAL);
             data_set($modelData, 'state', CustomerStateEnum::REGISTERED);
         } else {
-            data_set($modelData, 'status', CustomerStatusEnum::APPROVED);
-            data_set($modelData, 'state', CustomerStateEnum::ACTIVE);
+            data_set($modelData, 'status', CustomerStatusEnum::APPROVED->value);
+            data_set($modelData, 'state', CustomerStateEnum::ACTIVE->value);
         }
 
 
@@ -66,7 +66,7 @@ class FinishPreRegisterCustomer extends OrgAction
     public function rules(): array
     {
         return [
-            'contact_name'       => ['required', 'string', 'max:255'],
+            'contact_name'       => ['sometimes', 'string', 'max:255'],
             'company_name'       => ['required', 'string', 'max:255'],
             'phone'              => ['required', 'max:255'],
             'contact_address'    => ['required', new ValidAddress()],
