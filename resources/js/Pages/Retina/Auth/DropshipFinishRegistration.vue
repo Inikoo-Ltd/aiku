@@ -30,10 +30,16 @@ const props = defineProps<{
 		name: string,
 		parameters: string,
 	},
-	email: string
 	timeline: {}
 	current_timeline: string
+	client: {
+		email: string
+		contact_name: string
+
+	}
 }>()
+
+// console.log('client', props.client)
 
 // di <script setup lang="ts">
 const initialPollReplies = props.polls.map((poll) => ({
@@ -45,8 +51,8 @@ const initialPollReplies = props.polls.map((poll) => ({
 
 // Define form using Inertia's useForm
 const form = useForm({
-	contact_name: "",
-	email: props.email || "",
+	contact_name: props.client?.contact_name || "",
+	email: props.client?.email || "",
 	phone: "",
 	company_name: "",
 	website: "",
