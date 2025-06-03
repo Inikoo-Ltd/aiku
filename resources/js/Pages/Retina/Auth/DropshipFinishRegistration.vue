@@ -19,6 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { Checkbox } from "primevue"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
@@ -61,6 +62,7 @@ const form = useForm({
 	password_confirmation: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
+	is_opt_in: true
 })
 
 // Define reactive variables
@@ -362,6 +364,14 @@ simplePolls.value.forEach((poll) => {
 										{{ form.errors.password_confirmation }}
 									</p>
 								</div>
+							</div>
+							
+							<!-- Opt in newsletter -->
+							<div class="flex items-center gap-2 sm:col-span-6">
+								<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary />
+								<label for="opt_in_newsletter">
+									{{ trans("Opt in to our newsletter for updates and offers.") }}
+								</label>
 							</div>
 						</div>
 					</div>

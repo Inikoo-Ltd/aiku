@@ -185,7 +185,7 @@ const onCallbackGoogleLogin = (e) => {
                     </label>
                     <div class="mt-1">
                         <PureInput
-							v-model="form.username"
+							v-model="form.email"
 							id="email"
 							name="email"
                             :autofocus="true"
