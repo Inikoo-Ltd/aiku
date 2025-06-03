@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class PreRegisterRetinaDropshippingCustomer extends RetinaAction
+class PreRegisterRetinaCustomer extends RetinaAction
 {
     /**
      * @throws \Throwable
