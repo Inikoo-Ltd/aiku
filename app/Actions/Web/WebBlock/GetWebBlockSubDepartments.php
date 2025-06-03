@@ -26,9 +26,9 @@ class GetWebBlockSubDepartments
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
-            ->select(['slug', 'code', 'name', 'image_id', 'webpages.url as url'])
-            ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->where('show_in_website', true)
+            ->select(['product_categories.slug', 'product_categories.code', 'product_categories.name', 'product_categories.image_id', 'webpages.url as url'])
+            ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->where('product_categories.show_in_website', true)
             ->get();
 
 
