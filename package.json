@@ -132,6 +132,7 @@
         "vue-json-viewer": "^3.0.4",
         "vue-resizable": "^2.1.7",
         "vue-tel-input": "^8.1.1",
+        "vue3-google-login": "^2.0.33",
         "vue3-moveable": "^0.28.0",
         "vue3-popper": "^1.5.0",
         "vuedraggable": "^4.1.0",

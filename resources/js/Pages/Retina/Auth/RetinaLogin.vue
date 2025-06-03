@@ -9,6 +9,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Background from '@/Components/CMS/Fields/Background.vue'
+import { GoogleLogin } from 'vue3-google-login'
 
 defineOptions({ layout: RetinaShowIris })
 const form = useForm({
@@ -37,7 +38,10 @@ onMounted(async () => {
     inputUsername.value?._inputRef?.focus()
 })
 
+const onCallback = (e) => {
 
+    console.log('xxxxxx Google login callback', e)
+}
 </script>
 
 <template>
@@ -46,6 +50,7 @@ onMounted(async () => {
 
     <div class="rounded-md flex items-center justify-center w-full px-6 py-12 lg:px-8">
         <div class="w-full max-w-sm bg-transparent">
+            
             <form class="space-y-6">
                 <!-- Username Field -->
                 <div>
@@ -81,15 +86,30 @@ onMounted(async () => {
                     </div>
                 </div>
 
-
+                <ValidationErrors />
 
                 <!-- Submit Button -->
                 <div class="space-y-2">
                     <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :type="'tertiary'" :class="'!bg-[#C1A027] !text-white'" />
                 </div>
 
+                <!-- Google Login -->
+                <div class="mx-auto w-fit">
+                    <div class="text-center mb-4 text-sm">
+                        Or
+                    </div>
+
+                    <GoogleLogin
+                        clientId="627235140872-2pbbrb6mlnj5g06us8t9fsph25h0je7f.apps.googleusercontent.com"
+                        :callback="(e) => onCallback(e)"
+                        :error="(e) => console.log('yyyyyy error', e)"
+                    >
+                    
+                    </GoogleLogin>
+                </div>
+
                 <!-- Registration Link -->
-                <div class="flex justify-center items-center mt-4">
+                <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
                         {{ trans("Don\'t have an account") }}?
                         <Link :href="route('retina.register')"
@@ -99,7 +119,6 @@ onMounted(async () => {
                     </p>
                 </div>
             </form>
-            <ValidationErrors />
         </div>
     </div>
 </template>
