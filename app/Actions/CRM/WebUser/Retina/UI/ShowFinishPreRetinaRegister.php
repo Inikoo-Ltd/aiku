@@ -34,16 +34,22 @@ class ShowFinishPreRetinaRegister
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
             abort(404);
         }
+
+        $webUser = $request->user();
         return Inertia::render(
-            'Auth/DropshipRegister',
+            'Auth/DropshipFinishRegistration',
             [
             'countriesAddressData' => GetAddressData::run(),
             'polls' => $pollsResource,
+            'timeline' => [],
+            'current_timeline' => null,
+            'client' => $webUser,
             'registerRoute' => [
-                'name' => 'retina.finish_pre_register',
+                'name' => 'retina.finish_pre_register.store',
                 'parameters' => [
                     'shop' => $shop->id
-                ]
+                ],
+                'method' => 'POST'
             ]
         ]
         );
