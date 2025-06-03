@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class FinishPreRegisterRetinaDropshippingCustomer extends RetinaAction
+class FinishPreRegisterRetinaCustomer extends RetinaAction
 {
     /**
      * @throws \Throwable
