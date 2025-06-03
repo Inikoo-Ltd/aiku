@@ -22,6 +22,7 @@ use App\Models\Helpers\Address;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class StoreOrderFromWooCommerce extends OrgAction
 {
@@ -95,6 +96,8 @@ class StoreOrderFromWooCommerce extends OrgAction
             }
 
             SubmitOrder::run($order);
+        } else {
+            Sentry::captureMessage('Some products dont exist');
         }
     }
 }
