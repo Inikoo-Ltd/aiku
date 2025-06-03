@@ -17,6 +17,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\FamilyResource;
+use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -168,8 +170,14 @@ class UpdateProductCategory extends OrgAction
         return $this->handle($productCategory, modelData: $this->validatedData);
     }
 
-    public function jsonResponse(ProductCategory $productCategory): DepartmentsResource
+    public function jsonResponse(ProductCategory $productCategory): DepartmentsResource|SubDepartmentResource|FamilyResource
     {
-        return new DepartmentsResource($productCategory);
+        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            return new DepartmentsResource($productCategory);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            return new SubDepartmentResource($productCategory);
+        } else {
+            return new FamilyResource($productCategory);
+        }
     }
 }

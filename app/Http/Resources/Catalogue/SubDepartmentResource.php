@@ -27,6 +27,7 @@ class SubDepartmentResource extends JsonResource
         return [
             'slug'       => $this->slug,
             'image_id'   => $this->image_id,
+            'image'      => $this->imageSources(720, 720),
             'code'       => $this->code,
             'name'       => $this->name,
             'state'      => $this->state,
