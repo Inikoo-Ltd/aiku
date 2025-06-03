@@ -41,10 +41,9 @@ class GoogleLoginRetina extends RetinaAction
             abort(404);
         }
 
-        $googleUser = Arr::get($modelData, 'google_user', []);
+        $googleUser = $this->google_user ?? [];
 
-        $webUser = WebUser::where('google_id', Arr::get($googleUser, 'id'))
-            ->where('shop_id', $shop->id)
+        $webUser = WebUser::where('shop_id', $shop->id)
             ->where('email', Arr::get($googleUser, 'email'))
             ->first();
 
@@ -63,7 +62,6 @@ class GoogleLoginRetina extends RetinaAction
         $webUser->refresh();
 
         auth('retina')->login($webUser);
-        return;
     }
 
     public function postProcessRetinaLoginGoogle($request): RedirectResponse
@@ -87,7 +85,7 @@ class GoogleLoginRetina extends RetinaAction
             app()->setLocale($language->code);
         }
 
-        return Redirect::route('retina.finish-pre-register');
+        return redirect()->intended('/app/dashboard');
     }
 
     public function authorize(ActionRequest $request): bool
@@ -100,6 +98,7 @@ class GoogleLoginRetina extends RetinaAction
         $client = new Google_Client(['client_id' => config('services.google.client_id')]);
         $payload = $client->verifyIdToken($credential);
         if ($payload) {
+            dd($payload);
             return [
                 'id' => $payload['sub'],
                 'email' => $payload['email'],
@@ -122,7 +121,7 @@ class GoogleLoginRetina extends RetinaAction
         if ($googleCredential) {
             try {
                 $googleUser = $this->verifyGoogleCredential($googleCredential);
-                $request->merge(['google_user' => $googleUser]);
+                $this->set('google_user', $googleUser);
             } catch (\Exception $e) {
                 $validator->errors()->add('google_credential', $e->getMessage());
             }

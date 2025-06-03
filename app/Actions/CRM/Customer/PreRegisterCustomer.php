@@ -79,7 +79,6 @@ class PreRegisterCustomer extends OrgAction
                 'id' => $payload['sub'],
                 'email' => $payload['email'],
                 'name' => $payload['name'],
-                'avatar' => $payload['picture'] ?? null,
             ];
         }
         throw new \Exception('Invalid Google credential provided!');
