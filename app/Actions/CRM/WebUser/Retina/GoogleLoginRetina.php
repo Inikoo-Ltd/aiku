@@ -98,7 +98,6 @@ class GoogleLoginRetina extends RetinaAction
         $client = new Google_Client(['client_id' => config('services.google.client_id')]);
         $payload = $client->verifyIdToken($credential);
         if ($payload) {
-            dd($payload);
             return [
                 'id' => $payload['sub'],
                 'email' => $payload['email'],
