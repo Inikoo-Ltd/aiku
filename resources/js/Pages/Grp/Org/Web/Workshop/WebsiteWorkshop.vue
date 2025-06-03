@@ -43,7 +43,7 @@ const component = computed(() => {
         family: FamilyWorkshop,
         product: WorkshopProduct,
         department: DepartmentWorkshop,
-        sub_department : SubDepartementWorkshop
+        sub_department: SubDepartementWorkshop
     }
     return components[currentTab.value]
 })
@@ -75,5 +75,7 @@ const onPublish = (routeData) => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" />
+    <KeepAlive>
+        <component :is="component" :data="props[currentTab]" />
+    </KeepAlive>
 </template>

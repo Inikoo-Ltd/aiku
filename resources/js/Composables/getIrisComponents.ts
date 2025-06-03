@@ -66,7 +66,7 @@ const components: Record<string, Component> = {
     'department-1' : Department1Iris,
 
     //sub-departement
-   'sub-departments-1' : SubDepartments1Iris,
+    'sub-departments-1' : SubDepartments1Iris,
 
     //family
     'family-1' : FamilyIris1,
