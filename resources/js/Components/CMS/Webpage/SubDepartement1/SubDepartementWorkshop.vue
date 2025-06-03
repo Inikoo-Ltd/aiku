@@ -9,7 +9,6 @@ import { getStyles } from "@/Composables/styles";
 import { routeType } from "@/types/route";
 import FormEditSubDepertment from "./FormEditSubDepertment.vue";
 
-
 const props = defineProps<{
   modelValue: Record<string, any>;
   webpageData?: any;
@@ -18,19 +17,45 @@ const props = defineProps<{
   routeEditSubDepartement?: routeType;
 }>();
 
-const selectedSubDepartment = ref(null);
+const selectedSubDepartment = ref<null | {
+  id: number;
+  name: string;
+  description: string;
+  image?: string;
+}>(null);
+
 const showDialog = ref(false);
 
 function openModal(subDept: any) {
-  selectedSubDepartment.value = subDept;
+  selectedSubDepartment.value = {
+    id: subDept.id,
+    name: subDept.name,
+    description: subDept.description,
+    image: subDept.image,
+  };
   showDialog.value = true;
 }
+
+function handleSaved(updatedSubDept: any) {
+  const index = props.modelValue.sub_departments.findIndex(
+    (item: any) => item.id === updatedSubDept.id
+  );
+
+  if (index !== -1) {
+    props.modelValue.sub_departments[index] = {
+      ...props.modelValue.sub_departments[index],
+      ...updatedSubDept,
+    };
+  }
+  console.log(index,props.modelValue.sub_departments[index])
+  closeModal();
+}
+
 
 function closeModal() {
   showDialog.value = false;
   selectedSubDepartment.value = null;
 }
-
 </script>
 
 <template>
@@ -58,12 +83,11 @@ function closeModal() {
       }" />
     </div>
 
-    {{ routeEditSubDepartement }}
-
     <!-- PrimeVue Dialog -->
-    <Dialog :header="`Edit ${selectedSubDepartment?.department_name}`" v-model:visible="showDialog" :modal="true"
+    <Dialog :header="`Edit ${selectedSubDepartment?.name}`" v-model:visible="showDialog" :modal="true"
       :style="{ width: '500px' }" :closable="true" @hide="closeModal">
-      <FormEditSubDepertment :data="selectedSubDepartment" :saveRoute="routeEditSubDepartement"/>
+      <FormEditSubDepertment v-if="selectedSubDepartment" :key="selectedSubDepartment.id" :data="selectedSubDepartment"
+        :saveRoute="routeEditSubDepartement" @saved="handleSaved" />
     </Dialog>
   </div>
 </template>
