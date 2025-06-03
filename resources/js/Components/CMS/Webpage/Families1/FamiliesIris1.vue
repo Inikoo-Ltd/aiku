@@ -4,7 +4,7 @@ import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Family1Render from './Family1Render.vue'
+import Family1Render from './Families1Render.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { getStyles } from "@/Composables/styles"
 

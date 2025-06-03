@@ -32,7 +32,7 @@ import Topbar3Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar3
 import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
-import FamilyBluprint from "@/Components/CMS/Webpage/Family1/Blueprint"
+import FamilyBluprint from "@/Components/CMS/Webpage/Families1/Blueprint"
 import DepartementBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
@@ -61,7 +61,7 @@ export const getBlueprint = (componentName: string) => {
 		"department-1": DepartementBlueprint.blueprint,
 
 		//sub-departement
-		"sub-department-1": SubDepartement1Blueprint.blueprint,
+		"sub-departments-1": SubDepartement1Blueprint.blueprint,
 
 		//family
 		"family-1": FamilyBluprint.blueprint,
@@ -92,7 +92,6 @@ export const getBlueprint = (componentName: string) => {
 		"timeline": TimelineBlueprint.blueprint,
 		"step-1": Timeline2Bluprint.blueprint,
 		"carousel-1": Carousel1Blueprint.blueprint,
-		
 	}
 	return components[componentName] ?? []
 }
@@ -101,6 +100,7 @@ export const getBluprintPermissions = (componentName: string) => {
 	const components: Component = {
 		"departments": false,
 		"family-1": false,
+		"families-1": false,
 		"product": false,
 		"product-1": false,
 		"family": false,

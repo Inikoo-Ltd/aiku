@@ -64,7 +64,7 @@ const selectedTab = ref(props.data ? 1 : 0)
 
 const tabs = [
 	{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
-	{ label: 'Menu', icon: faList, tooltip: 'menu' },
+/* 	{ label: 'Menu', icon: faList, tooltip: 'menu' }, */
 	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
 ]
 
@@ -116,9 +116,9 @@ const onPickBlock = (value: object) => {
             :selectedWeblock="data?.code"
           />
         </TabPanel>
-        <TabPanel v-if="data" class="p-4">
+        <!-- <TabPanel v-if="data" class="p-4">
           <SubDepartementListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
-        </TabPanel>
+        </TabPanel> -->
         <TabPanel v-if="data" class="p-4">
           <SideEditor 
             v-model="data.data.fieldValue" 

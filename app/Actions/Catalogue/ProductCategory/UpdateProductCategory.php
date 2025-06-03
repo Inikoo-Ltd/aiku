@@ -72,7 +72,7 @@ class UpdateProductCategory extends OrgAction
         ])) {
             $this->productCategoryHydrators($productCategory);
         }
-        $productCategory->referesh();
+       $productCategory->refresh();
         return $productCategory;
     }
 
