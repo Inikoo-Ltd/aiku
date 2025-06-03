@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useForm } from "@inertiajs/vue3"
-import { ref, onMounted, nextTick, watch, computed } from "vue"
+import { Link, router, useForm } from "@inertiajs/vue3"
+import { ref, onMounted, nextTick, watch, computed, inject } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 // import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
 import { trans } from "laravel-vue-i18n"
@@ -17,19 +17,38 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { GoogleLogin, decodeCredential  } from 'vue3-google-login'
+import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
+import ValidationErrors from "@/Components/ValidationErrors.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
 // Set default layout
-// defineOptions({ layout: RetinaShowIris })
-const props = defineProps({
-	countriesAddressData: Array,
-	polls: Array,
+defineOptions({ layout: RetinaShowIris })
+
+const props = defineProps<{
+	countriesAddressData: [],
+	polls: {
+		id: string,
+		type: "option" | "text",
+		label: string,
+		name: string,
+	}[],
 	registerRoute: {
-		name: String,
-		parameters: String,
+		name: string,
+		parameters: string,
 	},
-})
+	google: {
+        client_id: string
+    }
+	
+}>()
+
+const layout = inject('layout', retinaLayoutStructure)
 
 // di <script setup lang="ts">
 const initialPollReplies = props.polls.map((poll) => ({
@@ -55,7 +74,7 @@ const form = useForm({
 // Define reactive variables
 const isLoading = ref(false)
 
-const submit = () => {
+const submitRegister = () => {
 	isLoading.value = true
 
 	if (form.password == form.password_confirmation) {
@@ -71,12 +90,6 @@ const submit = () => {
 		form.setError("password", "password not match")
 	}
 }
-
-const interestsList = ref([
-	{ label: "Pallets Storage", value: "pallets_storage" },
-	{ label: "Dropshipping", value: "dropshipping" },
-	{ label: "Space (Parking)", value: "rental_space" },
-])
 
 const addressFieldData = {
 	type: "address",
@@ -109,17 +122,162 @@ const initialPolls: Record<string, string | null> = {}
 simplePolls.value.forEach((poll) => {
 	initialPolls[poll.name] = poll.options.length > 1 ? null : ""
 })
+
+
+const isPasswordSame = computed(() => {
+	return form.password === form.password_confirmation
+})
+
+const isLoadingGoogle = ref(false)
+const onCallbackGoogleLogin = (e) => {
+    // console.log('xxxxxx Google login callback', e)
+    const userData = decodeCredential(e.credential)
+    // console.log("zzz Handle the userData", userData)
+
+    // Section: Submit
+    router.post(
+        route('retina.login_google', {
+            shop: layout.website?.id
+        }),
+        {
+            google_credential: e.credential,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingGoogle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to login with Google. Please contact administrator."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingGoogle.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
-	<div class="max-w-2xl mx-auto my-8">
+	<div class="rounded-md flex items-center justify-center w-full px-4 py-4 lg:px-8">
+        <div class="relative w-full max-w-lg bg-white border border-gray-200 rounded-md shadow-lg px-8 py-10">
+            <div v-if="isLoadingGoogle" class="absolute inset-0 bg-black/50 text-white z-10 flex justify-center items-center">
+                <LoadingIcon class="text-4xl" />
+            </div>
+
+            <form class="flex flex-col gap-y-6">
+                <!-- Username Field -->
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">
+                        {{ trans('Email') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureInput
+							v-model="form.username"
+							id="email"
+							name="email"
+                            :autofocus="true"
+							autocomplete="email"
+							required
+							placeholder="example@email.com"
+                            @keydown.enter="submitRegister"
+						/>
+                    </div>
+                </div>
+
+				<div class="sm:col-span-3">
+					<label for="password" class="capitalize block text-sm font-medium text-gray-700" > Password</label >
+					<div class="mt-2 password">
+						<PureInput
+							v-model="form.password"
+							@update:modelValue="(e) => form.clearErrors('password')"
+							:type="'password'"
+							required
+						/>
+						<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
+							{{ form.errors.password }}
+						</p>
+					</div>
+				</div>
+
+				<!-- Retype Password -->
+				<div class="sm:col-span-3">
+					<label for="password-confirmation" class="capitalize block text-sm font-medium text-gray-700" > Retype Password </label>
+					<div class="mt-2 password">
+						<PureInput
+							v-model="form.password_confirmation"
+							:type="'password'"
+							required />
+						<p
+							v-if="form.errors.password_confirmation"
+							class="text-sm text-red-600 mt-1">
+							{{ form.errors.password_confirmation }}
+						</p>
+					</div>
+				</div>
+
+				<Transition name="slide-to-right">
+					<div v-if="!isPasswordSame" class="-mt-4 text-red-500 italic">
+						{{ trans("Password is not match") }}
+					</div>
+				</Transition>
+
+                <ValidationErrors />
+
+                <!-- Submit Button -->
+                <div class="space-y-2">
+                    <Button full @click.prevent="submitRegister" :loading="isLoading" label="Register" xtype="'tertiary'" xclass="'!bg-[#C1A027] !text-white'" />
+                </div>
+
+                <!-- Google Login -->
+                <div class="mx-auto w-fit">
+                    <div class="text-center mb-4 text-sm">
+                        Or
+                    </div>
+
+                    <GoogleLogin
+                        :clientId="google.client_id"
+                        :callback="(e) => onCallbackGoogleLogin(e)"
+                        :error="(e) => console.log('yyyyyy error', e)"
+                    >
+                    
+                    </GoogleLogin>
+                </div>
+
+                <!-- Registration Link -->
+                <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
+                    <p class="text-sm text-gray-500">
+                        <span class="font-normal">{{ trans("Already have an account?") }}</span>
+                        <Link :href="route('retina.login.show')"
+                            class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
+                            {{ trans("Login here") }}
+                        </Link>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+	
+	<div v-if="false" class="max-w-2xl mx-auto my-8">
 		<!-- Card container -->
 		<div class="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
 			<!-- Card header -->
 			<div class="px-6 py-4 border-b border-gray-200">
 				<h2 class="text-xl font-semibold text-gray-800">Registration form</h2>
 			</div>
-			<form @submit.prevent="submit" class="space-y-12 px-14 py-10">
+			<form @submit.prevent="submitRegister" class="space-y-12 px-14 py-10">
 				<div class="text-xl font-semibold flex justify-center">
 					{{ trans("Join Our Dropship – Register Now!") }}
 				</div>

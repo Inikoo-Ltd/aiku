@@ -46,15 +46,18 @@ class ShowRetinaRegister
             return Inertia::render(
                 'Auth/DropshipRegister',
                 [
-                'countriesAddressData' => GetAddressData::run(),
-                'polls' => $pollsResource,
-                'registerRoute' => [
-                    'name' => 'retina.ds.register.store',
-                    'parameters' => [
-                        'shop' => $shop->id
+                    'countriesAddressData' => GetAddressData::run(),
+                    'polls' => $pollsResource,
+                    'registerRoute' => [
+                        'name' => 'retina.ds.register.store',
+                        'parameters' => [
+                            'shop' => $shop->id
+                        ]
+                    ],
+                    'google'    => [
+                        'client_id' => '627235140872-2pbbrb6mlnj5g06us8t9fsph25h0je7f.apps.googleusercontent.com'
                     ]
                 ]
-            ]
             );
         }
 

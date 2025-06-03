@@ -44,15 +44,15 @@ const inputUsername = ref(null)
 
 onMounted(async () => {
     await nextTick()
-    console.log('ff', inputUsername.value?._inputRef)
+    // console.log('ff', inputUsername.value?._inputRef)
     inputUsername.value?._inputRef?.focus()
 })
 
 const isLoadingGoogle = ref(false)
 const onCallbackGoogleLogin = (e) => {
-    console.log('xxxxxx Google login callback', e)
+    // console.log('xxxxxx Google login callback', e)
     const userData = decodeCredential(e.credential)
-    console.log("zzz Handle the userData", userData)
+    // console.log("zzz Handle the userData", userData)
 
     // Section: Submit
     router.post(
