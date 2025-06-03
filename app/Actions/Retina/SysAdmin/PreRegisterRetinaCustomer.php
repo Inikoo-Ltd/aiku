@@ -14,7 +14,6 @@ use App\Actions\CRM\Customer\PreRegisterCustomer;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\Shop;
 use App\Rules\IUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -31,9 +30,6 @@ class PreRegisterRetinaCustomer extends RetinaAction
 
     public function handle(Shop $shop, array $modelData)
     {
-        if (Arr::get($modelData, 'preview', false)) {
-            return;
-        }
         PreRegisterCustomer::make()->action($shop, $modelData);
     }
 
@@ -46,7 +42,7 @@ class PreRegisterRetinaCustomer extends RetinaAction
     {
         return [
             'email'                    => [
-                'required_without:google_credential',
+                'required',
                 'string',
                 'max:255',
                 'exclude_unless:deleted_at,null',
@@ -58,8 +54,6 @@ class PreRegisterRetinaCustomer extends RetinaAction
                     ]
                 ),
             ],
-            'google_credential'     => ['required_without:email', 'string', 'max:2048'],
-            'preview'                => ['sometimes', 'boolean'],
         ];
     }
 
