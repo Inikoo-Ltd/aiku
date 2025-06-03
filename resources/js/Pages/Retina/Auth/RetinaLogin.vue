@@ -143,7 +143,7 @@ const onCallbackGoogleLogin = (e) => {
                 </div>
 
                 <!-- Google Login -->
-                <div class="mx-auto w-fit">
+                <div v-if="layout?.iris?.website?.type !== 'fulfilment'" class="mx-auto w-fit">
                     <div class="text-center mb-4 text-sm">
                         Or
                     </div>
