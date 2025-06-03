@@ -38,12 +38,45 @@ import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iri
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
+import SubDepartments1Workshop from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementWorkshop.vue'
 
 
 export const getComponent = (componentName: string) => {
-    console.log(componentName)
     const components: Component = {
+        //topbar
+        'top-bar-1': Topbar1,
+        'top-bar-2': Topbar2,
+        'top-bar-3': Topbar3,
+        'top-bar-1-fulfilment': Topbar1Fulfilment,
+        'top-bar-2-fulfilment': Topbar2Fulfilment,
+        'top-bar-3-fulfilment': Topbar3Fulfilment,
+
+        //header
+        'header-1': Header1,
+        'header-2': Header2,
+
+        //menu 
+        'menu-1': Menu1,
+
+        //footer
         'footer-1': Footer1,
+
+        //departement
+        'department' : Department1Iris,
+
+        //sub-departement
+        'sub-departments-1' : SubDepartments1Workshop,
+
+        //family
+
+
+        //product
+        'product-1': ProductWorkshop1,
+        'product': ProductWorkshop1,
+
+        //product list
+        'products': ProductList,
+
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,
         "bricks": Gallery,
@@ -55,30 +88,17 @@ export const getComponent = (componentName: string) => {
         "iframe": Iframe,
         'images': ImageWorkshop,
         "overview_aurora": Overview,
-        'product-1': ProductWorkshop1,
-        'product': ProductWorkshop1,
-        'products': ProductList,
         "script": Script,
         'text': Text,
         'cta_aurora_1' : CtaAurora1,
-        'overview_2' : Overview2,
-        'top-bar-1': Topbar1,
-        'top-bar-2': Topbar2,
-        'top-bar-3': Topbar3,
-        'header-1': Header1,
-        'header-2': Header2,
-        'menu-1': Menu1,
+        'overview_2' : Overview2, 
         'text-column' : TextColumn,
-        'top-bar-1-fulfilment': Topbar1Fulfilment,
-        'top-bar-2-fulfilment': Topbar2Fulfilment,
-        'top-bar-3-fulfilment': Topbar3Fulfilment,
         'pricing': Pricing,
         'button' : Button,
         'column-layout-2': ColumnWorkshop,
         'disclosure': DisclosureWorkshop,
         'timeline' : Timeline,
         'step-1' : Step2Workshop,
-        'department' : Department1Iris,
         'carousel-1' : Carousel1Workshop
     }
     return components[componentName] ?? NotFoundComponents

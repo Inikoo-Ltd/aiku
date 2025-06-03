@@ -205,7 +205,7 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
                 </div>
 
                 <!-- Customer Reviews -->
-                <div class="flex items-center  justfy-between gap-4 font-bold cursor-pointer ">
+                <div class="flex items-center justfy-between gap-4 font-bold cursor-pointer ">
                     <div>Customer Reviews</div>
                     <div class="flex items-center gap-[1px]">
                         <FontAwesomeIcon :icon="faStar" class="text-[9px] text-gray-600" v-for="n in 5"
