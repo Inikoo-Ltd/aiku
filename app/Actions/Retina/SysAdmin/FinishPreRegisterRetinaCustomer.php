@@ -62,6 +62,7 @@ class FinishPreRegisterRetinaCustomer extends RetinaAction
                     'required',
                     app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
                 ],
+            'is_opt_in'       => ['sometimes', 'boolean'],
             'poll_replies'            => ['sometimes', 'required', 'array'],
         ];
     }

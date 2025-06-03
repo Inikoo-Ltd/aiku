@@ -35,7 +35,7 @@ class GoogleLoginRetina extends RetinaAction
 
     protected Shop $shop;
 
-    public function handle(Shop $shop, array $modelData)
+    public function handle(Shop $shop)
     {
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
             abort(404);

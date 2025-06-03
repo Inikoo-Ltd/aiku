@@ -11,6 +11,7 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\CRM\PollReply\StoreMultiPollReply;
+use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Customer\CustomerStateEnum;
@@ -43,8 +44,23 @@ class FinishPreRegisterCustomer extends OrgAction
             data_set($modelData, 'state', CustomerStateEnum::ACTIVE->value);
         }
 
+        if (Arr::get($modelData, 'is_opt_in', false)) {
+            data_set($modelData, 'email_subscriptions.is_subscribed_to_newsletter', true);
+        }
 
         $customer = UpdateCustomer::make()->action($customer, $modelData);
+
+        if (Arr::get($modelData, 'is_opt_in', false)) {
+            StoreProspect::make()->action($shop, array_filter([
+                'email'       => $customer->email,
+                'contact_name' => $customer->contact_name,
+                'phone'       => $customer->phone,
+                'company_name' => $customer->company_name,
+                'address'    => Arr::get($modelData, 'contact_address'),
+                'is_opt_in'   => true,
+                'customer_id' => $customer->id,
+            ]));
+        }
 
         if (Arr::get($modelData, 'poll_replies', []) != []) {
             $storePollyRepliesData = [
@@ -58,6 +74,7 @@ class FinishPreRegisterCustomer extends OrgAction
             'contact_name' => Arr::get($modelData, 'contact_name'),
             'password'     => Arr::get($modelData, 'password', Str::random(15)),
         ]);
+
 
         return $customer;
     }
@@ -77,6 +94,7 @@ class FinishPreRegisterCustomer extends OrgAction
                     app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
                 ],
             'poll_replies'            => ['sometimes', 'required', 'array'],
+            'is_opt_in'       => ['sometimes', 'boolean'],
         ];
     }
     /**

@@ -144,6 +144,7 @@ class StoreProspect extends OrgAction
             'first_name'       => ['nullable', 'string', 'max:255'],
             'last_name'        => ['nullable', 'string', 'max:255'],
             'company_name'      => ['nullable', 'string', 'max:255'],
+            'is_opt_in'       => ['sometimes', 'boolean'],
             'email'             => [
                 $this->strict ? 'email' : 'string:500',
                 new IUnique(
@@ -174,6 +175,14 @@ class StoreProspect extends OrgAction
             ],
 
         ];
+
+        if ($this?->asAction) {
+            $rules['customer_id'] = [
+                'sometimes',
+                'nullable',
+                'exists:customers,id,shop_id,' . $this->shop->id,
+            ];
+        }
 
         if (!$this->strict) {
             $rules['phone']      = [

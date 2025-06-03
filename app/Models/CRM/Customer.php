@@ -461,4 +461,9 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(MitSavedCard::class);
     }
+
+    public function prospects(): HasMany
+    {
+        return $this->hasMany(Prospect::class, 'customer_id');
+    }
 }
