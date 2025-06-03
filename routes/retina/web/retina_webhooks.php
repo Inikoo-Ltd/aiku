@@ -30,5 +30,5 @@ Route::name('webhooks.')->prefix('webhooks')->group(function () {
         Route::get('mit-saved-card-failure/{mitSavedCard:ulid}', CheckoutComMitSavedCardFailure::class)->name('mit_saved_card_failure');
 
     });
-    Route::post('subscribe-newsletter', CreateProspectFromWebblock::class)->name('subscribe_newsletter.store');
+    Route::post('subscribe-newsletter/{shop:id}', CreateProspectFromWebblock::class)->name('subscribe_newsletter.store');
 });
