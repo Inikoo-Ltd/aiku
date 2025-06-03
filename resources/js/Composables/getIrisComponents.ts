@@ -1,5 +1,4 @@
 import type { Component } from 'vue'
-import { defineAsyncComponent } from 'vue'
 
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
 import Header1Iris from "@/Components/CMS/Website/Headers/Header1/Header1Iris.vue"
@@ -32,23 +31,55 @@ import ButtonIris from '@/Components/CMS/Webpage/Button/ButtonIris.vue'
 import ColumnIris from '@/Components/CMS/Webpage/Column/ColumnIris.vue'
 import DisclosureIris from '@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue'
 import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
-import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
-
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import FamilyIris1 from '@/Components/CMS/Webpage/Family1/FamilyIris1.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
+import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
 
 
 const components: Record<string, Component> = {
-    'footer-1': Footer1Iris,
-    'header-1': Header1Iris,
-    'header-2': Header2Iris,
+    //topBar
     'top-bar-1': Topbar1Iris,
     'top-bar-2': Topbar2Iris,
     'top-bar-3': Topbar3Iris,
+    'top-bar-1-fulfilment': Topbar1FulfilmentIris,
+    'top-bar-2-fulfilment': Topbar2FulfilmentIris,
+    'top-bar-3-fulfilment': Topbar3FulfilmentIris,
+
+
+    //header
+    'header-1': Header1Iris,
+    'header-2': Header2Iris,
+
+    //menu
     'menu-1': Menu1Workshop,
+
+    //footer
+    'footer-1': Footer1Iris,
+
+    
+    
+     //departement
+    'department' : Department1Iris,
+    'department-1' : Department1Iris,
+
+    //sub-departement
+   'sub-departments-1' : SubDepartments1Iris,
+
+    //family
+    'family-1' : FamilyIris1,
+    'families-1' : FamilyIris1,
+
+    //product
+    'product-1' : ProductIris1,
+    
+
+    //product list
+    'products-1' : Products1Iris,
+    
+    
     'banner': WowsbarBannerIris,
     'bento-grid-1': BentoGridIris,
     'bricks': GalleryIris,
@@ -64,23 +95,13 @@ const components: Record<string, Component> = {
     'overview_2': Overview2Iris,
     'text-column': TextColumnIris,
     'pricing': Pricing,
-    'top-bar-1-fulfilment': Topbar1FulfilmentIris,
-    'top-bar-2-fulfilment': Topbar2FulfilmentIris,
-    'top-bar-3-fulfilment': Topbar3FulfilmentIris,
     'button' : ButtonIris,
     'column-layout-2': ColumnIris,
     'disclosure': DisclosureIris,
-    'family-1' : FamilyIris1,
-    'families-1' : FamilyIris1,
-    'product-1' : ProductIris1,
-    'products-1' : Products1Iris,
     'timeline': Timeline,
     'step-1' : Step2Iris,
-    'departments' : Department1Iris,
-    'department-1' : Department1Iris,
     'carousel-1' : Carousel1Iris,
-    'sub-department-1' : SubDepartments1Iris,
-    'sub-departments-1' : SubDepartments1Iris,
+ 
 }
 
 

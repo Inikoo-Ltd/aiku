@@ -41,12 +41,35 @@ import Product1Blueprinr from "@/Components/CMS/Webpage/Product1/Blueprint"
 
 export const getBlueprint = (componentName: string) => {
 	const components: Component = {
-		"footer-1": Footer1Blueprint.blueprint,
+		// topbar
+		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
+		"top-bar-2-fulfilment": Topbar2Fulfilment.blueprint,
+		"top-bar-3-fulfilment": Topbar3Fulfilment.blueprint,
 		"top-bar-1": Topbar1Blueprint.blueprint,
 		"top-bar-2": Topbar2Blueprint.blueprint,
 		"top-bar-3": Topbar3Blueprint.blueprint,
+
+		//header
 		"header-1": Header1Blueprint.blueprint,
 		"header-2": Header2Blueprint.blueprint,
+
+		//footer
+		"footer-1": Footer1Blueprint.blueprint,
+		
+		//depeartement
+		"departments": DepartementBlueprint.blueprint,
+		"department-1": DepartementBlueprint.blueprint,
+
+		//sub-departement
+		"sub-department-1": SubDepartement1Blueprint.blueprint,
+
+		//family
+		"family-1": FamilyBluprint.blueprint,
+
+		//families list
+		"families": FamilyBluprint.blueprint,
+
+
 		"banner": WowsbarBannerBlueprint.blueprint,
 		"bento-grid-1": BentoGridBlueprint.blueprint,
 		"bricks": GalleryBlueprint.blueprint,
@@ -54,30 +77,22 @@ export const getBlueprint = (componentName: string) => {
 		"cta2": CTA2Blueprint.blueprint,
 		"cta3": CTA3Blueprint.blueprint,
 		"text-column": TextColumn.blueprint,
-		"departments": DepartementBlueprint.blueprint,
-		"department-1": DepartementBlueprint.blueprint,
 		"iframe": IframeBlueprint.blueprint,
 		"images": ImageBlueprint.blueprint,
 		"overview_aurora": OverviewBlueprint.blueprint,
 		"pricing": PricingBlueprint.blueprint,
 		"product-1": Product1Blueprinr.blueprint,
-		/* 'products': .blueprint, */
 		"script": ScriptBlueprint.blueprint,
 		"text": TextBlueprint.blueprint,
 		"cta_aurora_1": CTAAurora1Blueprint,
 		"overview_2": Overview2Blueprint.blueprint,
-		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
-		"top-bar-2-fulfilment": Topbar2Fulfilment.blueprint,
-		"top-bar-3-fulfilment": Topbar3Fulfilment.blueprint,
 		"button": Button.blueprint,
 		"column-layout-2": ColumnLayout2Blueprint.blueprint,
 		"disclosure": DisclosureBlueprint.blueprint,
-		"family-1": FamilyBluprint.blueprint,
-		"families": FamilyBluprint.blueprint,
 		"timeline": TimelineBlueprint.blueprint,
 		"step-1": Timeline2Bluprint.blueprint,
 		"carousel-1": Carousel1Blueprint.blueprint,
-		"sub-department-1": SubDepartement1Blueprint.blueprint,
+		
 	}
 	return components[componentName] ?? []
 }
@@ -90,7 +105,7 @@ export const getBluprintPermissions = (componentName: string) => {
 		"product-1": false,
 		"family": false,
 		"families": false,
-		"sub-department-1": false,
+		"sub-departments-1": false,
 		"department-1": false,
 		"products-1": false,
 	}

@@ -488,6 +488,8 @@ const filterBlock = ref('all')
 watch(filterBlock, (newValue) => {
 	sendToIframe({ key: 'isPreviewLoggedIn', value: newValue })
 })
+
+console.log(props.webpage.layout)
 </script>
 
 <template>

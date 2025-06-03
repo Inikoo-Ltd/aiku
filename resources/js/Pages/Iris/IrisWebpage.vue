@@ -68,7 +68,7 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
-console.log(props.meta)
+console.log(props)
 </script>
 
 <template>
@@ -96,8 +96,5 @@ console.log(props.meta)
           :theme="layout?.app?.theme" :key="web_block_data_idx"
           :fieldValue="web_block_data.web_block.layout.data.fieldValue" />
       </div>
-
-
-
   </div>
 </template>

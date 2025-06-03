@@ -29,22 +29,22 @@ library.add(
 );
 
 const props = defineProps<{
-  fieldValue: Record<string, any>
+  modelValue: Record<string, any>
   webpageData?: any
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>();
-console.log('Subdepartement',props?.fieldValue?.sub_departments)
+console.log('Subdepartement',props?.modelValue?.sub_departments)
 
 </script>
 
 <template>
-  <div class="mx-auto px-4 py-12" :style="getStyles(fieldValue?.container?.properties, screenType)">
+  <div class="mx-auto px-4 py-12" :style="getStyles(modelValue?.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Sub-department:</h2>
-    <div v-if="fieldValue.sub_departments?.length">
+    <div v-if="modelValue.sub_departments?.length">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <button
-          v-for="item in fieldValue.sub_departments"
+          v-for="item in modelValue.sub_departments"
           :key="item.code"
           class="flex items-center gap-2 border rounded-xl px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all"
         >
