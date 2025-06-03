@@ -151,7 +151,7 @@ const onCallbackGoogleLogin = (e) => {
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully submit the data"),
+                    text: trans("Successfully register"),
                     type: "success"
                 })
             },
