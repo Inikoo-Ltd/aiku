@@ -55,6 +55,8 @@ class PreRegisterCustomer extends OrgAction
             'username'     => Arr::get($modelData, 'email'),
             'email'        => Arr::get($modelData, 'email'),
             'password'     => $password,
+            'contact_name' => Arr::get($modelData, 'contact_name'),
+            'google_id' => Arr::get($modelData, 'google_id'),
             'is_root'      => true,
         ]);
 
