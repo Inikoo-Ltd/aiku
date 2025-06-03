@@ -49,7 +49,7 @@ class ShowRetinaRegister
                     'countriesAddressData' => GetAddressData::run(),
                     'polls' => $pollsResource,
                     'registerRoute' => [
-                        'name' => 'register_pre_customer.store',
+                        'name' => 'retina.register_pre_customer.store',
                         'parameters' => [
                             'shop' => $shop->id
                         ]

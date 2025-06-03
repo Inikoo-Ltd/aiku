@@ -51,14 +51,14 @@ class PreRegisterCustomer extends OrgAction
         $customer = StoreCustomer::make()->action($shop, $modelData);
 
         $password = Str::random(15);
-        $webUser = StoreWebUser::make()->action($customer, [
+        $webUser = StoreWebUser::make()->action($customer, array_filter([
             'username'     => Arr::get($modelData, 'email'),
             'email'        => Arr::get($modelData, 'email'),
             'password'     => $password,
             'contact_name' => Arr::get($modelData, 'contact_name'),
             'google_id' => Arr::get($modelData, 'google_id'),
             'is_root'      => true,
-        ]);
+        ]));
 
         // SendCustomerWelcomeEmail::run($customer);
 

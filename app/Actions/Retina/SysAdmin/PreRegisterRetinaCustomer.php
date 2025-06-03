@@ -42,7 +42,7 @@ class PreRegisterRetinaCustomer extends RetinaAction
     {
         return [
             'email'                    => [
-                'required_without:google_credential',
+                'required',
                 'string',
                 'max:255',
                 'exclude_unless:deleted_at,null',
