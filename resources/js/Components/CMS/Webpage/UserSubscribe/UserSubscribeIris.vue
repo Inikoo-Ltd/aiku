@@ -40,7 +40,7 @@ const onSubmitSubscribe = async () => {
 	} else {  // If in Iris or Retina
 		try {
 			await axios.post(
-				window.origin + '/app/ds/register-pre-customer/' + layout?.iris?.website?.id,
+				window.origin + '/app/webhooks/subscribe-newsletter/' + layout?.iris?.shop?.id,
 				{
 					email: inputEmail.value,
 				},
