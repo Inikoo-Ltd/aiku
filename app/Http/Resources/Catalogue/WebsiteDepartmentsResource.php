@@ -64,9 +64,14 @@ class WebsiteDepartmentsResource extends JsonResource
             'invoices'                => $this->invoices_all,
             'organisation_name'       => $this->organisation_name,
             'organisation_slug'       => $this->organisation_slug,
-            'sub_departments'         => $this->children && $this->children->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->isNotEmpty()
-                                        ? SubDepartmentsResource::collection($this->children->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT))
-                                        : [],
+            'sub_departments_route'   => [
+                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                    'department'   => $this->slug
+                ]
+            ]
         ];
     }
 }

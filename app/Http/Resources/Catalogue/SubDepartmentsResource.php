@@ -52,9 +52,15 @@ class SubDepartmentsResource extends JsonResource
             'description'       => $this->description,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
-            'families'         => $this->children && $this->children->where('type', ProductCategoryTypeEnum::FAMILY)->isNotEmpty()
-                                        ? FamilyResource::collection($this->children->where('type', ProductCategoryTypeEnum::FAMILY))
-                                        : [],
+            'families_route'    => [
+                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug ?? null,
+                    'shop' => $this->shop->slug ?? null,
+                    'department' => $this->department->slug ?? $this->department_slug,
+                    'subDepartment' => $this->slug 
+                ]
+            ]
         ];
     }
 }
