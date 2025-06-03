@@ -32,7 +32,7 @@ class GetRetinaCustomerClientFromWooCommerce extends RetinaAction
         foreach ($customers as $customer) {
             $address = Arr::get($customer, 'shipping', []);
             $existsClient = $this->customer->clients()
-                ->where('email', $customer['email'])
+                ->where('phone', $customer['shipping']['phone'])
                 ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
                 ->first();
 
