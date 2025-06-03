@@ -105,7 +105,7 @@ export const getBluprintPermissions = (componentName: string) => {
 		"product-1": false,
 		"family": false,
 		"families": false,
-		"sub-department-1": false,
+		"sub-departments-1": false,
 		"department-1": false,
 		"products-1": false,
 	}
