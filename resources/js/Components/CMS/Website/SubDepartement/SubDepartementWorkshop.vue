@@ -5,7 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, watch, computed, provide, inject, toRaw } from "vue"
 import Modal from '@/Components/Utils/Modal.vue'
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
-import { getIrisComponent } from "@/Composables/getIrisComponents"
+import { getComponent } from "@/Composables/getWorkshopComponents"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
@@ -30,7 +30,7 @@ console.log(props.data)
 const layoutTheme = inject('layout', layoutStructure)
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
-
+const visibleDrawer = ref(false);
 // Make layout editable
 const layout = ref(props.data.layout);
 
@@ -109,20 +109,39 @@ provide("currentView", currentView);
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-        <!--  <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" /> -->
-        <div class="py-1 px-2 cursor-pointer lg:block hidden" :class="['selected-bg']" v-tooltip="'Desktop view'">
-          <FontAwesomeIcon icon='fas fa-desktop' class='' fixed-width aria-hidden='true' />
+     <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+        <!-- Left: Desktop View Icon -->
+        <div class="py-1 px-2 cursor-pointer lg:block hidden selected-bg" v-tooltip="'Desktop view'">
+          <FontAwesomeIcon icon="fas fa-desktop" fixed-width aria-hidden="true" />
+        </div>
+
+        <!-- Right: Preview Label -->
+        <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
+          <span v-if="layout?.data?.fieldValue?.departement?.name">
+            Preview: <strong>{{ layout.data.fieldValue.departement?.name }}</strong>
+          </span>
+          <span v-else>Pick The departement</span>
         </div>
       </div>
       <div v-if="layout?.code" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getIrisComponent(layout.code)" :fieldValue="layout.data.fieldValue" />
+        <component class="w-full" :is="getComponent(layout.code)" :fieldValue="layout.data.fieldValue" />
       </div>
       <div v-else>
         <EmptyState />
       </div>
     </div>
   </div>
+
+  <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
+    <template #header>
+      <div>
+        <h2 class="text-base font-semibold">Department Overview</h2>
+        <p class="text-xs text-gray-500">Choose a department to preview</p>
+      </div>
+    </template>
+
+    asdasdasd
+  </Drawer>
 </template>
 
 

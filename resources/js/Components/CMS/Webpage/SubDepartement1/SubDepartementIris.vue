@@ -34,7 +34,7 @@ const props = defineProps<{
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>();
-console.log('Subdepartement',props?.fieldValue?.sub_departments)
+
 
 </script>
 
@@ -43,10 +43,11 @@ console.log('Subdepartement',props?.fieldValue?.sub_departments)
     <h2 class="text-2xl font-bold mb-6">Browse By Sub-department:</h2>
     <div v-if="fieldValue.sub_departments?.length">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <button
+        <a
           v-for="item in fieldValue.sub_departments"
           :key="item.code"
-          class="flex items-center gap-2 border rounded-xl px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all"
+          :href="`/${item.url}`"
+          class="flex items-center gap-2 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all"
         >
           <FontAwesomeIcon
             v-if="item.icon"
@@ -54,10 +55,10 @@ console.log('Subdepartement',props?.fieldValue?.sub_departments)
             class="text-lg w-5 h-5"
           />
           <div v-else class="w-5 h-5">
-            <Image :src="item.image_thumbnail" class="w-full h-full object-contain" />
+            <Image :src="item.image" class="w-full h-full object-contain" />
           </div>
           {{ item.name }}
-        </button>
+        </a>
       </div>
     </div>
 

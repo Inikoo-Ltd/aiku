@@ -23,84 +23,88 @@ const props = defineProps<{
     autosaveRoute: routeType;
     layout: any;
     departments: any[];
-    update_sub_department_route : routeType
+    update_sub_department_route : routeType;
   };
 }>();
-const layoutTheme = inject('layout', layoutStructure)
+
+const layoutTheme = inject('layout', layoutStructure);
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 const visibleDrawer = ref(false);
 
-// Make layout editable
-const layout = ref(props.data.layout);
+// Keep local state for layout and the UI-only departement/sub_departments
+const layout = ref({ ...props.data.layout });
 
-
-const onPickTemplate = (template: any) => {
-  isModalOpen.value = false;
-  layout.value = template;
-  autosave()
-};
-
+// Update departement and sub_departments locally only, not saved
 const onChangeDepartment = (value: any) => {
-  const newDepartment = { ...value };
-  delete newDepartment.sub_departments
-
   if (layout.value?.data?.fieldValue) {
-    layout.value.data.fieldValue.departement = value;
+    layout.value.data.fieldValue.departement = value; // full value for UI
     layout.value.data.fieldValue.sub_departments = value.sub_departments || [];
   }
 };
 
-
-
 const autosave = () => {
-  const payload = toRaw(layout.value);
-  // Hapus properti jika ada
-  delete payload.data?.fieldValue?.departement
-  delete payload.data?.fieldValue?.sub_departments
-  console.log('Autosaving layout:', payload);
+  // Deep clone to safely modify payload without touching reactive data
+  const payload = JSON.parse(JSON.stringify(toRaw(layout.value)));
+
+  // Remove departement & sub_departments before sending to backend
+  if (payload.data?.fieldValue) {
+    delete payload.data.fieldValue.departement;
+    delete payload.data.fieldValue.sub_departments;
+  }
 
   router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
     {
       onStart: () => {
-        isLoadingSave.value = true
+        isLoadingSave.value = true;
       },
       onFinish: () => {
-        isLoadingSave.value = false
+        isLoadingSave.value = false;
       },
       onSuccess: () => {
+        // Update only backend saved layout data — keep UI-only fields in local layout.value
         props.data.layout = payload;
         notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
           type: 'success',
-        })
+        });
       },
       onError: (errors) => {
         notify({
           title: 'Autosave Failed',
           text: errors?.message || 'Unknown error occurred.',
           type: 'error',
-        })
-      }
+        });
+      },
     }
-  )
-}
+  );
+};
+
+const onPickTemplate = (template: any) => {
+  isModalOpen.value = false;
+  layout.value = template;
+  autosave();
+};
 
 const currentView = ref("desktop");
 provide("currentView", currentView);
 
-console.log('departement-props', props.data)
+console.log('departement-props', props.data);
 </script>
-
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate" :dataList="data.departments" />
+      <SideMenuDepartementWorkshop
+        :data="layout"
+        :webBlockTypes="data.web_block_types"
+        @auto-save="autosave"
+        @set-up-template="onPickTemplate"
+        :dataList="data.departments"
+      />
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
@@ -111,22 +115,28 @@ console.log('departement-props', props.data)
         </div>
 
         <!-- Right: Preview Label -->
-        <!-- Right: Preview Label -->
-        <div class="text-sm text-gray-600 italic  mr-3 cursor-pointer" @click="visibleDrawer = true">
+        <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
           <span v-if="layout?.data?.fieldValue?.departement?.name">
             Preview: <strong>{{ layout.data.fieldValue.departement?.name }}</strong>
           </span>
           <span v-else>Pick The departement</span>
         </div>
-
       </div>
 
-      <div v-if="layout?.code && layout.data.fieldValue.sub_departments" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getComponent(layout.code)" :modelValue="layout.data.fieldValue" :routeEditSubDepartement="data.update_sub_department_route" />
+      <div v-if="layout?.code" >
+        <component
+          class="w-full relative flex-1 overflow-auto border-4 border-[#4F46E5] active-block"
+          :is="getComponent(layout.code)"
+          :modelValue="{
+            ...layout.data.fieldValue,
+            departement: layout.data.fieldValue?.departement || null,
+            sub_departments: layout.data.fieldValue?.sub_departments || []
+          }"
+          :routeEditSubDepartement="data.update_sub_department_route"
+        />
       </div>
-      <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
-        style="height: 100%;">
 
+      <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]" style="height: 100%;">
         <div class="flex flex-col items-center gap-2">
           <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
           <h3 class="text-lg font-semibold">No department selected</h3>
@@ -137,11 +147,8 @@ console.log('departement-props', props.data)
 
         <Button :label="'Pick a department as a data preview'" @click="visibleDrawer = true" />
       </div>
-
-
     </div>
   </div>
-
 
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
@@ -151,13 +158,13 @@ console.log('departement-props', props.data)
       </div>
     </template>
 
-    <DepartementListTree :dataList="data.departments" @changeDepartment="onChangeDepartment"
-      :active="layout?.data?.fieldValue?.departement?.slug" />
+    <DepartementListTree
+      :dataList="data.departments"
+      @changeDepartment="onChangeDepartment"
+      :active="layout?.data?.fieldValue?.departement?.slug"
+    />
   </Drawer>
-
-
 </template>
-
 
 <style scoped>
 .selected-bg {

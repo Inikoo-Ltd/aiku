@@ -27,13 +27,16 @@ const selectedSubDepartment = ref<null | {
 const showDialog = ref(false);
 
 function openModal(subDept: any) {
-  selectedSubDepartment.value = {
-    id: subDept.id,
-    name: subDept.name,
-    description: subDept.description,
-    image: subDept.image,
-  };
-  showDialog.value = true;
+  if (props.routeEditSubDepartement) {
+    selectedSubDepartment.value = {
+      id: subDept.id,
+      name: subDept.name,
+      description: subDept.description,
+      image: subDept.image,
+    };
+    showDialog.value = true;
+  }
+
 }
 
 function handleSaved(updatedSubDept: any) {
@@ -47,7 +50,7 @@ function handleSaved(updatedSubDept: any) {
       ...updatedSubDept,
     };
   }
-  console.log(index,props.modelValue.sub_departments[index])
+  console.log(index, props.modelValue.sub_departments[index])
   closeModal();
 }
 
@@ -65,11 +68,11 @@ function closeModal() {
     <div v-if="modelValue?.sub_departments?.length">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <button v-for="item in modelValue.sub_departments" :key="item.code"
-          class="flex items-center gap-2 border rounded-xl px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all"
+          class="flex items-center gap-2 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all"
           @click="openModal(item)">
           <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-lg w-5 h-5" />
           <div v-else class="w-5 h-5">
-            <Image :src="item.image_thumbnail" class="w-full h-full object-contain" />
+            <Image :src="item.image" class="w-full h-full object-contain" />
           </div>
           {{ item.name }}
         </button>
