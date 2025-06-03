@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
-use App\Actions\CRM\Customer\StorePreRegisterCustomer;
+use App\Actions\CRM\Customer\PreRegisterCustomer;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\Shop;
 use App\Rules\IUnique;
@@ -34,7 +34,7 @@ class PreRegisterRetinaCustomer extends RetinaAction
         if (Arr::get($modelData, 'preview', false)) {
             return;
         }
-        StorePreRegisterCustomer::make()->action($shop, $modelData);
+        PreRegisterCustomer::make()->action($shop, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -46,7 +46,7 @@ class PreRegisterRetinaCustomer extends RetinaAction
     {
         return [
             'email'                    => [
-                'required',
+                'required_without:google_credential',
                 'string',
                 'max:255',
                 'exclude_unless:deleted_at,null',
@@ -58,6 +58,7 @@ class PreRegisterRetinaCustomer extends RetinaAction
                     ]
                 ),
             ],
+            'google_credential'     => ['required_without:email', 'string', 'max:2048'],
             'preview'                => ['sometimes', 'boolean'],
         ];
     }

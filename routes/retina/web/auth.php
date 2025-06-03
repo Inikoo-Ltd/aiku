@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Actions\CRM\Customer\StorePreRegisterCustomer;
+use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
 use App\Actions\CRM\WebUser\Retina\LogoutRetina;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
@@ -23,7 +23,6 @@ use App\Actions\Retina\SysAdmin\RegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
 use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
-use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest:retina')->group(function () {
@@ -32,27 +31,8 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
     Route::post('login', RetinaLogin::class)->name('login.store');
 
-    Route::post('register-pre-customer/{shop:id}', PreRegisterRetinaCustomer::class)->name('register_pre_customer.store');
-
-    Route::get('{shop:slug}/login/google', function (Shop $shop) {
-        session(['shop' => $shop]);
-        return Socialite::driver('google')->scopes(['email', 'profile'])->redirect();
-    })->name('login_google');
-
-    Route::get('auth/google/callback', function (Request $request) {
-        $googleUser = Socialite::driver('google')->user();
-        $shop = session('shop');
-
-        StorePreRegisterCustomer::run($shop, [
-            'email' => $googleUser->email,
-            'name' => $googleUser->name,
-            'google_id' => $googleUser->id,
-            'avatar' => $googleUser->avatar,
-        ]);
-        session()->forget('shop');
-
-        return redirect()->route('iris.iris_webpage');
-    })->name('auth_google_callback');
+    Route::post('{shop:id}/register-pre-customer', PreRegisterRetinaCustomer::class)->name('register_pre_customer.store');
+    Route::post('{shop:id}/login-google', GoogleLoginRetina::class)->name('login_google');
 
 
     Route::get('register', ShowRetinaRegister::class)->name('register');

@@ -17,10 +17,13 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Rules\IUnique;
+use Google_Client;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Validator;
+use Lorisleiva\Actions\ActionRequest;
 
-class StorePreRegisterCustomer extends OrgAction
+class PreRegisterCustomer extends OrgAction
 {
     /**
      * @throws \Throwable
@@ -41,7 +44,6 @@ class StorePreRegisterCustomer extends OrgAction
         if ($googleUser) {
             data_set($modelData, 'google_id', Arr::get($googleUser, 'id'));
             data_set($modelData, 'email', Arr::get($googleUser, 'email'));
-            data_set($modelData, 'google_avatar', Arr::get($googleUser, 'avatar'));
             data_set($modelData, 'contact_name', Arr::get($googleUser, 'name'));
             data_set($modelData, 'name', Arr::get($googleUser, 'name'));
         }
@@ -68,12 +70,26 @@ class StorePreRegisterCustomer extends OrgAction
         return $customer;
     }
 
+    private function verifyGoogleCredential(string $credential): array
+    {
+        $client = new Google_Client(['client_id' => config('services.google.client_id')]);
+        $payload = $client->verifyIdToken($credential);
+        if ($payload) {
+            return [
+                'id' => $payload['sub'],
+                'email' => $payload['email'],
+                'name' => $payload['name'],
+                'avatar' => $payload['picture'] ?? null,
+            ];
+        }
+        throw new \Exception('Invalid Google credential provided!');
+    }
 
     public function rules(): array
     {
         return [
-            'email'              => [
-                'required',
+            'email'                    => [
+                'required_without:google_credential',
                 'string',
                 'max:255',
                 'exclude_unless:deleted_at,null',
@@ -85,12 +101,21 @@ class StorePreRegisterCustomer extends OrgAction
                     ]
                 ),
             ],
-            'google_user'        => ['sometimes', 'array'],
-            'google_user.id'     => ['sometimes', 'string', 'max:255'],
-            'google_user.email'  => ['sometimes', 'email', 'max:255'],
-            'google_user.name'   => ['sometimes', 'string', 'max:255'],
-            'google_user.avatar' => ['sometimes', 'string', 'max:255'],
+            'google_credential'     => ['required_without:email', 'string', 'max:2048'],
         ];
+    }
+
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        $googleCredential = $request->input('google_credential', null);
+        if ($googleCredential) {
+            try {
+                $googleUser = $this->verifyGoogleCredential($googleCredential);
+                $request->merge(['google_user' => $googleUser]);
+            } catch (\Exception $e) {
+                $validator->errors()->add('google_credential', $e->getMessage());
+            }
+        }
     }
 
     /**
@@ -102,18 +127,6 @@ class StorePreRegisterCustomer extends OrgAction
         $this->initialisationFromShop($shop, $modelData);
 
         return $this->handle($shop, $this->validatedData);
-    }
-
-
-    public string $commandSignature = 'pre_register_test';
-
-    public function asCommand($command)
-    {
-        $f = Shop::find(13);
-
-        $this->handle($f, [
-            'email'     => 'preTest@gmail.com',
-        ]);
     }
 
 }

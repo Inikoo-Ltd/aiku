@@ -14,7 +14,6 @@ return new class () extends Migration {
     {
         Schema::table('web_users', function (Blueprint $table) {
             $table->string('google_id')->nullable();
-            $table->string('google_avatar')->nullable();
         });
     }
 
@@ -26,7 +25,7 @@ return new class () extends Migration {
     public function down()
     {
         Schema::table('web_users', function (Blueprint $table) {
-            $table->dropColumn(['google_id', 'google_avatar']);
+            $table->dropColumn(['google_id']);
         });
     }
 };
