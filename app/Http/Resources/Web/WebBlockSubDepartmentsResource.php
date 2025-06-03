@@ -43,9 +43,8 @@ class WebBlockSubDepartmentsResource extends JsonResource
             'slug'  => $this->slug,
             'code'  => $this->code,
             'name'  => $this->name,
-            'image' => $imageSources
-
-
+            'image' => $imageSources,
+            'url'   => $this->url
         ];
     }
 }

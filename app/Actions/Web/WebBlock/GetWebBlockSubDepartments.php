@@ -22,7 +22,7 @@ class GetWebBlockSubDepartments
     {
 
         $subDepartments = DB::table('product_categories')->where('department_id', $webpage->model_id)
-            ->select(['slug', 'code', 'name', 'image_id'])
+            ->select(['slug', 'code', 'name', 'image_id', 'webpages.url'])
             ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('show_in_website', true)
             ->get();
