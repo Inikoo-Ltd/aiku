@@ -43,8 +43,12 @@ const handleChange = () => props.form.clearErrors();
         <!-- Country Options -->
         <div class="col-span-2">
             <div class="relative">
-                <Multiselect searchable :options="countries" v-model="addressValues['country_id']"
-                    :class="{ 'pr-8': form.errors[fieldName] || form.recentlySuccessful }"
+                <Multiselect
+                    searchable
+                    :options="countries"
+                    v-model="addressValues['country_id']"
+                    @update:model-value="handleChange"
+                    :class="{ 'pr-8 errorShake': form.errors[fieldName] || form.recentlySuccessful }"
                     :placeholder="props.fieldData.placeholder ?? 'Select a country'"
                     :canDeselect="false"
                     :canClear="false"
@@ -74,7 +78,8 @@ const handleChange = () => props.form.clearErrors();
                         <Multiselect
                             v-if="administrativeAreas(addressValues['country_id']).length && (!addressValues['administrative_area'] || inAdministrativeAreas(addressValues['administrative_area'], addressValues['country_id']))"
                             :options="administrativeAreas(addressValues['country_id'])" :label="'name'" :value-prop="'name'"
-                            v-model="addressValues['administrative_area']" />
+                            v-model="addressValues['administrative_area']"
+                        />
                         <input v-else v-model="addressValues['administrative_area']" type="text" name="administrative_area"
                             id="administrative_area"
                             class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />

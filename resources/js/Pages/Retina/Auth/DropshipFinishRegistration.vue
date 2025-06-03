@@ -18,6 +18,7 @@ import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 import Timeline from "@/Components/Utils/Timeline.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
@@ -70,6 +71,7 @@ const submit = () => {
 
 	if (form.password == form.password_confirmation) {
 		form.post(route(props.registerRoute.name, props.registerRoute.parameters), {
+			preserveScroll: true,
 			onError: () => {
 				isLoading.value = false
 			},
@@ -125,23 +127,28 @@ simplePolls.value.forEach((poll) => {
 <template>
 	
 	<div class="pt-8">
-		<Timeline
+		<!-- <Timeline
 			:options="timeline"
 			:state="current_timeline"
 			:slidesPerView="3"
-		/>
+		/> -->
 
 		<div class="max-w-2xl mx-auto my-8">
+			
+			<div class="text-4xl font-semibold flex justify-center mb-8">
+				{{ trans("One last step to access the full system") }}
+			</div>
+
 			<!-- Card container -->
 			<div class="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
 				<!-- Card header -->
 				<div class="px-6 py-4 border-b border-gray-200">
-					<h2 class="text-xl font-semibold text-gray-800">Registration form</h2>
+					<h2 class="text-lg xfont-semibold">
+						{{ trans("Fill the form to complete your registration") }}
+					</h2>
 				</div>
-				<form @submit.prevent="submit" class="space-y-12 px-14 py-10">
-					<div class="text-xl font-semibold flex justify-center">
-						{{ trans("Join Our Dropship – Register Now!") }}
-					</div>
+				
+				<form @submit.prevent="submit" class="space-y-12 px-14 pb-10">
 					<div class="border-b border-gray-900/10 pb-12">
 						<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
 							<!-- First Name -->
@@ -275,11 +282,7 @@ simplePolls.value.forEach((poll) => {
 								<hr />
 							</div>
 							<div class="sm:col-span-6">
-								<label
-									for="address"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Country") }}</label
-								>
+								<label for="address" class="capitalize block text-sm font-medium text-gray-700" >{{ trans("Country") }}</label >
 								<Address
 									v-model="form[contact_address]"
 									fieldName="contact_address"
@@ -297,25 +300,27 @@ simplePolls.value.forEach((poll) => {
 								<label class="block text-sm font-medium text-gray-700 capitalize">
 									{{ pollReply.label }}
 								</label>
-								<Select
-									v-if="pollReply.type === 'option'"
-									v-model="form.poll_replies[idx].answer"
-									:options="props.polls[idx].options"
-									optionLabel="label"
-									optionValue="id"
-									:placeholder="`Please Choose One`"
-									class="mt-2 w-full" />
-								<Textarea
-									v-else
-									v-model="form.poll_replies[idx].answer"
-									rows="5"
-									cols="30"
-									placeholder="Your answer…"
-									class="mt-2 w-full border rounded-md p-2" />
-								<p
-									v-if="form.errors[`poll_replies.${idx}`]"
-									class="mt-1 text-sm text-red-600">
-									{{ form.errors[`poll_replies.${idx}`] }}
+								<div class="mt-2" :class="form.errors?.[`poll_replies.${idx}`] ? 'errorShake' : ''">
+									<Select
+										v-if="pollReply.type === 'option'"
+										v-model="form.poll_replies[idx].answer"
+										@update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
+										:options="props.polls[idx].options"
+										optionLabel="label"
+										optionValue="id"
+										:placeholder="`Please Choose One`"
+										class="w-full" />
+									<Textarea
+										v-else
+										v-model="form.poll_replies[idx].answer"
+										@update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
+										rows="5"
+										cols="30"
+										placeholder="Your answer…"
+										class="w-full border rounded-md p-2" />
+								</div>
+								<p v-if="form.errors[`poll_replies.${idx}`]" class="mt-1 text-sm text-red-600">
+									*{{ form.errors[`poll_replies.${idx}`] }}
 								</p>
 							</div>
 							<div class="sm:col-span-6">
@@ -360,14 +365,23 @@ simplePolls.value.forEach((poll) => {
 							</div>
 						</div>
 					</div>
+
 					<!-- Submit Button -->
-					<div class="flex justify-end">
-						<button
-							type="submit"
-							class="w-full inline-flex justify-center items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-							<span v-if="isLoading" class="loader mr-2"></span>
-							{{ trans("Finish Registration") }}
-						</button>
+					<div>
+						<div v-if="Object.keys(form.errors || {}).length" class="mb-4 text-red-600">
+							There is {{ Object.keys(form.errors || {}).length }} error(s) in the form. Please correct them before submitting.
+
+						</div>
+						<div class="flex justify-end">
+							<button
+								type="submit"
+								class="w-full inline-flex justify-center items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+								<span v-if="isLoading" class="loader mr-2">
+									<LoadingIcon />
+								</span>
+								{{ trans("Finish Registration") }}
+							</button>
+						</div>
 					</div>
 				</form>
 			</div>

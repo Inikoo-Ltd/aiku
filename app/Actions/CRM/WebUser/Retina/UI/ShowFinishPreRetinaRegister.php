@@ -41,8 +41,6 @@ class ShowFinishPreRetinaRegister
             [
             'countriesAddressData' => GetAddressData::run(),
             'polls' => $pollsResource,
-            'timeline' => [],
-            'current_timeline' => null,
             'client' => $webUser,
             'registerRoute' => [
                 'name' => 'retina.finish_pre_register.store',
@@ -50,7 +48,28 @@ class ShowFinishPreRetinaRegister
                     'shop' => $shop->id
                 ],
                 'method' => 'POST'
-            ]
+            ],
+            'timeline'  => [
+                "register" => [
+                    "label" => "Register",
+                    "tooltip" => "Registered",
+                    "key" => "register",
+                    "timestamp" => now(),
+                ],
+                "complete" => [
+                    "label" => "Complete Registration",
+                    "tooltip" => "Complete Registration",
+                    "key" => "complete",
+                    "timestamp" => null
+                ],
+                "finish" => [
+                    "label" => "Finish",
+                    "tooltip" => "Finished",
+                    "key" => "finish",
+                    "timestamp" => null
+                ],
+            ],
+            'current_timeline'  => 'complete',
         ]
         );
     }
