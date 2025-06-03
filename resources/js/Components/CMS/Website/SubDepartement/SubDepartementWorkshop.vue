@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCube, faLink } from "@fal"
+import { faCube, faInfoCircle, faLink } from "@fal"
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, watch, computed, provide, inject, toRaw } from "vue"
@@ -14,6 +14,8 @@ import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
 import SideMenuSubDepartementWorkshop from "./SideMenuSubDepartementWorkshop.vue"
 import { notify } from "@kyvg/vue3-notification"
+import Drawer from 'primevue/drawer';
+import SubDepartementListTree from "./SubDepartementListTree.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -23,10 +25,10 @@ const props = defineProps<{
     autosaveRoute: routeType;
     layout: any;
     sub_departements: any[];
+    update_family_route : routeType;
   }
 }>()
 
-console.log(props.data)
 const layoutTheme = inject('layout', layoutStructure)
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
@@ -42,16 +44,8 @@ const onPickTemplate = (template: any) => {
 };
 
 const onChangeDepartment = (value: any) => {
-  const newDepartment = {...value};
-  delete newDepartment.families
-
-
-  if (!layout.value.data.fieldValue || Array.isArray(layout.value.data.fieldValue)) {
-    layout.value.data.fieldValue = {}
-  }
-
   if (layout.value?.data?.fieldValue) {
-    layout.value.data.fieldValue.sub_departements = value;
+    layout.value.data.fieldValue.sub_departement = value.sub_departement;
     layout.value.data.fieldValue.families = value.families || [];
   }
 };
@@ -59,21 +53,24 @@ const onChangeDepartment = (value: any) => {
 
 
 const autosave = () => {
-  const payload = toRaw(layout.value);
-  // Hapus properti jika ada
-  delete payload.data?.fieldValue?.families
-  delete payload.data?.fieldValue?.sub_departements
+  // Deep clone to safely modify payload without touching reactive data
+  const payload = JSON.parse(JSON.stringify(toRaw(layout.value)));
 
+  // Remove departement & sub_departments before sending to backend
+  if (payload.data?.fieldValue) {
+    delete payload.data.fieldValue.families;
+    delete payload.data.fieldValue.sub_departement;
+  }
 
   router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
     {
       onStart: () => {
-        isLoadingSave.value = true
+        isLoadingSave.value = true;
       },
       onFinish: () => {
-        isLoadingSave.value = false
+        isLoadingSave.value = false;
       },
       onSuccess: () => {
         props.data.layout = payload;
@@ -81,18 +78,19 @@ const autosave = () => {
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
           type: 'success',
-        })
+        });
       },
       onError: (errors) => {
         notify({
           title: 'Autosave Failed',
           text: errors?.message || 'Unknown error occurred.',
           type: 'error',
-        })
-      }
+        });
+      },
     }
-  )
-}
+  );
+};
+
 
 console.log('props.data.layout', props)
 
@@ -117,17 +115,34 @@ provide("currentView", currentView);
 
         <!-- Right: Preview Label -->
         <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
-          <span v-if="layout?.data?.fieldValue?.departement?.name">
-            Preview: <strong>{{ layout.data.fieldValue.departement?.name }}</strong>
+          <span v-if="layout?.data?.fieldValue?.sub_departement?.name">
+            Preview: <strong>{{ layout.data.fieldValue.sub_departement?.name }}</strong>
           </span>
-          <span v-else>Pick The departement</span>
+          <span v-else>Pick The sub-departement</span>
         </div>
       </div>
       <div v-if="layout?.code" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getComponent(layout.code)" :fieldValue="layout.data.fieldValue" />
+        <component
+          class="w-full relative flex-1 overflow-auto border-4 border-[#4F46E5] active-block"
+          :is="getComponent(layout.code)"
+          :modelValue="{
+            ...layout.data.fieldValue,
+            sub_departement: layout.data.fieldValue?.departement || null,
+            families: layout.data.fieldValue?.families || []
+          }"
+          :routeEditfamily="data.update_family_route"
+        />
       </div>
-      <div v-else>
-        <EmptyState />
+      <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]" style="height: 100%;">
+        <div class="flex flex-col items-center gap-2">
+          <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
+          <h3 class="text-lg font-semibold">No sub-department selected</h3>
+          <p class="text-sm max-w-xs">
+            Please pick a sub-department to preview its data here.
+          </p>
+        </div>
+
+        <Button :label="'Pick a sub-department as a data preview'" @click="visibleDrawer = true" />
       </div>
     </div>
   </div>
@@ -135,12 +150,16 @@ provide("currentView", currentView);
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">Department Overview</h2>
-        <p class="text-xs text-gray-500">Choose a department to preview</p>
+        <h2 class="text-base font-semibold">Sub-Department Overview</h2>
+        <p class="text-xs text-gray-500">Choose a Sub-department to preview</p>
       </div>
     </template>
 
-    asdasdasd
+    <SubDepartementListTree 
+      :dataList="data.sub_departements"
+      @changeDepartment="onChangeDepartment"
+      :active="layout?.data?.fieldValue?.sub_departement?.slug"
+     />
   </Drawer>
 </template>
 
