@@ -38,7 +38,11 @@ class GetWebBlockProducts
             ->get();
 
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.products', WebBlockProductsResource::collection($families)->toArray(request()));
+        if (!$families->isEmpty()) {
+            data_set($webBlock, 'web_block.layout.data.fieldValue.products', WebBlockProductsResource::collection($families)->toArray(request()));
+        } else {
+            data_set($webBlock, 'web_block.layout.data.fieldValue.products', []);
+        }
 
         return $webBlock;
     }
