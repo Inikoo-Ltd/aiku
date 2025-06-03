@@ -105,6 +105,13 @@ const onUnchecked = (itemId: number) => {
 		</template>
 
 		<!-- Column: Price -->
+		<template #cell(customer_price)="{ item }">
+			<div>
+				{{ locale.currencyFormat(item.currency_code, item.customer_price) }}
+			</div>
+		</template>
+
+		<!-- Column: Price -->
 		<template #cell(status)="{ item: product }">
             <FontAwesomeIcon v-if="(product.platform_product_id) || (product.platform == 'manual')" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
         </template>

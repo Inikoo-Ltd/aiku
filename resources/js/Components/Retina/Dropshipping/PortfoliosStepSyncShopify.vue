@@ -168,6 +168,14 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
+        <Column field="customer_price" header="Selling Price" style="max-width: 125px;">
+            <template #body="{ data }">
+                <div class="whitespace-nowrap">
+                    {{ locale.currencyFormat(data.currency_code, data.customer_price) }}
+                </div>
+            </template>
+        </Column>
+
         <Column field="action" header="Action" style="text-align: right;">
             <template #body="{ data }">
                 <div class="flex gap-x-2 gap-y-1 flex-wrap justify-end">
