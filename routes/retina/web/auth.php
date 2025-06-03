@@ -19,7 +19,6 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
 use App\Actions\Retina\SysAdmin\FinishPreRegisterRetinaCustomer;
 use App\Actions\Retina\SysAdmin\PreRegisterRetinaCustomer;
-use App\Actions\Retina\SysAdmin\RegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
 use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
@@ -38,8 +37,6 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('register', ShowRetinaRegister::class)->name('register');
 
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
-
-    Route::post('ds/{shop:id}/register', RegisterRetinaDropshippingCustomer::class)->name('ds.register.store');
 
     Route::get('rp', ShowRetinaResetWebUserPassword::class)->name('reset-password.show');
     Route::get('reset-password-send', ShowForgotPasswordForm::class)->name('reset-password.edit');

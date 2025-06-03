@@ -47,9 +47,8 @@ class ShowRetinaRegister
                 'Auth/DropshipRegister',
                 [
                     'countriesAddressData' => GetAddressData::run(),
-                    'polls' => $pollsResource,
                     'registerRoute' => [
-                        'name' => 'retina.ds.register.store',
+                        'name' => 'register_pre_customer.store',
                         'parameters' => [
                             'shop' => $shop->id
                         ]

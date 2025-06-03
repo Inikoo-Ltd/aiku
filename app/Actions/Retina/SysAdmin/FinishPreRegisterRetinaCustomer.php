@@ -80,6 +80,7 @@ class FinishPreRegisterRetinaCustomer extends RetinaAction
             ->get()
             ->keyBy('id');
 
+        $isError = false;
         foreach ($pollReplies as $key => $value) {
             $pollId = Arr::get($value, 'id');
             $pollType = Arr::get($value, 'type');
@@ -90,7 +91,8 @@ class FinishPreRegisterRetinaCustomer extends RetinaAction
                     'poll_replies.' . $key,
                     "Poll reply not valid"
                 );
-                return;
+                $isError = true;
+                continue;
             }
 
             $poll = $polls->get($pollId);
@@ -100,7 +102,8 @@ class FinishPreRegisterRetinaCustomer extends RetinaAction
                     'poll_replies.' . $key,
                     "The poll does not exist!"
                 );
-                return;
+                $isError = true;
+                continue;
             }
 
             if ($pollType === PollTypeEnum::OPTION->value) {
@@ -114,15 +117,20 @@ class FinishPreRegisterRetinaCustomer extends RetinaAction
                         'poll_replies.' . $key,
                         "The answer option does not exist!"
                     );
-                    return;
+                    $isError = true;
+                    continue;
                 }
             } elseif ($pollType === PollTypeEnum::OPEN_QUESTION->value && !is_string($pollAnswer)) {
                 $validator->errors()->add(
                     'poll_replies.' . $key,
                     "The answer must be a string!"
                 );
-                return;
+                $isError = true;
+                continue;
             }
+        }
+        if ($isError) {
+            return;
         }
     }
 
