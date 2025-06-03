@@ -463,7 +463,7 @@ trait WithWooCommerceApiRequest
         $orderWebhook = $this->createWooCommerceWebhook([
             'name' => 'Order created',
             'topic' => 'order.created',
-            'delivery_url' => route('webhooks.woo.orders.create', [
+            'delivery_url' => route('webhooks.woo.orders.catch', [
                 'wooCommerceUser' => $this->id
             ]),
         ]);
