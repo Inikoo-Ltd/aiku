@@ -31,24 +31,22 @@ class ShowFinishPreRetinaRegister
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
-        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            return Inertia::render(
-                'Auth/DropshipRegister',
-                [
-                'countriesAddressData' => GetAddressData::run(),
-                'polls' => $pollsResource,
-                'registerRoute' => [
-                    'name' => 'retina.ds.finish_pre_register.store',
-                    'parameters' => [
-                        'shop' => $shop->id
-                    ]
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
+            abort(404);
+        }
+        return Inertia::render(
+            'Auth/DropshipRegister',
+            [
+            'countriesAddressData' => GetAddressData::run(),
+            'polls' => $pollsResource,
+            'registerRoute' => [
+                'name' => 'retina.finish_pre_register',
+                'parameters' => [
+                    'shop' => $shop->id
                 ]
             ]
-            );
-        }
-
-        return redirect()->route('iris.iris_webpage');
-
+        ]
+        );
     }
 
 }
