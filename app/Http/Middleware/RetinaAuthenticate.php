@@ -40,7 +40,7 @@ class RetinaAuthenticate extends Middleware
         $customer->status == CustomerStatusEnum::PRE_REGISTRATION &&
         $request->route()->getName() !== $redirectRoute) {
             return redirect()->route($redirectRoute);
-        } elseif ($request->route()->getName() ==  $redirectRoute) {
+        } elseif ($customer->status != CustomerStatusEnum::PRE_REGISTRATION && $request->route()->getName() ==  $redirectRoute) {
             return abort(404);
         }
 
