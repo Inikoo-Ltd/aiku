@@ -87,7 +87,7 @@ class GoogleLoginRetina extends RetinaAction
             app()->setLocale($language->code);
         }
 
-        return redirect()->route('retina.finish-pre-register');
+        return Redirect::route('retina.finish-pre-register');
     }
 
     public function authorize(ActionRequest $request): bool
