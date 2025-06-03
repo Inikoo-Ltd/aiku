@@ -108,10 +108,10 @@ const importStyleCSS = () => {
     link.rel = "stylesheet"
     link.href = "https://cdn.luigisbox.com/autocomplete.css"
     document.head.appendChild(link)
-    document.documentElement.style.setProperty('--luigiColor1', layout.iris.theme.color[0]);
-    document.documentElement.style.setProperty('--luigiColor2', layout.iris.theme.color[1]);
-    document.documentElement.style.setProperty('--luigiColor3', layout.iris.theme.color[2]);
-    document.documentElement.style.setProperty('--luigiColor4', layout.iris.theme.color[3]);
+    document.documentElement.style.setProperty('--luigiColor1', layout.iris?.theme?.color?.[0]);
+    document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[1]);
+    document.documentElement.style.setProperty('--luigiColor3', layout.iris?.theme?.color?.[2]);
+    document.documentElement.style.setProperty('--luigiColor4', layout.iris?.theme?.color?.[3]);
 }
 
 
