@@ -52,7 +52,7 @@ class DropshippingPortfolioResource extends JsonResource
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
             $weight = $this->item->gross_weight;
-            $price = $this->customer_price ?? $this->item->price;
+            $price = $this->item->price;
             $image = $this->item->imageSources(64, 64);
             $category = $department . $this->item->family?->name;
         }
@@ -100,6 +100,7 @@ class DropshippingPortfolioResource extends JsonResource
             'weight'                    => $weight,
             'price'                     => $price,
             'selling_price'             => $this->selling_price,
+            'customer_price'             => $this->customer_price,
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,

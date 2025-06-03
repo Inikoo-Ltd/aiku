@@ -124,20 +124,20 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="selling_price" header="Selling Price" style="max-width: 200px;">
+        <Column field="customer_price" header="Selling Price" style="max-width: 200px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
-                        v-model="data.selling_price"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {selling_price: data.selling_price}, 'selling_price')"
+                        v-model="data.customer_price"
+                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.customer_price}, 'customer_price')"
                         mode="currency"
-                        :placeholder="data.selling_price"
+                        :placeholder="data.customer_price"
                         :currency="data.currency_code"
                         locale="en-GB"
                         fluid
                         :inputStyle="{textAlign: 'right'}"
                     />
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'selling_price'], undefined)" />
+                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'customer_price'], undefined)" />
                 </div>
             </template>
         </Column>

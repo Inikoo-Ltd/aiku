@@ -61,12 +61,11 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
             ];
 
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
-
+            
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
             ]);
 
-            // TODO @kirin
             UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());

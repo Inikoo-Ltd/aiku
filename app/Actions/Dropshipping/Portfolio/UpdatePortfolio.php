@@ -90,7 +90,7 @@ class UpdatePortfolio extends OrgAction
             'item_name'       => 'sometimes|string',
             'item_code'       => 'sometimes|string',
             'customer_product_name'       => 'sometimes|string',
-            'customer_price'       => 'sometimes',
+            'customer_price'       => ['sometimes', 'numeric', 'min:0'],
             'customer_description'       => 'sometimes|string|nullable',
             'platform_product_id'       => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
