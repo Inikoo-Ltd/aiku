@@ -17,7 +17,7 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
-use App\Actions\Retina\SysAdmin\FinishPreRegisterRetinaDropshippingCustomer;
+use App\Actions\Retina\SysAdmin\FinishPreRegisterRetinaCustomer;
 use App\Actions\Retina\SysAdmin\PreRegisterRetinaCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaDropshippingCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
@@ -53,5 +53,5 @@ Route::middleware('retina-auth:retina')->group(function () {
     Route::get('prepare-account', ShowRetinaPrepareAccount::class)->name('prepare-account.show');
 
     Route::get('finish-pre-register', ShowFinishPreRetinaRegister::class)->name('finish_pre_register');
-    Route::post('{shop:id}/finish-pre-register', FinishPreRegisterRetinaDropshippingCustomer::class)->name('finish_pre_register.store');
+    Route::post('{shop:id}/finish-pre-register', FinishPreRegisterRetinaCustomer::class)->name('finish_pre_register.store');
 });

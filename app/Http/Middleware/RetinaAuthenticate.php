@@ -30,17 +30,19 @@ class RetinaAuthenticate extends Middleware
         $shop = $webUser->shop;
 
         $redirectRoute = 'retina.finish_pre_register';
+        $currentRoute = $request->route()->getName();
 
-        if ($shop->type == ShopTypeEnum::FULFILMENT || $request->route()->getName() == 'retina.logout') {
+        if ($shop->type == ShopTypeEnum::FULFILMENT || $currentRoute == 'retina.logout') {
             return $next($request);
         }
 
+        $notAllowedRoutes = [$redirectRoute, 'finish_pre_register.store'];
 
         if ($customer &&
         $customer->status == CustomerStatusEnum::PRE_REGISTRATION &&
         $request->route()->getName() !== $redirectRoute) {
             return redirect()->route($redirectRoute);
-        } elseif ($customer->status != CustomerStatusEnum::PRE_REGISTRATION && $request->route()->getName() ==  $redirectRoute) {
+        } elseif ($customer->status != CustomerStatusEnum::PRE_REGISTRATION && in_array($currentRoute, $notAllowedRoutes)) {
             return abort(404);
         }
 
