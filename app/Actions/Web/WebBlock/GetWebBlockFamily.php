@@ -30,7 +30,11 @@ class GetWebBlockFamily
             ->where('product_categories.show_in_website', true)
             ->get();
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.family', WebBlockFamilyResource::make($families)->toArray(request()));
+        if (!$families->isEmpty()) {
+            data_set($webBlock, 'web_block.layout.data.fieldValue.family', WebBlockFamilyResource::make($families)->toArray(request()));
+        } else {
+            data_set($webBlock, 'web_block.layout.data.fieldValue.family', []);
+        }
         return $webBlock;
     }
 
