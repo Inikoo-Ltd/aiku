@@ -36,23 +36,6 @@ class StoreOrderFromWooCommerce extends OrgAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, array $modelData): void
     {
-        $summary = [
-            'line_items' => $modelData['line_items'] ?? null,
-            'shipping'   => $modelData['shipping'] ?? null,
-            'billing'    => $modelData['billing'] ?? null,
-        ];
-
-        // Optionally, if these arrays can be huge, you might want to limit items, like:
-        if (is_array($summary['line_items']) && count($summary['line_items']) > 10) {
-            $summary['line_items'] = array_slice($summary['line_items'], 0, 10);
-        }
-
-        Sentry\configureScope(function (Scope $scope) use ($summary): void {
-            $scope->setContext('order_data_summary', $summary);
-        });
-
-        Sentry::captureMessage('Order data debug');
-
         $deliveryAttributes = $this->getAttributes(Arr::get($modelData, 'shipping'));
         $deliveryAddress = Arr::get($deliveryAttributes, 'address');
 
