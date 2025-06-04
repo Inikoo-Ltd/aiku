@@ -145,7 +145,7 @@ class ShowWebsiteWorkshop extends OrgAction
         }  elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
             $publishRoute = [
                 'method'     => 'post',
-                'name'       => 'grp.models.website.publish.family',
+                'name'       => 'grp.models.website.publish.products',
                 'parameters' => [
                     'website' => $website->id
                 ]
