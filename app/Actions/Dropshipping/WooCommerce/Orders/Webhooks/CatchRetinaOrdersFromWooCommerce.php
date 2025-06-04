@@ -29,8 +29,21 @@ class CatchRetinaOrdersFromWooCommerce extends OrgAction
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
         DB::transaction(function () use ($wooCommerceUser) {
+            $existingOrderKeys = $wooCommerceUser
+                ->customerSalesChannel
+                ?->orders()
+                ->pluck('data')
+                ->map(fn ($data) => $data['order_key'] ?? null)
+                ->filter()
+                ->toArray();
+
             $response = $wooCommerceUser->getWooCommerceOrders();
             foreach ($response as $order) {
+
+                if (in_array($order['order_key'], $existingOrderKeys, true)) {
+                    continue;
+                }
+                
                 if (!empty(array_filter($order['billing'])) && !empty(array_filter($order['shipping']))) {
                     if ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
                         StoreFulfilmentFromWooCommerce::run($wooCommerceUser, $order);
