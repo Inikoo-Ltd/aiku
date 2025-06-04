@@ -113,7 +113,7 @@ console.log('props.data', props)
             :selectedWeblock="data?.code"
           />
         </TabPanel>
-        <TabPanel v-if="data" class="p-4">
+        <TabPanel v-if="data?.data?.fieldValue" class="p-4">
         <SideEditor 
             v-model="data.data.fieldValue" 
             :blueprint="getBlueprint(data.code)"

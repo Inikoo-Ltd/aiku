@@ -118,7 +118,7 @@ console.log('props.data', props)
         <TabPanel v-if="data" class="p-4">
          <!--  <FamilyListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" /> -->
         </TabPanel>
-        <TabPanel v-if="data" class="p-4">
+        <TabPanel v-if="data?.data?.fieldValue" class="p-4">
           <SideEditor 
             v-model="data.data.fieldValue" 
             :blueprint="getBlueprint(data.code)"
