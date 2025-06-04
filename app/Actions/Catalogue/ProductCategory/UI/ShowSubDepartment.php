@@ -90,14 +90,18 @@ class ShowSubDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canDelete ? [
+                        !$subDepartment->children()->exists() ? [
                             'type'  => 'button',
                             'style' => 'delete',
+                            'key'   => 'delete',
                             'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
+                                'name'       => 'grp.models.product_category.delete',
+                                'parameters' => [
+                                    'productCategory' => $subDepartment->id,
+                                ],
+                                'method' => 'delete',
                             ]
-                        ] : false
+                        ] : false,
                     ],
                     'parentTag' => $parentTag,
                     'subNavigation' => $this->getSubDepartmentSubNavigation($subDepartment)

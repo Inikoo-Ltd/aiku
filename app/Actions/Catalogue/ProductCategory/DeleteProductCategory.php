@@ -9,7 +9,9 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
 
@@ -20,6 +22,7 @@ class DeleteProductCategory extends OrgAction
     public function handle(ProductCategory $productCategory): ProductCategory
     {
         $productCategory->stats()->delete();
+        $productCategory->webpage()->delete();
         $productCategory->delete();
         return $productCategory;
     }
@@ -31,7 +34,7 @@ class DeleteProductCategory extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        if ($this->productCategory->getProducts()->exists()) {
+        if ($this->productCategory->getProducts()->count() > 0) {
             $validator->errors()->add('products', 'This category has products associated with it.');
         }
 
@@ -39,6 +42,15 @@ class DeleteProductCategory extends OrgAction
             $validator->errors()->add('children', 'This category has sub-categories associated with it.');
         }
 
+    }
+
+    public function htmlResponse(ProductCategory $productCategory, ActionRequest $request)
+    {
+        return match($productCategory->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => Redirect::route('grp.org.shops.show.catalogue.departments.index', [$productCategory->organisation, $productCategory->shop]),
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => Redirect::route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$productCategory->organisation, $productCategory->shop, $productCategory->parent]),
+            default => []
+        };
     }
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): ProductCategory
