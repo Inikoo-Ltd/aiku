@@ -60,7 +60,7 @@ const emits = defineEmits<{
     (e: 'autoSave'): void
 }>()
 
-const selectedTab = ref(props.data ? 1 : 0)
+const selectedTab = ref(props.data?.data ? 1 : 0)
 
 const tabs = [
 	{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
@@ -73,7 +73,7 @@ function changeTab(index: Number) {
 }
 
 const computedTabs = computed(() => {
-	return props.data
+	return props.data?.data
 		? tabs
 		: [tabs[0]]
 })

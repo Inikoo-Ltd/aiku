@@ -27,7 +27,6 @@ class GetWebBlockProducts
             $field = 'family_id';
         }
 
-
         $families = DB::table('products')
             ->leftJoin('webpages', function ($join) {
                 $join->on('products.id', '=', 'webpages.model_id')
@@ -37,7 +36,8 @@ class GetWebBlockProducts
             ->where($field, $webpage->model_id)
             ->get();
 
-
+        data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['products']['data']['fieldValue']);
+        
         if (!$families->isEmpty()) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.products', WebBlockProductsResource::collection($families)->toArray(request()));
         } else {

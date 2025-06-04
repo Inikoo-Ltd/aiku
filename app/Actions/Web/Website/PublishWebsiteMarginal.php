@@ -45,6 +45,8 @@ class PublishWebsiteMarginal extends OrgAction
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilySnapshot->layout;
         } elseif ($marginal == 'product') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductSnapshot->layout;
+        } elseif ($marginal == 'products') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductsSnapshot->layout;
         }
 
         $firstCommit = true;
@@ -82,7 +84,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer','menu', 'department', 'sub_department', 'family', 'product'])) {
+        if (in_array($marginal, ['header', 'footer','menu', 'department', 'sub_department', 'family', 'product', 'products'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,
@@ -161,6 +163,12 @@ class PublishWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'product', $this->validatedData);
+    }
+
+    public function products(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'products', $this->validatedData);
     }
 
     public function theme(Website $website, ActionRequest $request): void
