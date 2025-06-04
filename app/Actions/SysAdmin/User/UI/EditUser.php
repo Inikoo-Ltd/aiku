@@ -42,6 +42,13 @@ class EditUser extends OrgAction
         return $this->handle($user);
     }
 
+    public function inEmployee(Organisation $organisation, Employee $employee, User $user, ActionRequest $request): User
+    {
+        $this->auth_scope = $organisation;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($user);
+    }
 
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
