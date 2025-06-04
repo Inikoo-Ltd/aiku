@@ -169,6 +169,31 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'product' => $layout
                 ]
             ]);
+        } elseif ($marginal == 'products') {
+            if (!$website->unpublishedProductsSnapshot) {
+                $productsSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::PRODUCTS,
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_products_snapshot_id' => $productsSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductsSnapshot->layout;
+
+            $this->update($website->unpublishedProductsSnapshot, [
+                'layout' => [
+                    'products' => $layout
+                ]
+            ]);
         }
         return $website;
     }
@@ -240,6 +265,12 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'product', $this->validatedData);
+    }
+
+    public function products(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'products', $this->validatedData);
     }
 
     public function action(Website $website, $marginal, $modelData): string
