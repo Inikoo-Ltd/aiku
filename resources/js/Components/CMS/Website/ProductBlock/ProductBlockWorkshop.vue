@@ -12,7 +12,7 @@ import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
-import SideMenuProductWorkshop from "./SideMenuProductWorkshop.vue"
+import SideMenuProductWorkshop from "./SideMenuProductBlockWorkshop.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { notify } from "@kyvg/vue3-notification"
 

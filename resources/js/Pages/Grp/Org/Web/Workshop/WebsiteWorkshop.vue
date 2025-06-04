@@ -7,11 +7,11 @@ import { computed, ref, toRaw } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import LayoutWorkshop from "@/Components/CMS/Website/Layout/LayoutWorkshop.vue"
-import WorkshopProduct from "@/Components/CMS/Website/Product/ProductWorkshop.vue"
-import FamilyWorkshop from '@/Components/CMS/Website/Family/FamilyWorkshop.vue'
+import ProductBlockWorkshop from "@/Components/CMS/Website/ProductBlock/ProductBlockWorkshop.vue"
+import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/ProductsBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import DepartmentWorkshop from '@/Components/CMS/Website/Departement/DepartementWorkshop.vue'
-import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartement/SubDepartementWorkshop.vue'
+import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartementBlockWorkshop/SubDepartementWorkshop.vue'
+import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -31,7 +31,6 @@ const props = defineProps<{
     sub_department: {}
 }>()
 
-console.log(props)
 
 let currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -40,10 +39,10 @@ const loadingPublish = ref(false)
 const component = computed(() => {
     const components = {
         website_layout: LayoutWorkshop,
-        family: FamilyWorkshop,
-        product: WorkshopProduct,
-        department: DepartmentWorkshop,
-        sub_department: SubDepartementWorkshop
+        department: SubDepartementWorkshop,
+        sub_department: FamiliesBlockWorkshop,
+        family: ProductsBlockWorkshop,
+        product: ProductBlockWorkshop,
     }
     return components[currentTab.value]
 })

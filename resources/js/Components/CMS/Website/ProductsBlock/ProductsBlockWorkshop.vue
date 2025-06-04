@@ -2,17 +2,13 @@
 import { faCube, faLink } from "@fal"
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, watch, computed, provide, inject, toRaw } from "vue"
-import Modal from '@/Components/Utils/Modal.vue'
-import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
+import { ref, provide, inject, toRaw } from "vue"
 import { getIrisComponent } from "@/Composables/getIrisComponents"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
-import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
-import SideMenuFamilyWorkshop from "./SideMenuFamilyWorkshop.vue"
+import SideMenuFamilyWorkshop from "./SideMenuProductsWorkshop.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -26,7 +22,7 @@ const props = defineProps<{
     families: any[];
   }
 }>()
-
+console.log('ddfdf',props)
 const layoutTheme = inject('layout', layoutStructure)
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
@@ -87,8 +83,6 @@ const autosave = () => {
     }
   )
 }
-
-
 
 const currentView = ref("desktop");
 provide("currentView", currentView);

@@ -72,10 +72,10 @@ function closeModal() {
 </script>
 
 <template>
-  <div v-if="props.modelValue.families && props.modelValue.families.length" class="px-4 py-10" :style="getStyles(modelValue.container?.properties, screenType)">
+  <div v-if="props.modelValue.families && props.modelValue.families.length" class="px-4 py-10 mx-[30px]" :style="getStyles(modelValue.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div v-for="(item, index) in props.modelValue.families" :key="index"   @click="openModal(item)">
         <Family1Render :data="item" />
       </div>

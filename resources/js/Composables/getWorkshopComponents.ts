@@ -40,6 +40,7 @@ import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Work
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
 import SubDepartments1Workshop from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
+import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -70,13 +71,14 @@ export const getComponent = (componentName: string) => {
 
         //family
         'families-1' : Families1Workshop,
+        'family-1': FamilyIris1,
 
         //product
         'product-1': ProductWorkshop1,
         'product': ProductWorkshop1,
 
         //product list
-        'products': ProductList,
+        'products-1' : Products1Iris,
 
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,
@@ -84,7 +86,6 @@ export const getComponent = (componentName: string) => {
         'cta1': CTA,
         'cta2': CTA2,
         'cta3': CTA3,
-        'family-1': FamilyIris1,
         "iframe": Iframe,
         'images': ImageWorkshop,
         "overview_aurora": Overview,
