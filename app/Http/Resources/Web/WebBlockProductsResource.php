@@ -40,7 +40,7 @@ class WebBlockProductsResource extends JsonResource
 
 
         return [
-            'slug'  => $this->slug,
+            'slug'  => $this->slug ?? null,
             'code'  => $this->code,
             'name'  => $this->name,
             'image' => $imageSources

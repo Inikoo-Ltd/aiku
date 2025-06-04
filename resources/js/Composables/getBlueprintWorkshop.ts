@@ -67,7 +67,7 @@ export const getBlueprint = (componentName: string) => {
 		"family-1": FamilyBluprint.blueprint,
 
 		//families list
-		"families": FamilyBluprint.blueprint,
+		"families-1": FamilyBluprint.blueprint,
 
 
 		"banner": WowsbarBannerBlueprint.blueprint,
