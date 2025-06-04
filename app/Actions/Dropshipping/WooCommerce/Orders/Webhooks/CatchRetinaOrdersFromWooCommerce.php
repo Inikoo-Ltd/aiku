@@ -43,7 +43,7 @@ class CatchRetinaOrdersFromWooCommerce extends OrgAction
                 if (in_array($order['order_key'], $existingOrderKeys, true)) {
                     continue;
                 }
-                
+
                 if (!empty(array_filter($order['billing'])) && !empty(array_filter($order['shipping']))) {
                     if ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
                         StoreFulfilmentFromWooCommerce::run($wooCommerceUser, $order);

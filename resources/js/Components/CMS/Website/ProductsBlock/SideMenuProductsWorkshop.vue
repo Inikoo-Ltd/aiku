@@ -23,8 +23,6 @@ import {
 import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
-import FamilyListTree from "@/Components/CMS/Website/Family/FamilyListTree.vue"
-/* import DepartementListTree from "./DepartementListTree.vue" */
 
 library.add(
 	faChevronRight,
@@ -115,16 +113,13 @@ console.log('props.data', props)
             :selectedWeblock="data?.code"
           />
         </TabPanel>
-    <!--     <TabPanel v-if="data" class="p-4">
-          <FamilyListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
-        </TabPanel> -->
-        <TabPanel v-if="data" class="p-4">
-          <!-- <SideEditor 
+        <TabPanel v-if="data?.data?.fieldValue" class="p-4">
+        <SideEditor 
             v-model="data.data.fieldValue" 
             :blueprint="getBlueprint(data.code)"
             @update:modelValue="(e) => { data.data.fieldValue = e, emits('autoSave') }"
             :uploadImageRoute="null" 
-          /> -->
+          />
         </TabPanel>
       </TabPanels>
     </TabGroup>

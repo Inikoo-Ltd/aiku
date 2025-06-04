@@ -113,7 +113,7 @@ provide("currentView", currentView);
         </div>
       </div>
       <div v-if="layout?.code" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getIrisComponent(layout.code)" :fieldValue="layout.data.fieldValue" />
+        <component class="w-full" :is="getIrisComponent(layout.code)" :modelValue="layout.data.fieldValue" />
       </div>
       <div v-else>
         <EmptyState />

@@ -23,7 +23,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
-use Sentry\State\Scope;
+
 class StoreOrderFromWooCommerce extends OrgAction
 {
     use AsAction;

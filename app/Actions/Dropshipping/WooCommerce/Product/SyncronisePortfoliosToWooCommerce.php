@@ -34,7 +34,7 @@ class SyncronisePortfoliosToWooCommerce extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            RequestApiUploadProductWooCommerce::dispatch($portfolio);
+            RequestApiUploadProductWooCommerce::dispatch($wooCommerceUser, $portfolio);
         }
     }
 

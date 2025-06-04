@@ -49,10 +49,14 @@ const component = computed(() => {
 
 
 const onPublish = (routeData) => {
-
+    let payload = props[props.tabs?.current].layout
+   /*  if(props.tabs?.current == 'department'){
+         delete payload.data.fieldValue.departement;
+         delete payload.data.fieldValue.sub_departments;
+    } */
     router.post(
         route(routeData.name, routeData.parameters),
-        { layout: props[props.tabs?.current].layout },
+        { layout: payload },
         {
             preserveScroll: true,
             onStart: () => { loadingPublish.value = true },
