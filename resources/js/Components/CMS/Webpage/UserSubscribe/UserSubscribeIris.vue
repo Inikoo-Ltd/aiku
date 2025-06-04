@@ -26,10 +26,16 @@ const isLoadingSubmit = ref(false)
 const currentState = ref("")
 const inputEmail = ref("")
 const errorMessage = ref("")
+const hiddenField = ref("")
 const onSubmitSubscribe = async () => {
 	isLoadingSubmit.value = true
 	errorMessage.value = ""
 	currentState.value = ""
+
+	if (hiddenField.value) {  // If hidden field is filled, do not submit (it's may be a bot autofill the field)
+        isLoadingSubmit.value = false
+        return
+    }
 
 	if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
 		setTimeout(() => {
@@ -78,6 +84,12 @@ const onSubmitSubscribe = async () => {
 							</label>
 
 							<div class="relative w-full">
+								<input
+									v-model="hiddenField"
+									type="text"
+									class="sr-only"
+								/>
+								
 								<input
 									type="email"
 									v-model="inputEmail"
