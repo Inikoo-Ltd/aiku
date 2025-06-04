@@ -28,7 +28,7 @@ class GetWebsiteWorkshopFamily
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             /* 'families'   => FamiliesResource::collection($families), */
             // 'products'   => ProductsResource::collection($products),
-            'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.family', []),
+            'layout'    => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.family',
                 'parameters' => [
