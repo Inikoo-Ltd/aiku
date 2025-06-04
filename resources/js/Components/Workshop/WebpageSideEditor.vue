@@ -255,7 +255,7 @@ const showWebpage = (activityItem: Daum) => {
                                     </div>
 
                                     <!-- Section: Properties panel -->
-                                    <Collapse v-if="element?.web_block?.layout" as="section"
+                                    <Collapse v-if="element?.web_block?.layout && getBluprintPermissions(element.type)" as="section"
                                         :when="openedBlockSideEditor === index">
                                         <div class="p-2">
                                             <div class="px-2">

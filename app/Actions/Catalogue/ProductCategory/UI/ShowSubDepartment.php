@@ -30,6 +30,7 @@ class ShowSubDepartment extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithSubDepartmentSubNavigation;
+    use WithWebpageActions;
 
 
     private Organisation|Shop|ProductCategory $parent;
@@ -50,6 +51,16 @@ class ShowSubDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $subDepartment, ActionRequest $request): Response
     {
+        $parentTag = [
+                    [
+                        'label' => $subDepartment->department->name,
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'icon'  => 'fal fa-folder-tree'
+                    ]
+                ];
         return Inertia::render(
             'Org/Catalogue/SubDepartment',
             [
@@ -70,6 +81,7 @@ class ShowSubDepartment extends OrgAction
                         'title' => __('Sub-department')
                     ],
                     'actions'       => [
+                        $this->getWebpageActions($subDepartment),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -87,6 +99,7 @@ class ShowSubDepartment extends OrgAction
                             ]
                         ] : false
                     ],
+                    'parentTag' => $parentTag,
                     'subNavigation' => $this->getSubDepartmentSubNavigation($subDepartment)
                 ],
                 'tabs'        => [

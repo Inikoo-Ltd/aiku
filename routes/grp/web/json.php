@@ -13,7 +13,9 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetProducts;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout;
 use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
 use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
@@ -91,3 +93,6 @@ Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('sh
 
 Route::get('trade-units/{tradeUnit}/tags', [GetTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
+
+Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
+Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');

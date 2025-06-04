@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
           <TransitionGroup tag="div" name="list" class="relative">
             <template v-for="(activityItem, idx) in props.webpage?.layout?.web_blocks" :key="activityItem.id">
               <section
-			  	v-show="showWebpage(activityItem)"
+			  	      v-show="showWebpage(activityItem)"
                 class="w-full min-h-[50px] relative"
                 :data-block-id="idx"
                 :class="{

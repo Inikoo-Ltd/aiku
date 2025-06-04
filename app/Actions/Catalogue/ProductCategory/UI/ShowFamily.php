@@ -14,6 +14,7 @@ use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -72,9 +73,6 @@ class ShowFamily extends OrgAction
     {
         $actions = [];
 
-
-
-
         return array_merge($actions, [
             $this->getWebpageActions($family),
             $this->canEdit ? [
@@ -96,8 +94,37 @@ class ShowFamily extends OrgAction
         ]);
     }
 
+
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
+        $parentTag = [];
+
+        if ($this->parent instanceof ProductCategory) {
+            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $parentTag = [
+                        [
+                            'label' => $family->department->name,
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'icon'  => 'fal fa-folder-tree'
+                        ]
+                        ];
+            } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $parentTag = [
+                    [
+                        'label' => $family->subDepartment->name,
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'icon'  => 'fal fa-folder-tree'
+                    ]
+                ];
+            }
+        }
+
         return Inertia::render(
             'Org/Catalogue/Family',
             [
@@ -119,6 +146,7 @@ class ShowFamily extends OrgAction
                         'title' => __('department')
                     ],
                     'actions' => $this->getActions($family, $request),
+                    'parentTag' => $parentTag,
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
 

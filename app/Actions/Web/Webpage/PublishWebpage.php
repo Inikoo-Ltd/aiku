@@ -40,7 +40,7 @@ class PublishWebpage extends OrgAction
         }
 
         $firstCommit = false;
-        if ($webpage->state == WebpageStateEnum::IN_PROCESS or $webpage->state == WebpageStateEnum::READY) {
+        if ($webpage->state == WebpageStateEnum::IN_PROCESS || $webpage->state == WebpageStateEnum::READY) {
             $firstCommit = true;
         }
 
@@ -89,7 +89,7 @@ class PublishWebpage extends OrgAction
             'is_dirty'           => false,
         ];
 
-        if ($webpage->state == WebpageStateEnum::IN_PROCESS or $webpage->state == WebpageStateEnum::READY) {
+        if ($webpage->state == WebpageStateEnum::IN_PROCESS || $webpage->state == WebpageStateEnum::READY) {
             $updateData['live_at'] = now();
         }
 

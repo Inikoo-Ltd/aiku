@@ -8,19 +8,18 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\ShopifyUserHasProduct;
-use Closure;
-use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
-use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeUnique
 {
@@ -29,112 +28,98 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
     use WithActionUpdate;
 
     public string $jobQueue = 'shopify';
+    public int $jobBackoff = 5;
 
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): void
+    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body = []): void
     {
-        $api = $shopifyUser->api();
-        $api->getOptions()->setGuzzleOptions(['timeout' => 90.0, 'max_retry_attempts' => 0,
-            'default_retry_multiplier' => 0.0,]);
+        DB::transaction(function () use ($shopifyUser, $portfolio, $body) {
+            try {
+                $images = [];
+                $count = 0;
+                foreach ($portfolio->item->images as $image) {
+                    if ($count >= 3) {
+                        break;
+                    }
 
-        $client = $api->getRestClient();
+                    $images[] = [
+                        "attachment" => $image->getBase64Image()
+                    ];
 
-        try {
-            $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
-        } catch (\Exception $e) {
-            $products = $client->request('GET', '/admin/api/2024-04/products.json', [
-                'title' => Arr::get($body, 'product.title'),
-                'limit' => 1
-            ]);
-
-            Log::info(json_encode($products));
-
-            if (!empty(Arr::get($products, 'body.products'))) {
-                $response = [
-                    'body' => [
-                        'product' => Arr::first(Arr::get($products, 'body.products.0'))
-                    ]
-                ];
-            } else {
-                $response = [
-                    'body' => [
-                        'product' => []
-                    ],
-                    'errors' => true
-                ];
+                    $count++;
+                }
+            } catch (\Exception $e) {
+                Sentry::captureException($e);
             }
-        }
 
-        Log::info('right-after-upload-' .$portfolio->id);
+            $body = [
+                "product" => [
+                    "id" => $portfolio->item->id,
+                    "title" => $portfolio->customer_product_name,
+                    "handle" => $portfolio->platform_handle,
+                    "body_html" => $portfolio->customer_description,
+                    "vendor" => $portfolio->item->shop->name,
+                    "product_type" => $portfolio->item->family?->name,
+                    "images" => $images,
+                    "variants" => [
+                        [
+                            "price" => number_format($portfolio->customer_price, 2, '.', ''),
+                            "sku" => $portfolio->id,
+                            "inventory_management" => "shopify",
+                            "inventory_policy" => "deny",
+                            "weight" => $portfolio->item->gross_weight,
+                            "weight_unit" => "g"
+                        ]
+                    ]
+                ]
+            ];
 
-        if ($response['errors']) {
-            \Sentry\captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
-        }
+            $productShopify = [];
+            $client = $shopifyUser->getShopifyClient();
+            $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
 
-        $productShopify = Arr::get($response, 'body.product');
+            if (count($availableProducts) <= 0) {
+                try {
+                    $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+                    if ($response['errors']) {
+                        UpdatePortfolio::run($portfolio, [
+                            'errors_response' => Arr::get($response, 'body.errors')
+                        ]);
 
-        $inventoryVariants = [];
-        foreach (Arr::get($productShopify, 'variants') as $variant) {
-            $variant['available_quantity'] = $portfolio->item->available_quantity;
-            $inventoryVariants[] = $variant;
-        }
+                        \Sentry::captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
+                    } else {
+                        $productShopify = Arr::get($response, 'body.product');
+                    }
+                } catch (\Exception $e) {
+                    \Sentry::captureMessage($e->getMessage());
 
-        HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
+                    $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
+                    $productShopify = Arr::get($availableProducts, '0');
+                }
+            } else {
+                $productShopify = Arr::get($availableProducts, '0');
+            }
 
-        if (Arr::get($productShopify, 'id')) {
-            ShopifyUserHasProduct::updateOrCreate([
-                'shopify_user_id' => $shopifyUser->id,
-                'product_type' => $portfolio->item->getMorphClass(),
-                'product_id' => $portfolio->item->id,
-                'portfolio_id' => $portfolio->id
-            ], [
-                'shopify_user_id' => $shopifyUser->id,
-                'product_type' => $portfolio->item->getMorphClass(),
-                'product_id' => $portfolio->item->id,
-                'portfolio_id' => $portfolio->id,
-                'shopify_product_id' => Arr::get($productShopify, 'id')
+            $inventoryVariants = [];
+            foreach (Arr::get($productShopify, 'variants') as $variant) {
+                $variant['available_quantity'] = $portfolio->item->available_quantity;
+                $inventoryVariants[] = $variant;
+            }
+
+            HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
+
+            UpdatePortfolio::run($portfolio, [
+                'platform_product_id' => Arr::get($productShopify, 'id')
             ]);
-        }
 
-        $this->update($portfolio, [
-            'data' => [
-                'api_response' => Arr::get($response, 'body')
-            ]
-        ]);
-
-        Log::info('end-dispatch-' .$portfolio->id);
+            UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $portfolio);
+        });
     }
 
-    public function rules(): array
+    public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio): string|int
     {
-        return [
-            'portfolios' => ['required', 'array']
-        ];
-    }
-
-    public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body): int
-    {
-        return rand();
-    }
-
-    public static function shopifyApiClosure(): Closure
-    {
-        return function (Options $opts) {
-            $ts = config('shopify-app.api_time_store');
-            $ls = config('shopify-app.api_limit_store');
-            $sd = config('shopify-app.api_deferrer');
-
-            // Custom Guzzle options
-            $opts->setGuzzleOptions(['timeout' => 90.0]);
-
-            return new BasicShopifyAPI(
-                $opts,
-                new $ts(),
-                new $ls(),
-                new $sd()
-            );
-        };
+        return $portfolio->id . rand();
     }
 }

@@ -26,6 +26,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 {
+    private CustomerSalesChannel $customerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -46,6 +48,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
 
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('order_stats', 'orders.id', '=', 'order_stats.order_id');
+        $query->leftJoin('customer_clients', 'customer_clients.id', '=', 'orders.customer_client_id');
 
         $query->select(
             'orders.id',
@@ -57,6 +60,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             'orders.date',
             'orders.total_amount',
             'currencies.code as currency_code',
+            'customer_clients.name as client_name',
         );
         return $query->defaultSort('id')
             ->allowedSorts(['id'])
@@ -77,6 +81,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->platform = $customerSalesChannel->platform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
         return $this->handle($customerSalesChannel);
     }
@@ -99,6 +104,17 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
                     'icon'       => 'fal fa-shopping-cart',
                     'title'   => __('Orders'),
                     'model'   =>  $platformName,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('catch'),
+                            'route' => [
+                                'name'       => 'retina.models.dropshipping.woocommerce.orders.catch',
+                                'parameters' => [$this->customerSalesChannel->user->id]
+                            ],
+                        ]
+                    ]
                 ],
 
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),

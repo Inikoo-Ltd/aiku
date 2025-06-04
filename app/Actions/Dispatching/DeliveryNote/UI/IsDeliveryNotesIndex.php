@@ -13,6 +13,7 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Inventory\Warehouse;
@@ -125,7 +126,10 @@ trait IsDeliveryNotesIndex
 
     public function tableStructure($parent, $prefix = null, $bucket = 'all'): Closure
     {
-        $employee = request()->user()->employees()->first() ?? null;
+        $employee = null;
+        if (!request()->user() instanceof WebUser) {
+            $employee = request()->user()->employees()->first() ?? null;
+        }
         $pickerEmployee = null;
         if ($employee) {
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();

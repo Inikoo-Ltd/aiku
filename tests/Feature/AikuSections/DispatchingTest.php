@@ -11,11 +11,14 @@
 namespace Tests\Feature;
 
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\Packing\StorePacking;
+use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\Shipment\StoreShipment;
@@ -30,11 +33,13 @@ use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
 use App\Models\Goods\Stock;
@@ -205,6 +210,32 @@ test('create second delivery note item', function (DeliveryNote $deliveryNote) {
     return $deliveryNoteItem;
 })->depends('create second delivery note');
 
+test('create more delivery note item', function (DeliveryNote $deliveryNote) {
+    /** @var HistoricAsset $historicAsset */
+    $historicAsset2 = HistoricAsset::find(1);
+
+    $stock       = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock       = UpdateStock::make()->action($stock, [
+        'state' => StockStateEnum::ACTIVE
+    ]);
+    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
+    $transaction = StoreTransaction::make()->action($this->order, $historicAsset2, Transaction::factory()->definition());
+
+    $deliveryNoteData = [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 15
+    ];
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteData);
+    $deliveryNote->refresh();
+    expect($deliveryNoteItem->delivery_note_id)->toBe($deliveryNoteData['delivery_note_id'])
+        ->and($deliveryNote->deliveryNoteItems()->count())->toBe(2);
+
+    return $deliveryNoteItem;
+})->depends('create second delivery note');
+
 test('update second delivery note state to in queue', function (DeliveryNote $deliveryNote) {
     $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
 
@@ -261,34 +292,105 @@ test('store picking', function (DeliveryNote $deliveryNote) {
 
 test('update picking', function (Picking $picking) {
 
-    //HALF
     $picking = UpdatePicking::make()->action($picking, [
-        'quantity_picked' => 5
+        'quantity' => 10
     ]);
 
     $picking->refresh();
-    expect($picking)->toBeInstanceOf(Picking::class)
-        ->and(intval($picking->quantity_picked))->toBe(5);
-    expect(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5);
 
-    //ALL
-    $picking = UpdatePicking::make()->action($picking, [
-        'quantity_picked' => 10
-    ]);
-
-    $picking->refresh();
     expect($picking)->toBeInstanceOf(Picking::class)
-        ->and(intval($picking->quantity_picked))->toBe(10)
-        ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(10);
+        ->and(intval($picking->quantity))->toBe(10);
+    expect(intval($picking->deliveryNoteItem->quantity_picked))->toBe(10)
+        ->and($picking->deliveryNoteItem->is_completed)->toBe(true);
 
     $picking->refresh();
 
     return $picking;
 
-})->depends('store picking')->todo();
+})->depends('store picking');
 
+test('pack item', function (Picking $picking) {
+    $deliveryNoteItem = $picking->deliveryNoteItem;
 
+    $packing = StorePacking::make()->action($deliveryNoteItem, $this->user, [
+    ]);
 
+    $packing->refresh();
+
+    expect($packing)->toBeInstanceOf(Packing::class)
+        ->and(intval($packing->quantity))->toBe(10);
+    expect(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10);
+
+    $packing->refresh();
+
+    return $packing;
+
+})->depends('update picking');
+
+test('store second picking', function (DeliveryNote $deliveryNote) {
+    $location = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $deliveryNoteItem = $deliveryNote->deliveryNoteItems->skip(1)->first();
+    $locationOrgStock = StoreLocationOrgStock::make()->action(orgStock: $deliveryNoteItem->orgStock, location: $location, strict: false, modelData:[
+        'quantity' => 150,
+        'type' => LocationStockTypeEnum::PICKING,
+        'fetched_at' => now(),
+    ]);
+
+    expect($deliveryNoteItem)->toBeInstanceOf(DeliveryNoteItem::class);
+
+    $picking = StorePicking::make()->action($deliveryNoteItem, $this->user, [
+        'picker_user_id' => $this->user->id,
+        'location_id' => $locationOrgStock->location_id,
+        'quantity' => 5,
+
+    ]);
+
+    expect($picking)->toBeInstanceOf(Picking::class)
+        ->and(intval($picking->quantity))->toBe(5)
+        ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
+        ->and($picking->deliveryNoteItem->is_completed)->toBe(false)
+        ->and($picking->location_id)->toBe($locationOrgStock->location_id);
+
+    $picking->refresh();
+
+    return $picking;
+
+})->depends('update second delivery note state to in queue');
+
+test('set remaining quantity to not picked (2nd picking)', function (Picking $picking) {
+    $deliveryNoteItem = $picking->deliveryNoteItem;
+    $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $this->user, [
+    ]);
+
+    expect($picking)->toBeInstanceOf(Picking::class)
+        ->and(intval($picking->quantity))->toBe(10)
+        ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
+        ->and(intval($picking->deliveryNoteItem->quantity_not_picked))->toBe(10)
+        ->and($picking->deliveryNoteItem->is_completed)->toBe(true);
+
+    $picking->refresh();
+
+    return $picking;
+
+})->depends('store second picking');
+
+test('Set Delivery Note state to Packed', function (Picking $picking) {
+    $deliveryNote = $picking->deliveryNote;
+    $deliveryNoteItem = $picking->deliveryNoteItem;
+
+    $packedDeliveryNote = SetDeliveryNoteStateAsPacked::make()->action($deliveryNote, $this->user);
+
+    $packedDeliveryNote->refresh();
+    $deliveryNoteItem->refresh();
+
+    expect($packedDeliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($packedDeliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED);
+    expect($deliveryNoteItem->state)->toBe(DeliveryNoteItemStateEnum::PACKED)
+        ->and(intval($deliveryNoteItem->quantity_packed))->toBe(5);
+
+    return $packedDeliveryNote;
+
+})->depends('set remaining quantity to not picked (2nd picking)');
 
 test('create shipment', function ($deliveryNote, $shipper) {
     $arrayData              = [

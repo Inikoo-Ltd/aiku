@@ -18,6 +18,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
+use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,6 +72,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read ProductCategory|null $department
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -82,6 +84,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
  * @property-read \App\Models\Catalogue\ProductCategorySalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
  * @property-read ProductCategory|null $subDepartment
@@ -152,6 +155,12 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
     }
+
+    public function contents(): MorphMany
+    {
+        return $this->morphMany(ModelHasContent::class, 'model');
+    }
+
 
     public function stats(): HasOne
     {

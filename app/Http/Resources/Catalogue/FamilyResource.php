@@ -16,7 +16,7 @@ class FamilyResource extends JsonResource
     public function toArray($request): array
     {
         /** @var ProductCategory $family */
-        $family = $this;
+        $family = $this->resource;
 
 
         return [
@@ -26,13 +26,19 @@ class FamilyResource extends JsonResource
             'code'            => $family->code,
             'show_in_website' => $family->show_in_website,
             'name'            => $family->name,
-            'state'           => $family->state,
+            'state' => [
+                        'value' => $family->state->value ?? null,
+                        'label' => $family->state->labels()[$family->state->value] ?? ucfirst($family->state->value),
+                        'icon'  => $family->state->stateIcon()[$family->state->value]['icon'] ?? null,
+                        'class' => $family->state->stateIcon()[$family->state->value]['class'] ?? null,
+                    ],
             'description'     => $family->description,
             'image'           => $family->imageSources(720, 480),
             'created_at'      => $family->created_at,
             'updated_at'      => $family->updated_at,
             'type'            => $family->type,
-            'follow_master'   => $family->follow_master
+            'follow_master'   => $family->follow_master,
+            'products' => ProductResource::collection($family->getProducts())->toArray(request())
         ];
     }
 }

@@ -49,7 +49,6 @@ class DropshippingPortfolioResource extends JsonResource
             if ($department = $this->item->department) {
                 $department =  $department->name . ', ';
             }
-
             $quantity = $this->item->available_quantity;
             $itemId = $this->item->current_historic_asset_id;
             $weight = $this->item->gross_weight;
@@ -57,11 +56,34 @@ class DropshippingPortfolioResource extends JsonResource
             $image = $this->item->imageSources(64, 64);
             $category = $department . $this->item->family?->name;
         }
+        $VAT = $price * 0.2;
+        $priceVAT = $price + $VAT;
 
-        $platformProductId = [];
+        $shopifyUploadRoute = [];
+        $wooUploadRoute = [];
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $platformProductId = [
-                'platform_product_id' => $this->shopifyPortfolio?->shopify_product_id
+            $shopifyUploadRoute = [
+                'platform_upload_portfolio' => [
+                    'method' => 'post',
+                    'name'       => 'retina.models.dropshipping.shopify.single_upload',
+                    'parameters' => [
+                        'shopifyUser' => $this->customerSalesChannel->user->id,
+                        'portfolio' => $this->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($this->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
+            $wooUploadRoute = [
+                'platform_upload_portfolio' => [
+                    'method' => 'post',
+                    'name'       => 'retina.models.dropshipping.woo.single_upload',
+                    'parameters' => [
+                        'wooCommerceUser' => $this->customerSalesChannel->user->id,
+                        'portfolio' => $this->id
+                    ]
+                ],
             ];
         }
 
@@ -71,16 +93,19 @@ class DropshippingPortfolioResource extends JsonResource
             'slug'                      => $this->item?->slug,
             'code'                      => $this->item?->code ?? $this->item_code,
             'currency_code'             => $this->item?->currency?->code,
-            'name'                      => $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'handle'                    => $this->platform_handle,
+            'name'                      => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'description'               => $this->customer_description ?? $this->item?->description ?? $this->item_description,
             'quantity_left'             => $quantity,
-            'platform_product_id'       => $this->platform_product_id,
             'weight'                    => $weight,
             'price'                     => $price,
+            'selling_price'             => $this->selling_price,
+            'customer_price'             => $this->customer_price,
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
-            ...$platformProductId,
+            'platform_product_id' => $this->platform_product_id,
             'category' => $category,
             'platform' => $this->platform->type,
             'delete_portfolio' => [
@@ -91,6 +116,8 @@ class DropshippingPortfolioResource extends JsonResource
                     'portfolio' => $this->id
                 ]
             ],
+            ...$shopifyUploadRoute,
+            ...$wooUploadRoute,
         ];
     }
 }

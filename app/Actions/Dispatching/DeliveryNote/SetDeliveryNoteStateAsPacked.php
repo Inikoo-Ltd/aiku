@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetDeliveryNoteStateAsPacked extends OrgAction
@@ -20,14 +21,16 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
     use WithActionUpdate;
 
     private DeliveryNote $deliveryNote;
+    protected User $user;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         data_set($modelData, 'packed_at', now());
+        data_set($modelData, 'packer_user_id', $this->user->id);
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKED->value);
 
         foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
-            StorePacking::make()->action($item, []);
+            StorePacking::make()->action($item, $this->user, []);
         }
         $deliveryNote = $this->update($deliveryNote, $modelData);
 
@@ -39,14 +42,16 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
+        $this->user = $request->user();
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote);
     }
 
-    public function action(DeliveryNote $deliveryNote): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
+        $this->user = $user;
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, []);
 

@@ -43,9 +43,17 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $item_code no normal field used for improve performance on UI search
  * @property string|null $item_name no normal field used for improve performance on UI search
  * @property int|null $customer_sales_channel_id
+ * @property string|null $customer_product_name
+ * @property string|null $customer_price
+ * @property string|null $customer_description
+ * @property string|null $platform_product_id
+ * @property string|null $errors_response
+ * @property string|null $platform_handle
+ * @property string $selling_price
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -117,6 +125,11 @@ class Portfolio extends Model implements Auditable
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
     }
 
 }

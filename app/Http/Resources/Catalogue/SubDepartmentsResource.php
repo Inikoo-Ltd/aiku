@@ -7,7 +7,7 @@
  */
 
 namespace App\Http\Resources\Catalogue;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -31,6 +31,8 @@ class SubDepartmentsResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                 => $this->id,
+            'name'               => $this->name,
             'slug'               => $this->slug,
             'shop_slug'          => $this->shop_slug,
             'shop_code'          => $this->shop_code,
@@ -38,6 +40,7 @@ class SubDepartmentsResource extends JsonResource
             'department_slug'    => $this->department_slug,
             'department_code'    => $this->department_code,
             'department_name'    => $this->department_name,
+            'image'              => $this->imageSources(720, 480),
             'state'              => [
                 'label' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
@@ -48,9 +51,15 @@ class SubDepartmentsResource extends JsonResource
             'description'       => $this->description,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
-            'families'         => $this->children && $this->children->where('type', ProductCategoryTypeEnum::FAMILY)->isNotEmpty()
-                                        ? FamilyResource::collection($this->children->where('type', ProductCategoryTypeEnum::FAMILY))
-                                        : [],
+            'families_route'    => [
+                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug ?? null,
+                    'shop' => $this->shop->slug ?? null,
+                    'department' => $this->department->slug ?? $this->department_slug,
+                    'subDepartment' => $this->slug
+                ]
+            ]
         ];
     }
 }

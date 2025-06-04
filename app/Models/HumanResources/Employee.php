@@ -96,6 +96,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\HumanResources\JobPosition> $jobPositions
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\HumanResources\EmployeeStats|null $stats
  * @property-read Collection<int, Task> $tasks
  * @property-read Collection<int, \App\Models\HumanResources\TimeTracker> $timeTrackers

@@ -8,6 +8,7 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Actions\Dropshipping\ShopifyUser\Traits\WithInitShopifyClient;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
@@ -87,6 +88,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \Osiset\ShopifyApp\Storage\Models\Plan|null $plan
  * @property-read Collection<int, Product> $products
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
@@ -109,6 +111,7 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     use InCustomer;
     use ShopModel;
     use SoftDeletes;
+    use WithInitShopifyClient;
 
     protected $casts = [
         'data'      => 'array',

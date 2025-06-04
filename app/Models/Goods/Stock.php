@@ -79,6 +79,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read StockSalesInterval|null $salesIntervals
+ * @property-read Media|null $seoImage
  * @property-read \App\Models\Goods\StockStats|null $stats
  * @property-read \App\Models\Goods\StockFamily|null $stockFamily
  * @property-read Collection<int, SupplierProduct> $supplierProducts

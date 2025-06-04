@@ -10,11 +10,14 @@ use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
-use App\Actions\Dropshipping\Shopify\Product\HandleApiProductToShopify;
+use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfoliosToShopify;
+use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfolioToShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
-use App\Actions\Dropshipping\WooCommerce\Product\StoreProductWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfoliosToWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfolioToWooCommerce;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
@@ -35,7 +38,9 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
+use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -206,23 +211,29 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('shopify-sync-all-stored-items', SyncRetinaStoredItemsFromApiProductsShopify::class)->name('shopify_sync_all_stored_items');
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
-    Route::post('wc-products', StoreProductWooCommerce::class)->name('woo.product.store')->withoutScopedBindings();
 
     Route::delete('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
     Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
 
     Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
+    Route::post('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
 });
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
-    Route::post('{shopifyUser:id}/shopify-batch-upload', HandleApiProductToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+    Route::post('{shopifyUser:id}/shopify-batch-upload', SyncroniseDropshippingPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+    Route::post('{shopifyUser:id}/shopify-single-upload/{portfolio:id}', SyncroniseDropshippingPortfolioToShopify::class)->name('shopify.single_upload')->withoutScopedBindings();
+
+    Route::post('{wooCommerceUser:id}/woo-batch-upload', SyncronisePortfoliosToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', SyncronisePortfolioToWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();
 
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
+
+    Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CatchRetinaOrdersFromWooCommerce::class)->name('woocommerce.orders.catch')->withoutScopedBindings();
 
 
 });
@@ -246,6 +257,7 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 });
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
+Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
 
 Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');

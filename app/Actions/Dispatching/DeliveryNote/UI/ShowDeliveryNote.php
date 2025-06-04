@@ -22,6 +22,7 @@ use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\HandlingDeliveryNoteItemsResource;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -229,12 +230,12 @@ class ShowDeliveryNote extends OrgAction
                 [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('Settled'),
-                    'label'   => __('Settled'),
+                    'tooltip' => __('Dispatch'),
+                    'label'   => __('Dispatch'),
                     'key'     => 'action',
                     'route'   => [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.delivery-note.state.settled',
+                        'name'       => 'grp.models.delivery-note.state.dispatched',
                         'parameters' => [
                             'deliveryNote' => $deliveryNote->id
                         ]
@@ -289,6 +290,8 @@ class ShowDeliveryNote extends OrgAction
                 ],
                 'picker'   => $deliveryNote->pickerUser,
                 'packer'   => $deliveryNote->packerUser,
+                'parcels'   => $deliveryNote->parcels,
+                'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
             ],
             'routes'    => [
                 'update'         => [
@@ -328,6 +331,28 @@ class ShowDeliveryNote extends OrgAction
             'delivery_note_state' => [
                 'value' => $deliveryNote->state,
                 'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
+                ],
+            'shipments' => [
+                    'submit_route' => [
+                        'name'       => 'grp.models.delivery-note.shipment.store',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
+
+                    'fetch_route' => [
+                        'name'       => 'grp.json.shippers.index',
+                        'parameters' => [
+                            'organisation' => $deliveryNote->organisation->slug,
+                        ]
+                    ],
+
+                    'delete_route' => [
+                        'name'       => 'grp.models.delivery-note.shipment.detach',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
                 ],
 
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?

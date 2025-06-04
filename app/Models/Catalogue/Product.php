@@ -23,6 +23,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
+use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -87,6 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read \App\Models\Helpers\Currency $currency
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
@@ -102,6 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Portfolio|null $portfolio
  * @property-read LaravelCollection<int, Product> $productVariants
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
@@ -195,6 +199,11 @@ class Product extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(ProductStats::class);
+    }
+
+    public function contents(): MorphMany
+    {
+        return $this->morphMany(ModelHasContent::class, 'model');
     }
 
     public function orgStocks(): BelongsToMany

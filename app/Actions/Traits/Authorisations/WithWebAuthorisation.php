@@ -55,6 +55,14 @@ trait WithWebAuthorisation
                 "fulfilment-shop.{$this->fulfilment->id}.view",
                 "group-webmaster.view"
             ]);
+        } elseif (str_starts_with($routeName, 'grp.models.org.product.')) {
+            $this->canEdit      = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
+            $this->isSupervisor = $request->user()->authTo("org-supervisor.{$this->organisation->id}");
+
+            return $request->user()->authTo([
+                "websites-view.{$this->organisation->id}",
+                "group-webmaster.view"
+            ]);
         }
 
         return false;

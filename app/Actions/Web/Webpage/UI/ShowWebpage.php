@@ -206,10 +206,11 @@ class ShowWebpage extends OrgAction
                 'tooltip' => __('Sub Department'),
                 'icon'    => ["fal", "fa-folder-tree"],
                 'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.sub_departments.show',
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                     'parameters' => [
                         'organisation'  => $webpage->organisation->slug,
                         'shop'          => $webpage->shop->slug,
+                        'department'    => $productCategory->department->slug,
                         'subDepartment' => $productCategory->slug
                     ]
                 ]

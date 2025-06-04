@@ -17,6 +17,8 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -30,6 +32,14 @@ class UpdatePortfolio extends OrgAction
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
+        if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'platform_handle')) {
+            data_set(
+                $modelData,
+                'platform_handle',
+                Str::slug(Arr::get($modelData, 'customer_product_name'))
+            );
+        }
+
         $portfolio = $this->update($portfolio, $modelData, ['data']);
 
 
@@ -71,6 +81,7 @@ class UpdatePortfolio extends OrgAction
                     ]
                 ),
             ],
+            'selling_price'   => ['sometimes', 'numeric', 'min:0'],
             'status'          => 'sometimes|boolean',
             'last_added_at'   => 'sometimes|date',
             'last_removed_at' => 'sometimes|date',
@@ -78,6 +89,12 @@ class UpdatePortfolio extends OrgAction
             'item_type'       => 'sometimes|string',
             'item_name'       => 'sometimes|string',
             'item_code'       => 'sometimes|string',
+            'customer_product_name'       => 'sometimes|string',
+            'customer_price'       => ['sometimes', 'numeric', 'min:0'],
+            'customer_description'       => ['sometimes', 'string', 'nullable'],
+            'platform_product_id'       => 'sometimes|string',
+            'platform_handle'       => 'sometimes|string',
+            'errors_response'       => 'sometimes|array'
         ];
 
         if (!$this->strict) {

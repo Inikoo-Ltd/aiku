@@ -14,7 +14,7 @@ const emits = defineEmits<{
 
 // Menggunakan defineModel untuk dua arah binding
 const model = defineModel<typeof defaultModel>({
-    default: () => ({ height: { value: null, unit: 'px' }, width: { value: null, unit: '%' } })
+    default: () => ({ height: { value: null, unit: 'px' }, width: { value: 100, unit: '%' } })
 })
 
 
@@ -23,10 +23,10 @@ onMounted(() => {
         model.value = { ...defaultModel }
     } else {
         if (!model.value.height) {
-            model.value = { ...model.value, height: { value: null, unit: 'px' } }
+            model.value = { ...model.value, height: { value: 100, unit: '%' } }
         }
         if (!model.value.width) {
-            model.value = { ...model.value, width: { value: null, unit: '%' } }
+            model.value = { ...model.value, width: { value: 100, unit: '%' } }
         }
     }
 })

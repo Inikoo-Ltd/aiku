@@ -46,60 +46,63 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     return $webpage;
                 }
 
-                try {
-                    if ($webpage->is_fixed) {
-                        data_forget($webpageData, 'webpage.code');
-                        data_forget($webpageData, 'webpage.url');
-                    }
-
-                    if ($isHone) {
-                        $migrationData = $webpage->migration_data;
-                        $migrationData = array_merge($migrationData, Arr::get($webpageData, 'webpage.migration_data', []));
-                        data_set($webpageData, 'webpage.migration_data', $migrationData);
-
-                        if (Arr::get($webpageData, 'is_home_logged_out')) {
-                            $migrationData['webpage'] = [];
-                            $migrationData['webpage'] = [
-                                'migration_data' => $migrationData
-                            ];
-                        }
-                    }
-
-                    $lastPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
-                    if ($lastPublishedAt) {
-                        $lastPublishedAt = Carbon::parse($lastPublishedAt);
-                    }
-
-                    $webpage = UpdateWebpage::make()->action(
-                        webpage: $webpage,
-                        modelData: $webpageData['webpage'],
-                        hydratorsDelay: $this->hydratorsDelay,
-                        strict: false,
-                        audit: false
-                    );
-
-                    if (in_array('web_blocks', $this->with)) {
-                        FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
-                        $currentPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
-                        if ($currentPublishedAt) {
-                            $currentPublishedAt = Carbon::parse($currentPublishedAt);
-                        }
-
-                        if (!$lastPublishedAt and $currentPublishedAt and $currentPublishedAt->gt($lastPublishedAt)) {
-                            PublishWebpage::make()->action(
-                                $webpage,
-                                [
-                                    'comment' => 'Published in aurora',
-                                ]
-                            );
-                        }
-                    }
-                    $this->recordChange($organisationSource, $webpage->wasChanged());
-                } catch (Exception $e) {
-                    $this->recordError($organisationSource, $e, $webpageData['webpage'], 'Webpage', 'update');
-
-                    return null;
+                //    try {
+                if ($webpage->is_fixed) {
+                    data_forget($webpageData, 'webpage.code');
+                    data_forget($webpageData, 'webpage.url');
                 }
+
+                if ($isHone) {
+                    $migrationData = $webpage->migration_data;
+                    $migrationData = array_merge($migrationData, Arr::get($webpageData, 'webpage.migration_data', []));
+                    data_set($webpageData, 'webpage.migration_data', $migrationData);
+
+                    if (Arr::get($webpageData, 'is_home_logged_out')) {
+                        $migrationData['webpage'] = [];
+                        $migrationData['webpage'] = [
+                            'migration_data' => $migrationData
+                        ];
+                    }
+                }
+
+                $lastPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
+                if ($lastPublishedAt) {
+                    $lastPublishedAt = Carbon::parse($lastPublishedAt);
+                }
+
+
+                $webpage = UpdateWebpage::make()->action(
+                    webpage: $webpage,
+                    modelData: $webpageData['webpage'],
+                    hydratorsDelay: $this->hydratorsDelay,
+                    strict: false,
+                    audit: false
+                );
+
+
+                if (in_array('web_blocks', $this->with)) {
+
+                    FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
+                    $currentPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
+                    if ($currentPublishedAt) {
+                        $currentPublishedAt = Carbon::parse($currentPublishedAt);
+                    }
+
+                    if (!$lastPublishedAt and $currentPublishedAt and $currentPublishedAt->gt($lastPublishedAt)) {
+                        PublishWebpage::make()->action(
+                            $webpage,
+                            [
+                                'comment' => 'Published in aurora',
+                            ]
+                        );
+                    }
+                }
+                $this->recordChange($organisationSource, $webpage->wasChanged());
+                //                } catch (Exception $e) {
+                //                    $this->recordError($organisationSource, $e, $webpageData['webpage'], 'Webpage', 'update');
+                //
+                //                    return null;
+                //                }
             } else {
                 if (Arr::get($webpageData, 'is_home_logout')) {
                     return null;

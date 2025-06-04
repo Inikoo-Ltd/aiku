@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faUnlink, faThLarge, faBars } from "@fal"
+import { faUnlink, faThLarge, faBars, faSeedling, faCheck, faFolderTree } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
@@ -11,18 +11,33 @@ import EmptyState from '../Utils/EmptyState.vue'
 import Image from '../Image.vue'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import Icon from "@/Components/Icon.vue"
 
-library.add(faUnlink, faThLarge, faBars)
+library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
 const props = defineProps<{
   data: {
-    department: {}
+    subDepartment: {
+      slug: string
+      image_id: ImageTS | string | null
+      code: string
+      name: string
+      state: string
+      created_at: string
+      updated_at: string
+    }
     families: {
       id: number
       name: string
       slug: string
       image: ImageTS
       code: string
+      state?: any
+      products?: {
+        id: number
+        name: string
+        image: ImageTS
+      }[]
     }[]
     routes: {
       detach_family: routeType
@@ -30,7 +45,6 @@ const props = defineProps<{
   }
 }>()
 
-// Loading state
 const isLoadingDelete = ref<string[]>([])
 
 const onDetachFamily = (slug: string) => {
@@ -40,9 +54,7 @@ const onDetachFamily = (slug: string) => {
       family: slug
     }),
     {
-      onStart: () => {
-        isLoadingDelete.value.push(slug)
-      },
+      onStart: () => isLoadingDelete.value.push(slug),
       onFinish: () => {
         isLoadingDelete.value = isLoadingDelete.value.filter(item => item !== slug)
       },
@@ -57,110 +69,130 @@ const onDetachFamily = (slug: string) => {
     }
   )
 }
-
-// Toggle tampilan
-const viewMode = ref<'grid' | 'list'>('grid')
-console.log(props.data.families)
 </script>
 
 <template>
-  <div>
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Sub Department Detail -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border border-gray-300 flex items-center justify-center">
+          <Image
+            v-if="data.subDepartment.image_id"
+            :src="data.subDepartment.image_id"
+            :alt="data.subDepartment.name"
+            class="w-full h-full object-cover"
+            imageCover
+          />
+          <FontAwesomeIcon v-else :icon="faFolderTree" class="text-gray-400 w-10 h-10" />
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">
+            {{ data.subDepartment.name }}
+          </h1>
+          <p class="text-sm text-gray-500">Code: {{ data.subDepartment.code }}</p>
+          <p class="text-sm text-gray-500">
+            Status:
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+              :class="{
+                'bg-green-100 text-green-700': data.subDepartment.state === 'active',
+                'bg-gray-100 text-gray-600': data.subDepartment.state !== 'active',
+              }"
+            >
+              {{ data.subDepartment.state }}
+            </span>
+          </p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-400 mt-2 sm:mt-0">
+        Created at: {{ new Date(data.subDepartment.created_at).toLocaleDateString() }}
+      </p>
+    </div>
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 border-b pb-3">
+      <h2 class="text-xl font-bold text-gray-800">
+        {{ trans("Family list") }} ({{ data.families.length }})
+      </h2>
+    </div>
+
+    <!-- Families Grid -->
     <div
       v-if="data.families?.length"
-      class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
     >
-      <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-        <h2 class="text-2xl font-bold text-gray-800">
-          {{ trans("Family list") }} ({{ data.families.length }})
-        </h2>
-        <div class="flex gap-2">
-          <Button
-            @click="viewMode = 'grid'"
-            :type="viewMode != 'grid' ? 'tertiary' : 'secondary'"
-            size="xs"
-            :icon="faThLarge"
-            label="Grid"
-            :key="viewMode"
-          >
-          </Button>
-           
-          <Button
-            @click="viewMode = 'list'"
-            :type="viewMode != 'list' ? 'tertiary' : 'secondary'"
-            size="xs"
-             :key="viewMode"
-            :icon="faBars"
-            label="list"
-          >
-          </Button>
-        </div>
-      </div>
-
-      <!-- Grid View -->
       <div
-        v-if="viewMode === 'grid'"
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+        v-for="family in data.families"
+        :key="family.id"
+        class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col relative"
       >
-        <div
-          v-for="family in data.families"
-          :key="family.id"
-          class="bg-white p-4 rounded-2xl shadow hover:shadow-md transition-all duration-200 flex flex-col"
-        >
-          <div class="relative w-full overflow-hidden rounded-xl aspect-[4/3]">
-            <Image
-              :src="family.image"
-              :alt="family.name"
-              class="object-cover w-full h-full"
-              imageCover
-            />
-          </div>
-          <div class="mt-4">
-            <h3 class="text-lg font-semibold text-gray-900 truncate">
-              {{ family.name }}
-            </h3>
-            <p class="text-sm text-gray-500">{{ family.code }}</p>
-          </div>
-          <div class="mt-auto pt-4">
-            <Button
-              @click="onDetachFamily(family.slug)"
-              label="Unlink"
-              type="negative"
-              icon="fal fa-unlink"
-              :loading="isLoadingDelete.includes(family.slug)"
-              full
-            />
-          </div>
-        </div>
-      </div>
+        <!-- Badge -->
+        <span class="absolute -top-3 left-0 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
+          Family
+        </span>
 
-      <!-- List View -->
-      <div v-else class="space-y-4">
-        <div
-          v-for="family in data.families"
-          :key="family.id"
-          class="bg-white p-4 rounded-xl border shadow-sm hover:shadow-md transition-all flex items-center gap-4"
-        >
+        <!-- Header -->
+        <div class="flex items-start gap-3 mb-3 border-b pb-2">
           <Image
             :src="family.image"
             :alt="family.name"
-            class="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+            class="w-10 h-10 rounded-lg object-cover"
             imageCover
           />
           <div class="flex-1 min-w-0">
-            <h3 class="text-base font-semibold text-gray-900 truncate">
+            <h3 class="text-base font-semibold text-gray-900 leading-tight">
               {{ family.name }}
+              <Icon
+                v-if="family.state"
+                :data="family.state"
+                :title="family.state.label"
+                class="ml-1"
+              />
             </h3>
-            <p class="text-sm text-gray-500 truncate">{{ family.code }}</p>
+            <p class="text-xs text-gray-500">Code: {{ family.code }}</p>
+            <p class="text-xs text-gray-500">
+              {{ family.products?.length || 0 }} product{{ family.products?.length === 1 ? '' : 's' }}
+            </p>
           </div>
-          <div>
-            <Button
-              @click="onDetachFamily(family.slug)"
-              label="Unlink"
-              type="negative"
-              icon="fal fa-unlink"
-              :loading="isLoadingDelete.includes(family.slug)"
-            />
+          <Button
+            @click.stop="onDetachFamily(family.slug)"
+            label=""
+            type="negative"
+            icon="fal fa-unlink"
+            size="xs"
+            :loading="isLoadingDelete.includes(family.slug)"
+          />
+        </div>
+
+        <!-- Product List -->
+        <div
+          class="bg-gray-50 border rounded-md mt-3 px-3 py-2 overflow-y-auto max-h-60 space-y-2 custom-scroll"
+        >
+          <template v-if="family.products?.length">
+            <div
+              v-for="product in family.products"
+              :key="product.id"
+              class="flex items-start gap-3 border-b py-1"
+            >
+              <FontAwesomeIcon :icon="['fal', 'seedling']" class="text-green-500 w-4 h-4 mt-1" />
+              <div class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
+                <Image
+                  :src="product.image?.source"
+                  :alt="product.name"
+                  class="w-full h-full object-cover"
+                  imageCover
+                />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-700 leading-tight truncate">{{ product.name }}</p>
+                <p class="text-xs text-gray-500">Code: {{ product.id }}</p>
+              </div>
+            </div>
+          </template>
+          <div v-else class="text-xs text-gray-400 italic text-center">
+            No products available.
           </div>
         </div>
       </div>
@@ -168,13 +200,10 @@ console.log(props.data.families)
 
     <!-- Empty State -->
     <div v-else class="mx-auto max-w-2xl px-4 py-20 text-center">
-      <EmptyState
-        :data="{
-          title: 'No families',
-          description: 'This subdepartment has no families'
-        }"
-      />
+      <EmptyState :data="{
+        title: 'No families',
+        description: 'This subdepartment has no families'
+      }" />
     </div>
   </div>
 </template>
-

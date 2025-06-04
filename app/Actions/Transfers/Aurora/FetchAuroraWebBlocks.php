@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
 use App\Actions\Web\ExternalLink\CheckExternalLinkStatus;
 use App\Actions\Web\WebBlock\DeleteWebBlock;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\SourceOrganisationService;
@@ -67,6 +68,14 @@ class FetchAuroraWebBlocks
      */
     public function handle(SourceOrganisationService $organisationSource, Webpage $webpage, $reset = false, $dbSuffix = ''): Webpage
     {
+
+        $shop = $webpage->shop;
+        if ($shop->type == ShopTypeEnum::FULFILMENT || $shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return $webpage;
+        }
+
+
+
         $this->dbSuffix = $dbSuffix;
 
         $this->organisationSource = $organisationSource;
@@ -77,8 +86,11 @@ class FetchAuroraWebBlocks
         }
 
         $oldMigrationsChecksum = $webpage->webBlocks()->get()->pluck('migration_checksum', 'migration_checksum')->toArray();
+
         if (isset($webpage->migration_data)) {
             $migrationTypes = ['both', 'loggedIn', 'loggedOut'];
+
+
 
             $allMigrationsDataByType = [];
             foreach ($migrationTypes as $type) {
@@ -109,6 +121,7 @@ class FetchAuroraWebBlocks
                     }
                 }
             }
+
 
             $this->processMigrationsData($migrationsData, $oldMigrationsChecksum);
         }
@@ -175,7 +188,7 @@ class FetchAuroraWebBlocks
 
 
 
-        //     print "***>>".$auroraBlock["type"]."<<<***\n";
+        //print "***>>".$auroraBlock["type"]."<<<***\n";
 
         switch ($auroraBlock["type"]) {
             case "images":
@@ -206,12 +219,28 @@ class FetchAuroraWebBlocks
                 $layout       = $this->processIFrameData($auroraBlock);
                 break;
             case "product":
-                $webBlockType = $group->webBlockTypes()->where("slug", "product")->first();
+                $webBlockType = $group->webBlockTypes()->where("slug", "product-1")->first();
                 $layout       = $this->processProductData($auroraBlock);
-                $models[]     = Product::find($webpage->model_id);
+
+
+                $fieldValue = Arr::get($webBlockType->data, 'fieldValue');
+
+                data_set($layout, 'data.fieldValue', $fieldValue);
+
+
+                /** @var Product $product */
+                $product = $webpage->model;
+
+                $product->update(
+                    [
+                        'description' => Arr::get($layout, 'data.fieldValue.value.text')
+                    ]
+                );
+
+                $models[]     = $product;
                 break;
 
-            case "category_products":
+            case "category_products_XX":
                 $webBlockType = $group->webBlockTypes()->where("slug", "family")->first();
                 $models[]     = ProductCategory::find($webpage->model_id);
                 $layout       = $this->processFamilyData($webpage, $auroraBlock);
@@ -274,14 +303,17 @@ class FetchAuroraWebBlocks
                 $layout = $this->processProductsData($auroraBlock);
                 break;
 
-            case "category_categories":
+            case "category_categories_XX":
                 $webBlockType = $group->webBlockTypes()->where("slug", "department")->first();
                 $layout       = $this->processDepartmentData($webpage, $auroraBlock);
                 break;
 
-            case "blackboard":
+            case "blackboard_XX":
                 $webBlockType = $group->webBlockTypes()->where("slug", "overview-aurora")->first();
                 $layout       = $this->processOverviewData($webBlockType, $webpage, $auroraBlock);
+
+
+
                 break;
             case "button":
                 $webBlockType = $group->webBlockTypes()->where("slug", "cta-aurora-1")->first();
@@ -383,7 +415,7 @@ class FetchAuroraWebBlocks
             || $code == "family"
             || $code == "department"
         ) {
-            if ($code == "family") {
+            if ($code == "family_XX") {
                 $items  = $layout['data']["fieldValue"]["value"]["items"];
                 $addOns = [];
                 foreach ($items as $item) {
@@ -396,7 +428,7 @@ class FetchAuroraWebBlocks
                 }
                 data_set($layout, "data.fieldValue.value.addOns", $addOns);
                 unset($layout['data']["fieldValue"]["value"]["items"]);
-            } elseif ($code == "department") {
+            } elseif ($code == "department_XX") {
                 $sections = $layout['data']["fieldValue"]["value"]["sections"];
                 foreach ($sections as $sectionPosition => $section) {
                     $items = $section['items'];
@@ -451,7 +483,7 @@ class FetchAuroraWebBlocks
                     $imageSource = $this->processImage($webBlock, $imageRawData, $webpage);
                     data_set($layout, 'data.fieldValue.button.container.properties.background.image', $imageSource);
                 }
-            } elseif ($code == "overview_aurora") {
+            } elseif ($code == "overview_aurora_XX") {
                 $imagesAurora = Arr::get($layout, 'data.fieldValue.images');
                 if ($imagesAurora) {
                     $imgSources = [];

@@ -10,19 +10,39 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableCollections from "@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import ModalCreateModel from '@/Components/Utils/ModalCreateModel.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import { ref } from 'vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
     data: {}
+    formData: {}
 }>()
 
-
+const isModalCreateOpen = ref(false)
 </script>
 
 <template>
-    <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead"></PageHeading>
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead">
+        <template #button-collection="{ action }">
+            <Button
+                :label="action.label"
+                :icon="action.icon"
+                :style="action.style"
+                @click="isModalCreateOpen = true"
+            />
+        </template>
+    </PageHeading>
     <TableCollections :data="data" />
+
+    <Modal :isOpen="isModalCreateOpen" @close="isModalCreateOpen = false" width="w-full max-w-3xl">
+        <ModalCreateModel
+            :formData
+        />
+    </Modal>
 </template>

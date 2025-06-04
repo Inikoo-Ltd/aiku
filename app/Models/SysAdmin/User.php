@@ -98,6 +98,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\UserHasPseudoJobPositions|null $pivot
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JobPosition> $pseudoJobPositions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SysAdmin\UserStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OutBoxHasSubscriber> $subscribedOutboxes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks

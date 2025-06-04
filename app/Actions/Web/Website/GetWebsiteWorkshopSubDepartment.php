@@ -50,6 +50,10 @@ class GetWebsiteWorkshopSubDepartment
                     'website' => $website->id
                 ]
             ],
+            'update_family_route' => [
+                'name' => 'grp.models.sub-department.update',
+                'parameters' => []
+            ]
         ];
     }
 }

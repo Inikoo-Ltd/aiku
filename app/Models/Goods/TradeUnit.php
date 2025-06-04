@@ -62,12 +62,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcodes
+ * @property-read Collection<int, Brand> $brands
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, Product> $outers
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, Tag> $tags

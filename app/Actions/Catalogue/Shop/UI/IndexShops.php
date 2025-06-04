@@ -8,7 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
-use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
+use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
+use App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\OrgAction;
@@ -122,28 +123,42 @@ class IndexShops extends OrgAction
                 );
             }
 
+
+            $emptyState = null;
+            if ($parent instanceof Organisation) {
+                if ($this->canEdit) {
+                    $emptyState = [
+                        'title'       => __('No shops found'),
+                        'description' => __('Get started by creating a shop. ✨'),
+                        'count'       => $parent->catalogueStats->number_shops,
+                        'action'      => [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new shop'),
+                            'label'   => __('shop'),
+                            'route'   => [
+                                'name'       => 'grp.org.shops.create',
+                                'parameters' => $parent->slug
+                            ]
+                        ]
+                    ];
+                } else {
+                    $emptyState = [
+                        'title'       => __('No shops found'),
+                        'description' => '',
+                        'count'       => $parent->catalogueStats->number_shops,
+                        'action'      => null
+
+                    ];
+                }
+            }
+
+
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
-                ->withEmptyState(
-                    class_basename($parent) == 'Organisation' ?
-                        [
-                            'title'       => __('No shops found'),
-                            'description' => $this->canEdit ? __('Get started by creating a shop. ✨') : null,
-                            'count'       => $parent->catalogueStats->number_shops,
-                            'action'      => $this->canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new shop'),
-                                'label'   => __('shop'),
-                                'route'   => [
-                                    'name'       => 'grp.org.shops.create',
-                                    'parameters' => $parent->slug
-                                ]
-                            ] : null
-                        ] : null
-                )
-                ->column(key: 'state', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'avatar')
+                ->withEmptyState($emptyState)
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'avatar')
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
@@ -158,6 +173,14 @@ class IndexShops extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $shops, ActionRequest $request): Response
     {
+        $productIndex = null;
+
+        if ($this->parent instanceof Group) {
+            $productIndex = IndexProductsInGroup::class;
+        } elseif ($this->parent instanceof Organisation) {
+            $productIndex = IndexProductsInOrganisation::class;
+        }
+
         return Inertia::render(
             'Org/Catalogue/Shops',
             [
@@ -194,7 +217,6 @@ class IndexShops extends OrgAction
                     : Inertia::lazy(fn () => ShopResource::collection($shops)),
 
 
-
                 ShopsTabsEnum::DEPARTMENTS->value => $this->tab == ShopsTabsEnum::DEPARTMENTS->value ?
                     fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, ShopsTabsEnum::DEPARTMENTS->value))
                     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, ShopsTabsEnum::DEPARTMENTS->value))),
@@ -204,9 +226,8 @@ class IndexShops extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, ShopsTabsEnum::FAMILIES->value))),
 
                 ShopsTabsEnum::PRODUCTS->value => $this->tab == ShopsTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInProductCategory::run($this->parent, ShopsTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInProductCategory::run($this->parent, ShopsTabsEnum::PRODUCTS->value))),
-
+                    fn () => ProductsResource::collection($productIndex::run($this->parent, ShopsTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection($productIndex::run($this->parent, ShopsTabsEnum::PRODUCTS->value))),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: 'shops'))
@@ -225,11 +246,12 @@ class IndexShops extends OrgAction
                     canEdit: $this->canEdit
                 ),
             )
-            ->table(IndexProductsInProductCategory::make()->tableStructure(
-                productCategory: $this->parent,
-                prefix: ShopsTabsEnum::PRODUCTS->value,
-                canEdit: $this->canEdit
-            ));
+            ->table(
+                $productIndex::make()->tableStructure(
+                    $this->parent,
+                    ShopsTabsEnum::PRODUCTS->value,
+                )
+            );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array

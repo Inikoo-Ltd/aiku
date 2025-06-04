@@ -24,7 +24,6 @@ class ForceDeleteRefund extends OrgAction
      */
     public function handle(Invoice $refund): Invoice
     {
-
         if (!$refund->in_process) {
             return $refund;
         }
@@ -32,8 +31,6 @@ class ForceDeleteRefund extends OrgAction
         DB::transaction(function () use ($refund) {
             $refund->invoiceTransactions()->forceDelete();
             $refund->forceDelete();
-
-
         });
         if ($refund->customer_id) {
             CustomerHydrateInvoices::dispatch($refund->customer);
@@ -42,7 +39,7 @@ class ForceDeleteRefund extends OrgAction
         return $refund;
     }
 
-    public function htmlResponse(Invoice $refund, ActionRequest $request): RedirectResponse
+    public function htmlResponse(Invoice $refund): RedirectResponse
     {
         return Redirect::route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [
             $refund->organisation->slug,

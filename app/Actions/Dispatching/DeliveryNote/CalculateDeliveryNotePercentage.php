@@ -10,18 +10,20 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 
 class CalculateDeliveryNotePercentage extends OrgAction
 {
-    public function handle(DeliveryNote $deliveryNote): void
+    use WithActionUpdate;
+    public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         $pickingPercentage = 0;
         $packingPercentage = 0;
 
-        $pickingRequired = $deliveryNote->deliveryNoteItems()->sum('required_quantity');
-        $pickingPicked = $deliveryNote->deliveryNoteItems()->sum('picked_quantity');
-        $packingPacked = $deliveryNote->deliveryNoteItems()->sum('packed_quantity');
+        $pickingRequired = $deliveryNote->deliveryNoteItems()->sum('quantity_required');
+        $pickingPicked = $deliveryNote->deliveryNoteItems()->sum('quantity_picked');
+        $packingPacked = $deliveryNote->deliveryNoteItems()->sum('quantity_packed');
 
         // Picking percentage: picked vs required
         if ($pickingRequired > 0) {
@@ -37,9 +39,18 @@ class CalculateDeliveryNotePercentage extends OrgAction
         $pickingPercentage = round($pickingPercentage, 2);
         $packingPercentage = round($packingPercentage, 2);
 
-        $deliveryNote->update([
+        $deliveryNote = $this->update($deliveryNote, [
             'picking_percentage' => $pickingPercentage,
             'packing_percentage' => $packingPercentage
         ]);
+
+        return $deliveryNote;
+    }
+
+    public function action(DeliveryNote $deliveryNote): DeliveryNote
+    {
+        $this->initialisationFromShop($deliveryNote->shop, []);
+
+        return $this->handle($deliveryNote);
     }
 }

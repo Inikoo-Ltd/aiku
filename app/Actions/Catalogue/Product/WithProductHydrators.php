@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
+use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProducts;
@@ -29,6 +30,9 @@ trait WithProductHydrators
         }
         if ($product->family_id) {
             FamilyHydrateProducts::dispatch($product->family)->delay($this->hydratorsDelay);
+        }
+        if ($product->sub_department_id) {
+            SubDepartmentHydrateProducts::dispatch($product->subDepartment)->delay($this->hydratorsDelay);
         }
     }
 }

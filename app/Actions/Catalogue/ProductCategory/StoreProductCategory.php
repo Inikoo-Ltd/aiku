@@ -179,11 +179,19 @@ class StoreProductCategory extends OrgAction
 
     public function htmlResponse(ProductCategory $productCategory, ActionRequest $request): RedirectResponse
     {
-        if (class_basename($productCategory->parent) == 'ProductCategory') {
+        if (class_basename($productCategory->parent) == 'ProductCategory' && $productCategory->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             return Redirect::route('grp.org.shops.show.catalogue.departments.show.families.show', [
                 'organisation' => $productCategory->organisation->slug,
                 'shop'         => $productCategory->shop->slug,
                 'department'   => $productCategory->parent->slug,
+                'family'       => $productCategory->slug,
+            ]);
+        } elseif (class_basename($productCategory->parent) == 'ProductCategory' && $productCategory->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            return Redirect::route('grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', [
+                'organisation' => $productCategory->organisation->slug,
+                'shop'         => $productCategory->shop->slug,
+                'department'   => $productCategory->parent->parent->slug,
+                'subDepartment' => $productCategory->parent->slug,
                 'family'       => $productCategory->slug,
             ]);
         } else {

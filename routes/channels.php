@@ -15,6 +15,14 @@ Broadcast::channel('shopify.upload-product.{shopifyUserId}', function (WebUser|S
     return true;
 });
 
+Broadcast::channel('shopify.{shopifyUserId}.upload-product.{portfolioId}', function (int|string $shopifyUserId, int|string $portfolioId) {
+    return true;
+});
+
+Broadcast::channel('woo.{wooCommerceUserId}.upload-product.{portfolioId}', function (int|string $wooCommerceUserId, int|string $portfolioId) {
+    return true;
+});
+
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });

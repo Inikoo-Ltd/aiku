@@ -66,6 +66,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
  * @property-read MasterProductCategory|null $parent
  * @property-read \App\Models\Masters\MasterProductCategorySalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch

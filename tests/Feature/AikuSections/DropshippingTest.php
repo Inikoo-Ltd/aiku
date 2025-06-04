@@ -44,7 +44,7 @@ beforeEach(function () {
     \Tests\Helpers\setupDropshippingTest($this);
 });
 
-test('test platform were seeded ', function () {
+test('test platform were seeded', function () {
     expect($this->group->platforms()->count())->toBe(4);
     $platform = Platform::first();
     expect($platform)->toBeInstanceOf(Platform::class)
@@ -168,7 +168,7 @@ test('get product 1s1 images', function () {
 
     $imageSources1 = GetPictureSources::run($image);
 
-    expect($imageSources1)->toBeArray()->toHaveCount(3);
+    expect($imageSources1)->toBeArray()->toHaveCount(4);
 })->depends('add 2nd image to product');
 
 test('get product 2nd images and show resized sources', function () {
@@ -180,7 +180,7 @@ test('get product 2nd images and show resized sources', function () {
     expect($image2)->toBeInstanceOf(Image::class);
 
     $imageSources2 = GetPictureSources::run($image2);
-    expect($imageSources2)->toBeArray()->toHaveCount(6);
+    expect($imageSources2)->toBeArray()->toHaveCount(8);
 })->depends('add 2nd image to product');
 
 

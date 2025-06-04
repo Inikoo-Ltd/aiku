@@ -28,7 +28,7 @@ class StoreShopifyUser extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer, $modelData): void
+    public function handle(Customer $customer, $modelData): ShopifyUser
     {
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
 
@@ -37,7 +37,6 @@ class StoreShopifyUser extends RetinaAction
         data_set($modelData, 'username', Str::random(4));
         data_set($modelData, 'password', Str::random(8));
         data_set($modelData, 'platform_id', $platform->id);
-
 
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = ShopifyUser::whereNull('customer_id')->where('name', Arr::get($modelData, 'name'))->first();
@@ -63,7 +62,14 @@ class StoreShopifyUser extends RetinaAction
             'customer_sales_channel_id' => $customerSalesChannel->id,
         ]);
 
+        return $shopifyUser;
+    }
 
+    public function jsonResponse(ShopifyUser $shopifyUser): string
+    {
+        return route('pupil.authenticate', [
+            'shop' => $shopifyUser->name
+        ]);
     }
 
     public function rules(): array
@@ -75,15 +81,24 @@ class StoreShopifyUser extends RetinaAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $shopifyFullName = $request->input('name').'.'.config('shopify-app.my_shopify_domain');
+        $nameInput = $request->input('name');
+        $myShopifyDomain = config('shopify-app.my_shopify_domain');
+
+        if (preg_match('/([a-zA-Z0-9\-]+)\.myshopify\.com/', $nameInput, $matches)) {
+            $storeName = $matches[1];
+        } else {
+            $storeName = preg_replace('/[^a-zA-Z0-9\-]/', '', $nameInput);
+        }
+
+        $shopifyFullName = $storeName . '.' . $myShopifyDomain;
 
         $this->set('name', $shopifyFullName);
     }
 
-    public function asController(ActionRequest $request): void
+    public function asController(ActionRequest $request): ShopifyUser
     {
         $this->initialisation($request);
 
-        $this->handle($this->customer, $this->validatedData);
+        return $this->handle($this->customer, $this->validatedData);
     }
 }

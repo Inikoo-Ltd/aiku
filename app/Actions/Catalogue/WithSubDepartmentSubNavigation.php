@@ -41,7 +41,7 @@ trait WithSubDepartmentSubNavigation
             ],
             [
                 'label'    => __('Collections'),
-                'number'   => 0,
+                'number'   => $subDepartment->stats->number_collections,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
                     'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]

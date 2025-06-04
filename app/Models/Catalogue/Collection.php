@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -60,6 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Model|\Eloquent $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $products
  * @property-read \App\Models\Catalogue\CollectionSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
@@ -72,7 +74,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection withoutTrashed()
  * @mixin \Eloquent
  */
-class Collection extends Model implements Auditable
+class Collection extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;

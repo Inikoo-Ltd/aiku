@@ -12,11 +12,11 @@ use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToDispatched;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPickerAssigned;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToSettled;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
@@ -24,6 +24,8 @@ use App\Actions\Dispatching\Picking\PickAllItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\Shipment\DetachShipmentFromDeliveryNote;
+use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
@@ -80,6 +82,8 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
 Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
+    Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
+    Route::delete('/detach-shipment/{shipment:id}', DetachShipmentFromDeliveryNote::class)->name('shipment.detach')->withoutScopedBindings();
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
@@ -90,7 +94,7 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
         Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
-        Route::patch('settled', UpdateDeliveryNoteStateToSettled::class)->name('settled');
+        Route::patch('dispatched', UpdateDeliveryNoteStateToDispatched::class)->name('dispatched');
     });
 });
 

@@ -87,11 +87,6 @@ class CreateSubDepartment extends OrgAction
                                         'label'    => __('name'),
                                         'required' => true
                                     ],
-                                    "image"         => [
-                                        "type"    => "image_crop_square",
-                                        "label"   => __("Image"),
-                                        "required" => false,
-                                    ],
                                 ]
                             ]
                         ],

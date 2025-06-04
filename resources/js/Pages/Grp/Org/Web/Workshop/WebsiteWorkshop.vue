@@ -7,11 +7,11 @@ import { computed, ref, toRaw } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import LayoutWorkshop from "@/Components/CMS/Website/Layout/LayoutWorkshop.vue"
-import WorkshopProduct from "@/Components/CMS/Website/Product/ProductWorkshop.vue"
-import CategoryWorkshop from '@/Components/CMS/Website/Family/CategoryWorkshop.vue'
+import ProductBlockWorkshop from "@/Components/CMS/Website/ProductBlock/ProductBlockWorkshop.vue"
+import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/ProductsBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import DepartmentWorkshop from '@/Components/CMS/Website/Departement/DepartementWorkshop.vue'
-import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartement/SubDepartementWorkshop.vue'
+import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartementBlockWorkshop/SubDepartementWorkshop.vue'
+import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -25,13 +25,13 @@ const props = defineProps<{
     category?: {}
     product?: {}
     website_layout: {}
-    family?: {}
+    families?: {}
+    products?: {}
     settings: {}
     department: {}
     sub_department: {}
 }>()
 
-console.log(props)
 
 let currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -40,27 +40,59 @@ const loadingPublish = ref(false)
 const component = computed(() => {
     const components = {
         website_layout: LayoutWorkshop,
-        family: CategoryWorkshop,
-        product: WorkshopProduct,
-        department: DepartmentWorkshop,
-        sub_department : SubDepartementWorkshop
+        sub_department: SubDepartementWorkshop,
+        families: FamiliesBlockWorkshop,
+        products: ProductsBlockWorkshop,
+        product: ProductBlockWorkshop,
     }
     return components[currentTab.value]
 })
 
 
-const onPublish = (routeData) => {
+const onPublish = (action: {
+  method: 'post' | 'put' | 'patch' | 'delete',
+  route: {
+    name: string,
+    parameters?: Record<string, any>
+  }
+}) => {
+  console.log("Publishing action:", action)
 
-    router.post(
-        route(routeData.name, routeData.parameters),
-        { layout: props[props.tabs?.current].layout },
-        {
-            preserveScroll: true,
-            onStart: () => { loadingPublish.value = true },
-            onSuccess: () => { console.log('done') },
-            onError: errors => { console.log(errors) },
-            onFinish: () => { loadingPublish.value = false },
-        })
+  const currentTab = props.tabs?.current
+  if (!currentTab || !props[currentTab]) {
+    console.warn("No valid tab selected.")
+    return
+  }
+
+  const payload = props[currentTab].layout
+
+  // Example: optionally strip out unused fields (uncomment if needed)
+  // if (currentTab === 'department') {
+  //   delete payload.data.fieldValue.departement
+  //   delete payload.data.fieldValue.sub_departments
+  // }
+
+  router[action.method](
+    route(action.name, action.parameters),
+    { layout: payload },
+    {
+      preserveScroll: true,
+      onStart: () => {
+        loadingPublish.value = true
+        console.log("Publishing started…")
+      },
+      onSuccess: () => {
+        console.log("Publishing successful.")
+      },
+      onError: (errors) => {
+        console.error("Publishing failed with errors:", errors)
+      },
+      onFinish: () => {
+        loadingPublish.value = false
+        console.log("Publishing complete.")
+      },
+    }
+  )
 }
 
 </script>
@@ -75,5 +107,7 @@ const onPublish = (routeData) => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" />
+    <KeepAlive>
+        <component :is="component" :data="props[currentTab]" />
+    </KeepAlive>
 </template>

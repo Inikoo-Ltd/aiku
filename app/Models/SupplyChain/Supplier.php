@@ -42,7 +42,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $id
  * @property int $group_id
  * @property int|null $agent_id
- * @property string $scope_type Group|Organisation  used for indicate private org suppliers
+ * @property string $scope_type Group|Organisation used to indicate private org suppliers
  * @property int $scope_id
  * @property bool $status
  * @property string $slug
@@ -83,6 +83,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, OrgSupplier> $orgSuppliers
  * @property-read Collection<int, PurchaseOrder> $purchaseOrders
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SupplyChain\SupplierStats|null $stats
  * @property-read Collection<int, StockDelivery> $stockDeliveries
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierProduct> $supplierProducts
@@ -144,11 +145,10 @@ class Supplier extends Model implements HasMedia, Auditable
         );
 
         static::updated(function (Supplier $supplier) {
-            if (!$supplier->wasRecentlyCreated) {
-                if ($supplier->wasChanged(['contact_name', 'company_name'])) {
-                    $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
-                }
+            if (!$supplier->wasRecentlyCreated  && $supplier->wasChanged(['contact_name', 'company_name'])) {
+                $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
             }
+
         });
     }
 

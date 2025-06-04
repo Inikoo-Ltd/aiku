@@ -18,7 +18,7 @@ import { notify } from "@kyvg/vue3-notification";
 import SelectButton from 'primevue/selectbutton';
 import { trans } from "laravel-vue-i18n";
 
-import Family1Render from '@/Components/CMS/Webpage/Family1/Family1Render.vue'
+import Family1Render from '@/Components/CMS/Webpage/Families1/Families1Render.vue'
 import DepartmentRender from '@/Components/CMS/Webpage/Department1/DepartmentRender.vue'
 
 const props = withDefaults(defineProps<{

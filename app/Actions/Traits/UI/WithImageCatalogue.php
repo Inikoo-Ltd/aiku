@@ -13,12 +13,13 @@ namespace App\Actions\Traits\UI;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\ModelHasContent;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 
 trait WithImageCatalogue
 {
-    public function processCatalogue(array $modelData, ProductCategory|Collection $model): ProductCategory|Collection
+    public function processCatalogue(array $modelData, ProductCategory|Collection|ModelHasContent $model): ProductCategory|Collection|ModelHasContent
     {
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */

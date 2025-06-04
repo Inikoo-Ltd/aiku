@@ -132,9 +132,7 @@ class ShowDepartment extends OrgAction
                 parent: $department->shop,
                 prefix: 'customers'
             )
-        )
-
-            ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value));
     }
 
 
