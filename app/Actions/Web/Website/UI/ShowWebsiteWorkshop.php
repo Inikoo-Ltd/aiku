@@ -90,6 +90,13 @@ class ShowWebsiteWorkshop extends OrgAction
         }
         $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
                 ?
+                fn () => GetWebsiteWorkshopSubDepartment::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopSubDepartment::run($website)
+                );
+
+        $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
+                ?
                 fn () => GetWebsiteWorkshopFamily::run($website)
                 : Inertia::lazy(
                     fn () => GetWebsiteWorkshopFamily::run($website)
@@ -97,9 +104,9 @@ class ShowWebsiteWorkshop extends OrgAction
 
         $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
                 ?
-                fn () => GetWebsiteWorkshopSubDepartment::run($website)
+                fn () => GetWebsiteWorkshopDepartment::run($website)
                 : Inertia::lazy(
-                    fn () => GetWebsiteWorkshopSubDepartment::run($website)
+                    fn () => GetWebsiteWorkshopDepartment::run($website)
                 );
 
 
@@ -131,6 +138,14 @@ class ShowWebsiteWorkshop extends OrgAction
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.product',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        }  elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.family',
                 'parameters' => [
                     'website' => $website->id
                 ]

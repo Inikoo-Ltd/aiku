@@ -31,9 +31,7 @@ class GetWebBlockSubDepartments
             ->where('product_categories.show_in_website', true)
             ->get();
 
-
-
-
+        data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['sub_department']['data']['fieldValue']);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
 
         return $webBlock;

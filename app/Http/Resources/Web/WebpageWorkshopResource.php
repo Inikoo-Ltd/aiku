@@ -29,10 +29,8 @@ class WebpageWorkshopResource extends JsonResource
         /** @var Webpage $webpage */
         $webpage = Webpage::find($this->id);
 
-
         $webPageLayout               = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
-
 
         return [
             'id'                                     => $webpage->id,
