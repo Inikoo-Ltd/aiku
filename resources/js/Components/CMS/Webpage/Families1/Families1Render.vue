@@ -21,18 +21,14 @@ defineProps<{
     <!-- Image Card with fixed 4:3 aspect ratio -->
     <div class="relative w-full bg-white rounded-2xl shadow-md overflow-hidden">
       <div class="relative aspect-[3/4] w-full">
-        <template v-if="data.images?.[0]?.source">
-          <Image
-            :src="data.images[0].source"
-            :alt="data.name"
-            class="absolute inset-0 w-full h-full object-cover"
-          />
+        <template v-if="data.image">
+          <Image :src="data.image" :alt="data.name" class="absolute inset-0 w-full h-full object-cover" />
         </template>
-      <template v-else>
-  <div class="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100">
-    <FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
-  </div>
-</template>
+        <template v-else>
+          <div class="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100">
+            <FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+          </div>
+        </template>
 
       </div>
     </div>

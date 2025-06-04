@@ -29,11 +29,10 @@ console.log('family',props)
 <template>
   <div v-if="props.fieldValue?.families && props.fieldValue?.families?.length" class="px-4 py-10 mx-[30px]" :style="getStyles(fieldValue.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
-
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-      <div v-for="(item, index) in props.fieldValue.families" :key="index">
+      <a v-for="(item, index) in props.fieldValue.families" :key="index" :href="`/${item.url}`">
         <Family1Render :data="item" />
-      </div>
+      </a>
     </div>
   </div>
 
