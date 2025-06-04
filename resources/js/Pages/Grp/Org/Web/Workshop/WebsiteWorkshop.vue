@@ -25,7 +25,8 @@ const props = defineProps<{
     category?: {}
     product?: {}
     website_layout: {}
-    family?: {}
+    families?: {}
+    products?: {}
     settings: {}
     department: {}
     sub_department: {}
@@ -39,9 +40,9 @@ const loadingPublish = ref(false)
 const component = computed(() => {
     const components = {
         website_layout: LayoutWorkshop,
-        department: SubDepartementWorkshop,
-        sub_department: FamiliesBlockWorkshop,
-        family: ProductsBlockWorkshop,
+        sub_department: SubDepartementWorkshop,
+        families: FamiliesBlockWorkshop,
+        products: ProductsBlockWorkshop,
         product: ProductBlockWorkshop,
     }
     return components[currentTab.value]

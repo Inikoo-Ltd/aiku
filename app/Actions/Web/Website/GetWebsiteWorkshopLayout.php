@@ -108,7 +108,8 @@ class GetWebsiteWorkshopLayout
                         'name'       => 'grp.models.website.update.theme',
                         'parameters' => [
                             'website' => $website->id
-                        ]
+                        ],
+                        'method'      => 'patch'
                     ],
 
             ];
