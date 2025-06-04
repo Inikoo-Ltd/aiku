@@ -98,6 +98,16 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
 
 
+        $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
+
+        if (count($productsWebBlock) == 0) {
+            $command->error('Webpage '.$webpage->code.' Products Web Block not found');
+            $this->createWebBlock($webpage, 'products-1', $department);
+        } elseif (count($productsWebBlock) > 1) {
+            $command->error('Webpage '.$webpage->code.' MORE than 1 Products Web Block found');
+        }
+
+
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
         foreach ($webpage->webBlocks as $webBlock) {
