@@ -37,7 +37,8 @@ import DepartementBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartement1Blueprint from "@/Components/CMS/Webpage/SubDepartement1/Blueprint"
-import Product1Blueprinr from "@/Components/CMS/Webpage/Product1/Blueprint"
+import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
+import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint.ts'
 
 export const getBlueprint = (componentName: string) => {
 	const components: Component = {
@@ -69,6 +70,9 @@ export const getBlueprint = (componentName: string) => {
 		//families list
 		"families-1": FamilyBluprint.blueprint,
 
+		//products-list
+		'products-1' : ProductsList1Blueprint,
+
 
 		"banner": WowsbarBannerBlueprint.blueprint,
 		"bento-grid-1": BentoGridBlueprint.blueprint,
@@ -81,7 +85,7 @@ export const getBlueprint = (componentName: string) => {
 		"images": ImageBlueprint.blueprint,
 		"overview_aurora": OverviewBlueprint.blueprint,
 		"pricing": PricingBlueprint.blueprint,
-		"product-1": Product1Blueprinr.blueprint,
+		"product-1": Product1Blueprint.blueprint,
 		"script": ScriptBlueprint.blueprint,
 		"text": TextBlueprint.blueprint,
 		"cta_aurora_1": CTAAurora1Blueprint,
