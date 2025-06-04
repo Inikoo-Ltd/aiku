@@ -36,8 +36,14 @@ class GetWebBlockProducts
             ->where($field, $webpage->model_id)
             ->get();
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['products']['data']['fieldValue']);
+        $productRoute = [
+            'name' => 'grp.json.product_category.products.index',
+            'parameters' => [$webpage->model->slug],
+        ];
         
+        data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['products']['data']['fieldValue']);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+
         if (!$families->isEmpty()) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.products', WebBlockProductsResource::collection($families)->toArray(request()));
         } else {
