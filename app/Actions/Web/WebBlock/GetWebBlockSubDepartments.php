@@ -36,7 +36,7 @@ class GetWebBlockSubDepartments
             'parameters' => [$webpage->model->slug],
         ];
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['sub_department']['data']['fieldValue']);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue']);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
 
