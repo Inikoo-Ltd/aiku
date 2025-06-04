@@ -172,7 +172,7 @@ const onCheckTable = async (item: {}) => {
         }
         
     } else {
-        console.log(item)
+        // console.log('pppp', item.deleteFromReturnRoute?.name)
         try {
             if(!item.deleteFromReturnRoute?.name) {
                 throw new Error('Delete route is not defined')
@@ -186,7 +186,7 @@ const onCheckTable = async (item: {}) => {
             console.log('sssss',error)
             notify({
                 title: 'Something went wrong',
-                text: 'Failed to select the data',
+                text: 'Failed to unselect the data',
                 type: 'error',
             })
             
@@ -275,6 +275,7 @@ const generateLinkPallet = (pallet: {}) => {
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="state == 'in_process'"
         @onSelectRow="onChangeCheked" checkboxKey='pallet_id'
         @onChecked="(item) => onCheckTable(item)"
+        @onUnchecked="(item) => onCheckTable(item)"
     >
 
         <!-- Column: Type Icon -->
