@@ -57,7 +57,6 @@ class ShowDepartment extends OrgAction
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
 
-
         return Inertia::render(
             'Org/Catalogue/Department',
             [
@@ -86,14 +85,18 @@ class ShowDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canDelete ? [
+                        !$department->children()->exists() ? [
                             'type'  => 'button',
                             'style' => 'delete',
+                            'key'   => 'delete',
                             'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
+                                'name'       => 'grp.models.product_category.delete',
+                                'parameters' => [
+                                    'productCategory' => $department->id,
+                                ],
+                                'method' => 'delete',
                             ]
-                        ] : false
+                        ] : false,
                     ],
                     'subNavigation' => $this->getDepartmentSubNavigation($department)
                 ],

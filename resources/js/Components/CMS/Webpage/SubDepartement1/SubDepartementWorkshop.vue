@@ -68,16 +68,17 @@ function closeModal() {
     <div v-if="modelValue?.sub_departments?.length">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <button v-for="item in modelValue.sub_departments" :key="item.code"
-          class="flex items-center gap-2 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all"
+          class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
           @click="openModal(item)">
-          <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-lg w-5 h-5" />
-          <div v-else class="w-5 h-5">
-            <Image :src="item.image" class="w-full h-full object-contain" />
+          <div class="flex items-center justify-center w-5 h-5 shrink-0 text-xl ">
+            <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-xl w-5 h-5" />
+            <Image v-else :src="item.image" class="w-full h-full object-contain" />
           </div>
-          {{ item.name }}
+          <span class="flex-1 text-center">{{ item.name }}</span>
         </button>
       </div>
     </div>
+
 
     <div v-else class="text-center text-gray-500 py-6">
       <EmptyState :data="{
