@@ -543,7 +543,7 @@ provide('onSaveWorkshop', onSaveWorkshop)
             </div>
 
             <div id="footer_copyright" class="text-[14px] md:text-[12px] text-center">
-                <Editor :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
+                <Editor :class="'model border border-transparent hover-text-input border-dashed cursor-text'"
                     :key="editorKey" v-model="modelValue.copyright" :editable="editable"
                     @update:model-value="(e) => { modelValue.copyright = e, emits('update:modelValue', props.modelValue) }" />
             </div>

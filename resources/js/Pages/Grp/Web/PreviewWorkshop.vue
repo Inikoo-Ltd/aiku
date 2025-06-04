@@ -135,13 +135,22 @@ provide('isPreviewMode', isPreviewMode)
 
 
 
-<style lang="scss">
-.hover-dashed {
+<style scoped lang="scss">
+:deep(.hover-dashed) {
     @apply relative;
 
     &::after {
         content: "";
         @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+    }
+}
+
+:deep(.hover-text-input) {
+    @apply relative isolate;
+
+    &::after {
+        content: "";
+        @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
     }
 }
 </style>
