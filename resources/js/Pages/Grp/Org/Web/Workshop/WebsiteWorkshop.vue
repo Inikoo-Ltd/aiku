@@ -31,7 +31,6 @@ const props = defineProps<{
     sub_department: {}
 }>()
 
-console.log(props)
 
 let currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
