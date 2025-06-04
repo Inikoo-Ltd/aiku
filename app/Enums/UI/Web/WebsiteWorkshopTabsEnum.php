@@ -26,15 +26,15 @@ enum WebsiteWorkshopTabsEnum: string
     {
         return match ($this) {
             WebsiteWorkshopTabsEnum::DEPARTMENT => [
-                'title' => __('department page'),
+                'title' => __('sub-department block'),
                 'icon'  => 'fal fa-th',
             ],
             WebsiteWorkshopTabsEnum::SUB_DEPARTMENT => [
-                'title' => __('sub-department page'),
+                'title' => __('families block'),
                 'icon'  => 'fal fa-folder-tree',
             ],
             WebsiteWorkshopTabsEnum::FAMILY => [
-                'title' => __('families page'),
+                'title' => __('products block'),
                 'icon'  => 'fal fa-th-large',
             ],
             WebsiteWorkshopTabsEnum::PRODUCT => [
