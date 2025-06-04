@@ -40,7 +40,7 @@ import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Work
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
 import SubDepartments1Workshop from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
-import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
+import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -78,7 +78,7 @@ export const getComponent = (componentName: string) => {
         'product': ProductWorkshop1,
 
         //product list
-        'products-1' : Products1Iris,
+        'products-1' : Products1Workshop,
 
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,

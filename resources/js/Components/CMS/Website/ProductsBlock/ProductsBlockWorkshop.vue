@@ -28,11 +28,12 @@ const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 
 // Make layout editable
-const layout = ref(null);
+const layout = ref(props.data.layout);
 
 const onPickTemplate = (template: any) => {
   isModalOpen.value = false;
   layout.value = template;
+  layout.value.data.fieldValue = {}
   autosave()
 };
 
@@ -50,7 +51,7 @@ const onChangeDepartment = (value: any) => {
 
 
 const autosave = () => {
-  const payload = toRaw(layout.value);
+  const  payload = toRaw(layout.value);
   delete payload.data?.fieldValue?.layout
   delete payload.data?.fieldValue?.sub_departments
   console.log('Autosaving layout:', payload);

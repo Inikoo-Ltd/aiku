@@ -7,18 +7,11 @@ import { getStyles } from "@/Composables/styles"
 const dummyProductImage = '/product/product_dummy.jpeg'
 const isMember = false
 
-
 const props = defineProps<{
-  fieldValue: {
-    family: {
-      name: string
-      description: string
-      images: { source: string }[]
-    }[]
-  }
-  webpageData?: any
-  blockData?: Object
-  screenType: 'mobile' | 'tablet' | 'desktop'
+	modelValue: any
+	webpageData?: any
+	blockData?: Object
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const products = [
@@ -78,7 +71,7 @@ const products = [
 ]
 </script>
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4" :style="getStyles(fieldValue.container?.properties, screenType)">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4" :style="getStyles(modelValue.container?.properties, screenType)">
     <div v-for="(product, index) in products" :key="index" class="border p-3 relative rounded shadow-sm bg-white">
       <!-- Bestseller Badge -->
       <div v-if="product.bestseller"

@@ -33,7 +33,7 @@ const isLoadingSave = ref(false);
 const visibleDrawer = ref(false);
 
 // Keep local state for layout and the UI-only departement/sub_departments
-const layout = ref({ ...props.data.layout });
+const layout = ref(props.data.layout);
 
 // Update departement and sub_departments locally only, not saved
 const onChangeDepartment = (value: any) => {
@@ -86,7 +86,8 @@ const autosave = () => {
 const onPickTemplate = (template: any) => {
   isModalOpen.value = false;
   layout.value = template;
-  autosave();
+  layout.value.data.fieldValue = {}
+  autosave()
 };
 
 const currentView = ref("desktop");
