@@ -48,22 +48,50 @@ const component = computed(() => {
 })
 
 
-const onPublish = (routeData) => {
-    let payload = props[props.tabs?.current].layout
-   /*  if(props.tabs?.current == 'department'){
-         delete payload.data.fieldValue.departement;
-         delete payload.data.fieldValue.sub_departments;
-    } */
-    router.post(
-        route(routeData.name, routeData.parameters),
-        { layout: payload },
-        {
-            preserveScroll: true,
-            onStart: () => { loadingPublish.value = true },
-            onSuccess: () => { console.log('done') },
-            onError: errors => { console.log(errors) },
-            onFinish: () => { loadingPublish.value = false },
-        })
+const onPublish = (action: {
+  method: 'post' | 'put' | 'patch' | 'delete',
+  route: {
+    name: string,
+    parameters?: Record<string, any>
+  }
+}) => {
+  console.log("Publishing action:", action)
+
+  const currentTab = props.tabs?.current
+  if (!currentTab || !props[currentTab]) {
+    console.warn("No valid tab selected.")
+    return
+  }
+
+  const payload = props[currentTab].layout
+
+  // Example: optionally strip out unused fields (uncomment if needed)
+  // if (currentTab === 'department') {
+  //   delete payload.data.fieldValue.departement
+  //   delete payload.data.fieldValue.sub_departments
+  // }
+
+  router[action.method](
+    route(action.name, action.parameters),
+    { layout: payload },
+    {
+      preserveScroll: true,
+      onStart: () => {
+        loadingPublish.value = true
+        console.log("Publishing started…")
+      },
+      onSuccess: () => {
+        console.log("Publishing successful.")
+      },
+      onError: (errors) => {
+        console.error("Publishing failed with errors:", errors)
+      },
+      onFinish: () => {
+        loadingPublish.value = false
+        console.log("Publishing complete.")
+      },
+    }
+  )
 }
 
 </script>

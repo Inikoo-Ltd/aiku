@@ -12,7 +12,7 @@ library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCirc
 
 const props = defineProps<{
   fieldValue: {
-    family: {
+    families: {
       name: string
       description: string
       images: { source: string }[]
@@ -27,7 +27,7 @@ console.log('family',props)
 </script>
 
 <template>
-  <div v-if="props.fieldValue.families && props.fieldValue.families.length" class="px-4 py-10 mx-[30px]" :style="getStyles(fieldValue.container?.properties, screenType)">
+  <div v-if="props.fieldValue?.families && props.fieldValue?.families?.length" class="px-4 py-10 mx-[30px]" :style="getStyles(fieldValue.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
