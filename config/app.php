@@ -273,6 +273,7 @@ return [
 
         'shipper_itd_token' => env('ITD_TOKEN'),
         'shipper_apc_token' => env('APC_TOKEN'),
+        'shipper_dpd_gb_token' => env('DPD_GB_TOKEN'),
 
 
         'local_share_url' => env('SANDBOX_SHARE_URL'),
