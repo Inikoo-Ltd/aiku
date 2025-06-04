@@ -49,10 +49,10 @@ watch(jsonValue, (newValue) => {
 
 <template>
     <div class="max-w-2xl rounded-md">
-        <div>
+        <!-- <div>
             <label class="text-gray-600 font-semibold cursor-pointer">Structured Data Type</label>
             <PureMultiselect v-model="form[fieldName].structured_data_type" :options="options" />
-        </div>
+        </div> -->
         <div class="mt-3">
             <label class="text-gray-600 font-semibold cursor-pointer">SEO Structured Data (JSON-LD)</label>
             <Codemirror v-model="form[fieldName].structured_data"
