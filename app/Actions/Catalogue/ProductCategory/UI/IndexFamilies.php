@@ -159,6 +159,7 @@ class IndexFamilies extends OrgAction
                 'product_categories.state',
                 'product_categories.description',
                 'product_categories.created_at',
+                'product_categories.image_id',
                 'product_categories.updated_at',
                 'departments.slug as department_slug',
                 'departments.code as department_code',
