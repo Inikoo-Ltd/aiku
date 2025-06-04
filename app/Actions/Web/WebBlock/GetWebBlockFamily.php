@@ -30,6 +30,14 @@ class GetWebBlockFamily
             ->where('product_categories.show_in_website', true)
             ->get();
 
+        $productRoute = [
+            'name' => 'grp.json.product_category.products.index',
+            'parameters' => [$webpage->model->slug],
+        ];
+
+        data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['family']['data']['fieldValue']);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+
         if (!$families->isEmpty()) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.family', WebBlockFamilyResource::make($families)->toArray(request()));
         } else {
