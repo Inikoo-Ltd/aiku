@@ -27,6 +27,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
+use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
@@ -311,6 +312,7 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
 });
 
+Route::delete('product-category/{productCategory:id}', DeleteProductCategory::class)->name('product_category.delete');
 
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {

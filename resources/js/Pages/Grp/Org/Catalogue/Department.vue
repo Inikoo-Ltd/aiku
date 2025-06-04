@@ -28,6 +28,9 @@ import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.v
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { trans } from "laravel-vue-i18n"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(
     faFolder,
@@ -83,7 +86,24 @@ const component = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template #button-delete="propx">
+            <ModalConfirmationDelete
+                :routeDelete="{
+                    name: propx.action.route.name,
+                    parameters: propx.action.route.parameters,
+                }"
+                :title="trans('Are you sure you want to delete department') + '?'"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                        <Button type="delete"/>
+                    </div>
+                </template>
+            </ModalConfirmationDelete>
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>
