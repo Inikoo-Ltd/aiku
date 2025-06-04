@@ -55,7 +55,6 @@ const onSubmitSubscribe = async () => {
 	
 		isLoadingSubmit.value = false
 	}
-
 }
 </script>
 

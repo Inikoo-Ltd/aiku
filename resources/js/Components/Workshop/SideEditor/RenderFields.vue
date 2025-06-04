@@ -21,6 +21,7 @@ const props = defineProps<{
     label?: string,
     information?: string,
     props_data?: any
+    reset_value?: any  // Value to reset the field to
   },
   uploadImageRoute?: routeType,
 }>()
@@ -48,7 +49,7 @@ const valueForField = computed(() => {
   return rawVal?.[currentView.value!]
 })
 
-const onPropertyUpdate = (newVal: any, path: any) => {
+const onPropertyUpdate = (newVal: any, path?: any) => {
   const rawKey = Array.isArray(path) ? path : props.blueprint.key
   const prevVal = get(modelValue.value, rawKey)
   const useIn = props.blueprint.useIn
@@ -67,7 +68,7 @@ const onPropertyUpdate = (newVal: any, path: any) => {
   emits('update:modelValue', rawKey, updatedValue)
 }
 
-
+const keyRender = ref(1)
 
 </script>
 
@@ -98,14 +99,19 @@ const onPropertyUpdate = (newVal: any, path: any) => {
     </div>
   </div>
 
-  <!-- <pre>{{get(modelValue, props.blueprint.key)}}</pre> -->
+  
   <component
+    :key="keyRender"
     :is="getComponent(blueprint.type)"
     :uploadRoutes="uploadImageRoute"
     v-bind="blueprint?.props_data"
     :modelValue="valueForField"
     @update:modelValue="onPropertyUpdate"
   />
+
+  <div v-if="blueprint.reset_value?.value" @click="() => (onPropertyUpdate(blueprint.reset_value.value), blueprint.reset_value.is_refresh_field_on_reset ? keyRender++ : null)" class="w-fit cursor-pointer text-xs text-gray-400 mt-1 hover:text-red-500 hover:underline">
+    {{ trans("Click here to reset the value") }}
+  </div>
 </template>
 
 <style lang="scss" scoped>

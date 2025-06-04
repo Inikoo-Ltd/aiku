@@ -11,9 +11,12 @@ import { getFormValue, setFormValue } from '@/Composables/SideEditorHelper'
 import { routeType } from '@/types/route'
 
 // FontAwesome setup
-import { faInfoCircle } from '@fal'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faInfoCircle} from '@fal'
+import { faSparkles } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faInfoCircle)
+import { trans } from 'laravel-vue-i18n'
+library.add(faInfoCircle, faSparkles)
 
 const props = defineProps<{
     blueprint: {
@@ -23,6 +26,7 @@ const props = defineProps<{
         useIn: string[]
         replaceForm: Array<any>
         icon?: any
+        show_new_until?: string  // "2025-06-04"
     }
     uploadImageRoute?: routeType
 }>()
@@ -57,6 +61,16 @@ const accordionKey = computed(() => {
     return props.blueprint.key
 })
 
+// Method: Check if the future date has passed
+const isFutureDatePassed = (futureDate: string) => {
+    const today = new Date();
+    const targetDate = new Date(futureDate);
+
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+
+    return targetDate < today;
+}
 </script>
 
 <template>
@@ -66,6 +80,14 @@ const accordionKey = computed(() => {
             <div class="flex items-center gap-2">
                 <Icon v-if="blueprint.icon" :data="blueprint.icon" />
                 <span>{{ blueprint.name }}</span>
+
+                <!-- Section: 'New' label -->
+                <div v-if="blueprint.show_new_until && !isFutureDatePassed(blueprint.show_new_until)"
+                    class="bg-yellow-100 border border-yellow-300 text-yellow-600 inline-flex items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
+                >
+                    <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
+                    {{ trans("New") }}
+                </div>
             </div>
         </AccordionHeader>
 
