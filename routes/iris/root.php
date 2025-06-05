@@ -29,3 +29,7 @@ Route::prefix("disclosure")
 Route::prefix("unsubscribe")
     ->name("unsubscribe.")
     ->group(__DIR__."/unsubscribe.php");
+
+Route::prefix("json")
+    ->name("json.")
+    ->group(__DIR__."/json.php");

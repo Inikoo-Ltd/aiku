@@ -42,7 +42,7 @@ class GetWebBlockProducts
                 'parameters' => [$webpage->model->slug],
             ],
             'iris' => [
-                'name' => 'retina.json.product_category.products.index',
+                'name' => 'iris.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
         ];
