@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -30,6 +31,8 @@ class SubDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $subDepartment =  ProductCategory::find($this->id);
+        
         return [
             'id'                 => $this->id,
             'name'               => $this->name,
@@ -51,15 +54,7 @@ class SubDepartmentsResource extends JsonResource
             'description'       => $this->description,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
-            'families_route'    => [
-                'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
-                'parameters' => [
-                    'organisation' => $this->organisation->slug ?? null,
-                    'shop' => $this->shop->slug ?? null,
-                    'department' => $this->department->slug ?? $this->department_slug,
-                    'subDepartment' => $this->slug
-                ]
-            ]
+            'families'          => FamiliesResource::collection($subDepartment->getFamilies()),
         ];
     }
 }

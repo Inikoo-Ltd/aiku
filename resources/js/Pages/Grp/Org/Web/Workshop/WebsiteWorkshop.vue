@@ -66,12 +66,6 @@ const onPublish = (action: {
 
   const payload = props[currentTab].layout
 
-  // Example: optionally strip out unused fields (uncomment if needed)
-  // if (currentTab === 'department') {
-  //   delete payload.data.fieldValue.departement
-  //   delete payload.data.fieldValue.sub_departments
-  // }
-
   router[action.method](
     route(action.name, action.parameters),
     { layout: payload },

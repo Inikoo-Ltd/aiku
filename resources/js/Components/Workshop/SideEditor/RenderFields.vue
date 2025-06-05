@@ -45,7 +45,7 @@ const valueForField = computed(() => {
     return rawVal
   }
 
-  return rawVal?.[currentView.value!]
+  return rawVal?.[currentView!]
 })
 
 const onPropertyUpdate = (newVal: any, path: any) => {
@@ -61,7 +61,7 @@ const onPropertyUpdate = (newVal: any, path: any) => {
   const current = isPlainObject(prevVal) ? { ...prevVal } : {}
   const updatedValue = {
     ...current,
-    [currentView.value]: newVal
+    [currentView]: newVal
   }
 
   emits('update:modelValue', rawKey, updatedValue)
