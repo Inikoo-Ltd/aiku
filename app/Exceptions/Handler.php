@@ -194,13 +194,18 @@ class Handler extends ExceptionHandler
             };
         }
 
+        $routeName='';
+        if($request->route()) {
+            $routeName = $request->route()->getName();
+        }
+
 
         return array_merge(
             $firstLoadOnlyProps,
             [
                 'error'     => $this->getBaseErrorData($response, $e),
                 'datetime'  => now()->tz('UTC')->toDateTimeString(),
-                'routeName' => $request->route()->getName(),
+                'routeName' => $routeName,
                 'auth'      => [
                     'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
                 ],
