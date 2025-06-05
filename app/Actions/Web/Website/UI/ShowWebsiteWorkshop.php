@@ -142,7 +142,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     'website' => $website->id
                 ]
             ];
-        }  elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.products',

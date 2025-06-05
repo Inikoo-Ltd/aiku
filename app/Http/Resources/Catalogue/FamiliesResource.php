@@ -34,7 +34,7 @@ class FamiliesResource extends JsonResource
     public function toArray($request): array
     {
 
-         $imageSources = null;
+        $imageSources = null;
         $media        = Media::find($this->image_id);
         if ($media) {
             $width  = 720;
