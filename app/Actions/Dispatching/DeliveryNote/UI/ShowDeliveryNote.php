@@ -304,7 +304,8 @@ class ShowDeliveryNote extends OrgAction
 
             'timelines' => $finalTimeline,
             'box_stats' => [
-                'state'    => $deliveryNote->state,
+                'state'    => $deliveryNote->state->labels()[$deliveryNote->state->value],
+                'number_items' => $deliveryNote->number_items,
                 'customer' => array_merge(
                     CustomerResource::make($deliveryNote->customer)->getArray(),
                     [
