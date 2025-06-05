@@ -40,7 +40,7 @@ class GetWebBlockFamilies
 
         $permissions =  [];
 
-        if($webpage->sub_type == 'department') {
+        if($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
             $permissions = ['edit'];
         }
 
