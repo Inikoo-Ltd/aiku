@@ -113,7 +113,7 @@ class EditWebsite extends OrgAction
                     'type'     => 'input',
                     'label'    => __('google tag id'),
                     'value'    => Arr::get($website->settings, "google_tag_id"),
-                    'placeholder' => 'G-XXXXXXXXXX',
+                    'placeholder' => 'GTM-ABC456GH',
                     'required' => false,
                 ],
                 'luigisbox_private_key' => [
