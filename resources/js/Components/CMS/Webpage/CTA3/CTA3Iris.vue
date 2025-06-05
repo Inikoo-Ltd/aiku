@@ -40,19 +40,35 @@ const props = defineProps<{
 </div>
 </div> -->
 
-	<div class="relative grid rounded-lg" :style="getStyles(fieldValue.container.properties, screenType)">
+	<div id="cta_3_iris" class="relative grid rounded-lg" :style="getStyles(fieldValue.container.properties, screenType)">
 		<!-- Background Image Layer -->
-		<div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" :style="{
+		<!-- <div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" :style="{
 			backgroundImage: fieldValue?.image?.source
 				? `url('${fieldValue.image.source.original}')`
 				: `url('https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png')`,
 			...getStyles(fieldValue.image.properties, screenType)
-		}"></div>
+		}"></div> -->
+
+		<div
+			class="absolute inset-0 overflow-hidden"
+			:style="getStyles(fieldValue.image.properties, screenType)"
+		>
+			<Image
+				:src="fieldValue?.image?.source
+					? fieldValue.image.source
+					: {
+						original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'
+					}
+				"
+				:alt="fieldValue?.image?.alt ?? 'CTA Image'"
+				imageCover
+			/>
+		</div>
 
 
-		<div :style="getStyles(fieldValue.container.properties?.block, screenType)" class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter
-         sm:flex sm:flex-col sm:items-start
-         lg:w-96 ">
+		<div :style="getStyles(fieldValue.container.properties?.block, screenType)"
+			class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:flex-col sm:items-start lg:w-96"
+		>
 
 			<div class="text-center lg:text-left text-gray-600 pr-3 mb-4 w-full">
 				<div v-html="fieldValue.text" />

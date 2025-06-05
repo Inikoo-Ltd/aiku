@@ -31,7 +31,7 @@ import ColumnComponentPicker from '@/Components/CMS/Fields/ColumnComponentPicker
 import Disclosure from '@/Components/CMS/Fields/Disclosure.vue'
 import ArrayEdit from '@/Components/CMS/Fields/ArrayEdit/LabelAndOrderArray.vue'
 import InputNumber from 'primevue/inputnumber';
-
+import fontFamily from "@/Components/Workshop/Properties/TextFontFamily.vue"
 import { set } from 'lodash-es'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import TextHeader from '@/Components/CMS/Fields/TextHeader.vue'
@@ -82,6 +82,7 @@ export const getComponent = (componentName: string) => {
         "icon-picker" : IconPickerBox,
         'number' : PureInputNumber,
         'switch' : ToggleSwitch ,
+        'fontFamily' : fontFamily
     }
     
     return components[componentName] ?? NotFoundComponents
