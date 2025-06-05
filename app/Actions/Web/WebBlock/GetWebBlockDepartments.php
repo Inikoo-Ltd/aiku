@@ -32,7 +32,10 @@ class GetWebBlockDepartments
             'name' => 'grp.json.product_category.products.index',
             'parameters' => [$webpage->model->slug],
         ];
+        
+        $permissions =  [];
 
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['department']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.departments', WebBlockDepartmentsResource::collection($departments)->toArray(request()));

@@ -41,6 +41,9 @@ class GetWebBlockProducts
             'parameters' => [$webpage->model->slug],
         ];
 
+        $permissions =  [];
+
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['products']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
 

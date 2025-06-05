@@ -38,7 +38,7 @@ class GetWebBlockFamilies
             'parameters' => [$webpage->model->slug],
         ];
 
-        $permissions =  ['edit'];
+        $permissions =  [];
 
         if($webpage->sub_type == 'department') {
             $permissions = ['edit'];

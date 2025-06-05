@@ -19,6 +19,9 @@ class GetWebBlockProduct
     public function handle(Webpage $webpage, array $webBlock): array
     {
 
+        $permissions =  [];
+
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', WebBlockProductResource::make($webpage->model)->toArray(request()));
         return $webBlock;
     }
