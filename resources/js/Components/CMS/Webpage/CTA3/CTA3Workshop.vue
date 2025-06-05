@@ -22,14 +22,31 @@ const emits = defineEmits<{
 </script>
 
 <template>
-	<div class="relative grid rounded-lg" :style="getStyles(modelValue.container.properties,screenType)">
+	<div id="cta_3_workshop" class="relative grid rounded-lg" :style="getStyles(modelValue.container.properties,screenType)">
 		<!-- Background Image Layer -->
-		<div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" :style="{
+		<!-- <div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" :style="{
 			backgroundImage: modelValue?.image?.source
 				? `url('${modelValue.image.source.original}')`
 				: `url('https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png')`,
 			...getStyles(modelValue.image.properties, screenType)
-		}" @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"></div>
+		}" @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"></div> -->
+
+		<div
+			class="absolute inset-0 overflow-hidden z-0"
+			:style="getStyles(modelValue.image.properties, screenType)"
+			@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"
+		>
+			<Image
+				:src="modelValue?.image?.source
+					? modelValue.image.source
+					: {
+						original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'
+					}
+				"
+				:alt="modelValue?.image?.alt ?? 'CTA Image'"
+				imageCover
+			/>
+		</div>
 
 
 		<div :style="getStyles(modelValue.container.properties?.block,screenType)" class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter
