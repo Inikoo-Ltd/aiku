@@ -34,8 +34,14 @@ class GetWebBlockFamilies
             ->get();
 
         $productRoute = [
-            'name' => 'grp.json.product_category.products.index',
-            'parameters' => [$webpage->model->slug],
+            'workshop' => [
+                'name' => 'grp.json.product_category.products.index',
+                'parameters' => [$webpage->model->slug],
+            ],
+            'iris' => [
+                'name' => 'retina.json.product_category.products.index',
+                'parameters' => [$webpage->model->slug],
+            ],
         ];
 
         $permissions =  [];
