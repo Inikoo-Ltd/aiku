@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\FamilyWebsiteResource;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
+use App\Http\Resources\Catalogue\WorkshopSubDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
@@ -42,7 +43,7 @@ class GetWebsiteWorkshopSubDepartment
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'sub_departements'   => SubDepartmentsResource::collection($fammilies),
+            'sub_departements'   => WorkshopSubDepartmentsResource::collection($fammilies),
             'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.sub_department',
