@@ -101,6 +101,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property int|null $picker_user_id
  * @property int|null $packer_user_id
+ * @property int $number_items current number of items
+ * @property int $number_items_state_unassigned
+ * @property int $number_items_state_queued
+ * @property int $number_items_state_handling
+ * @property int $number_items_state_handling_blocked
+ * @property int $number_items_state_packed
+ * @property int $number_items_state_finalised
+ * @property int $number_items_state_dispatched
+ * @property int $number_items_state_cancelled
+ * @property int $number_items_state_out_of_stock
+ * @property int $number_items_state_no_dispatched
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -200,10 +211,6 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsToMany(Order::class, 'delivery_note_order')->withTimestamps();
     }
 
-    public function stats(): HasOne
-    {
-        return $this->hasOne(DeliveryNoteStats::class);
-    }
 
     public function deliveryNoteItems(): HasMany
     {

@@ -104,19 +104,18 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.slug',
                 'delivery_notes.type',
                 'delivery_notes.state',
+                'delivery_notes.number_items',
                 'delivery_notes.weight',
                 'delivery_notes.effective_weight',
                 'delivery_notes.estimated_weight',
                 'shops.slug as shop_slug',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
-                'delivery_note_stats.number_items as number_items',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
-            ->leftJoin('delivery_note_stats', 'delivery_notes.id', 'delivery_note_stats.delivery_note_id')
             ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])

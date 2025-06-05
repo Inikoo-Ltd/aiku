@@ -15,6 +15,19 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $org_stock_id
+ * @property mixed $id
+ * @property mixed $state
+ * @property mixed $quantity_required
+ * @property mixed $quantity_picked
+ * @property mixed $org_stock_code
+ * @property mixed $org_stock_name
+ * @property mixed $is_completed
+ * @property mixed $quantity_packed
+ * @property mixed $quantity_not_picked
+ * @property mixed $quantity_dispatched
+ */
 class DeliveryNoteItemsResource extends JsonResource
 {
     public function toArray($request): array
