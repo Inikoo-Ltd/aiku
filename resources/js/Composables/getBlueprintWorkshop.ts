@@ -39,6 +39,7 @@ import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartement1Blueprint from "@/Components/CMS/Webpage/SubDepartement1/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint.ts'
+import { data } from "autoprefixer"
 
 export const getBlueprint = (componentName: string) => {
 	const components: Component = {
@@ -115,3 +116,16 @@ export const getBluprintPermissions = (componentName: string) => {
 	}
 	return components[componentName] ?? true
 }
+
+
+type PermissionData = {
+  permissions?: string[]
+}
+
+const hasPermission = (data: PermissionData, permission: string): boolean => {
+  return !data.permissions || data.permissions.includes(permission)
+}
+
+export const getEditPermissions = (data: PermissionData) => hasPermission(data, 'edit')
+export const getDeletePermissions = (data: PermissionData) => hasPermission(data, 'delete')
+export const getHiddenPermissions = (data: PermissionData) => hasPermission(data, 'hidden')

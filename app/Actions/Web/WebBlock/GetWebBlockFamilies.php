@@ -40,8 +40,8 @@ class GetWebBlockFamilies
 
         $permissions =  [];
 
-        if($webpage->sub_type == 'department') {
-            $permissions = ['edit'];
+        if($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+            $permissions = ['hidden'];
         }
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);

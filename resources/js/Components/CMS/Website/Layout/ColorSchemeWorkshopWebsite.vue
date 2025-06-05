@@ -95,6 +95,7 @@ const props = defineProps<{
       </a>
 
       <!-- Webpage Section -->
+       {{ props.theme.container?.properties }}
       <div class="flex justify-center" :style="getStyles(props.theme.container?.properties, 'desktop')">
         <a
           class="group relative col-span-5 pb-8 h-[42vh] cursor-pointer"
