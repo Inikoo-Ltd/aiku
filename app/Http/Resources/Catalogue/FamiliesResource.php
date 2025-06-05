@@ -54,6 +54,9 @@ class FamiliesResource extends JsonResource
             'department_slug'    => $this->department_slug,
             'department_code'    => $this->department_code,
             'department_name'    => $this->department_name,
+            'sub_department_slug'    => $this->sub_department_slug,
+            'sub_department_code'    => $this->sub_department_code,
+            'sub_department_name'    => $this->sub_department_name,
             'image'              =>  $imageSources ,
             'state'              => [
                 'tooltip' => $this->state->labels()[$this->state->value],

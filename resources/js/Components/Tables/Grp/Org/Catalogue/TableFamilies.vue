@@ -100,6 +100,19 @@ function departmentRoute(family: Family) {
     }
 }
 
+function subDepartmentRoute(family: Family) {
+    switch (route().current()) {
+        case 'grp.org.shops.show.catalogue.families.index':
+            return route(
+                'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                 [route().params["organisation"], route().params["shop"], family.department_slug, family.sub_department_slug])
+        case 'grp.org.shops.show.catalogue.departments.show.families.index':
+            return route(
+                'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                [route().params["organisation"], route().params["shop"], family.department_slug, family.sub_department_slug])
+    }
+}
+
 const isLoadingDetach = ref<string[]>([])
 
 </script>
@@ -128,6 +141,12 @@ const isLoadingDetach = ref<string[]>([])
             <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
                 {{ family["department_code"] }}
             </Link>
+        </template>
+        <template #cell(sub_department_name)="{ item: family }">
+            <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink">
+                {{ family["sub_department_code"] }}
+            </Link>
+            <span v-else class="text-xs text-gray-500">No sub department</span>
         </template>
 
         <template #cell(actions)="{ item }">
