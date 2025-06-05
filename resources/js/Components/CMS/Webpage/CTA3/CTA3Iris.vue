@@ -48,7 +48,6 @@ const props = defineProps<{
 				: `url('https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png')`,
 			...getStyles(fieldValue.image.properties, screenType)
 		}"></div> -->
-
 		<div
 			class="absolute inset-0 overflow-hidden"
 			:style="getStyles(fieldValue.image.properties, screenType)"
@@ -69,7 +68,6 @@ const props = defineProps<{
 		<div :style="getStyles(fieldValue.container.properties?.block, screenType)"
 			class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:flex-col sm:items-start lg:w-96"
 		>
-
 			<div class="text-center lg:text-left text-gray-600 pr-3 mb-4 w-full">
 				<div v-html="fieldValue.text" />
 			</div>
