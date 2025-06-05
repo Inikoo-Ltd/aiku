@@ -28,6 +28,10 @@ class AddressResource extends JsonResource
         /** @var Address $address */
         $address = $this;
 
+        if (!$this->resource) {
+            return [];
+        }
+
 
         $addressFormatRepository = new AddressFormatRepository();
         $countryRepository       = new CountryRepository();

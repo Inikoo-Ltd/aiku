@@ -41,6 +41,7 @@ import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop
 import SubDepartments1Workshop from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
+import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -100,7 +101,8 @@ export const getComponent = (componentName: string) => {
         'disclosure': DisclosureWorkshop,
         'timeline' : Timeline,
         'step-1' : Step2Workshop,
-        'carousel-1' : Carousel1Workshop
+        'carousel-1' : Carousel1Workshop,
+        "user-subscribe": UserSubscribeWorkshop,
     }
     return components[componentName] ?? NotFoundComponents
 }

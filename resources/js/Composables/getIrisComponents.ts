@@ -38,6 +38,8 @@ import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
 
+import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
+
 
 const components: Record<string, Component> = {
     //topBar
@@ -101,7 +103,7 @@ const components: Record<string, Component> = {
     'timeline': Timeline,
     'step-1' : Step2Iris,
     'carousel-1' : Carousel1Iris,
- 
+    "user-subscribe": UserSubscribeIris,
 }
 
 

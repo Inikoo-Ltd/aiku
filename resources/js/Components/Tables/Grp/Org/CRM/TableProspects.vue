@@ -13,12 +13,15 @@ import Tag from '@/Components/Tag.vue';
 import { ref } from 'vue'
 import Icon from '@/Components/Icon.vue';
 
-import { faThumbsDown, faChair, faLaugh } from '@fal';
-import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route';
 import { notify } from '@kyvg/vue3-notification';
 
-library.add(faThumbsDown, faChair, faLaugh)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faThumbsDown, faChair, faLaugh } from '@fal';
+import { faCheck } from '@far';
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from 'laravel-vue-i18n'
+library.add(faThumbsDown, faChair, faLaugh, faCheck)
 
 interface tag {
     id: number
@@ -110,11 +113,20 @@ function prospectRoute(prospect: Prospect) {
         <template #cell(state)="{ item: prospect }">
             <Icon :data="prospect.state_icon"></Icon>
         </template>
+        
         <template #cell(name)="{ item: prospect }">
             <Link :href="prospectRoute(prospect)" class="primaryLink">
                 {{ prospect['name'] }}
             </Link>
         </template>
+
+        <!-- Column: Opt in -->
+        <template #cell(is_opt_in)="{ item: prospect }">
+            <div class="text-center">
+                <FontAwesomeIcon v-if="prospect.is_opt_in" v-tooltip="trans('Opt-in to newsletter')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            </div>
+        </template>
+
         <template #cell(tags)="{ item: prospect }">
             <div class="min-w-[200px]">
                 <Multiselect 

@@ -45,6 +45,12 @@ trait WithIrisInertia
             'menu'         => array_merge(
                 $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
             ),
+            'shop'        => [
+                'type' => $website->shop?->type?->value,
+                'id'   => $website->shop?->id,
+                'slug' => $website->shop?->slug,
+                'name' => $website->shop?->name,
+            ],
             "website"      => WebsiteIrisResource::make($website)->getArray(),
             'theme'        => Arr::get($website->published_layout, 'theme'),
             'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
@@ -56,7 +62,7 @@ trait WithIrisInertia
                 'name'             => $webUser?->contact_name,
                 'username'         => $webUser?->username,
                 'email'            => $webUser?->email,
-                'favourites_count' => $webUser?->customer->stats->number_favourites,
+                'favourites_count' => $webUser?->customer?->stats?->number_favourites,
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ]
