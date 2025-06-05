@@ -7,18 +7,12 @@ import { getStyles } from "@/Composables/styles"
 const dummyProductImage = '/product/product_dummy.jpeg'
 const isMember = false
 
-
 const props = defineProps<{
-  fieldValue: {
-    family: {
-      name: string
-      description: string
-      images: { source: string }[]
-    }[]
-  }
-  webpageData?: any
-  blockData?: Object
-  screenType: 'mobile' | 'tablet' | 'desktop'
+	modelValue: any
+	webpageData?: any
+	blockData?: Object,
+  fieldValue?: any
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const products = [

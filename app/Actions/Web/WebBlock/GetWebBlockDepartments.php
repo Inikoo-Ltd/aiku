@@ -34,11 +34,11 @@ class GetWebBlockDepartments
                 'parameters' => [$webpage->model->slug],
             ],
             'iris' => [
-                'name' => 'retina.json.product_category.products.index',
+                'name' => 'iris.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
         ];
-        
+
         $permissions =  [];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
