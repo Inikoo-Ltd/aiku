@@ -153,6 +153,20 @@ class ShowDeliveryNote extends OrgAction
             DeliveryNoteStateEnum::QUEUED => [
                 [
                     'type'    => 'button',
+                    'style'   => 'delete',
+                    'tooltip' => __('Remove picker'),
+                    'label'   => __('Remove Picker'),
+                    'key'     => 'remove-picker',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery-note.state.remove-picker',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ],
+                [
+                    'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Change picker'),
                     'label'   => __('Change Picker'),

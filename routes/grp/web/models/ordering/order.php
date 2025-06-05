@@ -9,6 +9,7 @@
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
+use App\Actions\Dispatching\DeliveryNote\RemovePickerDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
@@ -87,6 +88,7 @@ Route::name('delivery-note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in-queue')->withoutScopedBindings();
+        Route::patch('remove-picker', RemovePickerDeliveryNote::class)->name('remove-picker');
         Route::patch('handling', StartHandlingDeliveryNote::class)->name('handling');
         Route::patch('picker-assigned', UpdateDeliveryNoteStateToPickerAssigned::class)->name('picker-assigned');
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
