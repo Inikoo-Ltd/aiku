@@ -5,7 +5,7 @@ import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import { Address } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -21,7 +21,8 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber } from "primevue"
-library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCubes)
+import Icon from "@/Components/Icon.vue"
+library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes)
 
 const props = defineProps<{
 	boxStats: {
@@ -70,6 +71,8 @@ const props = defineProps<{
 	}
 	updateRoute: routeType
 }>()
+
+// console.log(props.boxStats)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -276,7 +279,23 @@ const base64ToPdf = (base: string) => {
 		</BoxStatPallet>
 
 		<!-- Box: 2 -->
-		<BoxStatPallet class="py-2.5 pl-1.5 pr-3" icon="fal fa-user">
+		<BoxStatPallet class="py-2.5 pl-2.5 pr-3" icon="fal fa-user">
+			<div
+				xv-tooltip="trans('Current progress')"
+				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+				<dt class="flex-none">
+					<!-- <FontAwesomeIcon
+						icon="fal fa-weight"
+						fixed-width
+						aria-hidden="true"
+						class="text-gray-500" /> -->
+					<Icon :data="boxStats?.state_icon" />
+				</dt>
+				<dd class="text-gray-500">
+					{{ boxStats.state_label }}
+				</dd>
+			</div>
+
 			<div
 				v-tooltip="trans('Estimated weight of all products')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -289,6 +308,21 @@ const base64ToPdf = (base: string) => {
 				</dt>
 				<dd class="text-gray-500">
 					{{ locale.number(boxStats?.products.estimated_weight) || 0 }} kilograms
+				</dd>
+			</div>
+
+			<div
+				v-tooltip="trans('Total items')"
+				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+				<dt class="flex-none">
+					<FontAwesomeIcon
+						icon="fal fa-cube"
+						fixed-width
+						aria-hidden="true"
+						class="text-gray-500" />
+				</dt>
+				<dd class="text-gray-500">
+					{{ locale.number(boxStats.products?.number_items|| 0) }} items
 				</dd>
 			</div>
 

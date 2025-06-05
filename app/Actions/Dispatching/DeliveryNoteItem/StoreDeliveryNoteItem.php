@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
+use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Dispatching\DeliveryNote;
@@ -48,7 +49,9 @@ class StoreDeliveryNoteItem extends OrgAction
         if ($deliveryNoteItem->transaction_id && $deliveryNoteItem->transaction->asset) {
             AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset)->delay($this->hydratorsDelay);
         }
-
+        
+        $deliveryNote->refresh();
+        CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
 
         return $deliveryNoteItem;
     }

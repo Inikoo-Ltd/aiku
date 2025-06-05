@@ -193,14 +193,14 @@ const onSubmitWoocommerce = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
 
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
 
                 </div>
             </div>

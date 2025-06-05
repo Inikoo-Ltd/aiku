@@ -101,6 +101,7 @@ class ShowDeliveryNote extends OrgAction
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $timeline = [];
+
         foreach (DeliveryNoteStateEnum::cases() as $state) {
             $timestamp = $deliveryNote->{$state->snake().'_at'}
                 ? $deliveryNote->{$state->snake().'_at'}
@@ -108,6 +109,7 @@ class ShowDeliveryNote extends OrgAction
 
             $timestamp = $timestamp ?: null;
             $label = $state->labels()[$state->value];
+            $formatTime = null;
             if ($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
                 if (
                     in_array($state, [DeliveryNoteStateEnum::QUEUED])
@@ -121,10 +123,18 @@ class ShowDeliveryNote extends OrgAction
                     $label .= ' (' . $deliveryNote->pickerUser->contact_name . ')';
                 }
             }
+
+            if ($state->value === DeliveryNoteStateEnum::UNASSIGNED->value) {
+                $timestamp = $deliveryNote->created_at;
+            } elseif ($state->value == DeliveryNoteStateEnum::QUEUED->value) {
+                $formatTime = 'PPp';
+            }
+
             $timeline[$state->value] = [
                 'label'     => $label,
                 'tooltip'   => $state->labels()[$state->value],
                 'key'       => $state->value,
+                'format_time'   => $formatTime,
                 'timestamp' => $timestamp
             ];
         }
@@ -153,8 +163,24 @@ class ShowDeliveryNote extends OrgAction
             DeliveryNoteStateEnum::QUEUED => [
                 [
                     'type'    => 'button',
+                    'style'   => 'delete',
+                    'tooltip' => __('Remove picker'),
+                    'label'   => __('Remove Picker'),
+                    'icon'      => 'fal fa-user-slash',
+                    'key'     => 'remove-picker',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery-note.state.remove-picker',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ],
+                [
+                    'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Change picker'),
+                    'icon'      => 'fal fa-exchange-alt',
                     'label'   => __('Change Picker'),
                     'key'     => 'change-picker',
                 ],
@@ -206,6 +232,7 @@ class ShowDeliveryNote extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Change picker'),
+                    'icon'      => 'fal fa-exchange-alt',
                     'label'   => __('Change Picker'),
                     'key'     => 'change-picker',
                 ]
@@ -278,6 +305,8 @@ class ShowDeliveryNote extends OrgAction
             'timelines' => $finalTimeline,
             'box_stats' => [
                 'state'    => $deliveryNote->state,
+                'state_icon'    => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
+                'state_label'   => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 'customer' => array_merge(
                     CustomerResource::make($deliveryNote->customer)->getArray(),
                     [
