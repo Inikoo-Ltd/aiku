@@ -9,6 +9,7 @@
 namespace App\Actions\Web\WebBlock;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,7 @@ class GetWebBlockFamilies
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
             ->select(['product_categories.code', 'name', 'image_id', 'url', 'title'])
-            ->where($webpage->sub_type == 'department' ? 'department_id' : 'sub_department_id', $webpage->model_id)
+            ->where($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT ? 'product_categories.department_id' : 'product_categories.sub_department_id', $webpage->model_id)
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->where('show_in_website', true)
             ->whereNull('product_categories.deleted_at')
@@ -37,6 +38,13 @@ class GetWebBlockFamilies
             'parameters' => [$webpage->model->slug],
         ];
 
+        $permissions =  ['edit'];
+
+        if($webpage->sub_type == 'department') {
+            $permissions = ['edit'];
+        }
+
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
