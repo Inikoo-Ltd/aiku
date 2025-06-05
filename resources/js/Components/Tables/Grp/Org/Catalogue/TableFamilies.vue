@@ -137,10 +137,29 @@ const isLoadingDetach = ref<string[]>([])
                 {{ family["current_products"] }}
             </Link>
         </template>
+        
+        <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
             <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
                 {{ family["department_code"] }}
             </Link>
+
+            <div v-else>
+                {{ family["department_code"] }}
+            </div>
+        </template>
+
+        <!-- Column: Department name -->
+        <template #cell(department_name)="{ item: family }">
+            <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
+                {{ family["department_name"] }}
+            </Link>
+        </template>
+
+        <template #cell(product_categories)="{ item: family }">
+            <!-- <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
+                {{ family["department_code"] }}
+            </Link> -->
         </template>
         <template #cell(sub_department_name)="{ item: family }">
             <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink">

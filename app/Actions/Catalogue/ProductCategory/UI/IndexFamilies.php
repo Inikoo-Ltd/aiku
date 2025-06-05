@@ -259,6 +259,8 @@ class IndexFamilies extends OrgAction
 
                 if (class_basename($parent) != 'Collection') {
                     $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'product_categories', label: __('Sub Department'), canBeHidden: false, sortable: true, searchable: true);  // TODO: Fix this
                 }
 
                 if (class_basename($parent) == 'Collection') {
