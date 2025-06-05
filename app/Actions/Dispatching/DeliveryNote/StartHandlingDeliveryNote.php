@@ -43,24 +43,24 @@ class StartHandlingDeliveryNote extends OrgAction
         return $this->update($deliveryNote, $modelData);
     }
 
-    public function prepareForValidation()
-    {
-        if (!$this->asAction) {
-            $employee = $this->user->employees()->first();
-            if ($employee) {
-                $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
-                if (!$pickerEmployee) {
-                    throw ValidationException::withMessages([
-                        'messages' => __('You cannot start handling this delivery note. You Are Not A Picker')
-                    ]);
-                }
-            } elseif (!$employee) {
-                throw ValidationException::withMessages([
-                    'messages' => __('You Are Not An Employee')
-                ]);
-            }
-        }
-    }
+    // public function prepareForValidation()
+    // {
+    //     if (!$this->asAction) {
+    //         $employee = $this->user->employees()->first();
+    //         if ($employee) {
+    //             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
+    //             if (!$pickerEmployee) {
+    //                 throw ValidationException::withMessages([
+    //                     'messages' => __('You cannot start handling this delivery note. You Are Not A Picker')
+    //                 ]);
+    //             }
+    //         } elseif (!$employee) {
+    //             throw ValidationException::withMessages([
+    //                 'messages' => __('You Are Not An Employee')
+    //             ]);
+    //         }
+    //     }
+    // }
 
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote

@@ -53,22 +53,22 @@ class PickDeliveryNoteAsEmployee extends OrgAction
         return $this->handle($deliveryNote, $user);
     }
 
-    public function prepareForValidation()
-    {
-        $employee = request()->user()->employees()->first();
-        if ($employee) {
-            $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
-            if (!$pickerEmployee) {
-                throw ValidationException::withMessages([
-                    'messages' => __('You Are Not A Picker')
-                ]);
-            }
-        } elseif (!$employee) {
-            throw ValidationException::withMessages([
-                'messages' => __('You Are Not An Employee')
-            ]);
-        }
-    }
+    // public function prepareForValidation()
+    // {
+    //     $employee = request()->user()->employees()->first();
+    //     if ($employee) {
+    //         $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
+    //         if (!$pickerEmployee) {
+    //             throw ValidationException::withMessages([
+    //                 'messages' => __('You Are Not A Picker')
+    //             ]);
+    //         }
+    //     } elseif (!$employee) {
+    //         throw ValidationException::withMessages([
+    //             'messages' => __('You Are Not An Employee')
+    //         ]);
+    //     }
+    // }
 
     public function htmlResponse(DeliveryNote $deliveryNote): RedirectResponse
     {
