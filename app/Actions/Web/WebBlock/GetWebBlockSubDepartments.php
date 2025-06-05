@@ -29,6 +29,7 @@ class GetWebBlockSubDepartments
             ->select(['product_categories.slug', 'product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.image_id', 'webpages.url as url'])
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('product_categories.show_in_website', true)
+            ->whereNull('product_categories.deleted_at')
             ->get();
 
         $productRoute = [

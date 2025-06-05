@@ -29,6 +29,7 @@ class GetWebBlockFamilies
             ->where($webpage->sub_type == 'department' ? 'department_id' : 'sub_department_id', $webpage->model_id)
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->where('show_in_website', true)
+            ->whereNull('product_categories.deleted_at')
             ->get();
 
         $productRoute = [

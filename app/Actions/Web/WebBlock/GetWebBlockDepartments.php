@@ -25,6 +25,7 @@ class GetWebBlockDepartments
             ->select(['slug', 'code', 'name', 'image_id'])
             ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ->where('show_in_website', true)
+            ->whereNull('deleted_at')
             ->get();
 
         $productRoute = [
