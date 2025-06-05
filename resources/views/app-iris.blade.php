@@ -37,7 +37,7 @@
         <link rel="stylesheet" href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('resources/css/app.css') }}">
         <link rel="stylesheet" href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('node_modules/@fortawesome/fontawesome-free/css/svg-with-js.min.css') }}">
         
-        {{ Vite::useHotFile('iris.hot')->ushttps://ds.test/app/sysadmin/dropshippingeBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
+        {{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
         @inertiaHead
 
         @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
