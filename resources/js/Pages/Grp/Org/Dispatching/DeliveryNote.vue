@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint } from '@fal'
+import { faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash } from '@fal'
 import { faArrowRight, faCheck } from '@fas'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -38,7 +38,7 @@ import { get, set } from 'lodash'
 import PureInput from '@/Components/Pure/PureInput.vue'
 
 
-library.add(faFolder, faBoxCheck, faPrint, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck)
+library.add(faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck)
 
 const props = defineProps<{
     title: string,

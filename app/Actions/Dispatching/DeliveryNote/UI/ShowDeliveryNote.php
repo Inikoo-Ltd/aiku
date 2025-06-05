@@ -166,6 +166,7 @@ class ShowDeliveryNote extends OrgAction
                     'style'   => 'delete',
                     'tooltip' => __('Remove picker'),
                     'label'   => __('Remove Picker'),
+                    'icon'      => 'fal fa-user-slash',
                     'key'     => 'remove-picker',
                     'route'   => [
                         'method'     => 'patch',
@@ -179,6 +180,7 @@ class ShowDeliveryNote extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Change picker'),
+                    'icon'      => 'fal fa-exchange-alt',
                     'label'   => __('Change Picker'),
                     'key'     => 'change-picker',
                 ],
@@ -230,6 +232,7 @@ class ShowDeliveryNote extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Change picker'),
+                    'icon'      => 'fal fa-exchange-alt',
                     'label'   => __('Change Picker'),
                     'key'     => 'change-picker',
                 ]
