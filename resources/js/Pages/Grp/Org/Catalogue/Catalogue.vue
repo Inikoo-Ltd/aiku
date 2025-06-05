@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCubes } from "@fal"
+import { faCubes, faSeedling } from "@fal"
 import { faCheckCircle, faTimesCircle } from "@fas"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -26,7 +26,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { routeType } from '@/types/route'
 import { Image as ImageProxy } from "@/types/Image"
 
-library.add(faCheckCircle, faTimesCircle, faCubes)
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling)
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -192,14 +192,12 @@ const isLoadingMeta = ref<string | null>(null)
                         </div>
                     </component>
                 </div>
-
-                
             </Link>
         </dl>
     </div>
     
     <!-- Section: Top of the Month -->
-    <div v-if="top_selling?.product?.value || top_selling?.department?.value || top_selling?.family?.value" class="p-6">
+    <div v-if="top_selling?.product?.value?.all || top_selling?.department?.value?.all || top_selling?.family?.value?.all" class="p-6">
         <div class="text-xl font-semibold py-1 border-b border-gray-200">{{ trans("Top of the month (Top_selling)") }}</div>
         <dl class="isolate mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:grid-rows-2 h-72">
             <!-- Top_selling: Product -->
