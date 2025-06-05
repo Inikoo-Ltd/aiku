@@ -149,6 +149,7 @@ class IndexDepartments extends OrgAction
                 'product_categories.updated_at',
                 'product_category_stats.number_current_families',
                 'product_category_stats.number_current_products',
+                'product_category_stats.number_current_sub_departments',
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
@@ -243,6 +244,7 @@ class IndexDepartments extends OrgAction
                 }
 
                 if (class_basename($parent) != 'Collection') {
+                    $table->column(key: 'number_current_sub_departments', label: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
                     $table->column(key: 'number_current_families', label: __('current families'), canBeHidden: false, sortable: true, searchable: true)
                             ->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
                 }

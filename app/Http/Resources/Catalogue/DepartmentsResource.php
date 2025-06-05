@@ -55,6 +55,7 @@ class DepartmentsResource extends JsonResource
             'updated_at'              => $this->updated_at,
             'number_current_families' => $this->number_current_families,
             'number_current_products' => $this->number_current_products,
+            'number_current_sub_departments' => $this->number_current_sub_departments,
             'sales'                   => $this->sales_all,
             'invoices'                => $this->invoices_all,
             'organisation_name'       => $this->organisation_name,
