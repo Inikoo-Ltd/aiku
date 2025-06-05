@@ -1,67 +1,79 @@
 <script setup lang="ts">
-import { faHeart } from '@far'
-import { faCircle, faStar } from '@fas'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { getStyles } from '@/Composables/styles'
-
-import { ref, onMounted, onUnmounted, inject } from 'vue'
-import axios from 'axios'
-import { notify } from '@kyvg/vue3-notification'
-
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { routeType } from '@/types/route'
+import { faHeart } from '@far';
+import { faCircle, faStar } from '@fas';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { getStyles } from "@/Composables/styles"
 
 const dummyProductImage = '/product/product_dummy.jpeg'
 const isMember = false
 
 const props = defineProps<{
-  fieldValue: {
-    products_route: {
-      iris: routeType
-      workshop:routeType
-    }
-    container?: any
-  }
-  webpageData?: any
-  blockData?: Object
-  screenType: 'mobile' | 'tablet' | 'desktop'
+	modelValue: any
+	webpageData?: any
+	blockData?: Object,
+  fieldValue?: any
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
-const layout = inject('layout', layoutStructure)
-
-const products = ref<any[]>([])
-const loading = ref(false)
-let timeoutId: any
-const q = ref('')
-const meta = ref(1)
-
-const fetchProducts = async () => {
-  loading.value = true
-  try {
-    const response = await axios.get(route(props.fieldValue.products_route.iris.name, props.fieldValue.products_route.iris.parameters))
-    products.value = response.data?.data ?? []
-  } catch (error) {
-    console.error('Failed to fetch products:', error)
-    notify({
-      title: 'Error',
-      text: 'Failed to load products.',
-      type: 'error',
-    })
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  fetchProducts()
-})
+const products = [
+  {
+    title: 'Macrame Soft Chandelier - Natural',
+    sku: 'Macrame-C1',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 41,
+    inStock: true,
+    memberOnly: true,
+    image: ''
+  },
+  {
+    title: 'Macrame Soft Chandelier - Black',
+    sku: 'Macrame-C2',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 41,
+    inStock: true,
+    memberOnly: true,
+    image: ''
+  },
+  {
+    title: 'Macrame Large Drop Chandelier - Natural',
+    sku: 'Macrame-C3',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 41,
+    inStock: true,
+    memberOnly: true,
+    image: ''
+  },
+  {
+    title: 'Macrame Large Drop Chandelier - Black',
+    sku: 'Macrame-C4',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 0,
+    inStock: false,
+    bestseller: true,
+    memberOnly: true,
+    image: ''
+  },
+]
 </script>
-
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4"
-    :style="getStyles(fieldValue.container?.properties, screenType)">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4" :style="getStyles(fieldValue.container?.properties, screenType)">
     <div v-for="(product, index) in products" :key="index" class="border p-3 relative rounded shadow-sm bg-white">
-
       <!-- Bestseller Badge -->
       <div v-if="product.bestseller"
         class="absolute top-2 left-2 bg-white border border-black text-black text-xs font-bold px-2 py-0.5 rounded">
@@ -105,7 +117,7 @@ onMounted(() => {
         <!-- Retail Price -->
         <div class="flex justify-between text-sm font-semibold">
           <span>£{{ product.price.toFixed(2) }} <span class="text-xs">({{ (product.price / 8).toFixed(2)
-          }}/Piece)</span></span>
+              }}/Piece)</span></span>
         </div>
       </div>
 
@@ -132,6 +144,5 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
 
 <style scoped></style>
