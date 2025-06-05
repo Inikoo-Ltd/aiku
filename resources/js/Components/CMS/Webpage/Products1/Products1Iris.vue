@@ -1,148 +1,223 @@
 <script setup lang="ts">
-import { faHeart } from '@far';
-import { faCircle, faStar } from '@fas';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { getStyles } from "@/Composables/styles"
-
-const dummyProductImage = '/product/product_dummy.jpeg'
-const isMember = false
+import { faTimes } from '@fas'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { getStyles } from '@/Composables/styles'
+import { ref, onMounted, inject, watch } from 'vue'
+import axios from 'axios'
+import { debounce } from 'lodash'
+import { notify } from '@kyvg/vue3-notification'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { routeType } from '@/types/route'
+import ProductRender from './ProductRender.vue'
 
 const props = defineProps<{
-	modelValue: any
-	webpageData?: any
-	blockData?: Object,
-  fieldValue?: any
-	screenType: "mobile" | "tablet" | "desktop"
+  fieldValue: {
+    products_route: {
+      iris: routeType
+      workshop: routeType
+    }
+    container?: any
+  }
+  webpageData?: any
+  blockData?: Object
+  screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const products = [
-  {
-    title: 'Macrame Soft Chandelier - Natural',
-    sku: 'Macrame-C1',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 41,
-    inStock: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Soft Chandelier - Black',
-    sku: 'Macrame-C2',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 41,
-    inStock: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Natural',
-    sku: 'Macrame-C3',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 41,
-    inStock: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
+const layout = inject('layout', layoutStructure)
+
+const products = ref<any[]>([])
+const loading = ref(false)
+const q = ref('')
+const orderBy = ref('created_at_desc')
+const page = ref(1)
+const lastPage = ref(1)
+
+const filterFamily = ref('')
+const filterPriceMin = ref<number | null>(null)
+const filterPriceMax = ref<number | null>(null)
+const showFilters = ref(false)
+
+function buildFilters() {
+  const filters: Record<string, any> = {}
+  if (filterPriceMin.value !== null) filters['between[price_min]'] = filterPriceMin.value
+  if (filterPriceMax.value !== null) filters['between[price_max]'] = filterPriceMax.value
+  return filters
+}
+
+const fetchProducts = async (isLoadMore = false) => {
+  loading.value = true
+  try {
+    const filters = buildFilters()
+    const response = await axios.get(route(props.fieldValue.products_route.iris.name, {
+      productCategory: props.fieldValue.products_route.iris.parameters[0],
+      ...filters,
+      index_sort: orderBy.value,
+      index_perPage: 25,
+      page: page.value,
+    }))
+    const data = response.data
+    lastPage.value = data?.meta.last_page ?? 1
+    if (isLoadMore) {
+      products.value = [...products.value, ...(data?.data ?? [])]
+    } else {
+      products.value = data?.data ?? []
+    }
+  } catch (error) {
+    console.error('Failed to fetch products:', error)
+    notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleSearch = () => {
+  page.value = 1
+  fetchProducts(false)
+}
+
+watch([q, orderBy, filterFamily, filterPriceMin, filterPriceMax], debounce(() => {
+  page.value = 1
+  fetchProducts(false)
+}, 500))
+
+const loadMore = () => {
+  if (page.value < lastPage.value) {
+    page.value += 1
+    fetchProducts(true)
+  }
+}
+
+const orderOptions = [
+  { label: 'Newest', value: 'created_at' },
+  { label: 'Oldest', value: '-created_at' },
+  { label: 'Price ↑', value: '-price' },
+  { label: 'Price ↓', value: 'price' },
 ]
+
+const selectOrder = (val: string) => {
+  orderBy.value = val
+  handleSearch()
+}
+
+onMounted(() => {
+  fetchProducts()
+})
 </script>
+
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4" :style="getStyles(fieldValue.container?.properties, screenType)">
-    <div v-for="(product, index) in products" :key="index" class="border p-3 relative rounded shadow-sm bg-white">
-      <!-- Bestseller Badge -->
-      <div v-if="product.bestseller"
-        class="absolute top-2 left-2 bg-white border border-black text-black text-xs font-bold px-2 py-0.5 rounded">
-        BESTSELLER
+  <div class="flex flex-col lg:flex-row">
+    <!-- Sidebar Filters -->
+    <aside
+      class="w-full lg:w-64 bg-gray-50 border-r p-4"
+      :class="{ hidden: screenType === 'mobile' && !showFilters }"
+    >
+      <h2 class="font-bold text-sm mb-4">Filters</h2>
+
+      <div class="mb-4">
+        <label class="text-sm font-semibold mb-1 block">Price Min</label>
+        <input
+          v-model.number="filterPriceMin"
+          type="number"
+          min="0"
+          placeholder="0"
+          class="w-full border rounded px-3 py-2"
+        />
       </div>
 
-      <!-- Favorite Icon -->
-      <FontAwesomeIcon :icon="faHeart" class="absolute top-2 right-2 text-gray-400 text-xl"></FontAwesomeIcon>
+      <div>
+        <label class="text-sm font-semibold mb-1 block">Price Max</label>
+        <input
+          v-model.number="filterPriceMax"
+          type="number"
+          min="0"
+          placeholder="99999999999"
+          class="w-full border rounded px-3 py-2"
+        />
+      </div>
+    </aside>
 
-      <!-- Product Image -->
-      <img :src="dummyProductImage" class="w-full h-62 object-cover mb-3 rounded" />
+    <!-- Main Content -->
+    <main class="flex-1">
+      <!-- Search & Sort Tabs -->
+      <div class="px-4 pt-4 pb-2 border-b flex flex-col md:flex-row justify-between items-center gap-4">
+        <!-- Mobile Filter Toggle -->
+        <button
+          class="lg:hidden px-3 py-1 border rounded text-sm text-white"
+          @click="showFilters = !showFilters"
+          style="background-color: #1F2937;"
+        >
+          {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+        </button>
 
-      <!-- Title -->
-      <div class="font-medium text-sm mb-1">{{ product.title }}</div>
+        <!-- Search Input -->
+        <div class="relative w-full md:w-1/3">
+          <input
+            v-model="q"
+            @keyup.enter="handleSearch"
+            type="text"
+            placeholder="Search products..."
+            class="w-full px-4 py-2 border rounded shadow-sm pr-10"
+          />
+          <button
+            v-if="q"
+            @click="() => { q = ''; handleSearch() }"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
+            aria-label="Clear search"
+          >
+            <FontAwesomeIcon :icon="faTimes" class="text-lg text-red-500" />
+          </button>
+        </div>
 
-      <!-- SKU and RRP -->
-      <div class="flex justify-between text-xs text-gray-600 mb-1">
-        <span>{{ product.sku }}</span>
-        <span>RRP: £{{ product.rrp }}/Piece</span>
+        <!-- Sort Tabs -->
+        <div class="flex space-x-6 border-b border-gray-300 overflow-x-auto">
+          <button
+            v-for="option in orderOptions"
+            :key="option.value"
+            @click="selectOrder(option.value)"
+            class="pb-2 text-sm font-medium whitespace-nowrap"
+            :class="{
+              'border-b-2 text-[#1F2937] border-[#1F2937]': orderBy === option.value,
+              'text-gray-600 hover:text-[#1F2937]': orderBy !== option.value
+            }"
+          >
+            {{ option.label }}
+          </button>
+        </div>
       </div>
 
-      <!-- Rating and Stock -->
-      <div class="flex justify-between items-center text-xs mb-2">
-        <!-- Stock -->
-        <div class="flex items-center gap-1 text-green-600">
-          <FontAwesomeIcon :icon="faCircle" class="text-[8px]"></FontAwesomeIcon>
-          <span>({{ product.stock }})</span>
-        </div>
-        <!-- Stars -->
-        <div class="flex items-center space-x-[1px] text-gray-500">
-          <FontAwesomeIcon v-for="i in 5" :key="i" :class="i <= product.rating ? 'fas' : 'far'" :icon="faStar"
-            class="text-xs"></FontAwesomeIcon>
-          <span class="ml-1">{{ product.stock }}</span>
-        </div>
-      </div>
-
-
-
-      <!-- Prices -->
-      <div class="mb-3">
-        <!-- Retail Price -->
-        <div class="flex justify-between text-sm font-semibold">
-          <span>£{{ product.price.toFixed(2) }} <span class="text-xs">({{ (product.price / 8).toFixed(2)
-              }}/Piece)</span></span>
+      <!-- Product Grid -->
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4"
+        :style="getStyles(fieldValue?.container?.properties, screenType)"
+      >
+        <div
+          v-if="products.length"
+          v-for="(product, index) in products"
+          :key="index"
+          class="border p-3 relative rounded shadow-sm bg-white"
+        >
+          <ProductRender :product="product" />
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div v-if="product.inStock" class="flex items-center gap-2">
-        <!-- Quantity Selector -->
-        <div class="flex items-center border px-2 rounded">
-          <button class="text-lg font-bold text-gray-600">-</button>
-          <span class="px-2 text-sm">1</span>
-          <button class="text-lg font-bold text-gray-600">+</button>
-        </div>
-        <!-- Order Button -->
-        <button class="bg-gray-800 text-white px-3 py-1 rounded text-sm w-full">
-          Order Now
+      <!-- Load More Button -->
+      <div v-if="page < lastPage" class="flex justify-center mt-4">
+        <button
+          @click="loadMore"
+          class="px-4 py-2 text-white rounded shadow"
+          :disabled="loading"
+          style="background-color: #1F2937;"
+        >
+          <span v-if="loading">Loading...</span>
+          <span v-else>Load More</span>
         </button>
       </div>
-
-      <!-- Out of Stock -->
-      <div v-else>
-        <button class="w-full text-sm px-3 py-1 bg-gray-300 text-gray-600 rounded" disabled>
-          Out of Stock
-        </button>
-      </div>
-    </div>
+    </main>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+aside {
+  transition: all 0.3s ease;
+}
+</style>

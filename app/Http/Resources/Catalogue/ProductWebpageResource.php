@@ -26,11 +26,16 @@ class ProductWebpageResource extends JsonResource
             'image_id'    => $product->image_id,
             'code'        => $product->code,
             'name'        => $product->name,
+            'stock'       => $product->available_quantity,
             'price'       => $product->price,
             'description' => $product->description,
             'state'       => $product->state,
             'created_at'  => $product->created_at,
             'updated_at'  => $product->updated_at,
+            'currency'     => $product->currency,
+            'units'         => $product->units,
+            'unit'       => $product->unit,
+            'status'     => $product->status,
             'images'      => ImageResource::collection($product->images)
         ];
     }
