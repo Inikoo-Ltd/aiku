@@ -16,7 +16,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import VisibleCheckmark from '@/Components/CMS/Fields/VisibleCheckmark.vue';
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
-import { getBlueprint, getBluprintPermissions } from '@/Composables/getBlueprintWorkshop'
+import { getBlueprint, getBluprintPermissions, getEditPermissions, getDeletePermissions, getHiddenPermissions } from '@/Composables/getBlueprintWorkshop'
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
@@ -210,12 +210,13 @@ const showWebpage = (activityItem: Daum) => {
                         <draggable :list="props.webpage.layout.web_blocks" handle=".handle" @change="onChangeOrderBlock"
                             ghost-class="ghost" group="column" itemKey="id" class="mt-2 space-y-1 shadow">
                             <template #item="{ element, index }">
-
+                              
                                 <div class="bg-slate-50 border border-gray-300" v-if="showWebpage(element)">
+                                    
                                     <div class="group flex justify-between items-center gap-x-2 relative w-full cursor-pointer"
                                         :class="openedBlockSideEditor === index ? 'bg-indigo-500 text-white' : 'hover:bg-gray-100'">
                                         <div class="h-10 flex items-center gap-x-2 py-2 px-3 w-full"
-                                            @click="() => !getBluprintPermissions(element.type) ? null : openedBlockSideEditor === index ? openedBlockSideEditor = null : openedBlockSideEditor = index">
+                                            @click="() => !getEditPermissions(element.web_block.layout.data) ? null : openedBlockSideEditor === index ? openedBlockSideEditor = null : openedBlockSideEditor = index">
                                             <div class="flex items-center justify-center">
                                                 <FontAwesomeIcon icon="fal fa-bars"
                                                     class="handle text-sm cursor-grab pr-3 mr-2" />
@@ -227,9 +228,9 @@ const showWebpage = (activityItem: Daum) => {
                                         </div>
 
                                         <div class="h-full text-base cursor-pointer">
-                                            <div v-if="getBluprintPermissions(element.type)"
+                                            <div 
                                                 class="flex h-full items-center">
-                                                <div @click="(e) => setShowBlock(e, element)" class="py-1 px-2"
+                                                <div v-if="getHiddenPermissions(element.web_block.layout.data)" @click="(e) => setShowBlock(e, element)" class="py-1 px-2"
                                                     :class="openedBlockSideEditor === index ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-gray-600'">
                                                     <FontAwesomeIcon v-if="!element.show"
                                                         v-tooltip="trans('Show this block')" icon="fal fa-eye-slash"
@@ -239,7 +240,7 @@ const showWebpage = (activityItem: Daum) => {
                                                         aria-hidden="true" />
                                                 </div>
 
-                                                <div @click="(e) => {
+                                                <div v-if="getDeletePermissions(element.web_block.layout.data)" @click="(e) => {
                                                     isLoadingDeleteBlock === element.id
                                                         ? false
                                                         : confirmDelete(e, element)
