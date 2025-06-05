@@ -69,12 +69,11 @@ const links = ref([
                     </div>
 
 
-                    <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
-                        <div class="text-sm font-medium">
-                            <span>{{ data.family.data?.name || "No label" }}</span>
+                    <div class="border-t pt-4 space-y-4 text-gray-700">
+                        <div class="font-bold">
+                            {{ data.family.data?.name || "No label" }}
                         </div>
-                        <div class="text-md">
-                            <span class="text-gray-400">{{ data.family.data?.description || "No description" }}</span>
+                        <div class="text-sm h-64 overflow-y-auto pr-1 text-justify" v-html="data.family.data?.description">
                         </div>
                     </div>
                 </div>

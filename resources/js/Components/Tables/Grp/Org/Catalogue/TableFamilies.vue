@@ -165,7 +165,7 @@ const isLoadingDetach = ref<string[]>([])
             <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink">
                 {{ family["sub_department_code"] }}
             </Link>
-            <span v-else class="text-xs text-gray-500">No sub department</span>
+            <span v-else class="text-xs text-gray-400 italic">-</span>
         </template>
 
         <template #cell(actions)="{ item }">
