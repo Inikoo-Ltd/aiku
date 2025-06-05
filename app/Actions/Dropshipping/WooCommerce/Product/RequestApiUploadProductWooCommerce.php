@@ -42,7 +42,7 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
             //             'src' => GetImgProxyUrl::run($image->getImage())
             //         ];
             //     }
-            // }  //TODO: fix this
+            // }  //TODO: fix this make function to return jpg
 
             $wooCommerceProduct = [
                 'name' => $portfolio->customer_product_name,
