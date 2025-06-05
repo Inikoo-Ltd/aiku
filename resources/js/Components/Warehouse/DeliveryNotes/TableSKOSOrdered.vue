@@ -28,6 +28,8 @@ import { faSkull } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import { inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 library.add(faArrowDown, faSkull)
 
 
@@ -37,6 +39,7 @@ defineProps<{
     state: string
 }>()
 
+const locale = inject('locale', aikuLocaleStructure)
 
 function deliveryNoteRoute(deliveryNote: Order) {
     // console.log(route().current())
@@ -143,7 +146,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
         <!-- Column: Reference -->
         <template #cell(quantity_required)="{ item }">
-            {{ item.quantity_required }}
+            {{ locale.number(item.quantity_required) }}
         </template>
 
         <!-- Column: Reference -->

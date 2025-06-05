@@ -101,6 +101,7 @@ class ShowDeliveryNote extends OrgAction
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $timeline = [];
+
         foreach (DeliveryNoteStateEnum::cases() as $state) {
             $timestamp = $deliveryNote->{$state->snake().'_at'}
                 ? $deliveryNote->{$state->snake().'_at'}
@@ -108,6 +109,7 @@ class ShowDeliveryNote extends OrgAction
 
             $timestamp = $timestamp ?: null;
             $label = $state->labels()[$state->value];
+            $formatTime = null;
             if ($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
                 if (
                     in_array($state, [DeliveryNoteStateEnum::QUEUED])
@@ -121,10 +123,18 @@ class ShowDeliveryNote extends OrgAction
                     $label .= ' (' . $deliveryNote->pickerUser->contact_name . ')';
                 }
             }
+
+            if ($state->value === DeliveryNoteStateEnum::UNASSIGNED->value) {
+                $timestamp = $deliveryNote->created_at;
+            } elseif ($state->value == DeliveryNoteStateEnum::QUEUED->value) {
+                $formatTime = 'PPp';
+            }
+
             $timeline[$state->value] = [
                 'label'     => $label,
                 'tooltip'   => $state->labels()[$state->value],
                 'key'       => $state->value,
+                'format_time'   => $formatTime,
                 'timestamp' => $timestamp
             ];
         }
