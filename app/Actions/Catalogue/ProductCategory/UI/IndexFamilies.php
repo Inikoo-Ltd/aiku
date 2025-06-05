@@ -164,6 +164,9 @@ class IndexFamilies extends OrgAction
                 'departments.slug as department_slug',
                 'departments.code as department_code',
                 'departments.name as department_name',
+                'sub_departments.slug as sub_department_slug',
+                'sub_departments.code as sub_department_code',
+                'sub_departments.name as sub_department_name',
                 'product_category_stats.number_current_products',
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
@@ -177,6 +180,7 @@ class IndexFamilies extends OrgAction
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
+            ->leftjoin('product_categories as sub_departments', 'sub_departments.id', 'product_categories.sub_department_id')
             ->allowedSorts(['code', 'name', 'shop_code', 'department_code','number_current_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -245,7 +249,8 @@ class IndexFamilies extends OrgAction
                     $table->column(key: 'department_code', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true);
 
                 if ($parent instanceof Group) {
                     $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
