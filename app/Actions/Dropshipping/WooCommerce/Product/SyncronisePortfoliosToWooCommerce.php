@@ -15,6 +15,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class SyncronisePortfoliosToWooCommerce extends RetinaAction
 {
@@ -34,7 +35,8 @@ class SyncronisePortfoliosToWooCommerce extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            RequestApiUploadProductWooCommerce::dispatch($wooCommerceUser, $portfolio);
+            RequestApiUploadProductWooCommerce::run($wooCommerceUser, $portfolio);
+            Sentry::captureMessage("Product uploaded: " . $portfolio->item->name);
         }
     }
 
