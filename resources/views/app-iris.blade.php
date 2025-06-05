@@ -37,10 +37,10 @@
         <link rel="stylesheet" href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('resources/css/app.css') }}">
         <link rel="stylesheet" href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('node_modules/@fortawesome/fontawesome-free/css/svg-with-js.min.css') }}">
         
-        {{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
+        {{ Vite::useHotFile('iris.hot')->ushttps://ds.test/app/sysadmin/dropshippingeBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
         @inertiaHead
 
-        @if(Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
             <!-- Google Tag Manager -->
             <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -51,7 +51,7 @@
         @endif
     </head>
     <body class="font-sans antialiased h-full">
-        @if(Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
             <!-- Google Tag Manager (noscript) -->
             <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W7RHCWJ8"
             height="0" width="0" style="display:none;visibility:hidden" title="google_tag"></iframe></noscript>
