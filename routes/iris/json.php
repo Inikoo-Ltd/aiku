@@ -6,7 +6,7 @@
  * copyright 2025
 */
 
-use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisProducts;
 use Illuminate\Support\Facades\Route;
 
-Route::get('product-category/{productCategory}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('product-category/{productCategory}/products', GetIrisProducts::class)->name('product_category.products.index');

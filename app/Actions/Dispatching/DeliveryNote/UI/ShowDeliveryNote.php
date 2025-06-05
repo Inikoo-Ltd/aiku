@@ -11,7 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexHandlingDeliveryNoteItems;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
@@ -20,8 +20,8 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
-use App\Http\Resources\Dispatching\HandlingDeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Catalogue\Shop;
@@ -137,7 +137,7 @@ class ShowDeliveryNote extends OrgAction
             fn ($item) => $item->pickings->isNotEmpty() && $item->is_completed === true
         );
 
-        $actions = [];
+
 
         $actions = match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
@@ -245,9 +245,8 @@ class ShowDeliveryNote extends OrgAction
             default => []
         };
 
-        return Inertia::render(
-            'Org/Dispatching/DeliveryNote',
-            [
+
+        $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
                 $deliveryNote,
@@ -264,6 +263,9 @@ class ShowDeliveryNote extends OrgAction
                 'icon'    => [
                     'icon'  => 'fal fa-truck',
                     'title' => __('delivery note')
+                ],
+                'afterTitle'    => [
+                    'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions' => $actions
             ],
@@ -286,7 +288,7 @@ class ShowDeliveryNote extends OrgAction
                 ),
                 'products' => [
                     'estimated_weight' => $estWeight,
-                    'number_items'     => $deliveryNote->stats->number_items,
+                    'number_items'     => $deliveryNote->number_items,
                 ],
                 'picker'   => $deliveryNote->pickerUser,
                 'packer'   => $deliveryNote->packerUser,
@@ -327,54 +329,82 @@ class ShowDeliveryNote extends OrgAction
                         'invoice'      => $deliveryNote->slug
                     ]
                 ],
-                ],
+            ],
             'delivery_note_state' => [
                 'value' => $deliveryNote->state,
                 'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
-                ],
+            ],
             'shipments' => [
-                    'submit_route' => [
-                        'name'       => 'grp.models.delivery-note.shipment.store',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-
-                    'fetch_route' => [
-                        'name'       => 'grp.json.shippers.index',
-                        'parameters' => [
-                            'organisation' => $deliveryNote->organisation->slug,
-                        ]
-                    ],
-
-                    'delete_route' => [
-                        'name'       => 'grp.models.delivery-note.shipment.detach',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
+                'submit_route' => [
+                    'name'       => 'grp.models.delivery-note.shipment.store',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
                 ],
 
+                'fetch_route' => [
+                    'name'       => 'grp.json.shippers.index',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug,
+                    ]
+                ],
+
+                'delete_route' => [
+                    'name'       => 'grp.models.delivery-note.shipment.detach',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ],
+
+
+
+        ];
+
+
+
+
+
+        $props = array_merge($props, $this->getItems($deliveryNote));
+
+
+        $inertiaResponse = Inertia::render(
+            'Org/Dispatching/DeliveryNote',
+            $props
+        );
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state==DeliveryNoteStateEnum::QUEUED ) {
+            $inertiaResponse->table(IndexDeliveryNoteItemsStateUnassigned::make()->tableStructure(deliveryNote: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
+
+        }else{
+            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
+
+        }
+
+
+        return $inertiaResponse;
+    }
+
+    public function getItems(DeliveryNote $deliveryNote): array
+    {
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state==DeliveryNoteStateEnum::QUEUED ) {
+            return [
+                DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
+                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
+
+            ];
+        }
+
+        return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
                 fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
                 : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
-            // DeliveryNoteTabsEnum::PICKINGS->value => $this->tab == DeliveryNoteTabsEnum::PICKINGS->value ?
-            //     fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))
-            //     : Inertia::lazy(fn () => HandlingDeliveryNoteItemsResource::collection(IndexHandlingDeliveryNoteItems::run($deliveryNote))),
-            ]
-        )
-        ->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
-        // ->table(IndexHandlingDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::PICKINGS->value));
+        ];
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $this->fillFromRequest($request);
-
-        $this->set('canEdit', $request->user()->authTo('hr.edit'));
-        $this->set('canViewUsers', $request->user()->authTo('users.view'));
-    }
 
     public function getBreadcrumbs(DeliveryNote $deliveryNote, string $routeName, array $routeParameters, string $suffix = ''): array
     {
