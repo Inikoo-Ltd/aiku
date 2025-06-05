@@ -2,21 +2,14 @@
 import { faHeart } from '@far'
 import { faCircle, faStar } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { getStyles } from '@/Composables/styles'
-import { ref, onMounted, onUnmounted, inject } from 'vue'
-import axios from 'axios'
-import { notify } from '@kyvg/vue3-notification'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { routeType } from '@/types/route'
 import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
 
-const dummyProductImage = '/product/product_dummy.jpeg'
-const isMember = false
+
 
 const locale = useLocaleStore();
 
-const props = defineProps<{
+defineProps<{
     product: {}
 }>()
 </script>
@@ -91,5 +84,3 @@ const props = defineProps<{
     </div>
 </template>
 
-
-<style scoped></style>

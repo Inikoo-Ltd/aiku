@@ -2,11 +2,11 @@
 import { faTimes } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from '@/Composables/styles'
-import { ref, onMounted, inject, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
-import { debounce } from 'lodash'
+
+//import { debounce } from 'lodash' commented becuse breaks SSR
 import { notify } from '@kyvg/vue3-notification'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { routeType } from '@/types/route'
 import ProductRender from './ProductRender.vue'
 
@@ -23,7 +23,6 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const layout = inject('layout', layoutStructure)
 
 const products = ref<any[]>([])
 const loading = ref(false)
