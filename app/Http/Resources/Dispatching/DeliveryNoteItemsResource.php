@@ -23,7 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_picked
  * @property mixed $org_stock_code
  * @property mixed $org_stock_name
- * @property mixed $is_completed
+ * @property mixed $is_handled
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
  * @property mixed $quantity_dispatched
@@ -69,31 +69,31 @@ class DeliveryNoteItemsResource extends JsonResource
                                     : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
-            'is_completed'        => $this->is_completed,
+            'is_handled'        => $this->is_handled,
             'is_packed'           => $this->quantity_packed == $this->quantity_picked,
             'picking_route'       => [
-                'name' => 'grp.models.delivery-note-item.picking.store',
+                'name' => 'grp.models.delivery_note_item.picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method' => 'post'
             ],
             'picking_all_route'       => [
-                'name' => 'grp.models.delivery-note-item.picking_all.store',
+                'name' => 'grp.models.delivery_note_item.picking_all.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method' => 'post'
             ],
             'not_picking_route'       => [
-                'name' => 'grp.models.delivery-note-item.not-picking.store',
+                'name' => 'grp.models.delivery_note_item.not_picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method' => 'post'
             ],
             'packing_route'       => [
-                'name' => 'grp.models.delivery-note-item.packing.store',
+                'name' => 'grp.models.delivery_note_item.packing.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],

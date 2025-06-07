@@ -1,49 +1,52 @@
 <?php
-/*
- * author Arya Permana - Kirin
- * created on 05-06-2025-15h-52m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
-
 
 /*
- * author Arya Permana - Kirin
- * created on 23-05-2025-14h-36m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 06 Jun 2025 10:50:40 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class RemovePickerDeliveryNote extends OrgAction
+class UpdateDeliveryNoteStateToUnassigned extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         data_set($modelData, 'queued_at', null);
         data_set($modelData, 'state', DeliveryNoteStateEnum::UNASSIGNED->value);
         data_set($modelData, 'picker_user_id', null);
 
-        foreach ($deliveryNote->deliveryNoteItems as $item) {
-            UpdateDeliveryNoteItem::make()->action($item, [
-                'state' => DeliveryNoteItemStateEnum::UNASSIGNED
-            ]);
-        }
 
-        return $this->update($deliveryNote, $modelData);
+        return DB::transaction(function () use ($deliveryNote, $modelData) {
+            UpdateDeliveryNote::run($deliveryNote, $modelData);
+
+            DB::table('delivery_note_items')
+                ->where('delivery_note_id', $deliveryNote->id)
+                ->update(['state' => DeliveryNoteItemStateEnum::UNASSIGNED->value]);
+
+            DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
+
+            return $deliveryNote;
+        });
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
@@ -51,6 +54,9 @@ class RemovePickerDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
         $this->asAction = true;

@@ -194,8 +194,8 @@ class Handler extends ExceptionHandler
             };
         }
 
-        $routeName='';
-        if($request->route()) {
+        $routeName = '';
+        if ($request->route()) {
             $routeName = $request->route()->getName();
         }
 
