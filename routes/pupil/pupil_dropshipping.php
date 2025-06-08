@@ -13,7 +13,6 @@ use App\Actions\Pupil\IndexPupilProducts;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexPupilPortfolios;
-use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {

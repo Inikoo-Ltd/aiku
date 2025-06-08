@@ -19,6 +19,7 @@ use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForBasket;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -38,6 +39,9 @@ use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
+
+Route::get('select-products-for-basket/{customerSalesChannel:id}', IndexRetinaDropshippingProductsForBasket::class)->name('select_products_for_basket');
+
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('/', IndexDropshippingCustomerSalesChannels::class)->name('index');
@@ -73,7 +77,6 @@ Route::prefix('orders')->as('orders.')->group(function () {
 });
 
 Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
-
     Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
 
     Route::prefix('basket')->as('basket.')->group(function () {
