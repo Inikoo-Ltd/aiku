@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Basket\UI;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Dropshipping\SelectProductsForBasketResource;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,13 +19,15 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingProductsForBasket extends RetinaAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
+    public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
+
+        $customerSalesChannel = $order->customerSalesChannel;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('customer_clients.name', $value)
-                    ->orWhereStartWith('customer_clients.email', $value)
-                    ->orWhere('customer_clients.reference', '=', $value);
+                $query->whereAnyWordStartWith('products.name', $value)
+                    ->orWhereStartWith('products.code', $value)
+                    ->orWhereStartWith('portfolios.reference', $value);
             });
         });
 
@@ -43,6 +45,12 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
                 ->where('portfolios.customer_sales_channel_id', '=', $customerSalesChannel->id);
         });
 
+        $query->leftJoin('transactions', function ($join) use ($order) {
+            $join->on('transactions.model_id', '=', 'products.id')
+                ->where('transactions.model_type', '=', 'Product')
+                ->where('transactions.order_id', '=', $order->id);
+        });
+
 
         if ($this->customer->number_exclusive_products > 0) {
             $query->where(function ($query) {
@@ -50,7 +58,7 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
                     ->orWhere('products.exclusive_for_customer_id', $this->customer->id);
             });
         } else {
-            $query->whereIn('products.is_for_sale', true);
+            $query->where('products.is_for_sale', true);
 
         }
 
@@ -62,7 +70,9 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
             'products.price',
             'products.available_quantity',
             'products.image_id',
-
+            'portfolios.reference as portfolio_reference',
+            'transactions.id as transaction_id',
+            'transactions.quantity_ordered',
         ]);
 
 
@@ -73,12 +83,12 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
     }
 
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
+    public function asController(Order $order, ActionRequest $request): LengthAwarePaginator
     {
 
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel, 'products');
+        return $this->handle($order, 'products');
     }
 
     public function jsonResponse(LengthAwarePaginator $productsForBasket): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource

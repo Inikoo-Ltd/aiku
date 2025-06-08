@@ -40,7 +40,7 @@ use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('select-products-for-basket/{customerSalesChannel:id}', IndexRetinaDropshippingProductsForBasket::class)->name('select_products_for_basket');
+Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProductsForBasket::class)->name('select_products_for_basket');
 
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {

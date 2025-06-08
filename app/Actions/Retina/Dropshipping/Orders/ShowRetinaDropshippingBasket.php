@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UI\GetOrderAddressManagement;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
-use App\Actions\Ordering\Transaction\UI\IndexTransactions;
+use App\Actions\Ordering\Transaction\UI\RetinaIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
@@ -20,7 +20,7 @@ use App\Enums\UI\Ordering\BasketTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
-use App\Http\Resources\Ordering\TransactionsResource;
+use App\Http\Resources\Ordering\RetinaTransactionsInBasketResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Http\Resources\Sales\RetinaDropshippingBasketResource;
 use App\Models\Helpers\Address;
@@ -94,7 +94,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'select_products'     => [
                         'name'       => 'retina.dropshipping.select_products_for_basket',
                         'parameters' => [
-                            'customerSalesChannel' => $order->customer_sales_channel_id
+                            'order' => $order->id
                         ],
                         'method'     => 'patch'
                     ],
@@ -177,15 +177,15 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
-                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
+                    fn () => RetinaTransactionsInBasketResource::collection(RetinaIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => RetinaTransactionsInBasketResource::collection(RetinaIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
 
 
             ]
         )
             ->table(
-                IndexTransactions::make()->tableStructure(
-                    parent: $order,
+                RetinaIndexTransactionsInBasket::make()->tableStructure(
+                    order: $order,
                     tableRows: $nonProductItems,
                     prefix: BasketTabsEnum::TRANSACTIONS->value
                 )

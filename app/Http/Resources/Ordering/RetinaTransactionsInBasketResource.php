@@ -2,13 +2,12 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 06 Apr 2024 09:40:37 Central Indonesia Time, Bali Office, Indonesia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sun, 08 Jun 2025 21:35:46 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Http\Resources\Ordering;
 
-use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -38,19 +37,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $order_id
  * @property mixed $price
  */
-class TransactionsResource extends JsonResource
+class RetinaTransactionsInBasketResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
             'id'                  => $this->id,
-            'state'               => $this->state,
-            'status'              => $this->status,
             'quantity_ordered'    => $this->quantity_ordered,
             'quantity_bonus'      => $this->quantity_bonus,
-            'quantity_dispatched' => $this->quantity_dispatched,
-            'quantity_fail'       => $this->quantity_fail,
-            'quantity_cancelled'  => $this->quantity_cancelled,
             'gross_amount'        => $this->gross_amount,
             'net_amount'          => $this->net_amount,
             'price'               => $this->price,
@@ -61,36 +55,20 @@ class TransactionsResource extends JsonResource
             'created_at'          => $this->created_at,
             'currency_code'       => $this->currency_code,
 
-            'deleteRoute' => $request->user() instanceof User
-                ? [
-                    'name'       => 'grp.models.transaction.delete',
-                    'parameters' => [
-                        'transaction' => $this->id
-                    ],
-                    'method'     => 'delete'
-                ]
-                : [
-                    'name'       => 'retina.models.transaction.delete',
-                    'parameters' => [
-                        'transaction' => $this->id
-                    ],
-                    'method'     => 'delete'
+            'deleteRoute' => [
+                'name'       => 'retina.models.transaction.delete',
+                'parameters' => [
+                    'transaction' => $this->id
                 ],
-            'updateRoute' => $request->user() instanceof User
-                ? [
-                    'name'       => 'grp.models.transaction.update',
-                    'parameters' => [
-                        'transaction' => $this->id
-                    ],
-                    'method'     => 'patch'
-                ]
-                : [
-                    'name'       => 'retina.models.transaction.update',
-                    'parameters' => [
-                        'transaction' => $this->id
-                    ],
-                    'method'     => 'patch'
+                'method'     => 'delete'
+            ],
+            'updateRoute' => [
+                'name'       => 'retina.models.transaction.update',
+                'parameters' => [
+                    'transaction' => $this->id
                 ],
+                'method'     => 'patch'
+            ],
         ];
     }
 }
