@@ -81,7 +81,7 @@ class DeleteProductCategory extends OrgAction
         }
 
         if ($this->productCategory->children()->exists()) {
-            $validator->errors()->add('children', 'This category has sub-categories associated with it.');
+            $validator->errors()->add('children', 'This category has children associated with it.');
         }
     }
 

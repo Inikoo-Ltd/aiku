@@ -130,6 +130,15 @@ class DeleteAuroraWebProductCategories
                 }
 
                 print 'D '.$department->name." $department->id  $department->source_department_id \n";
+
+                DB::table('product_categories')->where('parent_id', $department->id)->update(['parent_id' => null]);
+                DB::table('product_categories')->where('department_id', $department->id)->update(['department_id' => null]);
+
+                DB::table('products')->where('department_id', $department->id)->update(['department_id' => null]);
+                DB::table('favourites')->where('department_id', $department->id)->update(['department_id' => null]);
+                DB::table('invoice_transactions')->where('department_id', $department->id)->update(['department_id' => null]);
+
+
                 DeleteProductCategory::make()->action($department, true);
                 // dd($department);
 
