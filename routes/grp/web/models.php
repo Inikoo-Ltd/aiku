@@ -291,9 +291,6 @@ Route::post('master-product/{masterProductCategory:id}/image', UploadImageMaster
 
 Route::post('master-product/{masterDepartment:id}/master-sub-departments/store', StoreMasterSubDepartment::class)->name('master_product.master_sub_departments.store')->withoutScopedBindings();
 
-Route::prefix('delivery-note/{deliveryNote:id}')->name('delivery_note.')->group(function () {
-    Route::post('shipment', UpdateStockFamily::class)->name('update')->withoutScopedBindings();
-});
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
     Route::patch('{stockFamily:id}/update', UpdateStockFamily::class)->name('update');
