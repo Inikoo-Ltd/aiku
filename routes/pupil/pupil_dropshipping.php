@@ -12,6 +12,7 @@ use App\Actions\Pupil\IndexPupilPlatformCustomerClients;
 use App\Actions\Pupil\IndexPupilProducts;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
+use App\Actions\Retina\Dropshipping\Portfolio\IndexPupilPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use Illuminate\Support\Facades\Route;
 
@@ -22,7 +23,7 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     });
 
     Route::prefix('portfolios')->as('portfolios.')->group(function () {
-        Route::get('my-portfolio', [IndexRetinaPortfolios::class, 'inPupil'])->name('index');
+        Route::get('my-portfolio', IndexPupilPortfolios::class)->name('index');
         Route::get('products', IndexPupilProducts::class)->name('products.index');
     });
 

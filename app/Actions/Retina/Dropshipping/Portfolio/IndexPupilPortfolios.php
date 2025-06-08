@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Mon, 14 Oct 2024 14:05:52 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 08 Jun 2025 12:07:53 Malaysia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
@@ -12,12 +12,13 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Dropshipping\DropshippingPortfolioResource;
+use App\Http\Resources\Dropshipping\PupilPortfolioResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -25,10 +26,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaPortfolios extends RetinaAction
+class IndexPupilPortfolios extends RetinaAction
 {
     private CustomerSalesChannel $customerSalesChannel;
-
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $unUploadedFilter = AllowedFilter::callback('un_upload', function ($query) {
@@ -44,9 +44,11 @@ class IndexRetinaPortfolios extends RetinaAction
         }
         $query->with(['item']);
 
-
-        $query->where('item_type', class_basename(Product::class));
-
+        if ($this->customer->is_fulfilment) {
+            $query->where('item_type', class_basename(StoredItem::class));
+        } else {
+            $query->where('item_type', class_basename(Product::class));
+        }
 
         return $query->defaultSort('-id')
             ->allowedFilters([$unUploadedFilter])
@@ -60,7 +62,6 @@ class IndexRetinaPortfolios extends RetinaAction
         if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
-
         return false;
     }
 
@@ -75,7 +76,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
     {
-        return DropshippingPortfolioResource::collection($portfolios);
+        return PupilPortfolioResource::collection($portfolios);
     }
 
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
@@ -101,12 +102,12 @@ class IndexRetinaPortfolios extends RetinaAction
                 'title'       => $title,
                 'is_manual'   => $manual,
                 'pageHead'    => [
-                    'title' => $title,
-                    'model' => $platformName,
-                    'icon'  => 'fal fa-cube'
+                    'title'   => $title,
+                    'model'   =>  $platformName,
+                    'icon'    => 'fal fa-cube'
                 ],
-                'routes'      => [
-                    'bulk_upload'               => match ($this->customerSalesChannel->platform->type) {
+                'routes'    => [
+                    'bulk_upload'  => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::SHOPIFY => [
                             'name'       => 'retina.models.dropshipping.shopify.batch_upload',
                             'parameters' => [
@@ -121,32 +122,32 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         default => false
                     },
-                    'itemRoute'                 => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
+                    'itemRoute' => [
+                        'name' => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug
                         ]
                     ],
-                    'addPortfolioRoute'         => [
-                        'name'       => 'retina.models.customer_sales_channel.customer.product.store',
+                    'addPortfolioRoute' => [
+                        'name' => 'retina.models.customer_sales_channel.customer.product.store',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
-                    'updatePortfolioRoute'      => [
-                        'name'       => 'retina.models.portfolio.update',
+                    'updatePortfolioRoute' => [
+                        'name' => 'retina.models.portfolio.update',
                         'parameters' => []
                     ],
-                    'deletePortfolioRoute'      => [
-                        'name'       => 'retina.models.portfolio.delete',
+                    'deletePortfolioRoute' => [
+                        'name' => 'retina.models.portfolio.delete',
                         'parameters' => []
                     ],
                     'batchDeletePortfolioRoute' => [
-                        'name'       => 'retina.models.customer_sales_channel.portfolio.batch.delete',
+                        'name' => 'retina.models.customer_sales_channel.portfolio.batch.delete',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ],
-                        'method'     => 'post'
+                        'method' => 'post'
                     ],
                 ],
                 'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
@@ -156,12 +157,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'platform' => $this->platform->id
                     ]
                 ] : [],
-                'content'     => [
+                'content' => [
                     'portfolio_empty' => [
-                        'title'       => __("You don't have any items in your portfolio"),
+                        'title' => __("You don't have any items in your portfolio"),
                         'description' => __("To get started, add products to your portfolios."),
-                        'separation'  => __("or"),
-                        'add_button'  => __("Add Portfolio"),
+                        'separation' => __("or"),
+                        'add_button' => __("Add Portfolio"),
                     ]
                 ],
                 'tabs'        => [
@@ -169,15 +170,15 @@ class IndexRetinaPortfolios extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'step'             => [
+                'step' => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
                         default => 0
                     }
                 ],
                 'platform_user_id' => $this->customerSalesChannel->user?->id,
-                'platform_data'    => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
-                'products'         => DropshippingPortfolioResource::collection($portfolios)
+                'platform_data' => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
+                'products' => PupilPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));
     }
@@ -221,7 +222,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.customer_sales_channels.basket.index',
+                                'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
                                 'parameters' => [
                                     $customerSalesChannel->slug
                                 ]
