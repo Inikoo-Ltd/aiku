@@ -24,21 +24,20 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRedirect extends OrgAction
 {
-    public function handle(Webpage $parent, array $modelData): Redirect
+    public function handle(Webpage $webpage, array $modelData): Redirect
     {
-        data_set($modelData, 'group_id', $parent->group_id);
-        data_set($modelData, 'organisation_id', $parent->organisation_id);
-        data_set($modelData, 'shop_id', $parent->shop_id);
-        data_set($modelData, 'website_id', $parent->website_id);
+        data_set($modelData, 'group_id', $webpage->group_id);
+        data_set($modelData, 'organisation_id', $webpage->organisation_id);
+        data_set($modelData, 'shop_id', $webpage->shop_id);
+        data_set($modelData, 'website_id', $webpage->website_id);
 
         $path = Arr::get($modelData, 'path');
-        $url = $parent->website->domain . '/' . $path;
+        $url = $webpage->website->domain . '/' . $path;
 
         data_set($modelData, 'url', $url);
-        /** @var Redirect $redirect */
-        $redirect = $parent->redirects()->create($modelData);
 
-        return $redirect;
+        return $webpage->redirects()->create($modelData);
+
     }
 
     public function rules(): array

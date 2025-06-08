@@ -66,9 +66,9 @@ class RetinaIndexTransactionsInBasket extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Order $order,$tableRows = null, $prefix = null): Closure
+    public function tableStructure(Order $order, $tableRows = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $tableRows,$order) {
+        return function (InertiaTable $table) use ($prefix, $tableRows, $order) {
             if ($prefix) {
                 $table
                     ->name($prefix)
