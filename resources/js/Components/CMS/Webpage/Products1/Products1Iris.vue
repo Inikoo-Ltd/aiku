@@ -126,10 +126,12 @@ const isMobile = computed(() => props.screenType === 'mobile')
 onMounted(() => {
   fetchProducts()
 })
+
+console.log('Products1Iris mounted with fieldValue:', props.fieldValue)
 </script>
 
 <template>
-  <div class="flex flex-col lg:flex-row">
+  <div class="flex flex-col lg:flex-row" :style="getStyles(fieldValue.container?.properties, screenType)">
     <!-- Sidebar Filters for Desktop & Tablet -->
     <aside v-if="!isMobile" class="w-68 p-4 transition-all duration-300 ease-in-out">
       <FilterProducts v-model="filter" />

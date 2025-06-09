@@ -3,7 +3,7 @@ import { faCube, faLink } from "@fal"
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, provide, inject, toRaw } from "vue"
-import { getIrisComponent } from "@/Composables/getIrisComponents"
+import { getComponent } from "@/Composables/getWorkshopComponents"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
@@ -103,7 +103,7 @@ provide("currentView", currentView);
         </div>
       </div>
       <div v-if="layout?.code" class="relative flex-1 overflow-hidden">
-        <component class="w-full" :is="getIrisComponent(layout.code)" :fieldValue="layout.data.fieldValue" />
+        <component class="w-full" :is="getComponent(layout.code)" :modelValue="layout.data.fieldValue" />
       </div>
       <div v-else>
         <EmptyState />
