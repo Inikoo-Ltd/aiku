@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-06-2025-11h-47m
@@ -15,10 +16,10 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\WooCommerceUser;
-use Illuminate\Support\Arr;
+use Inertia\Inertia;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Symfony\Component\HttpFoundation\Response;
 
 class StoreEbayUser extends OrgAction
 {
@@ -33,8 +34,7 @@ class StoreEbayUser extends OrgAction
 
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'name', Arr::get($modelData, 'name'));
-        data_set($modelData, 'settings.credentials.store_url', Arr::pull($modelData, 'store_url'));
+        data_set($modelData, 'name', $customer->name); // For store only, later will updated in callback
         data_set($modelData, 'platform_id', $platform->id);
 
         /** @var EbayUser $ebayUser */
@@ -50,8 +50,12 @@ class StoreEbayUser extends OrgAction
         $ebayUser->update([
             'customer_sales_channel_id' => $customerSalesChannel->id,
         ]);
+
         return $ebayUser;
+    }
 
-
+    public function htmlResponse(EbayUser $ebayUser): Response
+    {
+        return Inertia::location($ebayUser->getEbayAuthUrl());
     }
 }
