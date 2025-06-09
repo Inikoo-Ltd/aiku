@@ -54,7 +54,7 @@ class RetinaTransactionsInBasketResource extends JsonResource
             'product_slug'       => $this->product_slug,
             'created_at'         => $this->created_at,
             'currency_code'      => $this->currency_code,
-            'quantity_available' => $this->quantity_available ?? 0,
+            'available_quantity' => $this->available_quantity ?? 0,
 
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',

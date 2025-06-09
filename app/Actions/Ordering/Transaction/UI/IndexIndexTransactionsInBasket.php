@@ -56,7 +56,7 @@ class IndexIndexTransactionsInBasket extends OrgAction
                 'assets.name as asset_name',
                 'assets.type as asset_type',
                 'products.price as price',
-                'products.quantity_available as quantity_available',
+                'products.available_quantity as available_quantity',
                 'products.slug as product_slug',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
