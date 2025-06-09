@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { faTimes } from '@fas'
+import { faFilter, faTimes } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from '@/Composables/styles'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
-
-//import { debounce } from 'lodash' commented becuse breaks SSR
+import Button from '@/Components/Elements/Buttons/Button.vue'
+// import { debounce } from 'lodash-es' // Uncomment if needed and SSR-safe
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import ProductRender from './ProductRender.vue'
+import FilterProducts from './FilterProduct.vue'
+import Drawer from 'primevue/drawer'
 
 const props = defineProps<{
   fieldValue: {
@@ -23,30 +25,39 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-
 const products = ref<any[]>([])
 const loading = ref(false)
 const q = ref('')
 const orderBy = ref('created_at_desc')
 const page = ref(1)
 const lastPage = ref(1)
-
-const filterFamily = ref('')
-const filterPriceMin = ref<number | null>(null)
-const filterPriceMax = ref<number | null>(null)
+const filter = ref({ data: {} })
 const showFilters = ref(false)
 
-function buildFilters() {
+function buildFilters(): Record<string, any> {
   const filters: Record<string, any> = {}
-  if (filterPriceMin.value !== null) filters['between[price_min]'] = filterPriceMin.value
-  if (filterPriceMax.value !== null) filters['between[price_max]'] = filterPriceMax.value
+  const raw = filter.value.data || {}
+
+  for (const [key, val] of Object.entries(raw)) {
+    if (val === null || val === undefined || val === '') continue
+    if (typeof val === 'object' && !Array.isArray(val)) {
+      for (const [subKey, subVal] of Object.entries(val)) {
+        if (subVal === null || subVal === undefined || subVal === '') continue
+        filters[subKey] = subVal
+      }
+    } else {
+      filters[key] = val
+    }
+  }
+
   return filters
 }
 
 const fetchProducts = async (isLoadMore = false) => {
   loading.value = true
+  const filters = buildFilters()
+
   try {
-    const filters = buildFilters()
     const response = await axios.get(route(props.fieldValue.products_route.iris.name, {
       productCategory: props.fieldValue.products_route.iris.parameters[0],
       ...filters,
@@ -56,13 +67,13 @@ const fetchProducts = async (isLoadMore = false) => {
     }))
     const data = response.data
     lastPage.value = data?.meta.last_page ?? 1
+
     if (isLoadMore) {
       products.value = [...products.value, ...(data?.data ?? [])]
     } else {
       products.value = data?.data ?? []
     }
   } catch (error) {
-    console.error('Failed to fetch products:', error)
     notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
   } finally {
     loading.value = false
@@ -74,10 +85,15 @@ const handleSearch = () => {
   fetchProducts(false)
 }
 
-watch([q, orderBy, filterFamily, filterPriceMin, filterPriceMax], debounce(() => {
+watch([q, orderBy], () => {
   page.value = 1
   fetchProducts(false)
-}, 500))
+}, { deep: true })
+
+watch(filter, () => {
+  page.value = 1
+  fetchProducts(false)
+}, { deep: true })
 
 const loadMore = () => {
   if (page.value < lastPage.value) {
@@ -98,6 +114,8 @@ const selectOrder = (val: string) => {
   handleSearch()
 }
 
+const isMobile = computed(() => props.screenType === 'mobile')
+
 onMounted(() => {
   fetchProducts()
 })
@@ -105,62 +123,36 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col lg:flex-row">
-    <!-- Sidebar Filters -->
-    <aside
-      class="w-full lg:w-64 bg-gray-50 border-r p-4"
-      :class="{ hidden: screenType === 'mobile' && !showFilters }"
-    >
-      <h2 class="font-bold text-sm mb-4">Filters</h2>
-
-      <div class="mb-4">
-        <label class="text-sm font-semibold mb-1 block">Price Min</label>
-        <input
-          v-model.number="filterPriceMin"
-          type="number"
-          min="0"
-          placeholder="0"
-          class="w-full border rounded px-3 py-2"
-        />
-      </div>
-
-      <div>
-        <label class="text-sm font-semibold mb-1 block">Price Max</label>
-        <input
-          v-model.number="filterPriceMax"
-          type="number"
-          min="0"
-          placeholder="99999999999"
-          class="w-full border rounded px-3 py-2"
-        />
-      </div>
+    <!-- Sidebar Filters for Desktop & Tablet -->
+    <aside v-if="!isMobile" class="w-68  p-4 transition-all duration-300 ease-in-out">
+      <FilterProducts v-model="filter" />
     </aside>
 
     <!-- Main Content -->
     <main class="flex-1">
       <!-- Search & Sort Tabs -->
-      <div class="px-4 pt-4 pb-2 border-b flex flex-col md:flex-row justify-between items-center gap-4">
-        <!-- Mobile Filter Toggle -->
-        <button
-          class="lg:hidden px-3 py-1 border rounded text-sm text-white"
-          @click="showFilters = !showFilters"
-          style="background-color: #1F2937;"
-        >
-          {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
-        </button>
-
-        <!-- Search Input -->
-        <div class="relative w-full md:w-1/3">
+      <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+        <!-- Search Input + Mobile Filter Button -->
+        <div class="flex items-center w-full md:w-1/3 gap-2">
+          <!-- Filter toggle only on mobile -->
+          <Button
+            v-if="isMobile"
+            :icon="faFilter"
+            @click="showFilters = true"
+            class="!p-2 !w-auto"
+            aria-label="Open Filters"
+          />
           <input
             v-model="q"
             @keyup.enter="handleSearch"
             type="text"
             placeholder="Search products..."
-            class="w-full px-4 py-2 border rounded shadow-sm pr-10"
+            class="flex-grow px-4 py-2 border rounded shadow-sm pr-10"
           />
           <button
             v-if="q"
             @click="() => { q = ''; handleSearch() }"
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
+            class="text-gray-400 hover:text-black"
             aria-label="Clear search"
           >
             <FontAwesomeIcon :icon="faTimes" class="text-lg text-red-500" />
@@ -168,7 +160,7 @@ onMounted(() => {
         </div>
 
         <!-- Sort Tabs -->
-        <div class="flex space-x-6 border-b border-gray-300 overflow-x-auto">
+        <div class="flex space-x-6 border-b border-gray-300 overflow-x-auto mt-2 md:mt-0">
           <button
             v-for="option in orderOptions"
             :key="option.value"
@@ -212,6 +204,26 @@ onMounted(() => {
         </button>
       </div>
     </main>
+
+    <!-- PrimeVue Drawer for Mobile Filters -->
+    <Drawer
+      v-model:visible="showFilters"
+      position="left"
+      :modal="true"
+      :dismissable="true"
+      :closeOnEscape="true"
+      class="w-80 transition-transform duration-300 ease-in-out"
+    >
+      <div class="flex justify-between items-center px-4 py-2 border-b">
+        <h3 class="text-lg font-semibold">Filters</h3>
+        <button @click="showFilters = false" aria-label="Close filters">
+          <FontAwesomeIcon :icon="faTimes" class="text-xl" />
+        </button>
+      </div>
+      <div class="p-4">
+        <FilterProducts v-model="filter" />
+      </div>
+    </Drawer>
   </div>
 </template>
 
