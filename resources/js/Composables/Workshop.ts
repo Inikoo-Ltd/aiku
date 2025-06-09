@@ -89,6 +89,13 @@ export const irisStyleVariables = (layoutColor: string[]) => {
     const root = document.documentElement
     root.style.setProperty('--iris-color-primary', layoutColor[0])
     root.style.setProperty('--iris-color-secondary', layoutColor[2])
+    
+    root.style.setProperty('--iris-color-0', layoutColor[0])  // var(--iris-color-0)
+    root.style.setProperty('--iris-color-1', layoutColor[1])
+    root.style.setProperty('--iris-color-2', layoutColor[2])
+    root.style.setProperty('--iris-color-3', layoutColor[3])
+    root.style.setProperty('--iris-color-4', layoutColor[4])
+    root.style.setProperty('--iris-color-5', layoutColor[5])
 }
 
 

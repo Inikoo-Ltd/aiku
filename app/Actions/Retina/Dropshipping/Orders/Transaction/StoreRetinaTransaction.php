@@ -13,6 +13,7 @@ use App\Actions\RetinaAction;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -50,5 +51,10 @@ class StoreRetinaTransaction extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($order, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }
