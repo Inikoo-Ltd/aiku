@@ -32,7 +32,7 @@ class SubDepartmentsResource extends JsonResource
     public function toArray($request): array
     {
         $subDepartment =  ProductCategory::find($this->id);
-        
+
         return [
             'id'                 => $this->id,
             'name'               => $this->name,

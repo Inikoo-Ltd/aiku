@@ -291,9 +291,6 @@ Route::post('master-product/{masterProductCategory:id}/image', UploadImageMaster
 
 Route::post('master-product/{masterDepartment:id}/master-sub-departments/store', StoreMasterSubDepartment::class)->name('master_product.master_sub_departments.store')->withoutScopedBindings();
 
-Route::prefix('delivery-note/{deliveryNote:id}')->name('delivery_note.')->group(function () {
-    Route::post('shipment', UpdateStockFamily::class)->name('update')->withoutScopedBindings();
-});
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
     Route::patch('{stockFamily:id}/update', UpdateStockFamily::class)->name('update');
@@ -818,6 +815,8 @@ require __DIR__."/models/inventory/location_org_stock.php";
 require __DIR__."/models/inventory/warehouse_area.php";
 require __DIR__."/models/inventory/location.php";
 require __DIR__."/models/ordering/order.php";
+require __DIR__."/models/dispatching/delivery_note.php";
+require __DIR__."/models/dispatching/delivery_note_item.php";
 require __DIR__."/models/stock/stock.php";
 require __DIR__."/models/accounting/invoice.php";
 require __DIR__."/models/accounting/refund.php";

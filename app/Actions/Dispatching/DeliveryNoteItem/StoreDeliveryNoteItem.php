@@ -49,7 +49,7 @@ class StoreDeliveryNoteItem extends OrgAction
         if ($deliveryNoteItem->transaction_id && $deliveryNoteItem->transaction->asset) {
             AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset)->delay($this->hydratorsDelay);
         }
-        
+
         $deliveryNote->refresh();
         CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
 

@@ -18,7 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_picked
  * @property mixed $org_stock_code
  * @property mixed $org_stock_name
- * @property mixed $is_completed
+ * @property mixed $is_handled
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
  * @property mixed $quantity_dispatched

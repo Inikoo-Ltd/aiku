@@ -20,6 +20,7 @@ use App\Models\Accounting\Payment;
 use App\Models\Accounting\TopUp;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Catalogue\Asset;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
@@ -124,6 +125,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $current_order_in_basket_id
  * @property string|null $first_name
  * @property string|null $last_name
+ * @property int $number_exclusive_products
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
@@ -138,6 +140,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Platform> $customerSalesChannelsXXX
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
  * @property-read Group $group
@@ -463,5 +466,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function mitSavedCard(): HasMany
     {
         return $this->hasMany(MitSavedCard::class);
+    }
+
+    public function exclusiveProducts(): HasMany
+    {
+        return $this->hasMany(Product::class, 'exclusive_for_customer_id');
     }
 }

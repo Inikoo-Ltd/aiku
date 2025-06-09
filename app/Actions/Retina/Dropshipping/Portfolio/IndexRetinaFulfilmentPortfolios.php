@@ -12,7 +12,7 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
+use App\Http\Resources\Dropshipping\FulfilmentPortfolioResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -141,7 +141,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'products' => DropshippingPortfolioResource::collection($portfolios)
+                'products' => FulfilmentPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));
     }

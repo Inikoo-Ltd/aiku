@@ -22,6 +22,7 @@ class IndexDeliveryNoteItems extends OrgAction
 {
     public function handle(DeliveryNote $parent, $prefix = null): LengthAwarePaginator
     {
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('org_stocks.code', $value)
@@ -48,7 +49,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
-                'delivery_note_items.is_completed',
+                'delivery_note_items.is_handled',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name'

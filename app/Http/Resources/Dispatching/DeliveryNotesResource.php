@@ -30,6 +30,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_name
  * @property mixed $type
  * @property mixed $estimated_weight
+ * @property mixed $effective_weight
  *
  */
 class DeliveryNotesResource extends JsonResource
@@ -46,9 +47,9 @@ class DeliveryNotesResource extends JsonResource
             'state'             => $this->state,
             'state_icon'        => $this->state->stateIcon()[$this->state->value],
             'type'              => $this->type,
-            'weight'            => $this->weight,
-            'estimated_weight'  => $this->estimated_weight,
-            'effective_weight'  => $this->effective_weight,
+            'weight'            => $this->weight / 1000,
+            'estimated_weight'  => $this->estimated_weight / 1000,
+            'effective_weight'  => $this->effective_weight / 1000,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
             'shop_slug'         => $this->shop_slug,
@@ -59,7 +60,7 @@ class DeliveryNotesResource extends JsonResource
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'employee_pick_route' => [
-                'name' => 'grp.models.delivery-note.employee.pick',
+                'name' => 'grp.models.delivery_note.employee.pick',
                 'parameters' => [
                     'deliveryNote' => $this->id
                 ],

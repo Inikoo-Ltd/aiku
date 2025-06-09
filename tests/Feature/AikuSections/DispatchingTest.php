@@ -281,7 +281,7 @@ test('store picking', function (DeliveryNote $deliveryNote) {
     expect($picking)->toBeInstanceOf(Picking::class)
         ->and(intval($picking->quantity))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
-        ->and($picking->deliveryNoteItem->is_completed)->toBe(false)
+        ->and($picking->deliveryNoteItem->is_handled)->toBe(false)
         ->and($picking->location_id)->toBe($locationOrgStock->location_id);
 
     $picking->refresh();
@@ -301,7 +301,7 @@ test('update picking', function (Picking $picking) {
     expect($picking)->toBeInstanceOf(Picking::class)
         ->and(intval($picking->quantity))->toBe(10);
     expect(intval($picking->deliveryNoteItem->quantity_picked))->toBe(10)
-        ->and($picking->deliveryNoteItem->is_completed)->toBe(true);
+        ->and($picking->deliveryNoteItem->is_handled)->toBe(true);
 
     $picking->refresh();
 
@@ -348,7 +348,7 @@ test('store second picking', function (DeliveryNote $deliveryNote) {
     expect($picking)->toBeInstanceOf(Picking::class)
         ->and(intval($picking->quantity))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
-        ->and($picking->deliveryNoteItem->is_completed)->toBe(false)
+        ->and($picking->deliveryNoteItem->is_handled)->toBe(false)
         ->and($picking->location_id)->toBe($locationOrgStock->location_id);
 
     $picking->refresh();
@@ -366,7 +366,7 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
         ->and(intval($picking->quantity))->toBe(10)
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_not_picked))->toBe(10)
-        ->and($picking->deliveryNoteItem->is_completed)->toBe(true);
+        ->and($picking->deliveryNoteItem->is_handled)->toBe(true);
 
     $picking->refresh();
 

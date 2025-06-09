@@ -38,7 +38,7 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         $deliveryNoteItem =  $this->update($deliveryNoteItem, [
             'quantity_picked' => $totalPicked,
             'quantity_not_picked' => $totalNotPicked,
-            'is_completed' => $isCompleted,
+            'is_handled' => $isCompleted,
         ]);
 
         $deliveryNoteItem->refresh();

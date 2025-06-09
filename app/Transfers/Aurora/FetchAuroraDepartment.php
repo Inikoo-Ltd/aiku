@@ -26,6 +26,19 @@ class FetchAuroraDepartment extends FetchAurora
             return;
         }
 
+        $departmentsRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
+            ->select('Category Key', 'Category Code', 'Category Subject')
+            ->where('Category Branch Type', 'Root')
+            ->where('Category Scope', 'Product')
+            ->where('Category Code', 'like', 'Web.%')
+            ->where('Category Subject', 'Category')
+            ->get()->pluck('Category Key')->toArray();
+
+        if (in_array($this->auroraModelData->{'Product Category Key'}, $departmentsRootAuroraIDs)) {
+            return;
+        }
+
+
         $this->parsedData['shop'] = $shop;
 
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Category Code'});

@@ -26,7 +26,7 @@ Route::middleware(['verify.shopify'])->group(function () {
 
     Route::prefix("dropshipping")
         ->name("dropshipping.")
-        ->group(__DIR__."/dropshipping.php");
+        ->group(__DIR__."/pupil_dropshipping.php");
 
     Route::prefix("models")
         ->name("models.")

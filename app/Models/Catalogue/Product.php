@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Models\CRM\BackInStockReminder;
+use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
@@ -85,6 +86,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $historic_source_id
  * @property bool $is_for_sale For sale products including out of stock
+ * @property int|null $exclusive_for_customer_id
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
@@ -92,6 +94,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read \App\Models\Helpers\Currency $currency
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
+ * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
  * @property-read Group $group
@@ -274,6 +277,11 @@ class Product extends Model implements Auditable, HasMedia
         return Tag::whereHas('tradeUnits', function ($query) {
             $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
         })->get();
+    }
+
+    public function exclusiveForCustomer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
 }
