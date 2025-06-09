@@ -116,6 +116,7 @@ class AppServiceProvider extends ServiceProvider
                 'ShopifyUser'                   => 'App\Models\Dropshipping\ShopifyUser',
                 'TiktokUser'                    => 'App\Models\Dropshipping\TiktokUser',
                 'WooCommerceUser'               => 'App\Models\Dropshipping\WooCommerceUser',
+                'EbayUser'               => 'App\Models\Dropshipping\EbayUser',
 
                 // Fulfilment
                 'FulfilmentCustomer'            => 'App\Models\Fulfilment\FulfilmentCustomer',

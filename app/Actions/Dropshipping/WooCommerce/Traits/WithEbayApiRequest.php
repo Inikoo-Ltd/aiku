@@ -18,11 +18,22 @@ trait WithEbayApiRequest
         return [
             'client_id' => $this->ebay_client_id ?? config('services.ebay.client_id'),
             'client_secret' => $this->ebay_client_secret ?? config('services.ebay.client_secret'),
-            'redirect_uri' => route('webhooks.ebay.callback'),
+            'redirect_uri' => "AW_Advantage-AWAdvant-Retina-wgsvn",
             'sandbox' => config('services.ebay.sandbox', true),
-            'access_token' => Arr::get($this->settings, 'credentials.access_token'),
-            'refresh_token' => Arr::get($this->settings, 'credentials.refresh_token')
+            'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
+            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
         ];
+    }
+
+    /**
+     * Get eBay OAuth token endpoint URL
+     */
+    protected function getEbayTokenUrl()
+    {
+        $config = $this->getEbayConfig();
+        return $config['sandbox']
+            ? 'https://api.sandbox.ebay.com/identity/v1/oauth2/token'
+            : 'https://api.ebay.com/identity/v1/oauth2/token';
     }
 
     /**
@@ -54,11 +65,27 @@ trait WithEbayApiRequest
     {
         $config = $this->getEbayConfig();
 
+        $scopes = [
+            'https://api.ebay.com/oauth/api_scope',
+            'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.marketing',
+            'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.inventory',
+            'https://api.ebay.com/oauth/api_scope/sell.account.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.account',
+            'https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
+            'https://api.ebay.com/oauth/api_scope/sell.analytics.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.stores',
+            'https://api.ebay.com/oauth/api_scope/sell.stores.readonly',
+            'https://api.ebay.com/oauth/api_scope/commerce.identity.readonly'
+        ];
+
         $params = [
             'client_id' => $config['client_id'],
             'redirect_uri' => $config['redirect_uri'],
             'response_type' => 'code',
-            'scope' => 'https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.marketing.readonly https://api.ebay.com/oauth/api_scope/sell.marketing https://api.ebay.com/oauth/api_scope/sell.inventory.readonly https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account.readonly https://api.ebay.com/oauth/api_scope/sell.account https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly https://api.ebay.com/oauth/api_scope/sell.fulfillment https://api.ebay.com/oauth/api_scope/sell.analytics.readonly',
+            'scope' => implode(' ', $scopes),
         ];
 
         if ($state) {
@@ -66,47 +93,8 @@ trait WithEbayApiRequest
         }
 
         $queryString = http_build_query($params);
+
         return $this->getEbayOAuthUrl() . "/oauth2/authorize?{$queryString}";
-    }
-
-    /**
-     * Exchange authorization code for access token
-     */
-    public function exchangeCodeForToken($authorizationCode)
-    {
-        $config = $this->getEbayConfig();
-
-        try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/x-www-form-urlencoded',
-                'Authorization' => 'Basic ' . base64_encode($config['client_id'] . ':' . $config['client_secret'])
-            ])->post($this->getEbayOAuthUrl() . '/identity/v1/oauth2/token', [
-                'grant_type' => 'authorization_code',
-                'code' => $authorizationCode,
-                'redirect_uri' => $config['redirect_uri']
-            ]);
-
-            if ($response->successful()) {
-                $tokenData = $response->json();
-
-                UpdateEbayUser::run([
-                    'settings' => [
-                        'credentials' => [
-                            'ebay_access_token' => $tokenData['access_token'],
-                            'ebay_refresh_token' => $tokenData['refresh_token'],
-                            'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
-                        ]
-                    ]
-                ]);
-
-                return $tokenData;
-            }
-
-            throw new Exception('Failed to exchange code for token: ' . $response->body());
-        } catch (Exception $e) {
-            Log::error('eBay OAuth Token Exchange Error: ' . $e->getMessage());
-            throw $e;
-        }
     }
 
     /**
@@ -161,7 +149,7 @@ trait WithEbayApiRequest
         $config = $this->getEbayConfig();
 
         // Check if token exists and is not expired
-        if ($config['access_token'] && $this->ebay_token_expires_at && now()->lt($this->ebay_token_expires_at->subMinutes(5))) {
+        if ($config['access_token'] && Arr::get($this->settings, 'credentials.ebay_token_expires_at')) {
             return $config['access_token'];
         }
 
@@ -179,7 +167,7 @@ trait WithEbayApiRequest
      */
     public function isEbayAuthenticated()
     {
-        return !empty($this->ebay_access_token) && !empty($this->ebay_refresh_token);
+        return !empty(Arr::get($this->settings, 'credentials.ebay_access_token')) && !empty(Arr::get($this->settings, 'credentials.ebay_refresh_token'));
     }
 
     /**
@@ -488,7 +476,7 @@ trait WithEbayApiRequest
     public function getAccountInfo()
     {
         try {
-            $endpoint = "/sell/account/v1/account";
+            $endpoint = "/sell/stores/v1/store";
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
             Log::error('Get eBay Account Info Error: ' . $e->getMessage());

@@ -120,18 +120,9 @@ const onSubmitWoocommerce = async () => {
 };
 
 // Section: ebay
-const isModalEbay = ref<boolean>(false);
-const ebayInput = ref({
-    name: null as null | string,
-    url: null as null | string
-});
 const onSubmitEbay = async () => {
     const response = await axios.post(
-        route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters),
-        ebayInput.value);
-    isModalEbay.value = false;
-    ebayInput.value.name = null;
-    ebayInput.value.url = null;
+        route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters));
 
     window.location.href = response.data;
 };
@@ -244,7 +235,7 @@ const onSubmitEbay = async () => {
                         :label="trans('Connect')"
                         type="primary"
                         full
-                        @click="() => isModalEbay = true"
+                        @click="onSubmitEbay"
                     />
 
                     <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
@@ -311,31 +302,6 @@ const onSubmitEbay = async () => {
             </div>
 
             <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6" />
-        </div>
-    </Modal>
-
-    <!-- Modal: Ebay -->
-    <Modal :isOpen="isModalEbay" @onClose="isModalEbay = false" width="w-full max-w-lg">
-        <div class="">
-            <div class="mb-4">
-                <div class="text-center font-semibold text-xl">
-                    {{ trans("Ebay store detail") }}
-                </div>
-
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Ebay store detail") }}
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-y-2">
-                <PureInput v-model="ebayInput.name" :placeholder="trans('Your store name')"></PureInput>
-                <PureInputWithAddOn v-model="ebayInput.url" :leftAddOn="{
-                    icon: 'fal fa-globe'
-                }" :placeholder="trans('e.g https://storeurlexample.com')"
-                                    @keydown.enter="() => onSubmitEbay()" />
-            </div>
-
-            <Button @click="() => onSubmitEbay()" full label="Create" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 </template>

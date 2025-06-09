@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-06-2025-11h-47m
@@ -9,14 +10,16 @@
 namespace App\Actions\Dropshipping\Ebay;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\WooCommerce\Traits\WithEbayApiRequest;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
-use App\Models\Dropshipping\WooCommerceUser;
-use Illuminate\Console\Command;
+use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,38 +31,66 @@ class CallbackRetinaEbayUser extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithEbayApiRequest;
 
-    public $commandSignature = 'retina:ds:callback-ebay {customer} {store_url} {consumer_key} {consumer_secret}';
-
-    public function handle(EbayUser $ebayUser, array $modelData): EbayUser
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
+    public function handle(Customer $customer, array $modelData): EbayUser
     {
-        $consumerKey = Arr::get($modelData, 'consumer_key');
-        $consumerSecret = Arr::get($modelData, 'consumer_secret');
+        $config = $this->getEbayConfig();
 
-        /** @var EbayUser $ebayUser */
-        $ebayUser = UpdateEbayUser::run($ebayUser, [
-            'settings' => [
-                'credentials' => [
-                    'consumer_key' => $consumerKey,
-                    'consumer_secret' => $consumerSecret,
-                    'store_url' => Arr::get($ebayUser->settings, 'credentials.store_url')
-                ]
-            ]
-        ]);
+        try {
+            $response = Http::asForm()->withHeaders([
+                'Authorization' => 'Basic ' . base64_encode($config['client_id'] . ':' . $config['client_secret'])
+            ])->post($this->getEbayTokenUrl(), [
+                'grant_type' => 'authorization_code',
+                'code' => Arr::get($modelData, 'code'),
+                'redirect_uri' => $config['redirect_uri']
+            ]);
 
-        $ebayUser->refresh();
+            if ($response->successful()) {
+                $tokenData = $response->json();
 
-        // $webhooks = $ebayUser->registerWooCommerceWebhooks(); //TODO
+                $ebayUser = StoreEbayUser::run($customer, [
+                    'settings' => [
+                        'credentials' => [
+                            'ebay_access_token' => $tokenData['access_token'],
+                            'ebay_refresh_token' => $tokenData['refresh_token'],
+                            'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                        ]
+                    ]
+                ]);
 
-        UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
-            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
-        ]);
+                $ebayUser->refresh();
 
-        return $this->update($ebayUser, [
-            'settings' => array_merge($ebayUser->settings, [
-                // 'webhooks' => $webhooks//TODO
-            ])
-        ]);
+                /*$accountInfo = $ebayUser->getAccountInfo();
+
+                data_set($modelData, 'name', Arr::get($accountInfo, 'name'));
+                data_set($modelData, 'data', $accountInfo);*/
+
+                $ebayUser = UpdateEbayUser::run($ebayUser, [
+                    'settings' => [
+                        'credentials' => [
+                            'ebay_access_token' => $tokenData['access_token'],
+                            'ebay_refresh_token' => $tokenData['refresh_token'],
+                            'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                        ]
+                    ]
+                ]);
+
+                UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
+                    'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+                ]);
+
+                return $ebayUser;
+            }
+
+            throw new Exception('Failed to exchange code for token: ' . $response->body());
+        } catch (Exception $e) {
+            Log::error('eBay OAuth Token Exchange Error: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function htmlResponse(EbayUser $ebayUser): Response
@@ -74,34 +105,8 @@ class CallbackRetinaEbayUser extends OrgAction
         ]));
     }
 
-    public function rules(): array
+    public function asController(ActionRequest $request): EbayUser
     {
-        return [
-            'consumer_key' => ['required', 'string'],
-            'consumer_secret' => ['required', 'string']
-        ];
-    }
-
-    public function asController(ActionRequest $request): string
-    {
-        $ebayUser = EbayUser::findOrFail($request->get('user_id'));
-        $this->initialisationFromShop($ebayUser->customer->shop, $request);
-
-        return $this->handle($ebayUser, $this->validatedData);
-    }
-
-    public function asCommand(Command $command): void
-    {
-        $modelData = [
-            'store_url' => $command->argument('store_url'),
-            'consumer_key' => $command->argument('consumer_key'),
-            'consumer_secret' => $command->argument('consumer_secret')
-        ];
-
-        $customer = Customer::find($command->argument('customer'));
-
-        data_set($modelData, 'name', $customer->name);
-
-        $this->handle($customer, $modelData);
+        return $this->handle($request->user()->customer, $request->all());
     }
 }

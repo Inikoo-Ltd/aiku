@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-06-2025-11h-47m
@@ -8,13 +9,12 @@
 
 namespace App\Actions\Dropshipping\Ebay;
 
+use App\Actions\Dropshipping\WooCommerce\Traits\WithEbayApiRequest;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -24,24 +24,13 @@ class AuthorizeRetinaEbayUser extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithEbayApiRequest;
 
     public $commandSignature = 'retina:ds:authorize-ebay {customer} {name} {url}';
 
-    public function handle(Customer $customer, $modelData): string
+    public function handle(): string
     {
-        data_set($modelData, 'store_url', Arr::pull($modelData, 'url'));
-        $ebayUser = StoreEbayUser::run($customer, $modelData);
-
-        // $endpoint = '/wc-auth/v1/authorize'; //todo
-        $params = [
-            'app_name' => config('app.name'),
-            'scope' => 'read_write',
-            'user_id' => $ebayUser->id,
-            'return_url' => route('retina.dropshipping.customer_sales_channels.index'),
-            'callback_url' => route('webhooks.ebay.callback')
-        ];
-
-        return Arr::get($ebayUser, 'settings.credentials.store_url').$endpoint.'?'.http_build_query($params);
+        return $this->getEbayAuthUrl();
     }
 
     public function jsonResponse(string $url): string
@@ -58,33 +47,17 @@ class AuthorizeRetinaEbayUser extends OrgAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
-    public function rules(): array
-    {
-        return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('woo_commerce_users', 'name')],
-            'url' => ['required', 'string']
-        ];
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $this->set('name', $request->input('name'));
-    }
-
     public function asController(ActionRequest $request): string
     {
         $customer = $request->user()->customer;
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        return $this->handle();
     }
 
     public function asCommand(Command $command): void
     {
-        $modelData = [
-            'name' => $command->argument('name'),
-            'url' => $command->argument('url'),
-        ];
+        $modelData = [];
 
         $customer = Customer::find($command->argument('customer'))->first();
 
