@@ -216,38 +216,43 @@ const onAddProducts = async (product: {}) => {
     const routePost = product?.transaction_id ? 
         {
             route_post: route('retina.models.order.transaction.update', { order: props?.data?.data?.id, transaction: product.transaction_id }),
-            method: 'patch'
+            method: 'patch',
+            body: {
+                quantity: product.quantity_selected ?? 1,
+            }
         } : {
             route_post: route('retina.models.order.transaction.store', { order: props?.data?.data?.id }),
-            method: 'post'
+            method: 'post',
+            body: {
+                quantity: product.quantity_selected ?? 1,
+                historic_asset_id: product.historic_asset_id,
+            }
         }
 
     // return
 
-    router[routePost.method](routePost.route_post, {
-        products: [{
-            id: product.historic_asset_id,
-            quantity: product.quantity_selected ?? 1
-        }]
-    }, {
-        only: ['transactions', 'box_stats'],
-        onBefore: () => 'isLoadingSubmit.value = true',
-        onError: (error) => {
-            notify({
-                title: trans("Something went wrong."),
-                text: error.products || undefined,
-                type: "error"
-            })
-        },
-        onSuccess: () => {
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
-                type: "success"
-            })
-        },
-        onFinish: () => isLoadingSubmit.value = false
-    })
+    router[routePost.method](
+        routePost.route_post,
+        routePost.body,
+        {
+            only: ['transactions', 'box_stats'],
+            onBefore: () => 'isLoadingSubmit.value = true',
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: error.products || undefined,
+                    type: "error"
+                })
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Successfully added portfolios"),
+                    type: "success"
+                })
+            },
+            onFinish: () => isLoadingSubmit.value = false
+        })
 }
 
 const isModalUploadSpreadsheet = ref(false)
