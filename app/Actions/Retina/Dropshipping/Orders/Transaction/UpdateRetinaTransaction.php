@@ -21,7 +21,7 @@ class UpdateRetinaTransaction extends RetinaAction
 
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
-        if (Arr::get($modelData, 'quantity', 0) === 0) {
+        if (Arr::get($modelData, 'quantity_ordered', 0) === 0) {
             $transaction->forceDelete();
 
             return $transaction;
@@ -43,7 +43,7 @@ class UpdateRetinaTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'quantity' => ['required', 'numeric', 'min:0'],
+            'quantity_ordered' => ['required', 'numeric', 'min:0'],
         ];
     }
 

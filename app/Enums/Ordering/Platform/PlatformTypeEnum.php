@@ -17,6 +17,7 @@ enum PlatformTypeEnum: string
     case SHOPIFY = 'shopify';
     case TIKTOK = 'tiktok';
     case WOOCOMMERCE = 'woocommerce';
+    case EBAY = 'ebay';
     case MANUAL = 'manual';
 
     public function labels(): array
@@ -25,6 +26,7 @@ enum PlatformTypeEnum: string
             'shopify'     => 'Shopify',
             'tiktok'      => 'Tiktok',
             'woocommerce' => 'Woo Commerce',
+            'ebay'        => 'Ebay',
             'manual'        => __('Manual'),
         ];
     }

@@ -58,7 +58,6 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'updateRoute' => [
                 'name'       => 'retina.models.transaction.update',
                 'parameters' => [
-                    'order'       => $transaction->order_id,
                     'transaction' => $transaction->id
                 ],
                 'method'     => 'patch'
