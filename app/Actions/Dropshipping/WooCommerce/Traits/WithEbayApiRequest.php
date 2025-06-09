@@ -290,7 +290,7 @@ trait WithEbayApiRequest
                         'quantity' => $productData['quantity'] ?? 1
                     ]
                 ],
-                'condition' => $productData['condition'] ?? 'NEW',
+                'condition' => 'NEW',
                 'product' => [
                     'title' => $productData['title'],
                     'description' => $productData['description'],
