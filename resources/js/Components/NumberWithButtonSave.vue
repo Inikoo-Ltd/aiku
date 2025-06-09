@@ -221,7 +221,11 @@ const onClickPlusButton = () => {
 				<!-- Button: Minus -->
 				<div
 					@click.stop="() => props.readonly ? null : onClickMinusButton()"
-					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-1 py-1.5 text-xs justify-self-center"
+					:class="[
+						props.readonly ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
+					]"	
+				>
 					<FontAwesomeIcon
 						icon="fas fa-minus"
 						:class="form.quantity < 1 ? 'text-gray-400' : ''"
@@ -247,7 +251,7 @@ const onClickPlusButton = () => {
 						:inputStyle="{
 							padding: '0px',
 							width: bindToTarget?.fluid ? undefined : '50px',
-							color: colorTheme ?? '#374151',
+							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',
 							border: 'none',
 							textAlign: 'center',
 							background: (colorTheme ? colorTheme + '22' : null) ?? 'transparent',
@@ -258,7 +262,11 @@ const onClickPlusButton = () => {
 				<!-- Button: Plus -->
 				<div
 					@click.stop="() => props.readonly ? null : onClickPlusButton()"
-					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-1 py-1.5 text-xs justify-self-center"
+					:class="[
+						props.readonly ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
+					]"	
+				>
 					<FontAwesomeIcon icon="fas fa-plus" fixed-width aria-hidden="true" />
 				</div>
 			</div>

@@ -21,6 +21,7 @@ import { ref, onMounted, reactive, inject } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt } from "@fal";
+import { faSkull } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -28,7 +29,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue";
 import Modal from "@/Components/Utils/Modal.vue"
 
-library.add(faArrowDown, faDebug, faClipboardListCheck, faUndoAlt);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt);
 
 
 defineProps<{
@@ -182,6 +183,7 @@ const onCloseModal = () => {
                         }"
                     />
                 </span>
+
                 <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                     {{ item.quantity_not_picked }}
@@ -205,9 +207,10 @@ const onCloseModal = () => {
             <!-- <pre>{{ item.pickings }}</pre> -->
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 items-center">
-                    <div class="w-fit border-l-2 border-gray-400 bg-gray-200 py-0.5 px-2 font-semibold">
+                    <Link :href="generateLocationRoute(picking)" class="secondaryLink">
                         {{ picking.location_code }}
-                    </div>
+                    </Link>
+                    
                     <div v-tooltip="trans('Total picked quantity in this location')" class="text-gray-500 whitespace-nowrap">
                         <FontAwesomeIcon icon="fal fa-inventory" class="mr text-gray-500" fixed-width aria-hidden="true" />
                         {{ picking.quantity_picked }}
@@ -225,6 +228,11 @@ const onCloseModal = () => {
                         :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
                     />
                 </div>
+
+                <div v-if="item.quantity_not_picked" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit mr-auto">
+                    <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
+                    {{ item.quantity_not_picked }}
+                </div>
             </div>
 
             <div v-else class="text-xs text-gray-400 italic">
@@ -234,7 +242,7 @@ const onCloseModal = () => {
 
         <!-- Column: actions -->
         <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
-            <!-- {{ itemValue.locations }} -->
+            <!-- <pre>{{ itemValue }}</pre> -->
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="itemValue.locations?.[0]" class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
@@ -287,7 +295,7 @@ const onCloseModal = () => {
                                         v-tooltip="trans('Pick all required quantity in this location')"
                                         icon="fal fa-clipboard-list-check"
                                         :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                        :label="locale.number(itemValue.quantity_to_pick )"
+                                        :label="locale.number(itemValue.quantity_to_pick ?? 0 )"
                                         size="xs"
                                         type="secondary"
                                         :loading="isProcessing"
@@ -302,6 +310,7 @@ const onCloseModal = () => {
                                         }"
                                         isWithError
                                     />
+
                                     <ButtonWithLink
                                         class="ml-8"
                                         v-if="!itemValue.is_handled"
