@@ -11,7 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\ProductWebpageResource;
+use App\Http\Resources\Catalogue\ProductsWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
@@ -48,7 +48,7 @@ class GetProductsInProductCategory extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
-        return ProductWebpageResource::collection($products);
+        return ProductsWebpageResource::collection($products);
     }
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator

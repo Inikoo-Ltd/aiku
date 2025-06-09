@@ -40,6 +40,11 @@ return [
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
         'scopes' => env('TIKTOK_SCOPES')
     ],
+    'ebay' => [
+        'redirect_uri' => env('EBAY_REDIRECT_URI'),
+        'client_id' => env('EBAY_CLIENT_ID'),
+        'client_secret' => env('EBAY_CLIENT_SECRET')
+    ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),
     ]
