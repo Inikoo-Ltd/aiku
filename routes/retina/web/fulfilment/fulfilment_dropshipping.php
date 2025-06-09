@@ -6,6 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
+use App\Actions\Dropshipping\Ebay\StoreEbayUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
@@ -49,6 +51,10 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         Route::post('authorize', AuthorizeRetinaWooCommerceUser::class)->name('authorize');
         Route::post('/', StoreWooCommerceUser::class)->name('store');
         Route::delete('/', DeleteRetinaShopifyUser::class)->name('delete');
+    });
+    Route::prefix('ebay-user')->as('ebay.')->group(function () {
+        Route::post('authorize', AuthorizeRetinaEbayUser::class)->name('authorize');
+        Route::post('/', StoreEbayUser::class)->name('store');    
     });
 
     Route::prefix('{customerSalesChannel}')->group(function () {
