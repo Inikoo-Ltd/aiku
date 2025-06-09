@@ -105,4 +105,11 @@ onMounted(() => {
 </template>
 
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+::v-deep(.p-accordioncontent ) {
+  padding: 0px 0px 0px 0px !important;
+}
+::v-deep(.p-accordioncontent-content) {
+  padding: 1rem !important;
+}
+</style>

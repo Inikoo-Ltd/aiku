@@ -2,6 +2,8 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
+use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -16,10 +18,10 @@ trait WithEbayApiRequest
         return [
             'client_id' => $this->ebay_client_id ?? config('services.ebay.client_id'),
             'client_secret' => $this->ebay_client_secret ?? config('services.ebay.client_secret'),
-            'redirect_uri' => config('services.ebay.redirect_uri'),
+            'redirect_uri' => route('webhooks.ebay.callback'),
             'sandbox' => config('services.ebay.sandbox', true),
-            'access_token' => $this->ebay_access_token ?? null,
-            'refresh_token' => $this->ebay_refresh_token ?? null,
+            'access_token' => Arr::get($this->settings, 'credentials.access_token'),
+            'refresh_token' => Arr::get($this->settings, 'credentials.refresh_token')
         ];
     }
 
@@ -87,8 +89,7 @@ trait WithEbayApiRequest
             if ($response->successful()) {
                 $tokenData = $response->json();
 
-                // Store tokens in the model
-                $this->update([
+                UpdateEbayUser::run([
                     'settings' => [
                         'credentials' => [
                             'ebay_access_token' => $tokenData['access_token'],
@@ -132,10 +133,14 @@ trait WithEbayApiRequest
                 $tokenData = $response->json();
 
                 // Update stored tokens
-                $this->update([
-                    'ebay_access_token' => $tokenData['access_token'],
-                    'ebay_refresh_token' => $tokenData['refresh_token'] ?? $config['refresh_token'],
-                    'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                UpdateEbayUser::run([
+                    'settings' => [
+                        'credentials' => [
+                            'ebay_access_token' => $tokenData['access_token'],
+                            'ebay_refresh_token' => $tokenData['refresh_token'],
+                            'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                        ]
+                    ]
                 ]);
 
                 return $tokenData;
@@ -194,10 +199,10 @@ trait WithEbayApiRequest
             }
 
             // Clear stored tokens
-            $this->update([
-                'ebay_access_token' => null,
-                'ebay_refresh_token' => null,
-                'ebay_token_expires_at' => null
+            UpdateEbayUser::run([
+                'settings' => [
+                    'credentials' => []
+                ]
             ]);
 
             return true;

@@ -41,7 +41,6 @@ return [
         'scopes' => env('TIKTOK_SCOPES')
     ],
     'ebay' => [
-        'redirect_uri' => env('EBAY_REDIRECT_URI'),
         'client_id' => env('EBAY_CLIENT_ID'),
         'client_secret' => env('EBAY_CLIENT_SECRET')
     ],
