@@ -36,6 +36,7 @@ class ProductWebpageResource extends JsonResource
             'units'         => $product->units,
             'unit'       => $product->unit,
             'status'     => $product->status,
+            'rpp'     => $product->rpp,
             'images'      => ImageResource::collection($product->images)
         ];
     }
