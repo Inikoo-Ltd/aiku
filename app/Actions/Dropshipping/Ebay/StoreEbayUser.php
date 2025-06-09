@@ -16,10 +16,8 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Platform;
-use Inertia\Inertia;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Symfony\Component\HttpFoundation\Response;
 
 class StoreEbayUser extends OrgAction
 {
@@ -52,10 +50,5 @@ class StoreEbayUser extends OrgAction
         ]);
 
         return $ebayUser;
-    }
-
-    public function htmlResponse(EbayUser $ebayUser): Response
-    {
-        return Inertia::location($ebayUser->getEbayAuthUrl());
     }
 }
