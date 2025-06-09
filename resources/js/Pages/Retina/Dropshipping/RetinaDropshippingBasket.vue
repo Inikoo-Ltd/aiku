@@ -169,44 +169,9 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
 
 
 
-
-
-// Method: Submit the selected item
 const isLoadingSubmit = ref(false)
-// const onAddProducts = async (products: number[]) => {
-//     // console.log('products', products)
-//     // return 
 
-//     const productsMapped = products.map((product: any) => {
-//         return {
-//             id: product.item_id,
-//             quantity: product.quantity_selected ?? 1
-//         }
-//     })
 
-//     router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
-//         products: productsMapped
-//     }, {
-//         onBefore: () => isLoadingSubmit.value = true,
-//         onError: (error) => {
-//             notify({
-//                 title: "Something went wrong.",
-//                 text: error.products || undefined,
-//                 type: "error"
-//             })
-//         },
-//         onSuccess: () => {
-//             router.reload({only: ['data']})
-//             notify({
-//                 title: trans("Success!"),
-//                 text: trans("Successfully added portfolios"),
-//                 type: "success"
-//             })
-//             isModalProductListOpen.value = false
-//         },
-//         onFinish: () => isLoadingSubmit.value = false
-//     })
-// }
 
 const onAddProducts = async (product: {}) => {
     console.log('products zzzz', product.transaction_id)
@@ -218,7 +183,7 @@ const onAddProducts = async (product: {}) => {
             route_post: route('retina.models.transaction.update', {transaction: product.transaction_id }),
             method: 'patch',
             body: {
-                quantity: product.quantity_selected ?? 1,
+                quantity_ordered: product.quantity_selected ?? 1,
             }
         } : {
             route_post: route('retina.models.order.transaction.store', { order: props?.data?.data?.id }),
