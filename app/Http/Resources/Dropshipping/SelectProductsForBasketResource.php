@@ -30,11 +30,13 @@ class SelectProductsForBasketResource extends JsonResource
             'slug'               => $this->slug,
             'code'               => $this->code,
             'name'               => $this->name,
+            'image'              => null,  // TODO
             'price'              => $this->price,
+            'currency_code'      => null,  // TODO
             'available_quantity' => $this->available_quantity,
             'transaction_id'     => $this->transaction_id,
             'historic_asset_id'  => $this->historic_asset_id,
-            'quantity_ordered'   => $this->quantity_ordered,
+            'quantity_ordered'   => (int) $this->quantity_ordered,
         ];
     }
 }

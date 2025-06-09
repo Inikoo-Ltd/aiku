@@ -66,6 +66,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'shopify'   => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::SHOPIFY->value)->count(),
                     'tiktok'    => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::TIKTOK->value)->count(),
                     'woocommerce' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->count(),
+                    'ebay' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::EBAY->value)->count(),
                 ],
                 'tiktokAuth' => [
                     'url' => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),
@@ -110,6 +111,16 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         'method' => 'post'
                     ],
                     'isConnected' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::WOOCOMMERCE->value)->exists()
+                ],
+                'type_ebay' => [
+                    'connectRoute' => [
+                        'name' => match ($customer->is_fulfilment) {
+                            true   => 'retina.fulfilment.dropshipping.customer_sales_channels.ebay.authorize',
+                            default => 'retina.dropshipping.platform.ebay.authorize',
+                        },
+                        'parameters' => [],
+                        'method' => 'post'
+                    ],
                 ],
             ]
         );

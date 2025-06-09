@@ -147,26 +147,31 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                         v-for="(item, index) in portfoliosList"
                                         :key="index"
                                         class="relative h-fit rounded xcursor-pointer p-2 flex gap-x-2 border"
+                                        :class="[
+                                            typeof item.available_quantity !== 'undefined' && item.available_quantity < 1 ? 'bg-gray-200' : ''
+                                        ]"
                                     >
                                         <slot name="product" :item="item">
                                             <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                                             <div class="flex flex-col justify-between">
                                                 <div class="w-fit" xclick="() => selectProduct(item)">
+                                                    <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic mb-1">{{ item.code || 'no code' }}</div>
                                                     <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                                    <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                                                    <div v-tooltip="trans('Available stock')" class="w-fit text-xs xtext-gray-400 italic mb-1">{{ locale.number(item.available_quantity || 0) }} {{ trans("stocks") }}</div>
                                                     <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
                                                     <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                                                 </div>
-                                                <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+
+                                                <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="mb-2 w-fit text-xs text-gray-x500">
                                                     {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
                                                 </div>
 
                                                 <NumberWithButtonSave
-                                                    v-if="withQuantity"
-                                                    :modelValue="get(item, 'quantity_selected', 0)"
+                                                    v-if="withQuantity && (item?.available_quantity && item?.available_quantity > 0)"
+                                                    :modelValue="get(item, 'quantity_ordered', 0)"
                                                     :bindToTarget="{
                                                         min: 0,
-                                                        // max: item?.available_quantity
+                                                        max: item?.available_quantity
                                                     }"
                                                     @update:modelValue="(e: number) => (
                                                         // Put auto select action here
@@ -178,7 +183,10 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                                     noSaveButton
                                                     parentClass="w-min"
                                                 />
-                                                <pre>{{ item }}</pre>
+
+                                                <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
+                                                    <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
+                                                </div>
                                             </div>
                                         </slot>
                                     </div>
