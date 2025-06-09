@@ -162,28 +162,37 @@ class ShowDeliveryNote extends OrgAction
             ],
             DeliveryNoteStateEnum::QUEUED => [
                 [
-                    'type'    => 'button',
-                    'style'   => 'delete',
-                    'tooltip' => __('Remove picker'),
-                    'label'   => __('Remove Picker'),
-                    'icon'      => 'fal fa-user-slash',
-                    'key'     => 'remove-picker',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery-note.state.remove-picker',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
+                    'type'   => 'buttonGroup',
+                    'key'    => 'picker',
+                    'button' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'delete',
+                            'tooltip' => __('Remove picker'),
+                            'label'   => __('Remove Picker'),
+                            'icon'      => 'fal fa-user-slash',
+                            'key'     => 'remove-picker',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.delivery-note.state.remove-picker',
+                                'parameters' => [
+                                    'deliveryNote' => $deliveryNote->id
+                                ]
+                            ]
+                        ],
+                        [
+                            'type'    => 'button',
+                            'style'   => 'save',
+                            'tooltip' => __('Change picker'),
+                            'icon'      => 'fal fa-exchange-alt',
+                            'label'   => __('Change Picker'),
+                            'key'     => 'change-picker',
                         ]
-                    ]
+                        
+                    ],
+                    
                 ],
-                [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => __('Change picker'),
-                    'icon'      => 'fal fa-exchange-alt',
-                    'label'   => __('Change Picker'),
-                    'key'     => 'change-picker',
-                ],
+                
                 $deliveryNote->pickerUser->id == $request->user()->id ? [
                     'type'    => 'button',
                     'style'   => 'save',

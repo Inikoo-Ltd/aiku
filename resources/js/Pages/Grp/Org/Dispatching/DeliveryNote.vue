@@ -223,7 +223,7 @@ provide("listError", listError.value)
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
+    <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore>
             <Button 
 				v-if="delivery_note_state.value == 'packed' && !(box_stats?.shipments?.length)"
@@ -243,12 +243,13 @@ provide("listError", listError.value)
                 :type="action.type"
             />
         </template>
-        <template #button-change-picker ="{ action }">
+        <template #button-group-change-picker ="{ action }">
             <Button
                 @click="isModalToQueue = true"
                 :label="action.label"
                 :icon="action.icon"
                 type="tertiary"
+                class="border-transparent rounded-l-none"
             />
         </template>
     </PageHeading>
