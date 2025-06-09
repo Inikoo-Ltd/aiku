@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-06-2025-11h-45m
@@ -8,7 +9,7 @@
 
 namespace App\Models\Dropshipping;
 
-use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceApiRequest;
+use App\Actions\Dropshipping\WooCommerce\Traits\WithEbayApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
@@ -16,7 +17,6 @@ use App\Models\Ordering\Order;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -54,6 +54,7 @@ class EbayUser extends Model
 {
     use InCustomer;
     use HasSlug;
+    use WithEbayApiRequest;
 
     protected $guarded = [];
 

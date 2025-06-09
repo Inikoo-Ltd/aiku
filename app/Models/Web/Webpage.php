@@ -8,6 +8,7 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -241,9 +242,16 @@ class Webpage extends Model implements Auditable, HasMedia
     }
 
 
-    public function getFullUrl(): string
+    public function getUrl(): string
     {
-        return 'https://'.$this->website->domain.'/'.$this->url;
+        return match (app()->environment()) {
+            'production' => 'https://'.$this->website->domain.'/'.$this->url,
+            'staging' => 'https://canary.'.$this->website->domain.'/'.$this->url,
+            default => match ($this->shop->type) {
+                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/'.$this->url,
+                default => 'https://fulfilment.test/'.$this->url
+            }
+        };
     }
 
     public function externalLinks()

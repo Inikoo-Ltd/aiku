@@ -25,15 +25,15 @@ defineProps<{
     <FontAwesomeIcon :icon="faHeart" class="absolute top-2 right-2 text-gray-400 text-xl"></FontAwesomeIcon>
 
     <!-- Product Image -->
-    <Image :src="product.images[0].source" class="w-full h-62 object-cover mb-3 rounded" />
+    <Image :src="product.image.source" class="w-full h-62 object-cover mb-3 rounded" />
 
     <!-- Title -->
     <div class="font-medium text-sm mb-1">{{ product.name }}</div>
 
     <!-- SKU and RRP -->
     <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
-        <span>{{ product.code }}</span>
-        <span>RRP: {{ locale.currencyFormat(product.currency.code, product.price) }}/ {{ product.unit }}</span>
+        <span>{{ product?.code }}</span>
+        <span>RRP: {{ locale.currencyFormat(product?.currency?.code, ( product.rpp || 0 )) }}/ {{ product.unit }}</span>
     </div>
 
     <!-- Rating and Stock -->
@@ -57,8 +57,8 @@ defineProps<{
     <div class="mb-3">
         <!-- Retail Price -->
         <div class="flex justify-between text-sm font-semibold">
-            <span>{{ locale.currencyFormat(product.currency.code, product.price) }} </span>
-            <span class="text-xs">({{ Number.parseInt(product.units).toFixed(2) }}/{{ product.unit }})</span>
+            <span>{{ locale.currencyFormat(product?.currency?.code, product.price) }} </span>
+            <span class="text-xs">({{ parseInt(product.units, 10) }}/{{ product.unit }})</span>
         </div>
     </div>
 
