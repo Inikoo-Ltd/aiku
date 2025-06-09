@@ -21,9 +21,8 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
 {
     public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
-
         $customerSalesChannel = $order->customerSalesChannel;
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+        $globalSearch         = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('products.name', $value)
                     ->orWhereStartWith('products.code', $value)
@@ -59,7 +58,6 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
             });
         } else {
             $query->where('products.is_for_sale', true);
-
         }
 
 
@@ -68,6 +66,7 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
             'products.code',
             'products.name',
             'products.price',
+            'products.historic_asset_id',
             'products.available_quantity',
             'products.image_id',
             'portfolios.reference as portfolio_reference',
@@ -85,7 +84,6 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
 
     public function asController(Order $order, ActionRequest $request): LengthAwarePaginator
     {
-
         $this->initialisation($request);
 
         return $this->handle($order, 'products');
