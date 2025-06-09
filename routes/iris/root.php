@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
+use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +18,7 @@ Route::get(".well-known/apple-developer-merchantid-domain-association", function
 Route::middleware(["iris-auth:retina"])->group(function () {
     Route::prefix("")->group(function () {
         Route::group([], __DIR__ . '/system.php');
+        Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
     });
 });
