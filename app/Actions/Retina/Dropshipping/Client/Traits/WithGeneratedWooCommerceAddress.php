@@ -15,6 +15,7 @@ trait WithGeneratedWooCommerceAddress
 {
     public function getAttributes(array $data): array
     {
+        $address = [];
         $country = Country::where('code', Arr::get($data, 'country'))->first();
 
         if (!blank($data)) {

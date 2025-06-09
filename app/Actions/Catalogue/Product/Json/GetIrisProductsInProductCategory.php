@@ -11,7 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\ProductWebpageResource;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
@@ -20,9 +20,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetIrisProducts extends OrgAction
+class GetIrisProductsInProductCategory extends OrgAction
 {
-    public function handle(ProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -46,12 +46,12 @@ class GetIrisProducts extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $queryBuilder->where('department_id', $parent->id);
-        } elseif ($parent->type == ProductCategoryTypeEnum::FAMILY) {
-            $queryBuilder->where('family_id', $parent->id);
-        } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $queryBuilder->where('sub_department_id', $parent->id);
+        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $queryBuilder->where('department_id', $productCategory->id);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            $queryBuilder->where('family_id', $productCategory->id);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $queryBuilder->where('sub_department_id', $productCategory->id);
         }
 
         return $queryBuilder->defaultSort('-id')
@@ -63,14 +63,14 @@ class GetIrisProducts extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
-        return ProductWebpageResource::collection($products);
+        return IrisProductsInWebpageResource::collection($products);
     }
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($productCategory->shop, $request);
 
-        return $this->handle(parent: $productCategory);
+        return $this->handle(productCategory: $productCategory);
     }
 
 }

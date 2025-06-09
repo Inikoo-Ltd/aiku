@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $available_quantity
  * @property mixed $transaction_id
  * @property mixed $quantity_ordered
+ * @property mixed $historic_asset_id
  */
 class SelectProductsForBasketResource extends JsonResource
 {
@@ -32,6 +33,7 @@ class SelectProductsForBasketResource extends JsonResource
             'price'              => $this->price,
             'available_quantity' => $this->available_quantity,
             'transaction_id'     => $this->transaction_id,
+            'historic_asset_id'  => $this->historic_asset_id,
             'quantity_ordered'   => $this->quantity_ordered,
         ];
     }
