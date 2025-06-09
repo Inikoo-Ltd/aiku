@@ -41,7 +41,7 @@ import { Currency } from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
-import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
+import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
@@ -173,36 +173,78 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
 
 // Method: Submit the selected item
 const isLoadingSubmit = ref(false)
-const onAddProducts = async (products: number[]) => {
-    // console.log('products', products)
+// const onAddProducts = async (products: number[]) => {
+//     // console.log('products', products)
+//     // return 
+
+//     const productsMapped = products.map((product: any) => {
+//         return {
+//             id: product.item_id,
+//             quantity: product.quantity_selected ?? 1
+//         }
+//     })
+
+//     router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
+//         products: productsMapped
+//     }, {
+//         onBefore: () => isLoadingSubmit.value = true,
+//         onError: (error) => {
+//             notify({
+//                 title: "Something went wrong.",
+//                 text: error.products || undefined,
+//                 type: "error"
+//             })
+//         },
+//         onSuccess: () => {
+//             router.reload({only: ['data']})
+//             notify({
+//                 title: trans("Success!"),
+//                 text: trans("Successfully added portfolios"),
+//                 type: "success"
+//             })
+//             isModalProductListOpen.value = false
+//         },
+//         onFinish: () => isLoadingSubmit.value = false
+//     })
+// }
+
+const onAddProducts = async (product: {}) => {
+    console.log('products zzzz', product.transaction_id)
     // return 
 
-    const productsMapped = products.map((product: any) => {
-        return {
-            id: product.item_id,
-            quantity: product.quantity_selected ?? 1
-        }
-    })
 
-    router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
-        products: productsMapped
+    const routePost = product?.transaction_id ? 
+        {
+            route_post: route('retina.models.order.transaction.update', { order: props?.data?.data?.id, transaction: product.transaction_id }),
+            method: 'patch'
+        } : {
+            route_post: route('retina.models.order.transaction.store', { order: props?.data?.data?.id }),
+            method: 'post'
+        }
+
+    // return
+
+    router[routePost.method](routePost.route_post, {
+        products: [{
+            id: product.historic_asset_id,
+            quantity: product.quantity_selected ?? 1
+        }]
     }, {
-        onBefore: () => isLoadingSubmit.value = true,
+        only: ['transactions', 'box_stats'],
+        onBefore: () => 'isLoadingSubmit.value = true',
         onError: (error) => {
             notify({
-                title: "Something went wrong.",
+                title: trans("Something went wrong."),
                 text: error.products || undefined,
                 type: "error"
             })
         },
         onSuccess: () => {
-            router.reload({only: ['data']})
             notify({
                 title: trans("Success!"),
                 text: trans("Successfully added portfolios"),
                 type: "success"
             })
-            isModalProductListOpen.value = false
         },
         onFinish: () => isLoadingSubmit.value = false
     })
@@ -317,20 +359,18 @@ console.log('basket ds', props)
     </div>
 
 
-
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
-        <ProductsSelector
+        <ProductsSelectorAutoSelect
             :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
             :routeFetch="props.routes.select_products"
             :isLoadingSubmit
-            @submit="(products: {}[]) => onAddProducts(products)"
+            @submit="(products: {}) => onAddProducts(products)"
             withQuantity
         >
-        </ProductsSelector>
+        </ProductsSelectorAutoSelect>
     </Modal>
 
-    
 
     <UploadExcel
         v-if="upload_spreadsheet"
