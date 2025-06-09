@@ -76,6 +76,8 @@ Route::get('shop/{shop}/catalogue/collection/{scope}/products', GetProducts::cla
 Route::get('shop/{shop}/catalogue/{scope}/departments', GetDepartments::class)->name('shop.catalogue.departments');
 Route::get('shop/{shop}/catalogue/collection/{scope}/families', GetFamilies::class)->name('shop.catalogue.families');
 Route::get('shop/{shop}/catalogue/{scope}/collections', GetCollections::class)->name('shop.catalogue.collections');
+Route::get('shop/{shop}/catalogue/{scope}/collections/in-product-categories', [GetCollections::class, 'inProductCategory'])->name('shop.catalogue.collections.in-product-category');
+Route::get('shop/{shop}/catalogue/{scope}/collections/in-collection', [GetCollections::class, 'inCollection'])->name('shop.catalogue.collections.in-collection');
 
 Route::get('organisation/{organisation}/employees/packers', GetPackers::class)->name('employees.packers');
 Route::get('organisation/{organisation}/employees/pickers', GetPickers::class)->name('employees.pickers');

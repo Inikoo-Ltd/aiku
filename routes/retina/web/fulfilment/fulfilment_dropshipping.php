@@ -54,7 +54,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     });
     Route::prefix('ebay-user')->as('ebay.')->group(function () {
         Route::post('authorize', AuthorizeRetinaEbayUser::class)->name('authorize');
-        Route::post('/', StoreEbayUser::class)->name('store');    
+        Route::post('/', StoreEbayUser::class)->name('store');
     });
 
     Route::prefix('{customerSalesChannel}')->group(function () {

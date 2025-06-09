@@ -15,8 +15,10 @@ use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\Webpage;
+use App\Models\Web\WebpageHasCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -153,6 +155,13 @@ class Collection extends Model implements Auditable, HasMedia
                     ->wherePivot('type', 'Department')
                     ->withTimestamps();
     }
+
+    public function subDepartments(): MorphToMany
+    {
+        return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
+                    ->wherePivot('type', 'SubDepartment')
+                    ->withTimestamps();
+    }
     public function families(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
@@ -163,5 +172,10 @@ class Collection extends Model implements Auditable, HasMedia
     public function webpage(): MorphOne
     {
         return $this->morphOne(Webpage::class, 'model');
+    }
+
+    public function webpageHasCollections(): HasMany
+    {
+        return $this->hasMany(WebpageHasCollection::class);
     }
 }
