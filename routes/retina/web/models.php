@@ -176,15 +176,17 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
 
-    Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
-        Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
-        Route::patch('', UpdateRetinaTransaction::class)->name('update')->withoutScopedBindings();
-    });
+
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
         Route::post('upload', ImportRetinaOrderTransaction::class)->name('upload');
         Route::post('/', StoreRetinaTransaction::class)->name('store')->withoutScopedBindings();
     });
+});
+
+Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+    Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
+    Route::patch('', UpdateRetinaTransaction::class)->name('update')->withoutScopedBindings();
 });
 
 Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCustomer:id}')->group(function () {
