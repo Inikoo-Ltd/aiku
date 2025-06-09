@@ -10,8 +10,6 @@ namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
