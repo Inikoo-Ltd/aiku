@@ -90,7 +90,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_required'   => $this->quantity_required,
             'quantity_to_pick'    => $quantityToPick,
             'quantity_picked'     => $this->quantity_picked,
-            'quantity_not_picked' => $this->quantity_not_picked,
+            'quantity_not_picked' => (int) $this->quantity_not_picked,
             'quantity_packed'     => $this->quantity_packed,
             'quantity_dispatched' => $this->quantity_dispatched,
             'org_stock_code'      => $this->org_stock_code,
