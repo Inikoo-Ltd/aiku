@@ -66,7 +66,7 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
             'products.code',
             'products.name',
             'products.price',
-            'products.historic_asset_id',
+            'products.current_historic_asset_id as historic_asset_id',
             'products.available_quantity',
             'products.image_id',
             'portfolios.reference as portfolio_reference',
