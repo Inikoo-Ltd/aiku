@@ -148,7 +148,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                         :key="index"
                                         class="relative h-fit rounded xcursor-pointer p-2 flex gap-x-2 border"
                                         :class="[
-                                            typeof item.available_quantity !== 'undefined' && item.available_quantity < 1 ? 'bg-gray-200' : ''
+                                            typeof item.available_quantity !== 'undefined' && item.available_quantity < 1 ? 'bg-gray-200 border border-gray-300 opacity-40' : ''
                                         ]"
                                     >
                                         <slot name="product" :item="item">
@@ -183,10 +183,6 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                                     noSaveButton
                                                     parentClass="w-min"
                                                 />
-
-                                                <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
-                                                    <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
-                                                </div>
                                             </div>
                                         </slot>
                                     </div>
