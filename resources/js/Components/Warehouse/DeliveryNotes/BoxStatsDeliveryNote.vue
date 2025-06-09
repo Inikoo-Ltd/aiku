@@ -280,6 +280,19 @@ const base64ToPdf = (base: string) => {
 
 		<!-- Box: 2 -->
 		<BoxStatPallet class="py-2.5 pl-2.5 pr-3" icon="fal fa-user">
+			<template v-if="boxStats?.picker?.contact_name">
+				<div v-tooltip="trans('Picker name')"
+					class="border-l-4 border-yellow-300 bg-yellow-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+					<dt class="flex-none">
+						{{ trans("Picker") }}:
+					</dt>
+					<dd class="text-gray-500">
+						{{ boxStats?.picker?.contact_name}}
+					</dd>
+				</div>
+				<div class="border-t border-gray-300 w-full" />
+			</template>
+			
 			<div
 				xv-tooltip="trans('Current progress')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">

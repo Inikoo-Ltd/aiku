@@ -28,16 +28,17 @@ const props = defineProps<{
 
 <template>
   <div
-    class="h-full rounded-md overflow-hidden border-2 border-gray-400 flex justify-center"
+    class="h-fit rounded-md overflow-hidden border-2 border-gray-400 flex justify-center"
   >
     <div :class="theme.layout === 'fullscreen' ? 'w-full' : 'w-[80%]'" class="transition-all">
 
       <!-- Notification -->
-      <div class="group relative w-full h-8 bg-gray-200 text-gray-700 text-xxs flex items-center justify-center cursor-pointer">
+      <div class="group relative w-full h-8 bg-gray-200 text-gray-700 text-xxs flex items-center justify-center cursor-default">
         <span>Notification</span>
         <div class="inset-0 absolute items-center justify-center hidden group-hover:flex gap-x-1.5 bg-black/50 text-white text-xs whitespace-nowrap">
-          <span>Open Notification workshop</span>
-          <FontAwesomeIcon :icon="['fal', 'external-link']" fixed-width />
+          <!-- <span>Open Notification workshop</span>
+          <FontAwesomeIcon :icon="['fal', 'external-link']" fixed-width /> -->
+          Coming soon..
         </div>
       </div>
 
@@ -97,11 +98,11 @@ const props = defineProps<{
       <!-- Webpage Section -->
       <div class="flex justify-center" :style="getStyles(props.theme.container?.properties, 'desktop')">
         <a
-          class="group relative col-span-5 pb-8 h-[42vh] cursor-pointer"
+          class="group relative col-span-5 pb-8 h-[42vh] cursor-pointer w-full"
           :href="routeList.webpageRoute?.name ? route(routeList.webpageRoute.name, routeList.webpageRoute.parameters) : '#'"
           target="_blank"
         >
-          <div class="mt-6 font-black mx-auto text-center text-2xl whitespace-pre-line px-4" :style="{ color: theme.color?.[0] }">
+          <div class="mt-6 font-black mx-auto text-center text-2xl whitespace-pre-line px-6" :style="{ color: theme.color?.[0] }">
             Lorem ipsum dolor, sit amet consectetur adipisicing elit!
           </div>
 
@@ -111,7 +112,7 @@ const props = defineProps<{
               <div class="text-sm">Basic</div>
               <div class="text-2xl font-black">$74<span class="text-xs font-normal">/month</span></div>
               <div class="text-xs mt-2">Ideal for small businesses or startups with moderate storage needs.</div>
-              <div class="mt-3 rounded w-fit px-4 text-sm" :style="{ border: `2px solid ${theme.color?.[2]}`, color: theme.color?.[2] }">Buy</div>
+              <div class="mt-3 rounded w-fit px-4 text-sm" :style="{ color: theme.color?.[5], backgroundColor: theme.color?.[4] }">Buy</div>
             </div>
 
             <!-- Pro Plan -->
