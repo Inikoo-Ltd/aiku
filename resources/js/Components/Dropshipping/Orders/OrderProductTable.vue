@@ -5,6 +5,7 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import Table from '@/Components/Table/Table.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
 import { Table as TableTS} from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
@@ -20,6 +21,9 @@ const props = defineProps<{
     readonly?: boolean
 }>()
     
+
+const locale = inject('locale', retinaLayoutStructure)
+
 function productRoute(product) {
     // console.log(route().current())
     switch (route().current()) {
@@ -73,9 +77,15 @@ const debounceUpdateQuantity = debounce(
         </template>
 
         <!-- Column: Net -->
-        <!-- <template #cell(net_amount)="{ item }">
-            {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
-        </template> -->
+        <template #cell(asset_name)="{ item }">
+            <div>
+                <div>{{ item.asset_name }}</div>
+                <div class="text-gray-500 italic text-xs">
+                    Stock: {{ locale.number(item.quantity_available || 0) }} available
+
+                </div>
+            </div>
+        </template>
 
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
