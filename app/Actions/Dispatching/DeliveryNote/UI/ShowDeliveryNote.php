@@ -187,7 +187,7 @@ class ShowDeliveryNote extends OrgAction
                             'key'     => 'remove-picker',
                             'route'   => [
                                 'method'     => 'patch',
-                                'name'       => 'grp.models.delivery-note.state.remove-picker',
+                                'name'       => 'grp.models.delivery_note.state.remove-picker',
                                 'parameters' => [
                                     'deliveryNote' => $deliveryNote->id
                                 ]
