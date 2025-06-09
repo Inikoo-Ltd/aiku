@@ -10,54 +10,96 @@ import { routeType } from "@/types/route";
 import { trans } from "laravel-vue-i18n";
 import { ref } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAlbum, faAlbumCollection } from "@fal";
+import { faAlbumCollection } from "@fal";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
-
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import Modal from '@/Components/Utils/Modal.vue'
+import CollectionSelector from "@/Components/Departement&Family/CollectionSelector.vue";
+import { router } from "@inertiajs/vue3";
+import { notify } from "@kyvg/vue3-notification";
 
 library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
-        families: Array<any>
         department: {
             data: {
                 name: string,
-                description: string
-                image: Array<string>
+                description: string,
+                image: Array<string>,
                 url_master: routeType
             }
+        },
+        routeList: {
+            collectionRoute: routeType,
+            collections_route: routeType
+        },
+        routes: {
+            attach_collections_route: routeType,
+            detach_collections_route: routeType
         }
     }
 }>();
 
-const goToPrev = () => {
-    console.log("Previous clicked");
-};
-
-const goToNext = () => {
-    console.log("Next clicked");
-};
-
 const links = ref([
-  { label: trans("Create Collection"), route_target: props.data.routeList.collectionRoute, icon: faAlbumCollection },
+    {
+        label: trans("Create Collection"),
+        route_target: props.data.routeList.collectionRoute,
+        icon: faAlbumCollection
+    }
 ]);
 
-console.log(props)
+const isLoadingSubmit = ref(false);
+const isModalOpen = ref(false);
+
+const assignCollection = async (collections: any[]) => {
+    const method = props.data.routes.attach_collections_route.method;
+    const url = route(
+        props.data.routes.attach_collections_route.name,
+        props.data.routes.attach_collections_route.parameters
+    );
+
+    // Kirim hanya array ID
+    const collectionIds = collections.map(c => c.id);
+
+    router[method](url, { collections: collectionIds }, {
+        onBefore: () => isLoadingSubmit.value = true,
+        onError: (error) => {
+            notify({
+                title: trans("Something went wrong."),
+                text: error?.products || trans("Failed to add collection."),
+                type: "error"
+            });
+        },
+        onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully added portfolios"),
+                type: "success"
+            });
+            isModalOpen.value = false;
+        },
+        onFinish: () => {
+            isLoadingSubmit.value = false;
+        }
+    });
+}
 
 </script>
 
 <template>
     <div class="px-4 pb-8 m-5">
-        
+
         <Message v-if="data.department?.url_master" severity="success" closable>
             <template #icon>
                 <FontAwesomeIcon :icon="faInfoCircle" />
             </template>
             <span class="ml-2">Right Now you follow
-        <Link :href="route(data.department.url_master.name,data.department.url_master.parameters)" class="underline font-bold">
-        the master data
-        </Link>
-      </span>
+                <Link :href="route(data.department.url_master.name, data.department.url_master.parameters)"
+                    class="underline font-bold">
+                the master data
+                </Link>
+            </span>
         </Message>
 
 
@@ -74,7 +116,7 @@ console.log(props)
                         <div class="flex-1 mx-4">
                             <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
                                 <Image v-if="data?.department?.image" :src="data?.department?.image" :imageCover="true"
-                                       class="w-full h-40 object-cover rounded-t-lg" />
+                                    class="w-full h-40 object-cover rounded-t-lg" />
                                 <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
                                     <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
                                 </div>
@@ -97,22 +139,27 @@ console.log(props)
                 </div>
 
             </div>
-            
+
             <div class="bg-white flex justify-end">
                 <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
                     <div v-for="(item, index) in links" :key="index" class="p-2">
-                        <ButtonWithLink
-                        :routeTarget="item.route_target"
-                        full
-                        :icon="item.icon"
-                        :label="item.label"
-                        type="secondary"
-                        />
+                        <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
+                            type="secondary" />
                     </div>
+                    <div class="p-2">
+                        <Button full :label="'Add Collection'" @click="isModalOpen = true" />
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 
+
+    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-6xl">
+        <CollectionSelector :headLabel="trans('Add Collection to') + ' ' + data?.department?.name"
+            :routeFetch="props.data.routeList.collections_route" :isLoadingSubmit="isLoadingSubmit"
+            @submit="assignCollection" />
+    </Modal>
 
 </template>
