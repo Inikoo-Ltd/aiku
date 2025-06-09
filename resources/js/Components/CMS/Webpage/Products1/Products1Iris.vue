@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { faFilter, faTimes } from '@fas'
+import { faFilter, faTimes, faBoxOpen } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from '@/Composables/styles'
 import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-// import { debounce } from 'lodash-es' // Uncomment if needed and SSR-safe
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import ProductRender from './ProductRender.vue'
 import FilterProducts from './FilterProduct.vue'
 import Drawer from 'primevue/drawer'
+import Skeleton from 'primevue/skeleton'
 
 const props = defineProps<{
   fieldValue: {
@@ -26,7 +26,8 @@ const props = defineProps<{
 }>()
 
 const products = ref<any[]>([])
-const loading = ref(false)
+const loadingInitial = ref(false)
+const loadingMore = ref(false)
 const q = ref('')
 const orderBy = ref('created_at_desc')
 const page = ref(1)
@@ -54,7 +55,12 @@ function buildFilters(): Record<string, any> {
 }
 
 const fetchProducts = async (isLoadMore = false) => {
-  loading.value = true
+  if (isLoadMore) {
+    loadingMore.value = true
+  } else {
+    loadingInitial.value = true
+  }
+
   const filters = buildFilters()
 
   try {
@@ -76,7 +82,8 @@ const fetchProducts = async (isLoadMore = false) => {
   } catch (error) {
     notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
   } finally {
-    loading.value = false
+    loadingInitial.value = false
+    loadingMore.value = false
   }
 }
 
@@ -96,7 +103,7 @@ watch(filter, () => {
 }, { deep: true })
 
 const loadMore = () => {
-  if (page.value < lastPage.value) {
+  if (page.value < lastPage.value && !loadingMore.value) {
     page.value += 1
     fetchProducts(true)
   }
@@ -119,12 +126,14 @@ const isMobile = computed(() => props.screenType === 'mobile')
 onMounted(() => {
   fetchProducts()
 })
+
+console.log('Products1Iris mounted with fieldValue:', props.fieldValue)
 </script>
 
 <template>
-  <div class="flex flex-col lg:flex-row">
+  <div class="flex flex-col lg:flex-row" :style="getStyles(fieldValue.container?.properties, screenType)">
     <!-- Sidebar Filters for Desktop & Tablet -->
-    <aside v-if="!isMobile" class="w-68  p-4 transition-all duration-300 ease-in-out">
+    <aside v-if="!isMobile" class="w-68 p-4 transition-all duration-300 ease-in-out">
       <FilterProducts v-model="filter" />
     </aside>
 
@@ -134,7 +143,6 @@ onMounted(() => {
       <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
         <!-- Search Input + Mobile Filter Button -->
         <div class="flex items-center w-full md:w-1/3 gap-2">
-          <!-- Filter toggle only on mobile -->
           <Button
             v-if="isMobile"
             :icon="faFilter"
@@ -181,26 +189,45 @@ onMounted(() => {
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4"
         :style="getStyles(fieldValue?.container?.properties, screenType)"
       >
-        <div
-          v-if="products.length"
-          v-for="(product, index) in products"
-          :key="index"
-          class="border p-3 relative rounded shadow-sm bg-white"
-        >
-          <ProductRender :product="product" />
-        </div>
+        <!-- Initial Loading Skeletons -->
+        <template v-if="loadingInitial">
+          <div v-for="n in 8" :key="n" class="border p-3 rounded shadow-sm bg-white">
+            <Skeleton height="200px" class="mb-3" />
+            <Skeleton width="80%" class="mb-2" />
+            <Skeleton width="60%" />
+          </div>
+        </template>
+
+        <!-- Products -->
+        <template v-else-if="products.length">
+          <div
+            v-for="(product, index) in products"
+            :key="index"
+            class="border p-3 relative rounded shadow-sm bg-white"
+          >
+            <ProductRender :product="product" />
+          </div>
+        </template>
+
+        <!-- Empty State -->
+        <template v-else>
+          <div class="col-span-full text-center py-10 text-gray-500">
+            <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
+            <p>No products found.</p>
+          </div>
+        </template>
       </div>
 
       <!-- Load More Button -->
-      <div v-if="page < lastPage" class="flex justify-center mt-4">
+      <div v-if="page < lastPage && !loadingInitial" class="flex justify-center mt-4">
         <button
           @click="loadMore"
-          class="px-4 py-2 text-white rounded shadow"
-          :disabled="loading"
+          class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
+          :disabled="loadingMore"
           style="background-color: #1F2937;"
         >
-          <span v-if="loading">Loading...</span>
-          <span v-else>Load More</span>
+          <template v-if="loadingMore">Loading...</template>
+          <template v-else>Load More</template>
         </button>
       </div>
     </main>

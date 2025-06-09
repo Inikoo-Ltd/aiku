@@ -25,16 +25,30 @@ class SaveWebsiteSitemap extends OrgAction
     {
         $baseDir = 'sitemaps';
         $disk    = Storage::disk('local');
+        $limit   = 50000; // limit from Google is 50,000 URLs per sitemap
+        $chunkSize = 100;
 
         if (!$disk->exists($baseDir)) {
             $disk->makeDirectory($baseDir);
         }
+
         $sitemap = Sitemap::create();
-        foreach ($website->webpages as $webpage) {
-            $sitemap->add(Url::create($webpage->getUrl())
-                ->setLastModificationDate($webpage->updated_at));
-        }
-        $sitemap->writeToDisk('local', 'sitemaps/sitemap-' . $website->id  . '.xml');
+        $count = 0;
+
+        $website->webpages()->chunk($chunkSize, function ($webpages) use (&$sitemap, &$count, $limit, $website) {
+            foreach ($webpages as $webpage) {
+                $sitemap->add(Url::create($webpage->getUrl())
+                    ->setLastModificationDate($webpage->updated_at));
+
+                $count++;
+
+                if ($count >= $limit) {
+                    throw new \Exception("Sitemap limit of {$limit} URLs reached for website ID {$website->id}");
+                }
+            }
+        });
+
+        $sitemap->writeToDisk('local', "sitemaps/sitemap-{$website->id}.xml");
     }
 
     public string $commandSignature = 'website_sitemap';
@@ -42,7 +56,7 @@ class SaveWebsiteSitemap extends OrgAction
     public function asCommand($command)
     {
         /** @var Website $w */
-        $w = Website::find(11);
+        $w = Website::find(14);
 
         $this->handle($w);
 
