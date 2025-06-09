@@ -101,7 +101,7 @@ class ShowDepartment extends OrgAction
                     ],
                     'subNavigation' => $this->getDepartmentSubNavigation($department)
                 ],
-                'collections_route' => [
+                /* 'collections_route' => [
                     'name'       => 'grp.json.shop.catalogue.collections',
                     'parameters' => [
                         'shop'         => $department->shop->slug,
@@ -116,7 +116,7 @@ class ShowDepartment extends OrgAction
                         'webpage'  => $department->webpage->id,
                     ],
                     'method' => 'post'
-                ] : [],
+                ] : [], */
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => DepartmentTabsEnum::navigation()
