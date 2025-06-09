@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Comms\Notifications\GetSnsNotification;
+use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
@@ -47,6 +48,14 @@ Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
             // TODO
             Route::post('catch', CatchRetinaOrdersFromWooCommerce::class)->name('catch');
         });
+    });
+});
+
+Route::prefix('ebay')->name('webhooks.ebay.')->group(function () {
+    Route::post('ebay-user-callback', CallbackRetinaEbayUser::class)->name('callback');
+
+    Route::prefix('{ebayUser:id}')->group(function () {
+        
     });
 });
 

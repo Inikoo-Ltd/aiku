@@ -26,6 +26,7 @@ use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -416,6 +417,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function wooCommerceUser(): HasOne
     {
         return $this->hasOne(WooCommerceUser::class);
+    }
+
+    public function ebayUser(): HasOne
+    {
+        return $this->hasOne(EbayUser::class);
     }
 
     public function tiktokUser(): HasOne
