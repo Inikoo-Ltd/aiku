@@ -89,9 +89,13 @@ trait WithEbayApiRequest
 
                 // Store tokens in the model
                 $this->update([
-                    'ebay_access_token' => $tokenData['access_token'],
-                    'ebay_refresh_token' => $tokenData['refresh_token'],
-                    'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                    'settings' => [
+                        'credentials' => [
+                            'ebay_access_token' => $tokenData['access_token'],
+                            'ebay_refresh_token' => $tokenData['refresh_token'],
+                            'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                        ]
+                    ]
                 ]);
 
                 return $tokenData;
