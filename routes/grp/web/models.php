@@ -15,7 +15,9 @@ use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
+use App\Actions\Catalogue\Collection\AttachCollectionsToWebpage;
 use App\Actions\Catalogue\Collection\AttachCollectionToModels;
+use App\Actions\Catalogue\Collection\AttachCollectionToWebpage;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
@@ -648,6 +650,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
     Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
+    Route::post('attach-collections', AttachCollectionsToWebpage::class)->name('attach_collections');
+    Route::post('{collection:id}/attach-collection', AttachCollectionToWebpage::class)->name('attach_collection');
 });
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {

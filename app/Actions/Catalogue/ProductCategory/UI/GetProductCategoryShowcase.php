@@ -37,6 +37,14 @@ class GetProductCategoryShowcase
                         'department'   => $productCategory->slug,
                     ],
                     'method' => 'get'
+                ],
+                'collections_route' =>  [
+                    'name'       => 'grp.json.shop.catalogue.collections',
+                    'parameters' => [
+                        'shop'         => $productCategory->shop->slug,
+                        'scope'   => $productCategory->shop->slug
+                    ],
+                    'method' => 'get'
                 ]
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
@@ -61,6 +69,14 @@ class GetProductCategoryShowcase
                         //add product id
                     ],
                     'method' => 'patch'
+                ],
+                'collections_route' =>  [
+                    'name'       => 'grp.json.shop.catalogue.collections',
+                    'parameters' => [
+                        'shop'         => $productCategory->shop->slug,
+                        'scope'   => $productCategory->shop->slug
+                    ],
+                    'method' => 'get'
                 ]
             ];
         } else {
@@ -77,6 +93,14 @@ class GetProductCategoryShowcase
                             'family' => $productCategory->slug,
                         ],
                         'method' => 'get'
+                    ],
+                    'collections_route' =>  [
+                        'name'       => 'grp.json.shop.catalogue.collections',
+                        'parameters' => [
+                            'shop'         => $productCategory->shop->slug,
+                            'scope'   => $productCategory->shop->slug
+                        ],
+                        'method' => 'get'
                     ]
                 ];
             } elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.families.show') {
@@ -88,6 +112,14 @@ class GetProductCategoryShowcase
                             'shop'         => $productCategory->shop->slug,
                             'department'   => $productCategory->department->slug,
                             'family'       => $productCategory->slug,
+                        ],
+                        'method' => 'get'
+                    ],
+                    'collections_route' =>  [
+                        'name'       => 'grp.json.shop.catalogue.collections',
+                        'parameters' => [
+                            'shop'         => $productCategory->shop->slug,
+                            'scope'   => $productCategory->shop->slug
                         ],
                         'method' => 'get'
                     ]
@@ -104,7 +136,16 @@ class GetProductCategoryShowcase
                             'family'       => $productCategory->slug,
                         ],
                         'method' => 'get'
+                    ],
+                    'collections_route' =>  [
+                        'name'       => 'grp.json.shop.catalogue.collections',
+                        'parameters' => [
+                            'shop'         => $productCategory->shop->slug,
+                            'scope'   => $productCategory->shop->slug
+                        ],
+                        'method' => 'get'
                     ]
+
                 ];
             } elseif ($routeName == 'grp.org.shops.show.catalogue.departments.show.sub_departments.show') {
                 $data['routeList'] = [
@@ -116,6 +157,14 @@ class GetProductCategoryShowcase
                             'department'   => $productCategory->department->slug,
                             'subDepartment' => $productCategory->subDepartment?->slug,
                             'family'       => $productCategory->slug,
+                        ],
+                        'method' => 'get'
+                    ],
+                    'collections_route' =>  [
+                        'name'       => 'grp.json.shop.catalogue.collections.in-product-category',
+                        'parameters' => [
+                            'shop'         => $productCategory->shop->slug,
+                            'scope'   => $productCategory->slug
                         ],
                         'method' => 'get'
                     ]
@@ -131,6 +180,13 @@ class GetProductCategoryShowcase
                 ],
                 'method'     => 'delete'
             ],
+            'attach_collections_route' => $productCategory->webpage ? [
+                'name'       => 'grp.models.webpage.attach_collections',
+                'parameters' => [
+                    'webpage'  => $productCategory->webpage->id,
+                ],
+                'method' => 'post'
+            ] : [],
         ];
 
 
