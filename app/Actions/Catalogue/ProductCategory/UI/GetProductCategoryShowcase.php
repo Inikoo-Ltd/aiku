@@ -161,10 +161,10 @@ class GetProductCategoryShowcase
                         'method' => 'get'
                     ],
                     'collections_route' =>  [
-                        'name'       => 'grp.json.shop.catalogue.collections',
+                        'name'       => 'grp.json.shop.catalogue.collections.in-product-category',
                         'parameters' => [
                             'shop'         => $productCategory->shop->slug,
-                            'scope'   => $productCategory->shop->slug
+                            'scope'   => $productCategory->slug
                         ],
                         'method' => 'get'
                     ]
@@ -181,7 +181,7 @@ class GetProductCategoryShowcase
                 'method'     => 'delete'
             ],
             'attach_collections_route' => $productCategory->webpage ? [
-                'name'       => 'grp.models.webpage.attach_collection',
+                'name'       => 'grp.models.webpage.attach_collections',
                 'parameters' => [
                     'webpage'  => $productCategory->webpage->id,
                 ],
