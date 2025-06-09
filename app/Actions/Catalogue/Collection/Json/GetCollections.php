@@ -17,6 +17,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
+use Shopify\Rest\Admin2022_04\Collect;
 
 class GetCollections extends OrgAction
 {
@@ -24,11 +25,13 @@ class GetCollections extends OrgAction
 
     private Shop $parent;
 
-    public function handle(Shop $parent, Collection $scope, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $parent, Collection|Shop $scope, $prefix = null): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(Collection::class);
-        $queryBuilder->whereNotIn('collections.id', $scope->collections()->pluck('model_id'))
-                        ->where('collections.id', '!=', $scope->id);
+        if($scope instanceof Collection) {
+            $queryBuilder->whereNotIn('collections.id', $scope->collections()->pluck('model_id'))
+                            ->where('collections.id', '!=', $scope->id);
+        }
 
         $queryBuilder
             ->defaultSort('collections.code')
@@ -62,7 +65,14 @@ class GetCollections extends OrgAction
         return CollectionResource::collection($collections);
     }
 
-    public function asController(Shop $shop, Collection $scope, ActionRequest $request): LengthAwarePaginator
+    public function inCollection(Shop $shop, Collection $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+        return $this->handle(parent: $shop, scope: $scope);
+    }
+
+    public function asController(Shop $shop, Shop $scope, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);

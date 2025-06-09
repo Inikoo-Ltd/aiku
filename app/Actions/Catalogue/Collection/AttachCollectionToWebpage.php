@@ -9,7 +9,9 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateWebpages;
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateCollections;
 use App\Models\Catalogue\Collection;
 use App\Models\Web\Webpage;
 
@@ -20,7 +22,13 @@ class AttachCollectionToWebpage extends OrgAction
         $webpage->webpageHasCollections()->create([
             'collection_id' => $collection->id,
         ]);
-        CollectionHydrateItems::dispatch($collection);
+
+        $webpage->refresh();
+        $collection->refresh();
+
+        CollectionHydrateWebpages::dispatch($collection);
+        WebpageHydrateCollections::dispatch($webpage);
+        
         return $collection;
     }
 
