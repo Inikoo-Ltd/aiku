@@ -1,10 +1,10 @@
 <?php
-
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 17 Apr 2024 02:07:50 Malaysia Time, Kuala Lumpur , Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
+ * author Arya Permana - Kirin
+ * created on 09-06-2025-15h-56m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
 
 namespace App\Actions\Catalogue\Collection\Hydrators;
 
@@ -13,7 +13,7 @@ use App\Models\Catalogue\Collection;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CollectionHydrateItems
+class CollectionHydrateWebpages
 {
     use AsAction;
     use WithEnumStats;
@@ -32,12 +32,7 @@ class CollectionHydrateItems
     {
 
         $stats         = [
-            'number_departments' => $collection->departments()->count(),
-            'number_sub_departments' => $collection->subDepartments()->count(),
-            'number_families'    => $collection->families()->count(),
-            'number_products'    => $collection->products()->count(),
-            'number_collections' => $collection->collections()->count(),
-
+            'number_parent_webpages' => $collection->webpageHasCollections()->count(),
         ];
 
         $collection->stats->update($stats);

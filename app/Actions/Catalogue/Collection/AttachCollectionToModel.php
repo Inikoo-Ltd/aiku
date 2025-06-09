@@ -31,6 +31,12 @@ class AttachCollectionToModel extends OrgAction
                     'type' => 'Family',
                 ]);
             }
+
+            if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $model->collections()->attach($collection->id, [
+                    'type' => 'SubDepartment',
+                ]);
+            }
         } elseif ($model instanceof Product) {
             $model->collections()->attach($collection->id, [
                 'type' => 'Product',
