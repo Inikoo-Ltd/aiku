@@ -19,16 +19,18 @@ class AttachCollectionToWebpage extends OrgAction
 {
     public function handle(Webpage $webpage, Collection $collection): Collection
     {
-        $webpage->webpageHasCollections()->create([
-            'collection_id' => $collection->id,
-        ]);
+        data_set($data, 'organisation_id', $webpage->organisation_id);
+        data_set($data, 'collection_id', $collection->id);
+        data_set($data, 'group_id', $webpage->group_id);
+
+        $webpage->webpageHasCollections()->create($data);
 
         $webpage->refresh();
         $collection->refresh();
 
         CollectionHydrateWebpages::dispatch($collection);
         WebpageHydrateCollections::dispatch($webpage);
-        
+
         return $collection;
     }
 
