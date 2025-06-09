@@ -36,13 +36,13 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
             $product = $portfolio->item;
 
             $images = [];
-            // if (app()->isProduction()) {
-            //     foreach ($product->images as $image) {
-            //         $images[] = [
-            //             'src' => GetImgProxyUrl::run($image->getImage())
-            //         ];
-            //     }
-            // }  //TODO: fix this make function to return jpg
+            if (app()->isProduction()) {
+                foreach ($product->images as $image) {
+                    $images[] = [
+                        'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
+                    ];
+                }
+            }
 
             $wooCommerceProduct = [
                 'name' => $portfolio->customer_product_name,
