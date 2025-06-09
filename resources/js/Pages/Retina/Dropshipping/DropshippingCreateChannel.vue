@@ -54,11 +54,15 @@ const props = defineProps<{
         connectRoute: routeType
         isConnected: boolean
     }
+    type_ebay: {
+        connectRoute: routeType
+    }
     total_channels: {
         manual: number
         shopify: number
         woocommerce: number
         tiktok: number
+        ebay: number
     }
 }>();
 
@@ -111,6 +115,23 @@ const onSubmitWoocommerce = async () => {
     isModalWooCommerce.value = false;
     wooCommerceInput.value.name = null;
     wooCommerceInput.value.url = null;
+
+    window.location.href = response.data;
+};
+
+// Section: ebay
+const isModalEbay = ref<boolean>(false);
+const ebayInput = ref({
+    name: null as null | string,
+    url: null as null | string
+});
+const onSubmitEbay = async () => {
+    const response = await axios.post(
+        route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters),
+        ebayInput.value);
+    isModalEbay.value = false;
+    ebayInput.value.name = null;
+    ebayInput.value.url = null;
 
     window.location.href = response.data;
 };
@@ -204,6 +225,32 @@ const onSubmitWoocommerce = async () => {
 
                 </div>
             </div>
+            <!-- Section: Ebay -->
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+                <div
+                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <img src="https://e7.pngegg.com/pngimages/325/220/png-clipart-ebay-logo-ebay-online-shopping-amazon-com-sales-ebay-logo-text-logo-thumbnail.png"
+                         alt="" class="h-12">
+
+                    <div class="flex flex-col">
+                        <div class="font-semibold">Ebay</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}</div>
+                    </div>
+                </div>
+
+                <div class="w-full flex justify-end">
+                    <Button
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="() => isModalEbay = true"
+                    />
+
+                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+
+                </div>
+            </div>
         </div>
     </div>
 
@@ -264,6 +311,31 @@ const onSubmitWoocommerce = async () => {
             </div>
 
             <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6" />
+        </div>
+    </Modal>
+
+    <!-- Modal: Ebay -->
+    <Modal :isOpen="isModalEbay" @onClose="isModalEbay = false" width="w-full max-w-lg">
+        <div class="">
+            <div class="mb-4">
+                <div class="text-center font-semibold text-xl">
+                    {{ trans("Ebay store detail") }}
+                </div>
+
+                <div class="text-center text-xs text-gray-500">
+                    {{ trans("Enter your Ebay store detail") }}
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-y-2">
+                <PureInput v-model="ebayInput.name" :placeholder="trans('Your store name')"></PureInput>
+                <PureInputWithAddOn v-model="ebayInput.url" :leftAddOn="{
+                    icon: 'fal fa-globe'
+                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                                    @keydown.enter="() => onSubmitEbay()" />
+            </div>
+
+            <Button @click="() => onSubmitEbay()" full label="Create" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 </template>
