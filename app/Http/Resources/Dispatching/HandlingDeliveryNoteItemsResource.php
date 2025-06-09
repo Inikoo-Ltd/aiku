@@ -17,7 +17,6 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
     public function toArray($request): array
     {
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
-        // dd($deliveryNoteItem);
         $fullWarning = [
             'condition' => false,
             'message' => ''
@@ -41,7 +40,7 @@ class HandlingDeliveryNoteItemsResource extends JsonResource
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,
             'picking_route'       => [
-                'name' => 'grp.models.delivery-note-item.picking.store',
+                'name' => 'grp.models.delivery_note_item.picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],

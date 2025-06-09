@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
-
-import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { reactive, ref, watch } from "vue"
-import type { Component } from "vue"
-
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import RetinaTablePortfolios from "@/Components/Tables/Retina/RetinaTablePortfolios.vue"
@@ -15,15 +10,12 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt } from "@fas"
 import { faArrowLeft, faArrowRight, faUpload } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
-import { inject } from "vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set } from "lodash"
@@ -32,7 +24,6 @@ import PortfoliosStepSyncShopify from "@/Components/Retina/Dropshipping/Portfoli
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 library.add(faSyncAlt)
 
-// import FileShowcase from '@/xxxxxxxxxxxx'
 
 const props = defineProps<{
 	title: string
@@ -48,8 +39,6 @@ const props = defineProps<{
 		}
     }
 	products: {}
-	// is_manual: boolean
-	// order_route: routeType
 	routes: {
 		syncAllRoute: routeType
 		addPortfolioRoute: routeType
@@ -72,20 +61,7 @@ const props = defineProps<{
 
 const step = ref(props.step)
 
-const locale = inject('locale', aikuLocaleStructure)
 
-// const onCancelOrder = () => {
-// 	orderMode.value = false
-// }
-
-// const component = computed(() => {
-// 	const components: Component = {
-// 		// showcase: FileShowcase
-// 		// products: TableProducts
-// 	}
-
-// 	return components[currentTab.value]
-// })
 
 // Section: Add portfolios
 const isOpenModalPortfolios = ref(false)
@@ -192,7 +168,7 @@ const fetchIndexUnuploadedPortfolios = async () => {
 		route('retina.dropshipping.customer_sales_channels.portfolios.index',
 			{
 				customerSalesChannel: route().params.customerSalesChannel,
-				'filter[unupload]': 'true',
+				'filter[un_upload]': 'true',
 			}
 		)
 	)
@@ -434,26 +410,7 @@ const bulkDelete = () => {
 			</div>
 
 			<div class="relative space-x-2 space-y-1 text-right">
-				<!-- Button: bulk remove -->
-				<!-- <ButtonWithLink
-					v-if="selectedPortfoliosToSync?.length"
-					:routeTarget="{
-						name: routes.batchDeletePortfolioRoute.name,
-						parameters: routes.batchDeletePortfolioRoute.parameters,
-						method: routes.batchDeletePortfolioRoute.method,
-						body: {
-							portfolios: compSelectedPortfoliosToSyncId,
-						},
-					}"
-					:label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
-					type="delete"
-					size="s"
-					isWithError
-					@success="() => {
-						selectedPortfoliosToSync = []
-						fetchIndexUnuploadedPortfolios()
-					}"
-				/> -->
+
 
 				<!-- Button: bulk upload -->
 				<Button

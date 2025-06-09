@@ -4,7 +4,7 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/navigation'
 
-import { Pagination, Autoplay, Virtual } from 'swiper/modules'
+import { Pagination, Autoplay } from 'swiper/modules'
 import { getStyles } from '@/Composables/styles'
 import { faImage } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -21,9 +21,6 @@ const props = defineProps<{
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const emits = defineEmits<{
-    (e: 'autoSave'): void
-}>()
 
 const keySwiper = ulid()
 
@@ -46,9 +43,8 @@ const getHref = (item: number) => {
         :touch-start-prevent-default="false"
         :simulate-touch="false"
         :touch-ratio="1"
-        virtual
         :pagination="{ clickable: true }"
-        :modules="[Pagination, Autoplay, Virtual]"
+        :modules="[Pagination, Autoplay]"
         :spaceBetween="fieldValue.carousel_data.carousel_setting.spaceBetween" class="touch-pan-x touch-pan-y"
         :style="getStyles(fieldValue.container?.properties, screenType)"
         :breakpoints="{
@@ -61,7 +57,6 @@ const getHref = (item: number) => {
             v-for="(card, index) in fieldValue.carousel_data.cards"
             :key="index"
             :style="getStyles(fieldValue.carousel_data.card_container.properties, screenType)"
-            :virtualIndex="index"
             class=" flex flex-col"
         >
             <component :is="getHref(card) ? 'a' : 'div'" :href="card?.link?.href" :target="card?.link?.target"  class="flex-1 flex flex-col">

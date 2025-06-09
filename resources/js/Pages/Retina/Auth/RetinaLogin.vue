@@ -8,7 +8,6 @@ import { onMounted, ref, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import Background from '@/Components/CMS/Fields/Background.vue'
 
 defineOptions({ layout: RetinaShowIris })
 const form = useForm({
@@ -33,7 +32,6 @@ const inputUsername = ref(null)
 
 onMounted(async () => {
     await nextTick()
-    console.log('ff', inputUsername.value?._inputRef)
     inputUsername.value?._inputRef?.focus()
 })
 

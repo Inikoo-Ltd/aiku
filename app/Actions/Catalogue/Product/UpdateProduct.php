@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -60,8 +61,12 @@ class UpdateProduct extends OrgAction
 
         UpdateAsset::run($product->asset, $assetData, $this->hydratorsDelay);
 
-        if (Arr::hasAny($changed, ['state', 'status'])) {
+        if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
+        }
+
+        if (Arr::has($changed, 'exclusive_for_customer_id')) {
+            CustomerHydrateExclusiveProducts::dispatch($product->exclusiveForCustomer)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny(
@@ -85,7 +90,7 @@ class UpdateProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'          => [
+            'code'                      => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -100,26 +105,33 @@ class UpdateProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'          => ['sometimes', 'required', 'max:250', 'string'],
-            'price'         => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'   => ['sometimes', 'required', 'max:1500'],
-            'rrp'           => ['sometimes', 'required', 'numeric'],
-            'data'          => ['sometimes', 'array'],
-            'settings'      => ['sometimes', 'array'],
-            'status'        => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
-            'state'         => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'trade_config'  => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
-            'follow_master' => ['sometimes', 'boolean'],
-
+            'name'                      => ['sometimes', 'required', 'max:250', 'string'],
+            'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description'               => ['sometimes', 'required', 'max:1500'],
+            'rrp'                       => ['sometimes', 'required', 'numeric'],
+            'data'                      => ['sometimes', 'array'],
+            'settings'                  => ['sometimes', 'array'],
+            'status'                    => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
+            'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'trade_config'              => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
+            'follow_master'             => ['sometimes', 'boolean'],
+            'exclusive_for_customer_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
+            ],
 
             'org_stocks' => ['sometimes', 'present', 'array']
         ];
 
 
         if (!$this->strict) {
-            $rules['org_stocks']   = ['sometimes', 'nullable', 'array'];
-            $rules['gross_weight'] = ['sometimes', 'integer', 'gt:0'];
-            $rules                 = $this->noStrictUpdateRules($rules);
+            $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
+            $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
+            $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
+
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

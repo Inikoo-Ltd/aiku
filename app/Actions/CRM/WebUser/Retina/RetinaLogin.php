@@ -28,8 +28,6 @@ class RetinaLogin
     use AsController;
     use WithLogin;
 
-    private string $gate = 'retina';
-
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -55,7 +53,7 @@ class RetinaLogin
                     ->where('email', $handle)->first();
             }
 
-            if ($webUser and $webUser->auth_type == WebUserAuthTypeEnum::AURORA) {
+            if ($webUser && $webUser->auth_type == WebUserAuthTypeEnum::AURORA) {
                 $processed  = true;
                 $authorised = AuthoriseWebUserWithLegacyPassword::run($webUser, $request->validated());
                 if ($authorised) {
@@ -96,7 +94,7 @@ class RetinaLogin
             );
 
             throw ValidationException::withMessages([
-                'username' => trans('auth.failed'),
+                'username' => __('The provided credentials do not match our records.'),
             ]);
         }
 

@@ -6,7 +6,7 @@
  *  Copyright (c) 2022, inikoo
  */
 
-namespace App\Http\Resources\Catalogue;
+namespace App\Http\Resources\Dropshipping;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
@@ -32,7 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property StoredItem|Product $item
  *
  */
-class DropshippingPortfolioResource extends JsonResource
+class FulfilmentPortfolioResource extends JsonResource
 {
     public function toArray($request): array
     {
