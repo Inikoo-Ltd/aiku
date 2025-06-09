@@ -160,7 +160,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                                 <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                                     {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
                                                 </div>
-                                                
+
                                                 <NumberWithButtonSave
                                                     v-if="withQuantity"
                                                     :modelValue="get(item, 'quantity_selected', 0)"
@@ -178,6 +178,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                                     noSaveButton
                                                     parentClass="w-min"
                                                 />
+                                                <pre>{{ item }}</pre>
                                             </div>
                                         </slot>
                                     </div>
