@@ -39,18 +39,18 @@ trait WithSubDepartmentSubNavigation
                     'tooltip' => __('families')
                 ]
             ],
-            [
-                'label'    => __('Collections'),
-                'number'   => $subDepartment->stats->number_collections,
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
-                    'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-album-collection'],
-                    'tooltip' => __('collections')
-                ]
-            ],
+            // [
+            //     'label'    => __('Collections'),
+            //     'number'   => $subDepartment->stats->number_collections,
+            //     'route'     => [
+            //         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+            //         'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
+            //     ],
+            //     'leftIcon' => [
+            //         'icon'    => ['fal', 'fa-album-collection'],
+            //         'tooltip' => __('collections')
+            //     ]
+            // ],
         ];
     }
 

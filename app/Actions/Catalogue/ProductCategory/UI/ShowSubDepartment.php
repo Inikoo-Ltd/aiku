@@ -128,6 +128,23 @@ class ShowSubDepartment extends OrgAction
                     ],
                 ],
 
+                'collections_route' => [
+                    'name'       => 'grp.json.shop.catalogue.collections',
+                    'parameters' => [
+                        'shop'         => $subDepartment->shop->slug,
+                        'scope'   => $subDepartment->shop->slug
+                    ],
+                    'method' => 'get'
+                ],
+                
+                'attach_collections_route' => $subDepartment->webpage ? [
+                    'name'       => 'grp.models.webpage.attach_collection',
+                    'parameters' => [
+                        'webpage'  => $subDepartment->webpage->id,
+                    ],
+                    'method' => 'post'
+                ] : [],
+
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($subDepartment)),

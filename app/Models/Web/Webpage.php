@@ -266,6 +266,11 @@ class Webpage extends Model implements Auditable, HasMedia
         return $this->hasMany(WebpageTimeSeries::class);
     }
 
+    public function webpageHasCollections(): HasMany
+    {
+        return $this->hasMany(WebpageHasCollection::class);
+    }
+
     /**
      * Get the redirects associated with the webpage.
      *

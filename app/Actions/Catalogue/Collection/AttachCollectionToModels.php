@@ -23,6 +23,7 @@ class AttachCollectionToModels extends OrgAction
             'products'    => Product::class,
             'families'    => ProductCategory::class,
             'departments' => ProductCategory::class,
+            'sub_departments' => ProductCategory::class,
             'collections' => Collection::class,
         ];
 
@@ -49,6 +50,8 @@ class AttachCollectionToModels extends OrgAction
                 'families.*'    => ['exists:product_categories,id'],
                 'departments'   => ['nullable', 'array'],
                 'departments.*' => ['exists:product_categories,id'],
+                'sub_departments'   => ['nullable', 'array'],
+                'sub_departments.*' => ['exists:product_categories,id'],
                 'collections'   => ['nullable', 'array'],
                 'collections.*' => ['exists:collections,id'],
         ];

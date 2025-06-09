@@ -1,0 +1,12 @@
+{
+	"scope": "webpage",
+	"slug": "collections-1",
+	"code": "collections-1",
+	"name": "Collections-1",
+	"website_type" : ["info","b2b","b2","dropshipping","digital_agency"],
+	"fixed": true,
+	"icon": ["fal", "bars"],
+	"data": {
+		"fieldValue": {}
+	}
+}

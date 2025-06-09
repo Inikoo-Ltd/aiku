@@ -9,6 +9,7 @@
 */
 
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
+use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
@@ -57,6 +58,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::delete('wc-user', DeleteRetinaShopifyUser::class)->name('wc.delete');
 
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');
+    Route::get('ebay-user-callback', CallbackRetinaEbayUser::class)->name('ebay.callback');
 });
 
 Route::prefix('client')->as('client.')->group(function () {

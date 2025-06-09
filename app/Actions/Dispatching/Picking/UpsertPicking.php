@@ -27,24 +27,26 @@ class UpsertPicking extends OrgAction
     protected DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Picking
+    public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): bool
     {
 
         $pickingID = Arr::pull($modelData, 'picking_id');
-
         $picking = null;
         if ($pickingID) {
-            $picking = Picking::find(Arr::pull($modelData, 'picking_id'));
+            $picking = Picking::find($pickingID);
         }
 
         if ($picking) {
+            $modelData = [
+                'quantity' => Arr::get($modelData, 'quantity', 0),
+            ];
             $picking = UpdatePicking::run($picking, $modelData);
         } else {
             $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
         }
 
 
-        return $picking;
+        return true;
     }
 
     public function rules(): array
@@ -60,8 +62,6 @@ class UpsertPicking extends OrgAction
                 Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
             ],
             'quantity'              => ['required', 'numeric', 'min:0'],
-
-
             'picker_user_id' => [
                 'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)

@@ -37,6 +37,7 @@ class StoreCollection extends OrgAction
 
     public function handle(Shop|CollectionCategory|ProductCategory $parent, array $modelData): Collection
     {
+        $shop = null;
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         if ($parent instanceof CollectionCategory) {
             $shop = $parent->shop;
@@ -53,7 +54,7 @@ class StoreCollection extends OrgAction
         data_set($modelData, 'parent_id', $parent->id);
 
         /** @var Collection $collection */
-        $collection = $parent->collections()->create($modelData);
+        $collection = $shop->collections()->create($modelData);
 
         $collection->stats()->create();
         $collection->salesIntervals()->create();
@@ -61,6 +62,12 @@ class StoreCollection extends OrgAction
 
         if ($imageData['image']) {
             $this->processCatalogue($imageData, $collection);
+        }
+        
+        if($parent instanceof ProductCategory) {
+            if($parent->type == ProductCategoryTypeEnum::DEPARTMENT || $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                AttachCollectionToWebpage::make()->action($parent->webpage, $collection);
+            }
         }
 
         CollectionRecordSearch::dispatch($collection);

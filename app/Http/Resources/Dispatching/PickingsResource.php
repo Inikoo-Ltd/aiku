@@ -23,6 +23,7 @@ class PickingsResource extends JsonResource
             'engine'              => $this->engine,
             'picker_name'         => $this->picker->contact_name,
             'location_code'       => $this->location?->code,
+            'location_slug'       => $this->location?->slug,
             'location_id'         => $this->location?->id,
             'update_route'        => [
                 'name'  => 'grp.models.picking.update',
@@ -30,6 +31,13 @@ class PickingsResource extends JsonResource
                     'picking' => $this->id
                 ],
                 'method' => 'patch'
+            ],
+            'undo_picking_route'        => [
+                'name'  => 'grp.models.picking.delete',
+                'parameters' => [
+                    'picking' => $this->id
+                ],
+                'method' => 'delete'
             ],
         ];
     }
