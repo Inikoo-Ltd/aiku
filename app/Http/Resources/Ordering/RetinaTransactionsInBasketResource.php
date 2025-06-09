@@ -42,18 +42,19 @@ class RetinaTransactionsInBasketResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                  => $this->id,
-            'quantity_ordered'    => $this->quantity_ordered,
-            'quantity_bonus'      => $this->quantity_bonus,
-            'gross_amount'        => $this->gross_amount,
-            'net_amount'          => $this->net_amount,
-            'price'               => $this->price,
-            'asset_code'          => $this->asset_code,
-            'asset_name'          => $this->asset_name,
-            'asset_type'          => $this->asset_type,
-            'product_slug'        => $this->product_slug,
-            'created_at'          => $this->created_at,
-            'currency_code'       => $this->currency_code,
+            'id'                 => $this->id,
+            'quantity_ordered'   => $this->quantity_ordered,
+            'quantity_bonus'     => $this->quantity_bonus,
+            'gross_amount'       => $this->gross_amount,
+            'net_amount'         => $this->net_amount,
+            'price'              => $this->price,
+            'asset_code'         => $this->asset_code,
+            'asset_name'         => $this->asset_name,
+            'asset_type'         => $this->asset_type,
+            'product_slug'       => $this->product_slug,
+            'created_at'         => $this->created_at,
+            'currency_code'      => $this->currency_code,
+            'quantity_available' => $this->quantity_available ?? 0,
 
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
