@@ -215,7 +215,7 @@ const onAddProducts = async (product: {}) => {
 
     const routePost = product?.transaction_id ? 
         {
-            route_post: route('retina.models.order.transaction.update', { order: props?.data?.data?.id, transaction: product.transaction_id }),
+            route_post: route('retina.models.transaction.update', {transaction: product.transaction_id }),
             method: 'patch',
             body: {
                 quantity: product.quantity_selected ?? 1,
