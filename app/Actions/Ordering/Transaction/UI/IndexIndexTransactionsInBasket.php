@@ -17,7 +17,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class RetinaIndexTransactionsInBasket extends OrgAction
+class IndexIndexTransactionsInBasket extends OrgAction
 {
     public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
@@ -56,6 +56,7 @@ class RetinaIndexTransactionsInBasket extends OrgAction
                 'assets.name as asset_name',
                 'assets.type as asset_type',
                 'products.price as price',
+                'products.available_quantity as available_quantity',
                 'products.slug as product_slug',
                 'currencies.code as currency_code',
                 'orders.id as order_id',

@@ -211,37 +211,32 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
 
                             <div class="flex items-center flex-nowrap gap-x-2">
-
-
                                 <!-- Button: input number (picking) -->
-
                                 <NumberWithButtonSave
                                     v-if="location_org_stock.quantity > 0"
                                     key="picking_picked"
                                     noUndoButton
                                     @onError="(error: any) => {
-                                                proxyItem.errors = Object.values(error || {})
-                                            }"
+                                        proxyItem.errors = Object.values(error || {})
+                                    }"
                                     :modelValue="location_org_stock.quantity_picked"
                                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                     saveOnForm
                                     :routeSubmit="itemValue.upsert_picking_route"
                                     :bindToTarget="{
-                                                step: 1,
-                                                min: 0,
-                                                max: Math.min(location_org_stock.quantity, itemValue.quantity_required, itemValue.quantity_to_pick)
-                                            }"
+                                        step: 1,
+                                        min: 0,
+                                        max: Math.min(location_org_stock.quantity, itemValue.quantity_required, itemValue.quantity_to_pick)
+                                    }"
                                     :additionalData="{
-                                                location_org_stock_id: location_org_stock.id,
-                                                picking_id: location_org_stock.picking_id,
-                                            }"
+                                        location_org_stock_id: location_org_stock.id,
+                                        picking_id: location_org_stock.picking_id,
+                                    }"
                                     autoSave
                                     isWithRefreshModel
                                     :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                                 >
                                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
-
-
                                         <ButtonWithLink
                                             v-tooltip="trans('Pick all required quantity in this location')"
                                             icon="fal fa-clipboard-list-check"
@@ -253,12 +248,12 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                             class="py-0"
                                             :routeTarget="itemValue.picking_all_route"
                                             :bind-to-link="{
-                                                        preserveScroll: true,
-                                                        preserveState: true,
-                                                    }"
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                            }"
                                             :body="{
-                                                        location_org_stock_id: location_org_stock.id
-                                                    }"
+                                                location_org_stock_id: location_org_stock.id
+                                            }"
                                             isWithError
                                         />
 
@@ -272,9 +267,9 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                             :routeTarget="itemValue.not_picking_route"
                                             :bindToLink="{preserveScroll: true}"
                                         />
-
                                     </template>
                                 </NumberWithButtonSave>
+
                                 <!-- Section: Errors list -->
                                 <div v-if="proxyItem.errors?.length">
                                     <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{ error }}</p>

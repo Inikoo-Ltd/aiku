@@ -31,6 +31,13 @@ class PickingsResource extends JsonResource
                 ],
                 'method' => 'patch'
             ],
+            'undo_picking_route'        => [
+                'name'  => 'grp.models.picking.delete',
+                'parameters' => [
+                    'picking' => $this->id
+                ],
+                'method' => 'delete'
+            ],
         ];
     }
 }
