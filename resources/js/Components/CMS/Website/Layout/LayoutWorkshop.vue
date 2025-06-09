@@ -39,7 +39,17 @@ const props = defineProps<{
   }
 }>()
 
-const listColorTheme = [...useColorTheme]
+const ukTheme = [
+  '#957A65',
+  '#FFFFFF',
+  '#4B5058',
+  '#FFFFFF',
+  '#E87928',
+  '#FFFFFF',
+  '#cccccc',
+  '#4B5058'
+]
+const listColorTheme = [...useColorTheme, ukTheme]
 const onClickColor = (colorTheme: string[], index: number) => {
   set(props.data, 'theme.color', colorTheme)
 }
@@ -109,7 +119,7 @@ const onPublishTheme = () => {
               >
                 <div class="h-6 w-6" v-for="(color, i) in colorTheme" :key="i" :style="{ backgroundColor: color }"></div>
               </div>
-              <Transition name="spin-to-down">
+              <Transition name="spin-to-right">
                 <FontAwesomeIcon
                   v-if="isEqual(data.theme?.color, colorTheme)"
                   icon="fal fa-check"
