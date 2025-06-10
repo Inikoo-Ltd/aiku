@@ -297,9 +297,9 @@ class ShowCollection extends OrgAction
                     fn () => GetCollectionShowcase::run($collection)
                     : Inertia::lazy(fn () => GetCollectionShowcase::run($collection)),
 
-                CollectionTabsEnum::DEPARTMENTS->value => $this->tab == CollectionTabsEnum::DEPARTMENTS->value ?
-                    fn () => DepartmentsResource::collection(IndexDepartments::run($collection))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($collection))),
+                // CollectionTabsEnum::DEPARTMENTS->value => $this->tab == CollectionTabsEnum::DEPARTMENTS->value ?
+                //     fn () => DepartmentsResource::collection(IndexDepartments::run($collection))
+                //     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($collection))),
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
                     fn () => FamiliesResource::collection(IndexFamilies::run($collection))
@@ -309,20 +309,22 @@ class ShowCollection extends OrgAction
                     fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))),
 
-                CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
-                    fn () => CollectionsResource::collection(IndexCollection::run($collection))
-                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollection::run($collection))),
+                // CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
+                //     fn () => CollectionsResource::collection(IndexCollection::run($collection))
+                //     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollection::run($collection))),
 
 
 
             ]
-        )->table(
-            IndexDepartments::make()->tableStructure(
-                parent: $collection,
-                prefix: CollectionTabsEnum::DEPARTMENTS->value,
-                sales: false
-            )
-        )->table(
+        )
+        // ->table(
+        //     IndexDepartments::make()->tableStructure(
+        //         parent: $collection,
+        //         prefix: CollectionTabsEnum::DEPARTMENTS->value,
+        //         sales: false
+        //     )
+        // )
+        ->table(
             IndexFamilies::make()->tableStructure(
                 $collection,
                 prefix: CollectionTabsEnum::FAMILIES->value,
@@ -333,12 +335,14 @@ class ShowCollection extends OrgAction
                 $collection,
                 prefix: CollectionTabsEnum::PRODUCTS->value,
             )
-        )->table(
-            IndexCollection::make()->tableStructure(
-                $collection,
-                prefix: CollectionTabsEnum::COLLECTIONS->value
-            )
-        );
+        )
+        // ->table(
+        //     IndexCollection::make()->tableStructure(
+        //         $collection,
+        //         prefix: CollectionTabsEnum::COLLECTIONS->value
+        //     )
+        // )
+        ;
     }
 
     public function jsonResponse(Collection $collection): CollectionResource
