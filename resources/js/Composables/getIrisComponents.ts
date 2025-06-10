@@ -37,6 +37,7 @@ import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
+import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
 
 
 const components: Record<string, Component> = {
@@ -101,6 +102,7 @@ const components: Record<string, Component> = {
     'timeline': Timeline,
     'step-1' : Step2Iris,
     'carousel-1' : Carousel1Iris,
+    'collections-1': Collections1Iris,
  
 }
 

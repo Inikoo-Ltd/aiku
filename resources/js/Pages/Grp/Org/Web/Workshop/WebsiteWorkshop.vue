@@ -12,6 +12,7 @@ import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/Produc
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartementBlockWorkshop/SubDepartementWorkshop.vue'
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
+import CollectionsBlockWorkshop from '@/Components/CMS/Website/CollectionsWorkshop/CollectionsBlockWorkshop.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -44,6 +45,7 @@ const component = computed(() => {
         families: FamiliesBlockWorkshop,
         products: ProductsBlockWorkshop,
         product: ProductBlockWorkshop,
+        collection : CollectionsBlockWorkshop,
     }
     return components[currentTab.value]
 })

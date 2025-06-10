@@ -161,14 +161,15 @@ const UnassignCollection = async (id: number) => {
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
     <!-- Grid Layout: SubDepartment + Collection List -->
-    <div class="grid grid-cols-1 lg:grid-cols-[5fr_2fr] gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[5fr_2fr] gap-8">
 
-      <!-- SubDepartment & Families -->
-      <div>
-        <!-- Header -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-6">
+      <!-- Left: SubDepartment & Families -->
+      <div class="space-y-8">
+
+        <!-- SubDepartment Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div class="flex items-center gap-4">
-            <div class="w-20 h-20 rounded-xl bg-gray-100 border border-gray-300 flex items-center justify-center overflow-hidden">
+            <div class="w-20 h-20 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
               <Image
                 v-if="data.subDepartment.image_id"
                 :src="data.subDepartment.image_id"
@@ -201,38 +202,40 @@ const UnassignCollection = async (id: number) => {
             </div>
           </div>
 
-          <p class="text-sm text-gray-400 sm:mt-0">
-            Created at: {{ new Date(data.subDepartment.created_at).toLocaleDateString() }}
-          </p>
+          <div class="text-sm text-gray-400 sm:text-right">
+            <p>Created at:</p>
+            <p class="font-medium">{{ new Date(data.subDepartment.created_at).toLocaleDateString() }}</p>
+          </div>
         </div>
 
-        <!-- Family List -->
+        <!-- Family Section -->
         <div>
+          <!-- Header -->
           <div class="flex items-center justify-between mb-4 border-b pb-2">
             <h2 class="text-lg font-semibold text-gray-800">
               {{ trans("Family list") }} ({{ data.families.length }})
             </h2>
           </div>
 
-          <!-- Families -->
-          <div v-if="data.families?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- List -->
+          <div v-if="data.families?.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             <div
               v-for="family in data.families"
               :key="family.id"
-              class="relative bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col"
+              class="relative bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-5 flex flex-col"
             >
-              <span class="absolute -top-3 left-0 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">Family</span>
+              <span class="absolute -top-3 left-3 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded shadow">Family</span>
 
-              <!-- Family Header -->
-              <div class="flex items-start gap-3 mb-3 border-b pb-2">
+              <!-- Header -->
+              <div class="flex items-start gap-3 mb-4">
                 <Image
                   :src="family.image"
                   :alt="family.name"
-                  class="w-10 h-10 rounded-lg object-cover"
+                  class="w-12 h-12 rounded-lg object-cover shadow-sm"
                   imageCover
                 />
                 <div class="flex-1 min-w-0">
-                  <h3 class="text-base font-semibold text-gray-900 leading-tight">
+                  <h3 class="text-base font-semibold text-gray-900 flex items-center gap-1">
                     {{ family.name }}
                     <Icon
                       v-if="family.state"
@@ -246,6 +249,7 @@ const UnassignCollection = async (id: number) => {
                     {{ family.products?.length || 0 }} product{{ family.products?.length === 1 ? '' : 's' }}
                   </p>
                 </div>
+
                 <Button
                   @click.stop="onDetachFamily(family.slug)"
                   icon="fal fa-unlink"
@@ -255,13 +259,13 @@ const UnassignCollection = async (id: number) => {
                 />
               </div>
 
-              <!-- Family Products -->
-              <div class="bg-gray-50 border rounded-md mt-3 px-3 py-2 max-h-60 overflow-y-auto custom-scroll space-y-2">
+              <!-- Products -->
+              <div class="bg-gray-50 border rounded-lg px-4 py-2 max-h-56 overflow-y-auto custom-scroll space-y-2">
                 <template v-if="family.products?.length">
                   <div
                     v-for="product in family.products"
                     :key="product.id"
-                    class="flex items-start gap-3 border-b py-1"
+                    class="flex items-start gap-3 border-b last:border-b-0 py-2"
                   >
                     <FontAwesomeIcon :icon="['fal', 'seedling']" class="w-4 h-4 text-green-500 mt-1" />
                     <div class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
@@ -273,7 +277,7 @@ const UnassignCollection = async (id: number) => {
                       />
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-sm text-gray-700 truncate leading-tight">{{ product.name }}</p>
+                      <p class="text-sm text-gray-700 truncate">{{ product.name }}</p>
                       <p class="text-xs text-gray-500">Code: {{ product.id }}</p>
                     </div>
                   </div>
@@ -283,14 +287,14 @@ const UnassignCollection = async (id: number) => {
             </div>
           </div>
 
-          <!-- Empty State -->
-          <div v-else class="mx-auto max-w-2xl px-4 py-20 text-center">
+          <!-- Empty -->
+          <div v-else class="mx-auto max-w-md px-4 py-20 text-center">
             <EmptyState :data="{ title: 'No families', description: 'This subdepartment has no families' }" />
           </div>
         </div>
       </div>
 
-      <!-- Collections -->
+      <!-- Right: Collection List -->
       <CollectionList
         :collections="props.data.collections.data"
         :routeFetch="props.data.routeList.collections_route"

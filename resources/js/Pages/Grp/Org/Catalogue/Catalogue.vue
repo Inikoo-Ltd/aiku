@@ -115,6 +115,7 @@ const layout = inject('layout', layoutStructure)
 
 const boxLoaded = ref<{[key: string]: boolean}>({})
 const isLoadingMeta = ref<string | null>(null)
+console.log('props', props)
 </script>
 
 

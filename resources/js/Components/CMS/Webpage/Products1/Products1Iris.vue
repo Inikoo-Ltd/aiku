@@ -34,6 +34,7 @@ const page = ref(1)
 const lastPage = ref(1)
 const filter = ref({ data: {} })
 const showFilters = ref(false)
+const showAside = ref(true) // Sidebar visibility (for desktop)
 
 function buildFilters(): Record<string, any> {
   const filters: Record<string, any> = {}
@@ -126,70 +127,56 @@ const isMobile = computed(() => props.screenType === 'mobile')
 onMounted(() => {
   fetchProducts()
 })
-
-console.log('Products1Iris mounted with fieldValue:', props.fieldValue)
 </script>
 
 <template>
   <div class="flex flex-col lg:flex-row" :style="getStyles(fieldValue.container?.properties, screenType)">
-    <!-- Sidebar Filters for Desktop & Tablet -->
-    <aside v-if="!isMobile" class="w-68 p-4 transition-all duration-300 ease-in-out">
-      <FilterProducts v-model="filter" />
-    </aside>
+
+
+
+    <!-- Sidebar Filters for Desktop -->
+    <transition name="slide-fade">
+      <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
+        <FilterProducts v-model="filter" />
+      </aside>
+    </transition>
 
     <!-- Main Content -->
     <main class="flex-1">
-      <!-- Search & Sort Tabs -->
+      <!-- Search & Sort -->
       <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
-        <!-- Search Input + Mobile Filter Button -->
         <div class="flex items-center w-full md:w-1/3 gap-2">
-          <Button
-            v-if="isMobile"
-            :icon="faFilter"
-            @click="showFilters = true"
-            class="!p-2 !w-auto"
-            aria-label="Open Filters"
-          />
-          <input
-            v-model="q"
-            @keyup.enter="handleSearch"
-            type="text"
-            placeholder="Search products..."
-            class="flex-grow px-4 py-2 border rounded shadow-sm pr-10"
-          />
-          <button
-            v-if="q"
-            @click="() => { q = ''; handleSearch() }"
-            class="text-gray-400 hover:text-black"
-            aria-label="Clear search"
-          >
+          <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-2 !w-auto"
+            aria-label="Open Filters" />
+
+          <!-- Sidebar Toggle for Desktop -->
+          <div v-else class="p-4">
+            <Button :icon="faFilter" @click="showAside = !showAside" class="!p-2 !w-auto" aria-label="Open Filters" />
+
+          </div>
+          <input v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
+            class="flex-grow px-4 py-2 border rounded shadow-sm pr-10" />
+          <button v-if="q" @click="() => { q = ''; handleSearch() }" class="text-gray-400 hover:text-black"
+            aria-label="Clear search">
             <FontAwesomeIcon :icon="faTimes" class="text-lg text-red-500" />
           </button>
         </div>
 
         <!-- Sort Tabs -->
         <div class="flex space-x-6 border-b border-gray-300 overflow-x-auto mt-2 md:mt-0">
-          <button
-            v-for="option in orderOptions"
-            :key="option.value"
-            @click="selectOrder(option.value)"
-            class="pb-2 text-sm font-medium whitespace-nowrap"
-            :class="{
+          <button v-for="option in orderOptions" :key="option.value" @click="selectOrder(option.value)"
+            class="pb-2 text-sm font-medium whitespace-nowrap" :class="{
               'border-b-2 text-[#1F2937] border-[#1F2937]': orderBy === option.value,
               'text-gray-600 hover:text-[#1F2937]': orderBy !== option.value
-            }"
-          >
+            }">
             {{ option.label }}
           </button>
         </div>
       </div>
 
       <!-- Product Grid -->
-      <div
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4"
-        :style="getStyles(fieldValue?.container?.properties, screenType)"
-      >
-        <!-- Initial Loading Skeletons -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4"
+        :style="getStyles(fieldValue?.container?.properties, screenType)">
         <template v-if="loadingInitial">
           <div v-for="n in 8" :key="n" class="border p-3 rounded shadow-sm bg-white">
             <Skeleton height="200px" class="mb-3" />
@@ -198,18 +185,12 @@ console.log('Products1Iris mounted with fieldValue:', props.fieldValue)
           </div>
         </template>
 
-        <!-- Products -->
         <template v-else-if="products.length">
-          <div
-            v-for="(product, index) in products"
-            :key="index"
-            class="border p-3 relative rounded shadow-sm bg-white"
-          >
+          <div v-for="(product, index) in products" :key="index" class="border p-3 relative rounded shadow-sm bg-white">
             <ProductRender :product="product" />
           </div>
         </template>
 
-        <!-- Empty State -->
         <template v-else>
           <div class="col-span-full text-center py-10 text-gray-500">
             <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
@@ -218,29 +199,19 @@ console.log('Products1Iris mounted with fieldValue:', props.fieldValue)
         </template>
       </div>
 
-      <!-- Load More Button -->
+      <!-- Load More -->
       <div v-if="page < lastPage && !loadingInitial" class="flex justify-center mt-4">
-        <button
-          @click="loadMore"
-          class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
-          :disabled="loadingMore"
-          style="background-color: #1F2937;"
-        >
+        <button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
+          :disabled="loadingMore" style="background-color: #1F2937;">
           <template v-if="loadingMore">Loading...</template>
           <template v-else>Load More</template>
         </button>
       </div>
     </main>
 
-    <!-- PrimeVue Drawer for Mobile Filters -->
-    <Drawer
-      v-model:visible="showFilters"
-      position="left"
-      :modal="true"
-      :dismissable="true"
-      :closeOnEscape="true"
-      class="w-80 transition-transform duration-300 ease-in-out"
-    >
+    <!-- Mobile Filters Drawer -->
+    <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true" :closeOnEscape="true"
+      class="w-80 transition-transform duration-300 ease-in-out">
       <div class="flex justify-between items-center px-4 py-2 border-b">
         <h3 class="text-lg font-semibold">Filters</h3>
         <button @click="showFilters = false" aria-label="Close filters">
@@ -254,7 +225,19 @@ console.log('Products1Iris mounted with fieldValue:', props.fieldValue)
   </div>
 </template>
 
+
 <style scoped>
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
 aside {
   transition: all 0.3s ease;
 }

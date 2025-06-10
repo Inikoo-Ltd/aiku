@@ -5,6 +5,7 @@
 	"name": "Collections-1",
 	"website_type" : ["info","b2b","b2","dropshipping","digital_agency"],
 	"fixed": true,
+	"category": "collections",
 	"icon": ["fal", "bars"],
 	"data": {
 		"fieldValue": {}

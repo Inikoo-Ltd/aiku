@@ -1,29 +1,37 @@
 <script setup lang="ts">
+import { ref, inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faDollarSign, faImage, faUnlink, faGlobe } from '@fal'
+import { faDollarSign, faImage, faUnlink, faGlobe } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { inject, ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { Link, router } from '@inertiajs/vue3'
+
 import Image from '@/Components/Image.vue'
 import CountUp from 'vue-countup-v3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Icon from "@/Components/Icon.vue"
 import { notify } from '@kyvg/vue3-notification'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import WebpageSelector from '@/Components/Departement&Family/WebpageSelector.vue'
+import { faBrowser } from '@fal'
+import Collection from '@/Pages/Grp/Org/Catalogue/Collection.vue'
 
+// Add icons to the FontAwesome library
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
 
+// Inject locale
 const locale = inject('locale', aikuLocaleStructure)
-const unassignLoadingIds = ref<number[]>([])
 
+// Props
 const props = defineProps<{
   data: {
     name?: string
     image?: string
     description?: string
     id: number
+    slug: string
     stats: {
       label: string
       icon: string
@@ -44,8 +52,15 @@ const props = defineProps<{
   loadingUnassignIds?: number[]
 }>()
 
+// State
+const isModalOpen = ref(false)
+const loading = ref(false)
+const unassignLoadingIds = ref<number[]>([])
+
+// Methods
 const UnassignCollectionFormWebpage = async (id: number) => {
   unassignLoadingIds.value.push(id)
+
   const url = route("grp.models.webpage.detach_collection", {
     webpage: id,
     collection: props.data.id,
@@ -67,10 +82,50 @@ const UnassignCollectionFormWebpage = async (id: number) => {
       })
     },
     onFinish: () => {
-      unassignLoadingIds.value = unassignLoadingIds.value.filter((item) => item !== id)
+      unassignLoadingIds.value = unassignLoadingIds.value.filter(item => item !== id)
     },
   })
 }
+
+const AssignWebpagesToCollection = async (webpages: { id: number }[]) => {
+  loading.value = true
+
+  // Extract only the IDs
+  const ids = webpages.map(item => item.id)
+
+  router.post(
+    route('grp.models.webpage.attach_collection'), // Ganti dengan named route kamu
+    {
+      collection_id: props.data.id,
+      webpage_ids: ids, // send array of IDs
+    },
+    {
+      preserveScroll: true,
+      onSuccess: () => {
+        notify({
+          title: trans('Success!'),
+          text: trans('Webpages assigned successfully.'),
+          type: 'success',
+        })
+        isModalOpen.value = false
+      },
+      onError: (errors) => {
+        notify({
+          title: trans('Error'),
+          text: errors?.webpage_ids || trans('Failed to assign webpages.'),
+          type: 'error',
+        })
+      },
+      onFinish: () => {
+        loading.value = false
+      },
+    }
+  )
+}
+
+
+
+
 </script>
 
 <template>
@@ -93,21 +148,17 @@ const UnassignCollectionFormWebpage = async (id: number) => {
 
       <!-- Webpages List -->
       <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
-        <h2 class="text-lg font-semibold text-gray-800">{{ trans('Webpages') }}</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-800">{{ trans('Webpages') }}</h2>
+          <Button type="create" size="xs" :icon="faBrowser" @click="isModalOpen = true" :label="'webpage'">
+          </Button>
+        </div>
 
         <div v-if="data.attached_webpages.length" class="space-y-3">
-          <div
-            v-for="webpage in data.attached_webpages"
-            :key="webpage.id"
-            class="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow transition"
-          >
+          <div v-for="webpage in data.attached_webpages" :key="webpage.id"
+            class="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow transition">
             <!-- Icon -->
-            <Icon
-              v-if="webpage?.typeIcon"
-              :data="webpage.typeIcon"
-              size="xl"
-              class="text-gray-600 shrink-0"
-            />
+            <Icon v-if="webpage?.typeIcon" :data="webpage.typeIcon" size="xl" class="text-gray-600 shrink-0" />
 
             <!-- Info -->
             <div class="flex-1 min-w-0">
@@ -116,22 +167,34 @@ const UnassignCollectionFormWebpage = async (id: number) => {
             </div>
 
             <!-- Unassign Button -->
-            <Button
-              type="negative"
-              size="xs"
-              :icon="faUnlink"
-              v-tooltip="'Unassign'"
-              :loading="unassignLoadingIds.includes(webpage.id)"
-              @click="UnassignCollectionFormWebpage(webpage.id)"
-              class="shrink-0"
-            />
+            <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
+              :loading="unassignLoadingIds.includes(webpage.id)" @click="UnassignCollectionFormWebpage(webpage.id)"
+              class="shrink-0" />
           </div>
         </div>
 
         <div v-else class="text-sm text-gray-500 italic text-center">
-         <EmptyState />
+          <EmptyState />
         </div>
       </div>
+
     </div>
   </div>
+
+  <!-- Modal -->
+ <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-6xl">
+  <WebpageSelector
+    :headLabel="`${trans('Add Webpage to')}`"
+    :routeFetch="{ 
+      name: 'grp.json.shop.collection.webpages', 
+      parameters: {
+        shop: route().params['shop'], 
+        collection: data.slug 
+      }
+    }"
+    :isLoadingSubmit="loading"
+    @submit="AssignWebpagesToCollection"
+  />
+</Modal>
+
 </template>

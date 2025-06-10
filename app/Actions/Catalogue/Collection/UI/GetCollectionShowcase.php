@@ -72,6 +72,7 @@ class GetCollectionShowcase
             'description' => $collection->description,
             'name'        => $collection->name,
              'id'        => $collection->id,
+              'slug'        => $collection->slug,
             'stats'       => [
                 [
                     'label' => __('Department'),
