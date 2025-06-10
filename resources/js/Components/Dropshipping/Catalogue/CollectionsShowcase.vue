@@ -94,10 +94,9 @@ const AssignWebpagesToCollection = async (webpages: { id: number }[]) => {
   const ids = webpages.map(item => item.id)
 
   router.post(
-    route('grp.models.webpage.attach_collection'), // Ganti dengan named route kamu
+    route(props.data.routes.attach_webpage.name,props.data.routes.attach_webpage.parameters), // Ganti dengan named route kamu
     {
-      collection_id: props.data.id,
-      webpage_ids: ids, // send array of IDs
+      webpages: ids, // send array of IDs
     },
     {
       preserveScroll: true,
@@ -124,7 +123,7 @@ const AssignWebpagesToCollection = async (webpages: { id: number }[]) => {
 }
 
 
-
+console.log('Collection data:', props.data)
 
 </script>
 
@@ -184,7 +183,7 @@ const AssignWebpagesToCollection = async (webpages: { id: number }[]) => {
   <!-- Modal -->
  <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-6xl">
   <WebpageSelector
-    :headLabel="`${trans('Add Webpage to')}`"
+    :headLabel="`${trans('Add Webpage to collection')}`"
     :routeFetch="{ 
       name: 'grp.json.shop.collection.webpages', 
       parameters: {

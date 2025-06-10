@@ -31,6 +31,7 @@ const props = defineProps<{
     settings: {}
     department: {}
     sub_department: {}
+    collection : {}
 }>()
 
 

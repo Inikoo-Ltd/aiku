@@ -5,8 +5,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
-import SetMenuListWorkshop from "@/Components/CMS/Fields/SetMenuListWorkshop.vue"
-import axios from "axios"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -17,15 +15,11 @@ import {
 	faPlusCircle,
 	faBars,
 	faThLarge,
-	faList,
 	faPaintBrushAlt,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
-import DepartementListTree from "../Departement/DepartementListTree.vue"
-import SubDepartementListTree from "./WebpageList.vue"
-/* import DepartementListTree from "./DepartementListTree.vue" */
 
 library.add(
 	faChevronRight,

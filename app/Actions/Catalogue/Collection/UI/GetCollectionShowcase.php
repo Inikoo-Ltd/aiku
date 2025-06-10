@@ -72,7 +72,7 @@ class GetCollectionShowcase
             'description' => $collection->description,
             'name'        => $collection->name,
              'id'        => $collection->id,
-              'slug'        => $collection->slug,
+             'slug'        => $collection->slug,
             'stats'       => [
                 [
                     'label' => __('Department'),
@@ -114,7 +114,7 @@ class GetCollectionShowcase
             'routes' => [
                 'attach_webpage' => [
                     'name'       => 'grp.models.collection.attach_webpages',
-                    'parameters' => [],
+                    'parameters' => [ $collection->id ],
                     'method'     => 'post'
                 ],
                 'detach_webpage' => [
