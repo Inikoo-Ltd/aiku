@@ -111,6 +111,18 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
+            'routes' => [
+                'attach_webpage' => [
+                    'name'       => 'grp.models.collection.attach_webpages',
+                    'parameters' => [],
+                    'method'     => 'post'
+                ],
+                'detach_webpage' => [
+                    'name'       => 'grp.models.collection.detach_webpage',
+                    'parameters' => [],
+                    'method'     => 'delete'
+                ],
+            ],
             'attached_webpages' => WebpagesResource::collection(IndexWebpagesAttachedInCollection::run($collection))->resolve()
         ];
     }

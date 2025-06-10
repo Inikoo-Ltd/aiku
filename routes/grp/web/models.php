@@ -17,8 +17,10 @@ use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\AttachCollectionsToWebpage;
 use App\Actions\Catalogue\Collection\AttachCollectionToModels;
+use App\Actions\Catalogue\Collection\AttachWebpageToCollections;
 use App\Actions\Catalogue\Collection\DetachCollectionFromWebpage;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
+use App\Actions\Catalogue\Collection\DetachWebpageToCollections;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\AttachImagesToProduct;
@@ -735,6 +737,8 @@ Route::delete('/guest/{guest:id}', DeleteGuest::class)->name('guest.delete');
 Route::name('collection.')->prefix('collection/{collection:id}')->group(function () {
     Route::post('attach-models', AttachCollectionToModels::class)->name('attach-models');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
+    Route::post('attach-webpages', AttachWebpageToCollections::class)->name('attach_webpages');
+    Route::delete('/webpages/{webpage:id}/detach', DetachWebpageToCollections::class)->name('detach_webpage');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
