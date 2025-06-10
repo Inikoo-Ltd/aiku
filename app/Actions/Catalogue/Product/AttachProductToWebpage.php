@@ -9,7 +9,9 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateWebpages;
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateProducts;
 use App\Enums\Web\Webpage\WebpageHasProductTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
@@ -30,6 +32,8 @@ class AttachProductToWebpage extends OrgAction
         $webpage->refresh();
         $product->refresh();
 
+        ProductHydrateWebpages::dispatch($product);
+        WebpageHydrateProducts::dispatch($webpage);
         return $product;
     }
 

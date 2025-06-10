@@ -26,6 +26,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
+use App\Models\Web\WebpageHasProduct;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -265,6 +266,11 @@ class Product extends Model implements Auditable, HasMedia
     public function favourites(): HasMany
     {
         return $this->hasMany(Favourite::class);
+    }
+
+    public function webpageHasProducts(): HasMany
+    {
+        return $this->hasMany(WebpageHasProduct::class);
     }
 
     public function backInStockReminders(): HasMany
