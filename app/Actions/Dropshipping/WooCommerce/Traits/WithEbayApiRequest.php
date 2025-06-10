@@ -281,21 +281,21 @@ trait WithEbayApiRequest
     public function storeProduct($productData)
     {
         try {
-            $sku = $productData['sku'];
+            $sku = Arr::get($productData, 'sku');
             $endpoint = "/sell/inventory/v1/inventory_item/{$sku}";
 
             $inventoryItem = [
                 'availability' => [
                     'shipToLocationAvailability' => [
-                        'quantity' => $productData['quantity'] ?? 1
+                        'quantity' => Arr::get($productData, 'quantity', 1)
                     ]
                 ],
                 'condition' => 'NEW',
                 'product' => [
-                    'title' => $productData['title'],
-                    'description' => $productData['description'],
-                    'imageUrls' => $productData['images'] ?? [],
-                    'aspects' => $productData['aspects'] ?? []
+                    'title' => Arr::get($productData, 'title'),
+                    'description' => Arr::get($productData, 'description'),
+                    'imageUrls' => Arr::get($productData, 'images'),
+                    'aspects' => Arr::get($productData, 'aspects')
                 ]
             ];
 
