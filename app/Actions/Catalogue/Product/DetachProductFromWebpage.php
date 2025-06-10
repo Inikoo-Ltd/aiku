@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-06-2025-13h-11m
@@ -27,7 +28,7 @@ class DetachProductFromWebpage extends OrgAction
 
         ProductHydrateWebpages::dispatch($product);
         WebpageHydrateProducts::dispatch($webpage);
-        
+
         return $product;
     }
 

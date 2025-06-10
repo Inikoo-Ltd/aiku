@@ -9,8 +9,7 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
-use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
-use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
@@ -22,9 +21,7 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\CollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionResource;
-use App\Http\Resources\Catalogue\CollectionsResource;
-use App\Http\Resources\Catalogue\DepartmentsResource;
-use App\Http\Resources\Catalogue\FamiliesResource;
+use App\Http\Resources\Catalogue\FamiliesInCollectionResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -60,6 +57,7 @@ class ShowCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, Collection $collection, ActionRequest $request): Collection
     {
         $this->parent = $department;
@@ -68,6 +66,7 @@ class ShowCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
     {
         $this->parent = $family;
@@ -76,6 +75,7 @@ class ShowCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
     {
         $this->parent = $family;
@@ -84,6 +84,7 @@ class ShowCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
     {
         $this->parent = $family;
@@ -92,6 +93,7 @@ class ShowCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
     {
         $this->parent = $subDepartment;
@@ -297,52 +299,33 @@ class ShowCollection extends OrgAction
                     fn () => GetCollectionShowcase::run($collection)
                     : Inertia::lazy(fn () => GetCollectionShowcase::run($collection)),
 
-                // CollectionTabsEnum::DEPARTMENTS->value => $this->tab == CollectionTabsEnum::DEPARTMENTS->value ?
-                //     fn () => DepartmentsResource::collection(IndexDepartments::run($collection))
-                //     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($collection))),
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
-                    fn () => FamiliesResource::collection(IndexFamilies::run($collection))
-                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($collection))),
+                    fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection))
+                    : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection))),
 
                 CollectionTabsEnum::PRODUCTS->value => $this->tab == CollectionTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))),
 
-                // CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
-                //     fn () => CollectionsResource::collection(IndexCollection::run($collection))
-                //     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollection::run($collection))),
 
 
 
             ]
         )
-        // ->table(
-        //     IndexDepartments::make()->tableStructure(
-        //         parent: $collection,
-        //         prefix: CollectionTabsEnum::DEPARTMENTS->value,
-        //         sales: false
-        //     )
-        // )
+
         ->table(
-            IndexFamilies::make()->tableStructure(
-                $collection,
+            IndexFamiliesInCollection::make()->tableStructure(
+                collection:$collection,
                 prefix: CollectionTabsEnum::FAMILIES->value,
-                sales: false
             )
         )->table(
             IndexProductsInCollection::make()->tableStructure(
-                $collection,
+                collection:$collection,
                 prefix: CollectionTabsEnum::PRODUCTS->value,
             )
-        )
-        // ->table(
-        //     IndexCollection::make()->tableStructure(
-        //         $collection,
-        //         prefix: CollectionTabsEnum::COLLECTIONS->value
-        //     )
-        // )
-        ;
+        );
+
     }
 
     public function jsonResponse(Collection $collection): CollectionResource

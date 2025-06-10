@@ -164,10 +164,21 @@ class FetchAuroraWebpage extends FetchAurora
         if ($auroraModelData->{'Webpage Scope'} == 'Category Products') {
             $model = $this->parseFamily($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
             if (!$model) {
+                $model = $this->parseCollection($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
+            }
+
+
+            if (!$model) {
                 return null;
             }
+
+
+
         } elseif ($auroraModelData->{'Webpage Scope'} == 'Category Categories') {
             $model = $this->parseDepartment($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
+            if (!$model) {
+                $model = $this->parseCollection($organisation->id.':'.$auroraModelData->{'Webpage Scope Key'});
+            }
             if (!$model) {
                 return null;
             }

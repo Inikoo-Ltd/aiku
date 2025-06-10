@@ -205,5 +205,7 @@ interface SourceOrganisationService
 
     public function fetchInvoiceCategory($id);
 
+    public function fetchCollection($id);
+
 
 }

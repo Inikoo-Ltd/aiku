@@ -32,7 +32,7 @@ class FetchAuroraFamily extends FetchAurora
             ->where('Category Subject', 'Product')
             ->get()->pluck('Category Key')->toArray();
 
-        if (in_array($this->auroraModelData->{'Product Category Key'}, $familiesRootAuroraIDs)) {
+        if (in_array($this->auroraModelData->{'Category Root Key'}, $familiesRootAuroraIDs)) {
             return;
         }
 

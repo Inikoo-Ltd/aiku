@@ -146,7 +146,7 @@ class CreateCollection extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexCollection::make()->getBreadcrumbs(
+            IndexCollections::make()->getBreadcrumbs(
                 parent: $this->parent,
                 routeName: preg_replace('/create$/', 'index', $routeName),
                 routeParameters: $routeParameters,

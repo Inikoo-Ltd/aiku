@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-06-2025-15h-20m
@@ -8,9 +9,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Web\WebBlockCollectionResource;
-use App\Http\Resources\Web\WebBlockSubDepartmentsResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;

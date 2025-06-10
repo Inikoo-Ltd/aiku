@@ -43,7 +43,7 @@ trait WithGetWebpageWebBlocks
                 $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
             } elseif (in_array($webBlockType, ['collection-1'])) {
                 $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
-            }  else {
+            } else {
                 $parsedWebBlocks[$key] = $webBlock;
             }
         }

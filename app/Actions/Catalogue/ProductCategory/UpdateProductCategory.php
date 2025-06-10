@@ -41,7 +41,7 @@ class UpdateProductCategory extends OrgAction
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         if ($imageData['image']) {
-            $this->processCatalogue($imageData, $productCategory);
+            $this->processCatalogueImage($imageData, $productCategory);
         }
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {

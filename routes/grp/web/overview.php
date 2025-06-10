@@ -14,7 +14,7 @@ use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccountsInGroup;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Billables\Charge\UI\IndexCharges;
-use App\Actions\Catalogue\Collection\UI\IndexCollection;
+use App\Actions\Catalogue\Collection\UI\IndexCollections;
 use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
@@ -87,7 +87,7 @@ Route::name('catalogue.')->prefix('catalogue')->group(function () {
     Route::get('/products', IndexProductsInGroup::class)->name('products.index');
     Route::get('/departments', [IndexDepartments::class, 'inGroup'])->name('departments.index');
     Route::get('/families', [IndexFamilies::class, 'inGroup'])->name('families.index');
-    Route::get('/collections', [IndexCollection::class, 'inGroup'])->name('collections.index');
+    Route::get('/collections', [IndexCollections::class, 'inGroup'])->name('collections.index');
 });
 
 Route::name('billables.')->prefix('billables')->group(function () {

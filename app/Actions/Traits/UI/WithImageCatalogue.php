@@ -19,12 +19,12 @@ use Illuminate\Support\Arr;
 
 trait WithImageCatalogue
 {
-    public function processCatalogue(array $modelData, ProductCategory|Collection|ModelHasContent $model): ProductCategory|Collection|ModelHasContent
+    public function processCatalogueImage(array $modelData, ProductCategory|Collection|ModelHasContent $model): ProductCategory|Collection|ModelHasContent
     {
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */
             $image = Arr::pull($modelData, 'image');
-            // data_forget($modelData, 'image');
+
             $imageData = [
                 'path'         => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),

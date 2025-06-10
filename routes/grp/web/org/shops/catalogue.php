@@ -8,7 +8,8 @@
 
 use App\Actions\Catalogue\Collection\UI\CreateCollection;
 use App\Actions\Catalogue\Collection\UI\EditCollection;
-use App\Actions\Catalogue\Collection\UI\IndexCollection;
+use App\Actions\Catalogue\Collection\UI\IndexCollections;
+use App\Actions\Catalogue\Collection\UI\IndexCollectionsInProductCategory;
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Product\GetProductUploadedImages;
 use App\Actions\Catalogue\Product\UI\CreateProduct;
@@ -26,6 +27,7 @@ use App\Actions\Catalogue\ProductCategory\UI\EditSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexBlueprintDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
@@ -89,7 +91,7 @@ Route::name("departments.")->prefix('departments')
         Route::prefix('{department}')->name('show')->group(function () {
             Route::get('', ShowDepartment::class);
             Route::prefix('collection')->name('.collection.')->group(function () {
-                Route::get('index', [IndexCollection::class, 'inDepartment'])->name('index');
+                Route::get('index', [IndexCollectionsInProductCategory::class, 'inDepartment'])->name('index');
                 Route::get('create', [CreateCollection::class, 'inDepartment'])->name('create');
                 Route::prefix('{collection}')->group(function () {
                     Route::get('', [ShowCollection::class ,'inDepartment'])->name('show');
@@ -104,7 +106,7 @@ Route::name("departments.")->prefix('departments')
                     Route::get('edit', [EditFamily::class, 'inDepartment'])->name('edit');
                     Route::get('', ShowFamily::class)->name('show');
                     Route::prefix('collection')->name('show.collection.')->group(function () {
-                        Route::get('index', [IndexCollection::class, 'inFamilyInDepartment'])->name('index');
+                        Route::get('index', [IndexCollections::class, 'inFamilyInDepartment'])->name('index');
                         Route::get('create', [CreateCollection::class, 'inFamilyInDepartment'])->name('create');
                         Route::prefix('{collection}')->group(function () {
                             Route::get('', [ShowCollection::class ,'inFamilyInDepartment'])->name('show');
@@ -135,7 +137,7 @@ Route::name("departments.")->prefix('departments')
                 Route::prefix('{subDepartment}')->name('show')->group(function () {
                     Route::get('', ShowSubDepartment::class);
                     Route::prefix('collection')->name('.collection.')->group(function () {
-                        Route::get('index', [IndexCollection::class, 'inSubDepartment'])->name('index');
+                        Route::get('index', [IndexCollectionsInProductCategory::class, 'inSubDepartment'])->name('index');
                         Route::get('create', [CreateCollection::class, 'inSubDepartment'])->name('create');
                         Route::prefix('{collection}')->group(function () {
                             Route::get('', [ShowCollection::class ,'inSubDepartment'])->name('show');
@@ -149,7 +151,7 @@ Route::name("departments.")->prefix('departments')
                         Route::prefix('{family}')->name('show')->group(function () {
                             Route::get('', [ShowFamily::class, 'inSubDepartment']);
                             Route::prefix('collection')->name('.collection.')->group(function () {
-                                Route::get('index', [IndexCollection::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
+                                Route::get('index', [IndexCollections::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
                                 Route::get('create', [CreateCollection::class, 'inFamilyInSubDepartmentInDepartment'])->name('create');
                                 Route::prefix('{collection}')->group(function () {
                                     Route::get('', [ShowCollection::class ,'inFamilyInSubDepartmentInDepartment'])->name('show');
@@ -177,7 +179,7 @@ Route::name("families.")->prefix('families')
         Route::prefix('{family}')->name('show')->group(function () {
             Route::get('', [ShowFamily::class, 'inShop']);
             Route::prefix('collection')->name('.collection.')->group(function () {
-                Route::get('index', [IndexCollection::class, 'inFamily'])->name('index');
+                Route::get('index', [IndexCollections::class, 'inFamily'])->name('index');
                 Route::get('create', [CreateCollection::class, 'inFamily'])->name('create');
                 Route::prefix('{collection}')->group(function () {
                     Route::get('', [ShowCollection::class ,'inFamily'])->name('show');
@@ -195,7 +197,7 @@ Route::name("families.")->prefix('families')
 
 Route::name("collections.")->prefix('collections')
     ->group(function () {
-        Route::get('', IndexCollection::class)->name('index');
+        Route::get('', IndexCollections::class)->name('index');
         Route::get('create', CreateCollection::class)->name('create');
 
         Route::prefix('{collection}')->group(function () {
@@ -209,10 +211,10 @@ Route::name("collections.")->prefix('collections')
                 Route::get('index', [IndexDepartments::class, 'inCollection'])->name('index');
             });
             Route::prefix('families')->name('families.')->group(function () {
-                Route::get('index', [IndexFamilies::class, 'inCollection'])->name('index');
+                Route::get('index', IndexFamiliesInCollection::class)->name('index');
             });
             Route::prefix('collections')->name('collections.')->group(function () {
-                Route::get('index', [IndexCollection::class, 'inCollection'])->name('index');
+                Route::get('index', [IndexCollections::class, 'inCollection'])->name('index');
             });
         });
     });
