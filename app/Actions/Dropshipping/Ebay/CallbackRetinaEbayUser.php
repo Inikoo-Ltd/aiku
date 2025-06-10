@@ -52,6 +52,7 @@ class CallbackRetinaEbayUser extends OrgAction
             if ($response->successful()) {
                 $tokenData = $response->json();
 
+                /** @var EbayUser $ebayUser */
                 $ebayUser = StoreEbayUser::run($customer, [
                     'settings' => [
                         'credentials' => [
@@ -69,15 +70,10 @@ class CallbackRetinaEbayUser extends OrgAction
                 data_set($modelData, 'name', Arr::get($accountInfo, 'name'));
                 data_set($modelData, 'data', $accountInfo);*/
 
-                $ebayUser = UpdateEbayUser::run($ebayUser, [
-                    'settings' => [
-                        'credentials' => [
-                            'ebay_access_token' => $tokenData['access_token'],
-                            'ebay_refresh_token' => $tokenData['refresh_token'],
-                            'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
-                        ]
-                    ]
-                ]);
+                $ebayUser->createOptInProgram();
+                $ebayUser->createFulfilmentPolicy();
+                $ebayUser->createPaymentPolicy();
+                $ebayUser->createReturnPolicy();
 
                 UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
                     'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
