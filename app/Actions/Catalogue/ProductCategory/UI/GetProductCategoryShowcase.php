@@ -189,6 +189,13 @@ class GetProductCategoryShowcase
                 ],
                 'method' => 'post'
             ] : [],
+            'detach_collections_route' => $productCategory->webpage?->webpageHasCollections ? [
+                'name'       => 'grp.models.webpage.detach_collection',
+                'parameters' => [
+                    'webpage'  => $productCategory->webpage->id,
+                ],
+                'method' => 'delete'
+            ] : [],
         ];
 
         $data['collections'] = [
