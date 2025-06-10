@@ -1,91 +1,137 @@
-<script setup lang='ts'>
-
+<script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faDollarSign, faImage } from '@fal'
+import { faDollarSign, faImage, faUnlink, faGlobe } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { inject } from 'vue'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { Link } from '@inertiajs/vue3'
-import Image from "@/Components/Image.vue";
-import CountUp from 'vue-countup-v3'
+import { inject, ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
-library.add(faDollarSign, faImage)
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { Link, router } from '@inertiajs/vue3'
+import Image from '@/Components/Image.vue'
+import CountUp from 'vue-countup-v3'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Icon from "@/Components/Icon.vue"
+import { notify } from '@kyvg/vue3-notification'
+import EmptyState from '@/Components/Utils/EmptyState.vue'
 
-const props = defineProps<{
-    data: {
-        description: string
-        stats: {
-            label: string
-            icon: string
-            value: number
-            meta: {
-                value: number
-                label: string
-            }
-        }[]
-    }
-}>()
+library.add(faDollarSign, faImage, faUnlink, faGlobe)
 
 const locale = inject('locale', aikuLocaleStructure)
+const unassignLoadingIds = ref<number[]>([])
+
+const props = defineProps<{
+  data: {
+    name?: string
+    image?: string
+    description?: string
+    id: number
+    stats: {
+      label: string
+      icon: string
+      value: number
+      meta: { value: number; label: string }
+    }[]
+    attached_webpages: {
+      id: number
+      name: string
+      code?: string
+      title?: string
+      description?: string
+      image?: string[]
+      typeIcon?: any
+      route?: { name: string; parameters?: Record<string, any> }
+    }[]
+  }
+  loadingUnassignIds?: number[]
+}>()
+
+const UnassignCollectionFormWebpage = async (id: number) => {
+  unassignLoadingIds.value.push(id)
+  const url = route("grp.models.webpage.detach_collection", {
+    webpage: id,
+    collection: props.data.id,
+  })
+
+  router.delete(url, {
+    onError: (error) => {
+      notify({
+        title: trans("Something went wrong."),
+        text: error?.products || trans("Failed to remove collection."),
+        type: "error",
+      })
+    },
+    onSuccess: () => {
+      notify({
+        title: trans("Success!"),
+        text: trans("Collection has been removed."),
+        type: "success",
+      })
+    },
+    onFinish: () => {
+      unassignLoadingIds.value = unassignLoadingIds.value.filter((item) => item !== id)
+    },
+  })
+}
 </script>
 
 <template>
-    <div class=" p-4">
-        <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 mb-10">   
-            <div>
-                <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">   
-                    <div class="flex items-center justify-between mb-6">
-                            <div class="flex-1 mx-4">
-                                <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
-                                    <Image v-if="data.image" :src="data.image" :imageCover="true"
-                                            class="w-full h-40 object-cover rounded-t-lg" />
-                                    <div v-else class="flex flex-col justify-center items-center bg-gray-100 w-full h-48">
-                                        <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
-                                        <div class="text-gray-500 text-sm">
-                                            {{ trans("No image") }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-                    <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
-                        <div class="text-sm font-medium">
-                            <span>{{ data.name || "No label" }}</span>
-                        </div>
-                        <div class="text-md">
-                            <span class="text-gray-400">{{ data.description || "No description" }}</span>
-                        </div>
-                    </div>
-                </div>
+  <div class="p-4 space-y-6">
+    <div class="grid lg:grid-cols-[30%_1fr] gap-4 max-w-6xl">
+      <!-- Info Card -->
+      <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-3 h-fit">
+        <div class="bg-white rounded-lg overflow-hidden">
+          <Image v-if="data.image" :src="data.image" imageCover class="w-full h-36 object-cover" />
+          <div v-else class="h-36 flex items-center justify-center bg-gray-100 flex-col">
+            <FontAwesomeIcon :icon="faImage" class="text-gray-400 w-6 h-6" />
+            <span class="text-xs text-gray-500">{{ trans('No image') }}</span>
+          </div>
+        </div>
+        <div class="border-t pt-3 text-sm space-y-1 text-gray-700">
+          <div class="text-base font-semibold">{{ data.name || trans('No label') }}</div>
+          <div class="text-gray-500">{{ data.description || trans('No description') }}</div>
+        </div>
+      </div>
+
+      <!-- Webpages List -->
+      <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
+        <h2 class="text-lg font-semibold text-gray-800">{{ trans('Webpages') }}</h2>
+
+        <div v-if="data.attached_webpages.length" class="space-y-3">
+          <div
+            v-for="webpage in data.attached_webpages"
+            :key="webpage.id"
+            class="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow transition"
+          >
+            <!-- Icon -->
+            <Icon
+              v-if="webpage?.typeIcon"
+              :data="webpage.typeIcon"
+              size="xl"
+              class="text-gray-600 shrink-0"
+            />
+
+            <!-- Info -->
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-medium text-gray-800 truncate">{{ webpage.code || webpage.name }}</h3>
+              <p class="text-xs text-gray-500 line-clamp-2">{{ webpage.title || trans('No title') }}</p>
             </div>
+
+            <!-- Unassign Button -->
+            <Button
+              type="negative"
+              size="xs"
+              :icon="faUnlink"
+              v-tooltip="'Unassign'"
+              :loading="unassignLoadingIds.includes(webpage.id)"
+              @click="UnassignCollectionFormWebpage(webpage.id)"
+              class="shrink-0"
+            />
+          </div>
         </div>
 
-        <div class="border-l-4 border-l-indigo-500 border border-gray-300 max-w-lg px-2 py-2.5 mb-10">
-            <div class="text-sm text-gray-400 block">Parent</div>
-            <Link :href="data?.parent?.route?.name ? route(data.parent.route.name, data.parent.route.parameters) : '#'" class="primaryLink"> 
-                    {{ data.parent.name }}
-            </Link>
+        <div v-else class="text-sm text-gray-500 italic text-center">
+         <EmptyState />
         </div>
-
-        
-        <div class="flex gap-x-3 gap-y-4 flex-wrap">
-            <div v-for="fake in data.stats" class="bg-gray-50 min-w-64 border border-gray-300 rounded-md p-6">
-                <div class="flex justify-between items-center mb-1">
-                    <div class="">{{ fake.label }}</div>
-                    <FontAwesomeIcon :icon='fake.icon' class=' text-xl text-gray-400' fixed-width aria-hidden='true' />
-                </div>
-                <div class="mb-1 text-2xl font-semibold">
-                    <CountUp
-                        :endVal="fake.value"
-                        :duration="1.5"
-                        :scrollSpyOnce="true"
-                        :options="{
-                            formattingFn: (value: number) => locale.number(value)
-                        }"
-                    />
-                </div>
-                <!-- <div class="text-sm text-gray-400">{{ fake.meta.value }} {{ fake.meta.label }}</div> -->
-            </div>
-        </div>
+      </div>
     </div>
+  </div>
 </template>

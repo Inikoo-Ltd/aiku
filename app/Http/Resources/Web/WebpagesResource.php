@@ -36,6 +36,7 @@ class WebpagesResource extends JsonResource
             "level" => $this->level,
             "code" => $this->code,
             "url" => $this->url,
+            "title" => $this->title,
             "workshop" => route('grp.org.shops.show.web.webpages.workshop', [
                 'organisation' => $this->organisation_slug,
                 'shop' => $this->shop_slug,

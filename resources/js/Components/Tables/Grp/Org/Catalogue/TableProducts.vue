@@ -24,7 +24,7 @@ import { RouteParams } from "@/types/route-params";
 library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil);
 
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string,
     routes: {
@@ -33,7 +33,7 @@ defineProps<{
         detach: routeType
     },
 }>();
-
+console.log(props)
 
 function productRoute(product: Product) {
     switch (route().current()) {
@@ -218,7 +218,7 @@ const locale = inject("locale", aikuLocaleStructure);
                 />
             </Link>
             <Link
-                :v-else="item?.delete_product?.name"
+                v-else="item?.delete_product?.name"
                 as="button"
                 :href="route(item.delete_product.name, item.delete_product.parameters)"
                 :method="item.delete_product.method"

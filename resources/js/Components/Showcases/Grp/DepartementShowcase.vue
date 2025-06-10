@@ -83,7 +83,7 @@ const assignCollection = async (collections: any[]) => {
         }
     );
 };
-
+console.log('DepartementShowcase', props.data);
 const UnassignCollection = async ( id: number ) => {
     unassignLoadingIds.value.push(id);
     const method = props.data.routes.detach_collections_route.method;
