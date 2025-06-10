@@ -117,7 +117,7 @@ class GetCollectionShowcase
                     'method'     => 'post'
                 ],
                 'detach_webpage' => [
-                    'name'       => 'grp.models.collection.detach_webpages',
+                    'name'       => 'grp.models.collection.detach_webpage',
                     'parameters' => [],
                     'method'     => 'delete'
                 ],

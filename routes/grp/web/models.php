@@ -738,7 +738,7 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
     Route::post('attach-models', AttachCollectionToModels::class)->name('attach-models');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
     Route::post('attach-webpages', AttachWebpageToCollections::class)->name('attach_webpages');
-    Route::delete('/webpages/{webpage:id}/detach', DetachWebpageToCollections::class)->name('detach_webpages');
+    Route::delete('/webpages/{webpage:id}/detach', DetachWebpageToCollections::class)->name('detach_webpage');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
