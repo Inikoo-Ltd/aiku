@@ -305,6 +305,18 @@ class EditWebsite extends OrgAction
                     ]
                 ]
             ];
+            $blueprints[] = [
+                'label'  => __('Return Policy'),
+                'icon'   => 'fa-light fa-exchange',
+                'fields' => [
+                    'return_policy' => [
+                        'type'     => 'editor',
+                        'label'    => __('Return Policy'),
+                        'value'    => Arr::get($website->settings, 'return_policy'),
+                        'required' => false,
+                    ],
+                ]
+            ];
         }
 
 
