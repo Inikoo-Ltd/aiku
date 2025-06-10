@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Collection;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateWebpages;
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateCollections;
-use App\Http\Resources\Catalogue\CollectionResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Web\Webpage;
 
@@ -41,15 +40,10 @@ class DetachCollectionFromWebpage extends OrgAction
         return $this->handle($webpage, $collection);
     }
 
-    public function asController(Webpage $webpage, Collection $collection): Collection
+    public function asController(Webpage $webpage, Collection $collection): void
     {
         $this->initialisationFromShop($webpage->shop, []);
 
-        return $this->handle($webpage, $collection);
-    }
-
-    public function jsonResponse(Collection $collection): CollectionResource
-    {
-        return CollectionResource::make($collection);
+        $this->handle($webpage, $collection);
     }
 }
