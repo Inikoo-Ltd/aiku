@@ -104,6 +104,22 @@ trait WithEbayApiRequest
     {
         $config = $this->getEbayConfig();
 
+        $scopes = [
+            'https://api.ebay.com/oauth/api_scope',
+            'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.marketing',
+            'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.inventory',
+            'https://api.ebay.com/oauth/api_scope/sell.account.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.account',
+            'https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
+            'https://api.ebay.com/oauth/api_scope/sell.analytics.readonly',
+            'https://api.ebay.com/oauth/api_scope/sell.stores',
+            'https://api.ebay.com/oauth/api_scope/sell.stores.readonly',
+            'https://api.ebay.com/oauth/api_scope/commerce.identity.readonly'
+        ];
+
         if (!$config['refresh_token']) {
             throw new Exception('No refresh token available');
         }
@@ -114,7 +130,8 @@ trait WithEbayApiRequest
                 'Authorization' => 'Basic ' . base64_encode($config['client_id'] . ':' . $config['client_secret'])
             ])->post($this->getEbayTokenUrl(), [
                 'grant_type' => 'refresh_token',
-                'refresh_token' => $config['refresh_token']
+                'refresh_token' => $config['refresh_token'],
+                'scope' => implode(' ', $scopes),
             ]);
 
             if ($response->successful()) {
@@ -494,6 +511,136 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
             Log::error('Get eBay Account Info Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create user's eBay account opt in
+     */
+    public function createOptInProgram()
+    {
+        $optInProgram = [
+            'programType' => 'SELLING_POLICY_MANAGEMENT'
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/program/opt_in";
+            return $this->makeEbayRequest('post', $endpoint, $optInProgram);
+        } catch (Exception $e) {
+            Log::error('Opt in Program Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay account opt in
+     */
+    public function getOptInProgram()
+    {
+        try {
+            $endpoint = "/sell/account/v1/program/get_opted_in_programs";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Opt in Program Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create user's eBay fulfilment policy
+     */
+    public function createFulfilmentPolicy()
+    {
+        $data = [
+            "categoryTypes" => [
+                [
+                "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
+                ]
+            ],
+            "marketplaceId" => "EBAY_UK",
+            "name" => "Domestic free shipping",
+            "handlingTime" => [
+                "unit"  => "DAY",
+                "value"  => "1"
+            ],
+            "shippingOptions" => [
+                [
+                "costType" => "FLAT_RATE",
+                "optionType" => "DOMESTIC",
+                "shippingServices" => [
+                        [
+                        "buyerResponsibleForShipping" => "false",
+                        "freeShipping" => "true",
+                        "shippingCarrierCode" => "USPS",
+                        "shippingServiceCode" => "USPSPriorityFlatRateBox"
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy";
+            return $this->makeEbayRequest('post', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Create Fulfilment Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create user's eBay payment policy
+     */
+    public function createPaymentPolicy()
+    {
+        $data = [
+            "name" => "minimal Payment Policy",
+            "marketplaceId" => "EBAY_UK",
+            "categoryTypes" => [
+                [
+                "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
+                ]
+            ],
+            "paymentMethods" => [
+                [
+                "paymentMethodType" => "PERSONAL_CHECK"
+                ]
+            ]
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/payment_policy";
+            return $this->makeEbayRequest('post', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Create Payment Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+
+    /**
+     * Create user's eBay return policy
+     */
+    public function createReturnPolicy()
+    {
+        $data = [
+            "name" => "minimal return policy, US marketplace",
+            "marketplaceId" => "EBAY_UK",
+            "refundMethod" => "MONEY_BACK",
+            "returnsAccepted" => true,
+            "returnShippingCostPayer" => "SELLER",
+            "returnPeriod" => [
+                "value" => 30,
+                "unit" => "DAY"
+            ]
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/return_policy";
+            return $this->makeEbayRequest('post', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Create Return Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
