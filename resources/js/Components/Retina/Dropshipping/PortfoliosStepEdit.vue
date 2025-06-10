@@ -109,21 +109,6 @@ const valueTableFilter = ref({})
             </template>
         </Column> -->
 
-        <Column field="description" header="Description">
-            <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
-                    <textarea
-                        v-model="data.description"
-                        class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                        :placeholder="trans('No description')"
-                        @blur="(e) => emits('updateSelectedProducts', data, {customer_description: data.description}, 'description')"
-                    >
-                    </textarea>
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], undefined)" />
-                </div>
-            </template>
-        </Column>
-
         <Column field="customer_price" header="Selling Price" style="max-width: 200px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
@@ -138,6 +123,29 @@ const valueTableFilter = ref({})
                         :inputStyle="{textAlign: 'right'}"
                     />
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'customer_price'], undefined)" />
+                </div>
+            </template>
+        </Column>
+
+        <Column field="margin" header="Profit Margin (%)" style="max-width: 125px;">
+            <template #body="{ data }">
+                <div class="whitespace-nowrap relative pr-2">
+                    {{ data.margin }}%
+                </div>
+            </template>
+        </Column>
+
+        <Column field="description" header="Description">
+            <template #body="{ data }">
+                <div class="whitespace-nowrap relative pr-2">
+                    <textarea
+                        v-model="data.description"
+                        class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                        :placeholder="trans('No description')"
+                        @blur="(e) => emits('updateSelectedProducts', data, {customer_description: data.description}, 'description')"
+                    >
+                    </textarea>
+                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], undefined)" />
                 </div>
             </template>
         </Column>
