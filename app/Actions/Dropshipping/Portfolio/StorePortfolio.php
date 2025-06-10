@@ -37,6 +37,8 @@ class StorePortfolio extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
+        // TODO: Change with corret vat rate
+        $vatRate = 0.2;
         data_set($modelData, 'last_added_at', now(), overwrite: false);
 
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
@@ -52,7 +54,8 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'item_name', $item->name);
         data_set($modelData, 'customer_product_name', $item->name);
         data_set($modelData, 'customer_price', $item->price);
-        // data_set($modelData, 'customer_description', $item->description);
+        data_set($modelData, 'selling_price', $item->price);
+        data_set($modelData, 'price_inc_vat', $item->price + ($item->price * $vatRate));
 
         $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
             /** @var Portfolio $portfolio */
