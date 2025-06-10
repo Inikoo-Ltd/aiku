@@ -45,7 +45,6 @@ import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelect
 import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
-
 const props = defineProps<{
     title: string
     tabs: TSTabs

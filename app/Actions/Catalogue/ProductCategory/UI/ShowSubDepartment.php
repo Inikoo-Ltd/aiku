@@ -136,7 +136,7 @@ class ShowSubDepartment extends OrgAction
                     ],
                     'method' => 'get'
                 ],
-                
+
                 'attach_collections_route' => $subDepartment->webpage ? [
                     'name'       => 'grp.models.webpage.attach_collection',
                     'parameters' => [

@@ -1,8 +1,7 @@
 <?php
-
 /*
  * author Arya Permana - Kirin
- * created on 09-06-2025-15h-57m
+ * created on 10-06-2025-13h-17m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
@@ -14,7 +13,7 @@ use App\Models\Web\Webpage;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebpageHydrateCollections
+class WebpageHydrateProducts
 {
     use AsAction;
     use WithEnumStats;
@@ -34,7 +33,7 @@ class WebpageHydrateCollections
     public function handle(Webpage $webpage): void
     {
         $stats = [
-            'number_collections' => $webpage->webpageHasCollections()->count(),
+            'number_products' => $webpage->webpageHasProducts()->count(),
         ];
 
         $webpage->stats()->update($stats);

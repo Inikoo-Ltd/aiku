@@ -96,11 +96,10 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $platformName = __('Manual');
         }
-        
+
         $catchOrdersRoute = [];
 
-        if($this->customerSalesChannel->user instanceof WooCommerceUser)
-        {
+        if ($this->customerSalesChannel->user instanceof WooCommerceUser) {
             $catchOrdersRoute = [
                 'name'       => 'retina.models.dropshipping.woocommerce.orders.catch',
                 'parameters' => [$this->customerSalesChannel->user->id]

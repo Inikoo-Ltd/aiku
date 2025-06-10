@@ -12,8 +12,6 @@ namespace App\Models\Dropshipping;
 use App\Actions\Dropshipping\WooCommerce\Traits\WithEbayApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
-use App\Models\Catalogue\Product;
-use App\Models\Ordering\Order;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,22 +30,20 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $name
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $platform_id
  * @property int|null $customer_sales_channel_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser query()
  * @mixin \Eloquent
  */
 class EbayUser extends Model

@@ -59,6 +59,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_departments_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_parent_webpages
+ * @property int $number_sub_departments
+ * @property int $number_current_sub_departments state: active+discontinuing
+ * @property int $number_sub_departments_state_in_process
+ * @property int $number_sub_departments_state_active
+ * @property int $number_sub_departments_state_inactive
+ * @property int $number_sub_departments_state_discontinuing
+ * @property int $number_sub_departments_state_discontinued
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats query()

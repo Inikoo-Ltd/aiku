@@ -66,8 +66,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $subDepartments
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, WebpageHasCollection> $webpageHasCollections
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection onlyTrashed()

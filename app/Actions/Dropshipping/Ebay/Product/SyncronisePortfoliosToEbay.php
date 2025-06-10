@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-06-2025-10h-19m
@@ -8,7 +9,6 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
-use App\Actions\Dropshipping\Ebay\Product\RequestApiUploadProductEbay;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Support\Arr;

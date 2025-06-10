@@ -278,49 +278,53 @@ class IndexCollection extends OrgAction
                         ]
                     ];
         }
+        $actions = [];
 
-        $actions = array_values(array_filter([
-            ... (function () use ($request) {
-                if (!$this->canEdit) {
-                    return [];
-                }
+        if (!app()->isProduction()) {
+            $actions = array_values(array_filter([
+                ... (function () use ($request) {
+                    if (!$this->canEdit) {
+                        return [];
+                    }
 
-                $routes = [
-                    'grp.org.shops.show.catalogue.collections.index'                                      => 'grp.org.shops.show.catalogue.collections.create',
-                    'grp.org.shops.show.catalogue.departments.show.collection.index'                     => 'grp.org.shops.show.catalogue.departments.show.collection.create',
-                    'grp.org.shops.show.catalogue.departments.show.families.show.collection.index'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
-                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
-                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
-                    'grp.org.shops.show.catalogue.families.show.collection.index'                        => 'grp.org.shops.show.catalogue.families.show.collection.create',
-                ];
+                    $routes = [
+                        'grp.org.shops.show.catalogue.collections.index'                                      => 'grp.org.shops.show.catalogue.collections.create',
+                        'grp.org.shops.show.catalogue.departments.show.collection.index'                     => 'grp.org.shops.show.catalogue.departments.show.collection.create',
+                        'grp.org.shops.show.catalogue.departments.show.families.show.collection.index'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
+                        'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                        'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
+                        'grp.org.shops.show.catalogue.families.show.collection.index'                        => 'grp.org.shops.show.catalogue.families.show.collection.create',
+                    ];
 
-                $currentRoute = $request->route()->getName();
+                    $currentRoute = $request->route()->getName();
 
-                if (!isset($routes[$currentRoute])) {
-                    return [];
-                }
+                    if (!isset($routes[$currentRoute])) {
+                        return [];
+                    }
 
-                return [[
-                    'type'    => 'button',
-                    'style'   => 'create',
-                    'tooltip' => __('new collection'),
-                    'label'   => __('collection'),
-                    'route'   => [
-                        'name'       => $routes[$currentRoute],
-                        'parameters' => $request->route()->originalParameters()
-                    ]
-                ]];
-            })(),
+                    return [[
+                        'type'    => 'button',
+                        'style'   => 'create',
+                        'tooltip' => __('new collection'),
+                        'label'   => __('collection'),
+                        'route'   => [
+                            'name'       => $routes[$currentRoute],
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ]];
+                })(),
 
-            class_basename($this->parent) === 'Collection' ? [
-                'type'     => 'button',
-                'style'    => 'secondary',
-                'key'      => 'attach-collection',
-                'icon'     => 'fal fa-plus',
-                'tooltip'  => __('Attach collection to this collection'),
-                'label'    => __('Attach collection'),
-            ] : false
-        ]));
+                class_basename($this->parent) === 'Collection' ? [
+                    'type'     => 'button',
+                    'style'    => 'secondary',
+                    'key'      => 'attach-collection',
+                    'icon'     => 'fal fa-plus',
+                    'tooltip'  => __('Attach collection to this collection'),
+                    'label'    => __('Attach collection'),
+                ] : false
+            ]));
+        }
+
         return Inertia::render(
             'Org/Catalogue/Collections',
             [

@@ -63,9 +63,9 @@ class StoreCollection extends OrgAction
         if ($imageData['image']) {
             $this->processCatalogue($imageData, $collection);
         }
-        
-        if($parent instanceof ProductCategory) {
-            if($parent->type == ProductCategoryTypeEnum::DEPARTMENT || $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+
+        if ($parent instanceof ProductCategory) {
+            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT || $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 AttachCollectionToWebpage::make()->action($parent->webpage, $collection);
             }
         }

@@ -100,7 +100,7 @@ class DropshippingPortfolioResource extends JsonResource
                 ],
             ];
         }
-        
+
         return [
             'id'                        => $this->id,
             'item_id'                   => $itemId,

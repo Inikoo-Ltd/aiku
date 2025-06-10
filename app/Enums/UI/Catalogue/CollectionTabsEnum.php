@@ -21,10 +21,10 @@ enum CollectionTabsEnum: string
 
     case SHOWCASE            = 'showcase';
 
-    case DEPARTMENTS         = 'departments';
+    // case DEPARTMENTS         = 'departments';
     case FAMILIES            = 'families';
     case PRODUCTS            = 'products';
-    case COLLECTIONS         = 'collections';
+    // case COLLECTIONS         = 'collections';
     // case SALES               = 'sales';
     // case CUSTOMERS           = 'customers';
     // case OFFERS              = 'offers';
@@ -87,10 +87,10 @@ enum CollectionTabsEnum: string
                 'title' => __('Details'),
                 'icon'  => 'fas fa-info-circle',
             ],
-            CollectionTabsEnum::DEPARTMENTS => [
-                'title' => __("Departments")." ({$parent->stats->number_departments})",
-                'icon'  => 'fal fa-folder-tree',
-            ],
+            // CollectionTabsEnum::DEPARTMENTS => [
+            //     'title' => __("Departments")." ({$parent->stats->number_departments})",
+            //     'icon'  => 'fal fa-folder-tree',
+            // ],
             CollectionTabsEnum::FAMILIES => [
                 'title' => __('Families')." ({$parent->stats->number_families})",
                 'icon'  => 'fal fa-folder',
@@ -99,10 +99,10 @@ enum CollectionTabsEnum: string
                 'title' => __('Products')." ({$parent->stats->number_products})",
                 'icon'  => 'fal fa-cube',
             ],
-            CollectionTabsEnum::COLLECTIONS => [
-                'title' => __('Collections')." ({$parent->stats->number_collections})",
-                'icon'  => 'fal fa-cube',
-            ],
+            // CollectionTabsEnum::COLLECTIONS => [
+            //     'title' => __('Collections')." ({$parent->stats->number_collections})",
+            //     'icon'  => 'fal fa-cube',
+            // ],
         };
     }
 }

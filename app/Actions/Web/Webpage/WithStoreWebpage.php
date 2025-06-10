@@ -18,7 +18,7 @@ use Illuminate\Support\Arr;
 
 trait WithStoreWebpage
 {
-    protected function createWebBlock(Webpage $webpage, string $webBlockCode, Product|ProductCategory|Collection $model): Webpage
+    protected function createWebBlock(Webpage $webpage, string $webBlockCode, Product|ProductCategory|Collection|Webpage $model): Webpage
     {
         $webBlockType = WebBlockType::where('code', $webBlockCode)->first();
 
@@ -29,8 +29,9 @@ trait WithStoreWebpage
         $newLayout = [];
         data_set($newLayout, 'data.fieldValue', Arr::get($webBlockType->data, 'fieldValue', []));
 
-        $models   = [];
-        $models[] = $model;
+        $models = [];
+
+
         $webBlock = StoreWebBlock::make()->action(
             $webBlockType,
             [
@@ -39,6 +40,7 @@ trait WithStoreWebpage
             ],
             strict: false
         );
+
 
         $modelHasWebBlocksData = [
             'show_logged_in'  => true,
@@ -54,9 +56,9 @@ trait WithStoreWebpage
             "web_block_id"    => $webBlock->id,
             'show'            => true
         ];
-
-
         $webpage->modelHasWebBlocks()->create($modelHasWebBlocksData);
+
+
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
 

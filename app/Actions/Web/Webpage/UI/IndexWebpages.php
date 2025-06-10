@@ -365,6 +365,14 @@ class IndexWebpages extends OrgAction
             $subNavigation = $this->getWebpageNavigation($this->parent);
         }
 
+        $routeCreate = '';
+
+        if ($this->scope instanceof Fulfilment) {
+            $routeCreate = 'grp.org.fulfilments.show.web.webpages.create';
+        } elseif ($this->scope instanceof Shop) {
+            $routeCreate = 'grp.org.shops.show.web.webpages.create';
+        }
+
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -386,7 +394,7 @@ class IndexWebpages extends OrgAction
                             'style' => 'create',
                             'label' => __('webpage'),
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.web.webpages.create',
+                                'name'       => $routeCreate,
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]

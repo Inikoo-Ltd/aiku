@@ -106,8 +106,7 @@ class ShowDeliveryNote extends OrgAction
         );
 
 
-
-        $handlingActions = [
+        return [
             [
                 'type'     => 'button',
                 'style'    => 'save',
@@ -132,8 +131,6 @@ class ShowDeliveryNote extends OrgAction
                 'key'     => 'change-picker',
             ]
         ];
-
-        return $handlingActions;
     }
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
@@ -201,9 +198,9 @@ class ShowDeliveryNote extends OrgAction
                             'label'   => __('Change Picker'),
                             'key'     => 'change-picker',
                         ]
-                        
+
                     ],
-                    
+
                 ],
 
                 $deliveryNote->pickerUser->id == $request->user()->id
