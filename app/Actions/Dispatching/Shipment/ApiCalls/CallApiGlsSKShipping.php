@@ -106,6 +106,12 @@ class CallApiGlsSKShipping extends OrgAction
             $client = new SoapClient($url, $soapOptions);
         } catch (SoapFault $e) {
             $result['errorData'] = ['Soap API connection error'];
+            $result['status'] = 'fail';
+            $result['modelData'] = [
+                'api_response' => [
+                    'error' => $e->getMessage(),
+                ],
+            ];
             return $result;
         }
 
@@ -154,17 +160,5 @@ class CallApiGlsSKShipping extends OrgAction
             'errorData' => $errorData,
         ];
     }
-
-    public string $commandSignature = 'shipment:gls_sk';
-
-    public function asCommand($command)
-    {
-        $d = PalletReturn::find(825);
-        $s = Shipper::find(36);
-        dd($this->handle($d, $s));
-
-    }
-
-
 
 }
