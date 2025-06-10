@@ -8,8 +8,11 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Catalogue\Collection\UI\IndexCollectionsInWebpage;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -30,6 +33,8 @@ class WebpagesResource extends JsonResource
 
     public function toArray($request): array
     {
+        $webpage = Webpage::find($this->id);
+
         return [
             "id" => $this->id,
             "slug" => $this->slug,
@@ -60,6 +65,7 @@ class WebpagesResource extends JsonResource
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,
+            'collections'       => $webpage->webpageHasCollections ? CollectionsResource::collection(IndexCollectionsInWebpage::run($webpage))->resolve() : [],
         ];
     }
 }

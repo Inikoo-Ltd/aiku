@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Website\GetWebsiteWorkshopCollection;
 use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
@@ -112,9 +113,9 @@ class ShowWebsiteWorkshop extends OrgAction
 
         $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
                 ?
-                fn () => GetWebsiteWorkshopDepartment::run($website)
+                fn () => GetWebsiteWorkshopCollection::run($website)
                 : Inertia::lazy(
-                    fn () => GetWebsiteWorkshopDepartment::run($website)
+                    fn () => GetWebsiteWorkshopCollection::run($website)
                 );
 
 
