@@ -83,6 +83,7 @@ class ShippingParentResource extends JsonResource
             'from_first_name'    => explode(' ', $shopContactName)[0],
             'from_last_name'     => $shopLastName,
             'from_company_name'  => $shop->company_name,
+            'from_contact_name'   => $shopContactName,
             'from_phone'         => $shop->phone,
             'from_email'         => $shop->email,
             'from_address'       => AddressResource::make($shop->address)->getArray(),

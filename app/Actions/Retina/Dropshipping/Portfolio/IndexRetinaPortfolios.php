@@ -119,6 +119,12 @@ class IndexRetinaPortfolios extends RetinaAction
                                 'wooCommerceUser' => $this->customerSalesChannel->user->id
                             ]
                         ],
+                        PlatformTypeEnum::EBAY => [
+                            'name'       => 'retina.models.dropshipping.ebay.batch_upload',
+                            'parameters' => [
+                                'ebayUser' => $this->customerSalesChannel->user->id
+                            ]
+                        ],
                         default => false
                     },
                     'itemRoute'                 => [

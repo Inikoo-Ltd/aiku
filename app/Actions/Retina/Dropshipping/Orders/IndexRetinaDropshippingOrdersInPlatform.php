@@ -16,6 +16,8 @@ use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -94,6 +96,21 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $platformName = __('Manual');
         }
+        
+        $catchOrdersRoute = [];
+
+        if($this->customerSalesChannel->user instanceof WooCommerceUser)
+        {
+            $catchOrdersRoute = [
+                'name'       => 'retina.models.dropshipping.woocommerce.orders.catch',
+                'parameters' => [$this->customerSalesChannel->user->id]
+            ];
+        } elseif ($this->customerSalesChannel->user instanceof EbayUser) {
+            $catchOrdersRoute = [
+                'name'       => 'retina.models.dropshipping.ebay.orders.catch',
+                'parameters' => [$this->customerSalesChannel->user->id]
+            ];
+        }
 
         return Inertia::render(
             'Dropshipping/RetinaOrders',
@@ -109,10 +126,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('catch'),
-                            'route' => [
-                                'name'       => 'retina.models.dropshipping.woocommerce.orders.catch',
-                                'parameters' => [$this->customerSalesChannel->user->id]
-                            ],
+                            'route' => $catchOrdersRoute,
                         ]
                     ]
                 ],
