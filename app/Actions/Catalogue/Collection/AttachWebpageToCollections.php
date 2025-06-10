@@ -22,13 +22,11 @@ class AttachWebpageToCollections extends OrgAction
         $webpageIds = Arr::get($modelData, 'webpages', []);
 
         if (!empty($webpageIds)) {
+            $syncData = [];
             foreach ($webpageIds as $webpageId) {
-                $collection->webpageHasCollections()->create([
-                    'group_id' => $collection->group_id,
-                    'organisation_id' => $collection->organisation_id,
-                    'webpage_id' => $webpageId
-                ]);
+                $syncData[$webpageId] = ['group_id' => $collection->group_id, 'organisation_id' => $collection->organisation_id];
             }
+            $collection->webpages()->syncWithoutDetaching($syncData);
         }
 
         return true;

@@ -180,4 +180,9 @@ class Collection extends Model implements Auditable, HasMedia
     {
         return $this->hasMany(WebpageHasCollection::class);
     }
+
+    public function webpages(): BelongsToMany
+    {
+        return $this->belongsToMany(Webpage::class, 'webpage_has_collections');
+    }
 }
