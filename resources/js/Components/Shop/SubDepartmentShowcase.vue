@@ -6,12 +6,13 @@ import { faUnlink, faThLarge, faBars, faSeedling, faCheck, faFolderTree } from "
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import EmptyState from '../Utils/EmptyState.vue'
 import Image from '../Image.vue'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Icon from "@/Components/Icon.vue"
+import CollectionList from "@/Components/Departement&Family/CollectionList.vue"
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
@@ -40,12 +41,30 @@ const props = defineProps<{
       }[]
     }[]
     routes: {
-      detach_family: routeType
+      detach_family: routeType,
+      attach_collections_route: routeType,
+      detach_collections_route: routeType
+    }
+    collections: {
+      data: {
+        id: number
+        name: string
+        description?: string
+        image?: ImageTS[]
+      }[]
+    },
+    routeList: {
+      collectionRoute: string,
+      collections_route: string
     }
   }
 }>()
 
 const isLoadingDelete = ref<string[]>([])
+const isLoadingSubmit = ref(false)
+const unassignLoadingIds = ref<number[]>([])
+const isModalOpen = ref(false)
+provide('isModalOpen', isModalOpen)
 
 const onDetachFamily = (slug: string) => {
   router.delete(
@@ -69,141 +88,219 @@ const onDetachFamily = (slug: string) => {
     }
   )
 }
+
+const assignCollection = async (collections: any[]) => {
+  const method = props.data.routes.attach_collections_route.method
+  const url = route(
+    props.data.routes.attach_collections_route.name,
+    props.data.routes.attach_collections_route.parameters
+  )
+  const collectionIds = collections.map((c) => c.id)
+
+  router[method](
+    url,
+    { collections: collectionIds },
+    {
+      onBefore: () => (isLoadingSubmit.value = true),
+      onError: (error) => {
+        notify({
+          title: trans("Something went wrong."),
+          text: error?.products || trans("Failed to add collection."),
+          type: "error",
+        })
+      },
+      onSuccess: () => {
+        notify({
+          title: trans("Success!"),
+          text: trans("Successfully added portfolios"),
+          type: "success",
+        })
+        isModalOpen.value = false
+      },
+      onFinish: () => {
+        isLoadingSubmit.value = false
+      },
+    }
+  )
+}
+
+const UnassignCollection = async (id: number) => {
+  unassignLoadingIds.value.push(id)
+  const method = props.data.routes.detach_collections_route.method
+  const url = route(props.data.routes.detach_collections_route.name, {
+    ...props.data.routes.detach_collections_route.parameters,
+    collection: id,
+  })
+
+  router[method](
+    url,
+    {
+      onError: (error) => {
+        notify({
+          title: trans("Something went wrong."),
+          text: error?.products || trans("Failed to remove collection."),
+          type: "error",
+        })
+      },
+      onSuccess: () => {
+        notify({
+          title: trans("Success!"),
+          text: trans("Collection has been removed."),
+          type: "success",
+        })
+      },
+      onFinish: () => {
+        unassignLoadingIds.value = unassignLoadingIds.value.filter((x) => x !== id)
+      },
+    }
+  )
+}
 </script>
 
 <template>
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-    <!-- Sub Department Detail -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-6">
-      <div class="flex items-center gap-4">
-        <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border border-gray-300 flex items-center justify-center">
-          <Image
-            v-if="data.subDepartment.image_id"
-            :src="data.subDepartment.image_id"
-            :alt="data.subDepartment.name"
-            class="w-full h-full object-cover"
-            imageCover
-          />
-          <FontAwesomeIcon v-else :icon="faFolderTree" class="text-gray-400 w-10 h-10" />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800">
-            {{ data.subDepartment.name }}
-          </h1>
-          <p class="text-sm text-gray-500">Code: {{ data.subDepartment.code }}</p>
-          <p class="text-sm text-gray-500">
-            Status:
-            <span
-              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-              :class="{
-                'bg-green-100 text-green-700': data.subDepartment.state === 'active',
-                'bg-gray-100 text-gray-600': data.subDepartment.state !== 'active',
-              }"
-            >
-              {{ data.subDepartment.state }}
-            </span>
+    <!-- Grid Layout: SubDepartment + Collection List -->
+    <div class="grid grid-cols-1 lg:grid-cols-[5fr_2fr] gap-6">
+
+      <!-- SubDepartment & Families -->
+      <div>
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-6">
+          <div class="flex items-center gap-4">
+            <div class="w-20 h-20 rounded-xl bg-gray-100 border border-gray-300 flex items-center justify-center overflow-hidden">
+              <Image
+                v-if="data.subDepartment.image_id"
+                :src="data.subDepartment.image_id"
+                :alt="data.subDepartment.name"
+                class="w-full h-full object-cover"
+                imageCover
+              />
+              <FontAwesomeIcon
+                v-else
+                :icon="faFolderTree"
+                class="w-10 h-10 text-gray-400"
+              />
+            </div>
+
+            <div>
+              <h1 class="text-2xl font-bold text-gray-800">{{ data.subDepartment.name }}</h1>
+              <p class="text-sm text-gray-500">Code: {{ data.subDepartment.code }}</p>
+              <p class="text-sm text-gray-500">
+                Status:
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  :class="{
+                    'bg-green-100 text-green-700': data.subDepartment.state === 'active',
+                    'bg-gray-100 text-gray-600': data.subDepartment.state !== 'active',
+                  }"
+                >
+                  {{ data.subDepartment.state }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <p class="text-sm text-gray-400 sm:mt-0">
+            Created at: {{ new Date(data.subDepartment.created_at).toLocaleDateString() }}
           </p>
         </div>
-      </div>
-      <p class="text-sm text-gray-400 mt-2 sm:mt-0">
-        Created at: {{ new Date(data.subDepartment.created_at).toLocaleDateString() }}
-      </p>
-    </div>
 
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6 border-b pb-3">
-      <h2 class="text-xl font-bold text-gray-800">
-        {{ trans("Family list") }} ({{ data.families.length }})
-      </h2>
-    </div>
-
-    <!-- Families Grid -->
-    <div
-      v-if="data.families?.length"
-      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-    >
-      <div
-        v-for="family in data.families"
-        :key="family.id"
-        class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col relative"
-      >
-        <!-- Badge -->
-        <span class="absolute -top-3 left-0 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
-          Family
-        </span>
-
-        <!-- Header -->
-        <div class="flex items-start gap-3 mb-3 border-b pb-2">
-          <Image
-            :src="family.image"
-            :alt="family.name"
-            class="w-10 h-10 rounded-lg object-cover"
-            imageCover
-          />
-          <div class="flex-1 min-w-0">
-            <h3 class="text-base font-semibold text-gray-900 leading-tight">
-              {{ family.name }}
-              <Icon
-                v-if="family.state"
-                :data="family.state"
-                :title="family.state.label"
-                class="ml-1"
-              />
-            </h3>
-            <p class="text-xs text-gray-500">Code: {{ family.code }}</p>
-            <p class="text-xs text-gray-500">
-              {{ family.products?.length || 0 }} product{{ family.products?.length === 1 ? '' : 's' }}
-            </p>
+        <!-- Family List -->
+        <div>
+          <div class="flex items-center justify-between mb-4 border-b pb-2">
+            <h2 class="text-lg font-semibold text-gray-800">
+              {{ trans("Family list") }} ({{ data.families.length }})
+            </h2>
           </div>
-          <Button
-            @click.stop="onDetachFamily(family.slug)"
-            label=""
-            type="negative"
-            icon="fal fa-unlink"
-            size="xs"
-            :loading="isLoadingDelete.includes(family.slug)"
-          />
-        </div>
 
-        <!-- Product List -->
-        <div
-          class="bg-gray-50 border rounded-md mt-3 px-3 py-2 overflow-y-auto max-h-60 space-y-2 custom-scroll"
-        >
-          <template v-if="family.products?.length">
+          <!-- Families -->
+          <div v-if="data.families?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
-              v-for="product in family.products"
-              :key="product.id"
-              class="flex items-start gap-3 border-b py-1"
+              v-for="family in data.families"
+              :key="family.id"
+              class="relative bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col"
             >
-              <FontAwesomeIcon :icon="['fal', 'seedling']" class="text-green-500 w-4 h-4 mt-1" />
-              <div class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
+              <span class="absolute -top-3 left-0 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">Family</span>
+
+              <!-- Family Header -->
+              <div class="flex items-start gap-3 mb-3 border-b pb-2">
                 <Image
-                  :src="product.image?.source"
-                  :alt="product.name"
-                  class="w-full h-full object-cover"
+                  :src="family.image"
+                  :alt="family.name"
+                  class="w-10 h-10 rounded-lg object-cover"
                   imageCover
                 />
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-base font-semibold text-gray-900 leading-tight">
+                    {{ family.name }}
+                    <Icon
+                      v-if="family.state"
+                      :data="family.state"
+                      :title="family.state.label"
+                      class="ml-1"
+                    />
+                  </h3>
+                  <p class="text-xs text-gray-500">Code: {{ family.code }}</p>
+                  <p class="text-xs text-gray-500">
+                    {{ family.products?.length || 0 }} product{{ family.products?.length === 1 ? '' : 's' }}
+                  </p>
+                </div>
+                <Button
+                  @click.stop="onDetachFamily(family.slug)"
+                  icon="fal fa-unlink"
+                  type="negative"
+                  size="xs"
+                  :loading="isLoadingDelete.includes(family.slug)"
+                />
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-700 leading-tight truncate">{{ product.name }}</p>
-                <p class="text-xs text-gray-500">Code: {{ product.id }}</p>
+
+              <!-- Family Products -->
+              <div class="bg-gray-50 border rounded-md mt-3 px-3 py-2 max-h-60 overflow-y-auto custom-scroll space-y-2">
+                <template v-if="family.products?.length">
+                  <div
+                    v-for="product in family.products"
+                    :key="product.id"
+                    class="flex items-start gap-3 border-b py-1"
+                  >
+                    <FontAwesomeIcon :icon="['fal', 'seedling']" class="w-4 h-4 text-green-500 mt-1" />
+                    <div class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
+                      <Image
+                        :src="product.image?.source"
+                        :alt="product.name"
+                        class="w-full h-full object-cover"
+                        imageCover
+                      />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm text-gray-700 truncate leading-tight">{{ product.name }}</p>
+                      <p class="text-xs text-gray-500">Code: {{ product.id }}</p>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="text-xs text-gray-400 italic text-center">No products available.</div>
               </div>
             </div>
-          </template>
-          <div v-else class="text-xs text-gray-400 italic text-center">
-            No products available.
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="mx-auto max-w-2xl px-4 py-20 text-center">
+            <EmptyState :data="{ title: 'No families', description: 'This subdepartment has no families' }" />
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Empty State -->
-    <div v-else class="mx-auto max-w-2xl px-4 py-20 text-center">
-      <EmptyState :data="{
-        title: 'No families',
-        description: 'This subdepartment has no families'
-      }" />
+      <!-- Collections -->
+      <CollectionList
+        :collections="props.data.collections.data"
+        :routeFetch="props.data.routeList.collections_route"
+        :canAdd="true"
+        :loadingUnassignIds="unassignLoadingIds"
+        :isSubmitting="isLoadingSubmit"
+        @assign="assignCollection"
+        @unassign="UnassignCollection"
+      />
     </div>
   </div>
 </template>
+

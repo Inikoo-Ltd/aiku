@@ -51,7 +51,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
       />
     </div>
 
-    <ul v-if="props.collections.length"  class="space-y-2 max-h-96 overflow-y-auto pr-2">
+    <ul v-if="props.collections.length" class="space-y-2">
       <li
         v-for="collection in props.collections"
         :key="collection.id"
