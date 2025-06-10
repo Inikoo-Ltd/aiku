@@ -71,7 +71,7 @@ class GetCollectionShowcase
             'image'           => $collection->imageSources(720, 480),
             'description' => $collection->description,
             'name'        => $collection->name,
-             'id'        => $collection->id,
+            'id'        => $collection->id,
             'stats'       => [
                 [
                     'label' => __('Department'),
@@ -108,6 +108,18 @@ class GetCollectionShowcase
                         'value' => '+4',
                         'label' => __('from last month'),
                     ]
+                ],
+            ],
+            'routes' => [
+                'attach_webpage' => [
+                    'name'       => 'grp.models.collection.attach_webpages',
+                    'parameters' => [],
+                    'method'     => 'post'
+                ],
+                'detach_webpage' => [
+                    'name'       => 'grp.models.collection.detach_webpages',
+                    'parameters' => [],
+                    'method'     => 'delete'
                 ],
             ],
             'attached_webpages' => WebpagesResource::collection(IndexWebpagesAttachedInCollection::run($collection))->resolve()
