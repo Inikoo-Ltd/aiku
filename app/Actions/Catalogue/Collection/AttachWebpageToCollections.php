@@ -22,8 +22,12 @@ class AttachWebpageToCollections extends OrgAction
         $webpageIds = Arr::get($modelData, 'webpages', []);
 
         if (!empty($webpageIds)) {
-            $collection->webpageHasCollections()->sync($webpageIds);
-            $collection->refresh();
+            // Create new relations for each webpage ID
+            foreach ($webpageIds as $webpageId) {
+                $collection->webpageHasCollections()->create([
+                    'webpage_id' => $webpageId
+                ]);
+            }
         }
 
         return true;
