@@ -11,9 +11,11 @@ use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetProducts;
+use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
@@ -104,3 +106,5 @@ Route::get('workshop/department/{department}/sub-departments', GetSubDepartments
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/collection/{collection}/products', GetProductsInCollection::class)->name('collection.products.index');
+Route::get('workshop/collection/{collection}/families', GetFamiliesInCollection::class)->name('collection.families.index');
