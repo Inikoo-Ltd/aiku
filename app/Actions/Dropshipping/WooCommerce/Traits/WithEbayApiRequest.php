@@ -558,7 +558,7 @@ trait WithEbayApiRequest
                 "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
                 ]
             ],
-            "marketplaceId" => "EBAY_UK",
+            "marketplaceId" => "EBAY_US",
             "name" => "Domestic free shipping",
             "handlingTime" => [
                 "unit"  => "DAY",
@@ -596,7 +596,7 @@ trait WithEbayApiRequest
     {
         $data = [
             "name" => "minimal Payment Policy",
-            "marketplaceId" => "EBAY_UK",
+            "marketplaceId" => "EBAY_US",
             "categoryTypes" => [
                 [
                 "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
@@ -618,7 +618,6 @@ trait WithEbayApiRequest
         }
     }
 
-
     /**
      * Create user's eBay return policy
      */
@@ -626,7 +625,7 @@ trait WithEbayApiRequest
     {
         $data = [
             "name" => "minimal return policy, US marketplace",
-            "marketplaceId" => "EBAY_UK",
+            "marketplaceId" => "EBAY_US",
             "refundMethod" => "MONEY_BACK",
             "returnsAccepted" => true,
             "returnShippingCostPayer" => "SELLER",

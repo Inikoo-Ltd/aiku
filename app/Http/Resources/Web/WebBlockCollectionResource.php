@@ -44,7 +44,20 @@ class WebBlockCollectionResource extends JsonResource
             'code'  => $this->code,
             'name'  => $this->name,
             'image' => $imageSources,
-            'url'   => $this->url
+            'url'   => $this->url,
+
+            'products_route' => [
+                'name' => 'grp.json.collection.products.index',
+                'parameters' => [
+                    'collection' => $this->slug,
+                ]
+            ],
+            'families_route' => [
+                'name' => 'grp.json.collection.families.index',
+                'parameters' => [
+                    'collection' => $this->slug,
+                ]
+            ]
         ];
     }
 }

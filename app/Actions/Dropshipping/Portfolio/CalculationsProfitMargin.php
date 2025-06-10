@@ -14,6 +14,8 @@ class CalculationsProfitMargin extends OrgAction
 {
     public function handle(float $retailPrice, float $costPriceExVat, $vatRate = 0.20): float
     {
-        return ((($retailPrice / $vatRate) - $costPriceExVat) / ($retailPrice / $vatRate)) * 100;
+        $retailPriceIncVat = $retailPrice / (1 + $vatRate);
+
+        return (($retailPriceIncVat - $costPriceExVat) / $retailPriceIncVat) * 100;
     }
 }

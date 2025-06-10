@@ -101,6 +101,25 @@ const valueTableFilter = ref({})
                 </div>
             </template>
         </Column>
+        <Column field="price" header="Price (Inc VAT)" style="max-width: 125px;">
+            <template #body="{ data }">
+                <div class="whitespace-nowrap relative pr-2">
+                    <InputNumber
+                        v-model="data.price_inc_vat"
+                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'price')"
+                        mode="currency"
+                        :placeholder="data.price_inc_vat"
+                        :currency="data.currency_code"
+                        locale="en-GB"
+                        fluid
+                        :inputStyle="{textAlign: 'right'}"
+                        disabled="true"
+                    />
+                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'price'], undefined)" />
+                </div>
+            </template>
+        </Column>
+
         <!-- <Column field="platform_handle" header="Handled" style="max-width: 100px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
