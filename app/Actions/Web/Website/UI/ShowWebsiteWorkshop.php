@@ -71,6 +71,7 @@ class ShowWebsiteWorkshop extends OrgAction
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::COLLECTION->value]);
         }
 
         $tabs = [
@@ -103,6 +104,13 @@ class ShowWebsiteWorkshop extends OrgAction
                 );
 
         $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
+                ?
+                fn () => GetWebsiteWorkshopDepartment::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopDepartment::run($website)
+                );
+
+        $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
                 ?
                 fn () => GetWebsiteWorkshopDepartment::run($website)
                 : Inertia::lazy(

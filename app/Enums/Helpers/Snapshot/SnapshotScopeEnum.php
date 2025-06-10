@@ -25,6 +25,7 @@ enum SnapshotScopeEnum: string
     case DEPARTMENT = 'department';
     case FAMILY = 'family';
     case SUB_DEPARTMENT = 'sub_department';
+    case COLLECTION = 'collection';
     case PRODUCT = 'product';
     case PRODUCTS = 'products';
 
@@ -42,9 +43,9 @@ enum SnapshotScopeEnum: string
             'department'       => __('Department'),
             'family'           => __('Family'),
             'sub_department'   => __('Sub Department'),
+            'collection'       => __('Collection'),
             'product'          => __('Product'),
             'products'          => __('Products'),
-
         ];
     }
 }

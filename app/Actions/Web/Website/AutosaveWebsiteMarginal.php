@@ -194,6 +194,31 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'products' => $layout
                 ]
             ]);
+        } elseif ($marginal == 'collection') {
+            if (!$website->unpublishedCollectionSnapshot) {
+                $collectionSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::COLLECTION,
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_collection_snapshot_id' => $collectionSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedCollectionSnapshot->layout;
+
+            $this->update($website->unpublishedCollectionSnapshot, [
+                'layout' => [
+                    'collection' => $layout
+                ]
+            ]);
         }
         return $website;
     }
@@ -271,6 +296,12 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'products', $this->validatedData);
+    }
+
+    public function collection(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'collection', $this->validatedData);
     }
 
     public function action(Website $website, $marginal, $modelData): string
