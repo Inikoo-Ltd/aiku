@@ -222,23 +222,7 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
                     {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
                     ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
                 </div>
-                <div class="mb-2 font-semibold text-2xl text-orange-500 capitalize">
-                    {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
-                    ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
-                </div>
 
-                <div class="mb-8 flex items-center gap-2">
-                    <FontAwesomeIcon :icon="faMedal" class="text-orange-500" />
-                    <span :class="`bg-orange-500 text-white text-sm py-0.5 px-1 rounded`">
-                        Member Price
-                    </span>
-                    <span class="text-xs underline cursor-pointer">Membership Info</span>
-                </div>
-
-                <div class="mb-8">
-                    <div class="text-xs text-gray-500 mb-1">NOT A MEMBER?</div>
-                    <div class="text-orange-500 text-xs w-8/12">Order 4 or more outers from this product family to benefit from lower price.</div>
-                </div>
 
                 <!-- Order Now Section -->
                 <div class="flex gap-2 mb-6 items-center">
@@ -265,16 +249,6 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
 
                     <!-- Buy Now Pay Later, Delivery Info, Return Policy -->
                     <div class="mb-4 space-y-2">
-                        <div
-                            class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 cursor-pointer border-gray-800">
-                            <div class="flex items-center gap-4">
-                                Buy Now Pay Later
-                                <img src="https://cdn.prod.website-files.com/6660900e2837ec36d7ab4f69/66cccc3128fa6350a8266f72_PastPay-logo-dark-edge.png"
-                                    alt="PastPay" class="h-3" />
-                            </div>
-                            <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
-                        </div>
-
                         <div
                             class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
                             Delivery Info

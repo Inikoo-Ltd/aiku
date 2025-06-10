@@ -78,7 +78,7 @@ const links = ref([
                     </div>
                 </div>
             </div>
-              <div class="bg-white flex justify-end">
+             <!--  <div class="bg-white flex justify-end">
                 <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
                     <div v-for="(item, index) in links" :key="index" class="p-2">
                         <ButtonWithLink
@@ -90,7 +90,7 @@ const links = ref([
                         />
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>

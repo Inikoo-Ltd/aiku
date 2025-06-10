@@ -40,10 +40,10 @@ class DetachCollectionFromWebpage extends OrgAction
         return $this->handle($webpage, $collection);
     }
 
-    public function asController(Webpage $webpage, Collection $collection): Collection
+    public function asController(Webpage $webpage, Collection $collection): void
     {
         $this->initialisationFromShop($webpage->shop, []);
 
-        return $this->handle($webpage, $collection);
+        $this->handle($webpage, $collection);
     }
 }

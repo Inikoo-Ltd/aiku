@@ -199,7 +199,7 @@ class GetProductCategoryShowcase
         ];
 
         $data['collections'] = [
-            'data' => CollectionsResource::collection(IndexCollectionsInWebpage::run($productCategory->webpage))->resolve()
+            'data' => $productCategory?->webpage ? CollectionsResource::collection(IndexCollectionsInWebpage::run($productCategory->webpage))->resolve() : [],
         ];
 
         return $data;
