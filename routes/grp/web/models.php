@@ -547,6 +547,8 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('verify', [SendIdentityEmailVerification::class, 'inShop'])->name('verify');
     });
 
+    Route::post('website/{website:id}/webpage', [StoreWebpage::class, 'inShop'])->name('webpage.store')->withoutScopedBindings();
+
     Route::prefix('website/{website:id}/banner')->name('website.banner.')->group(function () {
 
 
