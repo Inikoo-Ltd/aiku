@@ -61,6 +61,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.private_key", Arr::pull($modelData, "luigisbox_private_key"));
         }
 
+        if (Arr::has($modelData, "return_policy")) {
+            data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
+        }
+
         $website = $this->update($website, $modelData, ['data', 'settings']);
         WebsiteRecordSearch::run($website);
 
@@ -138,6 +142,7 @@ class UpdateWebsite extends OrgAction
                 'string',
             ],
             'luigisbox_private_key' => ['sometimes', 'string'],
+            'return_policy' => ['sometimes', 'string'],
             'image'       => [
                 'sometimes',
                 'nullable',
