@@ -321,6 +321,20 @@ trait WithEbayApiRequest
     }
 
     /**
+     * Update existing product on eBay
+     */
+    public function updateProductPriceAndQuantity($productData)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/bulk_update_price_quantity";
+            return $this->makeEbayRequest('put', $endpoint, $productData);
+        } catch (Exception $e) {
+            Log::error('Update eBay Product Price and Quantity Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Delete product from eBay
      */
     public function deleteProduct($sku)
