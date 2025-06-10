@@ -133,8 +133,7 @@ const userCanEdit = (item) => {
 					<NumberWithButtonSave v-model="item.quantity"   @onSave="(e)=>onUpdateQuantity(item.id, e)"/>
 				</div>
 				<div v-else>
-					<!-- <Transition name="spin-to-right"><span :key="item.quantity">{{ locale.number(item.quantity) }} {{ item.asset_unit }}</span></Transition> -->
-					
+					<Transition name="spin-to-right"><span :key="item.quantity">{{ locale.number(item.quantity) }} {{ item.asset_unit }}</span></Transition>
 				</div>
 			</div>
 		</template>
