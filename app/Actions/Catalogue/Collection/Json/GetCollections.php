@@ -18,7 +18,6 @@ use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
-use Shopify\Rest\Admin2022_04\Collect;
 
 class GetCollections extends OrgAction
 {
@@ -29,10 +28,10 @@ class GetCollections extends OrgAction
     public function handle(Shop $parent, Collection|Shop|ProductCategory $scope, $prefix = null): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(Collection::class);
-        if($scope instanceof Collection) {
+        if ($scope instanceof Collection) {
             $queryBuilder->whereNotIn('collections.id', $scope->collections()->pluck('model_id'))
                             ->where('collections.id', '!=', $scope->id);
-        } elseif($scope instanceof ProductCategory) {
+        } elseif ($scope instanceof ProductCategory) {
             $queryBuilder->whereNotIn('collections.id', $scope->webpage->webpageHasCollections()->pluck('collection_id'))
                             ->where('collections.id', '!=', $scope->id);
         }

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-06-2025-10h-55m
@@ -38,7 +39,7 @@ class IndexWebpagesAttachedInCollection extends OrgAction
             ->where('webpage_has_collections.collection_id', $collection->id);
 
         if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
-            $queryBuilder->orderByRaw("CASE 
+            $queryBuilder->orderByRaw("CASE
             WHEN webpages.sub_type = 'storefront' THEN 1
             WHEN webpages.sub_type = 'department' THEN 2
             WHEN webpages.sub_type = 'sub_department' THEN 3

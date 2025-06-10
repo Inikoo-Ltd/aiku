@@ -1,18 +1,23 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 10 Jun 2025 11:14:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     use HasGroupOrganisationRelationship;
 
     public function up(): void
     {
         Schema::create('ebay_users', function (Blueprint $table) {
-            $table->id();
+            $table->increments('id');
             $table = $this->groupOrgRelationship($table);
             $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers');

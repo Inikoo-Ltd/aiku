@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-06-2025-08h-15m
@@ -8,34 +9,12 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
-use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
-use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
-use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
-use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithFamilySubNavigation;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\CollectionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 
 class IndexCollectionsInWebpage extends OrgAction
 {

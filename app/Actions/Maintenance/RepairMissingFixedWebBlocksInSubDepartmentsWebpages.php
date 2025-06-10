@@ -62,6 +62,14 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         }
 
 
+        $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
+
+        if (count($collectionsWebBlock) == 0) {
+            $command->error('Webpage '.$webpage->code.' Collection Web Block not found');
+            $this->createWebBlock($webpage, 'collections-1', $subDepartment);
+        } elseif (count($collectionsWebBlock) > 1) {
+            $command->error('Webpage '.$webpage->code.' MORE than 1 Collection Web Block found');
+        }
 
 
         UpdateWebpageContent::run($webpage);

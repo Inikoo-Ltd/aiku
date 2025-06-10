@@ -39,8 +39,8 @@ class StoreRetinaTransaction extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $order=$request->route('order');
-        if($order->customer_id !== $this->customer->id) {
+        $order = $request->route('order');
+        if ($order->customer_id !== $this->customer->id) {
             return false;
         }
         return true;

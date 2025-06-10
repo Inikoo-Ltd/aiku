@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 09-06-2025-16h-42m
@@ -21,11 +22,11 @@ class AttachCollectionsToWebpage extends OrgAction
         $collectionIds = Arr::get($modelData, 'collections', []);
 
         foreach ($collectionIds as $collectionId) {
-                $collection = Collection::find($collectionId);
-                if ($collection) {
-                    AttachCollectionToWebpage::make()->action($webpage, $collection);
-                }
-            
+            $collection = Collection::find($collectionId);
+            if ($collection) {
+                AttachCollectionToWebpage::make()->action($webpage, $collection);
+            }
+
         }
 
         return true;
