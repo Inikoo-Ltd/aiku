@@ -38,6 +38,7 @@ use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
+use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +71,8 @@ Route::get('email/templates/{emailTemplate:id}/compiled_layout', GetEmailTemplat
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
 
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
+
+Route::get('shop/{shop}/collection/{collection}/webpages', GetWebpagesForCollection::class)->name('shop.collection.webpages');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
 Route::get('shop/{shop}/catalogue/collection/{scope}/products', GetProducts::class)->name('shop.catalogue.collection.products');
