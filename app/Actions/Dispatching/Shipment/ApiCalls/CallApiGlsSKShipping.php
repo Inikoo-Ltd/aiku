@@ -17,7 +17,6 @@ use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -43,14 +42,6 @@ class CallApiGlsSKShipping extends OrgAction
         return 'https://api.mygls.sk';
     }
 
-    public function getHeaders(Shipper $shipper): array
-    {
-        return [
-            'remote-user'  => 'Basic '.$this->getAccessToken($shipper),
-            'Content-Type' => 'application/json',
-        ];
-    }
-
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
@@ -60,78 +51,43 @@ class CallApiGlsSKShipping extends OrgAction
         $url = $this->getBaseUrl() . '/ParcelService.svc?singleWsdl';
 
         $parentResource = ShippingParentResource::make($parent)->getArray();
-        // $parcels        = $parent->parcels;
-
-        // if (in_array(
-        //     Arr::get($parentResource, 'to_address.country_code'),
-        //     [
-        //         'GB',
-        //         'IM',
-        //         'JE',
-        //         'GG'
-        //     ]
-        // )) {
-        //     $postalCode = Arr::get($parentResource, 'to_address.postal_code');
-        // } else {
-        //     $postalCode = 'INT';
-        // }
-
-        // $items = [];
-        // foreach ($parcels as $parcel) {
-        //     array_push(
-        //         $items,
-        //         [
-        //             'Type'   => 'ALL',
-        //             'Weight' => $parcel['weight'], // apc weight in kg
-        //             'Length' => $parcels[0]['dimensions'][0] ?? 0, // cm
-        //             'Width'  => $parcels[0]['dimensions'][1] ?? 0, // cm
-        //             'Height' => $parcels[0]['dimensions'][2] ?? 0 // cm
-        //         ]
-        //     );
-        // }
-
-
-        // $serviceList = [];
-        // if (!empty($parent->cash_on_delivery)) {
-        //     $serviceList[] = (object)['Code' => 'COD'];
-        // }
+        $parcels        = $parent->parcels;
 
         $prepareParams = (object)[
             'ClientNumber' => $clientNumber,
-            'ClientReference' => 'test-' . Str::limit($parent->reference, 30),
-            'Content' => 'test',
-            'Count' => 1,
+            'ClientReference' => Str::limit($parent->reference, 30),
+            'Content' => app()->isProduction() ? '' : 'test_development_aiku_' . ($parent->customer_notes ?? ''),
+            'Count' => $parcels ? count($parcels) : 1,
             'DeliveryAddress' => (object)[
                 'ContactEmail' => Arr::get($parentResource, 'to_email'),
-                'ContactName' => Str::limit(Arr::get($parentResource, 'to_contact_name'), 60),
-                'ContactPhone' => Str::limit(Arr::get($parentResource, 'to_phone'), 15, ''),
-                'Name' => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
-                'Street' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'), 60),
-                'City' => Str::limit(Arr::get($parentResource, 'to_address.locality'), 31, ''),
+                'ContactName' => Arr::get($parentResource, 'to_contact_name'),
+                'ContactPhone' => Arr::get($parentResource, 'to_phone'),
+                'Name' => Arr::get($parentResource, 'to_company_name'),
+                'Street' => Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'),
+                'City' => Arr::get($parentResource, 'to_address.locality'),
                 'ZipCode' => Arr::get($parentResource, 'to_address.postal_code'),
-                'CountryIsoCode' => Arr::get($parentResource, 'to_address.country.code')
+                'CountryIsoCode' => Arr::get($parentResource, 'to_address.country_code')
             ],
             'PickupAddress' => (object)[
-                'ContactName' => 'test' . Str::limit(Arr::get($parentResource, 'from_contact_name'), 60),
-                'ContactPhone' => Str::limit(Arr::get($parentResource, 'from_phone'), 15, ''),
+                'ContactName' => Arr::get($parentResource, 'from_contact_name'),
+                'ContactPhone' => Arr::get($parentResource, 'from_phone'),
                 'ContactEmail' => Arr::get($parentResource, 'from_email'),
-                'Name' => Str::limit(Arr::get($parentResource, 'from_company_name'), 30),
-                'Street' => Str::limit(Arr::get($parentResource, 'from_address.address_line_1') . ' ' . Arr::get($parentResource, 'from_address.address_line_2'), 60),
-                'City' => Str::limit(Arr::get($parentResource, 'from_address.locality'), 31, ''),
+                'Name' => Arr::get($parentResource, 'from_company_name'),
+                'Street' => Arr::get($parentResource, 'from_address.address_line_1') . ' ' . Arr::get($parentResource, 'from_address.address_line_2'),
+                'City' => Arr::get($parentResource, 'from_address.locality'),
                 'ZipCode' => Arr::get($parentResource, 'from_address.postal_code'),
-                'CountryIsoCode' => Arr::get($parentResource, 'from_address.country.code')
+                'CountryIsoCode' => Arr::get($parentResource, 'from_address.country_code')
             ],
             'PickupDate' => Carbon::now()->format('Y-m-d')
         ];
 
-
-        // Add COD amount if applicable
+        // Add COD (Cash on Delivery) service if applicable
         // if (!empty($parent->cash_on_delivery)) {
+        //     $prepareParams->ServiceList = [(object)['Code' => 'COD']];
         //     $prepareParams->CODAmount = (float)$parent->cash_on_delivery;
         //     $prepareParams->CODReference = Str::limit($parent->reference, 30);
-        //     $prepareParams->ServiceList = $serviceList;
         // }
-        // $parcels[] = $parcel;
+
         $printLabelsRequest = array(
             'Username'   => $username,
             'Password'   => hex2bin($password),
@@ -144,98 +100,67 @@ class CallApiGlsSKShipping extends OrgAction
 
         $soapOptions = array(
             'soap_version'   => SOAP_1_1,
-            // 'stream_context' => stream_context_create(array('ssl' => array('cafile' => storage_path('app/cert/ca_cert.pem'))))
         );
 
         try {
             $client = new SoapClient($url, $soapOptions);
         } catch (SoapFault $e) {
-            dd($e->getMessage());
-            $result['errors'] = ['Soap API connection error'];
-
+            $result['errorData'] = ['Soap API connection error'];
             return $result;
         }
-        // dd($client);
 
         $apiResponse = $client->PrintLabels($printLabelsRequest)->PrintLabelsResult;
-
+        $apiResponseData = json_decode(json_encode($apiResponse), true);
+        if (Arr::get($apiResponseData, 'Labels')) {
+            // Store the fact that labels exist, but not the actual binary content to save memory
+            Arr::set($apiResponseData, 'Labels', 'Labels are present');
+        }
         $modelData = [
-            'api_response' => $apiResponse,
+            'api_response' => $apiResponseData,
         ];
-
-        // dd($apiResponse);
 
         $errorData = [];
 
-        // if ($apiResponse->Labels != "") {
-        //     $status                      = 'success';
-        //     $orderNumber                 = Arr::get($apiResponse, 'Orders.Order.OrderNumber');
-        //     $modelData['pdf_label']      = ;
-        //     $modelData['number_parcels'] = (int)Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.NumberOfPieces');
+        if ($apiResponse->Labels) {
+            $status                      = 'success';
+            $modelData['pdf_label']      = base64_encode($apiResponse->Labels);
+            $tracking_number = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo->ParcelNumber;
+            $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
 
+            $modelData['tracking'] = $tracking_number;
+        } else {
+            $status = 'fail';
 
-        //     $modelData['tracking'] = Arr::get($apiResponse, 'Orders.Order.WayBill');
-        // } else {
-        //     $status = 'fail';
+            $errFields = Arr::get($apiResponseData, 'PrintLabelsErrorList.ErrorInfo');
+            if ($errFields) {
 
-        //     $errFields = Arr::get($apiResponse, 'Orders.Order.Messages.ErrorFields.ErrorField');
+                if (!isset($errFields[0])) {
+                    $errFields = [$errFields];
+                }
 
-        //     if ($errFields) {
-        //         if (!isset($errFields[0])) {
-        //             $errFields = [$errFields];
-        //         }
-        //         foreach ($errFields as $error) {
-        //             if ($error['FieldName'] == 'Delivery PostalCode') {
-        //                 $errorData['others'][] = 'Invalid postcode,';
-        //             } else {
-        //                 $fieldParts = explode(' ', $error['FieldName']);
+                foreach ($errFields as $error) {
+                    if (Str::contains($error['ErrorDescription'] ?? '', ['Pickup', 'Delivery'])) {
+                        $errorData['address'][] = $error['ErrorDescription'] ?? 'Error in address';
+                    } else {
+                        $errorData['others'][] =  $error['ErrorDescription'] ?? 'Unknown error';
+                    }
+                }
+            }
+        }
 
-        //                 if (count($fieldParts) > 1) {
-        //                     if (Str::contains($fieldParts[0], 'Delivery')) {
-        //                         $errorData['address'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
-        //                         continue;
-        //                     }
-        //                     $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
-        //                     continue;
-        //                 }
-
-        //                 $errorData['others'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'].',';
-        //             }
-        //         }
-
-        //         foreach ($errorData as $key => $value) {
-        //             $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
-        //         }
-        //     }
-        // }
-
-        // return [
-        //     'status'    => $status,
-        //     'modelData' => $modelData,
-        //     'errorData' => $errorData,
-        // ];
-
-        return [];
+        return [
+            'status'    => $status,
+            'modelData' => $modelData,
+            'errorData' => $errorData,
+        ];
     }
 
-
-    /**
-     * @throws \Illuminate\Http\Client\ConnectionException
-     */
-    public function getLabel(string $labelID, Shipper $shipper): string
-    {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->get($this->getBaseUrl().'/api/3.0/Orders/'.$labelID.'.json')->json();
-
-        return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
-    }
-
-    public string $commandSignature = 'xxx2';
+    public string $commandSignature = 'shipment:gls_sk';
 
     public function asCommand($command)
     {
         $d = PalletReturn::find(825);
         $s = Shipper::find(36);
-
         dd($this->handle($d, $s));
 
     }
