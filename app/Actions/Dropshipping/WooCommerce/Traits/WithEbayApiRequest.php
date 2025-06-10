@@ -109,7 +109,7 @@ trait WithEbayApiRequest
         }
 
         try {
-            $response = Http::withHeaders([
+            $response = Http::asForm()->withHeaders([
                 'Content-Type' => 'application/x-www-form-urlencoded',
                 'Authorization' => 'Basic ' . base64_encode($config['client_id'] . ':' . $config['client_secret'])
             ])->post($this->getEbayOAuthUrl() . '/identity/v1/oauth2/token', [
