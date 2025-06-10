@@ -40,8 +40,11 @@ class UpdatePortfolio extends OrgAction
             );
         }
 
-        $portfolio = $this->update($portfolio, $modelData, ['data']);
+        data_set($modelData, 'vat_rate', 0.2);
+        data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'customer_price'), $portfolio->item->price, Arr::get($modelData, 'vat_rate')));
+        data_set($modelData, 'selling_price', Arr::get($modelData, 'customer_price'));
 
+        $portfolio = $this->update($portfolio, $modelData, ['data']);
 
         if ($portfolio->wasChanged(['status'])) {
             GroupHydratePortfolios::dispatch($portfolio->group)->delay($this->hydratorsDelay);

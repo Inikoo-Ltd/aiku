@@ -101,6 +101,8 @@ class DropshippingPortfolioResource extends JsonResource
             'price'                     => $price,
             'selling_price'             => $this->selling_price,
             'customer_price'             => $this->customer_price,
+            'margin'             => $this->margin,
+            'vat_rate'             => $this->vat_rate,
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
