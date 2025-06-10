@@ -626,7 +626,7 @@ trait WithEbayApiRequest
     {
         $data = [
             "name" => "minimal return policy, US marketplace",
-            "marketplaceId" => "EBAY_US",
+            "marketplaceId" => "EBAY_UK",
             "refundMethod" => "MONEY_BACK",
             "returnsAccepted" => true,
             "returnShippingCostPayer" => "SELLER",
