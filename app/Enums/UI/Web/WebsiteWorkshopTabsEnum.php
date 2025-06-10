@@ -21,6 +21,7 @@ enum WebsiteWorkshopTabsEnum: string
     case FAMILY             = 'families';
     case PRODUCTS           = 'products';
     case PRODUCT            = 'product';
+    case COLLECTION         = 'collection';
 
     public function blueprint(): array
     {
@@ -39,6 +40,10 @@ enum WebsiteWorkshopTabsEnum: string
             ],
             WebsiteWorkshopTabsEnum::PRODUCT => [
                 'title' => __('product page'),
+                'icon'  => 'fal fa-cube',
+            ],
+            WebsiteWorkshopTabsEnum::COLLECTION => [
+                'title' => __('collection page'),
                 'icon'  => 'fal fa-cube',
             ],
             WebsiteWorkshopTabsEnum::WEBSITE_LAYOUT => [

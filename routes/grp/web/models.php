@@ -623,6 +623,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/family', [AutosaveWebsiteMarginal::class, 'family'])->name('autosave.family');
     Route::patch('autosave/product', [AutosaveWebsiteMarginal::class, 'product'])->name('autosave.product');
     Route::patch('autosave/products', [AutosaveWebsiteMarginal::class, 'products'])->name('autosave.products');
+    Route::patch('autosave/collection', [AutosaveWebsiteMarginal::class, 'collection'])->name('autosave.collection');
 
     Route::post('publish/menu', [PublishWebsiteMarginal::class, 'menu'])->name('publish.menu');
     Route::post('publish/department', [PublishWebsiteMarginal::class, 'department'])->name('publish.department');
@@ -630,6 +631,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');
     Route::post('publish/product', [PublishWebsiteMarginal::class, 'product'])->name('publish.product');
     Route::post('publish/products', [PublishWebsiteMarginal::class, 'products'])->name('publish.products');
+    Route::post('publish/collection', [PublishWebsiteMarginal::class, 'collection'])->name('publish.collection');
 
     Route::patch('/settings/update', PublishWebsiteProductTemplate::class)->name('settings.update');
 
