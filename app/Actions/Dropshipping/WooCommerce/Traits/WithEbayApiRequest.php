@@ -112,7 +112,7 @@ trait WithEbayApiRequest
             $response = Http::asForm()->withHeaders([
                 'Content-Type' => 'application/x-www-form-urlencoded',
                 'Authorization' => 'Basic ' . base64_encode($config['client_id'] . ':' . $config['client_secret'])
-            ])->post($this->getEbayOAuthUrl() . '/identity/v1/oauth2/token', [
+            ])->post($this->getEbayTokenUrl(), [
                 'grant_type' => 'refresh_token',
                 'refresh_token' => $config['refresh_token']
             ]);
@@ -121,11 +121,11 @@ trait WithEbayApiRequest
                 $tokenData = $response->json();
 
                 // Update stored tokens
-                UpdateEbayUser::run([
+                UpdateEbayUser::run($this, [
                     'settings' => [
                         'credentials' => [
                             'ebay_access_token' => $tokenData['access_token'],
-                            'ebay_refresh_token' => $tokenData['refresh_token'],
+                            'ebay_refresh_token' => $config['refresh_token'],
                             'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
                         ]
                     ]
@@ -187,7 +187,7 @@ trait WithEbayApiRequest
             }
 
             // Clear stored tokens
-            UpdateEbayUser::run([
+            UpdateEbayUser::run($this, [
                 'settings' => [
                     'credentials' => []
                 ]
