@@ -202,6 +202,8 @@ class GetProductCategoryShowcase
             'data' => $productCategory?->webpage ? CollectionsResource::collection(IndexCollectionsInWebpage::run($productCategory->webpage))->resolve() : [],
         ];
 
+        $data['has_webpage'] = $productCategory->webpage ? true  : false;
+
         return $data;
     }
 }

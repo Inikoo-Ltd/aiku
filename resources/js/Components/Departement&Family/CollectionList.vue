@@ -45,7 +45,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
       <Button
         v-if="props.canAdd"
         size="xs"
-        :label="trans('Add Collection')"
+        :label="trans('Collection')"
         type="create"
         @click="isModalOpen = true"
       />
