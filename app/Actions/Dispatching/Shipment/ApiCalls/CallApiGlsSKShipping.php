@@ -11,6 +11,7 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingParentResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -129,7 +130,8 @@ class CallApiGlsSKShipping extends OrgAction
 
         if ($apiResponse->Labels) {
             $status                      = 'success';
-            $modelData['pdf_label']      = base64_encode($apiResponse->Labels);
+            $modelData['label']      = base64_encode($apiResponse->Labels);
+            $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
             $tracking_number = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo->ParcelNumber;
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
 

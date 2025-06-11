@@ -1,17 +1,14 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
-import PureInput from '@/Components/Pure/PureInput.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
 import { Table as TableTS} from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import { inject, ref } from 'vue'
 
 const props = defineProps<{

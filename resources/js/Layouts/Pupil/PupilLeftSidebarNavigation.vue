@@ -17,7 +17,7 @@ import PupilNavigationGroup from "@/Layouts/Pupil/PupilNavigationGroup.vue"
 
 
 import { generateNavigationName, generateCurrentString } from '@/Composables/useConvertString'
-import { get } from "lodash"
+import { get } from 'lodash-es'
 library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends)
 
 const layout = inject('layout', {})

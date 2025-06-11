@@ -1,6 +1,6 @@
 <script setup>
 import { ref, h, defineComponent } from "vue";
-import { set, get } from "lodash";
+import { set, get } from 'lodash-es';
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css';
 import 'vue-advanced-cropper/dist/theme.compact.css';

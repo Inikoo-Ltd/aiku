@@ -15,7 +15,7 @@ import { notify } from '@kyvg/vue3-notification'
 import Tag from '../Tag.vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import axios from 'axios'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 library.add(faPlus)

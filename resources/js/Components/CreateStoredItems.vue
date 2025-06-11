@@ -10,7 +10,7 @@ import { trans } from "laravel-vue-i18n"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import { routeType } from "@/types/route"
 import { ref } from 'vue'
 import Tag from '@/Components/Tag.vue'

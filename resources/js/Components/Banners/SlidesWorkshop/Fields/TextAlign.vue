@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faAlignLeft, faAlignCenter, faAlignRight } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ref, watch, toRefs, computed } from "vue"
-import { set, get } from "lodash"
+import { set, get } from 'lodash-es'
 import { BannerWorkshop } from '@/types/BannerWorkshop'
 
 

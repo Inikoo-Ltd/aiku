@@ -33,7 +33,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
-import { get, set } from "lodash";
+import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 
 

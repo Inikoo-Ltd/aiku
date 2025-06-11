@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Icon, Chip, Text } from "react-native-paper";
-import { noop } from "lodash";
+import { noop } from 'lodash-es';
 
 function Header(props) {
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 import { Column, DataTable, IconField, InputIcon, InputNumber, InputText } from 'primevue'
 import { onMounted, ref } from 'vue'
 

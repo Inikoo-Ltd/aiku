@@ -30,7 +30,8 @@ class ShipmentsResource extends JsonResource
             'tracking_urls'     => $this->tracking_urls,
             'tracking_url'        => $this->shipper->tracking_url,
             'combined_label_url' => $this->combined_label_url,
-            'pdf_label'         => $this->pdf_label,
+            'label'         => $this->label,
+            'label_type'    => $this->label_type,
         ];
     }
 }

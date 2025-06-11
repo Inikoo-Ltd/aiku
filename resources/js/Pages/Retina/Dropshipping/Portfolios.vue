@@ -18,7 +18,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { set } from "lodash"
+import { set } from 'lodash-es'
 import PortfoliosStepEdit from "@/Components/Retina/Dropshipping/PortfoliosStepEdit.vue"
 import PortfoliosStepSyncShopify from "@/Components/Retina/Dropshipping/PortfoliosStepSyncShopify.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"

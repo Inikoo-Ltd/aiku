@@ -13,7 +13,7 @@ import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
-import { debounce } from "lodash"
+import { debounce } from 'lodash-es'
 import DashboardCell from "./DashboardCell.vue"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 

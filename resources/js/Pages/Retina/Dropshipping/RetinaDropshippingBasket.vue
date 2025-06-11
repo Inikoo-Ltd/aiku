@@ -14,7 +14,7 @@ import { computed, ref } from 'vue'
 import type { Component } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { set as setLodash, get, merge, cloneDeep, isObject } from 'lodash-es'
+import { merge, cloneDeep, isObject } from 'lodash-es'
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import { blueprint } from '@/Components/Workshop/BlueprintSiteSettings'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
