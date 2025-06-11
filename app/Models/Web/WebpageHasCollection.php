@@ -16,15 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  *
  *
- * @property int $id
- * @property int $group_id
- * @property int $organisation_id
- * @property int $webpage_id
- * @property int $collection_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Collection $collection
- * @property-read \App\Models\Web\Webpage $webpage
+ * @property-read Collection|null $collection
+ * @property-read \App\Models\Web\Webpage|null $webpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasCollection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasCollection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasCollection query()
