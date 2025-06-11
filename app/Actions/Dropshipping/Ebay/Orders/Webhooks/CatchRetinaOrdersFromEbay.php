@@ -29,7 +29,9 @@ class CatchRetinaOrdersFromEbay extends OrgAction
 
     public function handle(EbayUser $ebayUser): void
     {
-        DB::transaction(function () use ($ebayUser) {
+        $response = $ebayUser->getOrders();
+        dd($response);
+        // DB::transaction(function () use ($ebayUser) {
             // $existingOrderKeys = $ebayUser
             //     ->customerSalesChannel
             //     ->orders()
@@ -38,8 +40,8 @@ class CatchRetinaOrdersFromEbay extends OrgAction
             //     ->filter()
             //     ->toArray();
 
-            $response = $ebayUser->getOrders();
-            dd($response);
+            // $response = $ebayUser->getOrders();
+
             // foreach ($response as $order) {
             //     if (in_array($order['order_key'], $existingOrderKeys, true)) {
             //         continue;
@@ -55,7 +57,7 @@ class CatchRetinaOrdersFromEbay extends OrgAction
             //         \Sentry::captureMessage('The order doesnt have billing or shipping, order: id ' . $order['order_key']);
             //     }
             // }
-        });
+        // });
     }
 
     public function asController(EbayUser $ebayUser, ActionRequest $request): void
