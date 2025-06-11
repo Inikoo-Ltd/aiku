@@ -27,6 +27,7 @@ class GetWebpagesWithCollection extends OrgAction
 
     public function handle(Website $website, $prefix = null): LengthAwarePaginator
     {
+        // todo
         $queryBuilder = QueryBuilder::for(Webpage::class);
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -41,7 +42,7 @@ class GetWebpagesWithCollection extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
         $queryBuilder->where('webpages.website_id', $website->id);
-        $queryBuilder->join('webpage_has_collections', 'webpages.id', '=', 'webpage_has_collections.webpage_id');
+        //$queryBuilder->join('webpage_has_collections', 'webpages.id', '=', 'webpage_has_collections.webpage_id');
         $queryBuilder->distinct();
 
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');

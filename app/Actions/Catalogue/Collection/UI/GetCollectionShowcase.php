@@ -8,9 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
-use App\Actions\Web\Webpage\UI\IndexWebpagesAttachedInCollection;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Web\WebpagesResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -123,7 +121,6 @@ class GetCollectionShowcase
                     'method'     => 'delete'
                 ],
             ],
-            'attached_webpages' => WebpagesResource::collection(IndexWebpagesAttachedInCollection::run($collection))->resolve()
         ];
     }
 }

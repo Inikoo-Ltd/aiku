@@ -15,12 +15,8 @@ use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
-use App\Actions\Catalogue\Collection\AttachCollectionsToWebpage;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
-use App\Actions\Catalogue\Collection\AttachWebpageToCollections;
-use App\Actions\Catalogue\Collection\DetachCollectionFromWebpage;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
-use App\Actions\Catalogue\Collection\DetachWebpageToCollections;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\AttachImagesToProduct;
@@ -656,8 +652,6 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
     Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
-    Route::post('attach-collections', AttachCollectionsToWebpage::class)->name('attach_collections');
-    Route::delete('detach-collections/{collection:id}', DetachCollectionFromWebpage::class)->name('detach_collection')->withoutScopedBindings();
 });
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
@@ -737,8 +731,6 @@ Route::delete('/guest/{guest:id}', DeleteGuest::class)->name('guest.delete');
 Route::name('collection.')->prefix('collection/{collection:id}')->group(function () {
     Route::post('attach-models', AttachModelsToCollection::class)->name('attach-models');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
-    Route::post('attach-webpages', AttachWebpageToCollections::class)->name('attach_webpages');
-    Route::delete('/webpages/{webpage:id}/detach', DetachWebpageToCollections::class)->name('detach_webpage');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {

@@ -8,11 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Catalogue\Collection\UI\IndexCollectionsInWebpage;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
-use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\HasSelfCall;
-use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -26,46 +22,46 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property mixed $state
+ * @property mixed $organisation_name
+ * @property mixed $shop_name
+ * @property mixed $shop_slug
+ * @property mixed $organisation_slug
+ * @property mixed $website_url
+ * @property mixed $title
+ * @property mixed $website_slug
  */
 class WebpagesResource extends JsonResource
 {
     use HasSelfCall;
 
+
     public function toArray($request): array
     {
-        $webpage = Webpage::find($this->id);
-
         return [
-            "id" => $this->id,
-            "slug" => $this->slug,
-            "level" => $this->level,
-            "code" => $this->code,
-            "url" => $this->url,
-            "title" => $this->title,
+            "id"       => $this->id,
+            "slug"     => $this->slug,
+            "level"    => $this->level,
+            "code"     => $this->code,
+            "url"      => $this->url,
+            "title"    => $this->title,
             "workshop" => route('grp.org.shops.show.web.webpages.workshop', [
                 'organisation' => $this->organisation_slug,
-                'shop' => $this->shop_slug,
-                'website' => $this->website_slug,
-                'webpage' => $this->slug,
+                'shop'         => $this->shop_slug,
+                'website'      => $this->website_slug,
+                'webpage'      => $this->slug,
             ]),
-            "href" => (app()->isProduction() ? 'https://' : 'http://'). $this->website_url . '/' . $this->url,
-            "type" => $this->type,
+            "href"     => (app()->isProduction() ? 'https://' : 'http://').$this->website_url.'/'.$this->url,
+            "type"     => $this->type,
             "typeIcon" => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
-            /* 	"typeIcon2" => match ($this->type) {
-                WebpageTypeEnum::STOREFRONT => ["fal", "fa-home"],
-                WebpageTypeEnum::OPERATIONS => ["fal", "fa-sign-in-alt"],
-                WebpageTypeEnum::BLOG => ["fal", "fa-newspaper"],
-                default => ["fal", "fa-browser"],
-            }, */
-            "sub_type" => $this->sub_type,
-            "created_at" => $this->created_at,
-            "updated_at" => $this->updated_at,
-            "state" => $this->state,
+
+            "sub_type"          => $this->sub_type,
+            "created_at"        => $this->created_at,
+            "updated_at"        => $this->updated_at,
+            "state"             => $this->state,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,
-            'collections'       => $webpage->webpageHasCollections ? CollectionsResource::collection(IndexCollectionsInWebpage::run($webpage))->resolve() : [],
         ];
     }
 }
