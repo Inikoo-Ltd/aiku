@@ -22,8 +22,13 @@ class GetWebBlockCollections
     {
 
         $collections = DB::table('collections')
-            ->leftjoin('webpage_has_collections', 'webpage_has_collections.collection_id', '=', 'collections.id')
-            ->where('webpage_has_collections.webpage_id', $webpage->id)
+            ->leftjoin('model_has_collections', 'model_has_collections.collection_id', '=', 'collections.id')
+            ->leftJoin('webpages', function ($join) {
+                $join->on('webpages.model_id', '=', 'collections.id');
+            })
+            ->where('webpages.model_type', 'Collection')
+            ->where('model_has_collections.model_id', $webpage->model_id)
+            ->where('model_has_collections.model_type', $webpage->model_type)
             ->select(['collections.slug', 'collections.code', 'collections.name', 'collections.image_id', 'webpages.url as url'])
             ->whereNull('collections.deleted_at')
             ->get();
