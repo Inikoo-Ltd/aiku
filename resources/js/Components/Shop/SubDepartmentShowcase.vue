@@ -56,7 +56,8 @@ const props = defineProps<{
     routeList: {
       collectionRoute: string,
       collections_route: string
-    }
+    },
+    has_wepage?: boolean
   }
 }>()
 
@@ -295,7 +296,7 @@ const UnassignCollection = async (id: number) => {
       </div>
 
       <!-- Right: Collection List -->
-      <CollectionList
+      <CollectionList  v-if="data.has_webpage"
         :collections="props.data.collections.data"
         :routeFetch="props.data.routeList.collections_route"
         :canAdd="true"
