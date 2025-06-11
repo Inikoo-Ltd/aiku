@@ -109,15 +109,46 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
+            
             'routes' => [
-                'attach_webpage' => [
-                    'name'       => 'grp.models.collection.attach_webpages',
-                    'parameters' => [ $collection->id ],
+                'parent_departments_route' => [
+                    'name' => 'grp.json.collection.parent.departments.index',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
+                ],
+                'departments_route' => [
+                    'name'  => 'grp.json.shop.catalogue.departments',
+                    'parameters' => [
+                        'shop' => $collection->shop->slug,
+                        'scope' => $collection->slug,
+                    ],
+                ],
+                'parent_sub_departments_route' => [
+                    'name' => 'grp.json.collection.parent.sub_departments.index',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
+                ],
+                'sub_departments_route' => [
+                    'name'  => 'grp.json.shop.catalogue.sub-departments',
+                    'parameters' => [
+                        'shop' => $collection->shop->slug,
+                        'scope' => $collection->slug,
+                    ],
+                ],
+                'attach_parent' => [
+                    'name'       => 'grp.models.product_category.collection.attach',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
                     'method'     => 'post'
                 ],
-                'detach_webpage' => [
-                    'name'       => 'grp.models.collection.detach_webpage',
-                    'parameters' => [],
+                'detach_parent' => [
+                    'name'       => 'grp.models.product_category.collection.detach',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
                     'method'     => 'delete'
                 ],
             ],

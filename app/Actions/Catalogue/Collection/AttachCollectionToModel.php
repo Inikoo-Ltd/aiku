@@ -44,6 +44,11 @@ class AttachCollectionToModel extends OrgAction
         return $collection;
     }
 
+    public function htmlResponse()
+    {
+        return back();
+    }
+
     public function action(Shop|ProductCategory $parent, Collection $collection): Collection
     {
         if ($parent instanceof ProductCategory) {
@@ -56,5 +61,12 @@ class AttachCollectionToModel extends OrgAction
         $this->initialisationFromShop($shop, []);
 
         return $this->handle($parent, $collection);
+    }
+
+    public function asController(ProductCategory $productCategory, Collection $collection): Collection
+    {
+        $this->initialisationFromShop($productCategory->shop, []);
+
+        return $this->handle($productCategory, $collection);
     }
 }
