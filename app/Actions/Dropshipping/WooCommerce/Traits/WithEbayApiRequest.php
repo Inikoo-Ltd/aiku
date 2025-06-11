@@ -16,9 +16,9 @@ trait WithEbayApiRequest
     protected function getEbayConfig()
     {
         return [
-            'client_id' => $this->ebay_client_id ?? config('services.ebay.client_id'),
-            'client_secret' => $this->ebay_client_secret ?? config('services.ebay.client_secret'),
-            'redirect_uri' => "AW_Advantage-AWAdvant-Retina-wgsvn",
+            'client_id' => config('services.ebay.client_id'),
+            'client_secret' => config('services.ebay.client_secret'),
+            'redirect_uri' => config('services.ebay.redirect_uri'),
             'sandbox' => config('services.ebay.sandbox', true),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
@@ -352,6 +352,46 @@ trait WithEbayApiRequest
     }
 
     /**
+     * Store offer on eBay
+     */
+    public function storeOffer($offerData)
+    {
+        $data = [
+                "sku" => Arr::get($offerData, 'sku'),
+                "marketplaceId" => "EBAY_US",
+                "format" => "FIXED_PRICE",
+                "listingDescription" => Arr::get($offerData, 'description'),
+                "availableQuantity" => Arr::get($offerData, 'quantity', 1),
+                "quantityLimitPerBuyer" => 10,
+                "pricingSummary" => [
+                    "price" => [
+                        "value" => Arr::get($offerData, 'price', 0),
+                        "currency" => Arr::get($offerData, 'currency', 'USD')
+                    ]
+                ],
+                "listingPolicies" => [
+                    "fulfillmentPolicyId" => Arr::get($offerData, 'fulfillment_policy_id'),
+                    "paymentPolicyId" => Arr::get($offerData, 'payment_policy_id'),
+                    "returnPolicyId" => Arr::get($offerData, 'return_policy_id')
+                ],
+                "categoryId" => Arr::get($offerData, 'category_id'),
+                "merchantLocationKey" => Arr::get($offerData, 'location_key'),
+                // "tax" => [
+                //     "vatPercentage" => 10.2,
+                //     "applyTax" => true,
+                //     "thirdPartyTaxCategory" => "Electronics"
+                // ] //TODO: Add tax if needed
+        ];
+        try {
+            $endpoint = "/sell/inventory/v1/offer";
+            return $this->makeEbayRequest('post', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Create eBay Product Offer: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Delete product from eBay
      */
     public function deleteProduct($sku)
@@ -637,6 +677,50 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Create Return Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay inventory location
+     */
+    public function getInventoryLocations()
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/location?limit=20&offset=0";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Inventory Location Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create user's eBay inventory location
+     */
+    public function createInventoryLocation($locationData)
+    {
+        $data = [
+                "location" => [
+                "address" => [
+                    "city" => Arr::get($locationData, 'city'),
+                    "stateOrProvince" => Arr::get($locationData, 'state'),
+                    "country" => Arr::get($locationData, 'country'),
+                ]
+            ],
+            "name" => Arr::get($locationData, 'name', 'Default Location'),
+            "merchantLocationStatus" => "ENABLED",
+            "locationTypes" => [
+                "WAREHOUSE"
+            ]
+        ];
+
+        try {
+            $locationKey = Arr::get($locationData, 'locationKey');
+            $endpoint = "/sell/inventory/v1/location/{$locationKey}";
+            return $this->makeEbayRequest('post', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Create Inventory Location Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
