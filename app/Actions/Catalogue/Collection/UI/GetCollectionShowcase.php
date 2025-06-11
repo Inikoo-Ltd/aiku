@@ -109,12 +109,25 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
+            
             'routes' => [
+                'parent_departments_route' => [
+                    'name' => 'grp.json.collection.parent.departments.index',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
+                ],
                 'departments_route' => [
                     'name'  => 'grp.json.shop.catalogue.departments',
                     'parameters' => [
                         'shop' => $collection->shop->slug,
                         'scope' => $collection->slug,
+                    ],
+                ],
+                'parent_sub_departments_route' => [
+                    'name' => 'grp.json.collection.parent.sub_departments.index',
+                    'parameters' => [
+                        'collection' => $collection->id,
                     ],
                 ],
                 'sub_departments_route' => [
