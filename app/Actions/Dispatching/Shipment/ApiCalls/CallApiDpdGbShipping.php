@@ -28,9 +28,9 @@ class CallApiDpdGbShipping extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    private string $geoSession = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoiMV80NjIzMDJfYXd3YXJlaG91c2UiLCJhdXRoX2tleSI6IjJhZGJkYzFiLTQ1OWEtNGVhNS04YmYzLTNhYjk0MTMwMTIwMCIsImRwZF9hY2NvdW50IjoiNDYyMzAyIiwiZHBkX2J1c2luZXNzX2lkIjoxLCJkcGRfdXNlcl9yb2xlcyI6WyJteURQRCJdLCJkcGRfc3VzcGVuZGVkIjpmYWxzZSwiZHBkX2FjY291bnRfb3ZlcnJpZGUiOm51bGwsImRwZF9leHBpcnkiOm51bGwsInNoaXBwaW5nX3ZlcnNpb24iOjIsImlzX3Bhc3N3b3JkX2V4cGlyZWQiOmZhbHNlLCJpc19hY2NvdW50X292ZXJyaWRkZW4iOmZhbHNlLCJwcm9kdWN0X2FjY2VzcyI6WyJteV9kcGQiXSwicHVibGljS2V5IjoiNmQzMDhmODAtNDkwMi00NTQ3LThhMTQtNjE4ODUyY2I0YWFlIiwiZXhwaXJ5IjoxNzQ5Njg4NjMyfQ.2ppVdRKI98r4W6Jt1JJjhoRoBDZ45unm5GkvrALpdFYcPabknT0xu6OniTdMHqxOzrZl1fjmeIRHKkQBtB2wKw';
+    private string $geoSession = '';
     private int $geoSessionDate = 0;
-    private string $accountNumber = '462302';
+    private string $accountNumber = '';
     public function getBaseUrl(): string
     {
         if (app()->environment('production')) {
