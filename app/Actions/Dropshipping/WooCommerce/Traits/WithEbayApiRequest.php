@@ -18,7 +18,7 @@ trait WithEbayApiRequest
         return [
             'client_id' => config('services.ebay.client_id'),
             'client_secret' => config('services.ebay.client_secret'),
-            'redirect_uri' => "AW_Advantage-AWAdvant-Retina-wgsvn",
+            'redirect_uri' => config('services.ebay.redirect_uri'),
             'sandbox' => config('services.ebay.sandbox', true),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
