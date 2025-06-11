@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
 import Popover from '@/Components/Popover.vue'
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import { useOrdinalSuffix } from '@/Composables/Utils'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'

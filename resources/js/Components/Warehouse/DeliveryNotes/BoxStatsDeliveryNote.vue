@@ -13,7 +13,7 @@ import { Link, router } from "@inertiajs/vue3"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { inject, ref, toRaw } from "vue"
 import { routeType } from "@/types/route"
-import { set, values } from "lodash"
+import { set, values } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { useTruncate } from "@/Composables/useTruncate"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"

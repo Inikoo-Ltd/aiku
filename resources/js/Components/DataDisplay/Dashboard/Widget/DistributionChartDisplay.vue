@@ -12,7 +12,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 library.add(faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
-import { capitalize } from "lodash"
+import { capitalize } from 'lodash-es'
 import { useLocaleStore } from "@/Stores/locale"
 
 const locale = useLocaleStore()

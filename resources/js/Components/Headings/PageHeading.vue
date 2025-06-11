@@ -14,7 +14,7 @@ import MetaLabel from "@/Components/Headings/MetaLabel.vue"
 import Container from "@/Components/Headings/Container.vue"
 import Action from "@/Components/Forms/Fields/Action.vue"
 import SubNavigation from "@//Components/Navigation/SubNavigation.vue"
-import { kebabCase } from "lodash"
+import { kebabCase } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import {faNarwhal, faReceipt} from "@fas"
 import { faLayerPlus } from "@far"

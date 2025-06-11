@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import MeterGroup from "primevue/metergroup"
-import { values } from "lodash"
+import { values } from 'lodash-es'
 import ChartDashboardDynamic from "../../ChartDashboardDynamic.vue"
 import Chart from "primevue/chart"
 import ProgressDashboardCard from "../../ProgressDashboardCard.vue"

@@ -21,7 +21,7 @@ import ButtonPreviewLogin from "@/Components/Workshop/Tools/ButtonPreviewLogin.v
 import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-import { debounce } from 'lodash';
+import { debounce } from 'lodash-es';
 import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"

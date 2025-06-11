@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
-import { set, get } from "lodash"
+import { set, get } from 'lodash-es'
 import { checkVAT, countries } from 'jsvat-next';
 import { ref, watch } from "vue"
 import { debounce } from "lodash-es"

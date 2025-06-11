@@ -12,7 +12,7 @@ import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy, faInfoCircle } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { set, get } from "lodash"
+import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faInfoCircle)
 import { ref, watch } from "vue"
 import { SenderEmail } from '@/types/SenderEmail'

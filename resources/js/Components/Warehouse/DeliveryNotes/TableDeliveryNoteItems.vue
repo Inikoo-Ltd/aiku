@@ -12,7 +12,7 @@ import { Order } from "@/types/order";
 import type { Table as TableTS } from "@/types/Table";
 import Icon from "@/Components/Icon.vue";
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue";
-import { debounce, get, set } from "lodash";
+import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";

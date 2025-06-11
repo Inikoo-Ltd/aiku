@@ -5,11 +5,11 @@ import Accordion from 'primevue/accordion'
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
 
 import { getFormValue } from '@/Composables/SideEditorHelper'
-import { set as setLodash, get, cloneDeep } from 'lodash-es'
+import { set as setLodash, get } from 'lodash-es'
 
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCaretDown, faCaretLeft, faCaretRight, faCaretUp } from '@fas'
+import { faCaretDown, faCaretLeft} from '@fas'
 
 const props = withDefaults(defineProps<{
     blueprint: {

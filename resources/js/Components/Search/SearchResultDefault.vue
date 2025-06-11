@@ -12,7 +12,7 @@ import Icon from "@/Components/Icon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useTruncate } from "@/Composables/useTruncate"
-import { capitalize } from "lodash"
+import { capitalize } from 'lodash-es'
 import { Icon as IconTS } from "@/types/Utils/Icon"
 
 const props = defineProps<{
