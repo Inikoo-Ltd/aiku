@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
@@ -81,6 +82,7 @@ class Shipment extends Model
         'trackings'     => 'array',
         'tracking_urls' => 'array',
         'label_urls'    => 'array',
+        'label_type'    => ShipmentLabelTypeEnum::class,
     ];
 
     protected $attributes = [
