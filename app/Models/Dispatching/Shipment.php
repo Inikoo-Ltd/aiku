@@ -52,7 +52,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property array<array-key, mixed>|null $trackings
  * @property array<array-key, mixed>|null $tracking_urls
  * @property array<array-key, mixed>|null $label_urls
- * @property string|null $pdf_label
+ * @property string|null $label
+ * @property ShipmentLabelTypeEnum $label_type
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
  * @property-read Group $group

@@ -67,7 +67,7 @@ class DeleteAuroraWebProductCategories
 
 
 
-        $families = DB::table('product_categories')->where('organisation_id',$organisation->id)->whereNotNull('source_family_id')->get()->pluck('source_family_id', 'id');
+        $families = DB::table('product_categories')->where('organisation_id', $organisation->id)->whereNotNull('source_family_id')->get()->pluck('source_family_id', 'id');
         foreach ($families as $familyKey => $sourceIDData) {
             $sourceIDData = preg_split('/:/', $sourceIDData);
 
@@ -112,7 +112,7 @@ class DeleteAuroraWebProductCategories
 
 
 
-        $departments = DB::table('product_categories')->where('organisation_id',$organisation->id)->whereNotNull('source_department_id')->get()->pluck('source_department_id', 'id');
+        $departments = DB::table('product_categories')->where('organisation_id', $organisation->id)->whereNotNull('source_department_id')->get()->pluck('source_department_id', 'id');
         foreach ($departments as $departmentKey => $sourceIDData) {
             $sourceIDData = preg_split('/:/', $sourceIDData);
 
