@@ -146,36 +146,36 @@ console.log('Collection data:', props.data)
       </div>
 
       <!-- Webpages List -->
-      <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-gray-800">{{ trans('Webpages') }}</h2>
-          <Button type="create" size="xs" :icon="faBrowser" @click="isModalOpen = true" :label="'webpage'">
-          </Button>
-        </div>
+<!--      <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">-->
+<!--        <div class="flex items-center justify-between">-->
+<!--          <h2 class="text-lg font-semibold text-gray-800">{{ trans('Webpages') }}</h2>-->
+<!--          <Button type="create" size="xs" :icon="faBrowser" @click="isModalOpen = true" :label="'webpage'">-->
+<!--          </Button>-->
+<!--        </div>-->
 
-        <div v-if="data.attached_webpages.length" class="space-y-3">
-          <div v-for="webpage in data.attached_webpages" :key="webpage.id"
-            class="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow transition">
-            <!-- Icon -->
-            <Icon v-if="webpage?.typeIcon" :data="webpage.typeIcon" size="xl" class="text-gray-600 shrink-0" />
+<!--        <div v-if="data.attached_webpages.length" class="space-y-3">-->
+<!--          <div v-for="webpage in data.attached_webpages" :key="webpage.id"-->
+<!--            class="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow transition">-->
+<!--            &lt;!&ndash; Icon &ndash;&gt;-->
+<!--            <Icon v-if="webpage?.typeIcon" :data="webpage.typeIcon" size="xl" class="text-gray-600 shrink-0" />-->
 
-            <!-- Info -->
-            <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-medium text-gray-800 truncate">{{ webpage.code || webpage.name }}</h3>
-              <p class="text-xs text-gray-500 line-clamp-2">{{ webpage.title || trans('No title') }}</p>
-            </div>
+<!--            &lt;!&ndash; Info &ndash;&gt;-->
+<!--            <div class="flex-1 min-w-0">-->
+<!--              <h3 class="text-sm font-medium text-gray-800 truncate">{{ webpage.code || webpage.name }}</h3>-->
+<!--              <p class="text-xs text-gray-500 line-clamp-2">{{ webpage.title || trans('No title') }}</p>-->
+<!--            </div>-->
 
-            <!-- Unassign Button -->
-            <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
-              :loading="unassignLoadingIds.includes(webpage.id)" @click="UnassignCollectionFormWebpage(webpage.id)"
-              class="shrink-0" />
-          </div>
-        </div>
+<!--            &lt;!&ndash; Unassign Button &ndash;&gt;-->
+<!--            <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"-->
+<!--              :loading="unassignLoadingIds.includes(webpage.id)" @click="UnassignCollectionFormWebpage(webpage.id)"-->
+<!--              class="shrink-0" />-->
+<!--          </div>-->
+<!--        </div>-->
 
-        <div v-else class="text-sm text-gray-500 italic text-center">
-          <EmptyState />
-        </div>
-      </div>
+<!--        <div v-else class="text-sm text-gray-500 italic text-center">-->
+<!--          <EmptyState />-->
+<!--        </div>-->
+<!--      </div>-->
 
     </div>
   </div>

@@ -160,17 +160,17 @@ const UnassignCollection = async ( id: number ) => {
                 </div>
             </div>
             <!-- Collection List -->
-            <div v-if="data.has_webpage" class="col-span-1 md:col-span-2 lg:col-span-2">
-                <CollectionList
-                    :collections="props.data.collections.data"
-                    :routeFetch="props.data.routeList.collections_route"
-                    :canAdd="true"
-                    :loadingUnassignIds="unassignLoadingIds"
-                    :isSubmitting="isLoadingSubmit"
-                    @assign="assignCollection"
-                    @unassign="UnassignCollection"
-                />
-            </div>
+<!--            <div v-if="data.has_webpage" class="col-span-1 md:col-span-2 lg:col-span-2">-->
+<!--                <CollectionList-->
+<!--                    :collections="props.data.collections.data"-->
+<!--                    :routeFetch="props.data.routeList.collections_route"-->
+<!--                    :canAdd="true"-->
+<!--                    :loadingUnassignIds="unassignLoadingIds"-->
+<!--                    :isSubmitting="isLoadingSubmit"-->
+<!--                    @assign="assignCollection"-->
+<!--                    @unassign="UnassignCollection"-->
+<!--                />-->
+<!--            </div>-->
         </div>
     </div>
 </template>
