@@ -16,8 +16,8 @@ trait WithEbayApiRequest
     protected function getEbayConfig()
     {
         return [
-            'client_id' => $this->ebay_client_id ?? config('services.ebay.client_id'),
-            'client_secret' => $this->ebay_client_secret ?? config('services.ebay.client_secret'),
+            'client_id' => config('services.ebay.client_id'),
+            'client_secret' => config('services.ebay.client_secret'),
             'redirect_uri' => "AW_Advantage-AWAdvant-Retina-wgsvn",
             'sandbox' => config('services.ebay.sandbox', true),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),

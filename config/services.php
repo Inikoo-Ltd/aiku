@@ -42,7 +42,8 @@ return [
     ],
     'ebay' => [
         'client_id' => env('EBAY_CLIENT_ID'),
-        'client_secret' => env('EBAY_CLIENT_SECRET')
+        'client_secret' => env('EBAY_CLIENT_SECRET'),
+        'sandbox' => env('EBAY_SANDBOX', true)
     ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),
