@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -24,6 +25,7 @@ class AttachModelToCollection extends OrgAction
             $collection->families()->attach($model->id);
         }
 
+        CollectionHydrateItems::dispatch($collection);
 
         return $collection;
     }

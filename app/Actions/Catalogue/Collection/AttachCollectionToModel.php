@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
@@ -37,8 +38,15 @@ class AttachCollectionToModel extends OrgAction
             ]);
         }
 
+        CollectionHydrateItems::dispatch($collection);
+
 
         return $collection;
+    }
+
+    public function htmlResponse()
+    {
+        return back();
     }
 
     public function action(Shop|ProductCategory $parent, Collection $collection): Collection
@@ -53,5 +61,12 @@ class AttachCollectionToModel extends OrgAction
         $this->initialisationFromShop($shop, []);
 
         return $this->handle($parent, $collection);
+    }
+
+    public function asController(ProductCategory $productCategory, Collection $collection): Collection
+    {
+        $this->initialisationFromShop($productCategory->shop, []);
+
+        return $this->handle($productCategory, $collection);
     }
 }

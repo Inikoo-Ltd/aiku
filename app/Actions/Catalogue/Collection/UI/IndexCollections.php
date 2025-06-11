@@ -64,10 +64,8 @@ class IndexCollections extends OrgAction
                 'collections.created_at',
                 'collections.updated_at',
                 'collections.slug',
-                'collection_stats.number_departments',
                 'collection_stats.number_families',
                 'collection_stats.number_products',
-                'collection_stats.number_collections'
             ]);
 
         if ($parent instanceof Group) {
@@ -171,10 +169,8 @@ class IndexCollections extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'number_departments', label: __('Departments'), canBeHidden: false, sortable: false, searchable: false);
-            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: false, searchable: false);
-            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: false, searchable: false);
-            $table->column(key: 'number_collections', label: __('Collections'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
+            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
             if ($parent instanceof Collection) {
                 $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
             }
