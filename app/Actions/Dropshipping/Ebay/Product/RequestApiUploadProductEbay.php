@@ -16,7 +16,6 @@ use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -35,6 +34,7 @@ class RequestApiUploadProductEbay extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
+            $imageUrls = [];
             $images = [];
             if (app()->isProduction()) {
                 foreach ($product->images as $image) {
@@ -42,21 +42,32 @@ class RequestApiUploadProductEbay extends RetinaAction
                         'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
                     ];
                 }
+
+                $imageUrls = [
+                    'imageUrls' => $images
+                ];
             }
 
-            $ebayProduct = [
+            $inventoryItem = [
                 'sku' => $product->code,
-                'quantity' => $product->available_quantity,
-                'title' => $portfolio->customer_product_name,
-                'description' => $portfolio->customer_description,
-                'aspects' => Arr::get($product, 'attributes', []),
-                'imageUrls' => $images
+                'availability' => [
+                    'shipToLocationAvailability' => [
+                        'quantity' => $product->available_quantity
+                    ]
+                ],
+                'condition' => 'NEW',
+                'product' => [
+                    'title' => $portfolio->customer_product_name,
+                    'description' => $portfolio->customer_description,
+                    ...$imageUrls
+                ]
             ];
 
-            $result = $ebayUser->storeProduct($ebayProduct);
+            $ebayUser->storeProduct($inventoryItem);
+            // $ebayUser->storeOffer($ebayProduct);
 
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => $ebayProduct['sku'],
+                'platform_product_id' => $inventoryItem['sku'],
             ]);
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);

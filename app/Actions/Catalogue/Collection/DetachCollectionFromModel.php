@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -19,6 +20,7 @@ class DetachCollectionFromModel extends OrgAction
     {
 
         $parent->collections()->detach($collection);
+        CollectionHydrateItems::dispatch($collection);
         return $parent;
     }
 
@@ -34,5 +36,18 @@ class DetachCollectionFromModel extends OrgAction
         $this->initialisationFromShop($shop, []);
 
         return $this->handle($parent, $collection);
+    }
+
+    
+    public function asController(ProductCategory $productCategory, Collection $collection): ProductCategory
+    {
+        $this->initialisationFromShop($productCategory->shop, []);
+
+        return $this->handle($productCategory, $collection);
+    }
+
+    public function htmlResponse()
+    {
+        return back();
     }
 }
