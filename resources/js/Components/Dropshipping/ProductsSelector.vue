@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
 import { inject, ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -8,10 +7,9 @@ import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Tag from '@/Components/Tag.vue'
 import { trans } from 'laravel-vue-i18n'
-import { debounce, get, set } from 'lodash'
+import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '@/Components/Image.vue'
-import { RouteParams } from '@/types/route-params'
 import { routeType } from '@/types/route'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

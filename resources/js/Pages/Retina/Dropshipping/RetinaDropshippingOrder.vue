@@ -13,7 +13,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from 'vue'
 import type { Component } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'

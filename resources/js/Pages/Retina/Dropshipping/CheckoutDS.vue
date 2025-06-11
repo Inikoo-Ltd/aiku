@@ -20,7 +20,7 @@ import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { get, debounce } from 'lodash'
+import { get, debounce } from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'

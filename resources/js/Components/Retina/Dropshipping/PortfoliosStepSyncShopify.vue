@@ -6,7 +6,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 import { Column, DataTable, IconField, InputIcon, InputText } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
 
