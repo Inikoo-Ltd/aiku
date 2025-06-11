@@ -22,7 +22,6 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -57,7 +56,7 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'customer_price', $priceIncVat);
         data_set($modelData, 'selling_price', $priceIncVat);
         data_set($modelData, 'price_inc_vat', $priceIncVat);
-        data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'selling_price'), $item->price, $vatRate));
+        data_set($modelData, 'margin', CalculationsProfitMargin::run($priceIncVat, $item->price, $vatRate));
 
         $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
             /** @var Portfolio $portfolio */
