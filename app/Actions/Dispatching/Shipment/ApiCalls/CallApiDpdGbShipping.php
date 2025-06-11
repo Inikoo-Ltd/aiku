@@ -11,6 +11,7 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingParentResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -170,7 +171,8 @@ class CallApiDpdGbShipping extends OrgAction
 
             $modelData['tracking'] = $trackingNumber;
             $modelData['shipment_id'] = $shipmentId;
-            $modelData['pdf_label'] = $this->getLabel($shipmentId, $shipper, 'text/html');
+            $modelData['label'] = $this->getLabel($shipmentId, $shipper, 'text/html');
+            $modelData['label_type'] = ShipmentLabelTypeEnum::HTML;
             $modelData['number_parcels'] = count($parcels);
         } else {
             $status = 'fail';
@@ -285,7 +287,7 @@ class CallApiDpdGbShipping extends OrgAction
             ->get($this->getBaseUrl() . 'shipping/shipment/' . $shipmentId . '/label');
 
         if ($response->successful()) {
-            return $response->body();
+            return base64_encode($response->body());
         }
 
         return '';

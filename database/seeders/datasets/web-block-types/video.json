@@ -1,0 +1,125 @@
+{
+	"slug": "video",
+	"code": "video-1",
+	"name": "Video",
+	"scope": "webpage",
+	"category": "block",
+	"icon": ["fal", "rectangle-wide"],
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
+	"data": {
+		"fieldValue": {
+			"video": {
+				"video_setup": {
+					"by_url": true,
+					"source": null,
+					"embed_code": null
+				}
+			},
+			"container": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"color": null,
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							},
+							"rounded": {
+								"unit": "px",
+								"topleft": {
+									"value": null
+								},
+								"topright": {
+									"value": null
+								},
+								"bottomleft": {
+									"value": null
+								},
+								"bottomright": {
+									"value": null
+								}
+							}
+						},
+					"margin": {
+						"top": {
+							"value": null
+						},
+						"left": {
+							"value": null
+						},
+						"unit": "px",
+						"right": {
+							"value": null
+						},
+						"bottom": {
+							"value": null
+						}
+					},
+					"shadow": {
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							}
+						}
+					},
+					"padding": {
+						"top": {
+							"value": null
+						},
+						"left": {
+							"value": null
+						},
+						"unit": "px",
+						"right": {
+							"value": null
+						},
+						"bottom": {
+							"value": null
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#111827",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			}
+		}
+	}
+    }
+}
