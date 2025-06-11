@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
@@ -36,6 +37,8 @@ class AttachModelsToCollection extends OrgAction
                 AttachModelToCollection::make()->action($collection, $product);
             }
         }
+
+        CollectionHydrateItems::dispatch($collection);
 
         return $collection;
     }

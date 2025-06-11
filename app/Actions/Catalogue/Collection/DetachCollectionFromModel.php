@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -19,6 +20,7 @@ class DetachCollectionFromModel extends OrgAction
     {
 
         $parent->collections()->detach($collection);
+        CollectionHydrateItems::dispatch($collection);
         return $parent;
     }
 
