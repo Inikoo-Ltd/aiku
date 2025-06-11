@@ -23,6 +23,10 @@ Broadcast::channel('woo.{wooCommerceUserId}.upload-product.{portfolioId}', funct
     return true;
 });
 
+Broadcast::channel('ebay.{ebayUserId}.upload-product.{portfolioId}', function (int|string $ebayUser, int|string $portfolioId) {
+    return true;
+});
+
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });

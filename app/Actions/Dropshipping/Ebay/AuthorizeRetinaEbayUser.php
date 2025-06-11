@@ -9,7 +9,7 @@
 
 namespace App\Actions\Dropshipping\Ebay;
 
-use App\Actions\Dropshipping\WooCommerce\Traits\WithEbayApiRequest;
+use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;

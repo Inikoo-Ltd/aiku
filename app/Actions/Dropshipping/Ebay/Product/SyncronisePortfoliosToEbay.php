@@ -16,7 +16,6 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class SyncronisePortfoliosToEbay extends RetinaAction
 {
@@ -37,7 +36,6 @@ class SyncronisePortfoliosToEbay extends RetinaAction
 
         foreach ($portfolios as $portfolio) {
             RequestApiUploadProductEbay::run($ebayUser, $portfolio);
-            Sentry::captureMessage("Product uploaded: " . $portfolio->item->name);
         }
     }
 

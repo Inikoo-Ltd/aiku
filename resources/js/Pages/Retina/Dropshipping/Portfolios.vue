@@ -427,7 +427,7 @@ const bulkDelete = () => {
 					v-if="selectedPortfoliosToSync?.length"
 					@click="() => bulkUpload()"
 					xlabel="trans('Sync to Shopify') + ' (' + selectedPortfoliosToSync?.length + ')'"
-					:label="`Sync to ${platform_data} (${selectedPortfoliosToSync?.length})`"
+					:label="`Sync to ${platform_data.name} (${selectedPortfoliosToSync?.length})`"
 					:icon="faUpload"
 					size="s"
 					type="positive"
