@@ -12,6 +12,7 @@ import SideMenuFamiliesCollectionsWorkshop from "@/Components/CMS/Website/Collec
 import { notify } from "@kyvg/vue3-notification"
 import Drawer from 'primevue/drawer';
 import WebpageList from "./WebpageList.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -146,12 +147,12 @@ provide("currentView", currentView);
     </template>
 
     <!-- You can uncomment this if using WebpageList -->
-    
-    <WebpageList 
+    <EmptyState />
+    <!-- <WebpageList 
       :dataList="data.webpages"
       @changeDepartment="onChangeWebpage"
       :active="layout?.data?.fieldValue?.webpage?.slug"
-    /> 
+    />  -->
    
   </Drawer>
 </template>

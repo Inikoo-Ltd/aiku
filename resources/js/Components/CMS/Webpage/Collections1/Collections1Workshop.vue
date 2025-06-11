@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import Image from "@/Components/Image.vue";
 import { routeType } from "@/types/route";
+import { getStyles } from "@/Composables/styles";
 
 const props = defineProps<{
   modelValue: Record<string, any>;
@@ -17,9 +18,8 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="mx-auto px-4 py-12">
+  <div class="mx-auto px-4 py-12" :style="getStyles(modelValue.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Collections :</h2>
-
     <div v-if="modelValue?.collections?.length">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <button v-for="item in modelValue.collections" :key="item.code"
