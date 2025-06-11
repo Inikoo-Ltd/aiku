@@ -64,10 +64,10 @@ class RequestApiUploadProductEbay extends RetinaAction
             ];
 
             $ebayUser->storeProduct($inventoryItem);
-            $ebayUser->storeOffer($ebayProduct);
+            // $ebayUser->storeOffer($ebayProduct);
 
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => $ebayProduct['sku'],
+                'platform_product_id' => $inventoryItem['sku'],
             ]);
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
