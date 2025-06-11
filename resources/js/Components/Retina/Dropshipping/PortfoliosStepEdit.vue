@@ -52,6 +52,12 @@ const valueTableFilter = ref({})
             </div>
         </template>
 
+        <Column field="code" header="" style="max-width: 90px;">
+            <template #body="{ data }">
+                <img :src="data.image" class="w-20 h-20" :alt="data.code">
+            </template>
+        </Column>
+
         <Column field="code" header="Code" style="max-width: 90px;">
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="truncate relative pr-2">
@@ -157,15 +163,17 @@ const valueTableFilter = ref({})
 
         <Column field="shipping" header="Shipping (Exc VAT)" style="max-width: 125px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
-                    {{ data.margin }}%
-                </div>
+                <FontAwesomeIcon
+                    class="text-blue-500"
+                    icon="fal fa-box"
+                    aria-hidden="true" />
             </template>
         </Column>
 
         <Column field="description" header="Description">
             <template #body="{ data }">
                 <FontAwesomeIcon
+                    class="text-blue-500"
                     icon="fal fa-bars"
                     aria-hidden="true" />
 <!--                <div class="whitespace-nowrap relative pr-2">
