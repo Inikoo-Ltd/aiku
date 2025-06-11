@@ -38,7 +38,7 @@ class DetachCollectionFromModel extends OrgAction
         return $this->handle($parent, $collection);
     }
 
-    
+
     public function asController(ProductCategory $productCategory, Collection $collection): ProductCategory
     {
         $this->initialisationFromShop($productCategory->shop, []);

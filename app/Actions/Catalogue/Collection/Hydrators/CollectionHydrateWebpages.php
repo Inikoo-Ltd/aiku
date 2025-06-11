@@ -33,7 +33,7 @@ class CollectionHydrateWebpages
     {
 
         $stats         = [
-            'number_parent_webpages' => $collection->webpageHasCollections()->count(),
+            'number_parent_webpages' => $collection->departments()->count() + $collection->subdepartments()->count(),
         ];
 
         $collection->stats->update($stats);

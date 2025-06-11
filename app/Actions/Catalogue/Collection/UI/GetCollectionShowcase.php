@@ -19,7 +19,6 @@ class GetCollectionShowcase
 
     public function handle(Collection $collection): array
     {
-        // dd($collection);
         $parentRoute = null;
 
         if ($collection->parent) {
@@ -109,7 +108,7 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
-            
+
             'routes' => [
                 'parent_departments_route' => [
                     'name' => 'grp.json.collection.parent.departments.index',

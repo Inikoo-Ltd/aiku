@@ -28,11 +28,11 @@ class GetCollections extends OrgAction
     public function handle(Shop $parent, Collection|Shop|ProductCategory $scope, $prefix = null): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(Collection::class);
-        if ($scope instanceof Collection) {
+        if ($scope instanceof Shop) {
             $queryBuilder->whereNotIn('collections.id', $scope->collections()->pluck('model_id'))
                             ->where('collections.id', '!=', $scope->id);
         } elseif ($scope instanceof ProductCategory) {
-            $queryBuilder->whereNotIn('collections.id', $scope->webpage->webpageHasCollections()->pluck('collection_id'))
+            $queryBuilder->whereNotIn('collections.id', $scope->collections()->pluck('collection_id'))
                             ->where('collections.id', '!=', $scope->id);
         }
         $queryBuilder
