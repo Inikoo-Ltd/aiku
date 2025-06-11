@@ -11,7 +11,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { faSyncAlt } from "@fas"
-import { faArrowLeft, faArrowRight, faUpload } from "@fal"
+import { faArrowLeft, faArrowRight, faUpload, faBox } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -22,7 +22,7 @@ import { set } from "lodash"
 import PortfoliosStepEdit from "@/Components/Retina/Dropshipping/PortfoliosStepEdit.vue"
 import PortfoliosStepSyncShopify from "@/Components/Retina/Dropshipping/PortfoliosStepSyncShopify.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
-library.add(faSyncAlt)
+library.add(faSyncAlt, faBox)
 
 
 const props = defineProps<{

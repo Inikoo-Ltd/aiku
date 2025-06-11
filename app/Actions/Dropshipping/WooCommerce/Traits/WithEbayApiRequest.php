@@ -603,9 +603,6 @@ trait WithEbayApiRequest
                 ]
             ],
             "paymentMethods" => [
-                [
-                "paymentMethodType" => "PERSONAL_CHECK"
-                ]
             ]
         ];
 

@@ -52,6 +52,12 @@ const valueTableFilter = ref({})
             </div>
         </template>
 
+        <Column field="code" header="" style="max-width: 90px;">
+            <template #body="{ data }">
+                <img :src="data.image" class="w-20 h-20" :alt="data.code">
+            </template>
+        </Column>
+
         <Column field="code" header="Code" style="max-width: 90px;">
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="truncate relative pr-2">
@@ -83,7 +89,7 @@ const valueTableFilter = ref({})
 
         </Column>
 
-        <Column field="price" header="Price (Exc VAT)" style="max-width: 125px;">
+        <Column field="price" header="Cost Price (Exc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -101,7 +107,8 @@ const valueTableFilter = ref({})
                 </div>
             </template>
         </Column>
-        <Column field="price" header="Price (Inc VAT)" style="max-width: 125px;">
+
+        <Column field="price" header="Cost Price (Inc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -128,7 +135,7 @@ const valueTableFilter = ref({})
             </template>
         </Column> -->
 
-        <Column field="customer_price" header="Selling Price" style="max-width: 200px;">
+        <Column field="customer_price" header="Selling Price (Inc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -154,9 +161,22 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
+        <Column field="shipping" header="Shipping (Exc VAT)" style="max-width: 125px;">
+            <template #body="{ data }">
+                <FontAwesomeIcon
+                    class="text-blue-500"
+                    icon="fal fa-box"
+                    aria-hidden="true" />
+            </template>
+        </Column>
+
         <Column field="description" header="Description">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
+                <FontAwesomeIcon
+                    class="text-blue-500"
+                    icon="fal fa-bars"
+                    aria-hidden="true" />
+<!--                <div class="whitespace-nowrap relative pr-2">
                     <textarea
                         v-model="data.description"
                         class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
@@ -165,7 +185,7 @@ const valueTableFilter = ref({})
                     >
                     </textarea>
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], undefined)" />
-                </div>
+                </div>-->
             </template>
         </Column>
     </DataTable>

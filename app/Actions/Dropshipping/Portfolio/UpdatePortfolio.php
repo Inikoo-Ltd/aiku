@@ -40,9 +40,11 @@ class UpdatePortfolio extends OrgAction
             );
         }
 
-        data_set($modelData, 'vat_rate', 0.2);
-        data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'customer_price'), $portfolio->item->price, Arr::get($modelData, 'vat_rate')));
-        data_set($modelData, 'selling_price', Arr::get($modelData, 'customer_price'));
+        if (Arr::exists($modelData, 'customer_price')) {
+            data_set($modelData, 'vat_rate', 0.2);
+            data_set($modelData, 'selling_price', Arr::get($modelData, 'customer_price'));
+            data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'selling_price'), $portfolio->item->price, Arr::get($modelData, 'vat_rate')));
+        }
 
         $portfolio = $this->update($portfolio, $modelData, ['data']);
 

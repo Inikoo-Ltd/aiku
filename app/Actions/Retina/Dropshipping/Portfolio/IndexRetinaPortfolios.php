@@ -205,6 +205,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     'count' => 0
                 ]);
 
+            $table->column(key: 'image', label: __(''), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'category', label: __('category'), canBeHidden: false, sortable: true, searchable: true);
