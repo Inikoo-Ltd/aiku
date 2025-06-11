@@ -4,7 +4,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { provide, ref } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useColorTheme } from "@/Composables/useStockList"
-import { isArray } from "lodash"
+import { isArray } from 'lodash-es'
 
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"

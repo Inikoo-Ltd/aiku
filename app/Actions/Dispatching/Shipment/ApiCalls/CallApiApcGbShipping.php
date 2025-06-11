@@ -11,6 +11,7 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingParentResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -192,7 +193,8 @@ class CallApiApcGbShipping extends OrgAction
         if ($statusCode == 200 && Arr::get($apiResponse, 'Orders.Messages.Code') == 'SUCCESS') {
             $status                      = 'success';
             $orderNumber                 = Arr::get($apiResponse, 'Orders.Order.OrderNumber');
-            $modelData['pdf_label']      = $this->getLabel($orderNumber, $shipper);
+            $modelData['label']      = $this->getLabel($orderNumber, $shipper);
+            $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = (int)Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.NumberOfPieces');
 
 

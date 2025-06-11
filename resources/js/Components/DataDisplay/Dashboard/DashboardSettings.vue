@@ -4,7 +4,7 @@ import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ToggleSwitch from "primevue/toggleswitch"
-import { debounce } from "lodash"
+import { debounce } from 'lodash-es'
 import axios from "axios"
 import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

@@ -20,7 +20,7 @@ import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { debounce } from "lodash"
+import { debounce } from 'lodash-es'
 
 library.add(
 	faRobot,

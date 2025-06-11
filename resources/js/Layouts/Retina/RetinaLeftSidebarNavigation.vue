@@ -15,7 +15,7 @@ import RetinaNavigationSimple from '@/Layouts/Retina/RetinaNavigationSimple.vue'
 import RetinaNavigationHorizontal from '@/Layouts/Retina/RetinaNavigationHorizontal.vue'
 import { generateNavigationName, generateCurrentString } from '@/Composables/useConvertString'
 
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import RetinaNavigationGroup from "@/Layouts/Retina/RetinaNavigationGroup.vue"
 import RetinaNavigationHorizontalNew from "./RetinaNavigationHorizontalNew.vue"
 library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey)

@@ -4,7 +4,7 @@ import Modal from "@/Components/Utils/Modal.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faImage } from "@fas";
-import { set } from "lodash";
+import { set } from 'lodash-es';
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 

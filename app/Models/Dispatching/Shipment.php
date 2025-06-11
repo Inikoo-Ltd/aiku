@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
@@ -51,7 +52,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property array<array-key, mixed>|null $trackings
  * @property array<array-key, mixed>|null $tracking_urls
  * @property array<array-key, mixed>|null $label_urls
- * @property string|null $pdf_label
+ * @property string|null $label
+ * @property ShipmentLabelTypeEnum $label_type
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
  * @property-read Group $group
@@ -81,6 +83,7 @@ class Shipment extends Model
         'trackings'     => 'array',
         'tracking_urls' => 'array',
         'label_urls'    => 'array',
+        'label_type'    => ShipmentLabelTypeEnum::class,
     ];
 
     protected $attributes = [

@@ -91,7 +91,7 @@ import Variabel from "./Variables/Variables"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
-import { debounce } from "lodash"
+import { debounce } from 'lodash-es'
 
 const props = withDefaults(defineProps<{
     modelValue: string | null,

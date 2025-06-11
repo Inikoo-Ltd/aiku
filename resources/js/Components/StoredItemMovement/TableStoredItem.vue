@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { get, defaultTo } from "lodash"
+import { get, defaultTo } from 'lodash-es'
 import axios from "axios"
 import { inject, onMounted, ref } from "vue"
 import { useForm, router } from "@inertiajs/vue3"

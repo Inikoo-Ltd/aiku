@@ -8,7 +8,7 @@ import { faLink, faUnlink } from "@fal"
 import { faExclamation } from "@fas"
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import { useFontFamilyList } from '@/Composables/useFont'
-import { set, get } from 'lodash'
+import { set, get } from 'lodash-es'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 
 library.add(faExclamation, faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faLink, faUnlink)

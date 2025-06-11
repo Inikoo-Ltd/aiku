@@ -12,7 +12,7 @@ import { faCopy } from '@fal'
 import { faTrash as farTrash } from '@far'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { set, get } from "lodash"
+import { set, get } from 'lodash-es'
 import { ref, watch, onMounted, onBeforeMount, isReadonly, inject } from "vue"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"

@@ -5,7 +5,7 @@
   -->
 
   <script setup lang="ts">
-  import { set, get } from "lodash";
+  import { set, get } from 'lodash-es';
   import { ref, watch, toRefs } from "vue";
   
   const props = defineProps<{

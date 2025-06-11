@@ -13,7 +13,7 @@ import { Link, router } from "@inertiajs/vue3"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { inject, ref, toRaw } from "vue"
 import { routeType } from "@/types/route"
-import { set, values } from "lodash"
+import { set, values } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { useTruncate } from "@/Composables/useTruncate"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -54,7 +54,8 @@ const props = defineProps<{
 			id: number
 			name: string
 			tracking: string
-			pdf_label?: string
+			label?: string
+            label_type?: string
 			combined_label_url?: string
 		}[]
 	}
@@ -393,7 +394,7 @@ const base64ToPdf = (base: string) => {
 									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 								</a>
 								
-								<div v-else-if="sments.pdf_label" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.pdf_label)" class="group cursor-pointer">
+								<div v-else-if="sments.label && sments.label_type === 'pdf'" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)" class="group cursor-pointer">
 									<span class="truncate">
 										{{ sments.name }}
 									</span>

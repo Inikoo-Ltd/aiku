@@ -1,4 +1,4 @@
-import {merge} from 'lodash';
+import {merge} from 'lodash-es';
 import request from '@/src/utils/Request';
 import {navigationRef} from '@/src/utils/NavigationService';
 import {ALERT_TYPE, Toast} from 'react-native-alert-notification';

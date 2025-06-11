@@ -11,7 +11,7 @@ import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { set, get } from "lodash"
+import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
 

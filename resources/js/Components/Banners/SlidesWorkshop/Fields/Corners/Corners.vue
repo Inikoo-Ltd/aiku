@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n";
 import { ref, computed, watch, reactive } from "vue";
-import { get, set, isNull } from "lodash";
+import { get, set, isNull } from 'lodash-es';
 import { faLock } from "@fas";
 import { faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";

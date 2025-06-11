@@ -76,6 +76,9 @@ const onUnchecked = (itemId: number) => {
 		}"
 		:isChecked="(item) => props.selectedData.products.includes(item.id)"
 	>
+        <template #cell(image)="{ item: product }">
+            <img :src="product.image" class="w-20 h-20" :alt="product.code">
+        </template>
 
 		<template #cell(slug)="{ item: product }">
 			<Link :href="productRoute(product)" class="primaryLink">

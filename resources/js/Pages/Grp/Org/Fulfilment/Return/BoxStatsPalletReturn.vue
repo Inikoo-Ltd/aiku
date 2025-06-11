@@ -643,7 +643,7 @@ const base64ToPdf = (base: string) => {
 									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 								</a>
 								
-								<div v-else-if="sments.pdf_label" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.pdf_label)" class="group cursor-pointer">
+								<div v-else-if="sments.label && sments.label_type === 'pdf'" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)" class="group cursor-pointer">
 									<span class="truncate">
 										{{ sments.name }}
 									</span>
