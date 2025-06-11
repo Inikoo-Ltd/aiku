@@ -4,7 +4,6 @@ import BaseList from '~/components/Base/BaseList';
 import {ROUTES} from '~/constants';
 import {Avatar, IconButton, Card, AnimatedFAB} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
-import { get } from 'lodash';
 
 const WokingPlacesClockingMachines = p => {
   const navigation = useNavigation();
