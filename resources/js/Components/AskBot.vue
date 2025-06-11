@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Modal from "@/Components/Utils/Modal.vue"
-import { throttle } from "lodash"
+import { throttle } from 'lodash-es'
 import { ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faLampDesk } from "@fal"

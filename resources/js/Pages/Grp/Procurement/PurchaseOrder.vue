@@ -54,7 +54,7 @@ import {
 	faFilePdf,
 } from "@fal"
 import { Action } from "@/types/Action"
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import { faMinus, faPlus } from "@far"
 import { PalletDelivery } from "@/types/Pallet"
 library.add(

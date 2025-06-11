@@ -25,8 +25,8 @@ import { faTag } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Textarea from "primevue/textarea"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { debounce } from "lodash";
-//import { debounce } from "lodash"; // WOWOWOW
+import { debounce } from 'lodash-es';
+//import { debounce } from 'lodash-es'; // WOWOWOW
 library.add(faTag)
 
 const props = defineProps<{

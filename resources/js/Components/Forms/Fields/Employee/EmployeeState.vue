@@ -11,7 +11,7 @@ import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import PureDatePicker from '@/Components/Pure/PureDatePicker.vue'
 import { trans } from 'laravel-vue-i18n'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)

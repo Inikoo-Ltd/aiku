@@ -15,7 +15,7 @@ import { faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faUser, faInventory, 
 import { generateNavigationName, generateCurrentString } from '@/Composables/useConvertString'
 import '@/Composables/Icon/ProductionsStateIcon'
 
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
 import NavigationGroup from "@/Layouts/Grp/NavigationGroup.vue"
 import NavigationScope from "@/Layouts/Grp/NavigationScope.vue"

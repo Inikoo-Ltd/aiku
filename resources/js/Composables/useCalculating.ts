@@ -8,7 +8,7 @@
 
 // From Group: Dashboard
 
-import { get } from "lodash"
+import { get } from 'lodash-es'
 
 // Method: to check the data is increase of decrease based on last year data
 export const isUpOrDown = (orgData: {}, keyName: string | null): string => {

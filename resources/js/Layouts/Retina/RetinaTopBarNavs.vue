@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import {get} from "lodash";
+import {get} from 'lodash-es';
 import {capitalize} from "@/Composables/capitalize";
 import { trans } from 'laravel-vue-i18n'
 import { Link } from "@inertiajs/vue3"

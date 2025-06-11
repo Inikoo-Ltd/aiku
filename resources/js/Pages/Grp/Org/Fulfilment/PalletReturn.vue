@@ -26,7 +26,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
 import TableStoredItemReturnStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemReturnStoredItems.vue"
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Popover from "@/Components/Popover.vue"
 import { Tabs as TSTabs } from "@/types/Tabs"
