@@ -13,20 +13,20 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-     Schema::table('webpage_stats', function (Blueprint $table) {
-         if (!Schema::hasColumn('webpage_stats', 'number_child_webpages_sub_type_sub_department')) {
-             $table->unsignedSmallInteger('number_child_webpages_sub_type_sub_department')->default(0);
-         }
-     });
+        Schema::table('webpage_stats', function (Blueprint $table) {
+            if (!Schema::hasColumn('webpage_stats', 'number_child_webpages_sub_type_sub_department')) {
+                $table->unsignedSmallInteger('number_child_webpages_sub_type_sub_department')->default(0);
+            }
+        });
     }
 
 
     public function down(): void
     {
-      Schema::table('webpage_stats', function (Blueprint $table) {
-          if (Schema::hasColumn('webpage_stats', 'number_child_webpages_sub_type_sub_department')) {
-              $table->dropColumn('number_child_webpages_sub_type_sub_department');
-          }
-      });
+        Schema::table('webpage_stats', function (Blueprint $table) {
+            if (Schema::hasColumn('webpage_stats', 'number_child_webpages_sub_type_sub_department')) {
+                $table->dropColumn('number_child_webpages_sub_type_sub_department');
+            }
+        });
     }
 };

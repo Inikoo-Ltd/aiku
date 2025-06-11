@@ -32,31 +32,31 @@ class CatchRetinaOrdersFromEbay extends OrgAction
         $response = $ebayUser->getOrders();
         dd($response);
         // DB::transaction(function () use ($ebayUser) {
-            // $existingOrderKeys = $ebayUser
-            //     ->customerSalesChannel
-            //     ->orders()
-            //     ->pluck('data')
-            //     ->map(fn ($data) => $data['order_key'] ?? null)
-            //     ->filter()
-            //     ->toArray();
+        // $existingOrderKeys = $ebayUser
+        //     ->customerSalesChannel
+        //     ->orders()
+        //     ->pluck('data')
+        //     ->map(fn ($data) => $data['order_key'] ?? null)
+        //     ->filter()
+        //     ->toArray();
 
-            // $response = $ebayUser->getOrders();
+        // $response = $ebayUser->getOrders();
 
-            // foreach ($response as $order) {
-            //     if (in_array($order['order_key'], $existingOrderKeys, true)) {
-            //         continue;
-            //     }
+        // foreach ($response as $order) {
+        //     if (in_array($order['order_key'], $existingOrderKeys, true)) {
+        //         continue;
+        //     }
 
-            //     if (!empty(array_filter($order['billing'])) && !empty(array_filter($order['shipping'])) && !blank(Arr::get($order, 'shipping.country')) && !blank(Arr::get($order, 'billing.country'))) {
-            //         if ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
-            //             StoreFulfilmentFromWooCommerce::run($wooCommerceUser, $order);
-            //         } elseif ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::DROPSHIPPING) {
-            //             StoreOrderFromWooCommerce::run($wooCommerceUser, $order);
-            //         }
-            //     } else {
-            //         \Sentry::captureMessage('The order doesnt have billing or shipping, order: id ' . $order['order_key']);
-            //     }
-            // }
+        //     if (!empty(array_filter($order['billing'])) && !empty(array_filter($order['shipping'])) && !blank(Arr::get($order, 'shipping.country')) && !blank(Arr::get($order, 'billing.country'))) {
+        //         if ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
+        //             StoreFulfilmentFromWooCommerce::run($wooCommerceUser, $order);
+        //         } elseif ($wooCommerceUser->customer?->shop?->type === ShopTypeEnum::DROPSHIPPING) {
+        //             StoreOrderFromWooCommerce::run($wooCommerceUser, $order);
+        //         }
+        //     } else {
+        //         \Sentry::captureMessage('The order doesnt have billing or shipping, order: id ' . $order['order_key']);
+        //     }
+        // }
         // });
     }
 

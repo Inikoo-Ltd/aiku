@@ -32,12 +32,8 @@ class CollectionHydrateItems
     {
 
         $stats         = [
-            'number_departments' => $collection->departments()->count(),
-            'number_sub_departments' => $collection->subDepartments()->count(),
             'number_families'    => $collection->families()->count(),
             'number_products'    => $collection->products()->count(),
-            'number_collections' => $collection->collections()->count(),
-
         ];
 
         $collection->stats->update($stats);

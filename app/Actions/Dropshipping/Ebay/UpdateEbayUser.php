@@ -26,7 +26,7 @@ class UpdateEbayUser extends OrgAction
         $ebayUser = $this->update($ebayUser, $modelData, ['settings']);
 
         $ebayUser->refresh();
-        
+
         return $ebayUser;
     }
 }

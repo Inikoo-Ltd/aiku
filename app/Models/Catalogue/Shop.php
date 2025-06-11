@@ -143,7 +143,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read Address|null $collectionAddress
- * @property-read LaravelCollection<int, \App\Models\Catalogue\CollectionCategory> $collectionCategories
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read \App\Models\Catalogue\ShopCommsStats|null $commsStats
  * @property-read Country $country
@@ -511,11 +510,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function senderEmail(): BelongsTo
     {
         return $this->belongsTo(SenderEmail::class);
-    }
-
-    public function collectionCategories(): HasMany
-    {
-        return $this->hasMany(CollectionCategory::class);
     }
 
     public function collections(): MorphToMany

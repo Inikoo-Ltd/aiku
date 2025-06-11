@@ -681,7 +681,7 @@ trait WithEbayApiRequest
         }
     }
 
-        /**
+    /**
      * Get user's eBay inventory location
      */
     public function getInventoryLocations()
@@ -695,7 +695,7 @@ trait WithEbayApiRequest
         }
     }
 
-        /**
+    /**
      * Create user's eBay inventory location
      */
     public function createInventoryLocation($locationData)

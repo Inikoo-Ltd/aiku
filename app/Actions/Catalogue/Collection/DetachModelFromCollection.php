@@ -41,9 +41,9 @@ class DetachModelFromCollection extends OrgAction
         return $this->handle($collection, $model);
     }
 
-    public function asController(Collection $collection, Product|ProductCategory $model, ActionRequest $request)
+    public function asController(Collection $collection, Product|ProductCategory $model, ActionRequest $request): Collection
     {
         $this->initialisationFromShop($collection->shop, $request);
-        $this->handle($collection, $model);
+        return $this->handle($collection, $model);
     }
 }
