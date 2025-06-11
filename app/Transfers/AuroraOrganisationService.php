@@ -22,6 +22,7 @@ use App\Transfers\Aurora\FetchAuroraBackInStockReminder;
 use App\Transfers\Aurora\FetchAuroraBarcode;
 use App\Transfers\Aurora\FetchAuroraCharge;
 use App\Transfers\Aurora\FetchAuroraClockingMachine;
+use App\Transfers\Aurora\FetchAuroraCollection;
 use App\Transfers\Aurora\FetchAuroraCredit;
 use App\Transfers\Aurora\FetchAuroraCustomer;
 use App\Transfers\Aurora\FetchAuroraCustomerClient;
@@ -614,6 +615,11 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchInvoiceCategory($id): ?array
     {
         return (new FetchAuroraInvoiceCategory($this))->fetch($id);
+    }
+
+    public function fetchCollection($id): ?array
+    {
+        return (new FetchAuroraCollection($this))->fetch($id);
     }
 
 }

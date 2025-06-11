@@ -36,7 +36,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexCollection extends OrgAction
+class IndexCollections extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithCollectionSubNavigation;

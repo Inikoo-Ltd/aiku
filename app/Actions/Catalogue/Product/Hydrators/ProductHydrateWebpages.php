@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-06-2025-13h-14m
@@ -9,7 +10,6 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;

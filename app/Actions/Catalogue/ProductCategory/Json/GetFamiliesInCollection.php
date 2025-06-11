@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-06-2025-15h-50m
@@ -47,11 +48,11 @@ class GetFamiliesInCollection extends OrgAction
         $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->join('model_has_collections', function ($join) use ($collection) {
-                $join->on('product_categories.id', '=', 'model_has_collections.model_id')
-                        ->where('model_has_collections.model_type', '=', 'ProductCategory')
-                        ->where('model_has_collections.collection_id', '=', $collection->id);
-            });
-        
+            $join->on('product_categories.id', '=', 'model_has_collections.model_id')
+                    ->where('model_has_collections.model_type', '=', 'ProductCategory')
+                    ->where('model_has_collections.collection_id', '=', $collection->id);
+        });
+
 
 
         return $queryBuilder

@@ -74,6 +74,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_collections
  * @property int $number_child_webpages_sub_type_sub_department
+ * @property int $number_products
  * @property-read \App\Models\Web\Webpage $webpage
  * @method static Builder<static>|WebpageStats newModelQuery()
  * @method static Builder<static>|WebpageStats newQuery()

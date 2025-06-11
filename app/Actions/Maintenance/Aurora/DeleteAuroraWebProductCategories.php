@@ -41,15 +41,15 @@ class DeleteAuroraWebProductCategories
     public function handle(Command $command, Organisation $organisation): void
     {
         $this->setSource($organisation);
-        $this->deleteFamilies();
-        $this->deleteDepartments();
+        $this->deleteFamilies($organisation);
+        $this->deleteDepartments($organisation);
 
 
 
 
     }
 
-    public function deleteFamilies(): void
+    public function deleteFamilies(Organisation $organisation): void
     {
         $familiesRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
             ->select('Category Key', 'Category Code', 'Category Subject')
@@ -67,7 +67,7 @@ class DeleteAuroraWebProductCategories
 
 
 
-        $families = DB::table('product_categories')->whereNotNull('source_family_id')->get()->pluck('source_family_id', 'id');
+        $families = DB::table('product_categories')->where('organisation_id',$organisation->id)->whereNotNull('source_family_id')->get()->pluck('source_family_id', 'id');
         foreach ($families as $familyKey => $sourceIDData) {
             $sourceIDData = preg_split('/:/', $sourceIDData);
 
@@ -80,7 +80,7 @@ class DeleteAuroraWebProductCategories
 
                 }
 
-                print 'F '.$family->name." $family->id  $family->source_family_id \n";
+                print 'F '.$family->name." $family->id  ".$family->source_family_id." WSource:  ".$family->webpage?->source_id." \n";
                 DB::table('products')->where('family_id', $family->id)->update(['family_id' => null]);
                 DB::table('favourites')->where('family_id', $family->id)->update(['family_id' => null]);
                 DB::table('invoice_transactions')->where('family_id', $family->id)->update(['family_id' => null]);
@@ -94,7 +94,7 @@ class DeleteAuroraWebProductCategories
 
     }
 
-    public function deleteDepartments(): void
+    public function deleteDepartments(Organisation $organisation): void
     {
         $departmentsRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
             ->select('Category Key', 'Category Code', 'Category Subject')
@@ -112,7 +112,7 @@ class DeleteAuroraWebProductCategories
 
 
 
-        $departments = DB::table('product_categories')->whereNotNull('source_department_id')->get()->pluck('source_department_id', 'id');
+        $departments = DB::table('product_categories')->where('organisation_id',$organisation->id)->whereNotNull('source_department_id')->get()->pluck('source_department_id', 'id');
         foreach ($departments as $departmentKey => $sourceIDData) {
             $sourceIDData = preg_split('/:/', $sourceIDData);
 

@@ -10,65 +10,40 @@ namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class DetachModelFromCollection extends OrgAction
 {
-    public function handle(Collection $collection, array $modelData): Collection
+    public function handle(Collection $collection, Product|ProductCategory $model): Collection
     {
-        $modelTypes = [
-            'product'    => Product::class,
-            'family'     => ProductCategory::class,
-            'department' => ProductCategory::class,
-            'collection' => Collection::class,
-        ];
 
-        foreach ($modelTypes as $key => $modelClass) {
-            $id = Arr::get($modelData, $key);
-            $model = $modelClass::find($id);
 
-            if ($model) {
-                $this->detachModel($collection, $model);
-            }
+        if ($model instanceof Product) {
+            $collection->products()->detach($model->id);
+        } else {
+            $collection->families()->detach($model->id);
         }
 
         CollectionHydrateItems::dispatch($collection);
         return $collection;
     }
 
-    private function detachModel(Collection $collection, Product|ProductCategory|Collection $model): void
-    {
-        if ($model instanceof ProductCategory) {
-            if ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $collection->departments()->detach($model->id);
-            }
 
-            if ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                $collection->families()->detach($model->id);
-            }
-        } elseif ($model instanceof Product) {
-            $collection->products()->detach($model->id);
-        } else {
-            $collection->collections()->detach($model->id);
-        }
-    }
 
-    public function action(Collection $collection, array $modelData): Collection
+    public function action(Collection $collection, Product|ProductCategory $model): Collection
     {
         $this->asAction       = true;
-        $this->initialisationFromShop($collection->shop, $modelData);
+        $this->initialisationFromShop($collection->shop, []);
 
-        return $this->handle($collection, $modelData);
+        return $this->handle($collection, $model);
     }
 
-    public function asController(Collection $collection, ActionRequest $request)
+    public function asController(Collection $collection, Product|ProductCategory $model, ActionRequest $request)
     {
         $this->initialisationFromShop($collection->shop, $request);
-        $this->handle($collection, $request->all());
+        $this->handle($collection, $model);
     }
 }

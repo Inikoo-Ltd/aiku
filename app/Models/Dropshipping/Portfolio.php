@@ -52,6 +52,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $selling_price
  * @property string $margin
  * @property string $vat_rate
+ * @property string $price_inc_vat
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer

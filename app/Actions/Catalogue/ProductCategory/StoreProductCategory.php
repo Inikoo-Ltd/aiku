@@ -75,7 +75,7 @@ class StoreProductCategory extends OrgAction
         });
 
         if ($imageData['image']) {
-            $this->processCatalogue($imageData, $productCategory);
+            $this->processCatalogueImage($imageData, $productCategory);
         }
 
         ProductCategoryRecordSearch::dispatch($productCategory);

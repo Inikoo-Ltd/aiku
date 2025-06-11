@@ -17,7 +17,7 @@ use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Service\Search\ReindexServiceSearch;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\Service\UpdateService;
-use App\Actions\Catalogue\Collection\AttachCollectionToModels;
+use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Collection\StoreCollection;
@@ -683,7 +683,7 @@ test('add items to collection', function (Collection $collection) {
         'products'    => [2]
     ];
 
-    $collection = AttachCollectionToModels::make()->action($collection, $data);
+    $collection = AttachModelsToCollection::make()->action($collection, $data);
     $collection->refresh();
     expect($collection)->toBeInstanceOf(Collection::class);
 
