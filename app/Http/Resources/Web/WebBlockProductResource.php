@@ -67,6 +67,7 @@ class WebBlockProductResource extends JsonResource
             'currency_code'   => $product->currency->code,
             'description'     => $product->description,
             'state'           => $product->state,
+            'rrp'             => $product->rrp,
             'price'           => $product->price,
             'status'           => $product->status,
             'state'           => $product->state,

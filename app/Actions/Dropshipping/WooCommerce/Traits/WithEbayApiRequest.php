@@ -598,8 +598,8 @@ trait WithEbayApiRequest
                 "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
                 ]
             ],
-            "marketplaceId" => "EBAY_US",
-            "name" => "Domestic free shipping",
+            "marketplaceId" => "EBAY_GB",
+            "name" => "Domestic shipping",
             "handlingTime" => [
                 "unit"  => "DAY",
                 "value"  => "1"
@@ -610,10 +610,10 @@ trait WithEbayApiRequest
                 "optionType" => "DOMESTIC",
                 "shippingServices" => [
                         [
-                        "buyerResponsibleForShipping" => "false",
+                        "buyerResponsibleForShipping" => "true",
                         "freeShipping" => "true",
-                        "shippingCarrierCode" => "USPS",
-                        "shippingServiceCode" => "USPSPriorityFlatRateBox"
+                        "shippingCarrierCode" => "RoyalMail",
+                        "shippingServiceCode" => "UK_RoyalMailNextDay"
                         ]
                     ]
                 ]
@@ -636,13 +636,11 @@ trait WithEbayApiRequest
     {
         $data = [
             "name" => "minimal Payment Policy",
-            "marketplaceId" => "EBAY_US",
+            "marketplaceId" => "EBAY_GB",
             "categoryTypes" => [
                 [
                 "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
                 ]
-            ],
-            "paymentMethods" => [
             ]
         ];
 
@@ -661,8 +659,8 @@ trait WithEbayApiRequest
     public function createReturnPolicy()
     {
         $data = [
-            "name" => "minimal return policy, US marketplace",
-            "marketplaceId" => "EBAY_US",
+            "name" => "minimal return policy",
+            "marketplaceId" => "EBAY_GB",
             "refundMethod" => "MONEY_BACK",
             "returnsAccepted" => true,
             "returnShippingCostPayer" => "SELLER",

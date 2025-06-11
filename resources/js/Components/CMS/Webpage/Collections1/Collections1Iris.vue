@@ -26,7 +26,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="mx-auto px-4 py-12">
+  <div class="mx-auto px-4 py-12" :style="getStyles(fieldValue.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Collections :</h2>
 
     <div v-if="fieldValue?.collections?.length">
