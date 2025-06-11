@@ -10,7 +10,6 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraDepartment extends FetchAurora

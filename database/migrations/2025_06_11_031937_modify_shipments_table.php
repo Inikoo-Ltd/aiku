@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 11 Jun 2025 12:39:28 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -10,11 +16,9 @@ return new class () extends Migration {
     {
         Schema::table('shipments', function (Blueprint $table) {
             $table->renameColumn('pdf_label', 'label');
-            $table->string('label_type')->index()->default(ShipmentLabelTypeEnum::NA->value)->after('label');
+            $table->string('label_type')->index()->default(ShipmentLabelTypeEnum::NA->value);
         });
-        DB::table('shipments')
-            ->whereNotNull('label')
-            ->update(['label_type' => ShipmentLabelTypeEnum::PDF->value]);
+
     }
 
 
