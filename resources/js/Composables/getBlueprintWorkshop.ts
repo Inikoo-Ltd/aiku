@@ -38,9 +38,10 @@ import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartement1Blueprint from "@/Components/CMS/Webpage/SubDepartement1/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
-import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint.ts'
+import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CTAVideo1/Blueprint'
+import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 
 import { data } from "autoprefixer"
 import CTAVideo1Workshop from "@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue"
@@ -102,7 +103,8 @@ export const getBlueprint = (componentName: string) => {
 		"step-1": Timeline2Bluprint.blueprint,
 		"carousel-1": Carousel1Blueprint.blueprint,
 		"cta-video-1" : CTAVideo1Blueprint.blueprint,
-		'video-1': VideoBlueprint.blueprint
+		'video-1': VideoBlueprint.blueprint,
+		'collections-1': CollectionBluprint.blueprint,
 	}
 	return components[componentName] ?? []
 }

@@ -8,9 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Collection\UI\IndexCollectionsInWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
@@ -198,9 +196,7 @@ class GetProductCategoryShowcase
             ] : [],
         ];
 
-        $data['collections'] = [
-            'data' => $productCategory?->webpage ? CollectionsResource::collection(IndexCollectionsInWebpage::run($productCategory->webpage))->resolve() : [],
-        ];
+
 
         $data['has_webpage'] = $productCategory->webpage ? true : false;
 
