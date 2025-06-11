@@ -85,6 +85,16 @@ class StoreGuest extends GrpAction
 
     public function prepareForValidation(): void
     {
+
+        if ($this->has('username')) {
+            $this->set('user.username', $this->get('username'));
+        }
+
+        if ($this->has('password')) {
+            $this->set('user.password', $this->get('password'));
+        }
+
+
         if (!$this->has('code')) {
             $this->set('code', $this->get('user.username'));
         }
@@ -205,6 +215,7 @@ class StoreGuest extends GrpAction
      */
     public function asController(ActionRequest $request): Guest
     {
+
         $this->initialisation(app('group'), $request);
 
         return $this->handle($this->group, $this->validatedData);
@@ -269,7 +280,7 @@ class StoreGuest extends GrpAction
 
         try {
             $guest = $this->handle($group, $this->validateAttributes());
-        } catch (Exception|Throwable $e) {
+        } catch (Throwable $e) {
             $command->error($e->getMessage());
 
             return 1;
