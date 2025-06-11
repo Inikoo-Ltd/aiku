@@ -21,7 +21,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSubDepartments;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollectionCategories;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCreditTransactions;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
@@ -70,7 +69,6 @@ class HydrateShops
         ShopHydrateInvoices::run($shop);
         ShopHydrateSales::run($shop);
         ShopHydrateProducts::run($shop);
-        ShopHydrateCollectionCategories::run($shop);
         ShopHydrateCollections::run($shop);
         ShopHydrateAssets::run($shop);
         ShopHydrateVariants::run($shop);

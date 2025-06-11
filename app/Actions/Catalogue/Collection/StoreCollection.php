@@ -18,7 +18,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\CollectionCategory;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Location;
@@ -37,12 +36,10 @@ class StoreCollection extends OrgAction
     use WithImageCatalogue;
     use WithNoStrictRules;
 
-    public function handle(Shop|CollectionCategory|ProductCategory $parent, array $modelData): Collection
+    public function handle(Shop|ProductCategory $parent, array $modelData): Collection
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
-        if ($parent instanceof CollectionCategory) {
-            $shop = $parent->shop;
-        } elseif ($parent instanceof ProductCategory) {
+        if ($parent instanceof ProductCategory) {
             $shop = $parent->shop;
         } else {
             $shop = $parent;
@@ -88,7 +85,7 @@ class StoreCollection extends OrgAction
                 'max:32',
                 new AlphaDashDot(),
                 new IUnique(
-                    table: 'collection_categories',
+                    table: 'collections',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
                         ['column' => 'deleted_at', 'operator' => 'notNull'],
@@ -113,13 +110,13 @@ class StoreCollection extends OrgAction
         return $rules;
     }
 
-    public function action(Shop|CollectionCategory|ProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Collection
+    public function action(Shop|ProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Collection
     {
         if (!$audit) {
             Location::disableAuditing();
         }
 
-        if ($parent instanceof CollectionCategory || $parent instanceof ProductCategory) {
+        if ($parent instanceof ProductCategory) {
             $shop = $parent->shop;
         } else {
             $shop = $parent;

@@ -22,8 +22,6 @@ use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
-use App\Actions\Catalogue\CollectionCategory\StoreCollectionCategory;
-use App\Actions\Catalogue\CollectionCategory\UpdateCollectionCategory;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
@@ -56,7 +54,6 @@ use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\CollectionCategory;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -541,27 +538,9 @@ test('update service', function (Service $service) {
     return $service;
 })->depends('create service');
 
-test('create collection category', function ($shop) {
-    $collectionCategory = StoreCollectionCategory::make()->action(
-        $shop,
-        [
-            'code'        => 'AAA',
-            'name'        => 'Cat one aaa',
-            'description' => 'Cat one aaa description'
-        ]
-    );
-    $shop->refresh();
-    expect($collectionCategory)->toBeInstanceOf(CollectionCategory::class)
-        ->and($shop->stats->number_collection_categories)->toBe(1)
-        ->and($shop->organisation->catalogueStats->number_collection_categories)->toBe(1)
-        ->and($shop->group->catalogueStats->number_collection_categories)->toBe(1);
-
-
-    return $collectionCategory;
-})->depends('create shop');
 
 test('create collection', function ($shop) {
-    $collectionCategory = StoreCollection::make()->action(
+    $collection = StoreCollection::make()->action(
         $shop,
         [
             'code'        => 'MyFColl',
@@ -570,35 +549,15 @@ test('create collection', function ($shop) {
         ]
     );
     $shop->refresh();
-    expect($collectionCategory)->toBeInstanceOf(Collection::class)
+    expect($collection)->toBeInstanceOf(Collection::class)
         ->and($shop->stats->number_collections)->toBe(1)
         ->and($shop->organisation->catalogueStats->number_collections)->toBe(1)
         ->and($shop->group->catalogueStats->number_collections)->toBe(1);
 
 
-    return $collectionCategory;
+    return $collection;
 })->depends('create shop');
 
-test('create collection in a collection category', function (CollectionCategory $collectionCategory) {
-    $collection = StoreCollection::make()->action(
-        $collectionCategory,
-        [
-            'code'        => 'BBB',
-            'name'        => 'Cat two bbb',
-            'description' => 'Cat two bbb description'
-        ]
-    );
-
-    $collectionCategory->refresh();
-    expect($collection)->toBeInstanceOf(Collection::class)
-        ->and($collectionCategory->stats->number_collections)->toBe(1)
-        ->and($collectionCategory->shop->stats->number_collections)->toBe(2)
-        ->and($collectionCategory->organisation->catalogueStats->number_collections)->toBe(2)
-        ->and($collectionCategory->group->catalogueStats->number_collections)->toBe(2);
-
-
-    return $collection;
-})->depends('create collection category');
 
 test('update collection', function ($collection) {
     expect($collection->name)->not->toBe('Updated Collection Name');
@@ -614,19 +573,7 @@ test('update collection', function ($collection) {
     return $collection;
 })->depends('create collection');
 
-test('update collection category', function ($collectionCategory) {
-    expect($collectionCategory->name)->not->toBe('Updated Collection Category Name');
 
-    $collectionCategoryData = [
-        'name'        => 'Updated Collection Category Name',
-        'description' => 'Updated Collection Category Description',
-    ];
-    $collectionCategory     = UpdateCollectionCategory::make()->action($collectionCategory, $collectionCategoryData);
-
-    expect($collectionCategory->name)->toBe('Updated Collection Category Name');
-
-    return $collectionCategory;
-})->depends('create collection category');
 
 test('create charge', function ($shop) {
     $charge = StoreCharge::make()->action(
@@ -677,27 +624,31 @@ test('update charge', function ($charge) {
 
 test('add items to collection', function (Collection $collection) {
     $data = [
-        'collections' => [2],
-        'departments' => [1, 3],
         'families'    => [4],
         'products'    => [2]
     ];
 
     $collection = AttachModelsToCollection::make()->action($collection, $data);
     $collection->refresh();
-    expect($collection)->toBeInstanceOf(Collection::class);
+    expect($collection)->toBeInstanceOf(Collection::class)
+        ->and($collection->stats->number_families)->toBe(1);
 
     return $collection;
 })->depends('update collection');
 
 test('remove items to collection', function (Collection $collection) {
-    $collection = DetachModelFromCollection::make()->action($collection, [
-        'department' => 1
-    ]);
+
+    /** @var ProductCategory  $family */
+    $family = ProductCategory::find(4);
+
+    $collection = DetachModelFromCollection::make()->action(
+        $collection,
+        $family
+    );
     $collection->refresh();
 
     expect($collection)->toBeInstanceOf(Collection::class)
-        ->and($collection->stats->number_departments)->toBe(1);
+        ->and($collection->stats->number_families)->toBe(0);
 
 })->depends('add items to collection');
 

@@ -123,90 +123,7 @@ class ShowCatalogue extends OrgAction
                     ],
 
                 ],
-                //                'dashboard'   => [
-                //                    'departments'     => $departmentsData,
-                //                    'sub_departments' => [
-                //                        [
-                //                            'label' => __('Current Sub Departments'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_current_sub_departments,
-                //                        ],
-                //                        [
-                //                            'label' => __('Active Sub Departments'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_sub_departments_state_active,
-                //                        ],
-                //                        [
-                //                            'label' => __('Discontinued Sub Departments'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_sub_departments_state_discontinued,
-                //                        ],
-                //                        [
-                //                            'label' => __('Discontinuing Sub Departments'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_sub_departments_state_discontinuing,
-                //                        ],
-                //                        [
-                //                            'label' => __('Sub Departments In Process'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_sub_departments_state_in_process,
-                //                        ],
-                //                    ],
-                //                    'families'        => [
-                //                        [
-                //                            'label' => __('Families'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_families,
-                //                        ],
-                //                        [
-                //                            'label' => __('Current Families'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_current_families,
-                //                        ],
-                //                        [
-                //                            'label' => __('Discontinuing Families'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_families_state_discontinuing,
-                //                        ],
-                //                        [
-                //                            'label' => __('Families In Process'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_families_state_in_process,
-                //                        ],
-                //                    ],
-                //                    'products'        => [
-                //                        [
-                //                            'label' => __('Products'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_products,
-                //                        ],
-                //                        [
-                //                            'label' => __('Current Products'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_current_products,
-                //                        ],
-                //                        [
-                //                            'label' => __('Products In Process'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_products_state_in_process,
-                //                        ],
-                //                        [
-                //                            'out_of_stock' => $percentageWithZeroQuantity
-                //                        ]
-                //                    ],
-                //                    'collections'     => [
-                //                        [
-                //                            'label' => __('Collection'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_collections,
-                //                        ],
-                //                        [
-                //                            'label' => __('Collection Categories'),
-                //                            'icon'  => 'fal fa-folder-tree',
-                //                            'value' => $shop->stats->number_collection_categories,
-                //                        ],
-                //                    ],
-                //                ],
+
                 'top_selling' => [
                     'family'     => [
                         'label' => __('Top Family'),
@@ -489,15 +406,6 @@ class ShowCatalogue extends OrgAction
                         'icon'  => 'fal fa-album-collection',
                         "color" => "#4f46e5",
                         'value' => $shop->stats->number_collections,
-                        'metas' => [
-                            [
-                                'tooltip' => __('Collection Categories'),
-                                'icon'    => [
-                                    'icon' => 'fal fa-album-collection'
-                                ],
-                                'count'   => $shop->stats->number_collection_categories,
-                            ],
-                        ]
                     ],
                 ]
 

@@ -14,7 +14,9 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('website_stats', function (Blueprint $table) {
-            $table->unsignedSmallInteger('number_webpages_sub_type_sub_department')->default(0);
+            if (!Schema::hasColumn('website_stats', 'number_webpages_sub_type_sub_department')) {
+                $table->unsignedSmallInteger('number_webpages_sub_type_sub_department')->default(0);
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('website_stats', function (Blueprint $table) {
-            $table->dropColumn('number_webpages_sub_type_sub_department');
+            if (Schema::hasColumn('website_stats', 'number_webpages_sub_type_sub_department')) {
+                $table->dropColumn('number_webpages_sub_type_sub_department');
+            }
         });
     }
 };
