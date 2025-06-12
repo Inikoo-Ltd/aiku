@@ -39,6 +39,7 @@ class IndexProductsInTradeUnit extends OrgAction
                 ->where('model_has_trade_units.model_type', class_basename(Product::class));
         });
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
+        $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
         $queryBuilder
             ->defaultSort('products.code')

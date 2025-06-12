@@ -38,7 +38,7 @@ class SubDepartmentHydrateProducts
     public function handle(ProductCategory $subDepartment): void
     {
         $stats = [
-            'number_products' => $subDepartment->getProducts()->where('is_main', true)->count()
+            'number_products' => $subDepartment->getproducts()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
         ];
 
         $stats = array_merge(
