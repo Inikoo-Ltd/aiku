@@ -490,14 +490,12 @@ watch(filterBlock, (newValue) => {
 	sendToIframe({ key: 'isPreviewLoggedIn', value: newValue })
 })
 
-const sycAurira = ref(false)
 
 
 const SyncAurora = () => {
-	console.log(sycAurira.value)
-/* 	router.patch(
-		route('grp.models.model_has_web_block.bulk.update'),
-		{ web_blocks: block },
+	router.patch(
+		route(props.webpage.route_webpage_edit.name,props.webpage.route_webpage_edit.parameters),
+		{ allow_fetch: props.webpage.allow_fetching },
 		{
 			onStart: () => {
 				console.log('========== start save ')
@@ -519,7 +517,7 @@ const SyncAurora = () => {
 			},
 			preserveScroll: true,
 		}
-	); */
+	);
 }
 
 console.log('webpage workshop props :',props)
@@ -589,7 +587,7 @@ console.log('webpage workshop props :',props)
 				<div class="flex items-center px-3">
 					<div class="flex items-center gap-2 px-3 text-sm text-gray-700">
 						<label for="sync-toggle">Sync with aurora</label>
-						<ToggleSwitch id="sync-toggle" v-model="sycAurira" @update:modelValue="(e)=>SyncAurora(e)" />
+						<ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetching" @update:modelValue="(e)=>SyncAurora(e)" />
 					</div>
 
 				</div>
