@@ -82,6 +82,10 @@ class GetProductCategoryShowcase
         } else {
             $data = [
                 'family' => FamilyResource::make($productCategory),
+                'departments' => $productCategory->shop->productCategories()
+                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                    ->get(['id', 'name'])
+                    ->toArray(),
             ];
             if ($routeName == 'grp.org.shops.show.catalogue.families.show') {
                 $data['routeList'] = [
