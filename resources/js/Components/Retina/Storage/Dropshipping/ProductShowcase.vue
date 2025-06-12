@@ -18,10 +18,37 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 
 import axios from "axios"
 import { router } from '@inertiajs/vue3'
+import { Image as ImageTS } from "@/types/Image"
+import { routeType } from "@/types/route"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { trans } from "laravel-vue-i18n"
 library.add(faCircle, faTrash)
 
 const props = defineProps<{
-    data: {}
+    data: {
+        imagesUploadedRoutes: routeType
+        stockImagesRoute: routeType
+        deleteImageRoute: routeType
+        attachImageRoute: routeType
+        uploadImageRoute: routeType
+        product: {
+            data: {
+                id: number,
+                slug: string,
+                image_id: number | null,
+                code: string,
+                name: string,
+                price: string,
+                currency_code: string,
+                description: string | null,
+                state: string,
+                created_at: string,
+                updated_at: string,
+                images: ImageTS
+                image_thumbnail: string | null
+            }
+        }
+    }
 }>()
 
 
@@ -30,14 +57,14 @@ const openGallery = ref(false)
 const selectedImage = ref(0)
 
 
-const stats = [
-    { name: '2024', stat: '71,897', previousStat: '70,946', change: '12%', changeType: 'increase' },
-    { name: '2023', stat: '58.16%', previousStat: '56.14%', change: '2.02%', changeType: 'increase' },
-    { name: '2022', stat: '24.57%', previousStat: '28.62%', change: '4.05%', changeType: 'decrease' },
-    { name: '2021', stat: '71,897', previousStat: '70,946', change: '12%', changeType: 'increase' },
-    { name: '2020', stat: '58.16%', previousStat: '56.14%', change: '2.02%', changeType: 'increase' },
-    { name: '2019', stat: '24.57%', previousStat: '28.62%', change: '4.05%', changeType: 'decrease' },
-]
+// const stats = [
+//     { name: '2024', stat: '71,897', previousStat: '70,946', change: '12%', changeType: 'increase' },
+//     { name: '2023', stat: '58.16%', previousStat: '56.14%', change: '2.02%', changeType: 'increase' },
+//     { name: '2022', stat: '24.57%', previousStat: '28.62%', change: '4.05%', changeType: 'decrease' },
+//     { name: '2021', stat: '71,897', previousStat: '70,946', change: '12%', changeType: 'increase' },
+//     { name: '2020', stat: '58.16%', previousStat: '56.14%', change: '2.02%', changeType: 'increase' },
+//     { name: '2019', stat: '24.57%', previousStat: '28.62%', change: '4.05%', changeType: 'decrease' },
+// ]
 
 const product = ref({
     images: props.data.product.data.images,
@@ -83,12 +110,12 @@ function changeSelectedImage(index) {
 
 
 <template>
-    <div class="grid grid-cols-4 gap-x-1 gap-y-4">
-        <div class="p-5 space-y-5">
+    <div class="grid grid-cols-4 gap-x-1 gap-y-4 p-4">
+        <div class="p-5 space-y-5 col-span-2">
             <div class="relative">
                 <div class=" h-full aspect-square rounded-lg shadow">
                     <TabGroup as="div" class="flex flex-col-reverse p-2.5" :selectedIndex="selectedImage"
-                        @change="changeSelectedImage">
+                        achange="changeSelectedImage">
                         <div class="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
                             <TabList class="grid grid-cols-3 gap-6">
                                 <Tab v-for="(image, index) in product.images" :key="image.id"
@@ -108,7 +135,6 @@ function changeSelectedImage(index) {
                                         @click.stop="deleteImage(image, index)" />
                                 </Tab>
                             </TabList>
-
                         </div>
 
                         <TabPanels class="overflow-hidden duration-300">
@@ -128,7 +154,7 @@ function changeSelectedImage(index) {
                                 <TabPanel>
                                     <EmptyState
                                         :data="{ title: 'You don\'t have any images', description: 'Click to upload' }"
-                                        @click="openGallery = true" class="cursor-pointer hover:bg-gray-50" />
+                                        aclick="openGallery = true" xclass="cursor-pointer hover:bg-gray-50" />
                                 </TabPanel>
                             </template>
                         </TabPanels>
@@ -136,46 +162,40 @@ function changeSelectedImage(index) {
                     </TabGroup>
                 </div>
             </div>
-
-            <!-- Order summary -->
-            <section aria-labelledby="summary-heading"
-                class="border border-gray-200 rounded-lg px-4 py-6 sm:p-4 lg:mt-0 lg:p-5">
-                <h2 id="summary-heading" class="text-lg font-medium">Product summary</h2>
-
-                <dl class="mt-6 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <dt class="text-sm text-gray-600">Added date</dt>
-                        <dd class="text-sm font-medium">{{ product.created_at }}</dd>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <dt class="text-sm text-gray-600">Stock</dt>
-                        <dd class="text-sm font-medium">24 pcs</dd>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <dt class="text-sm text-gray-600">Cost</dt>
-                        <dd class="text-sm font-medium">{{ locale.currencyFormat('usd', 8.80) }}</dd>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <dt class="text-sm text-gray-600">Price</dt>
-                        <dd class="text-sm font-medium text-right">{{ locale.currencyFormat('usd', product.price) }}
-                            <span class="font-light">margin (45.0%)</span>
-                        </dd>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <dt class="text-sm text-gray-600">RRP</dt>
-                        <dd class="text-sm font-medium text-right">{{ locale.currencyFormat('usd', 2.95) }} <span
-                                class="font-light">margin (66.1%)</span></dd>
-                    </div>
-                </dl>
-            </section>
         </div>
 
+        <!-- Order summary -->
+        <section aria-labelledby="summary-heading"
+            class="col-span-2 xborder xborder-gray-200 rounded-lg px-4 py-6 sm:p-4 lg:mt-0 lg:p-5">
+            <!-- <h2 id="summary-heading" class="text-lg font-medium">{{ trans("Product summary") }}</h2> -->
+
+            <dl class="mt-6 space-y-8">
+                <div class="flex flex-col">
+                    <dt class="text-sm text-gray-500">{{ trans("Name") }}</dt>
+                    <dd class="font-bold text-lg ">{{ data?.product?.data?.name ?? '-' }}</dd>
+                </div>
+
+                <div class="flex flex-col">
+                    <dt class="text-sm text-gray-500">{{ trans("Added date") }}</dt>
+                    <dd class="text-sm font-medium">{{ useFormatTime(data?.product?.data?.created_at) }}</dd>
+                </div>
+
+                <div class="flex flex-col">
+                    <dt class="text-sm text-gray-500">{{ trans("Price") }}</dt>
+                    <dd class="text-sm font-medium">{{ locale.currencyFormat(data?.product?.data?.currency_code, data?.product?.data?.price) }}</dd>
+                </div>
+
+                <div class="flex flex-col">
+                    <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
+                    <dd class="text-sm font-medium">{{ data?.product?.data?.description ?? '-' }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <!-- <pre>{{data}}</pre> -->
+
         <!-- Revenue -->
-        <div class="pt-8 p-4 col-span-3">
+        <!-- <div class="pt-8 p-4 col-span-3">
             <h3 class="text-base font-semibold leading-6">All sales since: Mon 20 August 2007</h3>
             <dl class="mt-5 grid grid-cols-1 overflow-hidden rounded bg-white md:grid-cols-3 md:gap-x-2 md:gap-y-4">
                 <div v-for="item in stats" :key="item.name" class="px-4 py-5 sm:p-6 border border-gray-200 rounded-md">
@@ -199,7 +219,7 @@ function changeSelectedImage(index) {
                     </dd>
                 </div>
             </dl>
-        </div>
+        </div> -->
     </div>
 
 
