@@ -64,14 +64,14 @@ class ShowRetinaProduct extends RetinaAction
                             'title' => __('product')
                         ],
                     'actions' => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
+                        // [
+                        //     'type'  => 'button',
+                        //     'style' => 'edit',
+                        //     'route' => [
+                        //         'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                        //         'parameters' => $request->route()->originalParameters()
+                        //     ]
+                        // ]
 
                     ]
                 ],
