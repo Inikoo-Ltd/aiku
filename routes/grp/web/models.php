@@ -15,7 +15,7 @@ use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
-use App\Actions\Catalogue\Collection\AttachCollectionsToModel;
+use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
@@ -800,7 +800,7 @@ Route::name('product_category.')->group(function () {
         Route::post('{collection:id}/attach-collection', AttachCollectionToModel::class)->name('collection.attach');
         Route::delete('{collection:id}/detach-collection', DetachCollectionFromModel::class)->name('collection.detach');
     });
-    Route::post('{collection:id}/attach-parents', AttachCollectionsToModel::class)->name('collection.attach_parents');
+    Route::post('{collection:id}/attach-parents', AttachMultipleParentsToACollection::class)->name('collection.attach_parents');
 });
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
