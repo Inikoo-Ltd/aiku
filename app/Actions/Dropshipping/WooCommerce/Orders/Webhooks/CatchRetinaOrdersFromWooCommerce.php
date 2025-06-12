@@ -34,7 +34,7 @@ class CatchRetinaOrdersFromWooCommerce extends OrgAction
                 ->customerSalesChannel
                 ?->orders()
                 ->pluck('data')
-                ->map(fn ($data) => $data['order_key'] ?? null)
+                ->map(fn ($data) => Arr::get($data, 'order_key'))
                 ->filter()
                 ->toArray();
 
@@ -62,6 +62,6 @@ class CatchRetinaOrdersFromWooCommerce extends OrgAction
     {
         $this->initialisation($wooCommerceUser->organisation, $request);
 
-        $this->handle($wooCommerceUser, $request->all());
+        $this->handle($wooCommerceUser);
     }
 }
