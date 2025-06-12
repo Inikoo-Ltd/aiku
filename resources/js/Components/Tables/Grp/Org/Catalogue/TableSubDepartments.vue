@@ -89,7 +89,7 @@ const familyRoute = (item, family) => {
             </Link>
         </template>
 
-        <template #cell(families)="{ item }">
+        <!-- <template #cell(families)="{ item }">
             <div v-if="item.families?.length" class="flex flex-wrap gap-2 max-w-2xl items-center">
                 <div>{{ item.families.length }} Families:</div>
                 <template v-for="(family, index) in item.families"
@@ -110,6 +110,6 @@ const familyRoute = (item, family) => {
             <div class="text-gray-500" v-else>
                 -
             </div>
-        </template>
+        </template> -->
     </Table>
 </template>
