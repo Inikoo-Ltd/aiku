@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Catalogue\DepartmentResource;
+use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -108,8 +110,8 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
-            'parent_depertments' => $collection->departments(),
-            'parent_subdepartments' => $collection->subdepartments(),
+            'parent_departments' => DepartmentResource::collection($collection->departments)->toArray(request()),
+            'parent_subdepartments' => SubDepartmentResource::collection($collection->subdepartments)->toArray(request()),
 
             'routes' => [
                 'parent_departments_route' => [
