@@ -79,6 +79,21 @@ class EditFamily extends OrgAction
 
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
+        $departmentIdFormData = [];
+
+        if ($family?->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $departmentIdFormData['department_id'] = [
+                'type'     => 'select',
+                'label'    => __('type'),
+                'required' => true,
+                'options'  => $family->shop->productCategories()
+                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                    ->get(['id as value', 'name as label'])
+                    ->toArray(),
+                'value'   =>  $family->parent_id,
+            ];
+
+        }
         return Inertia::render(
             'EditModel',
             [
@@ -105,7 +120,7 @@ class EditFamily extends OrgAction
                         ]
                     ]
                 ],
-               
+
                 'formData' => [
                     'blueprint' => [
                         [
@@ -126,18 +141,7 @@ class EditFamily extends OrgAction
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
                                 ],
-                                
-                                'type' => [
-                                    'type'     => 'select',
-                                    'label'    => __('type'),
-                                    'required' => true,
-                                    'options'  => $family->shop->productCategories()
-                                        ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
-                                        ->get(['id', 'name'])
-                                        ->toArray(),
-                                    'required' => true,
-                                     "value"   =>  $family->parent_id,
-                                ],
+                                ...$departmentIdFormData
                             ]
                         ]
 
