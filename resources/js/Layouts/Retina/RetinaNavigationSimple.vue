@@ -7,7 +7,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link } from "@inertiajs/vue3";
 import { capitalize } from "@/Composables/capitalize";
 import { isNavigationActive } from "@/Composables/useUrl";
-import { onMounted, ref, onUnmounted } from "vue";
+import { onMounted, ref, onUnmounted, inject } from "vue";
 import RetinaTopBarSubsections from "@/Layouts/Retina/RetinaTopBarSubsections.vue";
 import { faRoute, faTachometerAlt, faFileInvoiceDollar, faHandHoldingBox, faPallet } from "@fal";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -19,7 +19,7 @@ const props = defineProps<{
     nav: Navigation
 }>();
 
-
+const locale = inject('locale', {})
 const layout = useLayoutStore()
 const isTopMenuActive = ref(false)
 const isLoading = ref(false)
@@ -39,7 +39,7 @@ onUnmounted(() => {
 // }
 
 const activeClass = `bg-[${layout.app?.theme[3]}] text-[${layout.app?.theme[0]}]`
-const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]}`
+const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]}]`
 </script>
 
 <template>
@@ -74,13 +74,14 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
                 </span>
             </Transition>
 
-            <div v-if="nav.right_label" class="h-4 w-4 rounded-full flex justify-center items-center text-xs"
+            <div v-if="nav.right_label" class="h-4 w-4 rounded-full flex justify-center items-center text-xs tabular-nums pr-2"
                 :class="[
                     isNavigationActive(layout.currentRoute, props.nav.root) ? activeClass : inactiveClass,
                 ]"
                 v-tooltip="nav.right_label.tooltip"
             >
-                {{ nav.right_label.label }}
+                <span v-if="nav.right_label.label">{{ nav.right_label.label }}</span>
+                <span v-if="nav.right_label.number">{{ locale.number(nav.right_label.number) }}</span>
                 <FontAwesomeIcon v-if="nav.right_label.is_important" icon="fas fa-asterisk" class="text-red-500 text-[5px]" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="nav.right_label.icon" :icon="nav.right_label.icon" fixed-width aria-hidden="true" />
             </div>
