@@ -83,9 +83,9 @@ const onUnchecked = (itemId: number) => {
 			</div>
         </template>
 
-		<template #cell(slug)="{ item: product }">
-			<Link :href="productRoute(product)" class="primaryLink">
-				{{ product["slug"] }}
+		<template #cell(code)="{ item: product }">
+			<Link :href="productRoute(product)" class="primaryLink whitespace-nowrap">
+				{{ product["code"] }}
 			</Link>
         </template>
 
@@ -110,7 +110,7 @@ const onUnchecked = (itemId: number) => {
 			</div>
 		</template>
 
-		<!-- Column: Price -->
+		<!-- Column: RPP -->
 		<template #cell(customer_price)="{ item }">
 			<div>
 				{{ locale.currencyFormat(item.currency_code, item.customer_price) }}
@@ -123,16 +123,18 @@ const onUnchecked = (itemId: number) => {
         </template>
 
 		<template #cell(actions)="{ item }">
-			<ButtonWithLink
-				v-tooltip="trans('Unselect portfolio')"
-				type="negative"
-				icon="fal fa-trash-alt"
-				:routeTarget="item.delete_portfolio"
-				size="s"
-				:bindToLink="{
-					preserveScroll: true,
-				}"
-			/>
+			<div class="mx-auto">
+				<ButtonWithLink
+					v-tooltip="trans('Unselect portfolio')"
+					type="negative"
+					icon="fal fa-trash-alt"
+					:routeTarget="item.delete_portfolio"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+				/>
+			</div>
 		</template>
 	</Table>
 </template>
