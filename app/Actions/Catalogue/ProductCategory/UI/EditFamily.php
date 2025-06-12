@@ -30,14 +30,14 @@ class EditFamily extends OrgAction
         if ($this->parent instanceof Organisation) {
             $this->canEdit = $request->user()->authTo(
                 [
-                    'org-supervisor.'.$this->organisation->id,
+                    'org-supervisor.' . $this->organisation->id,
                 ]
             );
 
             return $request->user()->authTo(
                 [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
+                    'org-supervisor.' . $this->organisation->id,
+                    'shops-view' . $this->organisation->id,
                 ]
             );
         } else {
@@ -105,11 +105,7 @@ class EditFamily extends OrgAction
                         ]
                     ]
                 ],
-                'data_department' => $family->shop->productCategories()
-                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
-                    ->get(['id', 'name'])
-                    ->toArray(),
-                'selected_department' => $family->parent_id,
+               
                 'formData' => [
                     'blueprint' => [
                         [
@@ -129,6 +125,18 @@ class EditFamily extends OrgAction
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
+                                ],
+                                
+                                'type' => [
+                                    'type'     => 'select',
+                                    'label'    => __('type'),
+                                    'required' => true,
+                                    'options'  => $family->shop->productCategories()
+                                        ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                                        ->get(['id', 'name'])
+                                        ->toArray(),
+                                    'required' => true,
+                                     "value"   =>  $family->parent_id,
                                 ],
                             ]
                         ]
@@ -156,7 +164,7 @@ class EditFamily extends OrgAction
             $family,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 
@@ -164,7 +172,6 @@ class EditFamily extends OrgAction
     {
         $previous = ProductCategory::where('code', '<', $family->code)->orderBy('code', 'desc')->first();
         return $this->getNavigation($previous, $request->route()->getName());
-
     }
 
     public function getNext(ProductCategory $family, ActionRequest $request): ?array
