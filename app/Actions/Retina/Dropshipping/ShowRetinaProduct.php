@@ -15,6 +15,7 @@ use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -32,7 +33,7 @@ class ShowRetinaProduct extends RetinaAction
 
     public function asController(Product $product, ActionRequest $request): Product
     {
-        $this->initialisation($request)->withTab(ProductTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaProductTabsEnum::values());
 
         return $this->handle($product);
     }
@@ -40,7 +41,7 @@ class ShowRetinaProduct extends RetinaAction
     public function inPlatform(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): Product
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisation($request)->withTab(ProductTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaProductTabsEnum::values());
 
         return $this->handle($product);
     }
@@ -76,11 +77,11 @@ class ShowRetinaProduct extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
+                    'navigation' => RetinaProductTabsEnum::navigation()
                 ],
 
 
-                ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
+                RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
