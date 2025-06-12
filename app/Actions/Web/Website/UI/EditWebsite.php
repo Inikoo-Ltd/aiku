@@ -317,7 +317,9 @@ class EditWebsite extends OrgAction
                     ],
                 ]
             ];
-            $blueprints[] = [
+        }
+
+         $blueprints[] = [
                 'label'  => __('Script'),
                 'icon'   => 'fa-light fa-code',
                 'fields' => [
@@ -329,7 +331,6 @@ class EditWebsite extends OrgAction
                     ],
                 ]
             ];
-        }
 
 
         return Inertia::render(
