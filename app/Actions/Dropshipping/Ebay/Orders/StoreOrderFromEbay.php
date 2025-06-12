@@ -50,7 +50,7 @@ class StoreOrderFromEbay extends OrgAction
         }
 
         $ebayUserHasProductExists = $ebayUser->customerSalesChannel->portfolios()
-            ->whereIn('platform_product_id', $ebayProducts->pluck('product_id'))->exists();
+            ->whereIn('platform_product_id', $ebayProducts->pluck('legacyItemId'))->exists();
 
         if ($ebayUserHasProductExists) {
             $order = StoreOrder::make()->action($ebayUser->customer, [
