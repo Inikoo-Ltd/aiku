@@ -29,20 +29,20 @@ const isModalCreateOpen = ref(false)
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-collection="{ action }">
+       <!--  <template #button-collection="{ action }">
             <Button
                 :label="action.label"
                 :icon="action.icon"
                 :style="action.style"
                 @click="isModalCreateOpen = true"
             />
-        </template>
+        </template> -->
     </PageHeading>
     <TableCollections :data="data" />
 
-    <Modal :isOpen="isModalCreateOpen" @close="isModalCreateOpen = false" width="w-full max-w-3xl">
+    <!-- <Modal :isOpen="isModalCreateOpen" @close="isModalCreateOpen = false" width="w-full max-w-3xl">
         <ModalCreateModel
             :formData
         />
-    </Modal>
+    </Modal> -->
 </template>

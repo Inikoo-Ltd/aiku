@@ -296,7 +296,7 @@ const UnassignCollection = async (id: number) => {
       </div>
 
       <!-- Right: Collection List -->
-      <CollectionList  v-if="data.has_webpage"
+     <!--  <CollectionList  v-if="data.has_webpage"
         :collections="props.data.collections.data"
         :routeFetch="props.data.routeList.collections_route"
         :canAdd="true"
@@ -304,7 +304,7 @@ const UnassignCollection = async (id: number) => {
         :isSubmitting="isLoadingSubmit"
         @assign="assignCollection"
         @unassign="UnassignCollection"
-      />
+      /> -->
     </div>
   </div>
 </template>
