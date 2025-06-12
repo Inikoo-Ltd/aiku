@@ -185,7 +185,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'is_in_basket' => OrderStateEnum::CREATING == $order->state,
                 'balance'      => $order->customer?->balance,
                 'total_to_pay' => max(0, $order->total_amount - $order->customer->balance),
-
+                'total_products'    => $order->stats->number_item_transactions,
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
                     fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))

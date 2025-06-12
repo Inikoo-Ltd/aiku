@@ -3,7 +3,7 @@ import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, onMounted, ref } from "vue"
+import { computed, inject, onMounted, ref } from "vue"
 import type { Component } from "vue"
 import { data } from "autoprefixer";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -18,6 +18,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import { Head } from "@inertiajs/vue3"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { routeType } from "@/types/route"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -34,6 +36,9 @@ const props = defineProps<{
     }
     balance: string
     total_amount: string
+    routes: {
+        back_to_basket: routeType
+    }
 }>()
 
 // console.log('prporpor', props)
@@ -42,6 +47,9 @@ const currentTab = ref({
     index: 0,
     key: props.paymentMethods?.[0]?.key
 })
+
+const layout = inject('layout', retinaLayoutStructure)
+console.log('layout', layout.retina.type)
 
 const component = computed(() => {
     const components: Component = {
@@ -140,6 +148,15 @@ const component = computed(() => {
 
         <div class="xflex xjustify-end gap-x-4 mt-4 px-10">
             <ButtonWithLink
+                v-if="layout.retina.type === 'dropshipping'"
+                :icon="faArrowLeft"
+                type="tertiary"
+                label="Back to basket"
+                :routeTarget="routes.back_to_basket"
+            />
+
+            <ButtonWithLink
+                v-else
                 :icon="faArrowLeft"
                 type="tertiary"
                 label="Back to basket"
