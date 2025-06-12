@@ -55,7 +55,10 @@ class FetchAuroraProduct extends FetchAurora
         if ($this->auroraModelData->{'Product Customer Key'}) {
             $customer               = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Product Customer Key'});
             $exclusiveForCustomerID = $customer->id;
-        } else {
+
+
+
+
         }
 
 

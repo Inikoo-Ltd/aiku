@@ -50,6 +50,10 @@ class IndexProducts extends OrgAction
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
+
+        $queryBuilder->whereNull('products.exclusive_for_customer_id');
+
+
         if ($bucket == 'current') {
             $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
             foreach (IndexProductsInCatalogue::make()->getElementGroups($shop, $bucket) as $key => $elementGroup) {
