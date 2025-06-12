@@ -108,6 +108,8 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
+            'parent_depertments' => $collection->departments(),
+            'parent_subdepartments' => $collection->subdepartments(),
 
             'routes' => [
                 'parent_departments_route' => [
