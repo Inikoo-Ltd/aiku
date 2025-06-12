@@ -35,7 +35,7 @@ class StoreOrderFromEbay extends OrgAction
      */
     public function handle(EbayUser $ebayUser, array $modelData): void
     {
-        $deliveryAttributes = $this->getAttributes(Arr::get($modelData, 'buyer.buyerRegistrationAddress'));
+        $deliveryAttributes = $this->getAttributes(Arr::get($modelData, 'fulfillmentStartInstructions.0.shippingStep.shipTo'));
         $deliveryAddress = Arr::get($deliveryAttributes, 'address');
 
         $billingAddress = $ebayUser->customer->address->getFields();
@@ -50,7 +50,7 @@ class StoreOrderFromEbay extends OrgAction
         }
 
         $ebayUserHasProductExists = $ebayUser->customerSalesChannel->portfolios()
-            ->whereIn('platform_product_id', $ebayProducts->pluck('product_id'))->exists();
+            ->whereIn('platform_product_id', $ebayProducts->pluck('legacyItemId'))->exists();
 
         if ($ebayUserHasProductExists) {
             $order = StoreOrder::make()->action($ebayUser->customer, [

@@ -43,7 +43,7 @@ class DepartmentResource extends JsonResource
 
         return [
             'slug' => $department->slug,
-
+            'id' => $department->id,
             'code'             => $department->code,
             'name'             => $department->name,
             'state'            => [
