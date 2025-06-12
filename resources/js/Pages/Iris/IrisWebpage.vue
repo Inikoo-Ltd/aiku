@@ -21,6 +21,7 @@ const props = defineProps<{
     structured_data: JSON
   },
   web_blocks: any,
+  script_website : any
 }>()
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
@@ -37,15 +38,37 @@ const checkScreenType = () => {
 }
 
 
+function injectMetaTagFromString(rawHtml: string) {
+  if (!rawHtml?.trim().startsWith('<')) return
+
+  const wrapper = document.createElement('div')
+  wrapper.innerHTML = rawHtml.trim()
+  const element = wrapper.firstElementChild
+
+  if (element && element instanceof HTMLElement) {
+    // Prevent duplicates if meta with same name exists
+    if (element.tagName.toLowerCase() === 'meta') {
+      const nameAttr = element.getAttribute('name')
+      if (nameAttr) {
+        const existing = document.head.querySelector(`meta[name="${nameAttr}"]`)
+        if (existing) document.head.removeChild(existing)
+      }
+    }
+
+    document.head.appendChild(element)
+  }
+}
+
+
 
 onMounted(() => {
-  // Inject structured data script
   currentUrl.value = window.location.href
+
+  // Inject structured data as script
   const script = document.createElement('script')
   script.type = 'application/ld+json'
-
-  // Fix: stringify only if needed
   let structuredData = props.meta.structured_data
+
   if (typeof structuredData !== 'string') {
     try {
       structuredData = JSON.stringify(structuredData)
@@ -58,9 +81,15 @@ onMounted(() => {
   script.textContent = structuredData
   document.head.appendChild(script)
 
+  // ✅ Inject custom meta tag if valid
+  if (props.script_website) {
+    injectMetaTagFromString(props.script_website)
+  }
+
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
 })
+
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', checkScreenType)
@@ -68,7 +97,7 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
-console.log(props)
+console.log('props_value_webpage',props)
 </script>
 
 <template>
