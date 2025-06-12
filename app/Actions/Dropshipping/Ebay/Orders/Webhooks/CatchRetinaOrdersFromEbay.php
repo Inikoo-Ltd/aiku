@@ -10,11 +10,8 @@
 namespace App\Actions\Dropshipping\Ebay\Orders\Webhooks;
 
 use App\Actions\Dropshipping\Ebay\Orders\StoreOrderFromEbay;
-use App\Actions\Dropshipping\WooCommerce\Fulfilment\StoreFulfilmentFromWooCommerce;
-use App\Actions\Dropshipping\WooCommerce\Orders\StoreOrderFromWooCommerce;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -30,14 +27,12 @@ class CatchRetinaOrdersFromEbay extends OrgAction
 
     public function handle(EbayUser $ebayUser): void
     {
-        $response = $ebayUser->getOrders();
-        dd($response);
         DB::transaction(function () use ($ebayUser) {
             $existingOrderKeys = $ebayUser
                 ->customerSalesChannel
                 ->orders()
                 ->pluck('data')
-                ->map(fn ($data) => $data['orderId'] ?? null)
+                ->map(fn ($data) => Arr::get($data, 'orderId'))
                 ->filter()
                 ->toArray();
 
@@ -61,6 +56,6 @@ class CatchRetinaOrdersFromEbay extends OrgAction
     {
         $this->initialisation($ebayUser->organisation, $request);
 
-        $this->handle($ebayUser, $request->all());
+        $this->handle($ebayUser);
     }
 }
