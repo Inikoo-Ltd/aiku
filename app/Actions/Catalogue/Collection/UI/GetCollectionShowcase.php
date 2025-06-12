@@ -129,7 +129,7 @@ class GetCollectionShowcase
                     ],
                 ],
                 'attach_parent' => [
-                    'name'       => 'grp.models.product_category.collection.attach',
+                    'name'       => 'grp.models.product_category.collection.attach_parents',
                     'parameters' => [
                         'collection' => $collection->id,
                     ],
