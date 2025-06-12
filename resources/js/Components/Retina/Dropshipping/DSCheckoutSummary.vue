@@ -7,7 +7,7 @@ import { inject, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
-import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
+import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
 defineProps<{
     summary: {
@@ -113,7 +113,6 @@ const isModalShippingAddress = ref(false)
                 </dd>
             </div>
 
-
         </div>
 
         <div class="col-span-2">
@@ -138,12 +137,11 @@ const isModalShippingAddress = ref(false)
 
 
         <!-- Section: Delivery address -->
-        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)">
-            <!-- <pre>{{ address_management }}</pre> -->
-            <DeliveryAddressManagementModal
+        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-4xl">
+            <AddressEditModal
                 :addresses="address_management.addresses"
+                :address="summary?.customer?.addresses?.delivery"
                 :updateRoute="address_management.address_update_route"
-                keyPayloadEdit="delivery_address"
                 :address_modal_title="address_management.address_modal_title"
                 @onDone="() => (isModalShippingAddress = false)"
             />
