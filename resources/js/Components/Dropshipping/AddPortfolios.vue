@@ -5,12 +5,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import { onMounted, ref, watch } from 'vue'
 import { routeType } from '@/types/route'
-import { set } from 'lodash'
-import axios from 'axios'
-import PortfoliosStepSyncShopify from '../Retina/Dropshipping/PortfoliosStepSyncShopify.vue'
-import EmptyState from '../Utils/EmptyState.vue'
-import LoadingIcon from '../Utils/LoadingIcon.vue'
-import PortfoliosStepEdit from '../Retina/Dropshipping/PortfoliosStepEdit.vue'
+// import axios from 'axios'
 import ProductsSelector from './ProductsSelector.vue'
 
 const props = defineProps<{
@@ -33,6 +28,7 @@ const props = defineProps<{
 	}
     platform_user_id: number
 }>()
+
 
 const emits = defineEmits<(e: "onDone") => void>()
 
@@ -58,8 +54,7 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
                 text: trans("Successfully added portfolios"),
                 type: "success"
             })
-			props.step.current = 1
-            // isOpenModalPortfolios.value = false
+            emits("onDone")
         },
         onFinish: () => isLoadingSubmit.value = false
     })
@@ -87,201 +82,49 @@ const filterList = [
 ]
 const selectedList = ref(filterList[0])
 
+// const portfoliosList = ref([])
+// const stepLoading = ref(false)
 
-// Step 1: Submit
-const progressToUploadToShopify = ref({})
+// const fetchIndexUnuploadedPortfolios = async () => {
+// 	stepLoading.value = true
+// 	const data = await axios.get(
+// 		route('retina.dropshipping.customer_sales_channels.portfolios.index',
+// 			{
+// 				customerSalesChannel: route().params.customerSalesChannel,
+// 				'filter[un_upload]': 'true',
+// 			}
+// 		)
+// 	)
+// 	portfoliosList.value = data.data.data
+// 	stepLoading.value = false
+// }
 
+// watch(() => props.step.current, async (newStep, oldStep) => {
+// 	// console.log('Step changed to:', oldStep, newStep)
+// 	if (newStep === 1 || newStep === 2) {
+// 		fetchIndexUnuploadedPortfolios()
+// 	}
+// })
 
-const portfoliosList = ref([])
-const stepLoading = ref(false)
-
-const fetchIndexUnuploadedPortfolios = async () => {
-	stepLoading.value = true
-	const data = await axios.get(
-		route('retina.dropshipping.customer_sales_channels.portfolios.index',
-			{
-				customerSalesChannel: route().params.customerSalesChannel,
-				'filter[un_upload]': 'true',
-			}
-		)
-	)
-	portfoliosList.value = data.data.data
-	stepLoading.value = false
-}
-
-watch(() => props.step.current, async (newStep, oldStep) => {
-	// console.log('Step changed to:', oldStep, newStep)
-	if (newStep === 1 || newStep === 2) {
-		fetchIndexUnuploadedPortfolios()
-	}
-})
-
-// Step 2: Update portfolios
-const listState = ref({})
-const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, section: string) => {
-	set(listState.value, [portfolio.id, section], 'loading')
-
-
-	try {
-		await axios[props.routes.updatePortfolioRoute.method || 'patch'](
-			route(props.routes.updatePortfolioRoute.name,
-				{
-					portfolio: portfolio.id,
-				}
-			), modelData
-		)
-		set(listState.value, [portfolio.id, section], 'success')
-	} catch (error) {
-        console.log('Error updating portfolio:', error)
-		set(listState.value, [portfolio.id, section], 'error')
-	}
-
-	setTimeout(() => {
-		set(listState.value, [portfolio.id, section], null)
-	}, 3000);
-}
-
-// Step 3: bulk upload to Shopify
-const isLoadingBulkDeleteUpload = ref(false)
-const selectedPortfoliosToSync = ref()
-const bulkUpload = () => {
-	router[props.routes.bulk_upload.method || 'post'](
-		route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters),
-		{
-			portfolios: selectedPortfoliosToSync.value.map((product: any) => product.id),
-		},
-		{
-			preserveScroll: true,
-			// onBefore: () => isLoadingUpload.value = true,
-			onStart: () => {
-				isLoadingBulkDeleteUpload.value = true
-			},
-			onSuccess: () => {
-				selectedPortfoliosToSync.value.forEach((product) => {
-					set(progressToUploadToShopify.value, [product.id], 'loading')
-				})
-				selectedPortfoliosToSync.value = []
-				notify({
-					title: trans("Success!"),
-					text: trans("Successfully uploaded portfolios"),
-					type: "success",
-				})
-			},
-			onFinish: () => {
-				isLoadingBulkDeleteUpload.value = false
-			},
-			onError: (error) => {
-				notify({
-					title: trans("Something went wrong"),
-					text: error.message || trans("An error occurred while uploading portfolios"),
-					type: "error",
-				})
-			}
-		}
-	)
-}
-const bulkDelete = () => {
-	router[props.routes.batchDeletePortfolioRoute.method || 'post'](
-		route(props.routes.batchDeletePortfolioRoute.name, props.routes.batchDeletePortfolioRoute.parameters),
-		{
-			portfolios: selectedPortfoliosToSync.value.map((product: any) => product.id),
-		},
-		{
-			preserveScroll: true,
-			// onBefore: () => isLoadingUpload.value = true,
-			onStart: () => {
-				isLoadingBulkDeleteUpload.value = true
-			},
-			onSuccess: () => {
-				// selectedPortfoliosToSync.value.forEach((product) => {
-				// 	set(progressToUploadToShopify.value, [product.id], 'loading')
-				// })
-				portfoliosList.value = portfoliosList.value.filter(
-					(portfolio) => !selectedPortfoliosToSync.value.some((p: any) => p.id === portfolio.id)
-				)
-				selectedPortfoliosToSync.value = []
-				notify({
-					title: trans("Success!"),
-					text: trans("Deleted portfolios successfully"),
-					type: "success",
-				})
-			},
-			onFinish: () => {
-				isLoadingBulkDeleteUpload.value = false
-			},
-			onError: (error) => {
-				notify({
-					title: trans("Something went wrong"),
-					text: error.message || trans("An error occurred while uploading portfolios"),
-					type: "error",
-				})
-			}
-		}
-	)
-}
-
-onMounted(() => {
-    if (props.step.current > 0) {
-        fetchIndexUnuploadedPortfolios()
-    }
-})
+// onMounted(() => {
+//     fetchIndexUnuploadedPortfolios()
+// })
 </script>
 
 <template>
     <div>
         <!-- Head: step 0 -->
-        <div v-if="step.current === 0" class="grid grid-cols-4 mb-4">
+        <div class="grid grid-cols-4 mb-4">
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
                 {{ trans('Add products to portfolios') }}
             </div>
-            <div class="relative text-right">
-                <Button
-                    v-if="step.current == 0"
-                    @click="step.current = 1"
-                    :disabled="isLoadingSubmit"
-                    :label="trans('Skip to edit products')"
-                    iconRight="fal fa-arrow-right"
-                    type="tertiary"
-                />
-            </div>
         </div>
-        
-        <!-- Head: step 1 -->
-        <div v-if="step.current == 1" class="grid grid-cols-4">
-            <div class="relative">
-                <Button
-                    v-if="step.current == 1"
-                    @click="step.current = 0"
-                    :label="trans('Add portfolios')"
-                    icon="fal fa-arrow-left"
-                    type="tertiary"
-                />
-            </div>
-            <div class="text-center col-span-2">
-                <div class="font-bold text-2xl">{{ trans("Edit portfolios") }}</div>
-                <div class="text-gray-500 text-sm italic tracking-wide">
-                    <!-- {{ trans("Edit the portfolios before syncing them to Shopify if needed") }} -->
-                    {{ `Edit the portfolios before syncing them to ${platform_data.name} if needed` }}
-                </div>
-            </div>
-            <div class="relative text-right">
-                <!-- <Button
-                    v-if="step.current == 1"
-                    @click="step.current = 2"
-                    :label="trans('Sync to Shopify')"
-                    :iconRight="faArrowRight"
-                    type="tertiary"
-                /> -->
-            </div>
-        </div>
-        
 
         <!-- 0: Select Product -->
         <KeepAlive>
             <ProductsSelector
-                v-if="step.current === 0"
                 :headLabel="trans('Add products to portfolios')"
                 :route-fetch="{
                     name: props.routes.itemRoute.name,
@@ -300,6 +143,7 @@ onMounted(() => {
                     <div>
                     </div>
                 </template>
+
                 <template #afterInput>
                     <div class="flex gap-2 text-sm font-semibold text-gray-500 mt-2 max-w-sm">
                         <div v-for="list in filterList"
@@ -311,40 +155,22 @@ onMounted(() => {
                         </div>
                     </div>
                 </template>
-            </ProductsSelector>
-        </KeepAlive>
-        
-        <!-- 1: Edit Product -->
-        <KeepAlive>
-            <div v-if="step.current === 1">
-                <div class="relative px-4 h-[600px] mt-4 overflow-y-auto mb-4">
-                    <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
-                        <LoadingIcon />
+
+                <template #bottom-button="{ selectedProduct, isLoadingSubmit }">
+                    <div class="mt-4">
+                        <Button
+                            @click="() => onSubmitAddPortfolios(selectedProduct.map((product: any) => product.id))"
+                            :disabled="selectedProduct.length < 1"
+                            v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                            :label="`${trans('Add')} ${selectedProduct.length} and close`"
+                            type="primary"
+                            full
+                            icon="fas fa-plus"
+                            :loading="isLoadingSubmit"
+                        />
                     </div>
-                    <PortfoliosStepEdit
-                        v-else-if="portfoliosList?.length"
-                        :portfolios="portfoliosList"
-                        @updateSelectedProducts="updateSelectedProducts"
-                        :listState
-                        amounted="() => fetchIndexUnuploadedPortfolios()"
-                    />
-                    <EmptyState
-                        v-else
-                        :data="{
-                            title: trans('No portfolios selected'),
-                        }"
-                    />
-                </div>
-                <div class="border-t border-gray-300 pt-4 w-full">
-                    <Button
-                        @click="emits('onDone')"
-                        :label="trans('Done & close')"
-                        full
-                        xxiconRight="faArrowRight"
-                        type="tertiary"
-                    />
-                </div>
-            </div>
+                </template>
+            </ProductsSelector>
         </KeepAlive>
     </div>
 </template>
