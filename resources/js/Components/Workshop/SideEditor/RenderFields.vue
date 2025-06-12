@@ -10,6 +10,7 @@ import { getComponent } from '@/Composables/SideEditorHelper'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import type { Ref } from 'vue'
 library.add(faInfoCircle)
 
 const props = defineProps<{
@@ -30,7 +31,7 @@ const emits = defineEmits<{
   (e: 'update:modelValue', key: string | string[], value: any): void
 }>()
 
-const currentView = inject('currentView','desktop')
+const currentView = inject<Ref<string>>('currentView', ref('desktop'))
 
 
 const valueForField = computed(() => {
@@ -45,7 +46,7 @@ const valueForField = computed(() => {
     return rawVal
   }
 
-  return rawVal?.[currentView!]
+  return rawVal?.[currentView.value!]
 })
 
 const onPropertyUpdate = (newVal: any, path: any) => {
@@ -61,7 +62,7 @@ const onPropertyUpdate = (newVal: any, path: any) => {
   const current = isPlainObject(prevVal) ? { ...prevVal } : {}
   const updatedValue = {
     ...current,
-    [currentView]: newVal
+    [currentView.value]: newVal
   }
 
   emits('update:modelValue', rawKey, updatedValue)

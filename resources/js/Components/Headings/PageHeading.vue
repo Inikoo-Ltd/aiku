@@ -168,6 +168,7 @@ const layout = inject('layout', layoutStructure)
                 <template v-for="(action, actIndex) in data.actions">
                     <template v-if="action">
                         <!-- Button -->
+                         
                         <slot v-if="action.type == 'button'"
                             :name="`button-${kebabCase(action.key ? action.key : action.label)}`" :action="action">
                             <slot :name="`button-index-${actIndex}`" :action="action">

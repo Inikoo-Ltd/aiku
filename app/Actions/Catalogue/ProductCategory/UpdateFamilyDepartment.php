@@ -10,6 +10,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -31,12 +32,14 @@ class UpdateFamilyDepartment extends OrgAction
         $departmentId = Arr::pull($modelData, 'department_id');
 
         data_set($modelData, 'parent_id', $departmentId);
+        data_set($modelData, 'department_id', $departmentId);
 
         $family = $this->update($family, $modelData);
 
         $family->refresh();
 
         ProductCategoryRecordSearch::dispatch($family);
+        ProductCategoryHydrateFamilies::dispatch($family->parent);
 
         return $family;
     }

@@ -38,12 +38,16 @@ class StoreOrderFromShopify extends OrgAction
     {
         $customer = Arr::get($modelData, 'customer');
         $deliveryAddress = Arr::get($modelData, 'shipping_address');
+        $billingAddress = Arr::get($modelData, 'billing_address');
         $customerClient = $shopifyUser->customer?->clients()->where('email', Arr::get($customer, 'email'))->first();
 
         $shopifyProducts = collect($modelData['line_items']);
 
         $attributes = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
+        $billingAddressAttribute = $this->getAttributes(Arr::get($modelData, 'customer'), $billingAddress);
+
         $deliveryAddress = Arr::get($attributes, 'address');
+        $billingAddress = Arr::get($billingAddressAttribute, 'address');
 
         if (!$customerClient) {
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
@@ -59,7 +63,7 @@ class StoreOrderFromShopify extends OrgAction
                 'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
                 'date' => $modelData['created_at'],
                 'delivery_address' => new Address($deliveryAddress),
-                'billing_address' => new Address($deliveryAddress),
+                'billing_address' => new Address($billingAddress),
                 'data' => $modelData
             ], false);
 

@@ -317,6 +317,18 @@ class EditWebsite extends OrgAction
                     ],
                 ]
             ];
+            $blueprints[] = [
+                'label'  => __('Script'),
+                'icon'   => 'fa-light fa-code',
+                'fields' => [
+                    'script_website' => [
+                        'type'     => 'editor',
+                        'label'    => __('Script'),
+                        'value'    => Arr::get($website->settings, 'script_website.header'),
+                        'required' => false,
+                    ],
+                ]
+            ];
         }
 
 

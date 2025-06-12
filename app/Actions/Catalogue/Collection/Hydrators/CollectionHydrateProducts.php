@@ -2,18 +2,22 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 17 Apr 2024 02:07:50 Malaysia Time, Kuala Lumpur , Malaysia
+ * Created: Wed, 17 Apr 2024 02:07:50 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Catalogue\Collection\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\Collection;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CollectionHydrateItems
+class CollectionHydrateProducts
 {
     use AsAction;
     use WithEnumStats;
@@ -32,9 +36,20 @@ class CollectionHydrateItems
     {
 
         $stats         = [
-            'number_families'    => $collection->families()->count(),
             'number_products'    => $collection->products()->count(),
         ];
+
+        $count = DB::table('collection_has_models')
+            ->leftJoin('products', 'products.id', '=', 'collection_has_models.model_id')
+            ->where('collection_id', $collection->id)
+            ->where('model_type', 'Product')
+            ->selectRaw("products.state as state, count(*) as total")
+            ->groupBy('products.state')
+            ->pluck('total', 'state')->all();
+        foreach (ProductStateEnum::cases() as $case) {
+            $stats["number_products_state_".$case->snake()] = Arr::get($count, $case->value, 0);
+        }
+
 
         $collection->stats->update($stats);
     }
