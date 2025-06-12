@@ -20,6 +20,7 @@ use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
+use Checkout\PlatformType;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -97,6 +98,8 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             $platformName = __('Manual');
         }
 
+        $actions = [];
+
         $catchOrdersRoute = [];
 
         if ($this->customerSalesChannel->user instanceof WooCommerceUser) {
@@ -111,6 +114,17 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             ];
         }
 
+        if($this->customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL)
+        {
+            $actions =   [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('catch'),
+                            'route' => $catchOrdersRoute,
+                        ]
+                        ];
+        }
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
@@ -120,14 +134,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
                     'icon'       => 'fal fa-shopping-cart',
                     'title'   => __('Orders'),
                     'model'   =>  $platformName,
-                    'actions' => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('catch'),
-                            'route' => $catchOrdersRoute,
-                        ]
-                    ]
+                    'actions' => $actions
                 ],
 
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
