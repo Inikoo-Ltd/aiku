@@ -10,8 +10,9 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
-use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Models\Catalogue\Collection;
 
 class HydrateCollection
@@ -27,6 +28,7 @@ class HydrateCollection
 
     public function handle(Collection $collection): void
     {
-        CollectionHydrateItems::run($collection);
+        CollectionHydrateProducts::run($collection);
+        CollectionHydrateFamilies::run($collection);
     }
 }

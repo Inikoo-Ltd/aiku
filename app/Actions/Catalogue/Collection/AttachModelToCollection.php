@@ -8,7 +8,8 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -21,11 +22,13 @@ class AttachModelToCollection extends OrgAction
 
         if ($model instanceof Product) {
             $collection->products()->attach($model->id);
+            CollectionHydrateProducts::dispatch($collection);
         } else {
             $collection->families()->attach($model->id);
+            CollectionHydrateFamilies::dispatch($collection);
         }
 
-        CollectionHydrateItems::dispatch($collection);
+
 
         return $collection;
     }

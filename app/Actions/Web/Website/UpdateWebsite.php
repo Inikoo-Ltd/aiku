@@ -65,6 +65,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
         }
 
+        if (Arr::has($modelData, "script_website")) {
+            data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
+        }
+
         $website = $this->update($website, $modelData, ['data', 'settings']);
         WebsiteRecordSearch::run($website);
 
@@ -154,7 +158,12 @@ class UpdateWebsite extends OrgAction
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
-            ]
+            ],
+            'script_website' => [
+                'sometimes',
+                'nullable',
+                'string',
+            ],
         ];
 
         if (!$this->strict) {

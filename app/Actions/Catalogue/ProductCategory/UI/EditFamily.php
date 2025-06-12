@@ -84,7 +84,7 @@ class EditFamily extends OrgAction
         if ($family?->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $departmentIdFormData['department_id'] = [
                 'type'     => 'select',
-                'label'    => __('type'),
+                'label'    => __('Departement'),
                 'required' => true,
                 'options'  => $family->shop->productCategories()
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
