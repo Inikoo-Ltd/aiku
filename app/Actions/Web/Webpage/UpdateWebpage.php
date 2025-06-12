@@ -163,6 +163,7 @@ class UpdateWebpage extends OrgAction
             'title'          => ['sometimes', 'string'],
             'description'    => ['sometimes', 'string'],
             'show_in_parent' => ['sometimes', 'nullable', 'boolean'],
+            'allow_fetch'    => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {
