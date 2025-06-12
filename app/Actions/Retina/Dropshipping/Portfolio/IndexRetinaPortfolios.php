@@ -213,7 +213,11 @@ class IndexRetinaPortfolios extends RetinaAction
             $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'customer_price', label: __('RRP'), tooltip: __('Recommended retail price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'status', label: __('status'));
+
+            if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
+                $table->column(key: 'status', label: __('status'));
+            }
+
             $table->column(key: 'actions', label: __('action'), canBeHidden: false);
         };
     }
