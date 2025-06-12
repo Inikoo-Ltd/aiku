@@ -132,7 +132,6 @@ class FetchAuroraProducts extends FetchAuroraAction
         $query = DB::connection('aurora')
             ->table('Product Dimension')
             ->where('Product Type', 'Product')
-            ->whereNull('Product Customer Key')
             ->select('Product ID as source_id')
             ->orderBy('Product Valid From');
 
@@ -151,7 +150,6 @@ class FetchAuroraProducts extends FetchAuroraAction
     public function count(): ?int
     {
         $query = DB::connection('aurora')->table('Product Dimension')
-            ->whereNull('Product Customer Key')
             //    ->where('is_variant', 'No')
             ->where('Product Type', 'Product');
 

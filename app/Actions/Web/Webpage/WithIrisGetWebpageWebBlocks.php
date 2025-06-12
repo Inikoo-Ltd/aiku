@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\GetBanner;
+use App\Actions\Web\WebBlock\GetWebBlockCollections;
 use App\Actions\Web\WebBlock\GetWebBlockDepartments;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamily;
@@ -57,6 +58,8 @@ trait WithIrisGetWebpageWebBlocks
                 $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
             } elseif (in_array($webBlockType, ['product-1'])) {
                 $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
+            } elseif (in_array($webBlockType, ['collections-1'])) {
+                $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
             } else {
                 $parsedWebBlocks[$key] = $webBlock;
             }

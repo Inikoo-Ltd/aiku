@@ -67,6 +67,7 @@ class IndexProductsInCollection extends OrgAction
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
+        $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
         $queryBuilder->join('collection_has_models', function ($join) {
             $join->on('products.id', '=', 'collection_has_models.model_id')
