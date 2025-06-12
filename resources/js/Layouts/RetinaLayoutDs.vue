@@ -36,9 +36,9 @@ library.add(
 	faExclamationCircle,
 	faCheckCircle,
 	faArrowRight,
-	faListUl
+	faListUl, faEye
 )
-import { faListUl } from "@far"
+import { faListUl, faEye } from "@far"
 
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { trans } from "laravel-vue-i18n"
