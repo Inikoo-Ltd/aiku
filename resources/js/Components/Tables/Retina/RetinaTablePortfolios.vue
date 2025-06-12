@@ -18,6 +18,7 @@ import { faCheck } from "@far"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Image from "@/Components/Image.vue"
 
 library.add( faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck )
 
@@ -77,7 +78,9 @@ const onUnchecked = (itemId: number) => {
 		:isChecked="(item) => props.selectedData.products.includes(item.id)"
 	>
         <template #cell(image)="{ item: product }">
-            <img :src="product.image" class="w-20 h-20" :alt="product.code">
+            <div class="overflow-hidden w-16 h-16">
+				<Image :src="product.image" :alt="product.name" />
+			</div>
         </template>
 
 		<template #cell(slug)="{ item: product }">

@@ -8,6 +8,7 @@ import { onMounted, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import Image from '@/Components/Image.vue'
 library.add(faSearch)
 
 const props = defineProps<{
@@ -54,7 +55,7 @@ const valueTableFilter = ref({})
 
         <Column field="code" header="" style="max-width: 90px;">
             <template #body="{ data }">
-                <img :src="data.image" class="w-20 h-20" :alt="data.code">
+                <Image :src="data.image" class="w-20 h-20" :alt="data.code" />
             </template>
         </Column>
 
@@ -147,6 +148,7 @@ const valueTableFilter = ref({})
                         locale="en-GB"
                         fluid
                         :inputStyle="{textAlign: 'right'}"
+                        :class="get(listState, [data.id, 'customer_price'], undefined) === 'error' ? 'errorShake' : ''"
                     />
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'customer_price'], undefined)" />
                 </div>
@@ -161,7 +163,7 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="shipping" header="Shipping (Exc VAT)" style="max-width: 125px;">
+        <Column field="shipping" header="Shipping (Exc VAT)">
             <template #body="{ data }">
                 <FontAwesomeIcon
                     class="text-blue-500"

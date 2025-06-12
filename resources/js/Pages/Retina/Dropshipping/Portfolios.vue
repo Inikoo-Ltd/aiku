@@ -23,6 +23,7 @@ import PortfoliosStepEdit from "@/Components/Retina/Dropshipping/PortfoliosStepE
 import PortfoliosStepSyncShopify from "@/Components/Retina/Dropshipping/PortfoliosStepSyncShopify.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue"
+import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
 library.add(faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload)
 
 
@@ -163,8 +164,17 @@ const onUploadToShopify = () => {
 	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
 	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto py-43">
+		<AddPortfolios
+			v-if="platform_data?.type === 'manual'"
+			:step="step"
+			:routes="props.routes"
+			:platform_data
+			@onDone="isOpenModalPortfolios = false"
+			:platform_user_id
+		/>
 
 		<AddPortfoliosWithUpload
+			v-else
 			:step="step"
 			:routes="props.routes"
 			:platform_data
