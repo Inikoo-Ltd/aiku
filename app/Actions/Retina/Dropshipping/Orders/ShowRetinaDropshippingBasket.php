@@ -82,7 +82,18 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'afterTitle' => [
                         'label' => ' @'.$this->platform->name
                     ],
-
+                    'actions'   => [
+                        [
+                            'type'   => 'buttonGroup',
+                            'button' => [
+                                [
+                                    'type'    => 'button',
+                                    'key'     => 'upload-add',
+                                    'icon'      => 'fal fa-upload',
+                                ],
+                            ],
+                        ],
+                    ]
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
