@@ -16,17 +16,17 @@ import { trans } from "laravel-vue-i18n"
 library.add(faCube, faLink)
 
 
-const props = defineProps<{
+const props = defineProps < {
     modelValue: any
     webpageData?: any
     blockData?: Object
     fieldValue: {}
-}>()
+} > ()
 
 const locale = useLocaleStore()
 const orderQuantity = ref(0)
 const isFavorite = ref(false)
-const cancelToken = ref<Function | null>(null)
+const cancelToken = ref < Function | null > (null)
 console.log('poprs', props)
 const product = ref({
     labels: ['Vegan', 'Handmade', 'Cruelty Free', 'Plastic Free'],
@@ -46,7 +46,7 @@ const product = ref({
 })
 
 const toggleFavorite = () => {
-   isFavorite.value = !isFavorite.value
+    isFavorite.value = !isFavorite.value
 }
 
 const increaseQuantity = () => {
@@ -81,38 +81,38 @@ const productFaqs = [
 
 const debounceTimer = ref(null)
 const onDescriptionUpdate = (val) => {
-  // Clear previous timer
-  clearTimeout(debounceTimer.value)
+    // Clear previous timer
+    clearTimeout(debounceTimer.value)
 
-  // Start new 5-second timer
-  debounceTimer.value = setTimeout(() => {
-    saveDescriptions(val)
-  }, 5000)
+    // Start new 5-second timer
+    debounceTimer.value = setTimeout(() => {
+        saveDescriptions(val)
+    }, 5000)
 }
 
-const saveDescriptions = (value : string) => {
+const saveDescriptions = (value: string) => {
     if (cancelToken.value) cancelToken.value()
-	router.patch(
-		route("grp.models.product.update", { product : props.modelValue.product.id} ),
-		{ description: value },
-		{
-            preserveScroll : false,
-			onCancelToken: (token) => {
-				cancelToken.value = token.cancel
-			},
+    router.patch(
+        route("grp.models.product.update", { product: props.modelValue.product.id }),
+        { description: value },
+        {
+            preserveScroll: false,
+            onCancelToken: (token) => {
+                cancelToken.value = token.cancel
+            },
             onFinish: () => {
-				cancelToken.value = null
-			},
-			onSuccess: (e) => {},
-			onError: (error) => {
-				notify({
-					title: trans('Something went wrong'),
-					text: error.message,
-					type: 'error',
-				})
-			}
-		}
-	)
+                cancelToken.value = null
+            },
+            onSuccess: (e) => { },
+            onError: (error) => {
+                notify({
+                    title: trans('Something went wrong'),
+                    text: error.message,
+                    type: 'error',
+                })
+            }
+        }
+    )
 }
 
 
@@ -122,15 +122,16 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
 
 <template>
     <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6">
-        <div class="grid grid-cols-5 gap-x-10 mb-12">
-            <!-- Left Column (3/5) -->
-            <div class="col-span-3">
-                <div class="flex justify-between mb-6 items-center">
-                    <div class="w-[90%]">
+        <div class="grid grid-cols-12 gap-x-10 mb-12">
+            <!-- Left Column (7/12) -->
+            <div class="col-span-7">
+                <!-- Informasi Produk -->
+                <div class="flex justify-between mb-6 items-start">
+                    <div class="w-full">
                         <h1 class="font-bold text-2xl">{{ modelValue.product.name }}</h1>
 
                         <div class="flex gap-x-10 text-gray-600 mt-1 mb-1 text-sm">
-                            <div>Product code:{{ modelValue.product.code }}</div>
+                            <div>Product code: {{ modelValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
                                 <FontAwesomeIcon :icon="faStar" class="text-[9px]" v-for="n in 5" :key="n" />
                                 <span class="ml-1 text-xs">41</span>
@@ -138,34 +139,35 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
                         </div>
 
                         <div class="flex items-center gap-2 mb-4">
-                            <FontAwesomeIcon :icon="faCircle" class="text-sm" :class="modelValue.product.state == 'active' ? 'text-green-600' : 'text-red-600'" />
-                            <span v-if="modelValue.product.stock > 0" class="text-gray-600 text-sm">In Stock ({{ modelValue.product.stock }})</span>
+                            <FontAwesomeIcon :icon="faCircle" class="text-sm"
+                                :class="modelValue.product.state == 'active' ? 'text-green-600' : 'text-red-600'" />
+                            <span v-if="modelValue.product.stock > 0" class="text-gray-600 text-sm">In Stock ({{
+                                modelValue.product.stock }})</span>
                             <span v-else class="text-gray-600 text-sm">Out Of Stock</span>
                         </div>
                     </div>
 
-                    <div class="h-full flex items-center">
+                    <!-- Favorit -->
+                    <div class="h-full flex items-start">
                         <FontAwesomeIcon :icon="faHeart" class="text-2xl cursor-pointer"
                             :class="{ 'text-red-500': isFavorite }" @click="toggleFavorite" />
                     </div>
                 </div>
 
-                <!-- Product Images -->
+                <!-- Gambar Produk -->
                 <div class="py-1 w-full">
                     <ImageProducts :images="modelValue.product.images.data" />
                 </div>
 
-                <div class="my-3 text-sm text-gray-500">More Product information</div>
-
-                <!-- Labels Section -->
-                <div class="flex gap-x-10 text-gray-400 mb-6">
+                <!-- Label -->
+                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="label in product.labels" :key="label">
                         <FontAwesomeIcon :icon="faSeedling" class="text-sm" />
                         <span>{{ label }}</span>
                     </div>
                 </div>
 
-                <!-- Wrapper container with fixed width -->
+                <!-- Spesifikasi Produk -->
                 <div class="max-w-md cursor-pointer">
                     <Disclosure v-slot="{ open }">
                         <DisclosureButton
@@ -175,37 +177,31 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
                                 class="text-sm text-gray-500 transform transition-transform duration-200"
                                 :class="{ 'rotate-180': open }" />
                         </DisclosureButton>
-
-                        <DisclosurePanel class="text-sm text-gray-600 ">
-                            <!-- Kamu bisa isi detail spesifikasi dan dokumentasi di sini -->
+                        <DisclosurePanel class="text-sm text-gray-600">
                             <p>{{ productSpec }}</p>
                         </DisclosurePanel>
                     </Disclosure>
-
-
-                    <div class="text-sm text-gray-500 my-3">Frequently Asked Questions (FAQs)</div>
-
-                    <!-- FAQ Items with Disclosure -->
-                    <div>
-                        <Disclosure v-for="(faq, i) of productFaqs" :key="i" v-slot="{ open }">
-                            <DisclosureButton
-                                class="w-full py-1 border-b border-gray-400 font-bold text-gray-800 flex justify-between items-center gap-4">
-                                {{ faq.question }}
-                                <FontAwesomeIcon :icon="faChevronDown"
-                                    class="text-sm text-gray-500 transition-transform duration-200"
-                                    :class="{ 'rotate-180': open }" />
-                            </DisclosureButton>
-                            <DisclosurePanel class="text-sm text-gray-600 py-2">
-                                <p>{{ faq.answer }}</p>
-                            </DisclosurePanel>
-                        </Disclosure>
-                    </div>
-
-
                 </div>
 
-                <!-- Customer Reviews -->
-                <div class="flex items-center justfy-between gap-4 font-bold cursor-pointer ">
+                <!-- FAQ -->
+                <div class="my-3 text-sm text-gray-500">Frequently Asked Questions (FAQs)</div>
+                <div>
+                    <Disclosure v-for="(faq, i) of productFaqs" :key="i" v-slot="{ open }">
+                        <DisclosureButton
+                            class="w-full py-1 border-b border-gray-400 font-bold text-gray-800 flex justify-between items-center gap-4">
+                            {{ faq.question }}
+                            <FontAwesomeIcon :icon="faChevronDown"
+                                class="text-sm text-gray-500 transition-transform duration-200"
+                                :class="{ 'rotate-180': open }" />
+                        </DisclosureButton>
+                        <DisclosurePanel class="text-sm text-gray-600 py-2">
+                            <p>{{ faq.answer }}</p>
+                        </DisclosurePanel>
+                    </Disclosure>
+                </div>
+
+                <!-- Review -->
+                <div class="flex items-center justify-between gap-4 font-bold cursor-pointer mt-6">
                     <div>Customer Reviews</div>
                     <div class="flex items-center gap-[1px]">
                         <FontAwesomeIcon :icon="faStar" class="text-[9px] text-gray-600" v-for="n in 5"
@@ -216,15 +212,15 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
                 </div>
             </div>
 
-            <!-- Right Column (2/5) -->
-            <div class="col-span-2">
+            <!-- Right Column (5/12) -->
+            <div class="col-span-5 self-start">
+                <!-- Harga -->
                 <div class="mb-2 font-semibold text-2xl capitalize">
                     {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
                     ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
                 </div>
 
-
-                <!-- Order Now Section -->
+                <!-- Order -->
                 <div class="flex gap-2 mb-6 items-center">
                     <div class="flex items-center gap-1 select-none cursor-pointer">
                         <div class="font-bold text-3xl leading-none" @click="decreaseQuantity">-</div>
@@ -239,36 +235,51 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
                     </button>
                 </div>
 
+                <!-- Keterangan -->
                 <div class="flex items-center text-xs text-gray-500 mb-6">
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
                     <span>Order 4 full carton</span>
                 </div>
 
+                <!-- Deskripsi -->
                 <div class="text-xs font-medium text-gray-800 py-3">
-                    <EditorV2  v-model="modelValue.product.description" @update:model-value="(e)=>onDescriptionUpdate(e)" />
+                    <EditorV2 v-model="modelValue.product.description"
+                        @update:model-value="(e) => onDescriptionUpdate(e)" />
+                </div>
 
-                    <!-- Buy Now Pay Later, Delivery Info, Return Policy -->
-                    <div class="mb-4 space-y-2">
-                        <div
-                            class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
-                            Delivery Info
-                            <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+                <!-- Informasi Tambahan -->
+                <div class="mb-4 space-y-2">
+                    <div
+                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 cursor-pointer border-gray-800">
+                        <div class="flex items-center gap-4">
+                            Buy Now Pay Later
+                            <img src="https://cdn.prod.website-files.com/6660900e2837ec36d7ab4f69/66cccc3128fa6350a8266f72_PastPay-logo-dark-edge.png"
+                                alt="PastPay" class="h-3" />
                         </div>
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+                    </div>
 
-                        <div
-                            class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
-                            Return Policy
-                            <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
-                        </div>
+                    <div
+                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
+                        Delivery Info
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+                    </div>
 
-                        <div class="flex items-center gap-3 border-t border-gray-400 font-bold text-gray-800 py-2">
-                            Secure Payments:
-                            <img v-for="logo in product.paymentLogos" :key="logo.alt" :src="logo.src" :alt="logo.alt"
-                                class="h-4 px-1" />
-                        </div>
+                    <div
+                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
+                        Return Policy
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+                    </div>
+
+                    <!-- Logo Pembayaran -->
+                    <div class="flex items-center gap-3 border-t border-gray-400 font-bold text-gray-800 py-2">
+                        Secure Payments:
+                        <img v-for="logo in product.paymentLogos" :key="logo.alt" :src="logo.src" :alt="logo.alt"
+                            class="h-4 px-1" />
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </template>

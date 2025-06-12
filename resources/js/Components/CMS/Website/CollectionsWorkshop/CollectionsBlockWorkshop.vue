@@ -108,7 +108,7 @@ provide("currentView", currentView);
           <span v-if="layout?.data?.fieldValue?.webpage?.name">
             Preview: <strong>{{ layout.data.fieldValue.webpage?.name }}</strong>
           </span>
-          <span v-else>Pick a webpage</span>
+          <span v-else>Pick a Departement or sub-departement</span>
         </div>
       </div>
 
@@ -130,7 +130,7 @@ provide("currentView", currentView);
           <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
           <h3 class="text-lg font-semibold">No webpage selected</h3>
           <p class="text-sm max-w-xs">
-            Please pick a webpage to preview its data here.
+            Please pick a Departement or sub-departement to preview its data here.
           </p>
         </div>
         <Button :label="'Pick a webpage to preview'" @click="visibleDrawer = true" />
@@ -141,8 +141,8 @@ provide("currentView", currentView);
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">Webpage Overview</h2>
-        <p class="text-xs text-gray-500">Choose a webpage to preview</p>
+        <h2 class="text-base font-semibold">Departement or sub-departement  Overview</h2>
+        <p class="text-xs text-gray-500">Choose a Departement or sub-departement  to preview</p>
       </div>
     </template>
 
