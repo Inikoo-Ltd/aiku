@@ -8,7 +8,8 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
@@ -25,12 +26,14 @@ class DetachModelFromCollection extends OrgAction
     {
         if ($model instanceof Product) {
             $collection->products()->detach($model->id);
+            CollectionHydrateProducts::dispatch($collection);
         } else {
             $collection->families()->detach($model->id);
+            CollectionHydrateFamilies::dispatch($collection);
         }
 
 
-        CollectionHydrateItems::dispatch($collection);
+
 
         return $collection;
     }
