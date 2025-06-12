@@ -16,17 +16,17 @@ import { trans } from "laravel-vue-i18n"
 library.add(faCube, faLink)
 
 
-const props = defineProps < {
+const props = defineProps<{
     modelValue: any
     webpageData?: any
     blockData?: Object
     fieldValue: {}
-} > ()
+}>()
 
 const locale = useLocaleStore()
 const orderQuantity = ref(0)
 const isFavorite = ref(false)
-const cancelToken = ref < Function | null > (null)
+const cancelToken = ref<Function | null>(null)
 console.log('poprs', props)
 const product = ref({
     labels: ['Vegan', 'Handmade', 'Cruelty Free', 'Plastic Free'],
@@ -215,10 +215,25 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
             <!-- Right Column (5/12) -->
             <div class="col-span-5 self-start">
                 <!-- Harga -->
-                <div class="mb-2 font-semibold text-2xl capitalize">
-                    {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
-                    ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
+                <div class="flex justify-between items-center mb-3not border-b pb-3">
+                    <!-- Harga Saat Ini -->
+                    <div class="font-semibold text-2xl capitalize text-gray-900">
+                        {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
+                        <span class="text-sm text-gray-500">
+                            ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
+                        </span>
+                    </div>
+
+                    <!-- Harga RRP -->
+                    <div class="text-sm flex font-semibold text-gray-400 text-right">
+                        RRP : {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp || 0) }}
+                        <span class="block">
+                            /{{ modelValue.product.unit }}
+                        </span>
+                    </div>
                 </div>
+
+
 
                 <!-- Order -->
                 <div class="flex gap-2 mb-6 items-center">
@@ -250,17 +265,7 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
                 <!-- Informasi Tambahan -->
                 <div class="mb-4 space-y-2">
                     <div
-                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 cursor-pointer border-gray-800">
-                        <div class="flex items-center gap-4">
-                            Buy Now Pay Later
-                            <img src="https://cdn.prod.website-files.com/6660900e2837ec36d7ab4f69/66cccc3128fa6350a8266f72_PastPay-logo-dark-edge.png"
-                                alt="PastPay" class="h-3" />
-                        </div>
-                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
-                    </div>
-
-                    <div
-                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
+                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1  border-gray-400 cursor-pointer">
                         Delivery Info
                         <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
                     </div>

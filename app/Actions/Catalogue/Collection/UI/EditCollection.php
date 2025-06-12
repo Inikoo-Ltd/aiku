@@ -108,7 +108,12 @@ class EditCollection extends OrgAction
                                     'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $collection->description
-                                ]
+                                ],
+                                "image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("Image"),
+                                    "value"   => $collection->imageSources(720, 480),
+                                ],
                             ]
                         ]
 

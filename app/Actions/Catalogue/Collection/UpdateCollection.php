@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Collection;
 use App\Actions\Catalogue\Collection\Search\CollectionRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\CollectionResource;
 use App\Models\Catalogue\Collection;
@@ -19,6 +20,7 @@ use App\Models\Inventory\Location;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,11 +28,16 @@ class UpdateCollection extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithImageCatalogue;
 
     private Collection $collection;
 
     public function handle(Collection $collection, array $modelData): Collection
     {
+        $imageData = ['image' => Arr::pull($modelData, 'image')];
+        if ($imageData['image']) {
+            $this->processCatalogueImage($imageData, $collection);
+        }
         $collection = $this->update($collection, $modelData, ['data']);
         CollectionRecordSearch::dispatch($collection);
 
@@ -64,7 +71,7 @@ class UpdateCollection extends OrgAction
                 ),
             ],
             'name'        => ['sometimes', 'max:250', 'string'],
-            'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image'       => ['sometimes'],
             'description' => ['sometimes', 'required', 'max:1500'],
         ];
         if (!$this->strict) {
