@@ -732,8 +732,7 @@ Route::post('/guest/', StoreGuest::class)->name('guest.store');
 Route::delete('/guest/{guest:id}', DeleteGuest::class)->name('guest.delete');
 
 Route::name('collection.')->prefix('collection/{collection:id}')->group(function () {
-    Route::post('attach-model', AttachModelsToCollection::class)->name('attach-model');
-    Route::post('attach-models', AttachCollectionsToModel::class)->name('attach-models');
+    Route::post('attach-models', AttachModelsToCollection::class)->name('attach-models');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
 });
 
@@ -794,11 +793,14 @@ Route::name('invoice-category.')->prefix('invoice-category/')->group(function ()
 
 Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.mailshot.store');
 
-Route::name('product_category.')->prefix('product_category/{productCategory:id}')->group(function () {
-    Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
-    Route::post('content', [StoreModelHasContent::class, 'inProductCategory'])->name('content.store');
-    Route::post('{collection:id}/attach-collection', AttachCollectionToModel::class)->name('collection.attach');
-    Route::delete('{collection:id}/detach-collection', DetachCollectionFromModel::class)->name('collection.detach');
+Route::name('product_category.')->group(function () {
+    Route::prefix('product_category/{productCategory:id}')->group(function () {
+        Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
+        Route::post('content', [StoreModelHasContent::class, 'inProductCategory'])->name('content.store');
+        Route::post('{collection:id}/attach-collection', AttachCollectionToModel::class)->name('collection.attach');
+        Route::delete('{collection:id}/detach-collection', DetachCollectionFromModel::class)->name('collection.detach');
+    });
+    Route::post('{collection:id}/attach-parents', AttachCollectionsToModel::class)->name('collection.attach_parents');
 });
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {

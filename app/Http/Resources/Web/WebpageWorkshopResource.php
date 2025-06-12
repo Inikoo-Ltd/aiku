@@ -40,7 +40,16 @@ class WebpageWorkshopResource extends JsonResource
             'website_layout'                         => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
             'code'                                   => $webpage->code,
             'url'                                    => $webpage->url,
-            'type'                                   => $webpage->type,
+            'type'                                  => $webpage->type,
+            'allow_fetching'                         => $webpage->allow_fetching,
+            'route_webpage_edit' => [
+                'name'       => 'grp.models.shop.webpage.update',
+                'parameters' => [
+                    'shop'         => $webpage->shop->id,
+                    'webpage'      => $webpage->id
+                ],
+                'method' => 'patch'
+            ],
             'typeIcon'                               => match ($webpage->type) {
                 WebpageTypeEnum::STOREFRONT => ['fal', 'fa-home'],
                 WebpageTypeEnum::OPERATIONS => ['fal', 'fa-ufo-beam'],
@@ -49,7 +58,6 @@ class WebpageWorkshopResource extends JsonResource
             },
             'changes_webpage'                        => $this?->resource ? WebpagesResource::collection(IndexChangesWebpages::make()->handle($this->resource))->toArray(request()) : null,
             'is_dirty'                               => $webpage->is_dirty,
-            'web_blocks_parameters'                  => WebBlockParametersResource::collection($webpage->webBlocks),
             'layout'                                 => $webPageLayout,
             'sub_type'                               => $webpage->sub_type,
             'created_at'                             => $webpage->created_at,

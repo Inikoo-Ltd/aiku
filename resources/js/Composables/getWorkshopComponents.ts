@@ -107,7 +107,7 @@ export const getComponent = (componentName: string) => {
         'cta-video-1' : CTAVideo1Workshop,
         'video-1': Video1Workshop
     }
-    console.log(componentName)
+    
     return components[componentName] ?? NotFoundComponents
 }
 

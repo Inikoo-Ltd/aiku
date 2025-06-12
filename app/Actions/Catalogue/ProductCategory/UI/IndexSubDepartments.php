@@ -152,7 +152,7 @@ class IndexSubDepartments extends OrgAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'families', label: __('families'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'number_current_families', label: __('families'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

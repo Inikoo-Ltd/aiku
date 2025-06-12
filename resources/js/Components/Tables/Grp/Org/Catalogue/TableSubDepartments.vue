@@ -88,28 +88,5 @@ const familyRoute = (item, family) => {
             {{ family["department_code"] }}
             </Link>
         </template>
-
-        <template #cell(families)="{ item }">
-            <div v-if="item.families?.length" class="flex flex-wrap gap-2 max-w-2xl items-center">
-                <div>{{ item.families.length }} Families:</div>
-                <template v-for="(family, index) in item.families"
-                        :key="index">
-                    <Link
-                        v-if="familyRoute(item, family)"
-                        :href="familyRoute(item, family)"
-                        class="cursor-pointer"
-                    >
-                        <Tag stringToColor :label="family.name" />
-                    </Link>
-
-                    <div v-else>
-                        <Tag stringToColor :label="family.name" />
-                    </div>
-                </template>
-            </div>
-            <div class="text-gray-500" v-else>
-                -
-            </div>
-        </template>
     </Table>
 </template>

@@ -138,14 +138,14 @@ class Collection extends Model implements Auditable, HasMedia
     public function departments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'Department')
+                    ->wherePivot('type', 'department')
                     ->withTimestamps();
     }
 
     public function subDepartments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'SubDepartment')
+                    ->wherePivot('type', 'sub_department')
                     ->withTimestamps();
     }
 

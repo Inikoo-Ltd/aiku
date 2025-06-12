@@ -28,6 +28,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 /* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from "primevue/useconfirm";
+import ToggleSwitch from 'primevue/toggleswitch';
 
 
 import { routeType } from "@/types/route"
@@ -489,10 +490,41 @@ watch(filterBlock, (newValue) => {
 	sendToIframe({ key: 'isPreviewLoggedIn', value: newValue })
 })
 
-console.log(props.webpage.layout)
+
+
+const SyncAurora = () => {
+	router.patch(
+		route(props.webpage.route_webpage_edit.name,props.webpage.route_webpage_edit.parameters),
+		{ allow_fetch: props.webpage.allow_fetching },
+		{
+			onStart: () => {
+				console.log('========== start save ')
+				isSavingBlock.value = true
+			},
+			onFinish: () => {
+				isSavingBlock.value = false
+			},
+			onSuccess: () => {
+				sendToIframe({ key: 'reload', value: {} })
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message,
+					type: "error",
+				});
+				isSavingBlock.value = false
+			},
+			preserveScroll: true,
+		}
+	);
+}
+
+console.log('webpage workshop props :',props)
 </script>
 
 <template>
+
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #button-publish="{ action }">
@@ -514,8 +546,9 @@ console.log(props.webpage.layout)
 		<!-- Section: Side editor -->
 		<div v-if="!fullScreeen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
 			<WebpageSideEditor v-model="isModalBlockList" :isLoadingblock :isLoadingDeleteBlock :isAddBlockLoading
-				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"  v-model:filterBlock="filterBlock"
-				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings"/>
+				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"
+				v-model:filterBlock="filterBlock" @add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock"
+				ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings" />
 		</div>
 
 		<!-- Section: Preview -->
@@ -524,11 +557,13 @@ console.log(props.webpage.layout)
 				<!-- Section: Screenview -->
 				<div class="flex">
 					<ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
-					<div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600" v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview">
+					<div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
+						v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview">
 						<FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
 					</div>
 					<div class="py-1 px-2 cursor-pointer" v-tooltip="'fullScreeen'" @click="fullScreeen = !fullScreeen">
-						<FontAwesomeIcon :icon="!fullScreeen  ? faExpandWide : faCompressWide" fixed-width aria-hidden="true" />
+						<FontAwesomeIcon :icon="!fullScreeen  ? faExpandWide : faCompressWide" fixed-width
+							aria-hidden="true" />
 					</div>
 					<!-- <div class="py-1 px-2 cursor-pointer" v-tooltip="'undo'" @click="undo">
 						<FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
@@ -537,32 +572,39 @@ console.log(props.webpage.layout)
 						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
 					</div> -->
 				</div>
-	<!-- Users edit same page -->
-				<div v-if="compUsersEditThisPage?.length > 1" v-tooltip="compUsersEditThisPage.join(', ') + trans('. Your changes may conflict each others.')" class="text-center bg-yellow-300 rounded my-1 flex items-center gap-x-1 px-2">
-					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width aria-hidden="true" />
+				<!-- Users edit same page -->
+				<div v-if="compUsersEditThisPage?.length > 1"
+					v-tooltip="compUsersEditThisPage.join(', ') + trans('. Your changes may conflict each others.')"
+					class="text-center bg-yellow-300 rounded my-1 flex items-center gap-x-1 px-2">
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width
+						aria-hidden="true" />
 					{{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
-					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width
+						aria-hidden="true" />
 				</div>
 
 				<!-- Tools: login-logout, edit-preview -->
-				<!-- <div class="flex gap-3 items-center px-4">
-					<ButtonPreviewLogin v-model="isPreviewLoggedIn"
-						@update:model-value="(e) => sendToIframe({ key: 'isPreviewLoggedIn', value: e })" />
-				</div> -->
+				<div class="flex items-center px-3">
+					<div class="flex items-center gap-2 px-3 text-sm text-gray-700">
+						<label for="sync-toggle">Sync with aurora</label>
+						<ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetching" @update:modelValue="(e)=>SyncAurora(e)" />
+					</div>
+
+				</div>
+
 			</div>
 
 			<div class="border-2 h-full w-full relative">
 				<div class="h-full w-full bg-white overflow-auto">
 					<!-- Loading Icon di Tengah -->
-					<div v-if="isIframeLoading"
-						class="absolute inset-0 flex items-center justify-center bg-white">
+					<div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
 						<LoadingIcon class="w-24 h-24 text-6xl" />
 					</div>
 
 					<!-- Iframe -->
 					<iframe ref="_iframe" :src="iframeSrc" :title="props.title"
-						:class="[iframeClass, isIframeLoading ? 'hidden' : '']"
-						@load="isIframeLoading = false"  allowfullscreen/>
+						:class="[iframeClass, isIframeLoading ? 'hidden' : '']" @load="isIframeLoading = false"
+						allowfullscreen />
 				</div>
 			</div>
 
