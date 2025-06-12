@@ -205,8 +205,8 @@ class IndexRetinaPortfolios extends RetinaAction
                     'count' => 0
                 ]);
 
-            $table->column(key: 'image', label: __(''), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'image', label: __(''), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
@@ -217,7 +217,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 $table->column(key: 'status', label: __('status'));
             }
 
-            $table->column(key: 'actions', label: __('action'), canBeHidden: false);
+            $table->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 

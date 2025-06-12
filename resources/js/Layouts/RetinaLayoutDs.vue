@@ -36,11 +36,12 @@ library.add(
 	faExclamationCircle,
 	faCheckCircle,
 	faArrowRight,
-	faListUl
+	faListUl, faEye
 )
-import { faListUl } from "@far"
+import { faListUl, faEye } from "@far"
 
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
+import { trans } from "laravel-vue-i18n"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -117,7 +118,8 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						/>
 
 						<Link v-if="layout.iris?.is_logged_in" :href="route('retina.top_up.dashboard')" class="flex items-center gap-x-2 text-indigo-600">
-							<FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" />
+							<!-- <FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" /> -->
+							{{ trans("Your balance") }}:
 							<span class="font-semibold tabular-nums">
 								{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0)}}
 							</span>

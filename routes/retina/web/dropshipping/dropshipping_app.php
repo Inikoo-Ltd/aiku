@@ -17,6 +17,7 @@ use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
+use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
 use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
@@ -103,6 +104,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
         Route::get('wc-fetch', GetRetinaCustomerClientFromWooCommerce::class)->name('wc-fetch');
 
         Route::get('/', IndexRetinaCustomerClientsInCustomerSalesChannel::class)->name('index');
+        Route::get('/client-upload-templates', DownloadDropshippingClientTemplate::class)->name('upload_templates');
         Route::get('create', CreateRetinaCustomerClient::class)->name('create');
         Route::get('/{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
         Route::get('{customerClient}', ShowRetinaCustomerClient::class)->name('show');

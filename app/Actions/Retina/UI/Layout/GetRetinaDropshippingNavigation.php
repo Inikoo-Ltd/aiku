@@ -94,8 +94,8 @@ class GetRetinaDropshippingNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('Top ups'),
-                        'icon'  => ['fal', 'fa-money-bill-wave'],
+                        'label' => __('View Top ups'),
+                        'icon'  => ['far', 'fa-eye'],
                         'root'  => 'retina.top_up.',
                         'route' => [
                             'name' => 'retina.top_up.index',
