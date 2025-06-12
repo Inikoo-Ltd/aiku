@@ -47,6 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
+ * @property int|null $webpage_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -137,14 +138,14 @@ class Collection extends Model implements Auditable, HasMedia
     public function departments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'Department')
+                    ->wherePivot('type', 'department')
                     ->withTimestamps();
     }
 
     public function subDepartments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'SubDepartment')
+                    ->wherePivot('type', 'sub_department')
                     ->withTimestamps();
     }
 

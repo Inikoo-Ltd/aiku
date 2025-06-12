@@ -10,6 +10,7 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraDepartment extends FetchAurora
@@ -18,12 +19,11 @@ class FetchAuroraDepartment extends FetchAurora
 
     protected function parseModel(): void
     {
-
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
 
-        //        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-        //            return;
-        //        }
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return;
+        }
 
         $departmentsRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
             ->select('Category Key', 'Category Code', 'Category Subject')

@@ -5,64 +5,55 @@ import { faDollarSign, faImage, faUnlink, faGlobe } from '@fortawesome/free-soli
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { Link, router } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 
 import Image from '@/Components/Image.vue'
-import CountUp from 'vue-countup-v3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Icon from "@/Components/Icon.vue"
 import { notify } from '@kyvg/vue3-notification'
-import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import WebpageSelector from '@/Components/Departement&Family/WebpageSelector.vue'
-import { faBrowser } from '@fal'
-import Collection from '@/Pages/Grp/Org/Catalogue/Collection.vue'
+import CollectionSelector from '@/Components/Departement&Family/CollectionSelector.vue'
 
-// Add icons to the FontAwesome library
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
 
-// Inject locale
 const locale = inject('locale', aikuLocaleStructure)
-
-// Props
 const props = defineProps<{
   data: {
+    id: number
+    slug: string
     name?: string
     image?: string
     description?: string
-    id: number
-    slug: string
-    stats: {
+    stats: Array<{
       label: string
       icon: string
       value: number
-      meta: { value: number; label: string }
-    }[]
-    attached_webpages: {
-      id: number
-      name: string
-      code?: string
-      title?: string
-      description?: string
-      image?: string[]
-      typeIcon?: any
-      route?: { name: string; parameters?: Record<string, any> }
-    }[]
+      meta: {
+        value: number
+        label: string
+      }
+    }>
+    parent_departments: any[]
+    parent_subdepartments: any[]
+    routes: {
+      attach_parent: { name: string; parameters: any }
+      departments_route: { name: string; parameters: any }
+      sub_departments_route: { name: string; parameters: any }
+    }
   }
-  loadingUnassignIds?: number[]
 }>()
 
-// State
-const isModalOpen = ref(false)
+
+const isModalOpenDepartment = ref(false)
+const isModalOpenSubDepartment = ref(false)
 const loading = ref(false)
 const unassignLoadingIds = ref<number[]>([])
 
-// Methods
 const UnassignCollectionFormWebpage = async (id: number) => {
   unassignLoadingIds.value.push(id)
 
-  const url = route("grp.models.webpage.detach_collection", {
-    webpage: id,
+  const url = route("grp.models.dept.detach_collection", {
+    dept: id,
     collection: props.data.id,
   })
 
@@ -87,17 +78,13 @@ const UnassignCollectionFormWebpage = async (id: number) => {
   })
 }
 
-const AssignWebpagesToCollection = async (webpages: { id: number }[]) => {
+const attachToparent = async (key : string , data: { id: number }[]) => {
   loading.value = true
-
-  // Extract only the IDs
-  const ids = webpages.map(item => item.id)
+  const ids = data.map(item => item.id)
 
   router.post(
-    route(props.data.routes.attach_webpage.name,props.data.routes.attach_webpage.parameters), // Ganti dengan named route kamu
-    {
-      webpages: ids, // send array of IDs
-    },
+    route(props.data.routes.attach_parent.name, props.data.routes.attach_parent.parameters),
+    { [key]: ids },
     {
       preserveScroll: true,
       onSuccess: () => {
@@ -106,12 +93,13 @@ const AssignWebpagesToCollection = async (webpages: { id: number }[]) => {
           text: trans('Webpages assigned successfully.'),
           type: 'success',
         })
-        isModalOpen.value = false
+        isModalOpenDepartment.value = false
+        isModalOpenSubDepartment.value = false
       },
       onError: (errors) => {
         notify({
           title: trans('Error'),
-          text: errors?.webpage_ids || trans('Failed to assign webpages.'),
+          text: errors?.ids || trans('Failed to assign webpages.'),
           type: 'error',
         })
       },
@@ -121,10 +109,6 @@ const AssignWebpagesToCollection = async (webpages: { id: number }[]) => {
     }
   )
 }
-
-
-console.log('Collection data:', props.data)
-
 </script>
 
 <template>
@@ -145,55 +129,79 @@ console.log('Collection data:', props.data)
         </div>
       </div>
 
-      <!-- Webpages List -->
-<!--      <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">-->
-<!--        <div class="flex items-center justify-between">-->
-<!--          <h2 class="text-lg font-semibold text-gray-800">{{ trans('Webpages') }}</h2>-->
-<!--          <Button type="create" size="xs" :icon="faBrowser" @click="isModalOpen = true" :label="'webpage'">-->
-<!--          </Button>-->
-<!--        </div>-->
+      <!-- Department List -->
+      <div class="space-y-6">
+        <!-- Department Card -->
+        <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold text-gray-800">Department</h2>
+              <Button type="create" size="xs" @click="isModalOpenDepartment = true" :label="'Department'" />
+            </div>
+            <hr class="mt-2 border-gray-200" />
+          </div>
 
-<!--        <div v-if="data.attached_webpages.length" class="space-y-3">-->
-<!--          <div v-for="webpage in data.attached_webpages" :key="webpage.id"-->
-<!--            class="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow transition">-->
-<!--            &lt;!&ndash; Icon &ndash;&gt;-->
-<!--            <Icon v-if="webpage?.typeIcon" :data="webpage.typeIcon" size="xl" class="text-gray-600 shrink-0" />-->
+          <div v-if="data.parent_departments.length" class="space-y-2">
+            <div v-for="dept in data.parent_departments" :key="dept.id"
+              class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
+              <Icon v-if="dept?.typeIcon" :data="dept.typeIcon" size="lg" class="text-gray-600 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
+                <p class="text-xs text-gray-500 line-clamp-2">{{ dept.title || 'No title' }}</p>
+              </div>
+              <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
+                :loading="unassignLoadingIds.includes(dept.id)" @click="UnassignCollectionFormWebpage(dept.id)"
+                class="shrink-0" />
+            </div>
+          </div>
+          <div v-else class="text-xs text-gray-400 italic text-center py-2">
+            No departments assigned.
+          </div>
+        </div>
 
-<!--            &lt;!&ndash; Info &ndash;&gt;-->
-<!--            <div class="flex-1 min-w-0">-->
-<!--              <h3 class="text-sm font-medium text-gray-800 truncate">{{ webpage.code || webpage.name }}</h3>-->
-<!--              <p class="text-xs text-gray-500 line-clamp-2">{{ webpage.title || trans('No title') }}</p>-->
-<!--            </div>-->
+        <!-- Sub Department Card -->
+        <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold text-gray-800">Sub Department</h2>
+              <Button type="create" size="xs" @click="isModalOpenSubDepartment = true" :label="'Sub-Department'" />
+            </div>
+            <hr class="mt-2 border-gray-200" />
+          </div>
 
-<!--            &lt;!&ndash; Unassign Button &ndash;&gt;-->
-<!--            <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"-->
-<!--              :loading="unassignLoadingIds.includes(webpage.id)" @click="UnassignCollectionFormWebpage(webpage.id)"-->
-<!--              class="shrink-0" />-->
-<!--          </div>-->
-<!--        </div>-->
-
-<!--        <div v-else class="text-sm text-gray-500 italic text-center">-->
-<!--          <EmptyState />-->
-<!--        </div>-->
-<!--      </div>-->
-
+          <div v-if="data.parent_subdepartments.length" class="space-y-2">
+            <div v-for="dept in data.parent_subdepartments" :key="dept.id"
+              class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
+              <Icon v-if="dept?.typeIcon" :data="dept.typeIcon" size="lg" class="text-gray-600 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
+                <p class="text-xs text-gray-500 line-clamp-2">{{ dept.title || 'No title' }}</p>
+              </div>
+              <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
+                :loading="unassignLoadingIds.includes(dept.id)" @click="UnassignCollectionFormWebpage(dept.id)"
+                class="shrink-0" />
+            </div>
+          </div>
+          <div v-else class="text-xs text-gray-400 italic text-center py-2">
+            No sub departments assigned.
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Modal -->
- <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-6xl">
-  <WebpageSelector
-    :headLabel="`${trans('Add Webpage to collection')}`"
-    :routeFetch="{ 
-      name: 'grp.json.shop.collection.webpages', 
-      parameters: {
-        shop: route().params['shop'], 
-        collection: data.slug 
-      }
-    }"
-    :isLoadingSubmit="loading"
-    @submit="AssignWebpagesToCollection"
-  />
-</Modal>
+  <!-- Modals -->
+  <Modal :isOpen="isModalOpenDepartment" @onClose="isModalOpenDepartment = false" width="w-full max-w-6xl">
+    <CollectionSelector :headLabel="`${trans('Add Departement to collection')}`" :routeFetch="{
+      name: data.routes.departments_route.name,
+      parameters: data.routes.departments_route.parameters
+    }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('departments',ids)" />
+  </Modal>
 
+  <Modal :isOpen="isModalOpenSubDepartment" @onClose="isModalOpenSubDepartment = false" width="w-full max-w-6xl">
+    <CollectionSelector :headLabel="`${trans('Add Sub-Departement to collection')}`" :routeFetch="{
+      name: data.routes.sub_departments_route.name,
+      parameters: data.routes.sub_departments_route.parameters
+    }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('sub_departments',ids)" />
+  </Modal>
 </template>

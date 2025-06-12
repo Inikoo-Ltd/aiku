@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Catalogue\DepartmentResource;
+use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -19,7 +21,6 @@ class GetCollectionShowcase
 
     public function handle(Collection $collection): array
     {
-        // dd($collection);
         $parentRoute = null;
 
         if ($collection->parent) {
@@ -109,25 +110,15 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
-            
+            'parent_departments' => DepartmentResource::collection($collection->departments)->toArray(request()),
+            'parent_subdepartments' => SubDepartmentResource::collection($collection->subdepartments)->toArray(request()),
+
             'routes' => [
-                'parent_departments_route' => [
-                    'name' => 'grp.json.collection.parent.departments.index',
-                    'parameters' => [
-                        'collection' => $collection->id,
-                    ],
-                ],
                 'departments_route' => [
                     'name'  => 'grp.json.shop.catalogue.departments',
                     'parameters' => [
                         'shop' => $collection->shop->slug,
                         'scope' => $collection->slug,
-                    ],
-                ],
-                'parent_sub_departments_route' => [
-                    'name' => 'grp.json.collection.parent.sub_departments.index',
-                    'parameters' => [
-                        'collection' => $collection->id,
                     ],
                 ],
                 'sub_departments_route' => [
@@ -138,7 +129,7 @@ class GetCollectionShowcase
                     ],
                 ],
                 'attach_parent' => [
-                    'name'       => 'grp.models.product_category.collection.attach',
+                    'name'       => 'grp.models.product_category.collection.attach_parents',
                     'parameters' => [
                         'collection' => $collection->id,
                     ],

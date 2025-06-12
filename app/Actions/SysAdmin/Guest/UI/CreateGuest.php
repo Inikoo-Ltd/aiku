@@ -118,7 +118,7 @@ class CreateGuest extends InertiaAction
     public function getBreadcrumbs(): array
     {
         return array_merge(
-            IndexGuests::make()->getBreadcrumbs(),
+            IndexGuests::make()->getBreadcrumbs('grp.sysadmin.guests.index'),
             [
                 [
                     'type'          => 'creatingModel',

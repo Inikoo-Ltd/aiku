@@ -170,7 +170,6 @@ class CallApiDpdGbShipping extends OrgAction
             $shipmentId = Arr::get($apiResponse, 'data.shipmentId');
 
             $modelData['tracking'] = $trackingNumber;
-            $modelData['shipment_id'] = $shipmentId;
             $modelData['label'] = $this->getLabel($shipmentId, $shipper, 'text/html');
             $modelData['label_type'] = ShipmentLabelTypeEnum::HTML;
             $modelData['number_parcels'] = count($parcels);

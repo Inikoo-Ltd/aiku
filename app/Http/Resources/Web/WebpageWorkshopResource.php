@@ -49,7 +49,6 @@ class WebpageWorkshopResource extends JsonResource
             },
             'changes_webpage'                        => $this?->resource ? WebpagesResource::collection(IndexChangesWebpages::make()->handle($this->resource))->toArray(request()) : null,
             'is_dirty'                               => $webpage->is_dirty,
-            'web_blocks_parameters'                  => WebBlockParametersResource::collection($webpage->webBlocks),
             'layout'                                 => $webPageLayout,
             'sub_type'                               => $webpage->sub_type,
             'created_at'                             => $webpage->created_at,

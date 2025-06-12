@@ -57,7 +57,7 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+        ) = createShop();
 
     $this->group = $this->organisation->group;
 
@@ -66,7 +66,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
     $this->order    = createOrder($this->customer, $this->product);
@@ -261,22 +261,26 @@ test('update second delivery note state to handling', function (DeliveryNote $de
 })->depends('update second delivery note state to in queue');
 
 test('store picking', function (DeliveryNote $deliveryNote) {
-    $location = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
     $deliveryNoteItem = $deliveryNote->deliveryNoteItems->first();
-    $locationOrgStock = StoreLocationOrgStock::make()->action(orgStock: $deliveryNoteItem->orgStock, location: $location, strict: false, modelData:[
-        'quantity' => 100,
-        'type' => LocationStockTypeEnum::PICKING,
+    $locationOrgStock = StoreLocationOrgStock::make()->action(orgStock: $deliveryNoteItem->orgStock, location: $location, strict: false, modelData: [
+        'quantity'   => 100,
+        'type'       => LocationStockTypeEnum::PICKING,
         'fetched_at' => now(),
     ]);
 
     expect($deliveryNoteItem)->toBeInstanceOf(DeliveryNoteItem::class);
 
-    $picking = StorePicking::make()->action($deliveryNoteItem, $this->user, [
-        'picker_user_id' => $this->user->id,
-        'location_id' => $locationOrgStock->location_id,
-        'quantity' => 5,
+    $picking = StorePicking::make()->action(
+        $deliveryNoteItem,
+        $this->user,
+        [
+            'picker_user_id'        => $this->user->id,
+            'location_org_stock_id' => $locationOrgStock->id,
+            'quantity'              => 5,
 
-    ]);
+        ]
+    );
 
     expect($picking)->toBeInstanceOf(Picking::class)
         ->and(intval($picking->quantity))->toBe(5)
@@ -287,11 +291,9 @@ test('store picking', function (DeliveryNote $deliveryNote) {
     $picking->refresh();
 
     return $picking;
-
 })->depends('update second delivery note state to in queue');
 
 test('update picking', function (Picking $picking) {
-
     $picking = UpdatePicking::make()->action($picking, [
         'quantity' => 10
     ]);
@@ -306,7 +308,6 @@ test('update picking', function (Picking $picking) {
     $picking->refresh();
 
     return $picking;
-
 })->depends('store picking');
 
 test('pack item', function (Picking $picking) {
@@ -324,24 +325,27 @@ test('pack item', function (Picking $picking) {
     $packing->refresh();
 
     return $packing;
-
 })->depends('update picking');
 
 test('store second picking', function (DeliveryNote $deliveryNote) {
-    $location = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
     $deliveryNoteItem = $deliveryNote->deliveryNoteItems->skip(1)->first();
-    $locationOrgStock = StoreLocationOrgStock::make()->action(orgStock: $deliveryNoteItem->orgStock, location: $location, strict: false, modelData:[
-        'quantity' => 150,
-        'type' => LocationStockTypeEnum::PICKING,
-        'fetched_at' => now(),
-    ]);
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        location: $location,
+        strict: false,
+        modelData: [
+            'quantity'   => 150,
+            'type'       => LocationStockTypeEnum::PICKING,
+            'fetched_at' => now(),
+        ]
+    );
 
     expect($deliveryNoteItem)->toBeInstanceOf(DeliveryNoteItem::class);
-
     $picking = StorePicking::make()->action($deliveryNoteItem, $this->user, [
         'picker_user_id' => $this->user->id,
-        'location_id' => $locationOrgStock->location_id,
-        'quantity' => 5,
+        'location_org_stock_id'    => $locationOrgStock->id,
+        'quantity'       => 5,
 
     ]);
 
@@ -354,12 +358,11 @@ test('store second picking', function (DeliveryNote $deliveryNote) {
     $picking->refresh();
 
     return $picking;
-
 })->depends('update second delivery note state to in queue');
 
 test('set remaining quantity to not picked (2nd picking)', function (Picking $picking) {
     $deliveryNoteItem = $picking->deliveryNoteItem;
-    $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $this->user, [
+    $picking          = StoreNotPickPicking::make()->action($deliveryNoteItem, $this->user, [
     ]);
 
     expect($picking)->toBeInstanceOf(Picking::class)
@@ -371,11 +374,10 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
     $picking->refresh();
 
     return $picking;
-
 })->depends('store second picking');
 
 test('Set Delivery Note state to Packed', function (Picking $picking) {
-    $deliveryNote = $picking->deliveryNote;
+    $deliveryNote     = $picking->deliveryNote;
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
     $packedDeliveryNote = SetDeliveryNoteStateAsPacked::make()->action($deliveryNote, $this->user);
@@ -389,11 +391,10 @@ test('Set Delivery Note state to Packed', function (Picking $picking) {
         ->and(intval($deliveryNoteItem->quantity_packed))->toBe(5);
 
     return $packedDeliveryNote;
-
 })->depends('set remaining quantity to not picked (2nd picking)');
 
 test('create shipment', function ($deliveryNote, $shipper) {
-    $arrayData              = [
+    $arrayData = [
         'tracking' => 'AAA'
     ];
 

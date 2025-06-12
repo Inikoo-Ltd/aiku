@@ -348,6 +348,22 @@ const base64ToPdf = (base: string) => {
 	URL.revokeObjectURL(blobUrl);
 }
 
+const base64HtmlToPdf = (base64: string) => {
+	// Decode the base64 HTML
+	const htmlContent = atob(base64);
+
+	// Open a new blank window
+	const newWindow = window.open('', '_blank');
+	
+	if (newWindow) {
+		// Write the decoded HTML into the new window
+		newWindow.document.open();
+		newWindow.document.write(htmlContent);
+		newWindow.document.close();
+	} else {
+		alert('Popup blocked. Please allow popups for this site.');
+	}
+}
 </script>
 
 <template>
@@ -638,19 +654,43 @@ const base64ToPdf = (base: string) => {
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
 						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums">
 							<div class="flex justify-between">
-								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="">
+								<div v-if="sments.combined_label_url">
 									{{ sments.name }}
+									<a v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="">
+										<span class="">Open barcode</span>
+										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
+									</a>
 									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
-								</a>
+								</div>
 								
-								<div v-else-if="sments.label && sments.label_type === 'pdf'" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)" class="group cursor-pointer">
+								<!-- Type PDF -->
+								<div v-else-if="sments.label && sments.label_type === 'pdf'" class="group">
 									<span class="truncate">
 										{{ sments.name }}
 									</span>
 									<span v-if="sments.tracking" class="text-gray-400">
 										({{ useTruncate(sments.tracking, 14) }})
 									</span>
-									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 group-hover:text-gray-700" fixed-width aria-hidden="true" />
+
+									<div @click="base64ToPdf(sments.label)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+										<span class="">Open barcode</span>
+										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
+									</div>
+								</div>
+								
+								<!-- Type HTML -->
+								<div v-else-if="sments.label && sments.label_type === 'html'" class="group">
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ useTruncate(sments.tracking, 14) }})
+									</span>
+
+									<div @click="() => base64HtmlToPdf(sments.label)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+										<span class="">Open barcode</span>
+										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
+									</div>
 								</div>
 								
 								<div v-else>

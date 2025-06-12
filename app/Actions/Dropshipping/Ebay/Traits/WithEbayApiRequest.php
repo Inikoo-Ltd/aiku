@@ -1,12 +1,18 @@
 <?php
 
-namespace App\Actions\Dropshipping\WooCommerce\Traits;
+/*
+ * Author: Artha <artha@aw-advantage.com>
+ * Created: Wed, 11 Jun 2025 16:19:36 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Dropshipping\Ebay\Traits;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 trait WithEbayApiRequest
 {
@@ -19,7 +25,7 @@ trait WithEbayApiRequest
             'client_id' => config('services.ebay.client_id'),
             'client_secret' => config('services.ebay.client_secret'),
             'redirect_uri' => config('services.ebay.redirect_uri'),
-            'sandbox' => config('services.ebay.sandbox', true),
+            'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
         ];
@@ -229,7 +235,8 @@ trait WithEbayApiRequest
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
+                'Accept' => 'application/json',
+                'Content-Language' => 'en-GB'
             ])->$method($url, $data);
 
             if ($response->successful()) {
@@ -242,7 +249,8 @@ trait WithEbayApiRequest
                 $response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . $token,
                     'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
+                    'Content-Language' => 'en-GB'
                 ])->$method($url, $data);
 
                 if ($response->successful()) {
@@ -298,25 +306,10 @@ trait WithEbayApiRequest
     public function storeProduct($productData)
     {
         try {
-            $sku = Arr::get($productData, 'sku');
+            $sku = Arr::pull($productData, 'sku');
             $endpoint = "/sell/inventory/v1/inventory_item/{$sku}";
 
-            $inventoryItem = [
-                'availability' => [
-                    'shipToLocationAvailability' => [
-                        'quantity' => Arr::get($productData, 'quantity', 1)
-                    ]
-                ],
-                'condition' => 'NEW',
-                'product' => [
-                    'title' => Arr::get($productData, 'title'),
-                    'description' => Arr::get($productData, 'description'),
-                    'imageUrls' => Arr::get($productData, 'images'),
-                    'aspects' => Arr::get($productData, 'aspects')
-                ]
-            ];
-
-            return $this->makeEbayRequest('put', $endpoint, $inventoryItem);
+            return $this->makeEbayRequest('put', $endpoint, $productData);
         } catch (Exception $e) {
             Log::error('Store eBay Product Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];

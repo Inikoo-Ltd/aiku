@@ -10,6 +10,7 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraCollection extends FetchAurora
@@ -20,9 +21,9 @@ class FetchAuroraCollection extends FetchAurora
     {
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
 
-        //        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-        //            return;
-        //        }
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return;
+        }
 
         $collectionsRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
             ->select('Category Key', 'Category Code', 'Category Subject')
@@ -74,11 +75,11 @@ class FetchAuroraCollection extends FetchAurora
         $subjects = DB::connection('aurora')
             ->table('Category Bridge')
             ->where('Category Key', $this->auroraModelData->{'Category Key'})->get();
-        $models = [];
+        $models   = [];
         foreach ($subjects as $subject) {
             $modelAuroraType = $subject->{'Subject'};
-            $modelAuroraId = $subject->{'Subject Key'};
-            $model = null;
+            $modelAuroraId   = $subject->{'Subject Key'};
+            $model           = null;
             if ($modelAuroraType == 'Product') {
                 $model = $this->parseProduct($shop->organisation->id.':'.$modelAuroraId);
             } else {
@@ -88,10 +89,8 @@ class FetchAuroraCollection extends FetchAurora
             if ($model) {
                 $models[] = $model;
             }
-
         }
         $this->parsedData['models'] = $models;
-
     }
 
     private function parseImages(): array

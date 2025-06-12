@@ -180,25 +180,11 @@ class GetProductCategoryShowcase
                 ],
                 'method'     => 'delete'
             ],
-            'attach_collections_route' => $productCategory->webpage ? [
-                'name'       => 'grp.models.webpage.attach_collections',
-                'parameters' => [
-                    'webpage'  => $productCategory->webpage->id,
-                ],
-                'method' => 'post'
-            ] : [],
-            'detach_collections_route' => $productCategory->webpage?->webpageHasCollections ? [
-                'name'       => 'grp.models.webpage.detach_collection',
-                'parameters' => [
-                    'webpage'  => $productCategory->webpage->id,
-                ],
-                'method' => 'delete'
-            ] : [],
         ];
 
 
 
-        $data['has_webpage'] = $productCategory->webpage ? true : false;
+        $data['has_webpage'] = (bool)$productCategory->webpage;
 
         return $data;
     }

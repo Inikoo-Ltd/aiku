@@ -74,8 +74,7 @@ console.log(props)
 <template>
  <Head>
   <title>{{ meta.meta_title }}</title>
-  <meta name="description" :content="meta.meta_description" />
-
+    <meta name="description" :content="meta.meta_description" />
     <meta property="og:type" content="website" />
     <meta property="og:title" :content="meta.meta_title" />
     <meta property="og:description" :content="meta.meta_description" />
