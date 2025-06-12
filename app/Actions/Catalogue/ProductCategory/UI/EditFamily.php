@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -104,7 +105,11 @@ class EditFamily extends OrgAction
                         ]
                     ]
                 ],
-
+                'data_department' => $family->shop->productCategories()
+                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                    ->get(['id', 'name'])
+                    ->toArray(),
+                'selected_department' => $family->parent_id,
                 'formData' => [
                     'blueprint' => [
                         [

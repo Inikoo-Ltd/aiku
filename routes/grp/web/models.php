@@ -34,7 +34,6 @@ use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
-use App\Actions\Catalogue\ProductCategory\UpdateFamilyDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -315,9 +314,6 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
 
 Route::delete('product-category/{productCategory:id}', DeleteProductCategory::class)->name('product_category.delete');
 
-Route::prefix('family/{productCategory:id}')->name('family.')->group(function () {
-    Route::patch('/update-department', UpdateFamilyDepartment::class)->name('update_department');
-});
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::patch('', [UpdateProductCategory::class, 'inSubDepartment'])->name('update');
