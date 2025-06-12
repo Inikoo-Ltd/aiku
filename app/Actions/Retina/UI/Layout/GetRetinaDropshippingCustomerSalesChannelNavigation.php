@@ -27,7 +27,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
             'icon'        => ['fal', 'fa-shopping-basket'],
             'root'        => 'retina.dropshipping.customer_sales_channels.basket.',
             'right_label' => [
-                'label' => $customerSalesChannel->number_orders_state_creating,
+                'number' => $customerSalesChannel->number_orders_state_creating,
                 'class' => 'bg-yellow-500 text-green-500'
             ],
             'route'       => [
@@ -60,7 +60,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
                 'parameters' => [$customerSalesChannel->slug]
             ],
             'right_label' => [
-                'label'        => $customerSalesChannel->number_portfolios,
+                'number'        => $customerSalesChannel->number_portfolios,
                 'class'        => 'text-white',
             ],
             // 'topMenu'     => [
@@ -88,7 +88,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
                 'parameters' => [$customerSalesChannel->slug]
             ],
             'right_label' => [
-                'label'        => $customerSalesChannel->number_customer_clients,
+                'number'        => $customerSalesChannel->number_customer_clients,
                 'class'        => 'text-white',
             ],
         ];
@@ -102,7 +102,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
                 'parameters' => [$customerSalesChannel->slug]
             ],
             'right_label' => [
-                'label'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
+                'number'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
                 'class'        => 'text-white',
             ],
         ];

@@ -124,7 +124,7 @@ class GetRetinaFulfilmentNavigation
                                 'label' => __('Inventory'),
 
                                 'right_label' => [
-                                    'label' => $webUser->customer->fulfilmentCustomer->number_stored_items_state_active,
+                                    'number' => $webUser->customer->fulfilmentCustomer->number_stored_items_state_active,
                                     'class' => 'text-white',
                                 ],
 
@@ -159,7 +159,7 @@ class GetRetinaFulfilmentNavigation
                                 'label'         => __('Channels'),
                                 'icon'          => 'fal fa-code-branch',
                                 'right_label'   => [
-                                    'label' => $numberChannels,
+                                    'number' => $numberChannels,
                                     'class' => 'text-white',
                                 ],
                                 'icon_rotation' => 90,
