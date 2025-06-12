@@ -30,6 +30,9 @@ import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerR
 import { notify } from "@kyvg/vue3-notification"
 import Textarea from "primevue/textarea"
 
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+
 import InputNumber from "primevue/inputnumber"
 import Fieldset from "primevue/fieldset"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
@@ -348,21 +351,50 @@ const base64ToPdf = (base: string) => {
 	URL.revokeObjectURL(blobUrl);
 }
 
-const base64HtmlToPdf = (base64: string) => {
-	// Decode the base64 HTML
-	const htmlContent = atob(base64);
+const isLoadingBarcodeHtml = ref(null)
+const base64HtmlToPdf = async (base64: string, index) => {
+	isLoadingBarcodeHtml.value = index;
 
-	// Open a new blank window
-	const newWindow = window.open('', '_blank');
+	// Decode the Base64 HTML
+	const htmlContent = atob(base64);
 	
-	if (newWindow) {
-		// Write the decoded HTML into the new window
-		newWindow.document.open();
-		newWindow.document.write(htmlContent);
-		newWindow.document.close();
-	} else {
-		alert('Popup blocked. Please allow popups for this site.');
-	}
+	// console.log("HTML Content:", htmlContent);
+
+	// Create a hidden container to render the HTML
+	const container = document.createElement('div');
+	container.innerHTML = htmlContent;
+	container.style.position = 'fixed';
+	container.style.left = '-9999px';
+	container.style.marginTop = '0';
+	container.style.top = '0';
+	container.style.width = '794px'; // A4 width at 96dpi
+	container.style.background = 'white';
+	container.style.padding = '0';
+	document.body.appendChild(container);
+	
+	await new Promise(resolve => setTimeout(resolve, 100)); // Wait for styles to render
+
+	// Render the HTML to canvas
+	const canvas = await html2canvas(container, { scale: 2, backgroundColor: null, useCORS: true });
+
+	// Create PDF from canvas image
+	const imgData = canvas.toDataURL('image/png');
+	const pdf = new jsPDF('p', 'px', 'a4');
+
+	const pageWidth = pdf.internal.pageSize.getWidth();
+	const imgWidth = pageWidth;
+	const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+	pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+	// Output the PDF as blob URL and open in new tab
+	const blob = pdf.output('blob');
+	const blobUrl = URL.createObjectURL(blob);
+	window.open(blobUrl, '_blank');
+
+	// Clean up the hidden container
+	document.body.removeChild(container);
+	isLoadingBarcodeHtml.value = null;
 }
 </script>
 
@@ -652,15 +684,15 @@ const base64HtmlToPdf = (base64: string) => {
 					</div>
 					
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
-						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums">
+						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums relative">
 							<div class="flex justify-between">
 								<div v-if="sments.combined_label_url">
 									{{ sments.name }}
-									<a v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="">
+
+									<a v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
 										<span class="">Open barcode</span>
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</a>
-									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 								</div>
 								
 								<!-- Type PDF -->
@@ -687,9 +719,16 @@ const base64HtmlToPdf = (base64: string) => {
 										({{ useTruncate(sments.tracking, 14) }})
 									</span>
 
-									<div @click="() => base64HtmlToPdf(sments.label)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+									<div @click="() => base64HtmlToPdf(sments.label, shipmentIdx)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
 										<span class="">Open barcode</span>
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
+									</div>
+
+									<div
+										v-if="isLoadingBarcodeHtml === shipmentIdx"
+										class="bg-black/20 text-black text-2xl inset-0 absolute flex items-center justify-center"
+									>
+										<LoadingIcon />
 									</div>
 								</div>
 								
