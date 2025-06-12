@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachCollectionsToModel extends OrgAction
+class AttachMultipleParentsToACollection extends OrgAction
 {
     public function handle(Collection $collection, array $modelData): Collection
     {

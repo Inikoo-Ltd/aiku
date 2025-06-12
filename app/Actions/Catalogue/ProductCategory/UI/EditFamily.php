@@ -30,14 +30,14 @@ class EditFamily extends OrgAction
         if ($this->parent instanceof Organisation) {
             $this->canEdit = $request->user()->authTo(
                 [
-                    'org-supervisor.'.$this->organisation->id,
+                    'org-supervisor.' . $this->organisation->id,
                 ]
             );
 
             return $request->user()->authTo(
                 [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
+                    'org-supervisor.' . $this->organisation->id,
+                    'shops-view' . $this->organisation->id,
                 ]
             );
         } else {
@@ -79,6 +79,21 @@ class EditFamily extends OrgAction
 
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
+        $departmentIdFormData = [];
+
+        if ($family?->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $departmentIdFormData['department_id'] = [
+                'type'     => 'select',
+                'label'    => __('Departement'),
+                'required' => true,
+                'options'  => $family->shop->productCategories()
+                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                    ->get(['id as value', 'name as label'])
+                    ->toArray(),
+                'value'   =>  $family->parent_id,
+            ];
+
+        }
         return Inertia::render(
             'EditModel',
             [
@@ -105,11 +120,7 @@ class EditFamily extends OrgAction
                         ]
                     ]
                 ],
-                'data_department' => $family->shop->productCategories()
-                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
-                    ->get(['id', 'name'])
-                    ->toArray(),
-                'selected_department' => $family->parent_id,
+
                 'formData' => [
                     'blueprint' => [
                         [
@@ -130,6 +141,7 @@ class EditFamily extends OrgAction
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
                                 ],
+                                ...$departmentIdFormData
                             ]
                         ]
 
@@ -156,7 +168,7 @@ class EditFamily extends OrgAction
             $family,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 
@@ -164,7 +176,6 @@ class EditFamily extends OrgAction
     {
         $previous = ProductCategory::where('code', '<', $family->code)->orderBy('code', 'desc')->first();
         return $this->getNavigation($previous, $request->route()->getName());
-
     }
 
     public function getNext(ProductCategory $family, ActionRequest $request): ?array

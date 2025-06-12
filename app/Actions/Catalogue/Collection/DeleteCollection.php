@@ -25,12 +25,11 @@ class DeleteCollection extends OrgAction
     use AsAction;
     use WithAttributes;
 
+    private ?Collection $collection;
+
     public function handle(Collection $collection, bool $forceDelete = false): Collection
     {
         if ($forceDelete) {
-            if ($collection->webpage) {
-                throw new \Exception("Cannot force delete a collection that has a webpage");
-            }
 
             DB::table('model_has_collections')->where('collection_id', $collection->id)->delete();
             DB::table('collection_has_models')->where('collection_id', $collection->id)->delete();
@@ -57,13 +56,22 @@ class DeleteCollection extends OrgAction
         return $collection;
     }
 
+    public function afterValidator(): void
+    {
+        if ($this?->collection?->webpage) {
+            throw new \Exception("Cannot force delete a collection that has a webpage");
+        }
+    }
+
     public function action(Collection $collection, bool $forceDelete = false): Collection
     {
+        $this->collection = $collection;
         return $this->handle($collection, $forceDelete);
     }
 
     public function asController(Collection $collection, ActionRequest $request): Collection
     {
+        $this->collection = $collection;
         $this->initialisation($collection->organisation, $request);
 
         $forceDelete = $request->boolean('force_delete');
@@ -73,6 +81,7 @@ class DeleteCollection extends OrgAction
 
     public function inShop(Shop $shop, Collection $collection, ActionRequest $request): Collection
     {
+        $this->collection = $collection;
         $this->initialisationFromShop($shop, $request);
 
         $forceDelete = $request->boolean('force_delete');
