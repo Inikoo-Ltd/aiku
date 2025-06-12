@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -31,7 +30,6 @@ class SubDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $subDepartment =  ProductCategory::find($this->id);
 
         return [
             'id'                 => $this->id,
@@ -54,7 +52,7 @@ class SubDepartmentsResource extends JsonResource
             'description'       => $this->description,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
-            'number_current_families' => $this->number_current_families,
+            'number_families' => $this->number_families,
         ];
     }
 }
