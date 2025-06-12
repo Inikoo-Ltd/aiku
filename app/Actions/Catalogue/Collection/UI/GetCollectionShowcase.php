@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Api\Dropshipping\ShopResource;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\Collection;
@@ -112,6 +113,7 @@ class GetCollectionShowcase
             ],
             'parent_departments' => DepartmentResource::collection($collection->departments)->toArray(request()),
             'parent_subdepartments' => SubDepartmentResource::collection($collection->subdepartments)->toArray(request()),
+            'shop' => ShopResource::make($collection->shop)->toArray(request()),
 
             'routes' => [
                 'departments_route' => [
