@@ -17,6 +17,7 @@ use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
+use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
@@ -39,6 +40,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\DownloadRetinaOrderTransactionsTemplate;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
@@ -83,7 +85,8 @@ Route::prefix('orders')->as('orders.')->group(function () {
     Route::get('/', IndexRetinaDropshippingOrders::class)->name('index');
     Route::get('/{order}', ShowRetinaDropshippingOrder::class)->name('show');
 
-    Route::get('/{order}/upload-templates', ShowRetinaDropshippingOrder::class)->name('upload_templates');
+    Route::get('/{order}/recent-uploads', [IndexRecentUploads::class, 'inOrderRetina'])->name('recent_uploads');
+    Route::get('/{order}/upload-templates', DownloadRetinaOrderTransactionsTemplate::class)->name('upload_templates');
 });
 
 Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
