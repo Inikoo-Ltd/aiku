@@ -16,6 +16,7 @@ use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\AttachCollectionsToModel;
+use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
@@ -731,7 +732,8 @@ Route::post('/guest/', StoreGuest::class)->name('guest.store');
 Route::delete('/guest/{guest:id}', DeleteGuest::class)->name('guest.delete');
 
 Route::name('collection.')->prefix('collection/{collection:id}')->group(function () {
-    Route::post('attach-models', AttachModelsToCollection::class)->name('attach-models');
+    Route::post('attach-model', AttachModelsToCollection::class)->name('attach-model');
+    Route::post('attach-models', AttachCollectionsToModel::class)->name('attach-models');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
 });
 
@@ -795,7 +797,7 @@ Route::post('/outbox/{outbox:id}/mailshot', StoreMailshot::class)->name('outbox.
 Route::name('product_category.')->prefix('product_category/{productCategory:id}')->group(function () {
     Route::post('collection', [StoreCollection::class, 'inProductCategory'])->name('collection.store');
     Route::post('content', [StoreModelHasContent::class, 'inProductCategory'])->name('content.store');
-    Route::post('{collection:id}/attach-collection', AttachCollectionsToModel::class)->name('collection.attach');
+    Route::post('{collection:id}/attach-collection', AttachCollectionToModel::class)->name('collection.attach');
     Route::delete('{collection:id}/detach-collection', DetachCollectionFromModel::class)->name('collection.detach');
 });
 
