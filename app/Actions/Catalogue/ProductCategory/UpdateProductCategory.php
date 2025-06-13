@@ -20,8 +20,6 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -169,25 +167,16 @@ class UpdateProductCategory extends OrgAction
         return $this->handle($productCategory, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ProductCategory $productCategory, ActionRequest $request): ProductCategory
+    public function asController(ProductCategory $productCategory, ActionRequest $request): ProductCategory
     {
 
         $this->productCategory = $productCategory;
 
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($productCategory->shop, $request);
         return $this->handle($productCategory, $this->validatedData);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function inSubDepartment(ProductCategory $productCategory, ActionRequest $request): ProductCategory
-    {
-        $this->productCategory = $productCategory;
-        $this->initialisationFromShop($productCategory->shop, $request);
 
-        return $this->handle($productCategory, modelData: $this->validatedData);
-    }
 
     public function jsonResponse(ProductCategory $productCategory): DepartmentsResource|SubDepartmentResource|FamilyResource
     {
