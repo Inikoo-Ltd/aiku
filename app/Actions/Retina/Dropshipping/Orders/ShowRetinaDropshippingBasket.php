@@ -236,6 +236,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
             ),
             'customer_client'  => CustomerClientResource::make($order->customerClient)->getArray(),
             'customer_channel' => [
+                'slug'     => $customerChannel->slug,
                 'status'   => $order->customer_sales_channel_id,
                 'platform' => [
                     'name'  => $customerChannel->platform->name,

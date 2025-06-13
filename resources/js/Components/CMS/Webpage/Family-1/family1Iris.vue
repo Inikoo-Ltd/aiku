@@ -4,14 +4,12 @@ import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import EmptyState from '@/Components/Utils/EmptyState.vue'
-import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
 const props = defineProps<{
   fieldValue: {
-    families: {
+    family: {
       name: string
       description: string
       images: { source: string }[]
@@ -22,11 +20,11 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-console.log('family',props)
 </script>
 
 <template>
- <div>
-  Family Block
-</div>
+  <div class="p-4">
+    <div v-if="fieldValue?.family?.description" v-html="fieldValue?.family?.description"></div>
+    <div v-else  class="text-gray-500 italic">There is no desciption in this family</div>
+  </div>
 </template>

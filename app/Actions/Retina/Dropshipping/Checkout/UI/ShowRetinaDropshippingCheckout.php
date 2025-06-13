@@ -91,25 +91,45 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $order = Arr::get($checkoutData, 'order');
 
 
-        $toPay          = $order->total_amount > 0 ? $order->total_amount : 0;
-        $toPayByBalance = min($this->customer->balance, $toPay);
-        $toPayByOther   = max($toPay - $toPayByBalance, 0);
+        $toPay          = (float) ($order->total_amount > 0 ? $order->total_amount : 0.0);
+        $toPayByBalance = min((float) $this->customer->balance, $toPay);
+        $toPayByOther   = max($toPay - $toPayByBalance, 0.0);
 
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingCheckout',
             [
                 'breadcrumbs'    => $this->getBreadcrumbs($order),
-                'title'          => __('Basket'),
-                'pageHead'       => [
-                    'title' => __('Basket'),
-                    'icon'  => 'fal fa-shopping-basket'
+                'title'          => __('Checkout'),
+                'pageHead'    => [
+                    'title'      => $order->reference,
+                    'model'      => __('Checkout'),
+                    // 'icon'       => [
+                    //     'icon'  => 'fal fa-shopping-basket',
+                    //     'title' => __('customer client')
+                    // ],
+                    // 'afterTitle' => [
+                    //     'label' => ' @'.$this->platform->name
+                    // ],
+                    // 'actions'   => [
+                    //     [
+                    //         'type'   => 'buttonGroup',
+                    //         'button' => [
+                    //             [
+                    //                 'type'    => 'button',
+                    //                 'key'     => 'upload-add',
+                    //                 'icon'      => 'fal fa-upload',
+                    //             ],
+                    //         ],
+                    //     ],
+                    // ]
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
                 'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer?->balance,
                 'total_amount'   => $order->total_amount,
+                'currency_code'  => $order->currency->code,
                 'to_pay_data'    => [
                     'total'      => $toPay,
                     'by_balance' => $toPayByBalance,

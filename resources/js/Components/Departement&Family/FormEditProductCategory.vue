@@ -7,6 +7,8 @@ import ImageCropper from '@/Components/Forms/Fields/ImageCropSquare.vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
+import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
+import { EditorContent } from '@tiptap/vue-3'
 
 const props = defineProps<{
   data: {
@@ -65,29 +67,32 @@ const submitForm = async () => {
   <div>
     <div class="mb-6">
       <label for="name" class="block mb-1 text-sm font-semibold text-gray-700">Department Name</label>
-      <InputText id="name" v-model="form.name" class="w-full" placeholder="Enter department name"
+      <InputText id="name" v-model="form.name" class="w-full" placeholder="Enter name"
         @update:model-value="form.errors.name = undefined" />
       <p v-if="form.errors.name" class="text-xs text-red-500">{{ form.errors.name }}</p>
     </div>
 
     <div class="mb-6">
       <label for="description" class="block mb-1 text-sm font-semibold text-gray-700">Description</label>
-      <Textarea id="description" v-model="form.description" rows="4" class="w-full" placeholder="Enter description"
+      <Editor v-model="form.description">
+        <template #editor-content="{ editor }">
+          <div class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-blue-400">
+            <EditorContent :editor="editor" class="editor-content focus:outline-none" />
+          </div>
+        </template>
+      </Editor>
+      <!--   <Textarea id="description" v-model="form.description" rows="4" class="w-full" placeholder="Enter description"
         @update:model-value="form.errors.description = undefined" />
-      <p v-if="form.errors.description" class="text-xs text-red-500">{{ form.errors.description }}</p>
+      <p v-if="form.errors.description" class="text-xs text-red-500">{{ form.errors.description }}</p> -->
     </div>
 
     <div class="mb-6">
       <label class="block mb-2 text-sm font-semibold text-gray-700">Image</label>
-      <ImageCropper
-        :form="form"
-        fieldName="image"
-        :fieldData="{
-          options: {
-            aspectRatio: { width: 1, height: 1 }
-          }
-        }"
-      />
+      <ImageCropper :form="form" fieldName="image" :fieldData="{
+        options: {
+          aspectRatio: { width: 1, height: 1 }
+        }
+      }" />
     </div>
 
     <Button label="Submit" icon="pi pi-check" full @click="submitForm" />
