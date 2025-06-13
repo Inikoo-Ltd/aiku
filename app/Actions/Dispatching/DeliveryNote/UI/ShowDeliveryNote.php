@@ -99,10 +99,10 @@ class ShowDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
-    public function getHandlingActions(DeliveryNote $deliveryNote)
+    public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
         $isSomeNotPicked = !$deliveryNote->deliveryNoteItems->every(
-            fn ($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
+            fn($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
         );
 
 
@@ -135,14 +135,7 @@ class ShowDeliveryNote extends OrgAction
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-
-
-
         $startPickingLabel = __('Start picking');
-
-
-
-
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
@@ -180,7 +173,7 @@ class ShowDeliveryNote extends OrgAction
                             'style'   => 'delete',
                             'tooltip' => __('Remove picker'),
                             'label'   => __('Remove Picker'),
-                            'icon'      => 'fal fa-user-slash',
+                            'icon'    => 'fal fa-user-slash',
                             'key'     => 'remove-picker',
                             'route'   => [
                                 'method'     => 'patch',
@@ -194,7 +187,7 @@ class ShowDeliveryNote extends OrgAction
                             'type'    => 'button',
                             'style'   => 'save',
                             'tooltip' => __('Change picker'),
-                            'icon'      => 'fal fa-exchange-alt',
+                            'icon'    => 'fal fa-exchange-alt',
                             'label'   => __('Change Picker'),
                             'key'     => 'change-picker',
                         ]
@@ -272,7 +265,7 @@ class ShowDeliveryNote extends OrgAction
         };
     }
 
-    public function getBoxStats(DeliveryNote $deliveryNote)
+    public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
 
@@ -299,8 +292,7 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
-
-    public function getTimeline(DeliveryNote $deliveryNote)
+    public function getTimeline(DeliveryNote $deliveryNote): array
     {
         $timeline = [];
 
@@ -345,7 +337,6 @@ class ShowDeliveryNote extends OrgAction
 
         return $timeline;
     }
-
 
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
@@ -470,23 +461,23 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
 
             ];
         }
 
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+                fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
+                : Inertia::lazy(fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
         ];
     }

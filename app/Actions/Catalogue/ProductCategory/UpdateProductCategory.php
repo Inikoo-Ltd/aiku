@@ -39,6 +39,14 @@ class UpdateProductCategory extends OrgAction
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY && Arr::has($modelData, 'department_id')) {
+            $productCategory=UpdateFamilyDepartment::make()->action($productCategory, [
+                'department_id' => Arr::pull($modelData, 'department_id'),
+            ]);
+
+        }
+
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         if ($imageData['image']) {
             $this->processCatalogueImage($imageData, $productCategory);
@@ -48,19 +56,15 @@ class UpdateProductCategory extends OrgAction
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
-       if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            if (Arr::has($modelData, 'department_id')) {
-                UpdateFamilyDepartment::make()->action($productCategory, [
-                    'department_id' => Arr::pull($modelData, 'department_id'),
-                ]);
-            }
-        }
+
 
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $changes         = $productCategory->getChanges();
 
-        ProductCategoryRecordSearch::dispatch($productCategory);
+        if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
+            ProductCategoryRecordSearch::dispatch($productCategory);
+        }
 
         if (Arr::has($changes, 'state')) {
             $this->productCategoryHydrators($productCategory);
@@ -82,6 +86,7 @@ class UpdateProductCategory extends OrgAction
             $this->productCategoryHydrators($productCategory);
         }
         $productCategory->refresh();
+
         return $productCategory;
     }
 
@@ -117,10 +122,21 @@ class UpdateProductCategory extends OrgAction
             'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
             'description'       => ['sometimes', 'required', 'max:1500'],
-            'department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
-            'sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
+            'department_id' => [
+                'required',
+                Rule::exists('product_categories', 'id')
+                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                    ->where('shop_id', $this->shop->id)
+            ],
+            'sub_department_id' => [
+                'required',
+                Rule::exists('product_categories', 'id')
+                    ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+                    ->where('shop_id', $this->shop->id)
+            ],
+
             'follow_master'     => ['sometimes', 'boolean'],
-            'image'       => [
+            'image'             => [
                 'sometimes',
                 'nullable',
                 File::image()
