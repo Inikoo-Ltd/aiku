@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { faCube, faHeadSide, faLink, faSeedling, faHeart } from "@fal"
-import { faBox } from "@far"
+import { faBox, faPlus, faVial } from "@far"
 import { faChevronDown, faCircle, faMedal, faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
-import ImageProducts from "./ImageProducts.vue"
+import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { ConfirmPopupStyle } from "primevue"
 
 library.add(faCube, faLink)
 
@@ -118,6 +119,7 @@ const saveDescriptions = (value: string) => {
 
 const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not onheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
 
+console.log(props)
 </script>
 
 <template>
@@ -126,26 +128,35 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
             <!-- Left Column (7/12) -->
             <div class="col-span-7">
                 <!-- Informasi Produk -->
-                <div class="flex justify-between mb-6 items-start">
+                <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
-                        <h1 class="font-bold text-2xl">{{ modelValue.product.name }}</h1>
+                        <!-- Product Name -->
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            {{ modelValue.product.name }}
+                        </h1>
 
-                        <div class="flex gap-x-10 text-gray-600 mt-1 mb-1 text-sm">
-                            <div>Product code: {{ modelValue.product.code }}</div>
+                        <!-- Code & Rating -->
+                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                            <div>
+                                Product code: {{ modelValue.product.code }}
+                            </div>
                             <div class="flex items-center gap-[1px]">
-                                <FontAwesomeIcon :icon="faStar" class="text-[9px]" v-for="n in 5" :key="n" />
-                                <span class="ml-1 text-xs">41</span>
+                                <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
+                                    :key="n" />
+                                <span class="ml-1 text-xs text-gray-500">41</span>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2 mb-4">
-                            <FontAwesomeIcon :icon="faCircle" class="text-sm"
-                                :class="modelValue.product.state == 'active' ? 'text-green-600' : 'text-red-600'" />
-                            <span v-if="modelValue.product.stock > 0" class="text-gray-600 text-sm">In Stock ({{
-                                modelValue.product.stock }})</span>
-                            <span v-else class="text-gray-600 text-sm">Out Of Stock</span>
+                        <!-- Stock Status -->
+                        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                            <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                :class="modelValue.product.stock === 'active' ? 'text-green-600' : 'text-red-600'" />
+                            <span>
+                                {{ modelValue.product.stock > 0 ? `In Stock (${modelValue.product.stock})` : 'Out Of Stock' }}
+                            </span>
                         </div>
                     </div>
+
 
                     <!-- Favorit -->
                     <div class="h-full flex items-start">
@@ -215,40 +226,41 @@ const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever 
             <!-- Right Column (5/12) -->
             <div class="col-span-5 self-start">
                 <!-- Harga -->
-                <div class="flex justify-between items-center mb-3not border-b pb-3">
+                <div class="flex items-end border-b pb-3 mb-3">
                     <!-- Harga Saat Ini -->
-                    <div class="font-semibold text-2xl capitalize text-gray-900">
+                    <div class="text-gray-900 font-semibold text-5xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
-                        <span class="text-sm text-gray-500">
+                        <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">
                             ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
                         </span>
                     </div>
 
                     <!-- Harga RRP -->
-                    <div class="text-sm flex font-semibold text-gray-400 text-right">
-                        RRP : {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp || 0) }}
-                        <span class="block">
-                            /{{ modelValue.product.unit }}
-                        </span>
+                    <div class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
+                        <span>RRP: {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp ||
+                            0) }}</span>
+                        <span>/{{ modelValue.product.unit }}</span>
                     </div>
                 </div>
 
 
 
-                <!-- Order -->
-                <div class="flex gap-2 mb-6 items-center">
-                    <div class="flex items-center gap-1 select-none cursor-pointer">
-                        <div class="font-bold text-3xl leading-none" @click="decreaseQuantity">-</div>
-                        <div
-                            class="h-8 aspect-square border border-gray-400 flex items-center justify-center tabular-nums text-xl font-bold">
-                            {{ orderQuantity }}
-                        </div>
-                        <div class="font-bold text-3xl leading-none" @click="increaseQuantity">+</div>
-                    </div>
-                    <button class="bg-gray-800 text-white rounded px-3 py-1 w-full h-8 text-center font-semibold">
-                        Order Now
+                <div class="flex gap-2 mb-6">
+                    <!-- Add to Portfolio (90%) -->
+                    <button
+                        class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white rounded px-4 py-2 text-sm font-semibold w-[90%] transition">
+                        <FontAwesomeIcon :icon="faPlus" class="text-base" />
+                        Add to Portfolio
+                    </button>
+
+                    <!-- Buy a Sample (10%) -->
+                    <button
+                        class="flex items-center justify-center border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded p-2 text-sm font-semibold w-[10%] transition">
+                        <FontAwesomeIcon :icon="faVial" class="text-sm" />
                     </button>
                 </div>
+
+
 
                 <!-- Keterangan -->
                 <div class="flex items-center text-xs text-gray-500 mb-6">

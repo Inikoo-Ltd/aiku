@@ -13,7 +13,7 @@ import { ulid } from 'ulid'
 import Image from '@/Components/Image.vue'
 
 const props = defineProps<{
-    images: string[]
+  images: string[]
 }>()
 
 const keySwiperMain = ref(ulid())
@@ -26,32 +26,21 @@ const nextEl = ref<HTMLElement | null>(null)
 const navigation = ref({ prevEl: null, nextEl: null })
 
 onMounted(async () => {
-    await nextTick()
-    navigation.value = {
-        prevEl: prevEl.value,
-        nextEl: nextEl.value
-    }
+  await nextTick()
+  navigation.value = {
+    prevEl: prevEl.value,
+    nextEl: nextEl.value
+  }
 })
 </script>
 <template>
   <div class="w-full flex flex-col items-center relative">
     <!-- Main Swiper with Navigation -->
     <div class="relative w-full">
-      <Swiper
-        :key="keySwiperMain"
-        :slides-per-view="1"
-        :loop="true"
-        :autoplay="false"
-        :navigation="navigation"
-        :modules="[Navigation, Autoplay, Thumbs]"
-        :thumbs="{ swiper: thumbsSwiper }"
-        class="aspect-square w-full rounded-lg mb-4"
-      >
-        <SwiperSlide
-          v-for="(image, index) in images"
-          :key="index"
-          class="flex justify-center items-center"
-        >
+      <Swiper :key="keySwiperMain" :slides-per-view="1" :loop="true" :autoplay="false" :navigation="navigation"
+        :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
+        class="aspect-square w-full rounded-lg mb-4">
+        <SwiperSlide v-for="(image, index) in images" :key="index" class="flex justify-center items-center">
           <div class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg">
             <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
           </div>
@@ -59,38 +48,31 @@ onMounted(async () => {
       </Swiper>
 
       <!-- Navigation Buttons -->
-      <div
-        ref="prevEl"
-        class="absolute left-4 top-1/2 -translate-y-1/2 z-30 text-3xl cursor-pointer text-gray-700 select-none"
-      >
+      <div ref="prevEl"
+        class="absolute left-4 top-1/2 -translate-y-1/2 z-30 text-3xl cursor-pointer text-gray-700 select-none">
         <FontAwesomeIcon :icon="faChevronCircleLeft" />
       </div>
-      <div
-        ref="nextEl"
-        class="absolute right-4 top-1/2 -translate-y-1/2 z-30 text-3xl cursor-pointer text-gray-700 select-none"
-      >
+      <div ref="nextEl"
+        class="absolute right-4 top-1/2 -translate-y-1/2 z-30 text-3xl cursor-pointer text-gray-700 select-none">
         <FontAwesomeIcon :icon="faChevronCircleRight" />
       </div>
     </div>
 
     <!-- Thumbnail Swiper -->
-    <Swiper
-      :key="keySwiperThumb"
-      :slides-per-view="5"
-      :space-between="10"
-      watch-slides-progress
-      :modules="[Thumbs]"
-      @swiper="(swiper) => (thumbsSwiper = swiper)"
-      class="w-full"
-    >
-      <SwiperSlide
-        v-for="(image, index) in images"
-        :key="index"
-        class="cursor-pointer rounded overflow-hidden border border-gray-300"
-      >
-        <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`" class="w-full h-20 object-cover" />
+    <Swiper :key="keySwiperThumb" :slides-per-view="auto" :space-between="8" watch-slides-progress :modules="[Thumbs]"
+      @swiper="(swiper) => (thumbsSwiper = swiper)" :style="{ width: 'fit-content', marginLeft: '0px' }">
+      <SwiperSlide v-for="(image, index) in images" :key="index"
+        class="cursor-pointer rounded overflow-hidden border border-gray-300 !w-[60px]">
+        <slot name="image-thumbnail" :image="image">
+          <div class="aspect-square w-full">
+            <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
+          </div>
+        </slot>
+
       </SwiperSlide>
     </Swiper>
+
+
   </div>
 </template>
 
@@ -98,11 +80,11 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .swiper {
-    touch-action: pan-y;
+  touch-action: pan-y;
 }
 
 /* Sesuaikan posisi tombol navigasi supaya di luar gambar */
 .absolute {
-    user-select: none;
+  user-select: none;
 }
 </style>
