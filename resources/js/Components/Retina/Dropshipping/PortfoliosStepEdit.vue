@@ -2,8 +2,8 @@
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import { get, set } from 'lodash-es'
-import { Column, DataTable, IconField, InputIcon, InputNumber, InputText } from 'primevue'
-import { onMounted, ref } from 'vue'
+import { Column, DataTable, IconField, InputIcon, InputNumber, InputText, RadioButton } from 'primevue'
+import { inject, onMounted, ref } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@fal"
@@ -15,6 +15,8 @@ const props = defineProps<{
     portfolios: {}[]
     listState: { [key: string]: { [key: string]: string } }
 }>()
+
+const locale = inject('locale', {})
 
 const emits = defineEmits<{
     (e: "updateSelectedProducts", portfolio: {}, dataToSend: {}, keyToConditionicon: string ): void,
@@ -55,7 +57,9 @@ const valueTableFilter = ref({})
 
         <Column field="code" header="" style="max-width: 90px;">
             <template #body="{ data }">
-                <Image :src="data.image" class="w-20 h-20" :alt="data.code" />
+                <div class="w-20 h-20">
+                    <Image :src="data.image" imageCover :alt="data.code" />
+                </div>
             </template>
         </Column>
 
@@ -87,43 +91,65 @@ const valueTableFilter = ref({})
         </Column>
 
         <Column field="quantity_left" header="Stock" style="max-width: 200px;">
-
+            <template #body="{ data }">
+                <div class="">
+                    {{ locale.number(data.quantity_left) }}
+                </div>
+            </template>
         </Column>
 
+        <!-- Column: Exc VAT -->
         <Column field="price" header="Cost Price (Exc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
+                <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
+                    <RadioButton
+                        v-model="data.is_inc_exc"
+                        value="exc"
+                        variant="filled"
+                        size="small"
+                    />
+
                     <InputNumber
                         v-model="data.price"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'price')"
+                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'exc_vat')"
                         mode="currency"
                         :placeholder="data.price"
                         :currency="data.currency_code"
                         locale="en-GB"
                         fluid
                         :inputStyle="{textAlign: 'right'}"
-                        disabled="true"
+                        :disabled="data.is_inc_exc !== 'exc'"
+                        class="min-w-12"
                     />
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'price'], undefined)" />
+                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'exc_vat'], undefined)" />
                 </div>
             </template>
         </Column>
 
+        <!-- Column: Inc VAT -->
         <Column field="price" header="Cost Price (Inc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
+                <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
+                    <RadioButton
+                        v-model="data.is_inc_exc"
+                        value="inc"
+                        variant="filled"
+                        size="small"
+                    />
+                    
                     <InputNumber
                         v-model="data.price_inc_vat"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'price')"
+                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_vat')"
                         mode="currency"
                         :placeholder="data.price_inc_vat"
                         :currency="data.currency_code"
                         locale="en-GB"
                         fluid
                         :inputStyle="{textAlign: 'right'}"
-                        disabled="true"
+                        :disabled="data.is_inc_exc !== 'inc'"
+                        class="min-w-12"
                     />
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'price'], undefined)" />
+                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'inc_vat'], undefined)" />
                 </div>
             </template>
         </Column>
