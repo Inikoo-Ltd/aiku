@@ -210,20 +210,29 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Pickings -->
         <template #cell(pickings)="{ item }">
-             <pre>{{ item.pickings }}</pre>
+            <!-- <pre>{{ item.pickings }}</pre> -->
             <div v-if="item.pickings?.length" class="space-y-1">
-                <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 items-center">
-                    <Link :href="generateLocationRoute(picking)" class="secondaryLink">
-                        {{ picking.location_code }}
-                    </Link>
+                <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
+                    <!-- {{ picking.location_code }} -->
+                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
+                        <Link :href="generateLocationRoute(picking)" class="secondaryLink">
+                            {{ picking.location_code }}
+                        </Link>
                     
-                    <div v-tooltip="trans('Total picked quantity in this location')" class="text-gray-500 whitespace-nowrap">
-                        <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width aria-hidden="true" />
+                        <div v-tooltip="trans('Total picked quantity in this location')" class="text-gray-500 whitespace-nowrap">
+                            <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width aria-hidden="true" />
+                            {{ picking.quantity_picked }}
+                        </div>
+                    </div>
+                    
+                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit mr-auto">
+                        <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                         {{ picking.quantity_picked }}
                     </div>
 
                     <ButtonWithLink
                         v-if="!item.is_packed"
+                        v-tooltip="trans('Undo')"
                         type="negative"
                         size="xxs"
                         icon="fal fa-undo-alt"
@@ -234,15 +243,6 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                     />
                 </div>
 
-                <div v-if="item.quantity_not_picked" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit mr-auto">
-                    <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
-                    {{ item.quantity_not_picked }}
-                </div>
-            </div>
-
-            <div v-else-if="item.quantity_not_picked" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit mr-auto">
-                <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
-                {{ item.quantity_not_picked }}
             </div>
 
             <div v-else class="text-xs text-gray-400 italic">
@@ -405,9 +405,9 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
 
             <!-- Button: Pack -->
-            <div class="w-full max-w-32 mx-auto">
+            <div v-if="itemValue.is_picked && !itemValue.is_packed" class="w-full max-w-32 mx-auto">
                 <ButtonWithLink
-                    v-if="itemValue.is_picked && !itemValue.is_packed"
+                    
                     :routeTarget="itemValue.packing_route"
                     :bindToLink="{
                         preserveScroll: true,
