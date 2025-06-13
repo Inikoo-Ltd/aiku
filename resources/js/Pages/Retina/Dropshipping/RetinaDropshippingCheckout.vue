@@ -15,7 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
 
-import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
+import { faArrowLeft, faCreditCardFront, faUniversity, faInfoCircle } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import { Head } from "@inertiajs/vue3"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
@@ -25,7 +25,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
+library.add(faCreditCardFront, faUniversity, faInfoCircle, faExclamationTriangle)
 
 const props = defineProps<{
     title: string
@@ -50,6 +50,7 @@ const props = defineProps<{
     balance: string
     total_amount: string
     routes: {
+        pay_with_balance: routeType
         back_to_basket: routeType
     }
     to_pay_data: {
@@ -138,7 +139,10 @@ const component = computed(() => {
                     <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale.currencyFormat(currency_code, to_pay_data.by_balance) }} of {{ locale.currencyFormat(currency_code, to_pay_data.total) }}</span>
                     will paid with balance
                 </div>
-                <div>Please paid the rest with your preferred method below:</div>
+                
+                <div>
+                    Please paid the rest with your preferred method below:
+                </div>
             </div>
 
             <div class="mt-5 mx-10 border border-gray-300">
@@ -169,6 +173,7 @@ const component = computed(() => {
                         </nav>
                     </div>
                 </div>
+
                 <KeepAlive>
                     <component
                         :is="component"
@@ -180,11 +185,22 @@ const component = computed(() => {
 
         <!-- If balance can cover totally -->
         <div v-else-if="(to_pay_data.by_balance > 0) && (to_pay_data.by_balance >= to_pay_data.total)" class="ml-10 mr-4 py-5 flex items-center flex-col gap-y-2 border border-gray-300 rounded">
-            <div class="text-center text-gray-500">
-                This is your final confirmation.
-                <br> <span class="bg-yellow-400 text-gray-700">You can pay totally with your current balance.</span>
+            <div class="w-64">
+                <ButtonWithLink
+                    iconRight="fas fa-arrow-right"
+                    :label="trans('Place order')"
+                    :routeTarget="routes?.pay_with_balance"
+                    full
+                >
+                </ButtonWithLink>
             </div>
-            <Button @click="'isModalConfirmationOrder = true'" label="Place Order" size="l" />
+
+            <div class="text-xs text-gray-500 xmt-2 italic text-center gap-x-1 w-80 justify-center">
+                <FontAwesomeIcon icon="fal fa-info-circle" xclass="mt-[4px]" fixed-width aria-hidden="true" />
+                <div class="leading-5 text-center inline">
+                    {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                </div>
+            </div>
         </div>
 
 

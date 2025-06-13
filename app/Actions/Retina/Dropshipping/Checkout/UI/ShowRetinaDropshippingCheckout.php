@@ -137,6 +137,13 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 
                 ],
                 'routes'         => [
+                    'pay_with_balance' => [
+                        'name'       => 'retina.models.order.pay_with_balance',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ],
                     'back_to_basket' => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.basket.show',
                         'parameters' => [
