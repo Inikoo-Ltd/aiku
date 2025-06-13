@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 
-import ImageProducts from "./ImageProducts.vue"
+import ImageProducts from "@/Components/Product/ImageProducts.vue"
 
 library.add(faCube, faLink)
 
