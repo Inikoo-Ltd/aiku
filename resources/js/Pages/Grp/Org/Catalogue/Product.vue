@@ -63,7 +63,7 @@ const props = defineProps<{
     rental: {}
     trade_units?: {}
     stocks?: {}
-    taxonomy?: {
+    taxonomy: {
         department?: {
             name: string
             tooltip: string
@@ -82,7 +82,7 @@ const props = defineProps<{
         }
     }
 }>()
-
+console.log('Product.vue props:', props)
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -119,7 +119,7 @@ const breadcrumbItems = computed(() => {
     if (!hasDepartment && !hasFamily) return []
 
     items.push({
-        label: hasDepartment ? props.taxonomy.department.name : '-',
+        label: hasDepartment ? props.taxonomy.department.label : '-',
         to: hasDepartment
             ? route(
                 props.taxonomy.department.route.name,
@@ -133,7 +133,7 @@ const breadcrumbItems = computed(() => {
 
     if (hasFamily) {
         items.push({
-            label: props.taxonomy.family.name,
+            label: props.taxonomy.family.label,
             to: route(
                 props.taxonomy.family.route.name,
                 props.taxonomy.family.route.parameters,
@@ -143,7 +143,6 @@ const breadcrumbItems = computed(() => {
             icon: faFolder
         })
     }
-
     return items
 })
 </script>

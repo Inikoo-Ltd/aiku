@@ -146,7 +146,6 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 	)
 }
 
-console.log('props', props)
 </script>
 
 <template>
