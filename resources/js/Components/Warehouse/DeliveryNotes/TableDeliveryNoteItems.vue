@@ -210,7 +210,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Pickings -->
         <template #cell(pickings)="{ item }">
-            <!-- <pre>{{ item.pickings }}</pre> -->
+             <pre>{{ item.pickings }}</pre>
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 items-center">
                     <Link :href="generateLocationRoute(picking)" class="secondaryLink">
@@ -227,7 +227,6 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                         type="negative"
                         size="xxs"
                         icon="fal fa-undo-alt"
-                        label="Undo pick"
                         :routeTarget="picking.undo_picking_route"
                         :bindToLink="{ preserveScroll: true }"
                         @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"

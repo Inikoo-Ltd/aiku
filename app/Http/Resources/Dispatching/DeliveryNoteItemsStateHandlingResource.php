@@ -76,9 +76,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 
 
 
-        $pickings = Picking::where('delivery_note_item_id', $this->id)
-            ->where('type', PickingTypeEnum::PICK)
-            ->get();
+        $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
 
 
         return [
@@ -90,7 +88,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_required'   => $this->quantity_required,
             'quantity_to_pick'    => $quantityToPick,
             'quantity_picked'     => $this->quantity_picked,
-            'quantity_not_picked' => (int) $this->quantity_not_picked,
+            'quantity_not_picked' => $this->quantity_not_picked,
             'quantity_packed'     => $this->quantity_packed,
             'quantity_dispatched' => $this->quantity_dispatched,
             'org_stock_code'      => $this->org_stock_code,
@@ -98,7 +96,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_name'      => $this->org_stock_name,
             'locations'           => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
             'pickings'            => PickingsResource::collection($pickings),
-            // 'pickings'=>$pickingsA,
 
             'packings'           => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'            => $fullWarning,
