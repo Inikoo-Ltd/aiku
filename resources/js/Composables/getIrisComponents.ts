@@ -1,3 +1,4 @@
+import { Family } from './../types/family';
 import type { Component } from 'vue'
 
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
@@ -32,7 +33,7 @@ import ColumnIris from '@/Components/CMS/Webpage/Column/ColumnIris.vue'
 import DisclosureIris from '@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue'
 import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-import FamilyIris1 from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
+import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'

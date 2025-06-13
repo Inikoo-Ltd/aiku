@@ -14,6 +14,19 @@ import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { ConfirmPopupStyle } from "primevue"
 
+import btree from '@/../art/payment_service_providers/btree.svg'
+import cash from '@/../art/payment_service_providers/cash.svg'
+import checkout from '@/../art/payment_service_providers/checkout.svg'
+import hokodo from '@/../art/payment_service_providers/hokodo.svg'
+import pastpay from '@/../art/payment_service_providers/pastpay.svg'
+import paypal from '@/../art/payment_service_providers/paypal.svg'
+import sofort from '@/../art/payment_service_providers/sofort.svg'
+import worldpay from '@/../art/payment_service_providers/worldpay.svg'
+import xendit from '@/../art/payment_service_providers/xendit.svg'
+import bank from '@/../art/payment_service_providers/bank.svg'
+import accounts from '@/../art/payment_service_providers/accounts.svg'
+import cond from '@/../art/payment_service_providers/cond.svg'
+
 library.add(faCube, faLink)
 
 
@@ -116,6 +129,39 @@ const saveDescriptions = (value: string) => {
     )
 }
 
+const selectImage = (code: string) => {
+    if (!code) return null
+
+    switch (code) {
+        case 'btree':
+            return btree
+        case 'cash':
+            return cash
+        case 'checkout':
+            return checkout
+        case 'hokodo':
+            return hokodo
+        case 'accounts':
+            return accounts
+        case 'cond':
+            return cond
+        case 'bank':
+            return bank
+        case 'pastpay':
+            return pastpay
+        case 'paypal':
+            return paypal
+        case 'sofort':
+            return sofort
+        case 'worldpay':
+            return worldpay
+        case 'xendit':
+            return xendit
+        default:
+            return null
+    }
+}
+
 
 const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not onheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
 
@@ -179,49 +225,64 @@ console.log(props)
                 </div>
 
                 <!-- Spesifikasi Produk -->
-                <div class="max-w-md cursor-pointer">
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton
-                            class="mb-1 border-b justify-between border-gray-400 font-bold text-gray-800 py-1 flex items-center gap-4 w-full">
-                            Product Specification & Documentation
-                            <FontAwesomeIcon :icon="faChevronDown"
-                                class="text-sm text-gray-500 transform transition-transform duration-200"
-                                :class="{ 'rotate-180': open }" />
-                        </DisclosureButton>
-                        <DisclosurePanel class="text-sm text-gray-600">
-                            <p>{{ productSpec }}</p>
-                        </DisclosurePanel>
-                    </Disclosure>
-                </div>
+                <!-- Wrapper -->
+<div class="max-w-md w-full space-y-4">
 
-                <!-- FAQ -->
-                <div class="my-3 text-sm text-gray-500">Frequently Asked Questions (FAQs)</div>
-                <div>
-                    <Disclosure v-for="(faq, i) of productFaqs" :key="i" v-slot="{ open }">
-                        <DisclosureButton
-                            class="w-full py-1 border-b border-gray-400 font-bold text-gray-800 flex justify-between items-center gap-4">
-                            {{ faq.question }}
-                            <FontAwesomeIcon :icon="faChevronDown"
-                                class="text-sm text-gray-500 transition-transform duration-200"
-                                :class="{ 'rotate-180': open }" />
-                        </DisclosureButton>
-                        <DisclosurePanel class="text-sm text-gray-600 py-2">
-                            <p>{{ faq.answer }}</p>
-                        </DisclosurePanel>
-                    </Disclosure>
-                </div>
+    <!-- Spesifikasi Produk -->
+    <Disclosure v-slot="{ open }">
+        <DisclosureButton
+            class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
+            Product Specification & Documentation
+            <FontAwesomeIcon
+                :icon="faChevronDown"
+                class="text-sm text-gray-500 transform transition-transform duration-200"
+                :class="{ 'rotate-180': open }"
+            />
+        </DisclosureButton>
+        <DisclosurePanel class="text-sm text-gray-600">
+            <p>{{ productSpec }}</p>
+        </DisclosurePanel>
+    </Disclosure>
 
-                <!-- Review -->
-                <div class="flex items-center justify-between gap-4 font-bold cursor-pointer mt-6">
-                    <div>Customer Reviews</div>
-                    <div class="flex items-center gap-[1px]">
-                        <FontAwesomeIcon :icon="faStar" class="text-[9px] text-gray-600" v-for="n in 5"
-                            :key="'star-' + n" />
-                        <span class="ml-1 font-normal text-xs">{{ 31 }}</span>
-                    </div>
-                    <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
-                </div>
-            </div>
+    <!-- FAQ -->
+    <div>
+        <div class="text-sm text-gray-500 mb-1 font-semibold">Frequently Asked Questions (FAQs)</div>
+        <div class="space-y-2">
+            <Disclosure v-for="(faq, i) of productFaqs" :key="i" v-slot="{ open }">
+                <DisclosureButton
+                    class="w-full py-1 border-b border-gray-400 font-bold text-gray-800 flex justify-between items-center">
+                    {{ faq.question }}
+                    <FontAwesomeIcon
+                        :icon="faChevronDown"
+                        class="text-sm text-gray-500 transform transition-transform duration-200"
+                        :class="{ 'rotate-180': open }"
+                    />
+                </DisclosureButton>
+                <DisclosurePanel class="text-sm text-gray-600 py-2">
+                    <p>{{ faq.answer }}</p>
+                </DisclosurePanel>
+            </Disclosure>
+        </div>
+    </div>
+
+    <!-- Review -->
+    <div class="flex items-center justify-between font-bold cursor-pointer border-t pt-4 border-gray-300">
+        <div>Customer Reviews</div>
+        <div class="flex items-center gap-[1px]">
+            <FontAwesomeIcon
+                :icon="faStar"
+                class="text-[9px] text-gray-600"
+                v-for="n in 5"
+                :key="'star-' + n"
+            />
+            <span class="ml-1 font-normal text-xs">{{ 31 }}</span>
+        </div>
+        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+    </div>
+
+</div>
+</div>
+
 
             <!-- Right Column (5/12) -->
             <div class="col-span-5 self-start">
@@ -254,7 +315,7 @@ console.log(props)
                     </button>
 
                     <!-- Buy a Sample (10%) -->
-                    <button
+                    <button v-tooltip="'Buy  sample'"
                         class="flex items-center justify-center border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded p-2 text-sm font-semibold w-[10%] transition">
                         <FontAwesomeIcon :icon="faVial" class="text-sm" />
                     </button>
@@ -263,7 +324,7 @@ console.log(props)
 
 
                 <!-- Keterangan -->
-                <div class="flex items-center text-xs text-gray-500 mb-6">
+                <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
                     <span>Order 4 full carton</span>
                 </div>
@@ -289,11 +350,14 @@ console.log(props)
                     </div>
 
                     <!-- Logo Pembayaran -->
-                    <div class="flex items-center gap-3 border-t border-gray-400 font-bold text-gray-800 py-2">
+                    <div class="items-center gap-3 border-t border-gray-400 font-bold text-gray-800 py-2">
                         Secure Payments:
-                        <img v-for="logo in product.paymentLogos" :key="logo.alt" :src="logo.src" :alt="logo.alt"
-                            class="h-4 px-1" />
+                        <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
+                            <img v-for="logo in modelValue.product.service_providers" :key="logo.code"
+                                v-tooltip="logo.code" :src="selectImage(logo.code)" :alt="logo.code" class="h-4 px-1" />
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>

@@ -33,7 +33,7 @@ import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
-import FamilyIris1 from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
+import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
 import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iris.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
