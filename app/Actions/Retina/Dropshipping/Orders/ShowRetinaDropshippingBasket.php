@@ -292,14 +292,6 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'price_total' => $order->total_amount
                     ],
                 ],
-                $order->state == OrderStateEnum::CREATING ? [
-                    [
-                        'label'             => __('Total to pay'),
-                        'label_class'       => 'text-indigo-500 font-bold',
-                        'price_total'       => max(0, $order->total_amount - $order->customer->balance),
-                        'price_total_class' => 'text-indigo-500 font-bold',
-                    ],
-                ] : [],
                 'currency' => CurrencyResource::make($order->currency),
             ],
         ];
