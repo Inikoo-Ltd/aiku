@@ -48,7 +48,7 @@ class GetWebsiteWorkshopDepartment
                 ]
             ],
             'update_sub_department_route' => [
-                'name' => 'grp.models.sub-department.update',
+                'name' => 'grp.models.product_category.update',
                 'parameters' => []
             ]
         ];

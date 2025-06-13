@@ -41,7 +41,7 @@ class UpdateProductCategory extends OrgAction
     {
 
         if ($productCategory->type == ProductCategoryTypeEnum::FAMILY && Arr::has($modelData, 'department_id')) {
-            $productCategory=UpdateFamilyDepartment::make()->action($productCategory, [
+            $productCategory = UpdateFamilyDepartment::make()->action($productCategory, [
                 'department_id' => Arr::pull($modelData, 'department_id'),
             ]);
 
@@ -121,7 +121,7 @@ class UpdateProductCategory extends OrgAction
             'name'              => ['sometimes', 'max:250', 'string'],
             'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
-            'description'       => ['sometimes', 'required', 'max:1500'],
+            'description'       => ['sometimes', 'required', 'max:65500'],
             'department_id' => [
                 'sometimes',
                 Rule::exists('product_categories', 'id')
