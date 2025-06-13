@@ -29,17 +29,30 @@ class UpdateFamilyDepartment extends OrgAction
     public function handle(ProductCategory $family, array $modelData): ProductCategory
     {
 
-        $departmentId = Arr::pull($modelData, 'department_id');
+        $oldDepartment = $family->department;
+        $oldSubDepartment = $family->subDepartment;
 
-        data_set($modelData, 'parent_id', $departmentId);
-        data_set($modelData, 'department_id', $departmentId);
+        data_set($modelData, 'parent_id', Arr::get($modelData, 'department_id'));
+        data_set($modelData, 'sub_department_id', null);
 
         $family = $this->update($family, $modelData);
+        $changes         = $family->getChanges();
 
         $family->refresh();
 
-        ProductCategoryRecordSearch::dispatch($family);
-        ProductCategoryHydrateFamilies::dispatch($family->parent);
+
+        if (Arr::has($changes, 'department_id')) {
+            ProductCategoryHydrateFamilies::dispatch($family->parent);
+            ProductCategoryHydrateFamilies::dispatch($oldDepartment);
+
+        }
+
+        if (Arr::has($changes, 'sub_department_id')) {
+            ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
+        }
+
+
+
 
         return $family;
     }
@@ -68,7 +81,6 @@ class UpdateFamilyDepartment extends OrgAction
     public function action(ProductCategory $family, array $modelData): ProductCategory
     {
         $this->asAction = true;
-        $this->family = $family;
         $this->initialisationFromShop($family->shop, $modelData);
 
         return $this->handle($family, $this->validatedData);
@@ -76,9 +88,7 @@ class UpdateFamilyDepartment extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): void
     {
-        $this->family = $family;
         $this->initialisationFromShop($shop, $request);
-
         $this->handle($family, $this->validatedData);
     }
 }
