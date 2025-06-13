@@ -133,19 +133,19 @@ const component = computed(() => {
         </div>
 
         <!-- If balance can't cover -->
-        <div v-else-if="to_pay_data.by_other > 0" class="mt-10">
-            <div class="mx-auto text-center text-lg">
+        <div v-else-if="to_pay_data.by_other > 0" class="mt-10 mx-10 ">
+            <div class="mx-auto text-center text-lg border border-gray-300 py-4 rounded">
                 <div>
                     <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale.currencyFormat(currency_code, to_pay_data.by_balance) }} of {{ locale.currencyFormat(currency_code, to_pay_data.total) }}</span>
                     will paid with balance
                 </div>
                 
-                <div>
+                <div class="text-gray-500 text-sm mt-1">
                     Please paid the rest with your preferred method below:
                 </div>
             </div>
 
-            <div class="mt-5 mx-10 border border-gray-300">
+            <div class="mt-5 border border-gray-300">
                 <div v-if="props.paymentMethods?.length" class="max-w-lg">
                     <div class="grid grid-cols-1 sm:hidden">
                         <!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
@@ -178,6 +178,8 @@ const component = computed(() => {
                     <component
                         :is="component"
                         :data="paymentMethods[currentTab.index]"
+                        :needToPay="to_pay_data.by_other"
+                        :currency_code
                     />
                 </KeepAlive>
             </div>

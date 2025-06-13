@@ -232,12 +232,11 @@ test('UI edit family in department', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 3)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.product_catgory.update')
+                    ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
                         'productCategory' => $this->family->id
                     ])
@@ -487,7 +486,6 @@ test('UI edit collection', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);

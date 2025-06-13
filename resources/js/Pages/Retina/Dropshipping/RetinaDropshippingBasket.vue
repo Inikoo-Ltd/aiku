@@ -264,7 +264,7 @@ console.log('basket ds', props)
 
     <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
-    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200">
+    <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
         <component :is="component"
             :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
