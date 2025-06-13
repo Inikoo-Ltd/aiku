@@ -21,10 +21,15 @@ import { Head } from "@inertiajs/vue3"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { routeType } from "@/types/route"
 import DSCheckoutSummary from "@/Components/Retina/Dropshipping/DSCheckoutSummary.vue"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
 const props = defineProps<{
+    title: string
+    pageHead: {
+        
+    }
     order: {},
     paymentMethods: []
     box_stats: {
@@ -85,7 +90,10 @@ const component = computed(() => {
 
 <template>
     <!-- paymentMethods: <pre>{{ total_amount }}</pre> -->
-    <Head title="Checkout" />
+    <Head :title />
+
+    <PageHeading :data="pageHead">
+    </PageHeading>
 
     <div v-if="!box_stats" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}

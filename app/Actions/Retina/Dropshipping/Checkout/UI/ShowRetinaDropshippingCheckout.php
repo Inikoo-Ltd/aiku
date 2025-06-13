@@ -100,10 +100,29 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
             'Dropshipping/RetinaDropshippingCheckout',
             [
                 'breadcrumbs'    => $this->getBreadcrumbs($order),
-                'title'          => __('Basket'),
-                'pageHead'       => [
-                    'title' => __('Basket'),
-                    'icon'  => 'fal fa-shopping-basket'
+                'title'          => __('Checkout'),
+                'pageHead'    => [
+                    'title'      => $order->reference,
+                    'model'      => __('Checkout'),
+                    // 'icon'       => [
+                    //     'icon'  => 'fal fa-shopping-basket',
+                    //     'title' => __('customer client')
+                    // ],
+                    // 'afterTitle' => [
+                    //     'label' => ' @'.$this->platform->name
+                    // ],
+                    // 'actions'   => [
+                    //     [
+                    //         'type'   => 'buttonGroup',
+                    //         'button' => [
+                    //             [
+                    //                 'type'    => 'button',
+                    //                 'key'     => 'upload-add',
+                    //                 'icon'      => 'fal fa-upload',
+                    //             ],
+                    //         ],
+                    //     ],
+                    // ]
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
                 'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
