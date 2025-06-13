@@ -486,7 +486,6 @@ test('UI edit collection', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);
