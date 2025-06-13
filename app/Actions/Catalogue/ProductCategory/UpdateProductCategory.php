@@ -123,13 +123,13 @@ class UpdateProductCategory extends OrgAction
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
             'description'       => ['sometimes', 'required', 'max:1500'],
             'department_id' => [
-                'required',
+                'sometimes',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
             'sub_department_id' => [
-                'required',
+                'sometimes',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
@@ -154,12 +154,6 @@ class UpdateProductCategory extends OrgAction
         return $rules;
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if ($this->productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $this->set('department_id', null);
-        }
-    }
 
     public function action(ProductCategory $productCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): ProductCategory
     {
@@ -177,10 +171,10 @@ class UpdateProductCategory extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $productCategory, ActionRequest $request): ProductCategory
     {
+
         $this->productCategory = $productCategory;
 
         $this->initialisationFromShop($shop, $request);
-
         return $this->handle($productCategory, $this->validatedData);
     }
 
