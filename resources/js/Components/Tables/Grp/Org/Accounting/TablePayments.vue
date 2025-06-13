@@ -29,7 +29,6 @@ function paymentsRoute(payment: Payment) {
 </script>
 
 <template>
-	sfdfsdf
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(reference)="{ item: payment }">
 			<div>
