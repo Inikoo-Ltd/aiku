@@ -227,7 +227,6 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                         type="negative"
                         size="xxs"
                         icon="fal fa-undo-alt"
-                        label="Undo pick"
                         :routeTarget="picking.undo_picking_route"
                         :bindToLink="{ preserveScroll: true }"
                         @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
