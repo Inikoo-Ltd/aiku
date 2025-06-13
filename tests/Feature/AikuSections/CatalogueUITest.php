@@ -177,10 +177,8 @@ test('UI edit department', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.org.catalogue.departments.update')
+                    ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
-                        'organisation'    => $this->department->organisation_id,
-                        'shop'            => $this->department->shop_id,
                         'productCategory' => $this->department->id
                     ])
             )
@@ -239,10 +237,8 @@ test('UI edit family in department', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.org.catalogue.families.update')
+                    ->where('name', 'grp.models.product_catgory.update')
                     ->where('parameters', [
-                        'organisation'    => $this->family->organisation_id,
-                        'shop'            => $this->family->shop_id,
                         'productCategory' => $this->family->id
                     ])
             )

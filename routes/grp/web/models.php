@@ -256,8 +256,6 @@ Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name
 Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notifications.all.read');
 
 
-
-
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inEmployee'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inEmployee'])->name('attachment.detach')->withoutScopedBindings();
@@ -281,7 +279,6 @@ Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..
     Route::patch('', UpdateClockingMachine::class)->name('update');
     Route::delete('', DeleteClockingMachine::class)->name('delete');
 });
-
 
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');
@@ -312,11 +309,14 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
 });
 
-Route::delete('product-category/{productCategory:id}', DeleteProductCategory::class)->name('product_category.delete');
+
+Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
+    Route::patch('', UpdateProductCategory::class)->name('update');
+    Route::delete('', DeleteProductCategory::class)->name('delete');
+});
 
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
-    Route::patch('', [UpdateProductCategory::class, 'inSubDepartment'])->name('update');
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
 });
 Route::prefix('sub-department/{subDepartment}')->name('sub-department.')->group(function () {
@@ -328,7 +328,6 @@ Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfol
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
-
     Route::post("google-drive.authorize", [AuthorizeClientGoogleDrive::class, 'authorize'])->name('google_drive.authorize');
     Route::get("google-drive.callback", CallbackClientGoogleDrive::class)->name('google_drive.callback');
     Route::patch("settings", UpdateOrganisation::class)->name('settings.update');
@@ -367,17 +366,13 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::prefix('/shop/{shop:id}/catalogue/departments')->name('catalogue.departments.')->group(function () {
         Route::post('/', StoreProductCategory::class)->name('store')->withoutScopedBindings();
-        Route::patch('{productCategory:id}', UpdateProductCategory::class)->name('update')->withoutScopedBindings();
         Route::post('family/store/{productCategory:id}', [StoreProductCategory::class, 'inDepartment'])->name('family.store')->withoutScopedBindings();
         Route::post('sub-department/store/{productCategory:id}', [StoreProductCategory::class, 'inDepartment'])->name('sub-department.store')->withoutScopedBindings();
-
     });
-
 
 
     Route::prefix('/shop/{shop:id}/catalogue/families')->name('catalogue.families.')->group(function () {
         Route::post('{family:id}/product/store', [StoreProduct::class, 'inFamily'])->name('product.store')->withoutScopedBindings();
-        Route::patch('{productCategory:id}', UpdateProductCategory::class)->name('update')->withoutScopedBindings();
     });
 
     Route::post('/shop/{shop:id}/customer', StoreCustomer::class)->name('shop.customer.store');
@@ -420,8 +415,6 @@ Route::name('product.')->prefix('product')->group(function () {
 });
 
 
-
-
 Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
     Route::patch('/', UpdatePalletDelivery::class)->name('update');
     Route::post('submit-and-confirm', SubmitAndConfirmPalletDelivery::class)->name('submit_and_confirm');
@@ -436,17 +429,16 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inPalletDelivery'])->name('attachment.detach')->withoutScopedBindings();
 
-    Route::post('pallet-upload', ImportPalletsInPalletDelivery::class, )->name('pallet.upload');
-    Route::post('pallet-upload-with-stored-items', ImportPalletsInPalletDeliveryWithStoredItems::class, )->name('pallet.upload.with-stored-items');
+    Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
+    Route::post('pallet-upload-with-stored-items', ImportPalletsInPalletDeliveryWithStoredItems::class)->name('pallet.upload.with-stored-items');
     Route::post('pallet', StorePalletCreatedInPalletDelivery::class)->name('pallet.store');
     Route::post('multiple-pallet', StoreMultiplePalletsFromDelivery::class)->name('multiple-pallets.store');
 
-    Route::post('transaction', [StoreFulfilmentTransaction::class,'inPalletDelivery'])->name('transaction.store');
+    Route::post('transaction', [StoreFulfilmentTransaction::class, 'inPalletDelivery'])->name('transaction.store');
     Route::patch('delete', DeletePalletDelivery::class)->name('delete');
 
     Route::get('pdf', PdfPalletDelivery::class)->name('pdf');
 });
-
 
 
 Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(function () {
@@ -463,7 +455,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletReturn'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inPalletReturn'])->name('attachment.detach')->withoutScopedBindings();
 
-    Route::post('transaction', [StoreFulfilmentTransaction::class,'inPalletReturn'])->name('transaction.store');
+    Route::post('transaction', [StoreFulfilmentTransaction::class, 'inPalletReturn'])->name('transaction.store');
     Route::post('pallet', AttachPalletsToReturn::class)->name('pallet.store');
     Route::post('attach-pallet/{pallet:id}', AttachPalletToReturn::class)->name('pallet.attach')->withoutScopedBindings();
     Route::delete('detach-pallet/{pallet:id}', DetachPalletFromReturn::class)->name('pallet.detach');
@@ -482,8 +474,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInWarehouse::class)->name('shipment_from_warehouse.store');
 
     Route::delete('/detach-shipment/{shipment}', DetachShipmentFromPalletReturn::class)->name('shipment.detach');
-
-
 });
 
 Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
@@ -505,7 +495,6 @@ Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
     Route::patch('damaged', SetPalletAsDamaged::class)->name('damaged');
     Route::patch('lost', SetPalletAsLost::class)->name('lost');
     Route::patch('location', UpdatePalletLocation::class)->name('location.update');
-
 });
 
 Route::name('pallet-return-item.')->prefix('pallet-return-item/{palletReturnItem}')->group(function () {
@@ -522,8 +511,6 @@ Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('store
 Route::delete('{storedItem:id}/stored-items', DeleteStoredItem::class)->name('stored-items.delete');
 
 
-
-
 Route::prefix('rental-agreement/{rentalAgreement:id}')->group(function () {
     Route::patch('', UpdateRentalAgreement::class)->name('rental-agreement.update');
 });
@@ -532,7 +519,6 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
     Route::patch('publish', PublishBanner::class)->name('publish');
     Route::patch('layout', UpdateUnpublishedBannerSnapshot::class)->name('layout.update');
     Route::post('images', UploadImagesToBanner::class)->name('images.store');
-
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
@@ -551,10 +537,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('website/{website:id}/webpage', [StoreWebpage::class, 'inShop'])->name('webpage.store')->withoutScopedBindings();
 
     Route::prefix('website/{website:id}/banner')->name('website.banner.')->group(function () {
-
-
         Route::prefix('{banner:id}')->group(function () {
-
             Route::patch('', UpdateBanner::class)->name('update')->withoutScopedBindings();
 
             Route::patch('state/{state}', UpdateBannerState::class)->name('update-state')->withoutScopedBindings();
@@ -586,7 +569,6 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
     });
-
 });
 
 Route::name('fulfilment.')->prefix('fulfilment/{fulfilment}')->group(function () {
@@ -610,9 +592,6 @@ Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('or
 
 
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
-
-
-
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 
@@ -821,6 +800,7 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::post('brands/attach', [AttachBrandToModel::class, 'inTradeUnit'])->name('brands.attach');
     Route::delete('brands/{brand:id}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
 });
+
 
 require __DIR__."/models/inventory/warehouse.php";
 require __DIR__."/models/inventory/location_org_stock.php";

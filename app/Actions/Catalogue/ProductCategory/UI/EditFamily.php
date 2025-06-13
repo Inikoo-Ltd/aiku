@@ -148,10 +148,8 @@ class EditFamily extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.org.catalogue.families.update',
+                            'name'       => 'grp.models.product_category.update',
                             'parameters' => [
-                                'organisation'      => $family->organisation_id,
-                                'shop'              => $family->shop_id,
                                 'productCategory'   => $family->id
                             ]
                         ],
