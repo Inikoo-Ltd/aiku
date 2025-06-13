@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData;
+use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
@@ -90,10 +91,9 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $order = Arr::get($checkoutData, 'order');
 
 
-        $toPay          = $order->total_amount>0 ?$order->total_amount:0;
+        $toPay          = $order->total_amount > 0 ? $order->total_amount : 0;
         $toPayByBalance = min($this->customer->balance, $toPay);
         $toPayByOther   = max($toPay - $toPayByBalance, 0);
-
 
 
         return Inertia::render(
@@ -106,7 +106,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                     'icon'  => 'fal fa-shopping-basket'
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
-                'box_stats'      => $order ? $this->getOrderBoxStats($order) : null,  // TODO: make it same as in the basket
+                'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer?->balance,
                 'total_amount'   => $order->total_amount,
