@@ -109,7 +109,6 @@ const deleteImage = async (image, index: number) => {
 
 
 const onSubmitUpload = async (files: File[], refData = null) => {
-	console.log(files,refData)
 	const formData = new FormData()
 	files.forEach((file, index) => {
 		formData.append(`images[${index}]`, file)
