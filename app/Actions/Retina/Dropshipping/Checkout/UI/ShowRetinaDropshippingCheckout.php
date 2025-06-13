@@ -97,7 +97,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 
 
         return Inertia::render(
-            'Ecom/Checkout',
+            'Dropshipping/RetinaDropshippingCheckout',
             [
                 'breadcrumbs'    => $this->getBreadcrumbs($order),
                 'title'          => __('Basket'),
@@ -106,7 +106,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                     'icon'  => 'fal fa-shopping-basket'
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
-                'summary'        => $order ? $this->getOrderBoxStats($order) : null,
+                'box_stats'      => $order ? $this->getOrderBoxStats($order) : null,  // TODO: make it same as in the basket
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer?->balance,
                 'total_amount'   => $order->total_amount,

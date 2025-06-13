@@ -1,6 +1,5 @@
 <script setup lang="ts">
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
@@ -8,6 +7,11 @@ import { Link } from "@inertiajs/vue3"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faIdCardAlt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faIdCardAlt)
 
 defineProps<{
     summary: {
@@ -52,14 +56,15 @@ const isModalShippingAddress = ref(false)
             </div>
 
             <!-- Field: Reference Number -->
-            <Link as="a" v-if="summary?.customer_client.ulid" v-tooltip="trans('Reference')"
-                :href="route('retina.dropshipping.customer_sales_channels.client.show',[route().params['customerSalesChannel'], summary?.customer_client.ulid])"
+            <!-- <pre>{{ summary.customer_channel }}</pre> -->
+            <!-- <Link as="a" v-if="summary?.customer_client.ulid" v-tooltip="trans('Reference')"
+                :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
                 <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference }}</dd>
-            </Link>
+            </Link> -->
 
             <!-- Field: Contact name -->
             <div v-if="summary?.customer_client.contact_name" v-tooltip="trans('Contact name')"
