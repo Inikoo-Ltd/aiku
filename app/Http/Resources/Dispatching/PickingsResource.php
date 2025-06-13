@@ -10,6 +10,16 @@ namespace App\Http\Resources\Dispatching;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $id
+ * @property mixed $not_picked_reason
+ * @property mixed $not_picked_note
+ * @property mixed $quantity
+ * @property mixed $engine
+ * @property mixed $picker
+ * @property mixed $type
+ * @property mixed $location
+ */
 class PickingsResource extends JsonResource
 {
     public function toArray($request): array
@@ -18,7 +28,7 @@ class PickingsResource extends JsonResource
             'id'                  => $this->id,
             'not_picked_reason'   => $this->not_picked_reason,
             'not_picked_note'     => $this->not_picked_note,
-            'quantity_picked'     => (int) $this->quantity,
+            'quantity_picked'     => $this->quantity,
             'engine'              => $this->engine,
             'picker_name'         => $this->picker->contact_name,
             'type'                => $this->type,
