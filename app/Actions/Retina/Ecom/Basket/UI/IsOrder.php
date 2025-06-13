@@ -32,8 +32,9 @@ trait IsOrder
         $customerChannel = null;
         if ($order->customer_sales_channel_id) {
             $customerChannel = [
-                'status' => $order->customer_sales_channel_id,
-                'platform' => [
+                'slug'      => $order->customerSalesChannel->slug,
+                'status'    => $order->customer_sales_channel_id,
+                'platform'  => [
                     'name' => $order->platform?->name,
                     'image' => $this->getPlatformLogo($order->customerSalesChannel)
                 ]

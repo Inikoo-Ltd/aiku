@@ -275,33 +275,40 @@ console.log('basket ds', props)
 			@update:tab="handleTabUpdate"/>
     </div>
 
-    <div v-if="total_products > 0" class="flex justify-end px-6">
+    <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
         <div class="w-72">
+            <div class="text-sm text-gray-500">{{ trans("Special instructions") }}:</div>
             <PureTextarea
                 v-model="noteToSubmit"
                 @update:modelValue="() => debounceSubmitNote()"
-                :placeholder="trans('Special instructions if needed')"
+                :placeholder="trans('Add if needed')"
                 xkeydown.enter="() => onSubmitNote(closed)"
                 rows="4"
                 :disabled="!is_in_basket"
                 :loading="isLoadingNote"
                 :isSuccess="recentlySuccessNote"
                 :isError="recentlyErrorNote"
-                class="mb-2"
+                xclass="mb-2"
             />
-            
+            <!-- <Fieldset legend="Special instructions" class="-mt-4">
+            </Fieldset> -->
+        </div>
+
+
+        <div class="w-72 pt-5">
             <!-- Place Order -->
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
                     :label="trans('Place order')"
-                    :routeTarget="routes.pay_with_balance"
+                    :routeTarget="routes?.pay_with_balance"
                     class="w-full"
                     full
                 >
                 </ButtonWithLink>
-                <div class="text-sm text-gray-500 mt-2 italic flex items-start gap-x-1">
-                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[1px]" fixed-width aria-hidden="true" />
+
+                <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
                     <div class="leading-5">
                         {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
                     </div>
@@ -322,8 +329,6 @@ console.log('basket ds', props)
                 class="w-full"
                 full
             />
-
-
         </div>
     </div>
 
