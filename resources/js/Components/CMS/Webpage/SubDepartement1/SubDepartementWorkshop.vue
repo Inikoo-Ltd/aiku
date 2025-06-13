@@ -7,7 +7,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import Image from "@/Components/Image.vue";
 import { getStyles } from "@/Composables/styles";
 import { routeType } from "@/types/route";
-import FormEditSubDepertment from "./FormEditSubDepertment.vue";
+import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue";
 
 const props = defineProps<{
   modelValue: Record<string, any>;
@@ -89,8 +89,8 @@ function closeModal() {
 
     <!-- PrimeVue Dialog -->
     <Dialog :header="`Edit ${selectedSubDepartment?.name}`" v-model:visible="showDialog" :modal="true"
-      :style="{ width: '500px' }" :closable="true" @hide="closeModal">
-      <FormEditSubDepertment v-if="selectedSubDepartment" :key="selectedSubDepartment.id" :data="selectedSubDepartment"
+      :style="{ width: '500px', zIndex : 20 }" :closable="true" @hide="closeModal">
+      <FormEditProductCategory v-if="selectedSubDepartment" :key="selectedSubDepartment.id" :data="selectedSubDepartment"
         :saveRoute="routeEditSubDepartement" @saved="handleSaved" />
     </Dialog>
   </div>

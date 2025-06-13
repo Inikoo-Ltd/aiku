@@ -3,45 +3,37 @@ import { ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationCircle, faCheckCircle } from '@fas'
-import { faUndoAlt } from '@fal'
+import { faUndoAlt, faInfoCircle } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 
+import Dialog from 'primevue/dialog'
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
-import Modal from "@/Components/Utils/Modal.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 
-library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faUndoAlt)
+library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faUndoAlt, faInfoCircle)
 
 const props = defineProps<{
 	form: Record<string, any>,
 	fieldName: string,
 	fieldData: {
 		options: {
-			aspectRatio?: {
-				width: number,
-				height: number
-			},
-			minAspectRatio?: {
-				width: number,
-				height: number
-			},
-			maxAspectRatio?: {
-				width: number,
-				height: number
-			}
+			aspectRatio?: { width: number, height: number },
+			minAspectRatio?: { width: number, height: number },
+			maxAspectRatio?: { width: number, height: number }
 		}
 	}
 }>()
 
-console.log(props)
-
 const numbKey = ref(0)
 const tempImgToCrop = ref<string | null>(null)
 const imgAfterCrop = ref<{ original: string } | null>(
-	props.form[props.fieldName] ? props.form[props.fieldName]  : null
+	props.form[props.fieldName] ? props.form[props.fieldName] : null
 )
+
+const isOpenModalCrop = ref(false)
+const _cropper = ref<InstanceType<typeof Cropper> | null>(null)
 
 const onPickFile = async (file: File) => {
 	if (!file) return
@@ -66,9 +58,6 @@ const dataURLtoBlob = (dataurl: string): Blob => {
 	return new Blob([u8arr], { type: mime })
 }
 
-const isOpenModalCrop = ref(false)
-const _cropper = ref<InstanceType<typeof Cropper> | null>(null)
-
 const submitCrop = async () => {
 	props.form.errors[props.fieldName] = null
 	const result = await _cropper.value?.getResult()
@@ -85,12 +74,12 @@ const submitCrop = async () => {
 
 const stencilProps = props.fieldData?.options?.minAspectRatio && props.fieldData?.options?.maxAspectRatio
 	? {
-		minAspectRatio: props.fieldData?.options?.minAspectRatio,
-		maxAspectRatio: props.fieldData?.options?.maxAspectRatio,
+		minAspectRatio: props.fieldData.options.minAspectRatio,
+		maxAspectRatio: props.fieldData.options.maxAspectRatio,
 	}
 	: {
 		aspectRatio: props.fieldData?.options?.aspectRatio
-			? props.fieldData?.options?.aspectRatio.width / props.fieldData.options.aspectRatio.height
+			? props.fieldData.options.aspectRatio.width / props.fieldData.options.aspectRatio.height
 			: 1
 	}
 
@@ -101,8 +90,8 @@ watch(isOpenModalCrop, (val) => {
 
 <template>
 	<div class="w-fit min-w-32 relative">
-		<!-- Modal Crop -->
-		<Modal :isOpen="isOpenModalCrop" @close="isOpenModalCrop = false" width="max-w-xl w-full" :zIndex="999">
+		<!-- PrimeVue Dialog -->
+		<Dialog v-model:visible="isOpenModalCrop" modal header="Crop Image" :style="{ width: '600px' }">
 			<div class="w-full h-[300px] relative bg-gray-700">
 				<Cropper
 					:key="numbKey"
@@ -125,12 +114,12 @@ watch(isOpenModalCrop, (val) => {
 				{{ trans("Use mouse scroll to zoom in and zoom out") }}
 			</div>
 
-			<div class="w-full mt-6">
+			<div class="w-full mt-4">
 				<Button @click="submitCrop" :label="trans('Crop')" full size="xl" />
 			</div>
-		</Modal>
+		</Dialog>
 
-		<!-- Preview -->
+		<!-- Image Preview -->
 		<div
 			class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
 			:class="form.errors[fieldName] ? 'errorShake' : ''"
@@ -172,7 +161,6 @@ watch(isOpenModalCrop, (val) => {
 				:icon="['fas', 'check-circle']"
 				class="h-5 w-5 text-green-500"
 			/>
-			<!-- <FontAwesomeIcon v-if="form.processing" :icon="['fad', 'spinner-third']" class="h-5 w-5 animate-spin" /> -->
 		</div>
 
 		<!-- Error Text -->

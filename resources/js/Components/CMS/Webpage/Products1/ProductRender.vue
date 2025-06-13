@@ -25,7 +25,7 @@ defineProps<{
     <FontAwesomeIcon :icon="faHeart" class="absolute top-2 right-2 text-gray-400 text-xl"></FontAwesomeIcon>
 
     <!-- Product Image -->
-    <Image :src="product.image.source" class="w-full h-62 object-cover mb-3 rounded" />
+    <Image :src="product.image?.source" class="w-full h-62 object-cover mb-3 rounded" />
 
     <!-- Title -->
     <div class="font-medium text-sm mb-1">{{ product.name }}</div>

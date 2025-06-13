@@ -9,7 +9,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { getStyles } from "@/Composables/styles"
 import Dialog from 'primevue/dialog';
 import { routeType } from '@/types/route'
-import FormEditSubDepertment from '../SubDepartement1/FormEditSubDepertment.vue'
+import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue";
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -92,7 +92,7 @@ function closeModal() {
 
    <Dialog :header="`Edit ${selectedSubDepartment?.name}`" v-model:visible="showDialog" :modal="true"
       :style="{ width: '500px' }" :closable="true" @hide="closeModal">
-      <FormEditSubDepertment v-if="selectedSubDepartment" :key="selectedSubDepartment.id" :data="selectedSubDepartment"
+      <FormEditProductCategory v-if="selectedSubDepartment" :key="selectedSubDepartment.id" :data="selectedSubDepartment"
         :saveRoute="routeEditfamily" @saved="handleSaved" />
     </Dialog>
 </template>
