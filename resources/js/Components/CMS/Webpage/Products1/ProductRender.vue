@@ -30,7 +30,7 @@ defineProps<{
 
       <!-- Product Image -->
       <div class="w-full h-64 mb-3 rounded">
-        <Image :src="product.image?.source" alt="product image" :imageCover="true" />
+        <Image :src="product.image?.source" alt="product image" :imageCover="true" class="object-contain"/>
       </div>
 
       <!-- Title -->
