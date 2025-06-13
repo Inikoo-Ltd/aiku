@@ -48,11 +48,14 @@ class UpdateProductCategory extends OrgAction
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
-        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            UpdateFamilyDepartment::make()->action($productCategory, [
-                'department_id' => Arr::pull($modelData, 'department_id'),
-            ]);
+       if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            if (Arr::has($modelData, 'department_id')) {
+                UpdateFamilyDepartment::make()->action($productCategory, [
+                    'department_id' => Arr::pull($modelData, 'department_id'),
+                ]);
+            }
         }
+
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $changes         = $productCategory->getChanges();

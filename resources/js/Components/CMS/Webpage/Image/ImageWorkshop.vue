@@ -145,7 +145,7 @@ const getVal = (base: any, path?: string[]) =>{
     <div v-else class="flex flex-wrap">
       <div v-for="index in modelValue?.value?.images?.length"
         :key="`${index}-${modelValue?.value?.images?.[index - 1]?.source}`"
-           class="flex flex-col group relative p-2 hover:bg-white/40 h-full"
+           class="flex flex-col group relative  hover:bg-white/40 h-full"
         :class="getColumnWidthClass(getVal(modelValue?.value.layout_type), index - 1)">
         <template v-if="modelValue?.value?.images?.[index - 1]?.source">
           <a v-if="getHref(index - 1)" :href="getHref(index - 1)" target="_blank" rel="noopener noreferrer"
