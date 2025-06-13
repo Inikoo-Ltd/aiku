@@ -46,7 +46,7 @@ const sidebarOpen = ref(false)
 </script>
 
 <template>
-    <div class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
+    <div id="grp_app" class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
 
         <TopBar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen"
