@@ -92,7 +92,6 @@ const autosave = () => {
 };
 
 
-console.log('props.data.layout', props)
 
 
 const currentView = ref("desktop");
@@ -100,7 +99,6 @@ provide("currentView", currentView);
 </script>
 
 <template>
-  {{  data.update_family_route }}
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-auto border">
       <SideMenuSubDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"

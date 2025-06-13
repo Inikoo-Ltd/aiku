@@ -144,6 +144,7 @@ class ShowProduct extends OrgAction
             $family = [
                 'label'   => $product->family->code,
                 'tooltip' => $product->family->code,
+                 'name'   => $product->family->name,
                 'route'   => match ($routeName) {
                     'grp.org.shops.show.catalogue.departments.show.families.show.products.show' => [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
@@ -172,6 +173,7 @@ class ShowProduct extends OrgAction
         if ($product->department) {
             $department = [
                 'label'   => $product->department->code,
+                'name'   => $product->department->name,
                 'tooltip' => $product->department->name,
                 'route'   => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show',

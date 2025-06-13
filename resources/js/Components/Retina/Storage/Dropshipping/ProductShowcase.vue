@@ -130,7 +130,7 @@ function changeSelectedImage(index) {
                                         aria-hidden="true">
 
                                     </div>
-                                    <font-awesome-icon :icon="['fas', 'trash']"
+                                    <font-awesome-icon v-if="false" :icon="['fas', 'trash']"
                                         class="absolute top-2 right-2 text-red-400 cursor-pointer"
                                         @click.stop="deleteImage(image, index)" />
                                 </Tab>
@@ -143,7 +143,7 @@ function changeSelectedImage(index) {
                                 <TabPanel v-for="image in product.images" :key="image.id">
                                     <div
                                         class="border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow aspect-[1/1] w-full h-[300px] relative overflow-hidden">
-                                        <Image :src="image.source" :alt="image.name" @click="openGallery = true"
+                                        <Image :src="image.source" :alt="image.name" aclick="openGallery = true"
                                             class="w-full h-full object-cover object-center" />
                                     </div>
                                 </TabPanel>
