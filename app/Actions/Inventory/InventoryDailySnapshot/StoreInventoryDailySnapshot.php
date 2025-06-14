@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 14 Jun 2025 11:34:46 Malaysia Time, Kuala Lumpur, Malaysia
@@ -14,7 +15,6 @@ use App\Models\Inventory\Warehouse;
 
 class StoreInventoryDailySnapshot extends OrgAction
 {
-
     public function handle(Warehouse $warehouse, OrgStock $orgStock, array $modelData): InventoryDailySnapshot
     {
         data_set($modelData, 'warehouse_id', $warehouse->id);

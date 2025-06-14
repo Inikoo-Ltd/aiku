@@ -23,7 +23,7 @@ class GetWebBlockFamilies
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        if($webpage->model instanceof ProductCategory) {
+        if ($webpage->model instanceof ProductCategory) {
             $families = DB::table('product_categories')
                 ->leftJoin('webpages', function ($join) {
                     $join->on('product_categories.id', '=', 'webpages.model_id')

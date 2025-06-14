@@ -99,25 +99,25 @@ class UpdateProduct extends OrgAction
 
         if (Arr::has($changed, 'family_id')) {
             FamilyHydrateProducts::dispatch($product->family);
-            if($oldFamily){
+            if ($oldFamily) {
                 FamilyHydrateProducts::dispatch($oldFamily);
             }
         }
 
         if (Arr::has($changed, 'department_id')) {
-            if($product->department){
+            if ($product->department) {
                 DepartmentHydrateProducts::dispatch($product->department);
             }
-            if($oldDepartment){
+            if ($oldDepartment) {
                 DepartmentHydrateProducts::dispatch($oldDepartment);
             }
         }
 
         if (Arr::has($changed, 'sub_department_id')) {
-            if($product->department){
+            if ($product->department) {
                 SubDepartmentHydrateProducts::dispatch($product->oldSubDepartment);
             }
-            if($oldSubDepartment){
+            if ($oldSubDepartment) {
                 SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
             }
         }

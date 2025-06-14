@@ -272,28 +272,28 @@ class ShowProduct extends OrgAction
 
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
-                    fn() => GetProductShowcase::run($product)
-                    : Inertia::lazy(fn() => GetProductShowcase::run($product)),
+                    fn () => GetProductShowcase::run($product)
+                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
                 ProductTabsEnum::ORDERS->value => $this->tab == ProductTabsEnum::ORDERS->value ?
-                    fn() => OrderResource::collection(IndexOrders::run($product->asset))
-                    : Inertia::lazy(fn() => OrderResource::collection(IndexOrders::run($product->asset))),
+                    fn () => OrderResource::collection(IndexOrders::run($product->asset))
+                    : Inertia::lazy(fn () => OrderResource::collection(IndexOrders::run($product->asset))),
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
-                    fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
-                    : Inertia::lazy(fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
+                    fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
+                    : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
 
                 ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
-                    fn() => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
-                    : Inertia::lazy(fn() => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
+                    fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
+                    : Inertia::lazy(fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
 
                 ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
-                    fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
-                    : Inertia::lazy(fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
 
                 ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
-                    fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
-                    : Inertia::lazy(fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
+                    fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
+                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
 
             ]

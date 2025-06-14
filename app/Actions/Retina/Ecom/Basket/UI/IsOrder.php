@@ -9,7 +9,6 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;

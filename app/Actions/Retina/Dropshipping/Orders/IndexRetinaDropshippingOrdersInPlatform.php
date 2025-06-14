@@ -20,7 +20,6 @@ use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
-use Checkout\PlatformType;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -114,8 +113,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             ];
         }
 
-        if($this->customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL)
-        {
+        if ($this->customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL) {
             $actions =   [
                         [
                             'type'  => 'button',

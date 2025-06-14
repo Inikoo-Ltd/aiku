@@ -11,7 +11,6 @@ namespace App\Http\Resources\Api\Dropshipping;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 class ShopResource extends JsonResource
 {
     public function toArray($request): array

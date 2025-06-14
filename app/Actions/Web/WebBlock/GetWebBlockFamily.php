@@ -8,11 +8,8 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Web\WebBlockFamilyResource;
-use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetWebBlockFamily
