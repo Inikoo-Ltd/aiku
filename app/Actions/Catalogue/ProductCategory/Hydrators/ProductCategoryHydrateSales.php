@@ -12,25 +12,18 @@ use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductCategoryHydrateSales
+class ProductCategoryHydrateSales implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
 
 
-    private ProductCategory $productCategory;
-
-    public function __construct(ProductCategory $productCategory)
+    public function getJobUniqueId(ProductCategory $productCategory): string
     {
-        $this->productCategory = $productCategory;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->productCategory->id))->dontRelease()];
+        return $productCategory->id;
     }
 
     public function handle(ProductCategory $productCategory): void

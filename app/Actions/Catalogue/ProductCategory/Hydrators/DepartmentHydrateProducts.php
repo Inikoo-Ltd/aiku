@@ -13,26 +13,19 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class DepartmentHydrateProducts
+class DepartmentHydrateProducts implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use HasGetProductCategoryState;
 
-    private ProductCategory $department;
-
-    public function __construct(ProductCategory $department)
+    public function getJobUniqueId(ProductCategory $department): string
     {
-        $this->department = $department;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->department->id))->dontRelease()];
+        return $department->id;
     }
 
     public function handle(ProductCategory $department): void
