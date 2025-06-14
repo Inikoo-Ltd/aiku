@@ -212,4 +212,9 @@ class OrgStock extends Model implements Auditable
         return $this->hasMany(OrgStockTimeSeries::class);
     }
 
+    public function inventoryDailySnapshots(): HasMany
+    {
+        return $this->hasMany(InventoryDailySnapshot::class);
+    }
+
 }
