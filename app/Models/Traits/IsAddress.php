@@ -26,13 +26,13 @@ trait IsAddress
 
         return $address
             ->withCountryCode($this->country_code)
-            ->withAdministrativeArea($this->administrative_area)
-            ->withDependentLocality($this->dependent_locality)
-            ->withLocality($this->locality)
-            ->withPostalCode($this->postal_code)
-            ->withSortingCode($this->sorting_code)
-            ->withAddressLine2($this->address_line_2)
-            ->withAddressLine1($this->address_line_1);
+            ->withAdministrativeArea($this->administrative_area??'')
+            ->withDependentLocality($this->dependent_locality??'')
+            ->withLocality($this->locality??'')
+            ->withPostalCode($this->postal_code??'')
+            ->withSortingCode($this->sorting_code??'')
+            ->withAddressLine2($this->address_line_2??'')
+            ->withAddressLine1($this->address_line_1??'');
     }
 
     public function getFormattedAddressAttribute(): string
