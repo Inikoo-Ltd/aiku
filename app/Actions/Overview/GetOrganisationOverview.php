@@ -135,7 +135,7 @@ class GetOrganisationOverview extends OrgAction
             [
                 'name'  => __('Departments'),
                 'icon'  => 'fal fa-folder-tree',
-                'route' => '',
+                'route' => route('grp.org.overview.departments.index', $organisation),
                 'count' => $organisation->catalogueStats->number_departments ?? 0
             ],
             [

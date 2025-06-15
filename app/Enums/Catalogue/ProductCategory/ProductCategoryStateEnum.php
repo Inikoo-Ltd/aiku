@@ -25,7 +25,7 @@ enum ProductCategoryStateEnum: string
     case DISCONTINUING = 'discontinuing';
     case DISCONTINUED = 'discontinued';
 
-    public static function labels($forElements = false): array
+    public static function labels(): array
     {
         return [
             'in_process'    => __('In Process'),
@@ -93,7 +93,7 @@ enum ProductCategoryStateEnum: string
 
     public static function countDepartments(Group|Shop|Organisation|Collection $parent): array
     {
-        if ($parent instanceof Organisation) {
+        if ($parent instanceof Organisation | $parent instanceof Group) {
             $stats = $parent->catalogueStats;
         } else {
             $stats = $parent->stats;
@@ -125,7 +125,7 @@ enum ProductCategoryStateEnum: string
         ];
     }
 
-    public static function countSubDepartment(ProductCategory $parent): array
+    public static function countSubDepartment(Group|Organisation|ProductCategory $parent): array
     {
         $stats = $parent->stats;
 

@@ -16,7 +16,7 @@ use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Billables\Charge\UI\IndexCharges;
 use App\Actions\Catalogue\Collection\UI\IndexCollections;
 use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
-use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
+use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInGroup;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\EmailAddress\UI\IndexEmailAddress;
@@ -85,7 +85,7 @@ Route::name('comms-marketing.')->prefix('comms-marketing')->group(function () {
 
 Route::name('catalogue.')->prefix('catalogue')->group(function () {
     Route::get('/products', IndexProductsInGroup::class)->name('products.index');
-    Route::get('/departments', [IndexDepartments::class, 'inGroup'])->name('departments.index');
+    Route::get('/departments', IndexDepartmentsInGroup::class)->name('departments.index');
     Route::get('/families', [IndexFamilies::class, 'inGroup'])->name('families.index');
     Route::get('/collections', [IndexCollections::class, 'inGroup'])->name('collections.index');
 });
