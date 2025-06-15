@@ -34,9 +34,10 @@ class StoreDeletedInvoiceHistory
                     :
                     '⚠️ '.__("The invoice :ref has been deleted.", ['ref' => $invoice->reference])
         ];
-        Event::dispatch(AuditCustom::class, [
-            $customer
-        ]);
+
+        Event::dispatch(new AuditCustom($customer));
+
+
     }
 
 }

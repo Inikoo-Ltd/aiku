@@ -41,7 +41,7 @@ class UpdatePalletLocation extends OrgAction
             'location' => $location->code
         ];
 
-        Event::dispatch(AuditCustom::class, [$pallet]);
+        Event::dispatch(new AuditCustom($pallet));
 
         return $pallet;
     }
