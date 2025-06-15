@@ -13,25 +13,19 @@ namespace App\Actions\SysAdmin\User\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Models\SysAdmin\User;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UserHydrateAudits
+class UserHydrateAudits implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private User $user;
-
-    public function __construct(User $user)
+    public function getJobUniqueId(User $user): string
     {
-        $this->user = $user;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->user->id))->dontRelease()];
+        return $user->id;
     }
 
     public function handle(User $user): void

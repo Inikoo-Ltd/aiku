@@ -10,24 +10,17 @@ namespace App\Actions\CRM\WebUser\Hydrators;
 
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Models\CRM\WebUser;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebUserHydrateAudits
+class WebUserHydrateAudits implements ShouldBeUnique
 {
     use AsAction;
 
-    private WebUser $webUser;
-
-    public function __construct(WebUser $webUser)
+    public function getJobUniqueId(WebUser $webUser): string
     {
-        $this->webUser = $webUser;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->webUser->id))->dontRelease()];
+        return $webUser->id;
     }
 
     public function handle(WebUser $webUser): void
