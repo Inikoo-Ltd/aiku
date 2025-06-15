@@ -33,7 +33,7 @@ task('deploy:sync-octane-anchor', function () {
 });
 
 desc('Stops inertia SSR server');
-task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'));
+task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
 
 set('keep_releases', 15);
 
@@ -87,5 +87,5 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-   // 'artisan:inertia:stop-ssr',
+    'artisan:inertia:stop-ssr',
 ]);
