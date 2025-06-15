@@ -13,24 +13,17 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebpageHydrateChildWebpages
+class WebpageHydrateChildWebpages implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Webpage $webpage;
-
-    public function __construct(Webpage $webpage)
+    public function getJobUniqueId(Webpage $webpage): string
     {
-        $this->webpage = $webpage;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->webpage->id))->dontRelease()];
+        return $webpage->id;
     }
 
     public function handle(Webpage $webpage): void

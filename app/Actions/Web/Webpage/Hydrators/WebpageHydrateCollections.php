@@ -12,25 +12,18 @@ namespace App\Actions\Web\Webpage\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebpageHydrateCollections
+class WebpageHydrateCollections implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Webpage $webpage;
-
-    public function __construct(Webpage $webpage)
+    public function getJobUniqueId(Webpage $webpage): string
     {
-        $this->webpage = $webpage;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->webpage->id))->dontRelease()];
+        return $webpage->id;
     }
 
     public function handle(Webpage $webpage): void

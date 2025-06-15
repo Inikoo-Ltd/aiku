@@ -11,31 +11,25 @@ namespace App\Actions\Catalogue\Collection\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Collection;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CollectionHydrateProducts
+class CollectionHydrateProducts implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Collection $collection;
 
-    public function __construct(Collection $collection)
+    public function getJobUniqueId(Collection $collection): string
     {
-        $this->collection = $collection;
+        return $collection->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->collection->id))->dontRelease()];
-    }
     public function handle(Collection $collection): void
     {
-
-        $stats         = [
-            'number_products'    => $collection->products()->count(),
+        $stats = [
+            'number_products' => $collection->products()->count(),
         ];
 
         $count = DB::table('collection_has_models')

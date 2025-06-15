@@ -12,23 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class FulfilmentCustomerHydratePalletReturns
+class FulfilmentCustomerHydratePalletReturns implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private FulfilmentCustomer $fulfilmentCustomer;
-    public function __construct(FulfilmentCustomer $fulfilmentCustomer)
+    public function getJobUniqueId(FulfilmentCustomer $fulfilmentCustomer): string
     {
-        $this->fulfilmentCustomer = $fulfilmentCustomer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->fulfilmentCustomer->id))->dontRelease()];
+        return $fulfilmentCustomer->id;
     }
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void
