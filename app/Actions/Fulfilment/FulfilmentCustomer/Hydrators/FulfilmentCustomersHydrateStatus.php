@@ -17,9 +17,14 @@ class FulfilmentCustomersHydrateStatus
     use AsAction;
 
 
-    public function handle(FulfilmentCustomer $fulfilmentCustomer): void
+    public function handle(): void
     {
-        FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer);
+        foreach (
+            FulfilmentCustomer::where('status', '!=', FulfilmentCustomerStatusEnum::LOST)
+                ->get() as $fulfilmentCustomer
+        ) {
+            FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer);
+        }
     }
 
 
@@ -27,12 +32,7 @@ class FulfilmentCustomersHydrateStatus
 
     public function asCommand(): int
     {
-        foreach (
-            FulfilmentCustomer::where('status', '!=', FulfilmentCustomerStatusEnum::LOST)
-                ->get() as $fulfilmentCustomer
-        ) {
-            $this->handle($fulfilmentCustomer);
-        }
+        $this->handle();
 
         return 0;
     }
