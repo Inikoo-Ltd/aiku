@@ -8,20 +8,17 @@
 
 namespace App\Actions\Traits\Authorisations;
 
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCatalogueAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->asAction) {
             return true;
         }
 
-        if ($this->parent instanceof Organisation) {
+        if ($request->route()->getName() == 'grp.org.shops.index') {
             $this->canEdit = $request->user()->authTo(
                 [
                     'org-supervisor.'.$this->organisation->id,
@@ -34,10 +31,9 @@ trait WithCatalogueAuthorisation
                     'shops-view'.$this->organisation->id,
                 ]
             );
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
+
             return $request->user()->authTo("products.{$this->shop->id}.view");
         }
     }

@@ -50,7 +50,7 @@ class StoreProduction extends OrgAction
             SeedProductionPermissions::run($production);
 
             $orgAdmins = $organisation->group->users()->with('roles')->get()->filter(
-                fn($user) => $user->roles->where('name', "org-admin-$organisation->id")->toArray()
+                fn ($user) => $user->roles->where('name', "org-admin-$organisation->id")->toArray()
             );
             foreach ($orgAdmins as $orgAdmin) {
                 UserAddRoles::run($orgAdmin, [
