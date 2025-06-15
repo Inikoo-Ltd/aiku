@@ -13,30 +13,22 @@ namespace App\Actions\Web\Website\Hydrators;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Web\Website;
 use Exception;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Google\Client;
 use Google\Service\Webmasters;
 use GuzzleHttp\Exception\ConnectException;
 
-class WebsiteHydrateGoogleCloudSearch
+class WebsiteHydrateGoogleCloudSearch implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
     public string $commandSignature = 'hydrate:website_data_google_cloud {organisations?*} {--s|slugs=}';
 
-    private Website $website;
-
-    public function getJobMiddleware(): array
+    public function getJobUniqueId(Website $website): string
     {
-        return [(new WithoutOverlapping($this->website->id))->dontRelease()];
+        return $website->id;
     }
-
-    public function __construct()
-    {
-        $this->model = Website::class;
-    }
-
 
     /**
      * @throws \Google\Exception
@@ -56,17 +48,15 @@ class WebsiteHydrateGoogleCloudSearch
             }
             data_set($groupSettings, 'gcp.oauthClientSecret', $apiToken);
             $website->group->update(['settings' => $groupSettings]);
-
         }
 
-        $client = new Client();
+        $client                      = new Client();
         $gcpOauthClientSecretDecoded = base64_decode($apiToken);
         $client->setAuthConfig(json_decode($gcpOauthClientSecretDecoded, true));
         $client->addScope(Webmasters::WEBMASTERS_READONLY);
         $service = new Webmasters($client);
 
         $this->saveSiteUrl($website, $service);
-
     }
 
     private function saveSiteUrl(Website $website, $service, $retry = 3): ?string
@@ -75,12 +65,12 @@ class WebsiteHydrateGoogleCloudSearch
             return '';
         }
         $websiteData = $website->data;
-        $siteUrl = Arr::get($websiteData, 'gcp.siteUrl');
+        $siteUrl     = Arr::get($websiteData, 'gcp.siteUrl');
         if (!$siteUrl) {
             try {
                 $siteEntry = $service->sites->listSites()->getSiteEntry();
-                $listSite = Arr::pluck($siteEntry, "siteUrl");
-                $siteUrl = Arr::where($listSite, function (string $value) use ($website) {
+                $listSite  = Arr::pluck($siteEntry, "siteUrl");
+                $siteUrl   = Arr::where($listSite, function (string $value) use ($website) {
                     return str_contains($value, $website->domain);
                 });
                 if (empty($siteUrl)) {
@@ -98,8 +88,6 @@ class WebsiteHydrateGoogleCloudSearch
 
         return null;
     }
-
-
 
 
 }
