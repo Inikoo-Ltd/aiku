@@ -14,7 +14,6 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -53,7 +52,7 @@ class UserHydrateAudits implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:user_audits';
 
-    public function asCommand($command): void
+    public function asCommand(): void
     {
         $users = User::all();
 

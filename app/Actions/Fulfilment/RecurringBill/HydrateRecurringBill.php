@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\RecurringBill;
 
+use App\Actions\Fulfilment\RecurringBill\Hydrators\RecurringBillHydratePallets;
 use App\Actions\Fulfilment\RecurringBill\Hydrators\RecurringBillHydrateTransactions;
 use App\Actions\HydrateModel;
 use App\Models\Fulfilment\RecurringBill;
@@ -20,6 +21,7 @@ class HydrateRecurringBill extends HydrateModel
     public function handle(RecurringBill $recurringBill): void
     {
         RecurringBillHydrateTransactions::run($recurringBill);
+        RecurringBillHydratePallets::run($recurringBill);
     }
 
     protected function getModel(string $slug): RecurringBill

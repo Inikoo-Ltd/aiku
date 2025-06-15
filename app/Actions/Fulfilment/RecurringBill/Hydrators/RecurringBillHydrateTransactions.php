@@ -11,25 +11,19 @@ namespace App\Actions\Fulfilment\RecurringBill\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Fulfilment\RecurringBill;
 use App\Models\Fulfilment\RecurringBillTransaction;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RecurringBillHydrateTransactions
+class RecurringBillHydrateTransactions implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private RecurringBill $recurringBill;
-
-    public function __construct(RecurringBill $recurringBill)
+    public function getJobUniqueId(RecurringBill $recurringBill): string
     {
-        $this->recurringBill = $recurringBill;
+        return $recurringBill->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->recurringBill->id))->dontRelease()];
-    }
 
     public function handle(RecurringBill $recurringBill): void
     {

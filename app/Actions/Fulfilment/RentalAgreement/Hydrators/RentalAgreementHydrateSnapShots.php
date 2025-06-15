@@ -10,23 +10,17 @@ namespace App\Actions\Fulfilment\RentalAgreement\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Fulfilment\RentalAgreement;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RentalAgreementHydrateSnapShots
+class RentalAgreementHydrateSnapShots implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private RentalAgreement $rentalAgreement;
-    public function __construct(RentalAgreement $rentalAgreement)
+    public function getJobUniqueId(RentalAgreement $rentalAgreement): string
     {
-        $this->rentalAgreement = $rentalAgreement;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->rentalAgreement->id))->dontRelease()];
+        return $rentalAgreement->id;
     }
 
     public function handle(RentalAgreement $rentalAgreement): void

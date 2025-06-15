@@ -14,23 +14,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaStateEnum;
 use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaTypeEnum;
 use App\Models\Fulfilment\StoredItemAudit;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoredItemAuditHydrateDeltas
+class StoredItemAuditHydrateDeltas implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private StoredItemAudit $StoredItemAudit;
-    public function __construct(StoredItemAudit $StoredItemAudit)
+    public function getJobUniqueId(StoredItemAudit $storedItemAudit): string
     {
-        $this->StoredItemAudit = $StoredItemAudit;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->StoredItemAudit->id))->dontRelease()];
+        return $storedItemAudit->id;
     }
 
     public function handle(StoredItemAudit $storedItemAudit): void
