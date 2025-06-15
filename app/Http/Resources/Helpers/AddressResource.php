@@ -37,7 +37,7 @@ class AddressResource extends JsonResource
 
         $adr = new Adr();
         $adr = $adr
-            ->withCountryCode($address->country_code)
+            ->withCountryCode($address->country_code??'')
             ->withAdministrativeArea($address->administrative_area ?? '')
             ->withDependentLocality($address->dependent_locality ?? '')
             ->withLocality($address->locality ?? '')
