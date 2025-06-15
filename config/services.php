@@ -49,8 +49,11 @@ return [
     'amazon' => [
         'client_id' => env('AMAZON_CLIENT_ID'),
         'client_secret' => env('AMAZON_CLIENT_SECRET'),
-        'sandbox' => env('AMAZON_SANDBOX', true),
-        'redirect_uri' => env('AMAZON_REDIRECT_URI')
+        'redirect_uri' => env('AMAZON_REDIRECT_URI', env('APP_URL') . '/oauth/amazon/callback'),
+        'region' => env('AMAZON_REGION', 'na'),
+        'sandbox' => env('AMAZON_SANDBOX', false),
+        'marketplace_id' => env('AMAZON_MARKETPLACE_ID', 'ATVPDKIKX0DER'),
+        'refresh_token' => env('AMAZON_REFRESH_TOKEN'),
     ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),

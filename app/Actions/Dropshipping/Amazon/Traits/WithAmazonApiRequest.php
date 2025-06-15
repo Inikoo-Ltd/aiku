@@ -21,16 +21,45 @@ trait WithAmazonApiRequest
      */
     protected function getAmazonConfig()
     {
-        return [
+        $sandbox = config('services.amazon.sandbox', false);
+        
+        $config = [
             'client_id' => config('services.amazon.client_id'),
             'client_secret' => config('services.amazon.client_secret'),
             'redirect_uri' => config('services.amazon.redirect_uri'),
-            'region' => config('services.amazon.region', 'us-east-1'),
-            'sandbox' => config('services.amazon.sandbox', false),
-            'access_token' => Arr::get($this->settings, 'credentials.amazon_access_token'),
-            'refresh_token' => Arr::get($this->settings, 'credentials.amazon_refresh_token'),
-            'marketplace_id' => config('services.amazon.marketplace_id', 'ATVPDKIKX0DER') // US Marketplace ID
+            'region' => config('services.amazon.region', 'eu'),
+            'sandbox' => $sandbox,
         ];
+        
+        // Set token sources based on environment
+        if ($sandbox) {
+            $storedAccessToken = config('services.amazon.access_token', null);
+            if ($storedAccessToken) {
+                $config['access_token'] = $storedAccessToken;
+            } else {
+                // If no stored token, generate a new one
+                $config['access_token'] = $this->getLWAAccessToken([
+                    'client_id' => config('services.amazon.client_id'),
+                    'client_secret' => config('services.amazon.client_secret'),
+                    'refresh_token' => config('services.amazon.refresh_token')
+                ]);
+                config(['services.amazon.access_token' => 
+                    $config['access_token']   
+                ]);
+            }
+            $marketplaceId = config('services.amazon.marketplace_id', null);
+            if ($marketplaceId) {
+                $config['marketplace_id'] = $marketplaceId;
+            } else {
+                config(['services.amazon.marketplace_id' => $this->getAmazonMarketplaceId()]);
+            }
+            $config['refresh_token'] = config('services.amazon.refresh_token');
+        } else {
+            $config['access_token'] = Arr::get($this->settings, 'credentials.amazon_access_token');
+            $config['refresh_token'] = Arr::get($this->settings, 'credentials.amazon_refresh_token');
+        }
+        
+        return $config;
     }
 
     /**
@@ -38,10 +67,11 @@ trait WithAmazonApiRequest
      */
     protected function getAmazonTokenUrl()
     {
-        $config = $this->getAmazonConfig();
-        return $config['sandbox']
-            ? 'https://api.sandbox.amazon.com/auth/o2/token'
-            : 'https://api.amazon.com/auth/o2/token';
+        // $config = $this->getAmazonConfig();
+        // return $config['sandbox']
+        //     ? 'https://api.sandbox.amazon.com/auth/o2/token'
+        //     : 'https://api.amazon.com/auth/o2/token';
+        return 'https://api.amazon.com/auth/o2/token';
     }
 
     /**
@@ -86,6 +116,25 @@ trait WithAmazonApiRequest
         };
     }
 
+    public function getAmazonMarketplaceId($config = null): string
+    {
+        if (!$config) {
+            $config = $this->getAmazonConfig();
+        }
+        $res = Http::withHeaders([
+            'x-amz-access-token' => $config['access_token'],
+        ])->get("{$this->getAmazonBaseUrl()}/sellers/v1/marketplaceParticipations");
+
+        if ($res->successful()) {
+            $data = $res->json();
+            dd($data);
+            if (isset($data['payload']) && is_array($data['payload']) && count($data['payload']) > 0) {
+                return Arr::get($data['payload'][0], 'marketplaceId');
+            }
+        }
+        return "";
+    }
+
     /**
      * Exchange authorization code for tokens
      */
@@ -106,15 +155,15 @@ trait WithAmazonApiRequest
                 $tokenData = $response->json();
 
                 // Update stored tokens
-                UpdateAmazonUser::run($this, [
-                    'settings' => [
-                        'credentials' => [
-                            'amazon_access_token' => $tokenData['access_token'],
-                            'amazon_refresh_token' => $tokenData['refresh_token'],
-                            'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
-                        ]
-                    ]
-                ]);
+                // UpdateAmazonUser::run($this, [
+                //     'settings' => [
+                //         'credentials' => [
+                //             'amazon_access_token' => $tokenData['access_token'],
+                //             'amazon_refresh_token' => $tokenData['refresh_token'],
+                //             'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                //         ]
+                //     ]
+                // ]);
 
                 return $tokenData;
             }
@@ -149,15 +198,15 @@ trait WithAmazonApiRequest
                 $tokenData = $response->json();
 
                 // Update stored tokens
-                UpdateAmazonUser::run($this, [
-                    'settings' => [
-                        'credentials' => [
-                            'amazon_access_token' => $tokenData['access_token'],
-                            'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in']),
-                            'amazon_refresh_token' => $config['refresh_token']
-                        ]
-                    ]
-                ]);
+                // UpdateAmazonUser::run($this, [
+                //     'settings' => [
+                //         'credentials' => [
+                //             'amazon_access_token' => $tokenData['access_token'],
+                //             'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in']),
+                //             'amazon_refresh_token' => $config['refresh_token']
+                //         ]
+                //     ]
+                // ]);
 
                 return $tokenData;
             }
@@ -197,7 +246,7 @@ trait WithAmazonApiRequest
     public function isAmazonAuthenticated()
     {
         return !empty(Arr::get($this->settings, 'credentials.amazon_access_token')) &&
-               !empty(Arr::get($this->settings, 'credentials.amazon_refresh_token'));
+            !empty(Arr::get($this->settings, 'credentials.amazon_refresh_token'));
     }
 
     /**
@@ -207,11 +256,11 @@ trait WithAmazonApiRequest
     {
         try {
             // Clear stored tokens
-            UpdateAmazonUser::run($this, [
-                'settings' => [
-                    'credentials' => []
-                ]
-            ]);
+            // UpdateAmazonUser::run($this, [
+            //     'settings' => [
+            //         'credentials' => []
+            //     ]
+            // ]);
 
             return true;
         } catch (Exception $e) {
@@ -223,9 +272,11 @@ trait WithAmazonApiRequest
     /**
      * Generate LWA (Login with Amazon) access token for restricted operations
      */
-    protected function getLWAAccessToken()
+    protected function getLWAAccessToken($config = null)
     {
-        $config = $this->getAmazonConfig();
+        if (!$config) {
+            $config = $this->getAmazonConfig();
+        }
 
         try {
             $response = Http::asForm()->post($this->getAmazonTokenUrl(), [
@@ -265,18 +316,13 @@ trait WithAmazonApiRequest
     protected function makeAmazonRequest($method, $endpoint, $data = [], $queryParams = [])
     {
         try {
-            $token = $this->getAmazonAccessToken();
             $url = $this->getAmazonBaseUrl() . $endpoint;
             $config = $this->getAmazonConfig();
+            $token = $config['access_token'];
 
             // Add marketplace_id to query parameters if not present
-            if (!isset($queryParams['marketplaceIds']) && !isset($queryParams['MarketplaceId'])) {
-                $queryParams['marketplaceIds'] = [$config['marketplace_id']];
-            }
-
-            if (!empty($queryParams)) {
-                $queryString = http_build_query($queryParams);
-                $url .= "?{$queryString}";
+            if (!isset($queryParams['MarketplaceIds']) && !isset($queryParams['MarketplaceId'])) {
+                $queryParams['MarketplaceIds'] = $config['marketplace_id'];
             }
 
             // Note: In production, you would need to implement the proper AWS Signature V4 here
@@ -287,8 +333,9 @@ trait WithAmazonApiRequest
                 'x-amz-access-token' => $token
             ];
 
-            $response = Http::withHeaders($headers)->$method($url, $data);
 
+            $response = Http::withHeaders($headers)->withQueryParameters($queryParams)->$method($url, $data);
+            
             if ($response->successful()) {
                 return $response->json();
             }
@@ -316,11 +363,12 @@ trait WithAmazonApiRequest
     /**
      * Get user's Amazon catalog items
      */
-    public function getProducts($limit = 50, $nextToken = null)
+    public function getProducts($limit = 50, $nextToken = null, $keywords = "shoes")
     {
         try {
             $queryParams = [
-                'limit' => $limit
+                'pageSize' => $limit,
+                'keywords' => $keywords
             ];
 
             if ($nextToken) {
@@ -396,13 +444,9 @@ trait WithAmazonApiRequest
     public function upsertProduct($sku, $productData)
     {
         try {
-            $config = $this->getAmazonConfig();
             $endpoint = "/listings/2021-08-01/items/{$sku}";
-            $queryParams = [
-                'marketplaceIds' => [$config['marketplace_id']]
-            ];
 
-            return $this->makeAmazonRequest('put', $endpoint, $productData, $queryParams);
+            return $this->makeAmazonRequest('put', $endpoint, $productData);
         } catch (Exception $e) {
             Log::error('Upsert Amazon Product Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -481,7 +525,7 @@ trait WithAmazonApiRequest
     {
         try {
             $queryParams = [
-                'OrderStatuses' => ['SHIPPED', 'UNSHIPPED', 'PARTIALLY_SHIPPED']
+                'OrderStatuses' => 'PendingAvailability,Unshipped,Pending,PartiallyShipped,Shipped,Canceled,Unfulfillable,InvoiceUnconfirmed',
             ];
 
             if ($createdAfter) {
@@ -631,10 +675,10 @@ trait WithAmazonApiRequest
     /**
      * Get account info
      */
-    public function getAccountInfo()
+    public function getSellerAccount()
     {
         try {
-            $endpoint = "/sellers/v1/marketplaceParticipations";
+            $endpoint = "/sellers/v1/account";
             return $this->makeAmazonRequest('get', $endpoint);
         } catch (Exception $e) {
             Log::error('Get Amazon Account Info Error: ' . $e->getMessage());
