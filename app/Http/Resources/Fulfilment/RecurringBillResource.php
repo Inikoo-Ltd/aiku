@@ -19,7 +19,6 @@ class RecurringBillResource extends JsonResource
     {
         /** @var RecurringBill $recurringBill */
         $recurringBill = $this;
-        // dd($this);
 
 
         return [
