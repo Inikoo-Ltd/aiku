@@ -24,7 +24,6 @@ class RecurringBillHydrateTransactions implements ShouldBeUnique
         return $recurringBill->id;
     }
 
-
     public function handle(RecurringBill $recurringBill): void
     {
         $stats = [

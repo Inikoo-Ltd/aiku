@@ -11,7 +11,7 @@ namespace App\Actions\SysAdmin\Guest;
 use App\Actions\GrpAction;
 use App\Actions\HumanResources\JobPosition\SyncUserJobPositions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
-use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateUniversalSearch;
+use App\Actions\SysAdmin\Guest\Search\GuestReindexSearch;
 use App\Actions\SysAdmin\User\StoreUser;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
@@ -68,7 +68,7 @@ class StoreGuest extends GrpAction
             return $guest;
         });
 
-        GuestHydrateUniversalSearch::dispatch($guest);
+        GuestReindexSearch::dispatch($guest);
         GroupHydrateGuests::dispatch($group);
 
         return $guest;

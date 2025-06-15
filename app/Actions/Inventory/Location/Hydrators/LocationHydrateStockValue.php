@@ -21,7 +21,6 @@ class LocationHydrateStockValue implements ShouldBeUnique
         return $location->id;
     }
 
-
     public function handle(Location $location): void
     {
         $orgStockValue          = 0;

@@ -6,12 +6,12 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
-namespace App\Actions\Production\Production\Hydrators;
+namespace App\Actions\Production\Production\Search;
 
 use App\Models\Production\Production;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductionHydrateUniversalSearch
+class ProductionRecordSearch
 {
     use AsAction;
 

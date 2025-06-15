@@ -9,7 +9,6 @@
 namespace App\Actions\Helpers\Query;
 
 use App\Actions\Helpers\Query\Hydrators\QueryHydrateCount;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class HydrateModelTypeQueries
@@ -20,11 +19,5 @@ class HydrateModelTypeQueries
     {
         QueryHydrateCount::make()->byModelType($modelType);
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping('HydrateModelTypeQueries'))->dontRelease()];
-    }
-
 
 }

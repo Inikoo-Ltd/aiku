@@ -6,12 +6,12 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SysAdmin\Guest\Hydrators;
+namespace App\Actions\SysAdmin\Guest\Search;
 
 use App\Models\SysAdmin\Guest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GuestHydrateUniversalSearch
+class GuestReindexSearch
 {
     use AsAction;
 
