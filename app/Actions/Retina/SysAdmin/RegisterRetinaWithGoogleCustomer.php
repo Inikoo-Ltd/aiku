@@ -11,13 +11,12 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\IrisAction;
-use App\Actions\CRM\Customer\FinishPreRegisterCustomer;
-use App\Actions\RetinaAction;
+use App\Actions\CRM\Customer\RegisterWithGoogleCustomer;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
-use App\Models\CRM\WebUser;
+use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -27,7 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class FinishPreRegisterRetinaCustomer extends IrisAction
+class RegisterRetinaWithGoogleCustomer extends IrisAction
 {
     /**
      * @throws \Throwable
@@ -37,12 +36,12 @@ class FinishPreRegisterRetinaCustomer extends IrisAction
 
     protected Shop $shop;
 
-    public function handle(WebUser $webUser, array $modelData)
+    public function handle(array $modelData)
     {
-        if (Arr::get($modelData, 'preview', false)) {
-            return;
-        }
-        FinishPreRegisterCustomer::make()->action($webUser, $modelData);
+        RegisterWithGoogleCustomer::make()->action(
+            $this->shop,
+            $modelData
+        );
     }
 
     public function authorize(ActionRequest $request): bool
@@ -55,16 +54,31 @@ class FinishPreRegisterRetinaCustomer extends IrisAction
         return [
             'contact_name'             => ['required', 'string', 'max:255'],
             'company_name'             => ['required', 'string', 'max:255'],
+            'email'                    => [
+                'required',
+                'string',
+                'max:255',
+                'exclude_unless:deleted_at,null',
+                new IUnique(
+                    table: 'customers',
+                    extraConditions: [
+                        ['column' => 'shop_id', 'value' => $this->shop->id],
+                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                    ]
+                ),
+            ],
             'phone'                    => ['required', 'max:255'],
             'contact_address'          => ['required', new ValidAddress()],
+            'is_opt_in'       => ['sometimes', 'boolean'],
             'password'                 =>
                 [
                     'sometimes',
                     'required',
                     app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
                 ],
-            'is_opt_in'       => ['sometimes', 'boolean'],
             'poll_replies'            => ['sometimes', 'required', 'array'],
+
+
         ];
     }
 

@@ -36,10 +36,10 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
                 'countriesAddressData' => GetAddressData::run(),
                 'polls'                => $pollsResource,
                 'registerRoute'        => [
-                    'name'       => 'retina.finish_pre_register.store',
+                    'name'       => 'retina.register_step_3.store',
                 ],
 
-                'googleData'=>$modeData,
+                'googleData' => $modeData,
 
                 'google'               => [
                     'client_id' => config('services.google.client_id')

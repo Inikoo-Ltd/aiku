@@ -21,8 +21,7 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
-use App\Actions\Retina\SysAdmin\FinishPreRegisterRetinaCustomer;
-use App\Actions\Retina\SysAdmin\PreRegisterRetinaCustomer;
+use App\Actions\Retina\SysAdmin\RegisterRetinaWithGoogleCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
 use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
@@ -34,17 +33,17 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('login', ShowRetinaLogin::class)->name('login.show');
     Route::post('login', RetinaLogin::class)->name('login.store');
 
-    Route::post('{shop:id}/register-pre-customer', PreRegisterRetinaCustomer::class)->name('register_pre_customer.store');
     Route::post('login-google', GoogleLoginRetina::class)->name('login_google');
     Route::post('register-google', GoogleRegisterRetina::class)->name('register_google');
 
-   // Route::post('register-google', PreRegisterCustomer::class)->name('register_pre_customer_google.store');
+    // Route::post('register-google', PreRegisterCustomer::class)->name('register_pre_customer_google.store');
 
 
     Route::get('register', ShowRetinaRegisterChooseMethod::class)->name('register');
     Route::get('register-step-2', ShowStandAloneRegistration::class)->name('register_standalone');
 
     Route::get('register-step-3', ShowRetinaRegisterWithGoogle::class)->name('register_step_3');
+    Route::post('register-step-3/register', RegisterRetinaWithGoogleCustomer::class)->name('register_step_3.store');
 
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
 
@@ -53,7 +52,6 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('reset-password-error', ShowRetinaResetWebUserPasswordError::class)->name('reset-password.error');
     Route::post('reset-password-send', SendRetinaResetPasswordEmail::class)->name('reset-password.send');
     Route::patch('reset-password', UpdateRetinaWebUserPassword::class)->name('reset-password.update');
-    Route::post('finish-pre-register', FinishPreRegisterRetinaCustomer::class)->name('finish_pre_register.store');
 });
 
 Route::middleware('retina-auth:retina')->group(function () {
