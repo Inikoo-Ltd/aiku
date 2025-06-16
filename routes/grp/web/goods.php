@@ -103,7 +103,11 @@ Route::prefix('families')->as('stock-families.')->group(function () {
 });
 
 Route::prefix('trade-units')->as('trade-units.')->group(function () {
-    Route::get('/', IndexTradeUnits::class)->name('index');
+    Route::get('/all', IndexTradeUnits::class)->name('index');
+    Route::get('/active', [IndexTradeUnits::class, 'active'])->name('active');
+    Route::get('/in-process', [IndexTradeUnits::class, 'inProcess'])->name('in_process');
+    Route::get('/discontinued', [IndexTradeUnits::class, 'discontinued'])->name('discontinued');
+    Route::get('/anomality', [IndexTradeUnits::class, 'anomality'])->name('anomality');
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');

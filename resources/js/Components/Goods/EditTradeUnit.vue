@@ -47,6 +47,7 @@ const props = defineProps<{
 // Section: modal create new tag
 const isModalTag = ref(false)
 const _multiselect_tags = ref(null)
+const newTagImg = ref<File | null>(null)
 const newTagName = ref('')
 const isLoadingCreateTag = ref(false)
 const onCreateNewTag = () => {
@@ -54,6 +55,7 @@ const onCreateNewTag = () => {
         route(props.tag_routes.store_tag.name, props.tag_routes.store_tag.parameters),
         {
             name: newTagName.value,
+            image: newTagImg.value,
         },
         {
             onStart: () => {
@@ -322,308 +324,342 @@ const onEditBrand = () => {
 </script>
 
 <template>
-    <div class="grid grid-cols-2">
-
-
-        <div class="w-full max-w-md px-8 py-4">
-            <div for="">
-                Tags:
-            </div>
-
-            <div class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
-                <Tag v-for="tag in props.tags" :key="tag.id" :label="tag.name" @click.self="() => (isModalUpdateTag = true, selectedUpdateTag = {...tag})" stringToColor style="cursor: pointer">
-                    <template #closeButton>
-                        <ModalConfirmationDelete
-                            :routeDelete="{
-                                name: props.tag_routes.delete_tag.name,
-                                parameters: {
-                                    ...props.tag_routes.delete_tag.parameters,
-                                    tag: tag.id,
-                                }
-                            }"
-                            :title="trans('Are you sure you want to delete tag') + ` ${tag.name}?`"
-                            isFullLoading
-                        >
-                            <template #default="{ isOpenModal, changeModel }">
-                                <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                                    <FontAwesomeIcon icon='fal fa-trash-alt' class='text-xs' aria-hidden='true' />
-                                </div>
-                            </template>
-                        </ModalConfirmationDelete>
-                    </template>
-                </Tag>
-            </div>
-
-            <div v-if="props.tag_routes?.index_tag?.name" class="w-full max-w-64">
-                <MultiSelect
-                    ref="_multiselect_tags"
-                    v-model="formSelectedTags.tags_id"
-                    :options="optionsList.length ? optionsList : props.tags"
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="Select Tags"
-                    :maxSelectedLabels="3"
-                    filter
-                    class="w-full md:w-80"
-                    @show="() => fetchProductList()"
-                    @hide="() => (formSelectedTags.isDirty ? onManageTags() : null)"
-                >
-                    <template #footer="{ value, options }">
-                        <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
-                            <LoadingIcon></LoadingIcon>
-                        </div>
-
-                        <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
-                            <Button
-                                @click="() => (isModalTag = true, _multiselect_tags?.hide())"
-                                label="Create new tag"
-                                icon="fas fa-plus"
-                                full
-                                type="secondary"
-                            />
-                        </div>
-                    </template>
-                </MultiSelect>
-            </div>
+    <div class="w-full max-w-md py-4">
+        <div for="">
+            Tags:
         </div>
 
-        <div v-if="props.brand_routes?.index_brand" class="w-full max-w-md px-8 py-4 gap-x-3 ">
-            <div>
-                {{ trans("Brand") }}:
-            </div>
+        <div class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
+            <Tag v-for="tag in props.tags" :key="tag.id" :label="tag.name" @click.self="() => (isModalUpdateTag = true, selectedUpdateTag = {...tag})" stringToColor style="cursor: pointer">
+                <template #closeButton>
+                    <ModalConfirmationDelete
+                        :routeDelete="{
+                            name: props.tag_routes.delete_tag.name,
+                            parameters: {
+                                ...props.tag_routes.delete_tag.parameters,
+                                tag: tag.id,
+                            }
+                        }"
+                        :title="trans('Are you sure you want to delete tag') + ` ${tag.name}?`"
+                        isFullLoading
+                    >
+                        <template #default="{ isOpenModal, changeModel }">
+                            <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                                <FontAwesomeIcon icon='fal fa-trash-alt' class='text-xs' aria-hidden='true' />
+                            </div>
+                        </template>
+                    </ModalConfirmationDelete>
+                </template>
+            </Tag>
+        </div>
 
-            <div class="w-full">
-                <PureMultiselectInfiniteScroll
-                    :modelValue="props.brand?.id"
-                    @update:modelValue="(e) => (set(data, ['brand', 'id'], e), onAttachBrand(e))"
-                    :fetchRoute="props.brand_routes.index_brand"
-                    :placeholder="trans('Select brand')"
-                    valueProp="id"
-                    required
-                    aoptionsList="(options) => dataServiceList = options"
-                    :initOptions="props.brand ? [props.brand] : undefined"
-                >
-                    <template #singlelabel="{ value }">
-                        <div class="w-full text-left pl-4">{{ value.name }} </div>
-                    </template>
-                    <template #option="{ option, isSelected, isPointed }">
-                        <div class="flex justify-between w-full">
-                            {{ option.name }}
-                            <div class="flex gap-x-2">
-                                <ModalConfirmationDelete
-                                    :routeDelete="{
-                                        name: props.brand_routes.delete_brand.name,
-                                        parameters: {
-                                            ...props.brand_routes.delete_brand.parameters,
-                                            brand: option.id,
-                                        }
-                                    }"
-                                    :title="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
-                                    isFullLoading
-                                >
-                                    <template #default="{ isOpenModal, changeModel }">
-                                        <div @click.stop="changeModel" class="cursor-pointer px-1 text-red-400 hover:text-red-600 rounded-sm">
-                                            <FontAwesomeIcon icon='fal fa-trash-alt' class='' aria-hidden='true' />
-                                        </div>
-                                    </template>
-                                </ModalConfirmationDelete>
+        <div v-if="props.tag_routes?.index_tag?.name" class="w-full max-w-64">
+            <MultiSelect
+                ref="_multiselect_tags"
+                v-model="formSelectedTags.tags_id"
+                :options="optionsList.length ? optionsList : props.tags"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select Tags"
+                :maxSelectedLabels="3"
+                filter
+                class="w-full md:w-80"
+                @show="() => fetchProductList()"
+                @hide="() => (formSelectedTags.isDirty ? onManageTags() : null)"
+            >
+                <template #footer="{ value, options }">
+                    <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
+                        <LoadingIcon></LoadingIcon>
+                    </div>
 
-                                <div @click.stop="(selectedBrandToUpdate = option, isModalUpdateBrand = true)" class="text-gray-400 hover:text-gray-500">
-                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
-                                </div>
+                    <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
+                        <Button
+                            @click="() => (isModalTag = true, _multiselect_tags?.hide())"
+                            label="Create new tag"
+                            icon="fas fa-plus"
+                            full
+                            type="secondary"
+                        />
+                    </div>
+                </template>
+            </MultiSelect>
+        </div>
+    </div>
+
+    <div v-if="props.brand_routes?.index_brand" class="w-full max-w-md py-4 gap-x-3 ">
+        <div>
+            {{ trans("Brand") }}:
+        </div>
+
+        <div class="w-full">
+            <PureMultiselectInfiniteScroll
+                :modelValue="props.brand?.id"
+                @update:modelValue="(e) => (set(data, ['brand', 'id'], e), onAttachBrand(e))"
+                :fetchRoute="props.brand_routes.index_brand"
+                :placeholder="trans('Select brand')"
+                valueProp="id"
+                required
+                aoptionsList="(options) => dataServiceList = options"
+                :initOptions="props.brand ? [props.brand] : undefined"
+            >
+                <template #singlelabel="{ value }">
+                    <div class="w-full text-left pl-4">{{ value.name }} </div>
+                </template>
+                <template #option="{ option, isSelected, isPointed }">
+                    <div class="flex justify-between w-full">
+                        {{ option.name }}
+                        <div class="flex gap-x-2">
+                            <ModalConfirmationDelete
+                                :routeDelete="{
+                                    name: props.brand_routes.delete_brand.name,
+                                    parameters: {
+                                        ...props.brand_routes.delete_brand.parameters,
+                                        brand: option.id,
+                                    }
+                                }"
+                                :title="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                                isFullLoading
+                            >
+                                <template #default="{ isOpenModal, changeModel }">
+                                    <div @click.stop="changeModel" class="cursor-pointer px-1 text-red-400 hover:text-red-600 rounded-sm">
+                                        <FontAwesomeIcon icon='fal fa-trash-alt' class='' aria-hidden='true' />
+                                    </div>
+                                </template>
+                            </ModalConfirmationDelete>
+
+                            <div @click.stop="(selectedBrandToUpdate = option, isModalUpdateBrand = true)" class="text-gray-400 hover:text-gray-500">
+                                <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
                             </div>
                         </div>
-                    </template>
+                    </div>
+                </template>
 
-                    <template #afterlist>
-                        <div class="w-full p-2 border-t border-gray-300">
-                            <Button
-                                @click="() => (isModalBrand = true)"
-                                label="Add new brand"
-                                icon="fas fa-plus"
-                                full
-                                type="secondary"
-                            />
-                        </div>
-                    </template>
-                </PureMultiselectInfiniteScroll>
-                
-                <ModalConfirmationDelete
-                    v-if="props.brand?.id"
-                    :routeDelete="props.brand_routes.detach_brand"
-                    :title="trans('Are you sure you want to unselect brand?')"
-                    :description="trans('This will remove the brand from this unit, but not delete it.')"
-                    isFullLoading
-                    noLabel="Unselect"
-                    noIcon="fal fa-times"
-                >
-                    <template #default="{ isOpenModal, changeModel }">
-                        <div @click="changeModel" class="ml-auto w-fit text-xs text-red-500 hover:underline cursor-pointer">
-                            <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
-                            {{ trans("Unselect brand") }}
-                        </div>
-                    </template>
-                </ModalConfirmationDelete>
+                <template #afterlist>
+                    <div class="w-full p-2 border-t border-gray-300">
+                        <Button
+                            @click="() => (isModalBrand = true)"
+                            label="Add new brand"
+                            icon="fas fa-plus"
+                            full
+                            type="secondary"
+                        />
+                    </div>
+                </template>
+            </PureMultiselectInfiniteScroll>
+            
+            <ModalConfirmationDelete
+                v-if="props.brand?.id"
+                :routeDelete="props.brand_routes.detach_brand"
+                :title="trans('Are you sure you want to unselect brand?')"
+                :description="trans('This will remove the brand from this unit, but not delete it.')"
+                isFullLoading
+                noLabel="Unselect"
+                noIcon="fal fa-times"
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <div @click="changeModel" class="ml-auto w-fit text-xs text-red-500 hover:underline cursor-pointer">
+                        <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
+                        {{ trans("Unselect brand") }}
+                    </div>
+                </template>
+            </ModalConfirmationDelete>
+        </div>
+    </div>
+
+
+    <!-- Modal: create new tag -->
+    <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new tag') }}</h2>
+            </div>
+
+            <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        {{ trans('Image') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureImageCrop
+                            :aspectRatio="1/1"
+                            @cropped="(e) => newTagImg = e"
+                        />
+                    </div>
+                </div>
+
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureInput v-model="newTagName" placeholder="1-64 characters" />
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6 mb-4 relative">
+                <Button
+                    @click="() => onCreateNewTag()"
+                    label="Submit"
+                    :disabled="!newTagName"
+                    :loading="isLoadingCreateTag"
+                    full
+                />
             </div>
         </div>
+    </Modal>
 
+    <!-- Modal: Edit tag -->
+    <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit tag') }}</h2>
+            </div>
 
-        <!-- Modal: create new tag -->
-        <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
-            <div class="isolate bg-white px-6 lg:px-8">
-                <div class="mx-auto max-w-2xl text-center">
-                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new tag') }}</h2>
-                </div>
-
-                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                    <div class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Name') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureInput v-model="newTagName" placeholder="1-64 characters" />
-                        </div>
+            <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureImageCrop
+                            :src_image="selectedUpdateTag?.image"
+                            :aspectRatio="1/1"
+                            @cropped="(e) => selectedUpdateTag.image = e"
+                        />
                     </div>
-
                 </div>
 
-                <div class="mt-6 mb-4 relative">
-                    <Button
-                        @click="() => onCreateNewTag()"
-                        label="Submit"
-                        :disabled="!newTagName"
-                        :loading="isLoadingCreateTag"
-                        full
-                    />
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureInput :modelValue="selectedUpdateTag?.name" @update:modelValue="(e) => set(selectedUpdateTag, ['name'], e)" placeholder="1-64 characters" />
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6 mb-4 relative">
+                <Button
+                    @click="() => onEditTag()"
+                    label="Update tag"
+                    :disabled="!selectedUpdateTag?.name"
+                    :loading="isLoadingUpdateTag"
+                    full
+                />
+            </div>
+        </div>
+    </Modal>
+
+    
+    <!-- Modal: create new brand -->
+    <Modal :isOpen="isModalBrand" @onClose="isModalBrand = false" width="w-[600px]">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
+            </div>
+
+            <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        {{ trans('Image') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureImageCrop
+                            :aspectRatio="1/1"
+                            @cropped="(e) => newBrandImg = e"
+                        />
+                    </div>
                 </div>
             </div>
-        </Modal>
 
-        <!-- Modal: Edit tag -->
-        <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
-            <div class="isolate bg-white px-6 lg:px-8">
-                <div class="mx-auto max-w-2xl text-center">
-                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit tag') }}</h2>
-                </div>
-
-                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                    <div class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Name') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureInput :modelValue="selectedUpdateTag?.name" @update:modelValue="(e) => set(selectedUpdateTag, ['name'], e)" placeholder="1-64 characters" />
-                        </div>
+            <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Reference') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureInput v-model="newBrandReference" placeholder="1-16 characters" />
                     </div>
-
                 </div>
 
-                <div class="mt-6 mb-4 relative">
-                    <Button
-                        @click="() => onEditTag()"
-                        label="Update tag"
-                        :disabled="!selectedUpdateTag?.name"
-                        :loading="isLoadingUpdateTag"
-                        full
-                    />
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureInput v-model="newBrandName" placeholder="1-64 characters" />
+                    </div>
                 </div>
+
             </div>
-        </Modal>
 
-        
-        <!-- Modal: create new brand -->
-        <Modal :isOpen="isModalBrand" @onClose="isModalBrand = false" width="w-[600px]">
-            <div class="isolate bg-white px-6 lg:px-8">
-                <div class="mx-auto max-w-2xl text-center">
-                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
-                </div>
-
-                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                    <div class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            {{ trans('Image') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureImageCrop
-                                :aspectRatio="1/1"
-                                @cropped="(e) => newBrandImg = e"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                    <div class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Reference') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureInput v-model="newBrandReference" placeholder="1-16 characters" />
-                        </div>
-                    </div>
-
-                    <div class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Name') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureInput v-model="newBrandName" placeholder="1-64 characters" />
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="mt-6 mb-4 relative">
-                    <Button
-                        @click="() => onCreateNewBrand()"
-                        label="Create"
-                        :disabled="!newBrandName"
-                        :loading="isLoadingCreateBrand"
-                        full
-                    />
-                </div>
+            <div class="mt-6 mb-4 relative">
+                <Button
+                    @click="() => onCreateNewBrand()"
+                    label="Create"
+                    :disabled="!newBrandName"
+                    :loading="isLoadingCreateBrand"
+                    full
+                />
             </div>
-        </Modal>
+        </div>
+    </Modal>
 
-        <!-- Modal: Edit brand -->
-        <Modal :isOpen="isModalUpdateBrand" @onClose="isModalUpdateBrand = false" width="w-[600px]">
-            <div class="isolate bg-white px-6 lg:px-8">
-                <div class="mx-auto max-w-2xl text-center">
-                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
-                </div>
-
-                <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                    <div class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Reference') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureInput :modelValue="selectedBrandToUpdate?.reference" @update:modelValue="(e) => set(selectedBrandToUpdate, ['reference'], e)" placeholder="1-16 characters" />
-                        </div>
-                    </div>
-
-                    <div class="col-span-2">
-                        <label for="first-name" class="block text-sm font-medium leading-6">
-                            <span class="text-red-500">*</span> {{ trans('Name') }}
-                        </label>
-                        <div class="mt-1">
-                            <PureInput :modelValue="selectedBrandToUpdate?.name" @update:modelValue="(e) => set(selectedBrandToUpdate, ['name'], e)" placeholder="1-64 characters" />
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="mt-6 mb-4 relative">
-                    <Button
-                        @click="() => onEditBrand()"
-                        label="Edit Brand"
-                        :disabled="!selectedBrandToUpdate?.reference || !selectedBrandToUpdate?.name"
-                        :loading="isLoadingCreateBrand"
-                        full
-                    />
-                </div>
+    <!-- Modal: Edit brand -->
+    <Modal :isOpen="isModalUpdateBrand" @onClose="isModalUpdateBrand = false" width="w-[600px]">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
             </div>
-        </Modal>
 
-    </div>
+            <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        {{ trans('Image') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureImageCrop
+                            :src_image="selectedBrandToUpdate?.image"
+                            :aspectRatio="1/1"
+                            @cropped="(e) => selectedBrandToUpdate.image = e"
+                        />
+                    </div>
+                </div>
+
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Reference') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureInput :modelValue="selectedBrandToUpdate?.reference" @update:modelValue="(e) => set(selectedBrandToUpdate, ['reference'], e)" placeholder="1-16 characters" />
+                    </div>
+                </div>
+
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureInput :modelValue="selectedBrandToUpdate?.name" @update:modelValue="(e) => set(selectedBrandToUpdate, ['name'], e)" placeholder="1-64 characters" />
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6 mb-4 relative">
+                <Button
+                    @click="() => onEditBrand()"
+                    label="Edit Brand"
+                    :disabled="!selectedBrandToUpdate?.reference || !selectedBrandToUpdate?.name"
+                    :loading="isLoadingCreateBrand"
+                    full
+                />
+            </div>
+        </div>
+    </Modal>
+
 </template>

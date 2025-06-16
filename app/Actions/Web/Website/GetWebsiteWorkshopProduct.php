@@ -4,6 +4,7 @@ namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\ProductResource;
+use App\Http\Resources\Web\WebBlockProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\WebBlockType;
@@ -24,7 +25,7 @@ class GetWebsiteWorkshopProduct
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
 
-            $fieldValue['product'] = ProductResource::make($product);
+            $fieldValue['product'] = WebBlockProductResource::make($product);
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });

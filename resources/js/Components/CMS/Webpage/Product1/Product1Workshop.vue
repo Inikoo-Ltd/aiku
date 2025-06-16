@@ -5,7 +5,6 @@ import { faChevronDown, faCircle, faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
-import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useLocaleStore } from '@/Stores/locale'
@@ -189,6 +188,7 @@ const selectImage = (code: string) => {
                 </div>
             </div>
         </div>
+
         <ProductContents :product="props.modelValue.product" />
     </div>
 
@@ -196,18 +196,29 @@ const selectImage = (code: string) => {
     <div class="block lg:hidden px-4 py-6 text-gray-800">
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
         <ImageProducts :images="modelValue.product.images.data" />
-        <div class="text-lg font-semibold mt-4">
-            {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
-            <span class="text-xs text-gray-500 ml-1">({{ modelValue.product.units }}/{{ modelValue.product.unit
-                }})</span>
+        <div class="flex justify-between items-start gap-4 mt-4">
+            <!-- Price + Unit Info -->
+            <div>
+                <div class="text-lg font-semibold">
+                    {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
+                    <span class="text-xs text-gray-500 ml-1">
+                        ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
+                    </span>
+                </div>
+                <div class="text-xs text-gray-400 font-semibold mt-1">
+                    RRP: {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp || 0) }}
+                </div>
+            </div>
+
+            <!-- Favorite Icon -->
+            <div class="mt-1">
+                <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
+                    :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
+                    @click="toggleFavorite" />
+            </div>
         </div>
-        <div class="text-xs text-gray-400 font-semibold mt-1">
-            RRP: {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp || 0) }}
-        </div>
-        <div class="mt-2">
-            <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer" :class="{ 'text-red-500': isFavorite }"
-                @click="toggleFavorite" />
-        </div>
+
+
         <div class="flex flex-wrap gap-2 mt-4">
             <div v-for="label in product.labels" :key="label" class="text-xs flex items-center gap-1 text-gray-500">
                 <FontAwesomeIcon :icon="faSeedling" class="text-sm" />
@@ -236,5 +247,8 @@ const selectImage = (code: string) => {
                     :src="selectImage(logo.code)" :alt="logo.code" class="h-4" />
             </div>
         </div>
+
+        <ProductContents :product="props.modelValue.product" />
     </div>
+
 </template>

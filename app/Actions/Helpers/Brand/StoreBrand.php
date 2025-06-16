@@ -10,8 +10,8 @@
 
 namespace App\Actions\Helpers\Brand;
 
+use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
-use App\Actions\Traits\UI\WithLogo;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use App\Models\SysAdmin\Group;
@@ -21,15 +21,29 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreBrand extends OrgAction
 {
-    use WithLogo;
     public function handle(Group|TradeUnit $parent, array $modelData): Brand
     {
 
-        $brand = Brand::create($modelData);
-
         $image = Arr::pull($modelData, 'image', null);
+        if ($parent instanceof Group) {
+            data_set($modelData, 'group_id', $parent->id);
+        } else {
+            data_set($modelData, 'group_id', $parent->group_id);
+        }
+
+        $brand = Brand::create($modelData);
         if ($image) {
-            $brand = $this->processWebsiteLogo(['image' => $image ], $brand);
+            $imageData = [
+                'path'         => $image->getPathName(),
+                'originalName' => $image->getClientOriginalName(),
+                'extension'    => $image->getClientOriginalExtension(),
+            ];
+            $brand     = SaveModelImage::run(
+                model: $brand,
+                imageData: $imageData,
+                scope: 'image',
+            );
+
         }
         AttachBrandToModel::make()->handle(
             $parent,
