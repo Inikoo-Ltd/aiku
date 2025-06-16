@@ -75,6 +75,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_customers_who_un_reminded
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_collections
  * @method static Builder<static>|ProductCategoryStats newModelQuery()
  * @method static Builder<static>|ProductCategoryStats newQuery()
  * @method static Builder<static>|ProductCategoryStats query()

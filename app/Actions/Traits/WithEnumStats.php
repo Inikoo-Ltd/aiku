@@ -23,10 +23,11 @@ trait WithEnumStats
         $stats = [];
 
         $applyWhere = false;
-        if ($this->is_closure($where)) {
+        if ($this->isClosure($where)) {
             $applyWhere = true;
         } else {
-            $where = function ($q) {
+            $where = function () {
+                //
             };
         }
 
@@ -48,7 +49,7 @@ trait WithEnumStats
         return $stats;
     }
 
-    public function is_closure($t): bool
+    public function isClosure($t): bool
     {
         return $t instanceof \Closure;
     }

@@ -10,7 +10,8 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import type { Component } from "vue"
-import { computed, inject, ref, watch } from "vue"
+import { set } from "lodash-es"
+import { computed, inject, provide, ref, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
@@ -25,7 +26,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
 import TableStoredItemReturnStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemReturnStoredItems.vue"
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Popover from "@/Components/Popover.vue"
 import { Tabs as TSTabs } from "@/types/Tabs"
@@ -52,6 +53,8 @@ import {
 	faArrowAltRight,
 	faArrowAltLeft,
     faTrashAlt,
+	faShippingFast,
+	faWeight, faPrint,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -59,6 +62,10 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmationDelete.vue"
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import InputNumber from "primevue/inputnumber"
+import Fieldset from "primevue/fieldset"
 
 library.add(
 	faIdCardAlt,
@@ -73,7 +80,9 @@ library.add(
 	faUndoAlt,
 	faArrowAltRight,
 	faArrowAltLeft,
-    faTrashAlt
+    faTrashAlt,
+	faShippingFast,
+	faWeight, faPrint
 )
 
 const props = defineProps<{
@@ -103,7 +112,7 @@ const props = defineProps<{
 		dropshipping: boolean
 	}
 
-	upload_spreadsheet: UploadPallet
+	upload_spreadsheet?: UploadPallet
 	can_edit_transactions: boolean
 	box_stats: BoxStats
 	notes_data: PDRNotes[]
@@ -123,9 +132,15 @@ const props = defineProps<{
 		code: string
 	}[]
 	stored_items_count?: number
+	shipments: {
+		fetch_route: routeType
+		submit_route: routeType
+		delete_route: routeType
+	}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
+const layout = inject('layout', layoutStructure)
 const parsed_stored_items_count = ref(props.stored_items_count || 0)
 
 const currentTab = ref(props.tabs.current)
@@ -252,11 +267,85 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
 }
 
 const isModalUploadFileOpen = ref(false)
+
+// Section: Shipment
+const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
+const isModalShipment = ref(false)
+const optionShippingList = ref([])
+const onOpenModalTrackingNumber = async () => {
+	isLoadingData.value = "addTrackingNumber"
+	try {
+		const xxx = await axios.get(
+			route(props.shipments.fetch_route.name, props.shipments.fetch_route.parameters)
+		)
+		optionShippingList.value = xxx?.data?.data || []
+	} catch (error) {
+		console.error(error)
+		notify({
+			title: trans("Something went wrong."),
+			text: trans("Failed to retrieve shipper list"),
+			type: "error",
+		})
+	}
+	isLoadingData.value = false
+}
+const onSubmitShipment = () => {
+	// formAddService.historic_asset_id = optionShippingList.value.filter(
+	// 	(service) => service.id == formAddService.service_id
+	// )[0].historic_asset_id
+	// isLoadingButton.value = "addTrackingNumber"
+
+	formTrackingNumber
+		.transform((data) => ({
+			shipper_id: data.shipping_id?.id,
+			tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number,
+		}))
+		.post(route(props.shipments.submit_route.name, { ...props.shipments.submit_route.parameters }), {
+			preserveScroll: true,
+			onStart: () => {
+				isLoadingButton.value = "addTrackingNumber"
+			},
+			onSuccess: () => {
+				isModalShipment.value = false
+				formTrackingNumber.reset()
+			},
+			onError: (errors) => {
+				// TODO: Make condition if the error related to delivery address then set to true
+				// set(listError.value, 'box_stats_delivery_address', true) // To make the Box stats delivery address error
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to add Shipment. Please try again."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingButton.value = false
+			},
+		})
+}
+
+const listError = ref({
+	box_stats_parcel: false
+})
+provide("listError", listError.value)
+
+// const optionShippingList = ref([])
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template v-if="timeline.state === 'picked' && (box_stats?.shipments?.length < 1)" #otherBefore>
+			<Button 
+				v-if="!data.data?.is_collection"
+				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
+				v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
+				:label="trans('Shipment')"
+				icon="fal fa-shipping-fast"
+				type="tertiary"
+			/>
+		</template>
+
 		<!-- Button: Upload -->
 		<template #button-upload="{ action }">
 			<Button
@@ -583,7 +672,7 @@ const isModalUploadFileOpen = ref(false)
 	</div>
 
 	<!-- Section: Box Stats -->
-	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management />
+	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments />
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component
@@ -631,4 +720,129 @@ const isModalUploadFileOpen = ref(false)
 		progressDescription="Adding Pallet Deliveries"
 		:attachmentRoutes
 		:options="props.option_attach_file" />
+
+	<!-- Modal: Shipment -->
+	<Modal
+		v-if="!data.data?.is_collection"
+		:isOpen="isModalShipment"
+		@onClose="isModalShipment = false"
+		width="w-full max-w-2xl"
+	>
+		<div class="text-center font-bold mb-4">
+			{{ trans('Add shipment') }}
+		</div>
+
+		<div class="w-full mt-3">
+			<span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+
+			<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
+				<div v-if="isLoadingData === 'addTrackingNumber'"
+					v-for="sip in 3"
+					class="skeleton w-full max-w-52 h-20 rounded"
+				>
+					
+				</div>
+
+				<div v-else
+					v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
+					@click="() => formTrackingNumber.shipping_id = shipment"
+					class="relative w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
+					:class="[
+						formTrackingNumber.shipping_id?.id == shipment.id
+							? 'bg-indigo-200 border-indigo-300'
+							: 'hover:bg-gray-100 border-gray-300',
+					]"
+
+				>
+					<div class="font-bold tesm">{{ shipment.name }}</div>
+					<div class="text-xs text-gray-500 italic">
+						{{ shipment.phone }}
+					</div>
+					<div class="text-xs text-gray-500 italic">
+						{{ shipment.tracking_url }}
+					</div>
+					
+					<FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
+				</div>
+
+			</div>
+
+			<div class="">
+				<PureMultiselectInfiniteScroll
+					v-model="formTrackingNumber.shipping_id"
+					:fetchRoute="shipments.fetch_route"
+					required
+					:placeholder="trans('Select shipping')"
+					object
+					@optionsList="(e) => optionShippingList = e"
+				>
+					<template #singlelabel="{ value }">
+						<div class="w-full text-left pl-4">
+							{{ value.name }}
+							<span class="text-sm text-gray-400">({{ value.code }})</span>
+						</div>
+					</template>
+
+					<template #option="{ option, isSelected, isPointed }">
+						<div class="">
+							{{ option.name }}
+							<span class="text-sm text-gray-400">({{ option.code }})</span >
+						</div>
+					</template>
+				</PureMultiselectInfiniteScroll>
+
+				<p
+					v-if="get(formTrackingNumber, ['errors', 'shipping_id'])"
+					class="mt-2 text-sm text-red-500">
+					{{ formTrackingNumber.errors.shipping_id }}
+				</p>
+			</div>
+
+			<!-- Tracking number -->
+			<div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
+				<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+				<PureInput
+					v-model="formTrackingNumber.tracking_number"
+					placeholder="ABC-DE-1234567"
+					xxkeydown.enter="() => onSubmitAddService(action, closed)" />
+				<p
+					v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
+					class="mt-2 text-sm text-red-600">
+					{{ formTrackingNumber.errors.tracking_number }}
+				</p>
+			</div>
+
+			<!-- TODO: show the list of the error from delivery address -->
+			<div
+				v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
+				class="mt-2 text-sm text-red-600">
+				<p v-for="errorx in formTrackingNumber?.errors?.address">
+					{{ errorx }}
+				</p>
+			</div>
+
+			<div class="flex justify-end mt-3">
+				<Button
+					:style="'save'"
+					:loading="isLoadingButton == 'addTrackingNumber'"
+					:label="'save'"
+					:disabled="
+						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
+					"
+					full
+					@click="() => onSubmitShipment()" />
+			</div>
+
+			<!-- Loading: fetching service list -->
+			<div
+				v-if="isLoadingData === 'addTrackingNumber'"
+				class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+				<FontAwesomeIcon
+					icon="fad fa-spinner-third"
+					class="animate-spin text-5xl"
+					fixed-width
+					aria-hidden="true" />
+			</div>
+		</div>
+	</Modal>
 </template>

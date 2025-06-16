@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Banner\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebsiteEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowBannerWorkshop extends OrgAction
 {
-    use WithWebsiteEditAuthorisation;
+    use WithWebEditAuthorisation;
 
     private Website $parent;
 
@@ -44,7 +44,7 @@ class ShowBannerWorkshop extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Banner $banner, ActionRequest $request): Banner
     {
-        $this->initialisationFromShop($fulfilment->shop, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handler($website, $banner);
     }

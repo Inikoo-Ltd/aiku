@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Goods\HydrateTradeUnits;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStock;
@@ -411,6 +412,11 @@ test('Hydrate stocks', function () {
 test('Hydrate stock families', function () {
     HydrateStockFamily::run(StockFamily::first());
     $this->artisan('hydrate:stock_families')->assertSuccessful();
+});
+
+test('Hydrate trade units', function () {
+    HydrateTradeUnits::run(TradeUnit::first());
+    $this->artisan('hydrate:trade_units')->assertSuccessful();
 });
 
 test('goods hydrator', function () {

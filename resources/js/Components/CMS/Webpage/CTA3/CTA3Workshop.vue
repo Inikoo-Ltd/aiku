@@ -10,6 +10,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -17,49 +18,59 @@ const emits = defineEmits<{
 	(e: "autoSave"): void
 }>()
 
-const openGallery = ref(false)
 
 </script>
 
 <template>
-	<div class="relative overflow-hidden rounded-lg lg:h-96" :style="getStyles(properties)">
-		<div class="absolute inset-0" @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))" >
-			<template v-if="modelValue?.image?.source">
-				<Image :src="modelValue.image.source" :imageCover="true" :alt="modelValue.image.alt"
-					:imgAttributes="modelValue.image.attributes" :style="getStyles(modelValue.image.properties)" />
-			</template>
-			<template v-else>
-				<img src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-					:alt="modelValue?.image?.alt" class="h-full w-full object-cover" />
-			</template>
-		</div>
-
-		<div aria-hidden="true" class="relative h-96 w-full lg:hidden" />
-		<div aria-hidden="true" class="relative h-32 w-full lg:hidden" />
+	<div id="cta_3_workshop" class="relative grid rounded-lg" :style="getStyles(modelValue.container.properties,screenType)">
+		<!-- Background Image Layer -->
+		<!-- <div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" :style="{
+			backgroundImage: modelValue?.image?.source
+				? `url('${modelValue.image.source.original}')`
+				: `url('https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png')`,
+			...getStyles(modelValue.image.properties, screenType)
+		}" @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"></div> -->
 
 		<div
-			class="absolute inset-x-0 bottom-0 rounded-bl-lg rounded-br-lg bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:items-center sm:justify-between lg:inset-x-auto lg:inset-y-0 lg:w-96 lg:flex-col lg:items-start lg:rounded-br-none lg:rounded-tl-lg">
-			<div class="text-center lg:text-left text-gray-600 pr-3 overflow-y-auto mb-4">
-				<Editor
-					v-if="modelValue?.text"
-					v-model="modelValue.text"
-					@update:modelValue="() => emits('autoSave')"
+			class="absolute inset-0 overflow-hidden z-0"
+			:style="getStyles(modelValue.image.properties, screenType)"
+			@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"
+		>
+			<Image
+				:src="modelValue?.image?.source
+					? modelValue.image.source
+					: {
+						original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png'
+					}
+				"
+				:alt="modelValue?.image?.alt ?? 'CTA Image'"
+				imageCover
+			/>
+		</div>
+
+
+		<div :style="getStyles(modelValue.container.properties?.block,screenType)" class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter
+         sm:flex sm:flex-col sm:items-start
+         lg:w-96">
+
+			<div class="text-center lg:text-left text-gray-600 pr-3 mb-4 w-full">
+				<Editor v-if="modelValue?.text" v-model="modelValue.text" @update:modelValue="() => emits('autoSave')"
 					:uploadImageRoute="{
-                        name: webpageData.images_upload_route.name,
-                        parameters: {
-                            ...webpageData.images_upload_route.parameters,
-                            modelHasWebBlocks: blockData?.id,
-                        }
-                    }"
-				/>
+						name: webpageData.images_upload_route.name,
+						parameters: {
+							...webpageData.images_upload_route.parameters,
+							modelHasWebBlocks: blockData?.id,
+						},
+					}" />
 			</div>
 
-			<div typeof="button" 
-			@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[1]?.key?.join('-'))"
-			 :style="getStyles(modelValue.button.container.properties)"
+			<div typeof="button"
+				@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[1]?.key?.join('-'))"
+				:style="getStyles(modelValue.button.container.properties, screenType)"
 				class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6 cursor-pointer">
 				{{ modelValue.button.text }}
 			</div>
 		</div>
 	</div>
+
 </template>

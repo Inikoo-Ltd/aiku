@@ -15,7 +15,6 @@ use App\Models\Helpers\Upload;
 use App\Models\Catalogue\Shop;
 use App\Rules\Phone;
 use Exception;
-use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -77,19 +76,6 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         }
     }
 
-    // public function prepareForValidation($data)
-    // {
-
-    //     $tags = explode(',', Arr::get($data, 'tags'));
-
-    //     if ($tags[0] != '') {
-    //         $data['tags'] = $tags;
-    //     } else {
-    //         $data['tags'] = null;
-    //     }
-
-    //     return $data;
-    // }
 
     protected function processExcelData($data)
     {

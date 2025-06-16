@@ -152,6 +152,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $total_weight kg
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
+ * @property int $number_customers_status_pre_registration
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

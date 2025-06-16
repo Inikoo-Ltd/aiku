@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\Tiktok\User;
 
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -60,7 +60,11 @@ class AuthenticateTiktokAccount extends RetinaAction
                         if ($tiktokUser->deleted_at) {
                             $tiktokUser->restore();
                             $platform = Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first();
-                            AttachCustomerToPlatform::make()->action($customer, $platform, []);
+                            StoreCustomerSalesChannel::make()->action($customer, $platform, [
+                                'platform_user_type' => $tiktokUser->getMorphClass(),
+                                'platform_user_id' => $tiktokUser->id,
+                                'reference' => $tiktokUser->name
+                            ]);
                         }
                     } else {
                         $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);
@@ -98,7 +102,16 @@ class AuthenticateTiktokAccount extends RetinaAction
             return false;
         }
 
-        return $customer->tiktokUser && now()->lessThan(Carbon::createFromTimestamp($customer->tiktokUser?->access_token_expire_in));
+        return (bool) $customer->tiktokUser;
+    }
+
+    public function checkIsAuthenticatedExpired(Customer $customer): bool
+    {
+        if (!$customer->tiktokUser) {
+            return false;
+        }
+
+        return $customer->tiktokUser && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($customer->tiktokUser?->access_token_expire_in));
     }
 
     public function rules(): array

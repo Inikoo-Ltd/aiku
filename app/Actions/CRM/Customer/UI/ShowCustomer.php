@@ -177,8 +177,8 @@ class ShowCustomer extends OrgAction
                 */
 
                 // $tabs::DISPATCHED_EMAILS->value => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
-                //     fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))
-                //     : Inertia::lazy(fn () => DispatchedEmailResource::collection(IndexDispatchedEmails::run($customer))),
+                //     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
+                //     : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
                 $tabs::CREDIT_TRANSACTIONS->value  => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
                     : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
@@ -261,12 +261,11 @@ class ShowCustomer extends OrgAction
 
             'grp.org.shops.show.crm.customers.show',
             'grp.org.shops.show.crm.customers.edit',
-            'grp.org.shops.show.crm.customers.show.platforms.index',
-            'grp.org.shops.show.crm.customers.show.platforms.show',
-            'grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index',
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index',
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.other_platform.index',
-            'grp.org.shops.show.crm.customers.show.platforms.show.orders.index'
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index',
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index'
             => array_merge(
                 ShowShop::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'shop'])),
                 $headCrumb(

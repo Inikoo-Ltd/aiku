@@ -124,7 +124,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This key is used by the Illuminate encrypted service and should be set
-    | to a random, 32 character string, otherwise these encrypted strings
+    | to a random, 32-character string, otherwise these encrypted strings
     | will not be safe. Please do this before deploying an application!
     |
     */
@@ -204,7 +204,6 @@ return [
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
-        \Matchish\ScoutElasticSearch\ElasticSearchServiceProvider::class,
 
 
         App\Providers\AppServiceProvider::class,
@@ -271,12 +270,23 @@ return [
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
 
     'sandbox' => [
-        'share_url' => env('SANDBOX_SHARE_URL'),
-        'checkout_com' => [
+
+        'shipper_itd_token' => env('ITD_TOKEN'),
+        'shipper_apc_token' => env('APC_TOKEN'),
+        'shipper_dpd_gb_token' => env('DPD_GB_TOKEN'),
+        'shipper_gls_sk_token' => env('GLS_SK_TOKEN'),
+
+
+        'local_share_url' => env('SANDBOX_SHARE_URL'),
+        'checkout_com'    => [
             'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
-        ]
+        ],
+        'luigisbox' => [
+            'tracking_id'      => env('LS_TRACKING_ID'),
+            'private_key'      => env('LS_PRIVATE_KEY'),
+        ],
     ]
 
 ];

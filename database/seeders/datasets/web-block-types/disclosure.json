@@ -4,82 +4,84 @@
 	"name": "disclosure",
 	"scope": "webpage",
 	"icon": ["fal", "rectangle-wide"],
+	"category": "block",
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
 	"data": {
 		"fieldValue": {
 			"value": [
 				{
-					"label": "What's the best thing about Switzerland?",
-					"description": "I don't know, but the flag is a big plus. Lorem ipsum dolor sit amet consectetur adipisicing elit. Quas cupiditate laboriosam fugiat."
+					"label": "<p><span style=\"font-size: 1.0000rem\"><strong>What's the best thing about Switzerland?</strong></span></p>",
+					"description": "<p><span style=\"font-size: 0.8750rem\">I don't know, but the flag is a big plus. Lorem ipsum dolor sit amet consectetur adipisicing elit. Quas cupiditate laboriosam fugiat.</span></p>"
 				}
 			],
 			"container": {
 				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 0
+							},
+							"topright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							}
+						}
+					},
+					"margin": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"padding": {
+						"top": {
+							"value": 25
+						},
+						"left": {
+							"value": 25
+						},
+						"unit": "px",
+						"right": {
+							"value": 25
+						},
+						"bottom": {
+							"value": 25
+						}
+					},
 					"background": {
 						"type": "color",
 						"color": "#FFFFF",
 						"image": {
 							"original": null
-						}
-					},
-					"padding": {
-						"unit": "px",
-						"top": {
-							"value": 25
-						},
-						"left": {
-							"value": 25
-						},
-						"right": {
-							"value": 25
-						},
-						"bottom": {
-							"value": 25
-						}
-					},
-					"margin": {
-						"unit": "px",
-						"top": {
-							"value": 0
-						},
-						"left": {
-							"value": 0
-						},
-						"right": {
-							"value": 0
-						},
-						"bottom": {
-							"value": 0
-						}
-					},
-					"border": {
-						"color": "#000000",
-						"unit": "px",
-						"rounded": {
-							"unit": "px",
-							"topright": {
-								"value": 0
-							},
-							"topleft": {
-								"value": 0
-							},
-							"bottomright": {
-								"value": 0
-							},
-							"bottomleft": {
-								"value": 0
-							}
-						},
-						"top": {
-							"value": 0
-						},
-						"left": {
-							"value": 0
-						},
-						"right": {
-							"value": 0
-						},
-						"bottom": {
-							"value": 0
 						}
 					}
 				}

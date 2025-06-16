@@ -10,6 +10,7 @@ import { getComponent } from '@/Composables/SideEditorHelper'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import type { Ref } from 'vue'
 library.add(faInfoCircle)
 
 const props = defineProps<{
@@ -23,7 +24,6 @@ const props = defineProps<{
     props_data?: any
   },
   uploadImageRoute?: routeType,
-  index: Number | string | string[]
 }>()
 
 const modelValue = defineModel()
@@ -31,7 +31,8 @@ const emits = defineEmits<{
   (e: 'update:modelValue', key: string | string[], value: any): void
 }>()
 
-const currentView = ref('desktop')
+const currentView = inject<Ref<string>>('currentView', ref('desktop'))
+
 
 const valueForField = computed(() => {
   const rawVal = get(modelValue.value, props.blueprint.key)
@@ -45,7 +46,7 @@ const valueForField = computed(() => {
     return rawVal
   }
 
-  return rawVal?.[currentView.value!] ?? rawVal?.desktop ?? rawVal
+  return rawVal?.[currentView.value!]
 })
 
 const onPropertyUpdate = (newVal: any, path: any) => {
@@ -58,17 +59,15 @@ const onPropertyUpdate = (newVal: any, path: any) => {
     return
   }
 
-  const current = isPlainObject(prevVal) ? prevVal : {}
-
-  const updatedValue = Array.isArray(props.blueprint.useIn) && props.blueprint.useIn.length > 0
-  ? {
-      ...current,
-      [currentView.value]: newVal
-    }
-  : newVal
+  const current = isPlainObject(prevVal) ? { ...prevVal } : {}
+  const updatedValue = {
+    ...current,
+    [currentView.value]: newVal
+  }
 
   emits('update:modelValue', rawKey, updatedValue)
 }
+
 
 
 </script>
@@ -94,7 +93,7 @@ const onPropertyUpdate = (newVal: any, path: any) => {
       </div>
       <ScreenView
         :show-list="blueprint.useIn || []"
-        :currentView="currentView"
+        v-model="currentView"
         @screen-view="e => currentView = e"
       />
     </div>

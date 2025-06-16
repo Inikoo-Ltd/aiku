@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
@@ -44,12 +43,12 @@ class IndexFamilies extends OrgAction
 
     private bool $sales = true;
 
-    private Group|Shop|ProductCategory|Organisation|Collection $parent;
+    private Group|Shop|ProductCategory|Organisation $parent;
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->sales = false;
+        $this->sales  = false;
         $this->initialisationFromGroup(group(), $request)->withTab(ProductCategoryTabsEnum::values());
 
         return $this->handle($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value);
@@ -79,14 +78,6 @@ class IndexFamilies extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
-    }
-
-    public function inCollection(Organisation $organisation, Shop $shop, Collection $collection, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $collection;
-        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
-
-        return $this->handle(parent: $collection, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
@@ -140,12 +131,6 @@ class IndexFamilies extends OrgAction
                 // todo
                 abort(419);
             }
-        } elseif (class_basename($parent) == 'Collection') {
-            $queryBuilder->join('model_has_collections', function ($join) use ($parent) {
-                $join->on('product_categories.id', '=', 'model_has_collections.model_id')
-                        ->where('model_has_collections.model_type', '=', 'ProductCategory')
-                        ->where('model_has_collections.collection_id', '=', $parent->id);
-            });
         }
 
 
@@ -159,10 +144,14 @@ class IndexFamilies extends OrgAction
                 'product_categories.state',
                 'product_categories.description',
                 'product_categories.created_at',
+                'product_categories.image_id',
                 'product_categories.updated_at',
                 'departments.slug as department_slug',
                 'departments.code as department_code',
                 'departments.name as department_name',
+                'sub_departments.slug as sub_department_slug',
+                'sub_departments.code as sub_department_code',
+                'sub_departments.name as sub_department_name',
                 'product_category_stats.number_current_products',
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
@@ -176,7 +165,8 @@ class IndexFamilies extends OrgAction
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code','number_current_products'])
+            ->leftjoin('product_categories as sub_departments', 'sub_departments.id', 'product_categories.sub_department_id')
+            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_current_products', 'sub_department_name', 'department_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -236,19 +226,21 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                     $table->column(key: 'department_code', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
 
                 if ($parent instanceof Group) {
                     $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
                 if (class_basename($parent) != 'Collection') {
@@ -265,6 +257,35 @@ class IndexFamilies extends OrgAction
     public function jsonResponse(LengthAwarePaginator $families): AnonymousResourceCollection
     {
         return FamiliesResource::collection($families);
+    }
+
+
+    public function getActions(ActionRequest $request): array
+    {
+        $actions = [];
+        if ($this->canEdit) {
+            if ($this->parent instanceof ProductCategory) {
+                $createRoute = "grp.org.shops.show.catalogue.departments.show.families.create";
+
+                if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
+                }
+
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new family'),
+                    'label'   => __('family'),
+                    'route'   => [
+                        'name'       => $createRoute,
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ];
+            }
+        }
+
+
+        return $actions;
     }
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
@@ -286,148 +307,87 @@ class IndexFamilies extends OrgAction
         }
 
 
-        $title = __('families');
-        $model = '';
-        $icon  = [
+        $title      = __('families');
+        $model      = '';
+        $icon       = [
             'icon'  => ['fal', 'fa-folder'],
             'title' => __('family')
         ];
         $afterTitle = null;
-        $iconRight = null;
+        $iconRight  = null;
 
         if ($this->parent instanceof ProductCategory) {
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $title = $this->parent->name;
-                $model = '';
-                $icon  = [
+                $title      = $this->parent->name;
+                $model      = '';
+                $icon       = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
                 ];
-                $iconRight    = [
+                $iconRight  = [
                     'icon' => 'fal fa-folder',
                 ];
                 $afterTitle = [
 
-                    'label'     => __('Families')
+                    'label' => __('Families')
                 ];
-
-                $createRoute = "grp.org.shops.show.catalogue.departments.show.families.create";
-
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $title = $this->parent->name;
-                $model = '';
-                $icon  = [
+                $title      = $this->parent->name;
+                $model      = '';
+                $icon       = [
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
                 ];
-                $iconRight    = [
+                $iconRight  = [
                     'icon' => 'fal fa-folder',
                 ];
                 $afterTitle = [
 
-                    'label'     => __('Families')
+                    'label' => __('Families')
                 ];
-
-                $createRoute = "grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.create";
-
             }
-        } elseif ($this->parent instanceof Collection) {
-            $title = $this->parent->name;
-            $model = __('collection');
-            $icon  = [
-                'icon'  => ['fal', 'fa-cube'],
-                'title' => __('collection')
-            ];
-            $iconRight    = [
-                'icon' => 'fal fa-folder',
-            ];
-            $afterTitle = [
-                'label'     => __('Families')
-            ];
         }
 
         $routes = null;
-        if ($this->parent instanceof Collection) {
-            $routes = [
-                        'dataList'  => [
-                            'name'          => 'grp.json.shop.catalogue.families',
-                            'parameters'    => [
-                                'shop'  => $this->parent->shop->slug,
-                                'scope' => $this->parent->slug
-                            ]
-                        ],
-                        'submitAttach'  => [
-                            'name'          => 'grp.models.collection.attach-models',
-                            'parameters'    => [
-                                'collection' => $this->parent->id
-                            ]
-                        ],
-                        'detach'        => [
-                            'name'          => 'grp.models.collection.detach-models',
-                            'parameters'    => [
-                                'collection' => $this->parent->id
-                            ]
-                        ]
-                    ];
-        }
+
 
         return Inertia::render(
             'Org/Catalogue/Families',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'                         => $this->getBreadcrumbs(
+                    $this->parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('families'),
-                'pageHead'    => [
+                'title'                               => __('families'),
+                'pageHead'                            => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'actions'       => [
-                        $this->canEdit ? (
-                            class_basename($this->parent) == 'ProductCategory' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new family'),
-                            'label'   => __('family'),
-                            'route'   => [
-                                'name'       => $createRoute,
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false
-                        ) : false,
-                        class_basename($this->parent) == 'Collection' ? [
-                            'type'     => 'button',
-                            'style'    => 'secondary',
-                            'key'      => 'attachFamily',
-                            'icon'     => 'fal fa-plus',
-                            'tooltip'  => __('Attach family to this collection'),
-                            'label'    => __('Attach family'),
-                        ] : false
-                    ],
+                    'actions'       => $this->getActions($request),
                     'subNavigation' => $subNavigation,
                 ],
-                'routes'      => $routes,
-                'data'        => FamiliesResource::collection($families),
-                'tabs' => [
+                'routes'                              => $routes,
+                'data'                                => FamiliesResource::collection($families),
+                'tabs'                                => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                fn () => FamiliesResource::collection($families)
-                : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                fn () => FamiliesResource::collection($families)
-                : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
             ]
-        )->table($this->tableStructure(parent: $this->parent, modelOperations:null, canEdit:false, prefix:ProductCategoryTabsEnum::INDEX->value, sales: false))
-        ->table($this->tableStructure(parent: $this->parent, modelOperations:null, canEdit:false, prefix:ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
+        )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -468,28 +428,17 @@ class IndexFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub-departments.show', $routeParameters),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
                         'parameters' => [
                             $routeParameters['organisation'],
                             $routeParameters['shop'],
                             $routeParameters['department'],
                             $routeParameters['subDepartment']
                         ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.shops.show.catalogue.collections.families.index' =>
-            array_merge(
-                ShowCollection::make()->getBreadcrumbs('grp.org.shops.show.catalogue.collections.show', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
                     ],
                     $suffix
                 )

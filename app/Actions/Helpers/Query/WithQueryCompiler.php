@@ -49,7 +49,6 @@ trait WithQueryCompiler
                     'parameters' => $constrainData['fields']
                 ],
 
-                'tags' => $this->compileTagConstrain($constrainData),
 
                 'prospect_last_contacted' => $this->prospectLastContactedConstrain($constrainData),
 
@@ -63,57 +62,7 @@ trait WithQueryCompiler
         return $compiledConstrain;
     }
 
-    public function compileTagConstrain(array $constrainData): array
-    {
-        if (count(Arr::get($constrainData, 'tag_ids', [])) == 0) {
-            $this->returnZero = true;
-        }
 
-
-        $this->joins[] = [
-            'type'     => 'left',
-            'table'    => 'taggables',
-            'first'    => 'prospects.id',
-            'operator' => '=',
-            'second'   => 'taggables.taggable_id',
-
-            'where' => [
-                'type'       => 'where',
-                'parameters' => [
-                    'taggables.taggable_type',
-                    '=',
-                    'Prospect'
-                ]
-            ]
-        ];
-
-        if (Arr::get($constrainData, 'logic', 'all')) {
-            return [
-                'type'       => 'whereIn',
-                'parameters' => [
-                    'taggables.tag_id',
-                    $constrainData['tag_ids']
-                ]
-            ];
-        } else {
-            $parameters = [];
-            foreach ($constrainData['tag_ids'] as $tag_id) {
-                $parameters[] = [
-                    'type'       => 'orWhere',
-                    'parameters' => [
-                        'taggables.tag_id',
-                        '=',
-                        $tag_id
-                    ]
-                ];
-            }
-
-            return [
-                'type'       => 'group',
-                'parameters' => $parameters
-            ];
-        }
-    }
 
 
     public function canContactBy(array $constrainData): ?array

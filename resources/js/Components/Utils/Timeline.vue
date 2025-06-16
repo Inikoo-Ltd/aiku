@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { ref, watch, onBeforeMount } from 'vue'
+import { ref, watch, onBeforeMount, computed } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -9,7 +9,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { localesCode, OptionsTime, useFormatTime as useFormatTimeComposables } from '@/Composables/useFormatTime'
-/* import { useFormatTime } from '@/Composables/useFormatTime'; */
 library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling)
 import type { Timeline } from '@/types/Timeline'
 
@@ -26,33 +25,41 @@ const emits = defineEmits<{
 }>()
 
 const _swiperRef = ref()
-const finalOptions = ref<Timeline[]>([])
+// const finalOptions = ref<Timeline[]>([])
 
-
-const stepsWithIndex = (() => {
+const computedXxx = computed(() => {
     const finalData = []
     Object.entries(props.options).forEach(([key, value], index) => {
         finalData.push({ ...value, index });
     });
 
-    // Do something with finalData array
-    finalOptions.value = finalData
-    // console.log(finalData)
-});
+    return finalData
+})
+
+// const stepsWithIndex = (() => {
+//     const finalData = []
+//     Object.entries(props.options).forEach(([key, value], index) => {
+//         finalData.push({ ...value, index });
+//     });
+
+//     // Do something with finalData array
+//     finalOptions.value = finalData
+//     // console.log(finalData)
+// });
 
 const setupState = (step: Timeline) => {
-    const foundState = finalOptions.value.find((item) => item.key === props.state)
+    const foundState = computedXxx.value.find((item) => item.key === props.state)
     if(foundState){
         const set = step.key == props.state || step.index < foundState.index
         return set
     }else return
 }
 
-watch(() => props.state, (newData) => {
-    stepsWithIndex()
-})
+// watch(() => props.state, (newData) => {
+//     stepsWithIndex()
+// })
 
-onBeforeMount(stepsWithIndex)
+// onBeforeMount(stepsWithIndex)
 
 // Format Date
 const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
@@ -61,7 +68,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
     let tempLocaleCode = OptionsTime?.localeCode === 'zh-Hans' ? 'zhCN' : OptionsTime?.localeCode ?? 'enUS'
     let tempDateIso = new Date(dateIso)
 
-    return format(tempDateIso, 'PPP', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
+    return format(tempDateIso, 'EEE, do MMM yy', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
 }
 
 </script>
@@ -70,10 +77,10 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
     <div class="w-full py-5 sm:py-2 flex flex-col isolate">
         <Swiper ref="_swiperRef" :slideToClickedSlide="false" :slidesPerView="slidesPerView"
             :centerInsufficientSlides="true" :pagination="{ clickable: true, }" class="w-full h-fit isolate">
-            <template v-for="(step, stepIndex) in finalOptions" :key="stepIndex">
+            <template v-for="(step, stepIndex) in computedXxx" :key="stepIndex">
                 <SwiperSlide>
                     <!-- Section: Title -->
-                    <div class="w-fit mx-auto capitalize text-xxs md:text-xs text-center"
+                    <div class="w-fit mx-auto capitalize text-xxs md:text-xs text-center whitespace-nowrap truncate max-w-full px-2"
                         :class="step.timestamp || state == step.key ? 'text-[#888] ' : 'text-gray-300'">
                         <FontAwesomeIcon v-if="step.icon" :icon='step.icon' class='text-sm' fixed-width aria-hidden='true' />
                         {{ step.label }}
@@ -90,7 +97,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                         </div>
 
                         <!-- Step: Head -->
-                        <div @click="() => emits('updateButton', { step: step, options: finalOptions })"
+                        <div @click="() => emits('updateButton', { step: step, options: computedXxx })"
                             v-tooltip="step.label"
                             class="z-20 aspect-square mx-auto rounded-full text-lg flex justify-center items-center"
                             :class="[
@@ -100,10 +107,13 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                         </div>
                     </div>
 
+                    <!-- <pre>{{ step }}</pre> -->
+
                     <!-- Step: Description -->
-                    <div v-tooltip="useFormatTimeComposables(step.timestamp, { formatTime: 'hms' })"
+                    <div v-tooltip="useFormatTimeComposables(step.timestamp, { formatTime: 'PPPPpp' })"
                         class="text-xxs md:text-xs text-[#555] text-center select-none">
-                        {{ useFormatTime(step.timestamp) }}
+                        <span v-if="step.format_time">{{ useFormatTimeComposables(step.timestamp, { formatTime: step.format_time }) }}</span>
+                        <span v-else>{{ useFormatTime(step.timestamp) }}</span>
                     </div>
                 </SwiperSlide>
             </template>

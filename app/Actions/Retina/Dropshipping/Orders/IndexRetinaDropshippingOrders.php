@@ -10,11 +10,12 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersResources;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
@@ -26,12 +27,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingOrders extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, ?Platform $platform = null, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('pallets.reference', $value)
-                    ->orWhereWith('pallets.reference', $value);
+                $query->whereAnyWordStartWith('customer_clients.name', $value)
+                    ->orWhereWith('orders.reference', $value);
             });
         });
 
@@ -40,60 +41,76 @@ class IndexRetinaDropshippingOrders extends RetinaAction
         }
 
         $query = QueryBuilder::for(Order::class);
-
-        if ($parent instanceof Customer) {
-            $query->where('customer_id', $parent->id);
-        }
-
         $query->leftJoin('order_stats', 'order_stats.order_id', '=', 'orders.id');
+        $query->leftJoin('customer_clients', 'customer_clients.id', '=', 'orders.customer_client_id');
 
-        $query->defaultSort('orders.id');
+        if ($platform) {
+            $query->where('orders.platform_id', $platform->id);
+        }
+        $query->leftJoin('platforms', 'platforms.id', '=', 'orders.platform_id');
+
+        $query->where('orders.customer_id', $customer->id);
+
+
+        $query->defaultSort('-orders.date');
+        $query->select([
+            'orders.id',
+            'orders.date',
+            'orders.reference',
+            'orders.slug',
+            'orders.state',
+            'orders.total_amount',
+            'platforms.name as platform_name',
+            'number_item_transactions',
+            'customer_clients.name as client_name',
+        ]);
 
         return $query->defaultSort('orders.id')
-            ->allowedSorts(['orders.id'])
+            ->allowedSorts([
+                'reference',
+                'date',
+                'state',
+                'number_item_transactions',
+                'total_amount',
+                'client_name',
+                'platform_name'
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->is_root;
-    }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
 
-        $customer = $request->user()->customer;
-
-        return $this->handle($customer);
+        return $this->handle($this->customer);
     }
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         return Inertia::render(
-            'Dropshipping/Orders',
+            'Dropshipping/RetinaOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),
                 'pageHead'    => [
                     'title' => __('Orders'),
-                    'icon'  => 'fal fa-money-bill-wave'
+                    'icon'  => 'fal fa-shopping-cart',
                 ],
-                'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
-                ],
+
+
+                'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
 
                 'orders' => RetinaDropshippingOrdersResources::collection($orders)
             ]
-        )->table($this->tableStructure('orders'));
+        )->table($this->tableStructure(''));
     }
 
-    public function tableStructure($prefix = null, $modelOperations = []): Closure
+    public function tableStructure(?Platform $platform = null, $prefix = null, $modelOperations = []): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $modelOperations) {
+        return function (InertiaTable $table) use ($prefix, $modelOperations, $platform) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -102,7 +119,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
-                'title' => __("No order exist"),
+                'title' => __("There are no orders yet"),
                 'count' => 0
             ];
 
@@ -110,10 +127,22 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-            $table ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
-            $table->column(key: 'number_item_transactions', label: __('quantity'), canBeHidden: false, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, searchable: true);
+            $table->column(key: 'state', label: __('Status'), sortable: true, type: 'icon');
+
+            if (!$platform) {
+                $table->column(key: 'platform_name', label: __('Channel'), sortable: true);
+            } elseif ($platform->type == PlatformTypeEnum::SHOPIFY) {
+                $table->column(key: 'platform_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
+            } elseif ($platform->type == PlatformTypeEnum::TIKTOK) {
+                $table->column(key: 'platform_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
+            }
+
+
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'client_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+            $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: "right");
         };
     }
 
@@ -124,12 +153,12 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
                                 'name' => 'retina.dropshipping.orders.index'
                             ],
-                            'label'  => __('Orders'),
+                            'label' => __('Orders'),
                         ]
                     ]
                 ]

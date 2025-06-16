@@ -13,10 +13,10 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,23 +29,19 @@ class StoreRetinaCustomerClient extends RetinaAction
     protected Customer $customer;
 
 
-    public function handle(Customer $customer, array $modelData): CustomerClient
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerClient
     {
-        return StoreCustomerClient::run($customer, $modelData);
+        return StoreCustomerClient::run($customerSalesChannel, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
-            return true;
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id !== $this->customer->id) {
+            return false;
         }
 
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
-
-
-        return false;
+        return true;
     }
 
     public function rules(): array
@@ -53,32 +49,28 @@ class StoreRetinaCustomerClient extends RetinaAction
         return StoreCustomerClient::make()->getBaseRules($this->customer);
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(CustomerClient $customerClient): RedirectResponse
     {
-        return Redirect::route('retina.dropshipping.client.index');
+        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            return Redirect::route('retina.fulfilment.dropshipping.customer_sales_channels.client.show', [
+                $customerClient->salesChannel->slug,
+                $customerClient->ulid
+            ]);
+        }
+        return Redirect::route('retina.dropshipping.customer_sales_channels.client.show', [
+                $customerClient->salesChannel->slug,
+                $customerClient->ulid
+        ]);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): CustomerClient
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerClient
     {
         $this->initialisation($request);
-        return $this->handle($this->customer, $this->validatedData);
-    }
 
-    public function inPlatform(Platform $platform, ActionRequest $request): CustomerClient
-    {
-        $this->set('platform_id', $platform->id);
-        $this->initialisation($request);
-        return $this->handle($this->customer, $this->validatedData);
-    }
-
-    public function action(Customer $customer, array $modelData): CustomerClient
-    {
-        $this->asAction = true;
-        $this->initialisationFulfilmentActions($customer->fulfilmentCustomer, $modelData);
-        return $this->handle($customer, $this->validatedData);
+        return $this->handle($customerSalesChannel, $this->validatedData);
     }
 
 

@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydrateOrders;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaAction;
@@ -46,11 +46,11 @@ class StoreRetinaPlatformOrder extends RetinaAction
             return $order;
         });
 
-        $customerHasPlatform = $customer->customerHasPlatforms()
+        $customerSalesChannel = $customer->customerSalesChannels()
             ->where('platform_id', $platform->id)
             ->first();
 
-        CustomerHasPlatformsHydrateOrders::dispatch($customerHasPlatform);
+        CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
 
         return $order;
     }
@@ -69,7 +69,7 @@ class StoreRetinaPlatformOrder extends RetinaAction
 
     public function htmlResponse(Order $order)
     {
-        return Redirect::route('retina.dropshipping.platforms.orders.show', [
+        return Redirect::route('retina.dropshipping.customer_sales_channels.orders.show', [
             $order->platform->slug,
             $order->slug
         ]);

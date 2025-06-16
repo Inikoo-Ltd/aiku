@@ -8,16 +8,17 @@
 
 import { inject, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends } from "@fal"
+import { faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey } from "@fal"
 import { useLayoutStore } from "@/Stores/retinaLayout.js"
 
 import RetinaNavigationSimple from '@/Layouts/Retina/RetinaNavigationSimple.vue'
 import RetinaNavigationHorizontal from '@/Layouts/Retina/RetinaNavigationHorizontal.vue'
 import { generateNavigationName, generateCurrentString } from '@/Composables/useConvertString'
 
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import RetinaNavigationGroup from "@/Layouts/Retina/RetinaNavigationGroup.vue"
-library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends)
+import RetinaNavigationHorizontalNew from "./RetinaNavigationHorizontalNew.vue"
+library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey)
 
 const layout = inject('layout', {})
 
@@ -168,8 +169,15 @@ const iconList: { [key: string]: string } = {
 
         <!-- LeftSidebar: Grp -->
         <template v-else v-for="(grpNav, itemKey) in layout.navigation">
+            <template v-if="grpNav.type === 'horizontal'">
+                <RetinaNavigationHorizontalNew
+                    :key="itemKey + 'platform'"
+                    :nav="grpNav"
+                />
+            </template>
+
             <RetinaNavigationSimple
-                v-if="itemKey != 'platforms_navigation'"
+                v-else-if="itemKey != 'platforms_navigation'"
                 :nav="grpNav"
                 :navKey="generateNavigationName(itemKey)"
             />

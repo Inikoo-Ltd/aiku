@@ -14,15 +14,17 @@ use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\RetinaAction;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaProduct extends RetinaAction
 {
+    private CustomerSalesChannel $customerSalesChannel;
     public function handle(Product $product): Product
     {
         return $product;
@@ -30,7 +32,15 @@ class ShowRetinaProduct extends RetinaAction
 
     public function asController(Product $product, ActionRequest $request): Product
     {
-        $this->initialisation($request)->withTab(ProductTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
+    public function inPlatform(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): Product
+    {
+        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisation($request)->withTab(RetinaProductTabsEnum::values());
 
         return $this->handle($product);
     }
@@ -53,24 +63,24 @@ class ShowRetinaProduct extends RetinaAction
                             'title' => __('product')
                         ],
                     'actions' => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
+                        // [
+                        //     'type'  => 'button',
+                        //     'style' => 'edit',
+                        //     'route' => [
+                        //         'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                        //         'parameters' => $request->route()->originalParameters()
+                        //     ]
+                        // ]
 
                     ]
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
+                    'navigation' => RetinaProductTabsEnum::navigation()
                 ],
 
 
-                ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
+                RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
@@ -106,17 +116,17 @@ class ShowRetinaProduct extends RetinaAction
         $portfolio = Product::where('slug', $routeParameters['product'])->first();
 
         return array_merge(
-            IndexRetinaPortfolios::make()->getBreadcrumbs(),
+            IndexRetinaPortfolios::make()->getBreadcrumbs($this->customerSalesChannel),
             $headCrumb(
                 $portfolio,
                 [
                     'index' => [
-                        'name'       => 'retina.dropshipping.portfolios.index',
-                        'parameters' => []
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.index',
+                        'parameters' => [$this->customerSalesChannel->slug]
                     ],
                     'model' => [
-                        'name'       => 'retina.dropshipping.portfolios.show',
-                        'parameters' => [$portfolio->slug]
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.show',
+                        'parameters' => [$this->customerSalesChannel->slug, $portfolio->slug]
                     ]
                 ],
                 $suffix

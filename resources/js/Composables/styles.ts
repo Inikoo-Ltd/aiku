@@ -78,23 +78,41 @@ export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
 };
 
 export const resolveResponsiveValue = (
-    base: any,
-    screen: 'mobile' | 'tablet' | 'desktop',
-    path?: string[]
-  ) => {
-    if (!base || typeof base !== 'object') return base;
-  
-    const responsiveObj = base[screen];
-  
-    // Jika responsive object ada dan path bernilai, coba ambil dari situ
-    if (responsiveObj && typeof responsiveObj === 'object' && path) {
-      const resolvedFromResponsive = path.reduce((acc, key) => acc?.[key], responsiveObj);
-      if (resolvedFromResponsive !== undefined) return resolvedFromResponsive;
-    }
-  
-    // Fallback ke base biasa
-    return path ? path.reduce((acc, key) => acc?.[key], base) : base;
+  base: any,
+  screen: 'mobile' | 'tablet' | 'desktop',
+  path?: string[]
+) => {
+  if (!base || typeof base !== 'object') return base;
+
+  const getValue = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return undefined;
+    return path ? path.reduce((acc, key) => acc?.[key], obj) : obj;
   };
+
+  // ✅ NEW: If path is undefined and base has direct responsive keys (e.g., { mobile: '...', desktop: '...' }), just return base[screen]
+  const isResponsiveObject =
+    !path &&
+    ['mobile', 'tablet', 'desktop'].some(k => Object.prototype.hasOwnProperty.call(base, k));
+
+  if (isResponsiveObject) {
+    return base?.[screen] ?? base?.desktop ?? null;
+  }
+
+  // 1. Try current screen
+  const currentValue = getValue(base[screen]);
+  if (currentValue !== undefined) return currentValue;
+
+  // 2. Fallback to desktop
+  if (screen !== 'desktop') {
+    const desktopValue = getValue(base.desktop);
+    if (desktopValue !== undefined) return desktopValue;
+  }
+
+  // 3. Fallback to global
+  return getValue(base);
+};
+
+
   
   
 
@@ -102,6 +120,7 @@ export const resolveResponsiveValue = (
     properties: any,
     screen: 'mobile' | 'tablet' | 'desktop' = 'desktop'
 ) => {
+    
     if (!properties || typeof properties !== 'object') return null;
 
     const getVal = (base: any, path?: string[]) =>
@@ -116,8 +135,9 @@ export const resolveResponsiveValue = (
             ? `${getVal(properties.dimension, ['width', 'value'])}${getVal(properties.dimension, ['width','unit'])}`
             : null,
 
-        color: properties?.text?.color || null,
-        fontFamily: properties?.text?.fontFamily || null,
+        color:  getVal(properties?.text, ['color']) || null,
+        fontFamily:  getVal(properties?.text, ['fontFamily'])  || null,
+        fontSize: getVal(properties?.text, ['fontSize']) ? getVal(properties?.text, ['fontSize']) + 'px' : null,
         objectFit: getVal(properties?.object_fit),
         objectPosition: getVal(properties?.object_position),
 
@@ -159,8 +179,8 @@ export const resolveResponsiveValue = (
             const backgroundType = getVal(backgroundBase, ['type']);
             const backgroundColor = getVal(backgroundBase, ['color']);
             const backgroundGradient = getVal(backgroundBase, ['gradient', 'value']);
-            const backgroundImage = getVal(backgroundBase, ['image', 'original']);
-
+            const backgroundImage = getVal(backgroundBase, ['image','source','original']);
+            /* console.log(backgroundBase) */
             if (!backgroundType) return null;
             if (backgroundType === 'color') {
                 return backgroundColor
@@ -171,36 +191,36 @@ export const resolveResponsiveValue = (
             }
         })(),
 
-        borderTop: getVal(properties?.border, ['top', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['top', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderTop: getVal(properties?.border, ['top', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['top', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderBottom: getVal(properties?.border, ['bottom', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['bottom', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderBottom: getVal(properties?.border, ['bottom', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['bottom', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderLeft: getVal(properties?.border, ['left', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['left', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderLeft: getVal(properties?.border, ['left', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['left', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderRight: getVal(properties?.border, ['right', 'value']) && properties?.border?.unit && properties?.border?.color
-            ? `${getVal(properties.border, ['right', 'value'])}${properties.border.unit} solid ${properties.border.color}`
+        borderRight: getVal(properties?.border, ['right', 'value']) && (getVal(properties?.border, ['unit']) || properties?.border?.unit) && (getVal(properties?.border, ['color']) || properties?.border?.color)
+            ? `${getVal(properties.border, ['right', 'value'])}${(getVal(properties?.border, ['unit']) || properties.border.unit  )} solid ${(getVal(properties?.border, ['color']) || properties?.border?.color)}`
             : null,
 
-        borderTopLeftRadius: getVal(properties?.border, ['rounded', 'topleft', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'topleft', 'value'])}${properties.border.rounded.unit}`
+        borderTopLeftRadius: getVal(properties?.border, ['rounded','topleft','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded', 'topleft', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
-        borderTopRightRadius: getVal(properties?.border, ['rounded', 'topright', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'topright', 'value'])}${properties.border.rounded.unit}`
+        borderTopRightRadius: getVal(properties?.border, ['rounded','topright','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded', 'topright', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
-        borderBottomLeftRadius: getVal(properties?.border, ['rounded', 'bottomleft', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'bottomleft', 'value'])}${properties.border.rounded.unit}`
+        borderBottomLeftRadius: getVal(properties?.border, ['rounded','bottomleft','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded', 'bottomleft', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
-        borderBottomRightRadius: getVal(properties?.border, ['rounded', 'bottomright', 'value']) && properties?.border?.rounded?.unit
-            ? `${getVal(properties.border, ['rounded', 'bottomright', 'value'])}${properties.border.rounded.unit}`
+        borderBottomRightRadius: getVal(properties?.border, ['rounded','bottomright','value']) && (getVal(properties?.border, ['rounded','unit']) || properties?.border?.rounded?.unit)
+            ? `${getVal(properties.border, ['rounded','bottomright', 'value'])}${(getVal(properties?.border, ['rounded','unit']) || properties.border.rounded.unit  )}`
             : null,
 
         borderColor: getVal(properties?.border, ['color']) && properties?.border?.color
@@ -211,9 +231,10 @@ export const resolveResponsiveValue = (
             ? `${getVal(properties.gap, ['value'])}${properties.gap.unit}`
             : null,
 
-        justifyContent: getVal(properties?.justifyContent),
+        justifyContent: getVal(properties.justifyContent),
         boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor)
     };
+
 
     return Object.fromEntries(Object.entries(styles).filter(([_, val]) => val !== null));
 };

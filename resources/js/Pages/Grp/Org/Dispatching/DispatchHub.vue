@@ -5,31 +5,57 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { capitalize } from "@/Composables/capitalize"
+import { Head } from "@inertiajs/vue3";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { capitalize } from "@/Composables/capitalize";
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import { computed, ref } from "vue";
+import type { Component } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
+
+import { faHandsHelping, faBan, faCheckCircle, faList, faCheck } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue";
+
+library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck);
 
 
 const props = defineProps<{
     title: string
     pageHead: {}
-    box_stats: {
-        name: string
-        number: number
-        route: routeType
-        icon: {
-            icon: string
-            tooltip: string
+    tabs: {
+        current: string
+        navigation: {}
+    }
+    dashboard: {
+        [key: string]: {
+            label: string
+            count: number
+            cases: {
+                key: string
+                label: string
+                value?: number
+                icon: string | string[]
+                class?: string
+                route?: {
+                    name: string
+                    parameters?: object
+                }
+            }[]
         }
-    }[]
-}>()
+    }
+}>();
 
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faSignOut } from '@fal'
-import SimpleBox from '@/Components/DataDisplay/SimpleBox.vue'
-import { routeType } from '@/types/route'
 
-library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faSignOut);
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const component: Component = computed(() => {
+    const components = {
+        ["dashboard" as string]: DispatchDashboard
+    };
+
+    return components[currentTab.value];
+});
 
 </script>
 
@@ -38,7 +64,9 @@ library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faSignOut);
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
 
-    <SimpleBox v-if="box_stats" :box_stats="box_stats" />
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+
+    <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
 
 
 </template>

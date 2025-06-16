@@ -9,7 +9,6 @@
 namespace App\Actions\UI\Profile;
 
 use App\Actions\Analytics\UserRequest\UI\IndexUserRequestLogs;
-use App\Actions\Analytics\UserRequest\UI\ShowUserRequestLogs;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\OrgAction;
@@ -79,7 +78,6 @@ class ShowProfile extends OrgAction
                     'navigation' => ProfileTabsEnum::navigation()
                 ],
 
-                // pls fix the current tab
                 ProfileTabsEnum::DASHBOARD->value => $this->tab == ProfileTabsEnum::DASHBOARD->value ?
                     fn () => GetProfileShowcase::run($user)
                     : Inertia::lazy(fn () => GetProfileShowcase::run($user)),
@@ -97,9 +95,6 @@ class ShowProfile extends OrgAction
                     : Inertia::lazy(fn () => UserRequestLogsResource::collection(IndexUserRequestLogs::run())),
 
 
-                // 'auth'          => [
-                //         'user' => LoggedUserResource::make($user)->getArray(),
-                //     ],
 
             ]
         )
@@ -109,7 +104,6 @@ class ShowProfile extends OrgAction
                     prefix: ProfileTabsEnum::TIMESHEETS->value
                 )
             )
-            ->table(ShowUserRequestLogs::make()->tableStructure())
             ->table(IndexHistory::make()->tableStructure(prefix: ProfileTabsEnum::HISTORY->value));
     }
 

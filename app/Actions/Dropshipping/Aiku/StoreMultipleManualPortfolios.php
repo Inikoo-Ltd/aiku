@@ -9,15 +9,12 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortfolios;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -34,40 +31,33 @@ class StoreMultipleManualPortfolios extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Customer $customer, array $modelData): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
-        /** @var Platform $platform */
-        $platform = $customer->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
-
-        DB::transaction(function () use ($customer, $platform, $modelData) {
+        DB::transaction(function () use ($customerSalesChannel, $modelData) {
             foreach (Arr::get($modelData, 'items') as $itemID) {
-                if ($customer->is_fulfilment) {
+                $itemID = (int) $itemID;
+                if ($customerSalesChannel->customer->is_fulfilment) {
                     /** @var StoredItem $item */
                     $item = StoredItem::find($itemID);
                 } else {
                     /** @var Product $item */
                     $item = Product::find($itemID);
                 }
-
-                if ($item->portfolio()->where('customer_id', $customer->id)->exists()) {
+                if ($item->portfolio()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
                     continue;
                 }
 
                 StorePortfolio::make()->action(
-                    customer: $customer,
+                    customerSalesChannel: $customerSalesChannel,
                     item: $item,
-                    modelData: [
-                        'platform_id' => $platform->id
-                    ]
+                    modelData: []
                 );
             }
         });
 
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)
-        ->where('platform_id', $platform->id)
-        ->first();
 
-        CustomerHasPlatformsHydratePortfolios::dispatch($customerHasPlatform);
+
+        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
     }
 
     public function rules(): array
@@ -80,10 +70,10 @@ class StoreMultipleManualPortfolios extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Customer $customer, ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $this->initialisationFromShop($customer->shop, $request);
+        $this->initialisationFromShop($customerSalesChannel->shop, $request);
 
-        $this->handle($customer, $this->validatedData);
+        $this->handle($customerSalesChannel, $this->validatedData);
     }
 }

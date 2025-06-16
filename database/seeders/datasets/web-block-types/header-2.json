@@ -4,6 +4,7 @@
 	"code": "header-2",
 	"name": "Header 2",
 	"component": "header",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"container": {
@@ -251,6 +252,30 @@
 							"color": "rgba(10, 10, 10, 1)",
 							"image": {
 								"original": null
+							}
+						}
+					}
+				}
+			},
+			"mobile": {
+				"profile": {
+					"icon": ["fal", "user-circle"],
+					"container": {
+						"properties": {
+							"text": {
+								"color": "rgb(0, 0, 0)",
+								"fontSize" : "1.5rem"
+							}
+						}
+					}
+				},
+				"menu": {
+					"icon": ["fal", "bars"],
+					"container": {
+						"properties": {
+							"text": {
+								"color": "rgb(0, 0, 0)",
+								"fontSize" : 20
 							}
 						}
 					}

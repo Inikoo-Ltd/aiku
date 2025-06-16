@@ -64,6 +64,22 @@ class OrganisationHydrateShops implements ShouldBeUnique
             )
         );
 
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'current_shops',
+                field: 'type',
+                enum: ShopTypeEnum::class,
+                models: Shop::class,
+                where: function ($q) use ($organisation) {
+                    $q->where('organisation_id', $organisation->id)->whereIn('state', [
+                        ShopStateEnum::OPEN,
+                        ShopStateEnum::CLOSING_DOWN,
+                    ]);
+                }
+            )
+        );
+
 
         $organisation->catalogueStats()->update($stats);
     }

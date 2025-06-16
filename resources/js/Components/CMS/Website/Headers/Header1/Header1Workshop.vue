@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import MobileMenu from '@/Components/MobileMenu.vue'
 import { getStyles } from "@/Composables/styles";
 import MobileHeader from '@/Components/CMS/Website/Headers/MobileHeader.vue';
 
@@ -54,7 +53,7 @@ const toggle = (event) => {
 
 <template>
     <div class="shadow-sm" :style="getStyles(modelValue.container.properties, screenType)">
-        <div class="flex flex-col justify-between items-center py-4 px-6 hidden lg:block">
+        <div class="flex flex-col justify-between items-center py-4 px-6 ">
             <div class="w-full grid grid-cols-3 items-center gap-6">
                 <!-- Logo -->
                 <component v-if="modelValue?.logo?.image?.source" :is="modelValue?.logo?.image?.source ? 'a' : 'div'"
@@ -75,7 +74,8 @@ const toggle = (event) => {
                 <!-- Search Bar -->
                 <div class="relative justify-self-center w-full max-w-md">
                     <!-- <input type="text" placeholder="Search Products"
-                        class="border border-gray-300 py-2 px-4 rounded-md text-sm w-full shadow-inner focus:outline-none focus:border-gray-500">
+                        class="border border-gray-300 py-2 px-4 rounded-md text-sm w-full shadow-inner focus:outline-none focus:border-gray-500"> -->
+                    <!--
                     <FontAwesomeIcon icon="fas fa-search"
                         class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500" fixed-width /> -->
                 </div>
@@ -91,8 +91,6 @@ const toggle = (event) => {
                 </div>
             </div>
         </div>
-
-        <MobileHeader :header-data="modelValue" :menu-data="{}" :screenType="screenType" />
     </div>
 </template>
 

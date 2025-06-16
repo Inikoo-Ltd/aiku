@@ -42,6 +42,13 @@ class EditUser extends OrgAction
         return $this->handle($user);
     }
 
+    public function inEmployee(Organisation $organisation, Employee $employee, User $user, ActionRequest $request): User
+    {
+        $this->auth_scope = $organisation;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($user);
+    }
 
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
@@ -107,10 +114,23 @@ class EditUser extends OrgAction
             "formData" => [
                 "blueprint" => [
                     [
+                        "label"   => __("Access"),
+                        "title"   => __("access"),
+                        "icon"    => "fal fa-door-closed",
+                        "current" => true,
+                        "fields"  => [
+                            "status" => [
+                                "type"        => "toggle",
+                                "label"       => __("can login"),
+                                "value"       => $user->status,
+                            ],
+                        ],
+                    ],
+                    [
                         "label"   => __("Credentials"),
                         "title"   => __("id"),
                         "icon"    => "fal fa-key",
-                        "current" => true,
+                        "current" => false,
                         "fields"  => [
                             "username" => [
                                 "type"        => "input",

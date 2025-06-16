@@ -10,8 +10,6 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\CRM\BackInStockReminder;
-use App\Models\CRM\Favourite;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
@@ -20,6 +18,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
+use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -68,14 +68,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $follow_master
+ * @property bool $show_in_website
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read ProductCategory|null $department
- * @property-read LaravelCollection<int, BackInStockReminder> $departmentBackInStockReminders
- * @property-read LaravelCollection<int, Favourite> $departmentFavourites
- * @property-read LaravelCollection<int, BackInStockReminder> $familyBackInStockReminders
- * @property-read LaravelCollection<int, Favourite> $familyFavourites
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -86,12 +84,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
  * @property-read \App\Models\Catalogue\ProductCategorySalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
  * @property-read ProductCategory|null $subDepartment
- * @property-read LaravelCollection<int, BackInStockReminder> $subDepartmentBackInStockReminders
- * @property-read LaravelCollection<int, Favourite> $subDepartmentFavourites
- * @property-read LaravelCollection<int, ProductCategory> $subDepartments
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategoryTimeSeries> $timeSeries
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
@@ -160,6 +156,12 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
+    public function contents(): MorphMany
+    {
+        return $this->morphMany(ModelHasContent::class, 'model');
+    }
+
+
     public function stats(): HasOne
     {
         return $this->hasOne(ProductCategoryStats::class);
@@ -190,14 +192,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(ProductCategory::class, 'department_id');
     }
 
+
     public function subDepartment(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'sub_department_id');
-    }
-
-    public function subDepartments(): HasMany
-    {
-        return $this->hasMany(ProductCategory::class, 'department_id');
     }
 
 
@@ -216,17 +214,24 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
 
+
     public function getProducts(): LaravelCollection
     {
         return match ($this->type) {
             ProductCategoryTypeEnum::DEPARTMENT => Product::where('department_id', $this->id)->get(),
-            ProductCategoryTypeEnum::FAMILY     => Product::where('family_id', $this->id)->get(),
+            ProductCategoryTypeEnum::FAMILY => Product::where('family_id', $this->id)->get(),
             ProductCategoryTypeEnum::SUB_DEPARTMENT => Product::where('sub_department_id', $this->id)->get(),
         };
     }
+
     public function collections(): MorphToMany
     {
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
+    }
+
+    public function childrenCollections(): MorphMany
+    {
+        return $this->morphMany(Collection::class, 'parent')->withTimestamps();
     }
 
     public function webpage(): MorphOne
@@ -234,39 +239,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphOne(Webpage::class, 'model');
     }
 
-    public function departmentFavourites(): HasMany
-    {
-        return $this->hasMany(Favourite::class, 'department_id');
-    }
-
-    public function familyFavourites(): HasMany
-    {
-        return $this->hasMany(Favourite::class, 'family_id');
-    }
-
-    public function subDepartmentFavourites(): HasMany
-    {
-        return $this->hasMany(Favourite::class, 'sub_department_id');
-    }
-
-    public function departmentBackInStockReminders(): HasMany
-    {
-        return $this->hasMany(BackInStockReminder::class, 'department_id');
-    }
-
-    public function familyBackInStockReminders(): HasMany
-    {
-        return $this->hasMany(BackInStockReminder::class, 'family_id');
-    }
-
-    public function subDepartmentBackInStockReminders(): HasMany
-    {
-        return $this->hasMany(BackInStockReminder::class, 'sub_department_id');
-    }
 
     public function masterProductCategory(): BelongsTo
     {
-        return $this->belongsTo(MasterProductCategory::class, );
+        return $this->belongsTo(MasterProductCategory::class);
     }
 
 }

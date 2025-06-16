@@ -88,13 +88,13 @@ export const initialiseApp = () => {
                 }
             }
 
-
             const dataActiveUser = {
                 ...usePage().props.auth.user,
                 name: null,
                 last_active: new Date(),
                 action: 'navigate',
                 current_page: {
+                    route_name: layout.currentRoute,
                     label: event.detail.page.props.title,
                     url: event.detail.page.url,
                     icon_left: usePage().props.live_users?.icon_left || null,
@@ -103,7 +103,7 @@ export const initialiseApp = () => {
             }
 
             // To avoid emit on logout
-            if (dataActiveUser.id) {
+            if (dataActiveUser.id && layout.currentRoute !== 'grp.websites.preview' && layout.currentRoute !== 'grp.websites.webpage.preview') {
                 // Set to self
                 useLiveUsers().liveUsers[usePage().props.auth.user.id] = dataActiveUser
 
@@ -147,7 +147,7 @@ export const initialiseApp = () => {
         }
         if (usePage().props.layout?.digital_agency) {
             layout.digital_agency = usePage().props.layout.digital_agency
-            console.log('%c digital_agency', 'background: red; color: white', usePage().props.layout.digital_agency)
+            // console.log('%c digital_agency', 'background: red; color: white', usePage().props.layout.digital_agency)
         }
 
 

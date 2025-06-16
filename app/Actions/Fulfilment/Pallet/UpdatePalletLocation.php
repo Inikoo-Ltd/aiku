@@ -41,7 +41,7 @@ class UpdatePalletLocation extends OrgAction
             'location' => $location->code
         ];
 
-        Event::dispatch(AuditCustom::class, [$pallet]);
+        Event::dispatch(new AuditCustom($pallet));
 
         return $pallet;
     }
@@ -91,14 +91,15 @@ class UpdatePalletLocation extends OrgAction
         return $this->handle($location, $pallet);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouse(Warehouse $warehouse, Location $location, Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->pallet = $pallet;
         $this->scope  = $warehouse;
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        $location = Location::where('id', $request->only('location_id'))->first();
+        $newLocation = Location::where('id', $request->only('location_id'))->first();
 
-        return $this->handle($location, $pallet);
+        return $this->handle($newLocation, $pallet);
     }
 }

@@ -21,6 +21,9 @@ class RouteServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $webHooksDomain = app()->environment('local') && config('app.sandbox.local_webhooks_url') ?
+            config('app.sandbox.local_webhooks_url') : config('app.domain');
+
         $this->configureRateLimiting();
 
         Route::middleware('pupil')
@@ -35,7 +38,7 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::middleware('webhooks')
             ->domain(config('app.domain'))
-            ->domain('https://a674-2a09-bac5-4d44-97d-00-f2-22.ngrok-free.app')
+            ->domain($webHooksDomain)
             ->prefix('webhooks')
             ->group(base_path('routes/grp/webhooks/webhooks.php'));
 
@@ -64,9 +67,18 @@ class RouteServiceProvider extends ServiceProvider
             ->name('retina.')
             ->group(base_path('routes/retina/web/app.php'));
 
+        Route::middleware('retina-api')
+            ->prefix('app/api')
+            ->name('retina.api.')
+            ->group(base_path('routes/retina/api/retina_api.php'));
+
         Route::middleware('iris')
             ->name('iris.')
             ->group(base_path('routes/iris/root.php'));
+
+        // API Documentation Routes
+        Route::middleware('web')
+            ->group(base_path('routes/api-docs.php'));
     }
 
     protected function configureRateLimiting(): void

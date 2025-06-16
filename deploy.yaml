@@ -15,15 +15,19 @@ hosts:
     environment: 'production'
     deploy_path: '~/aiku'
     branch: production
+    labels:
+      env: prod
   staging:
     environment: 'staging'
     deploy_path: '~/aiku'
     branch: staging
+    labels:
+      env: staging
 tasks:
   build:
     - run: uptime
 before:
   deploy: install:env
 after:
-  deploy:failed: [deploy:unlock]
-  deploy:update_code: [npm:install, deploy:vendors]
+  deploy:failed: [ deploy:unlock ]
+  deploy:update_code: [ npm:install, deploy:vendors ]

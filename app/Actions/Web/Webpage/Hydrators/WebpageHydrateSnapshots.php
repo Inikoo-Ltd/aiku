@@ -12,24 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Webpage;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebpageHydrateSnapshots
+class WebpageHydrateSnapshots implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Webpage $webpage;
-
-    public function __construct(Webpage $webpage)
+    public function getJobUniqueId(Webpage $webpage): string
     {
-        $this->webpage = $webpage;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->webpage->id))->dontRelease()];
+        return $webpage->id;
     }
 
     public function handle(Webpage $webpage): void
@@ -38,16 +31,19 @@ class WebpageHydrateSnapshots
             'number_snapshots' => $webpage->snapshots()->count(),
         ];
 
-        $stats = array_merge($stats, $this->getEnumStats(
-            model:'snapshots',
-            field: 'state',
-            enum: SnapshotStateEnum::class,
-            models: Snapshot::class,
-            where: function ($q) use ($webpage) {
-                $q->where('parent_id', $webpage->id);
-                $q->where('parent_id', $webpage->id);
-            }
-        ));
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'snapshots',
+                field: 'state',
+                enum: SnapshotStateEnum::class,
+                models: Snapshot::class,
+                where: function ($q) use ($webpage) {
+                    $q->where('parent_id', $webpage->id);
+                    $q->where('parent_id', $webpage->id);
+                }
+            )
+        );
 
 
         $webpage->stats()->update($stats);

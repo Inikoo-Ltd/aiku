@@ -80,6 +80,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_web_users_auth_type_aurora
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_customers_status_pre_registration
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCRMStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCRMStats newQuery()

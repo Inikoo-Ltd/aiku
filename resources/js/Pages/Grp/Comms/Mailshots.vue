@@ -8,19 +8,25 @@
 import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableMailshots from "@/Components/Tables/TableMailshots.vue";
-import { capitalize } from "@/Composables/capitalize"
+import { capitalize } from "@/Composables/capitalize";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faInboxIn, faDumpsterFire, faThumbsDown } from "@fal";
 
-const props = defineProps<{
+library.add(faInboxIn, faDumpsterFire, faThumbsDown);
+
+
+defineProps<{
     data: object
     title: string
-    pageHead: object
-}>()
+    pageHead: PageHeadingTypes
+}>();
 
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <TableMailshots :data="data"/>
+    <TableMailshots :data="data" />
 </template>
 

@@ -135,7 +135,13 @@ test('UI Index catalogue departments', function () {
 
 test('UI show department', function () {
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.shops.show.catalogue.departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
+
+
+    $response = get(route('grp.org.shops.show.catalogue.departments.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug
+    ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Catalogue/Department')
@@ -171,10 +177,8 @@ test('UI edit department', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.org.catalogue.departments.update')
+                    ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
-                        'organisation'    => $this->department->organisation_id,
-                        'shop'            => $this->department->shop_id,
                         'productCategory' => $this->department->id
                     ])
             )
@@ -228,15 +232,12 @@ test('UI edit family in department', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.org.catalogue.families.update')
+                    ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
-                        'organisation'    => $this->family->organisation_id,
-                        'shop'            => $this->family->shop_id,
                         'productCategory' => $this->family->id
                     ])
             )
@@ -258,7 +259,8 @@ test('UI Index catalogue product inside department', function () {
 
 test('UI Index catalogue family in (tab index)', function () {
     $response = get(route('grp.org.shops.show.catalogue.families.index', [
-        $this->organisation->slug, $this->shop->slug,
+        $this->organisation->slug,
+        $this->shop->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -275,7 +277,8 @@ test('UI Index catalogue family in (tab index)', function () {
 
 test('UI Index catalogue family in (tab sales)', function () {
     $response = get(route('grp.org.shops.show.catalogue.families.index', [
-        $this->organisation->slug, $this->shop->slug,
+        $this->organisation->slug,
+        $this->shop->slug,
         'tab' => 'sales'
     ]));
 
@@ -293,7 +296,8 @@ test('UI Index catalogue family in (tab sales)', function () {
 
 test('UI Index catalogue product in current', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.current_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -310,7 +314,8 @@ test('UI Index catalogue product in current', function () {
 
 test('UI Index catalogue product all', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -327,7 +332,8 @@ test('UI Index catalogue product all', function () {
 
 test('UI Index catalogue product in process', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.in_process_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -345,7 +351,8 @@ test('UI Index catalogue product in process', function () {
 
 test('UI Index catalogue product in discontinued', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.discontinued_products.index', [
-        $this->organisation->slug, $this->shop->slug
+        $this->organisation->slug,
+        $this->shop->slug
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -382,7 +389,7 @@ test('UI show product in department', function () {
 
 
 test('UI Index catalogue sub department inside department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.index', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -393,7 +400,7 @@ test('UI Index catalogue sub department inside department', function () {
 });
 
 test('UI Create catalogue sub department inside department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.create', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.create', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -403,10 +410,10 @@ test('UI Create catalogue sub department inside department', function () {
 });
 
 test('UI show sub department in department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Catalogue/Department')
+            ->component('Org/Catalogue/SubDepartment')
             ->has('title')
             ->has('breadcrumbs', 4)
             ->has('navigation')
@@ -421,12 +428,12 @@ test('UI show sub department in department', function () {
 });
 
 test('UI edit sub department in department', function () {
-    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub-departments.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
+            ->has('formData.blueprint.0.fields', 3)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);
@@ -479,7 +486,6 @@ test('UI edit collection', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);

@@ -53,9 +53,9 @@ function familyRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show",
                 [route().params["organisation"], route().params["shop"], route().params["department"], family.slug])
-        case "grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index":
+        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index":
             return route(
-                "grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show",
+                "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show",
                 [route().params["organisation"], route().params["shop"], route().params["department"], route().params["subDepartment"], family.slug])
         case 'grp.overview.catalogue.families.index':
             return route(
@@ -100,6 +100,19 @@ function departmentRoute(family: Family) {
     }
 }
 
+function subDepartmentRoute(family: Family) {
+    switch (route().current()) {
+        case 'grp.org.shops.show.catalogue.families.index':
+            return route(
+                'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                 [route().params["organisation"], route().params["shop"], family.department_slug, family.sub_department_slug])
+        case 'grp.org.shops.show.catalogue.departments.show.families.index':
+            return route(
+                'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                [route().params["organisation"], route().params["shop"], family.department_slug, family.sub_department_slug])
+    }
+}
+
 const isLoadingDetach = ref<string[]>([])
 
 </script>
@@ -124,10 +137,35 @@ const isLoadingDetach = ref<string[]>([])
                 {{ family["current_products"] }}
             </Link>
         </template>
+        
+        <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
             <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
                 {{ family["department_code"] }}
             </Link>
+
+            <div v-else>
+                {{ family["department_code"] }}
+            </div>
+        </template>
+
+        <!-- Column: Department name -->
+        <template #cell(department_name)="{ item: family }">
+            <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
+                {{ family["department_name"] }}
+            </Link>
+        </template>
+
+        <template #cell(product_categories)="{ item: family }">
+            <!-- <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
+                {{ family["department_code"] }}
+            </Link> -->
+        </template>
+        <template #cell(sub_department_name)="{ item: family }">
+            <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink">
+                {{ family["sub_department_code"] }}
+            </Link>
+            <span v-else class="text-xs text-gray-400 italic">-</span>
         </template>
 
         <template #cell(actions)="{ item }">

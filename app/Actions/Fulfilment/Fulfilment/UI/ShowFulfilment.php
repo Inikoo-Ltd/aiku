@@ -37,6 +37,7 @@ class ShowFulfilment extends OrgAction
 
     public function asController(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): Fulfilment
     {
+
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(FulfilmentTabsEnum::values());
 
         return $this->handle($fulfilment);
@@ -282,7 +283,7 @@ class ShowFulfilment extends OrgAction
             'scheduledActivities' => [
                 [
                     'icon'        => 'fal fa-pallet',
-                    'title'       => __('pallets  '),
+                    'title'       => __('pallets'),
                     'description' => (
                         $this->organisation->fulfilmentStats->number_pallets_state_in_process
                             + $this->organisation->fulfilmentStats->number_pallets_state_submitted

@@ -1,372 +1,366 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/vue";
-import {
-    faCube,
-    faLink,
-    faStar,
-    faCircle,
-    faChevronDown,
-    faChevronLeft,
-    faChevronRight,
-    faHeart,
-    faSeedling,
-    faHandPaper,
-    faFish,
-    faMedal,
-    faSquare,
-} from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Image from "@/Components/Image.vue";
+import { faCube, faHeadSide, faLink, faSeedling, faHeart } from "@fal"
+import { faBox, faPlus, faVial } from "@far"
+import { faChevronDown, faCircle, faMedal, faStar } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { ref } from "vue"
+import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
+import ImageProducts from "@/Components/Product/ImageProducts.vue"
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { useLocaleStore } from '@/Stores/locale'
+import { router } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
+import { ConfirmPopupStyle } from "primevue"
 
-library.add(
-    faCube,
-    faLink,
-    faStar,
-    faCircle,
-    faChevronDown,
-    faChevronLeft,
-    faChevronRight,
-    faHeart,
-    faSeedling,
-    faHandPaper,
-    faFish,
-    faMedal,
-    faSquare
-);
+import btree from '@/../art/payment_service_providers/btree.svg'
+import cash from '@/../art/payment_service_providers/cash.svg'
+import checkout from '@/../art/payment_service_providers/checkout.svg'
+import hokodo from '@/../art/payment_service_providers/hokodo.svg'
+import pastpay from '@/../art/payment_service_providers/pastpay.svg'
+import paypal from '@/../art/payment_service_providers/paypal.svg'
+import sofort from '@/../art/payment_service_providers/sofort.svg'
+import worldpay from '@/../art/payment_service_providers/worldpay.svg'
+import xendit from '@/../art/payment_service_providers/xendit.svg'
+import bank from '@/../art/payment_service_providers/bank.svg'
+import accounts from '@/../art/payment_service_providers/accounts.svg'
+import cond from '@/../art/payment_service_providers/cond.svg'
+
+library.add(faCube, faLink)
+
 
 const props = defineProps<{
+    fieldValue: any
+    webpageData?: any
+    blockData?: Object
     fieldValue: {}
-	theme?: any
-}>();
+}>()
 
-const tableData = [
-    {
-        label: "Origin",
-        value: "Dummy",
-    },
-    {
-        label: "Net weight",
-        value: "Dummy",
-    },
-    {
-        label: "Shipping weight",
-        value: "Dummy",
-    },
-    {
-        label: "Dimensions",
-        value: "Dummy",
-    },
-    {
-        label: "Barcode",
-        value: "Dummy",
-    },
-    {
-        label: "MSDS",
-        value: "Dummy",
-        url: "Dummy",
-    },
-    {
-        label: "MSDS",
-        value: "Dummy",
-        url: "Dummy",
-    },
-    {
-        label: "MSDS",
-        value: "Dummy",
-        url: "Dummy",
-    },
-];
-
-const selectedProduct = ref(0);
-const emits = defineEmits(["update:modelValue", "autoSave"]);
-const dataProduct = ref({
+const locale = useLocaleStore()
+const orderQuantity = ref(0)
+const isFavorite = ref(false)
+const cancelToken = ref<Function | null>(null)
+console.log('poprs', props)
+const product = ref({
+    labels: ['Vegan', 'Handmade', 'Cruelty Free', 'Plastic Free'],
     images: [
-        "https://tailwindui.com/plus/img/ecommerce-images/product-page-01-product-shot-02.jpg",
-        "https://tailwindui.com/plus/img/ecommerce-images/product-page-01-product-shot-02.jpg",
-        "https://tailwindui.com/plus/img/ecommerce-images/product-page-01-product-shot-02.jpg",
-        "https://tailwindui.com/plus/img/ecommerce-images/product-page-01-product-shot-02.jpg",
+        'https://media.aiku.io/QE3VZW2yBT-RO4qWYuaa3ouc5WtTsBochW4VDw9sKJQ/bG9jYWw6Ly9tZWRpYS85US8wQy82MFIzMEMxSDc0VzMwQzlRL2E1OTg0NGJjLmpwZw.avif',
+        'http://media.aiku.io/W2GnpCzQywkUCdpi-VUFxoLjTU7wRTWnjKjoTBr3ELQ/bG9jYWw6Ly9tZWRpYS85Ui8wQy82MFIzMEMxSDc0VzMwQzlSL2U0NWU0Mzc3LnBuZw.avif',
+        'https://media.aiku.io/SpnYAGPOMaubSosNwaGX85QdiumKFscavJl76q-9twk/bG9jYWw6Ly9tZWRpYS85Uy8wQy82MFIzMEMxSDc0VzMwQzlTL2E0ZmYxMmJlLmpwZw.avif',
+        'https://media.aiku.io/zM4hxmcha55ajZYIraLElQKQslHD8g8OZjqDNoquktg/bG9jYWw6Ly9tZWRpYS9IRy8wQy82MFIzMEMxSDc0VzMwQ0hHLzZiZTc2ZTJkLmpwZw.avif',
+        'https://media.aiku.io/QE3VZW2yBT-RO4qWYuaa3ouc5WtTsBochW4VDw9sKJQ/bG9jYWw6Ly9tZWRpYS85US8wQy82MFIzMEMxSDc0VzMwQzlRL2E1OTg0NGJjLmpwZw.avif',
+        'http://media.aiku.io/W2GnpCzQywkUCdpi-VUFxoLjTU7wRTWnjKjoTBr3ELQ/bG9jYWw6Ly9tZWRpYS85Ui8wQy82MFIzMEMxSDc0VzMwQzlSL2U0NWU0Mzc3LnBuZw.avif'
     ],
-});
+    paymentLogos: [
+        { alt: 'Paypal', src: 'https://e7.pngegg.com/pngimages/292/77/png-clipart-paypal-logo-illustration-paypal-logo-icons-logos-emojis-tech-companies.png' },
+        { alt: 'Visa', src: 'https://e7.pngegg.com/pngimages/687/457/png-clipart-visa-credit-card-logo-payment-mastercard-usa-visa-blue-company.png' },
+        { alt: 'Mastercard', src: 'https://i.pinimg.com/736x/38/2f/0a/382f0a8cbcec2f9d791702ef4b151443.jpg' }
+    ]
+})
+
+const toggleFavorite = () => {
+    isFavorite.value = !isFavorite.value
+}
+
+const increaseQuantity = () => {
+    orderQuantity.value++
+}
+
+const decreaseQuantity = () => {
+    if (product.value.orderQuantity > 1) {
+        product.value.orderQuantity--
+    }
+}
+
+// src/data/faqs.ts
+const productFaqs = [
+    {
+        question: 'How do they come packaged?',
+        answer: 'These bath bombs come individually wrapped in recyclable packaging for freshness and protection during transit.'
+    },
+    {
+        question: 'Are these bath bombs safe for sensitive skin?',
+        answer: 'Yes, they are made with skin-friendly ingredients and free from harsh chemicals, but a patch test is always recommended.'
+    },
+    {
+        question: 'Can I use these bath bombs in a Jacuzzi?',
+        answer: 'We do not recommend using bath bombs in Jacuzzis as they may interfere with the jets or filter systems.'
+    },
+    {
+        question: 'What is the shelf life of the bath bombs?',
+        answer: 'Our bath bombs have a shelf life of up to 12 months when stored in a cool, dry place.'
+    }
+]
+
+const debounceTimer = ref(null)
+const onDescriptionUpdate = (val) => {
+    // Clear previous timer
+    clearTimeout(debounceTimer.value)
+
+    // Start new 5-second timer
+    debounceTimer.value = setTimeout(() => {
+        saveDescriptions(val)
+    }, 5000)
+}
+
+const saveDescriptions = (value: string) => {
+    if (cancelToken.value) cancelToken.value()
+    router.patch(
+        route("grp.models.product.update", { product: props.fieldValue.product.id }),
+        { description: value },
+        {
+            preserveScroll: false,
+            onCancelToken: (token) => {
+                cancelToken.value = token.cancel
+            },
+            onFinish: () => {
+                cancelToken.value = null
+            },
+            onSuccess: (e) => { },
+            onError: (error) => {
+                notify({
+                    title: trans('Something went wrong'),
+                    text: error.message,
+                    type: 'error',
+                })
+            }
+        }
+    )
+}
+
+const selectImage = (code: string) => {
+    if (!code) return null
+
+    switch (code) {
+        case 'btree':
+            return btree
+        case 'cash':
+            return cash
+        case 'checkout':
+            return checkout
+        case 'hokodo':
+            return hokodo
+        case 'accounts':
+            return accounts
+        case 'cond':
+            return cond
+        case 'bank':
+            return bank
+        case 'pastpay':
+            return pastpay
+        case 'paypal':
+            return paypal
+        case 'sofort':
+            return sofort
+        case 'worldpay':
+            return worldpay
+        case 'xendit':
+            return xendit
+        default:
+            return null
+    }
+}
+
+
+const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not onheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
+
+console.log(props)
 </script>
 
 <template>
-    <div id="app" class="mx-auto max-w-5xl px-4 py-4 text-gray-600">
-        <div class="flex gap-x-10 mb-12">
-            <div class="flex-1">
-                <div class="font-bold text-2xl">{{ fieldValue.product.name }}</div>
+    <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6">
+        <div class="grid grid-cols-12 gap-x-10 mb-12">
+            <!-- Left Column (7/12) -->
+            <div class="col-span-7">
+                <!-- Informasi Produk -->
+                <div class="flex justify-between mb-4 items-start">
+                    <div class="w-full">
+                        <!-- Product Name -->
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            {{ fieldValue.product.name }}
+                        </h1>
 
-                <div class="mb-1 flex gap-x-10">
-                    <div class="text-sm">Product code:{{ fieldValue.product.code }}</div>
-                    <div class="flex gap-x-[1px] items-center">
-                        <FontAwesomeIcon icon="fas fa-star" class="text-[9px] text-gray-600" />
-                        <FontAwesomeIcon icon="fas fa-star" class="text-[9px] text-gray-600" />
-                        <FontAwesomeIcon icon="fas fa-star" class="text-[9px] text-gray-600" />
-                        <FontAwesomeIcon icon="fas fa-star" class="text-[9px] text-gray-600" />
-                        <FontAwesomeIcon icon="fas fa-star" class="text-[9px] text-gray-600" />
-                        <span class="ml-1 text-xs">41</span>
-                    </div>
-                </div>
-
-                <div class="mb-1 flex justify-between">
-                    <div>
-                        <FontAwesomeIcon icon="fas fa-circle" class="text-sm text-green-600" />
-                        <span class="ml-1 text-sm">(41)</span>
-                    </div>
-                    <div>RRP: £{{fieldValue.product.price}}/Piece</div>
-                </div>
-
-                <!-- Images product -->
-                <div class="grid grid-cols-5 mb-10 gap-x-2">
-                    <div class="flex flex-col gap-y-1.5">
-                        <div v-for="(product, idxProduct) in fieldValue.product.images"
-                            @click="() => (selectedProduct = idxProduct)" class="aspect-square cursor-pointer"
-                            :class="selectedProduct == idxProduct ? 'ring-2 ring-gray-400' : 'hover:ring-1 hover:ring-gray-300'">
-                            <Image :imageCover="true" :src="product.source" :alt="`product Image ${idxProduct}`" />
-                        </div>
-                    </div>
-
-                    <!-- Image large -->
-                    <div class="relative col-span-4 aspect-square">
-                        <FontAwesomeIcon
-                            icon="absolute bottom-2 right-2 text-3xl far fa-heart text-gray-400 hover:text-gray-600 cursor-pointer" />
-                        <Image :imageCover="true"  :src="fieldValue.product.images[selectedProduct].source" alt="product Image" />
-                        <div v-if="selectedProduct != 0" @click="() => (selectedProduct = selectedProduct - 1)"
-                            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
-                            <FontAwesomeIcon icon="fas fa-chevron-left" class="text-2xl" />
-                        </div>
-                        <div v-if="selectedProduct != dataProduct.images.length - 1"
-                            @click="() => (selectedProduct = selectedProduct + 1)"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
-                            <FontAwesomeIcon icon="fas fa-chevron-right" class="text-2xl" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section: Description -->
-                <div class="space-y-4 mb-6">
-                    <div class="text-xs text-gray-500">
-                       {{ fieldValue.product.description }}
-                    </div>
-                </div>
-
-                <!-- <div class="flex gap-x-10 text-gray-400 mb-6">
-                    <div class="flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-seedling" class="text-sm" />
-                        <div class="text-xs">Vegan</div>
-                    </div>
-                    <div class="flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-hand-paper" class="text-sm" />
-                        <div class="text-xs">Handmade</div>
-                    </div>
-                    <div class="flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-fish" class="text-sm" />
-                        <div class="text-xs">Cruelty Free</div>
-                    </div>
-                    <div class="flex items-center gap-x-2">
-                        <FontAwesomeIcon icon="fas fa-square" class="fa-rotate-by text-sm"
-                            style="--fa-rotate-angle: 45deg" />
-                        <div class="text-xs">Plastic Free</div>
-                    </div>
-                </div> -->
-
-                <Disclosure v-if="fieldValue.setting.product_specs" v-slot="{ open }">
-                    <DisclosureButton class="cursor-pointer w-full">
-                        <div class="mb-2 flex gap-x-4 items-center w-fit cursor-pointer">
-                            <div class="font-bold">Product Specification & Documentation</div>
-                            <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                class="text-gray-400" />
-                        </div>
-                    </DisclosureButton>
-                    <DisclosurePanel class="text-sm text-gray-500">
-                        <div class="col-span-2 divide-y divide-gray-300 text-gray-500 text-sm w-fit">
-                            <div v-for="row in tableData" class="py-1 grid grid-cols-5 gap-x-4">
-                                <div class="col-span-2">
-                                    {{ row.label }}
-                                </div>
-                                <component :is="row.url ? 'a' : 'div'" :href="row.url" class="col-span-3"
-                                    :class="[row.url ? 'hover:underline' : '']">
-                                    {{ row.value }}
-                                </component>
+                        <!-- Code & Rating -->
+                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                            <div>
+                                Product code: {{ fieldValue.product.code }}
+                            </div>
+                            <div class="flex items-center gap-[1px]">
+                                <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
+                                    :key="n" />
+                                <span class="ml-1 text-xs text-gray-500">41</span>
                             </div>
                         </div>
-                    </DisclosurePanel>
-                </Disclosure>
 
-                <Disclosure v-slot="{ open }" v-if="fieldValue.setting.customer_review" >
-                    <DisclosureButton class="cursor-pointer w-full">
-                        <div class="mb-2 flex gap-x-4 items-center w-fit cursor-pointer">
-                            <div class="font-bold">Customer Reviews</div>
-                            <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                class="text-gray-400" />
+                        <!-- Stock Status -->
+                        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                            <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                :class="fieldValue.product.stock === 'active' ? 'text-green-600' : 'text-red-600'" />
+                            <span>
+                                {{ fieldValue.product.stock > 0 ? `In Stock (${fieldValue.product.stock})` : 'Out Of Stock' }}
+                            </span>
                         </div>
-                    </DisclosureButton>
-                    <DisclosurePanel class="text-sm text-gray-500">
-                       Dummy
-                    </DisclosurePanel>
-                </Disclosure>
-            </div>
-
-            <!-- Column: Right -->
-            <div class="flex-none w-1/3"> <!-- Adjust width as needed -->
-               <!--  <div v-if="mode.value == 'login' || mode.value == 'member'">
-                    <div v-if="mode.value == 'login'" class="mb-2 font-semibold text-2xl">£9.60 (£1.20/Piece)</div>
-                    <div v-if="mode.value == 'login' || mode.value == 'member'"
-                        class="mb-2 font-semibold text-2xl text-orange-500">
-                        £8.00 (£1.00/Piece)
-                    </div>
-                    <div v-if="mode.value == 'login'" class="mb-2 space-x-2">
-                        <FontAwesomeIcon icon="fas fa-medal" class="text-orange-500" />
-                        <span class="bg-orange-500 text-white py-0.5 px-1 rounded-md">Member Price</span>
-                        <span class="text-xs underline cursor-pointer">Membership Info</span>
                     </div>
 
-                    <div v-if="mode.value == 'login'" class="mb-8">
-                        <div class="mb-0.5 text-xs text-gray-500">NOT A MEMBER?</div>
-                        <div class="mb-2 text-orange-500 text-xs w-8/12">
-                            Order 4 or more outers from this product family to benefit from lower price.
-                        </div>
-                        <div class="text-xs underline cursor-pointer">Browse Product Family</div>
-                    </div>
-                </div> -->
 
-                <div  class="p-3 w-full">
-                    <div class="flex gap-3">
-                        <div
-                            class="bg-gray-600 flex-1 text-white rounded px-3 py-1 h-fit flex items-center justify-center">
-                            Login
-                        </div>
-                        <div
-                            class="bg-gray-600 flex-1 text-white rounded px-3 py-1 h-fit flex items-center justify-center">
-                            Register
-                        </div>
+                    <!-- Favorit -->
+                    <div class="h-full flex items-start">
+                        <FontAwesomeIcon :icon="faHeart" class="text-2xl cursor-pointer"
+                            :class="{ 'text-red-500': isFavorite }" @click="toggleFavorite" />
                     </div>
                 </div>
 
-                <!-- Section: Order now -->
-                <div  class="flex gap-x-2 mb-6">
-                    <div class="flex items-start gap-x-1">
-                        <div class="font-bold text-3xl leading-none cursor-pointer">-</div>
-                        <div
-                            class="h-8 aspect-square border border-gray-400 flex items-center justify-center tabular-nums text-xl font-bold">
-                            1
-                        </div>
-                        <div class="font-bold text-3xl leading-none cursor-pointer">+</div>
-                    </div>
-                    <div class="bg-gray-600 text-white rounded px-3 py-1 h-fit w-fit">
-                        Order Now
+                <!-- Gambar Produk -->
+                <div class="py-1 w-full">
+                    <ImageProducts :images="fieldValue.product.images.data" />
+                </div>
+
+                <!-- Label -->
+                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
+                    <div class="flex items-center gap-1 text-xs" v-for="label in product.labels" :key="label">
+                        <FontAwesomeIcon :icon="faSeedling" class="text-sm" />
+                        <span>{{ label }}</span>
                     </div>
                 </div>
 
-                <!-- Section: Buy now pay later, delivery info, return policy -->
-                <div v-if="fieldValue.setting.payments_and_policy" class="mb-4">
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton
-                            class="flex items-center w-full gap-x-4 border-t border-gray-300 pl-3 font-bold text-gray-600 py-1">
-                            Buy Now Pay Later
-                            <img src="https://pastpay.com/wp-content/uploads/2023/07/PastPay-logo-dark-edge.png"
-                                class="h-3" alt="" />
-                            <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                class="text-sm text-gray-500" />
-                        </DisclosureButton>
-                        <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                            If you're unhappy with your purchase for any reason, email us within 90 days and we'll
-                            refund you in full, no questions asked.
-                        </DisclosurePanel>
-                    </Disclosure>
+                <!-- Spesifikasi Produk -->
+                <!-- Wrapper -->
+<div class="max-w-md w-full space-y-4">
 
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton
-                            class="flex items-center w-full gap-x-4 border-t border-gray-300 pl-3 font-bold text-gray-600 py-1">
-                            Delivery Info
-                            <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                class="text-sm text-gray-500" />
-                        </DisclosureButton>
-                        <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                            If you're unhappy with your purchase for any reason, email us within 90 days and we'll
-                            refund you in full, no questions asked.
-                        </DisclosurePanel>
-                    </Disclosure>
+    <!-- Spesifikasi Produk -->
+    <Disclosure v-slot="{ open }">
+        <DisclosureButton
+            class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
+            Product Specification & Documentation
+            <FontAwesomeIcon
+                :icon="faChevronDown"
+                class="text-sm text-gray-500 transform transition-transform duration-200"
+                :class="{ 'rotate-180': open }"
+            />
+        </DisclosureButton>
+        <DisclosurePanel class="text-sm text-gray-600">
+            <p>{{ productSpec }}</p>
+        </DisclosurePanel>
+    </Disclosure>
 
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton
-                            class="flex items-center gap-x-4 border-t w-full border-gray-300 pl-3 font-bold text-gray-600 py-1">
-                            Return Policy
-                            <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                class="text-sm text-gray-500" />
-                        </DisclosureButton>
-                        <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                            If you're unhappy with your purchase for any reason, email us within 90 days and we'll
-                            refund you in full, no questions asked.
-                        </DisclosurePanel>
-                    </Disclosure>
+    <!-- FAQ -->
+    <div>
+        <div class="text-sm text-gray-500 mb-1 font-semibold">Frequently Asked Questions (FAQs)</div>
+        <div class="space-y-2">
+            <Disclosure v-for="(faq, i) of productFaqs" :key="i" v-slot="{ open }">
+                <DisclosureButton
+                    class="w-full py-1 border-b border-gray-400 font-bold text-gray-800 flex justify-between items-center">
+                    {{ faq.question }}
+                    <FontAwesomeIcon
+                        :icon="faChevronDown"
+                        class="text-sm text-gray-500 transform transition-transform duration-200"
+                        :class="{ 'rotate-180': open }"
+                    />
+                </DisclosureButton>
+                <DisclosurePanel class="text-sm text-gray-600 py-2">
+                    <p>{{ faq.answer }}</p>
+                </DisclosurePanel>
+            </Disclosure>
+        </div>
+    </div>
 
-                    <!-- Secure Payments: PayPal, Visa, Mastercard -->
-                    <div class="mb-8 mt-4">
-                        <div class="pl-3 font-semibold flex items-center gap-x-4">
-                            <div class="text-xs mb-3">Secure Payments:</div>
-                            <img src="https://FontAwesomeIcon.pinimg.com/736x/21/bc/22/21bc22b0ae1013adeec20aeef47b3369.jpg"
-                                alt="" class="h-6" />
-                        </div>
-                        <div class="mx-auto flex divide-x-2 divide-gray-300 w-fit border-x border-gray-300">
-                            <img src="https://e7.pngegg.com/pngimages/292/77/png-clipart-paypal-logo-illustration-paypal-logo-icons-logos-emojis-tech-companies.png"
-                                alt="Paypal" class="px-1 h-4" />
-                            <img src="https://e7.pngegg.com/pngimages/687/457/png-clipart-visa-credit-card-logo-payment-mastercard-usa-visa-blue-company.png"
-                                alt="Visa" class="px-1 h-4" />
-                            <img src="https://FontAwesomeIcon.pinimg.com/736x/38/2f/0a/382f0a8cbcec2f9d791702ef4b151443.jpg"
-                                alt="Mastercard" class="px-1 h-4" />
+    <!-- Review -->
+    <div class="flex items-center justify-between font-bold cursor-pointer border-t pt-4 border-gray-300">
+        <div>Customer Reviews</div>
+        <div class="flex items-center gap-[1px]">
+            <FontAwesomeIcon
+                :icon="faStar"
+                class="text-[9px] text-gray-600"
+                v-for="n in 5"
+                :key="'star-' + n"
+            />
+            <span class="ml-1 font-normal text-xs">{{ 31 }}</span>
+        </div>
+        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+    </div>
+
+</div>
+</div>
+
+
+            <!-- Right Column (5/12) -->
+            <div class="col-span-5 self-start">
+                <!-- Harga -->
+                <div class="flex items-end border-b pb-3 mb-3">
+                    <!-- Harga Saat Ini -->
+                    <div class="text-gray-900 font-semibold text-5xl capitalize leading-none flex-grow min-w-0">
+                        {{ locale.currencyFormat(fieldValue.product.currency_code, fieldValue.product.price || 0) }}
+                        <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">
+                            ({{ fieldValue.product.units }}/{{ fieldValue.product.unit }})
+                        </span>
+                    </div>
+
+                    <!-- Harga RRP -->
+                    <div class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
+                        <span>RRP: {{ locale.currencyFormat(fieldValue.product.currency_code, fieldValue.product.rrp ||
+                            0) }}</span>
+                        <span>/{{ fieldValue.product.unit }}</span>
+                    </div>
+                </div>
+
+
+
+                <div class="flex gap-2 mb-6">
+                    <!-- Add to Portfolio (90%) -->
+                    <button
+                        class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white rounded px-4 py-2 text-sm font-semibold w-[90%] transition">
+                        <FontAwesomeIcon :icon="faPlus" class="text-base" />
+                        Add to Portfolio
+                    </button>
+
+                    <!-- Buy a Sample (10%) -->
+                    <button v-tooltip="'Buy  sample'"
+                        class="flex items-center justify-center border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded p-2 text-sm font-semibold w-[10%] transition">
+                        <FontAwesomeIcon :icon="faVial" class="text-sm" />
+                    </button>
+                </div>
+
+
+
+                <!-- Keterangan -->
+                <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
+                    <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
+                    <span>Order 4 full carton</span>
+                </div>
+
+                <!-- Deskripsi -->
+                <div class="text-xs font-medium text-gray-800 py-3">
+                    <EditorV2 v-model="fieldValue.product.description"
+                        @update:model-value="(e) => onDescriptionUpdate(e)" />
+                </div>
+
+                <!-- Informasi Tambahan -->
+                <div class="mb-4 space-y-2">
+                    <div
+                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1  border-gray-400 cursor-pointer">
+                        Delivery Info
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+                    </div>
+
+                    <div
+                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
+                        Return Policy
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
+                    </div>
+
+                    <!-- Logo Pembayaran -->
+                    <div class="items-center gap-3 border-t border-gray-400 font-bold text-gray-800 py-2">
+                        Secure Payments:
+                        <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
+                            <img v-for="logo in fieldValue.product.service_providers" :key="logo.code"
+                                v-tooltip="logo.code" :src="selectImage(logo.code)" :alt="logo.code" class="h-4 px-1" />
                         </div>
                     </div>
 
-                </div>
-
-                <!-- Section: FAQ -->
-                <div v-if="fieldValue.setting.faqs" class="mt-4 pl-3">
-                    <h2 class="mb-4 text">Frequently Asked Questions (FAQs):</h2>
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton class="cursor-pointer border-b-2 w-full border-gray-300 py-2 pl-1.5">
-                            <summary class="flex justify-between font-bold text-sm">
-                                <span>How do they come packaged?</span>
-                                <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                    class="text-sm text-gray-500" />
-                            </summary>
-                        </DisclosureButton>
-                        <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                            If you're unhappy with your purchase for any reason, email us within 90 days and we'll
-                            refund you in full, no questions asked.
-                        </DisclosurePanel>
-                    </Disclosure>
-
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton class="cursor-pointer border-b-2 w-full border-gray-300 py-2 pl-1.5">
-                            <summary class="flex justify-between font-bold text-sm">
-                                <span>Do the bath bombs Fizz or Foam?</span>
-                                <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                    class="text-sm text-gray-500" />
-                            </summary>
-                        </DisclosureButton>
-                        <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                            If you're unhappy with your purchase for any reason, email us within 90 days and we'll
-                            refund you in full, no questions asked.
-                        </DisclosurePanel>
-                    </Disclosure>
-
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton class="cursor-pointer border-b-2 w-full border-gray-300 py-2 pl-1.5">
-                            <summary class="flex justify-between font-bold text-sm">
-                                <span>Are they safe for children?</span>
-                                <FontAwesomeIcon :icon="open ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"
-                                    class="text-sm text-gray-500" />
-                            </summary>
-                        </DisclosureButton>
-                        <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                            If you're unhappy with your purchase for any reason, email us within 90 days and we'll
-                            refund you in full, no questions asked.
-                        </DisclosurePanel>
-                    </Disclosure>
                 </div>
             </div>
         </div>
+
     </div>
 </template>

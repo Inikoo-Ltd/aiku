@@ -29,7 +29,7 @@ class ShowDepartment extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
-
+    use WithWebpageActions;
 
     private Organisation|Shop $parent;
 
@@ -48,14 +48,15 @@ class ShowDepartment extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): ProductCategory
     {
+
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
-
         return $this->handle($department);
     }
 
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
+
         return Inertia::render(
             'Org/Catalogue/Department',
             [
@@ -69,40 +70,14 @@ class ShowDepartment extends OrgAction
                     'next'     => $this->getNext($department, $request),
                 ],
                 'pageHead'    => [
-                    'title'     => $department->name,
-                    'icon'      => [
+                    'title'         => $department->name,
+                    'model'        => __('Department'),
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('department')
                     ],
-                    'actions' => [
-                        $department->webpage ?
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'tooltip' => __('To Webpage'),
-                            'label'   => __('To Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.web.webpages.show',
-                                'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'website'      => $this->shop->website->slug,
-                                    'webpage'      => $department->webpage->slug
-                                ]
-                            ]
-                        ] : [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'tooltip' => __('Create Webpage'),
-                            'label'   => __('Create Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.models.webpages.product_category.store',
-                                'parameters' => $department->id,
-                                'method'     => 'post'
-                            ]
-                        ],
+                    'actions'       => [
+                        $this->getWebpageActions($department),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -111,17 +86,37 @@ class ShowDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canDelete ? [
+                        !$department->children()->exists() ? [
                             'type'  => 'button',
                             'style' => 'delete',
+                            'key'   => 'delete',
                             'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
+                                'name'       => 'grp.models.product_category.delete',
+                                'parameters' => [
+                                    'productCategory' => $department->id,
+                                ],
+                                'method' => 'delete',
                             ]
-                        ] : false
+                        ] : false,
                     ],
                     'subNavigation' => $this->getDepartmentSubNavigation($department)
                 ],
+                /* 'collections_route' => [
+                    'name'       => 'grp.json.shop.catalogue.collections',
+                    'parameters' => [
+                        'shop'         => $department->shop->slug,
+                        'scope'   => $department->shop->slug
+                    ],
+                    'method' => 'get'
+                ],
+
+                'attach_collections_route' => $department->webpage ? [
+                    'name'       => 'grp.models.webpage.attach_collection',
+                    'parameters' => [
+                        'webpage'  => $department->webpage->id,
+                    ],
+                    'method' => 'post'
+                ] : [], */
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => DepartmentTabsEnum::navigation()
@@ -145,28 +140,10 @@ class ShowDepartment extends OrgAction
                             prefix: 'customers'
                         )
                     )),
-                // DepartmentTabsEnum::MAILSHOTS->value => $this->tab == DepartmentTabsEnum::MAILSHOTS->value
-                //     ?
-                //     fn () => MailshotResource::collection(
-                //         IndexMailshots::run(
-                //             parent: $department,
-                //             prefix: 'mailshots'
-                //         )
-                //     )
-                //     : Inertia::lazy(fn () => MailshotResource::collection(
-                //         IndexMailshots::run(
-                //             parent: $department,
-                //             prefix: 'mailshots'
-                //         )
-                //     )),
-
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($department))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($department))),
-
-
-
 
 
             ]
@@ -175,15 +152,7 @@ class ShowDepartment extends OrgAction
                 parent: $department->shop,
                 prefix: 'customers'
             )
-        )
-        // ->table(
-        //     IndexMailshots::make()->tableStructure(
-        //         parent: $department->shop,
-        //         prefix: 'mailshots'
-        //     )
-        // )
-
-            ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value));
     }
 
 
@@ -219,28 +188,7 @@ class ShowDepartment extends OrgAction
         $department = ProductCategory::where('slug', $routeParameters['department'])->first();
 
         return match ($routeName) {
-            /*
-            'shops.departments.show' =>
-            array_merge(
-                IndexShops::make()->getBreadcrumbs(),
-                $headCrumb(
-                    $routeParameters['department'],
-                    [
-                        'index' => [
-                            'name'       => 'shops.departments.index',
-                            'parameters' => []
-                        ],
-                        'model' => [
-                            'name'       => 'shops.departments.show',
-                            'parameters' => [
-                                $routeParameters['department']->slug
-                            ]
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            */
+
             'grp.org.shops.show.catalogue.departments.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
@@ -284,17 +232,7 @@ class ShowDepartment extends OrgAction
         }
 
         return match ($routeName) {
-            /*
-            'shops.departments.show' => [
-                'label' => $department->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'department' => $department->slug
-                    ]
-                ]
-            ],
-            */
+
             'grp.org.shops.show.catalogue.departments.show' => [
                 'label' => $department->name,
                 'route' => [

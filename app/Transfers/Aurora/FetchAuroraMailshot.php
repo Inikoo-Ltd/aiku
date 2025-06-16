@@ -36,6 +36,39 @@ class FetchAuroraMailshot extends FetchAurora
             'Stopped' => MailshotStateEnum::STOPPED,
         };
 
+
+        $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Creation Date'});
+        if ($this->auroraModelData->{'Email Campaign State'} == 'ComposingEmail' and $this->parseDatetime($this->auroraModelData->{'Email Campaign Setup Date'})) {
+            $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Setup Date'});
+        }
+        if ($this->auroraModelData->{'Email Campaign State'} == 'Ready' && $this->parseDatetime($this->auroraModelData->{'Email Campaign Composed Date'})) {
+            $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Composed Date'});
+        }
+
+        if ($this->auroraModelData->{'Email Campaign State'} == 'Scheduled' && $this->parseDatetime($this->auroraModelData->{'Email Campaign Scheduled Date'})) {
+            $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Scheduled Date'});
+        }
+
+        if ($this->auroraModelData->{'Email Campaign State'} == 'Sending' && $this->parseDatetime($this->auroraModelData->{'Email Campaign Start Send Date'})) {
+            $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Start Send Date'});
+        }
+
+        if ($this->auroraModelData->{'Email Campaign State'} == 'Sent' && $this->parseDatetime($this->auroraModelData->{'Email Campaign End Send Date'})) {
+            $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign End Send Date'});
+        }
+
+        if ($this->auroraModelData->{'Email Campaign State'} == 'Cancelled' && $this->parseDatetime($this->auroraModelData->{'Email Campaign Last Updated Date'})) {
+            $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Last Updated Date'});
+        }
+
+        if ($this->auroraModelData->{'Email Campaign State'} == 'Stopped' && $this->parseDatetime($this->auroraModelData->{'Email Campaign Stopped Date'})) {
+            $date = $this->parseDatetime($this->auroraModelData->{'Email Campaign Stopped Date'});
+        }
+
+
+
+
+
         if ($this->auroraModelData->{'Email Campaign Type'} == 'Newsletter') {
             $type   = MailshotTypeEnum::NEWSLETTER;
             $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first();
@@ -71,12 +104,14 @@ class FetchAuroraMailshot extends FetchAurora
             $subject = '?';
         }
 
+
         $this->parsedData['mailshot'] = [
             'subject'    => $subject,
             'type'       => $type,
             'state'      => $state,
             'source_id'  => $this->organisation->id.':'.$this->auroraModelData->{'Email Campaign Key'},
             'created_at' => $this->parseDatetime($this->auroraModelData->{'Email Campaign Creation Date'}),
+            'date'       => $date,
 
             'ready_at'         => $this->parseDatetime($this->auroraModelData->{'Email Campaign Composed Date'}),
             'scheduled_at'     => $this->parseDatetime($this->auroraModelData->{'Email Campaign Scheduled Date'}),
@@ -89,6 +124,7 @@ class FetchAuroraMailshot extends FetchAurora
             'last_fetched_at'   => now(),
         ];
 
+        dd($this->parsedData['mailshot'], $this->auroraModelData, );
     }
 
 

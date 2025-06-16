@@ -1,9 +1,10 @@
 {
-	"slug": "department-1",
-	"code": "department-1",
-	"name": "Department",
+	"slug": "departments",
+	"code": "departments",
+	"name": "Departments",
 	"scope": "webpage",
 	"category": "department",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"icon": ["fal", "building"],
 	"fixed" : true,
 	"data": {

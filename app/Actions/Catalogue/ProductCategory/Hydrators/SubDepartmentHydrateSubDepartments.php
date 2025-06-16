@@ -12,35 +12,31 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SubDepartmentHydrateSubDepartments
+class SubDepartmentHydrateSubDepartments implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private ProductCategory $productCategory;
-
-    public function __construct(ProductCategory $productCategory)
+    public function getJobUniqueId(ProductCategory $productCategory): string
     {
-        $this->productCategory = $productCategory;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->productCategory->id))->dontRelease()];
+        return $productCategory->id;
     }
 
     public function handle(ProductCategory $productCategory): void
     {
-
         if ($productCategory->type !== ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             return;
         }
 
         $stats = [
-            'number_sub_departments' => $productCategory->subDepartments()->count(),
+            'number_sub_departments' => DB::table('product_categories')
+                ->where('sub_department_id', $productCategory->id)
+                ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+                ->count(),
         ];
 
         $stats = array_merge(

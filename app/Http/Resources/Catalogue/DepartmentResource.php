@@ -27,23 +27,40 @@ class DepartmentResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var \App\Models\Catalogue\ProductCategory $department */
+        $department = $this->resource;
+
+        $urlMaster                              = null;
+        if ($department->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.masters.departments.show',
+                'parameters' => [
+                    $department->masterProductCategory->slug
+                ]
+            ];
+        }
+
+
         return [
-            'slug'               => $this->slug,
-            'shop_slug'          => $this->shop_slug,
-            'shop_code'          => $this->shop_code,
-            'shop_name'          => $this->shop_name,
-            'code'               => $this->code,
-            'name'               => $this->name,
-            'state'              => [
-                'label' => $this->state->labels()[$this->state->value],
-                'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
-                'class' => $this->state->stateIcon()[$this->state->value]['class']
+            'slug' => $department->slug,
+            'id' => $department->id,
+            'code'             => $department->code,
+            'name'             => $department->name,
+            'state'            => [
+                'label' => $department->state->labels()[$this->state->value],
+                'icon'  => $department->state->stateIcon()[$this->state->value]['icon'],
+                'class' => $department->state->stateIcon()[$this->state->value]['class']
             ],
-            'description'       => $this->description,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
-            'current_families'  => $this->stats->number_families ?? 0,
-            'current_products'  => $this->stats->number_products ?? 0
+            'description'      => $department->description,
+            'created_at'       => $department->created_at,
+            'updated_at'       => $department->updated_at,
+            'current_families' => $department->stats->number_families ?? 0,
+            'current_products' => $department->stats->number_products ?? 0,
+            'type'             => $department->type,
+            'show_in_website'  => $department->show_in_website,
+            'url_master'       => $urlMaster,
+            'image'           => $department->imageSources(720, 480),
+
         ];
     }
 }

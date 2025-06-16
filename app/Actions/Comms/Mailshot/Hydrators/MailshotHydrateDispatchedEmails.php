@@ -40,11 +40,12 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
                 enum: DispatchedEmailStateEnum::class,
                 models: DispatchedEmail::class,
                 where: function ($q) use ($mailshot) {
-                    $q->where('mailshot_id', $mailshot->id);
+                    $q->where('parent_type', 'Mailshot')->where('parent_id', $mailshot->id);
                 }
             )
         );
 
         $mailshot->stats()->update($stats);
+        MailshotHydrateCumulativeDispatchedEmails::run($mailshot);
     }
 }

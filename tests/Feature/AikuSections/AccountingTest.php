@@ -953,31 +953,6 @@ test('UI show payment account in organisation payment service provider (stats ta
     });
 });
 
-// test('UI show payment account in organisation payment service provider (payments tab)', function () {
-//     $this->withoutExceptionHandling();
-//     $orgPaymentServiceProvider = $this->organisation->orgPaymentServiceProviders->first();
-//     $paymentAccount            = $orgPaymentServiceProvider->paymentAccounts->first();
-
-//     $response                  = get('http://app.aiku.test/org/'.$this->organisation->slug.'/accounting/providers/'.$orgPaymentServiceProvider->slug.'/accounts/'.$paymentAccount->slug.'?tab=payments');
-
-//     $response->assertInertia(function (AssertableInertia $page) use ($paymentAccount) {
-//         $page
-//             ->component('Org/Accounting/PaymentAccount')
-//             ->has('title')
-//             ->has('breadcrumbs', 4)
-//             ->has('pageHead')
-//             ->has(
-//                 'pageHead',
-//                 fn (AssertableInertia $page) => $page
-//                     ->where('title', $paymentAccount->name)
-//                     ->has('actions')
-//                     ->etc()
-//             )
-//             ->has('tabs');
-//     });
-// });
-//  THIS NO LONGER EXIST
-
 test('UI show payment account in organisation payment service provider (history tab)', function () {
     $orgPaymentServiceProvider = $this->organisation->orgPaymentServiceProviders->first();
     $paymentAccount            = $orgPaymentServiceProvider->paymentAccounts->first();

@@ -7,14 +7,11 @@
  */
 
 use App\Actions\CRM\Prospect\Mailshots\UI\IndexProspectMailshots;
-use App\Actions\CRM\Prospect\Tags\UI\IndexProspectTags;
 use App\Actions\CRM\Prospect\UI\CreateProspect;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\CRM\Prospect\UI\ShowProspect;
 
 Route::get('/', IndexProspects::class)->name('index');
 Route::get('/create', CreateProspect::class)->name('create');
-Route::get('/tags', [IndexProspectTags::class, 'inShop'])->name('tags.index');
 Route::get('/mailshots', [IndexProspectMailshots::class, 'inShop'])->name('mailshots.index');
-
 Route::get('/{prospect}', ShowProspect::class)->name('show');

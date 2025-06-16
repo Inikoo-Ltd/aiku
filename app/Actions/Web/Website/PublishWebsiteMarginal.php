@@ -29,12 +29,25 @@ class PublishWebsiteMarginal extends OrgAction
     public function handle(Website $website, string $marginal, array $modelData): Website
     {
         $this->marginal =  $marginal;
-
         $layout = Arr::get($modelData, 'layout', []);
         if ($marginal == 'header') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout;
         } elseif ($marginal == 'footer') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFooterSnapshot->layout;
+        } elseif ($marginal == 'menu') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+        } elseif ($marginal == 'department') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout;
+        } elseif ($marginal == 'sub_department') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSubDepartmentSnapshot->layout;
+        } elseif ($marginal == 'family') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilySnapshot->layout;
+        } elseif ($marginal == 'product') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductSnapshot->layout;
+        } elseif ($marginal == 'products') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductsSnapshot->layout;
+        } elseif ($marginal == 'collection') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedCollectionSnapshot->layout;
         }
 
         $firstCommit = true;
@@ -72,7 +85,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer'])) {
+        if (in_array($marginal, ['header', 'footer','menu', 'department', 'sub_department', 'family', 'product', 'products', 'collection'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,
@@ -117,10 +130,52 @@ class PublishWebsiteMarginal extends OrgAction
         $this->handle($website, 'header', $this->validatedData);
     }
 
+    public function menu(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'menu', $this->validatedData);
+    }
+
     public function footer(Website $website, ActionRequest $request): void
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'footer', $this->validatedData);
+    }
+
+    public function department(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'department', $this->validatedData);
+    }
+
+    public function subDepartment(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'sub_department', $this->validatedData);
+    }
+
+    public function family(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'family', $this->validatedData);
+    }
+
+    public function product(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'product', $this->validatedData);
+    }
+
+    public function products(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'products', $this->validatedData);
+    }
+
+    public function collection(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'collection', $this->validatedData);
     }
 
     public function theme(Website $website, ActionRequest $request): void
@@ -129,11 +184,7 @@ class PublishWebsiteMarginal extends OrgAction
         $this->handle($website, 'theme', $this->validatedData);
     }
 
-    public function menu(Website $website, ActionRequest $request): void
-    {
-        $this->initialisationFromShop($website->shop, $request);
-        $this->handle($website, 'menu', $this->validatedData);
-    }
+
 
     public function action(Website $website, $marginal, $modelData): string
     {

@@ -20,6 +20,7 @@ export default {
 					key: ["properties", "object_fit"],
 					label: "Object Image",
 					type: "select",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {
 						placeholder: "Object",
 						options: [
@@ -46,6 +47,7 @@ export default {
 					key: ["properties", "object_position"],
 					label: "Object Position",
 					type: "select",
+					useIn : ["desktop", "tablet", "mobile"],
 					props_data: {
 						placeholder: "Object",
 						options: [
@@ -112,6 +114,24 @@ export default {
 			],
 		},
 		{
+			name: "Block Properties",
+			key: ["container", "properties"],
+			replaceForm: [
+				{
+					key: ["block","dimension"],
+					label: "Dimension",
+					type: "dimension",
+					useIn : ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["block","border"],
+					label: "Border",
+					type: "border",
+					useIn : ["desktop", "tablet", "mobile"],
+				},
+			],
+		},
+		{
 			name: "Button",
 			key: ["button"],
 			editGlobalStyle : "button",
@@ -135,62 +155,67 @@ export default {
 					key: ["container", "properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["container", "properties", "text"],
 					type: "textProperty",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 
 				{
 					key: ["container", "properties", "margin"],
 					label: "Margin",
 					type: "margin",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["container", "properties", "padding"],
 					label: "Padding",
 					type: "padding",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["container", "properties", "border"],
 					label: "Border",
 					type: "border",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 			],
 		},
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
-				{
-					key: ["background"],
-					label: "Background",
-					type: "background",
-				},
 				{
 					key: ["padding"],
 					label: "Padding",
 					type: "padding",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["margin"],
 					label: "Margin",
 					type: "margin",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["border"],
 					label: "Border",
 					type: "border",
+					useIn : ["desktop", "tablet", "mobile"],
 				},
 				{
                     key: ["shadow"],
                     label : "Shadow",
                     type: "shadow",
+					useIn : ["desktop", "tablet", "mobile"],
                 },
                 {
                     key: ["shadowColor"],
                     label : "Shadow Color",
                     type: "color",
+					useIn : ["desktop", "tablet", "mobile"],
                 },
 			],
 		},

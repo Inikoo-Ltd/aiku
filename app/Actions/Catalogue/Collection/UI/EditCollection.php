@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Collection\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -31,6 +32,41 @@ class EditCollection extends OrgAction
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($collection, $request);
+    }
+
+    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($collection);
+    }
+
+    public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($collection);
+    }
+
+    public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($collection);
+    }
+
+    public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($collection);
+    }
+
+    public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($collection);
     }
 
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
@@ -72,7 +108,12 @@ class EditCollection extends OrgAction
                                     'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $collection->description
-                                ]
+                                ],
+                                "image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("Image"),
+                                    "value"   => $collection->imageSources(720, 480),
+                                ],
                             ]
                         ]
 

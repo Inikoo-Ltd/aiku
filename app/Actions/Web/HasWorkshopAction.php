@@ -15,11 +15,11 @@ trait HasWorkshopAction
         return
             [
                 $this->canEdit ? [
-                    'type'  => 'button',
-                    'style' => 'edit',
-                    'label' => __('settings'),
-                    'icon'  => ["fal", "fa-sliders-h"],
-                    'route' => [
+                    'type'    => 'button',
+                    'style'   => 'edit',
+                    'tooltip' => __('settings'),
+                    'icon'    => ["fal", "fa-sliders-h"],
+                    'route'   => [
                         'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                         'parameters' => array_values($request->route()->originalParameters())
                     ]

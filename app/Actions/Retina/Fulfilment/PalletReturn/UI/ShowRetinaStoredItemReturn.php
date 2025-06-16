@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
@@ -24,6 +25,7 @@ use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\PalletReturn;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,6 +33,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaStoredItemReturn extends RetinaAction
 {
+    /**
+     * @var \App\Models\Dropshipping\CustcustomerSalesChannelomerSalesChannel|null
+     */
+    private ?CustomerSalesChannel $customerSalesChannel;
+
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
         return $palletReturn;
@@ -47,12 +54,22 @@ class ShowRetinaStoredItemReturn extends RetinaAction
     }
 
 
-    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function inStorage(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->customerSalesChannel = $palletReturn->customerSaleChannel;
         $this->initialisation($request)->withTab(PalletReturnTabsEnum::values());
 
         return $this->handle($palletReturn);
     }
+
+    public function asController(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    {
+        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisation($request)->withTab(PalletReturnTabsEnum::values());
+
+        return $this->handle($palletReturn);
+    }
+
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
     {
@@ -66,19 +83,16 @@ class ShowRetinaStoredItemReturn extends RetinaAction
 
         $actions = GetRetinaPalletReturnActions::run($palletReturn);
 
+        $title = __('goods out');
 
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('goods out'),
+                'title'       => $title,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
-                    'previous' => ShowRetinaPalletReturn::make()->getPrevious($palletReturn, $request, true),
-                    'next'     => ShowRetinaPalletReturn::make()->getNext($palletReturn, $request, true),
-                ],
                 'pageHead'    => [
                     'title'      => $palletReturn->reference,
                     'icon'       => [
@@ -86,7 +100,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                         'title' => $palletReturn->reference
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'      => __('goods out'),
+                    'model'      => $title,
                     'actions'    => $actions
                 ],
 
@@ -138,13 +152,6 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'items_storage'   => $palletReturn->fulfilmentCustomer->items_storage,
                     'dropshipping'    => $palletReturn->fulfilmentCustomer->dropshipping,
                 ],
-                'routeStorePallet' => [
-                    'name'       => 'retina.models.pallet-return.pallet.store',
-                    'parameters' => [
-                        'palletReturn' => $palletReturn->id
-                    ]
-                ],
-
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'retina.models.pallet-return.attachment.attach',
@@ -204,8 +211,8 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                 'data' => PalletReturnResource::make($palletReturn),
 
                 PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?
-                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value)) //todo idk if this is right
-                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))), //todo idk if this is right
+                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))
+                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))),
 
                 PalletReturnTabsEnum::SERVICES->value => $this->tab == PalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, PalletReturnTabsEnum::SERVICES->value))
@@ -285,6 +292,23 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     ],
                     $suffix
                 )
+            ),
+            'retina.fulfilment.dropshipping.customer_sales_channels.basket.show' => array_merge(
+                IndexRetinaFulfilmentBaskets::make()->getBreadcrumbs($this->customerSalesChannel),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.basket.index',
+                                'parameters' => [
+                                    'customerSalesChannel' => $routeParameters['customerSalesChannel']
+                                ]
+                            ],
+                            'label' => $palletReturn->reference,
+                        ]
+                    ]
+                ]
             ),
 
             default => []

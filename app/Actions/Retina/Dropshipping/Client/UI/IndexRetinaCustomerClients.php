@@ -63,7 +63,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                                 'tooltip' => __('new client'),
                                 'label'   => __('client'),
                                 'route'   => [
-                                    'name' => 'retina.dropshipping.client.create',
+                                    'name' => 'retina.dropshipping.customer_clients.create',
                                 ]
                             ]
                         ],
@@ -112,7 +112,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                             'tooltip' => __('New Client'),
                             'label'   => __('New Client'),
                             'route'   => [
-                                'name' => 'retina.dropshipping.client.create',
+                                'name' => 'retina.dropshipping.customer_clients.create',
                             ]
                         ],
                     ],
@@ -134,7 +134,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.client.index',
+                                'name'       => 'retina.dropshipping.customer_clients.index',
                             ],
                             'label' => __('Clients'),
                         ]

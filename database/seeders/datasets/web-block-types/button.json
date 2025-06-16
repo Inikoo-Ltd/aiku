@@ -3,7 +3,9 @@
 	"code": "button",
 	"name": "Button",
 	"scope": "webpage",
+	"category": "element",
 	"icon": ["fal", "rectangle-wide"],
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"button": {
@@ -117,7 +119,7 @@
 							"unit": "%"
 						},
 						"width": {
-							"value": 100,
+							"value": null,
 							"unit": "%"
 						}
 					},

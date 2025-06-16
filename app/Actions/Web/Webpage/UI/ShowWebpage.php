@@ -11,7 +11,7 @@ namespace App\Actions\Web\Webpage\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\UI\WithInertia;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
@@ -20,6 +20,7 @@ use App\Actions\Web\Webpage\GetWebpageGoogleCloud;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -28,7 +29,6 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
 use App\Http\Resources\Web\RedirectsResource;
 use App\Http\Resources\Web\WebpageResource;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -47,17 +47,12 @@ class ShowWebpage extends OrgAction
     use AsAction;
     use WithInertia;
     use HasWorkshopAction;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithWebpageSubNavigation;
-
-
-    private Website $parent;
 
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
-        $this->scope  = $shop;
-        $this->parent = $website;
         $this->initialisationFromShop($shop, $request)->withTab(WebpageTabsEnum::values());
 
         return $webpage;
@@ -66,47 +61,239 @@ class ShowWebpage extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
-        $this->scope  = $fulfilment;
-        $this->parent = $website;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(WebpageTabsEnum::values());
 
         return $webpage;
     }
 
 
-    public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
+    public function getModelActions(Webpage $webpage): array
     {
-
-        $subNavigation = [];
-
-
-        if ($this->parent instanceof Website) {
-            $subNavigation = $this->getWebpageNavigation($this->parent);
+        $actions = [];
+        if ($webpage->model_type == 'ProductCategory') {
+            $actions = $this->getModelProductCategoryActions($webpage);
+        } elseif ($webpage->model_type == 'Product') {
+            $actions = $this->getModelProductActions($webpage);
+        } elseif ($webpage->model_type == 'Collection') {
+            $actions = $this->getModelCollectionActions($webpage);
         }
 
-        $actions = $this->workshopActions($request);
-        if ($webpage->sub_type == WebpageSubTypeEnum::BLOG) {
-            $actions = array_merge(
-                $actions,
-                [
-                    $this->canEdit ? [
-                        'type'  => 'button',
-                        'style' => 'create',
-                        'label' => __('new article'),
-                        'route' => [
-                            'name'       => 'org.websites.show.blog.article.create',
-                            'parameters' => [
-                                'website' => $webpage->website->slug,
-                            ]
-                        ]
-                    ] : []
+        return $actions;
+    }
+
+
+    public function createRedirectAction(Webpage $webpage): array
+    {
+        $actions = [];
+
+        if ($this->canEdit) {
+            if ($webpage->shop->type == ShopTypeEnum::FULFILMENT) {
+                $redirectRoute = [
+                    'name'       => 'grp.org.fulfilments.show.web.webpages.redirect.create',
+                    'parameters' => [
+                        'organisation' => $webpage->organisation->slug,
+                        'fulfilment'   => $webpage->shop->fulfilment->slug,
+                        'website'      => $webpage->website->slug,
+                        'webpage'      => $webpage->slug
+                    ]
+                ];
+            } else {
+                $redirectRoute = [
+                    'name'       => 'grp.org.shops.show.web.webpages.redirect.create',
+                    'parameters' => [
+                        'organisation' => $webpage->organisation->slug,
+                        'shop'         => $webpage->shop->slug,
+                        'website'      => $webpage->website->slug,
+                        'webpage'      => $webpage->slug
+                    ]
+                ];
+            }
+
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'edit',
+                'icon'    => ["fal", "fa-directions"],
+                'tooltip' => __('New Redirect'),
+                'route'   => $redirectRoute
+            ];
+        }
+
+
+        return $actions;
+    }
+
+
+    public function getModelCollectionActions(Webpage $webpage): array
+    {
+        $actions = [];
+
+        /** @var \App\Models\Catalogue\Collection $collection */
+        $collection = $webpage->model;
+
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'edit',
+            'tooltip' => __('Collection'),
+            'icon'    => ["fal", "fa-album-collection"],
+            'route'   => [
+                'name'       => 'grp.org.shops.show.catalogue.collections.show',
+                'parameters' => [
+                    'organisation' => $webpage->organisation->slug,
+                    'shop'         => $webpage->shop->slug,
+                    'collection'   => $collection->slug
                 ]
-            );
-        } elseif ($webpage->type == WebpageTypeEnum::STOREFRONT) {
-            $mainWebpageAction = $this->canEdit ? [
+            ]
+        ];
+
+
+        return $actions;
+    }
+
+    public function getModelProductActions(Webpage $webpage): array
+    {
+        $actions = [];
+
+        /** @var Product $product */
+        $product = $webpage->model;
+
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'edit',
+            'tooltip' => __('Product'),
+            'icon'    => ["fal", "fa-cube"],
+            'route'   => [
+                'name'       => 'grp.org.shops.show.catalogue.products.show',
+                'parameters' => [
+                    'organisation' => $webpage->organisation->slug,
+                    'shop'         => $webpage->shop->slug,
+                    'department'   => $product->slug
+                ]
+            ]
+        ];
+
+
+        return $actions;
+    }
+
+    public function getModelProductCategoryActions(Webpage $webpage): array
+    {
+        $actions = [];
+
+        /** @var ProductCategory $productCategory */
+        $productCategory = $webpage->model;
+
+        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'edit',
+                'tooltip' => __('Department'),
+                'icon'    => ["fal", "fa-folder-tree"],
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                    'parameters' => [
+                        'organisation' => $webpage->organisation->slug,
+                        'shop'         => $webpage->shop->slug,
+                        'department'   => $productCategory->slug
+                    ]
+                ]
+            ];
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'edit',
+                'tooltip' => __('Sub Department'),
+                'icon'    => ["fal", "fa-folder-tree"],
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                    'parameters' => [
+                        'organisation'  => $webpage->organisation->slug,
+                        'shop'          => $webpage->shop->slug,
+                        'department'    => $productCategory->department->slug,
+                        'subDepartment' => $productCategory->slug
+                    ]
+                ]
+            ];
+        } else {
+            $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
-                'label' => __('Main webpage'),
+                'icon'  => ["fal", "fa-folder"],
+                'route' => [
+                    'name'       => 'grp.org.shops.show.catalogue.families.show',
+                    'parameters' => [
+                        'organisation' => $webpage->organisation->slug,
+                        'shop'         => $webpage->shop->slug,
+                        'family'       => $productCategory->slug
+                    ]
+                ]
+            ];
+        }
+
+
+        if ($this->canEdit) {
+            if ($webpage->shop->type == ShopTypeEnum::FULFILMENT) {
+                $workshopRoute = [
+                    'name'       => 'grp.org.fulfilments.show.web.webpages.show.blueprint.show',
+                    'parameters' => [
+                        'organisation' => $webpage->organisation->slug,
+                        'fulfilment'   => $webpage->shop?->fulfilment->slug,
+                        'website'      => $webpage->website->slug,
+                        'webpage'      => $webpage->slug
+                    ]
+                ];
+            } else {
+                $workshopRoute = [
+                    'name'       => 'grp.org.shops.show.web.webpages.show.blueprint.show',
+                    'parameters' => [
+                        'organisation' => $webpage->organisation->slug,
+                        'shop'         => $webpage->shop->slug,
+                        'website'      => $webpage->website->slug,
+                        'webpage'      => $webpage->slug
+                    ]
+                ];
+            }
+
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'edit',
+                'icon'    => ["fal", "fa-object-group"],
+                'tooltip' => __('blueprint'),
+                'route'   => $workshopRoute
+            ];
+        }
+
+
+        return $actions;
+    }
+
+    public function getTypeSpecificActions(Webpage $webpage): array
+    {
+        $actions = [];
+
+        if (!$this->canEdit) {
+            return $actions;
+        }
+
+
+        if ($webpage->sub_type == WebpageSubTypeEnum::BLOG) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('new article'),
+                'route' => [
+                    'name'       => 'org.websites.show.blog.article.create',
+                    'parameters' => [
+                        'website' => $webpage->website->slug,
+                    ]
+                ]
+            ];
+        } elseif (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::CONTENT])) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('new webpage'),
                 'route' => [
                     'name'       => 'org.websites.show.webpages.show.webpages.create',
                     'parameters' => [
@@ -114,187 +301,26 @@ class ShowWebpage extends OrgAction
                         'webpage' => $webpage->slug
                     ]
                 ]
-            ] : [];
-
-            if (!empty($mainWebpageAction)) {
-                array_splice($actions, 1, 0, [$mainWebpageAction]);
-            }
-        } elseif ($webpage->model instanceof ProductCategory) {
-
-            $actions = array_merge(
-                $actions,
-                [
-                    $this->canEdit ? [
-                        'type'  => 'button',
-                        'style' => 'secondary',
-                        'label' => __('blueprint'),
-                        'route' => $webpage->shop?->fulfilment ? [
-                            'name'       => 'grp.org.fulfilments.show.web.webpages.show.blueprint.show',
-                            'parameters' => [
-                                'organisation' => $webpage->organisation->slug,
-                                'fulfilment'   => $webpage->shop?->fulfilment->slug,
-                                'website'      => $webpage->website->slug,
-                                'webpage'      => $webpage->slug
-                            ]
-                        ] : [
-                            'name'       => 'grp.org.shops.show.web.webpages.show.blueprint.show',
-                            'parameters' => [
-                                'organisation' => $webpage->organisation->slug,
-                                'shop'         => $webpage->shop->slug,
-                                'website'      => $webpage->website->slug,
-                                'webpage'      => $webpage->slug
-                            ]
-                        ]
-                    ] : []
-                ]
-            );
-
-        } elseif (in_array(
-            $webpage->type,
-            [
-                WebpageTypeEnum::CATALOGUE,
-                WebpageTypeEnum::CONTENT
-            ]
-        )) {
-            $actions = array_merge(
-                $actions,
-                [
-                    ($this->canEdit and in_array($webpage->type, [WebpageTypeEnum::STOREFRONT,WebpageTypeEnum::CONTENT])) ? [
-                        'type'  => 'button',
-                        'style' => 'create',
-                        'label' => __('child webpage'),
-                        'route' => [
-                            'name'       => 'org.websites.show.webpages.show.webpages.create',
-                            'parameters' => [
-                                'website' => $webpage->website->slug,
-                                'webpage' => $webpage->slug
-                            ]
-                        ]
-                    ] : [],
-
-                    // Check the model type
-                    $webpage->model ? (
-                        $webpage->model instanceof Collection ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Collection'),
-                            'tooltip' => __('To Collection'),
-                            'icon'  => ["fal", "fa-album-collection"],
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.collections.show',
-                                'parameters' => [
-                                    'organisation' => $webpage->organisation->slug,
-                                    'shop' => $webpage->shop->slug,
-                                    'collection' => $webpage->model->slug
-                                ]
-                            ]
-                        ] : (
-                            $webpage->model instanceof Product ? [
-                                'type'  => 'button',
-                                'style' => 'create',
-                                'label' => __('Product'),
-                                'tooltip' => __('To Product'),
-                                'icon'  => ["fal", "fa-cube"],
-                                'route' => [
-                                    'name'       => 'grp.org.shops.show.catalogue.products.all_products.show',
-                                    'parameters' => [
-                                        'organisation' => $webpage->organisation->slug,
-                                        'shop' => $webpage->shop->slug,
-                                        'product' => $webpage->model->slug
-                                    ]
-                                ]
-                            ] : (
-                                $webpage->model instanceof ProductCategory ? (
-                                    $webpage->model->type == ProductCategoryTypeEnum::DEPARTMENT ? [
-                                        'type'  => 'button',
-                                        'style' => 'create',
-                                        'label' => __('Department'),
-                                        'tooltip' => __('To Department'),
-                                        'icon'  => ["fal", "fa-folder-tree"],
-                                        'route' => [
-                                            'name'       => 'grp.org.shops.show.catalogue.departments.show',
-                                            'parameters' => [
-                                                'organisation' => $webpage->organisation->slug,
-                                                'shop' => $webpage->shop->slug,
-                                                'department' => $webpage->model->slug
-                                            ]
-                                        ]
-                                    ] : (
-                                        $webpage->model->type == ProductCategoryTypeEnum::FAMILY ? [
-                                            'type'  => 'button',
-                                            'style' => 'create',
-                                            'label' => __('Family'),
-                                            'tooltip' => __('To Family'),
-                                            'icon'  => ["fal", "fa-folder"],
-                                            'route' => [
-                                                'name'       => 'grp.org.shops.show.catalogue.families.show',
-                                                'parameters' => [
-                                                    'organisation' => $webpage->organisation->slug,
-                                                    'shop' => $webpage->shop->slug,
-                                                    'family' => $webpage->model->slug
-                                                ]
-                                            ]
-                                        ] : []
-                                    )
-                                ) : []
-                            )
-                        )
-                    ) : [],
-                ]
-            );
+            ];
         }
 
+        return $actions;
+    }
+
+    public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
+    {
+        $subNavigation = $this->getWebpageNavigation($webpage->website);
 
 
-        if ($this->scope instanceof Fulfilment) {
-            $subNavigationRoot = 'grp.org.fulfilments.show.web.webpages';
-        } else {
-            $subNavigationRoot = 'grp.org.shops.show.web.webpages';
-        }
-        $subNavigationRoot .= '';
+        $actions = $this->getModelActions($webpage);
 
-        //todo remove next line this one after fix
+
+        $actions = array_merge($actions, $this->createRedirectAction($webpage));
+        $actions = array_merge($actions, $this->workshopActions($request));
+        $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
+
+
         $subNavigationRoot = '';
-
-        //        if($webpage->type == WebpageTypeEnum::STOREFRONT) {
-        //            $subNavigationRoot='grp.org.shops.show.web.webpages.index.type.catalogue';
-        //        } else {
-        //            $subNavigationRoot='grp.org.shops.show.web.webpages.index.type.operations';
-        //        }
-        //
-
-        $actions = array_merge(
-            $actions,
-            [
-                $this->scope instanceof Fulfilment ? [
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('New Redirect'),
-                    'route' => [
-                        'name'       => 'grp.org.fulfilments.show.web.webpages.redirect.create',
-                        'parameters' => [
-                            'organisation' => $webpage->organisation->slug,
-                            'fulfilment'   => $this->scope->slug,
-                            'website'      => $webpage->website->slug,
-                            'webpage'      => $webpage->slug
-                        ]
-                    ]
-                ] : [
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('New Redirect'),
-                    'route' => [
-                        'name'       => 'grp.org.shops.show.web.webpages.redirect.create',
-                        'parameters' => [
-                            'organisation' => $webpage->organisation->slug,
-                            'shop'   => $this->scope->slug,
-                            'website'      => $webpage->website->slug,
-                            'webpage'      => $webpage->slug
-                        ]
-                    ]
-                ]
-            ]
-        );
 
         return Inertia::render(
             'Org/Web/Webpage',
@@ -305,23 +331,23 @@ class ShowWebpage extends OrgAction
                 ),
                 'title'       => __('webpage'),
                 'pageHead'    => [
-                    'title'   => $webpage->code,
-                    'afterTitle'   => [
-                        'label'     => '../' . $webpage->url,
+                    'title'         => $webpage->code,
+                    'afterTitle'    => [
+                        'label' => '../'.$webpage->url,
                     ],
-                    'icon'    => [
+                    'icon'          => [
                         'title' => __('webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
-                    'actions' => $actions,
+                    'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
 
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => WebpageTabsEnum::navigation()
                 ],
-                'root_active'   => $subNavigationRoot,
+                'root_active' => $subNavigationRoot,
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
@@ -335,7 +361,7 @@ class ShowWebpage extends OrgAction
                     fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))
                     : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))),
 
-                WebpageTabsEnum::WEBPAGES->value => $this->tab == WebpageTabsEnum::WEBPAGES->value
+                WebpageTabsEnum::WEBPAGES->value  => $this->tab == WebpageTabsEnum::WEBPAGES->value
                     ?
                     fn () => WebpageResource::collection(
                         IndexWebpages::run(
@@ -350,8 +376,8 @@ class ShowWebpage extends OrgAction
                         )
                     )),
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
-                fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                : Inertia::lazy(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
+                    fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
+                    : Inertia::lazy(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($webpage))
@@ -378,11 +404,11 @@ class ShowWebpage extends OrgAction
                 prefix: WebpageTabsEnum::REDIRECTS->value
             )
         )
-        ->table(
-            IndexHistory::make()->tableStructure(
-                prefix: WebpageTabsEnum::CHANGELOG->value
-            )
-        );
+            ->table(
+                IndexHistory::make()->tableStructure(
+                    prefix: WebpageTabsEnum::CHANGELOG->value
+                )
+            );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

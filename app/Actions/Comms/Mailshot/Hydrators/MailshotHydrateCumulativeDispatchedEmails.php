@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Mailshot\Hydrators;
 
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\Mailshot;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -27,52 +26,42 @@ class MailshotHydrateCumulativeDispatchedEmails implements ShouldBeUnique
     }
 
 
-    public function handle(Mailshot $mailshot, DispatchedEmailStateEnum $state): void
+    public function handle(Mailshot $mailshot): void
     {
-        if ($state == DispatchedEmailStateEnum::READY) {
-            MailshotHydrateDispatchedEmails::run($mailshot);
+        $mailshotStats = $mailshot->stats;
 
-            return;
-        }
+        $stats['number_try_send_failure'] = $mailshotStats->number_dispatched_emails_state_error +
+            $mailshotStats->number_dispatched_emails_state_rejected_by_provider +
+            $mailshotStats->number_dispatched_emails_state_rejected_by_provider;
+        $stats['number_try_send_success'] = $mailshotStats->number_dispatched_emails_state_delivered +
+            $mailshotStats->number_dispatched_emails_state_hard_bounce +
+            $mailshotStats->number_dispatched_emails_state_soft_bounce +
+            $mailshotStats->number_dispatched_emails_state_opened +
+            $mailshotStats->number_dispatched_emails_state_clicked +
+            $mailshotStats->number_dispatched_emails_state_spam +
+            $mailshotStats->number_dispatched_emails_state_unsubscribed;
 
-        /** @noinspection PhpUncoveredEnumCasesInspection */
-        $count = DB::table('dispatched_emails')
-            ->where('mailshot_id', $mailshot->id)->where('is_test', false)
-            ->where(
-                match ($state) {
-                    DispatchedEmailStateEnum::ERROR => 'is_error',
-                    DispatchedEmailStateEnum::REJECTED_BY_PROVIDER => 'is_rejected',
-                    DispatchedEmailStateEnum::SENT => 'is_sent',
-                    DispatchedEmailStateEnum::DELIVERED => 'is_delivered',
-                    DispatchedEmailStateEnum::HARD_BOUNCE => 'is_hard_bounced',
-                    DispatchedEmailStateEnum::SOFT_BOUNCE => 'is_soft_bounced',
-                    DispatchedEmailStateEnum::OPENED => 'is_opened',
-                    DispatchedEmailStateEnum::CLICKED => 'is_clicked',
-                    DispatchedEmailStateEnum::SPAM => 'is_spam',
-                    DispatchedEmailStateEnum::UNSUBSCRIBED => 'is_unsubscribed',
-                },
-                true
-            )->count();
+        $stats['number_try_send_total'] = $stats['number_try_send_failure'] + $stats['number_try_send_success'];
+        $stats['number_deliveries_failure'] = $mailshotStats->number_dispatched_emails_state_hard_bounce +
+            $mailshotStats->number_dispatched_emails_state_soft_bounce ;
+        $stats['number_deliveries_success'] = $stats['number_try_send_success'] - $stats['number_deliveries_failure'];
 
+        $baseQuery = DB::table('dispatched_emails')
+            ->where('parent_type', 'Mailshot')
+            ->where('parent_id', $mailshot->id);
 
-        /** @noinspection PhpUncoveredEnumCasesInspection */
-        $mailshot->stats()->update(
-            [
-                match ($state) {
-                    DispatchedEmailStateEnum::ERROR => 'number_error_emails',
-                    DispatchedEmailStateEnum::REJECTED_BY_PROVIDER => 'number_rejected_emails',
-                    DispatchedEmailStateEnum::SENT => 'number_sent_emails',
-                    DispatchedEmailStateEnum::DELIVERED => 'number_delivered_emails',
-                    DispatchedEmailStateEnum::HARD_BOUNCE => 'number_hard_bounced_emails',
-                    DispatchedEmailStateEnum::SOFT_BOUNCE => 'number_soft_bounced_emails',
-                    DispatchedEmailStateEnum::OPENED => 'number_opened_emails',
-                    DispatchedEmailStateEnum::CLICKED => 'number_clicked_emails',
-                    DispatchedEmailStateEnum::SPAM => 'number_spam_emails',
-                    DispatchedEmailStateEnum::UNSUBSCRIBED => 'number_unsubscribed_emails',
-                }
+        $openedDispatchedEmails = $baseQuery
+            ->where('number_reads', '>', 0)->count();
 
-                => $count
-            ]
-        );
+        $stats['number_delivered_open_success'] = $openedDispatchedEmails;
+        $stats['number_delivered_open_failure'] = $stats['number_deliveries_success'] - $openedDispatchedEmails;
+
+        $interactDispatchedEmails = $baseQuery
+            ->where('number_clicks', '>', 0)->count();
+
+        $stats['number_opened_interact_success'] = $interactDispatchedEmails;
+        $stats['number_opened_interact_failure'] = $stats['number_delivered_open_success'] - $interactDispatchedEmails;
+
+        $mailshot->stats->update($stats);
     }
 }

@@ -16,12 +16,10 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
-use App\Models\ShopifyUserHasProduct;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -38,66 +36,78 @@ class StoreOrderFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $customer        = Arr::get($modelData, 'customer');
-        $deliveryAddress = Arr::get($modelData, 'customer.default_address');
-        $customerClient  = $shopifyUser->customer?->clients()->where('email', Arr::get($customer, 'email'))->first();
+        $customer = Arr::get($modelData, 'customer');
+        $deliveryAddress = Arr::get($modelData, 'shipping_address');
+        $billingAddress = Arr::get($modelData, 'billing_address');
+        $customerClient = $shopifyUser->customer?->clients()->where('email', Arr::get($customer, 'email'))->first();
 
         $shopifyProducts = collect($modelData['line_items']);
 
-        $attributes      = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
-        $deliveryAddress = Arr::get($attributes, 'address');
+        $attributes = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
+        $billingAddressAttribute = $this->getAttributes(Arr::get($modelData, 'customer'), $billingAddress);
 
-        $order = StoreOrder::make()->action($shopifyUser->customer, [
-            'platform_id' => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id,
-            'date'             => $modelData['created_at'],
-            'delivery_address' => new Address($deliveryAddress),
-            'billing_address'  => new Address($deliveryAddress)
-        ]);
+        $deliveryAddress = Arr::get($attributes, 'address');
+        $billingAddress = Arr::get($billingAddressAttribute, 'address');
 
         if (!$customerClient) {
-            data_set($attributes, 'platform_id', Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id);
-            $customerClient = StoreCustomerClient::make()->action($shopifyUser->customer, $attributes);
+            $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
         }
 
-        foreach ($shopifyProducts as $shopifyProduct) {
-            /** @var ShopifyUserHasProduct $shopifyUserHasProduct */
-            $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_product_id', $shopifyProduct['product_id'])->first();
+        $shopifyUserHasProductExists = $shopifyUser->customerSalesChannel->portfolios()
+            ->whereIn('platform_product_id', $shopifyProducts->pluck('product_id'))->exists();
 
-            if ($shopifyUserHasProduct) {
-                /** @var \App\Models\Catalogue\Product $product */
-                $product = $shopifyUserHasProduct->product;
-                if (!$product) {
-                    \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a product');
-                    continue;
+        if ($shopifyUserHasProductExists) {
+            $order = StoreOrder::make()->action($shopifyUser->customer, [
+                'customer_client_id' => $customerClient->id,
+                'platform_id' => $shopifyUser->platform_id,
+                'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
+                'date' => $modelData['created_at'],
+                'delivery_address' => new Address($deliveryAddress),
+                'billing_address' => new Address($billingAddress),
+                'data' => $modelData
+            ], false);
+
+            foreach ($shopifyProducts as $shopifyProduct) {
+                /** @var Portfolio $shopifyUserHasProduct */
+                $shopifyUserHasProduct = $shopifyUser->customerSalesChannel->portfolios()
+                    ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+
+                if ($shopifyUserHasProduct) {
+                    /** @var \App\Models\Catalogue\Product $product */
+                    $product = $shopifyUserHasProduct->item;
+                    if (!$product) {
+                        \Sentry\captureMessage('ShopifyUserHasProduct ' . $shopifyUserHasProduct->id . ' does not have a product');
+                        continue;
+                    }
+
+                    /** @var \App\Models\Catalogue\HistoricAsset $product */
+                    $historicAsset = $product->asset?->historicAsset;
+                    if (!$historicAsset) {
+                        \Sentry\captureMessage('ShopifyUserHasProduct ' . $shopifyUserHasProduct->id . ' does not have a historic asset');
+                        continue;
+                    }
+
+                    StoreTransaction::make()->action(
+                        order: $order,
+                        historicAsset: $historicAsset,
+                        modelData: [
+                            'quantity_ordered' => $shopifyProduct['quantity'],
+                        ]
+                    );
                 }
-
-                /** @var \App\Models\Catalogue\HistoricAsset $product */
-                $historicAsset = $product->asset?->historicAsset;
-                if (!$historicAsset) {
-                    \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a historic asset');
-                    continue;
-                }
-
-                StoreTransaction::make()->action(
-                    order: $order,
-                    historicAsset: $historicAsset,
-                    modelData: [
-                        'quantity_ordered' => $shopifyProduct['quantity'],
-                    ]
-                );
             }
+
+            $shopifyUser->orders()->attach($order->id, [
+                'shopify_user_id' => $shopifyUser->id,
+                'model_type' => class_basename(Order::class),
+                'model_id' => $order->id,
+                'shopify_order_id' => Arr::get($modelData, 'order_id'),
+                'shopify_fulfilment_id' => Arr::get($modelData, 'id'),
+                'state' => ChannelFulfilmentStateEnum::OPEN,
+                'customer_client_id' => $customerClient->id
+            ]);
+
+            SubmitOrder::run($order);
         }
-
-        $shopifyUser->orders()->attach($order->id, [
-            'shopify_user_id'       => $shopifyUser->id,
-            'model_type'            => class_basename(Order::class),
-            'model_id'              => $order->id,
-            'shopify_order_id'      => Arr::get($modelData, 'order_id'),
-            'shopify_fulfilment_id' => Arr::get($modelData, 'id'),
-            'state'                 => ChannelFulfilmentStateEnum::OPEN,
-            'customer_client_id'    => $customerClient->id
-        ]);
-
-        SubmitOrder::run($order);
     }
 }

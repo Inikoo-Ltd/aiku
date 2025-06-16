@@ -56,4 +56,32 @@ trait WithSetAutoServices
         return $model;
     }
 
+    public function processStoredItemAutoServices(PalletReturn $model, $autoServices, $totalStoredItems, $debug = false): PalletReturn
+    {
+
+        /** @var Service $service */
+        foreach ($autoServices as $service) {
+            /** @var FulfilmentTransaction $transaction */
+            $transaction = $model->transactions()->where('asset_id', $service->asset_id)->first();
+
+            if ($transaction and $totalStoredItems == 0) {
+                DeleteFulfilmentTransaction::make()->action($transaction);
+            } elseif ($totalStoredItems > 0 and $transaction) {
+                UpdateFulfilmentTransaction::make()->action($transaction, ['quantity' => $totalStoredItems]);
+            } elseif ($totalStoredItems > 0) {
+                $asset = Asset::find($service->asset_id);
+                StoreFulfilmentTransaction::make()->action(
+                    $model,
+                    [
+                        'is_auto_assign'    => true,
+                        'historic_asset_id' => $asset->current_historic_asset_id,
+                        'quantity'          => $totalStoredItems
+                    ]
+                );
+            }
+        }
+
+        return $model;
+    }
+
 }

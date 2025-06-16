@@ -7,23 +7,40 @@
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue'
 import { RouteParams } from "@/types/route-params";
+import { Link } from '@inertiajs/vue3'
 
 defineProps<{
     data: object,
     tab?: string
 }>()
 
+function masterSubDepartmentRoute(subDepartment: {}) {
+    switch (route().current()) {
+        case 'grp.masters.departments.sub_departments.index':
+            return route(
+                'grp.masters.departments.sub_departments.show',
+                [
+                    (route().params as RouteParams).masterDepartment,
+                    subDepartment.slug
+                ]);
+        default:
+            return route(
+                'grp.masters.shops.show.sub-departments.show',
+                [
+                    (route().params as RouteParams).masterShop,
+                    (route().params as RouteParams).masterDepartment,
+                    subDepartment.slug
+                ]
+        );
+    }
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: subDepartment }">
-            <Link :href="route('grp.masters.shops.show.sub-departments.show',
-            {
-              masterShop:(route().params as RouteParams).masterShop,
-              masterDepartment: (route().params as RouteParams).masterDepartment,
-              masterSubDepartment: subDepartment.slug
-            })" class="primaryLink">
+            <Link v-if="masterSubDepartmentRoute(subDepartment)" :href="masterSubDepartmentRoute(subDepartment)" class="primaryLink">
                 {{ subDepartment["code"] }}
             </Link>
         </template>

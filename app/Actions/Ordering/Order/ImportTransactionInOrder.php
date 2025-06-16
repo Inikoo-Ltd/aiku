@@ -16,6 +16,7 @@ use App\Imports\Ordering\TransactionImport;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Upload;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -61,13 +62,24 @@ class ImportTransactionInOrder extends OrgAction
         ];
     }
 
-
     public function asController(Order $order, ActionRequest $request): Upload
     {
         $this->parent = $order->shop;
         $this->initialisationFromShop($order->shop, $request);
 
         $file = $request->file('file');
+        Storage::disk('local')->put($this->tmpPath, $file);
+
+        return $this->handle($order, $file, $this->validatedData);
+    }
+
+    public function action(Order $order, array $modelData): Upload
+    {
+        $this->parent = $order->shop;
+        $this->initialisationFromShop($order->shop, $modelData);
+
+
+        $file = Arr::get($modelData, 'file');
         Storage::disk('local')->put($this->tmpPath, $file);
 
         return $this->handle($order, $file, $this->validatedData);

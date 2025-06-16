@@ -1,0 +1,20 @@
+{
+	"slug": "product-1",
+	"scope": "webpage",
+	"code": "product-1",
+	"name": "Product showcase A",
+	"icon": ["fal", "cube"],
+	"category": "product",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"setting" : {
+				"faqs" : true,
+				"product_specs" : true,
+				"customer_review" : true,
+				"payments_and_policy" : true
+			}
+		}
+	}
+}

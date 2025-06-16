@@ -19,6 +19,7 @@ export default {
 				{
 					key: ["properties", "object_fit"],
 					label: "Object Image",
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "select",
 					props_data: {
 						placeholder: "Object",
@@ -45,6 +46,7 @@ export default {
 				{
 					key: ["properties", "object_position"],
 					label: "Object Position",
+					useIn : ["desktop", "tablet", "mobile"],
 					type: "select",
 					props_data: {
 						placeholder: "Object",
@@ -112,29 +114,33 @@ export default {
 			],
 		},
 		{
-			name: "Properties",
+			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
 				{
 					key: ["dimension"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label: "Dimension",
 					type: "dimension",
 					props_data: {},
 				},
 				{
 					key: ["padding"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label: "Padding",
 					type: "padding",
 					props_data: {},
 				},
 				{
 					key: ["margin"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label: "Margin",
 					type: "margin",
 					props_data: {},
 				},
 				{
 					key: ["border"],
+					useIn : ["desktop", "tablet", "mobile"],
 					label: "Border",
 					type: "border",
 					props_data: {},
@@ -142,11 +148,13 @@ export default {
 				{
                     key: ["shadow"],
                     label : "Shadow",
+					useIn : ["desktop", "tablet", "mobile"],
                     type: "shadow",
                 },
                 {
                     key: ["shadowColor"],
                     label : "Shadow Color",
+					useIn : ["desktop", "tablet", "mobile"],
                     type: "color",
                 },
 			],

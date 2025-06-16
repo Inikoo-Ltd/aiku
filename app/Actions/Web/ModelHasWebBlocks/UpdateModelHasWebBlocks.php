@@ -9,11 +9,9 @@
 namespace App\Actions\Web\ModelHasWebBlocks;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
-use App\Events\BroadcastPreviewHeaderFooter;
-use App\Events\BroadcastPreviewWebpage;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use Illuminate\Support\Arr;
@@ -21,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateModelHasWebBlocks extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
 
 
@@ -32,8 +30,6 @@ class UpdateModelHasWebBlocks extends OrgAction
         $modelHasWebBlocks->refresh();
         UpdateWebpageContent::run($modelHasWebBlocks->webpage);
 
-        /* BroadcastPreviewWebpage::dispatch($modelHasWebBlocks->webpage);
-        BroadcastPreviewHeaderFooter::dispatch($modelHasWebBlocks->website); */
 
         return $modelHasWebBlocks;
 
@@ -41,7 +37,8 @@ class UpdateModelHasWebBlocks extends OrgAction
 
     public function asController(ModelHasWebBlocks $modelHasWebBlocks, ActionRequest $request): ModelHasWebBlocks
     {
-        return $this->handle($modelHasWebBlocks, $request->all());
+        $this->initialisationFromShop($modelHasWebBlocks->shop, $request);
+        return $this->handle($modelHasWebBlocks, $this->validatedData);
     }
 
     public function rules(): array

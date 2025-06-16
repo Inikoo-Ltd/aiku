@@ -11,7 +11,7 @@ namespace App\Actions\SysAdmin\Guest;
 use App\Actions\GrpAction;
 use App\Actions\HumanResources\JobPosition\SyncUserJobPositions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
-use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateUniversalSearch;
+use App\Actions\SysAdmin\Guest\Search\GuestReindexSearch;
 use App\Actions\SysAdmin\User\StoreUser;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
@@ -68,7 +68,7 @@ class StoreGuest extends GrpAction
             return $guest;
         });
 
-        GuestHydrateUniversalSearch::dispatch($guest);
+        GuestReindexSearch::dispatch($guest);
         GroupHydrateGuests::dispatch($group);
 
         return $guest;
@@ -85,6 +85,16 @@ class StoreGuest extends GrpAction
 
     public function prepareForValidation(): void
     {
+
+        if ($this->has('username')) {
+            $this->set('user.username', $this->get('username'));
+        }
+
+        if ($this->has('password')) {
+            $this->set('user.password', $this->get('password'));
+        }
+
+
         if (!$this->has('code')) {
             $this->set('code', $this->get('user.username'));
         }
@@ -205,6 +215,7 @@ class StoreGuest extends GrpAction
      */
     public function asController(ActionRequest $request): Guest
     {
+
         $this->initialisation(app('group'), $request);
 
         return $this->handle($this->group, $this->validatedData);
@@ -269,7 +280,7 @@ class StoreGuest extends GrpAction
 
         try {
             $guest = $this->handle($group, $this->validateAttributes());
-        } catch (Exception|Throwable $e) {
+        } catch (Throwable $e) {
             $command->error($e->getMessage());
 
             return 1;

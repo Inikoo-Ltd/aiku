@@ -12,7 +12,7 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\ShopifyUserHasFulfilment;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;

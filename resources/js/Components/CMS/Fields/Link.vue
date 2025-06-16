@@ -4,7 +4,7 @@ import { trans } from "laravel-vue-i18n"
 import RadioButton from "primevue/radiobutton"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import SelectQuery from "@/Components/SelectQuery.vue"
-import { set } from "lodash"
+import { set } from 'lodash-es'
 
 const props = withDefaults(defineProps<{
 	modelValue?: {
@@ -34,7 +34,7 @@ const localModel = computed({
 	get: () => {
 		return props.modelValue ?? (props.defaultValue 
 			? { ...props.defaultValue, data: props.defaultValue } 
-			: { type: 'external', href: null, workshop: null, id: null, target: "_self", url: null, data: {} })
+			: { type: 'internal', href: null, workshop: null, id: null, target: "_self", url: null, data: {} })
 	},
 	set: (newValue) => {
 		emit('update:modelValue', newValue) // 🔥 Emit perubahan ke modelValue
@@ -139,7 +139,10 @@ function getRoute() {
 				fieldName="data" 
 				:value="localModel"
 				:closeOnSelect="true" 
+				:searchable="true"
 				label="href" 
+				:canClear="true"
+				:clearOnSearch="true"
 				:onChange="(e) => { 
 					set(localModel, 'url', e?.url)
 					set(localModel, 'href', e?.href)

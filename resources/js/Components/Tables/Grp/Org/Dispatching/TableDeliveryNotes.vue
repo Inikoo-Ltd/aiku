@@ -5,16 +5,20 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { DeliveryNote } from "@/types/delivery-note"
-import { Tab } from "@headlessui/vue"
+import { DialogTitle, Tab } from "@headlessui/vue"
 import type { Table as TableTS } from "@/types/Table"
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useFormatTime } from '@/Composables/useFormatTime'
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale";
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from "laravel-vue-i18n"
+import Modal from "@/Components/Utils/Modal.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 const props = defineProps<{
     data: TableTS,
@@ -91,6 +95,41 @@ function customerRoute(deliveryNote: DeliveryNote) {
     }
 }
 
+const isModalPick = ref(null)
+const isLoadingPick = ref(false)
+const isErrorPicker = ref<string | null>(null)
+const onClickPick = () => {
+    if (!isModalPick.value?.employee_pick_route?.name) {
+        console.error("No route name found for employee pick")
+        return
+    }
+
+    router.patch(
+        route(isModalPick.value.employee_pick_route.name, isModalPick.value.employee_pick_route.parameters),
+        {
+
+        }, 
+        {
+            onStart: () => {
+                isLoadingPick.value = true
+            },
+            onError: (errors) => {
+                isErrorPicker.value = errors.messages
+                notify({
+                    title: trans("Something went wrong"),
+                    text: isErrorPicker.value,
+                    type: "error",
+                })
+            },
+            onSuccess: () => {
+                isModalPick.value = null
+            },
+            onFinish: () => {
+                isLoadingPick.value = false
+            }
+        }
+    )
+}
 </script>
 
 <template>
@@ -118,5 +157,56 @@ function customerRoute(deliveryNote: DeliveryNote) {
                 {{ deliveryNote["customer_name"] }}
             </Link>
         </template>
+        
+        <template #cell(action)="{ item: deliveryNote }">
+            <Button
+                @click="() => isModalPick = deliveryNote"
+                type="secondary"
+                :label="trans('Pick')"
+                size="xs"
+            />
+        </template>
     </Table>
+
+    <Modal
+        :isOpen="!!isModalPick"
+        @close="isModalPick = null, isErrorPicker = null"
+        width="w-full max-w-lg"
+    >
+        <div class="sm:flex sm:items-start w-full">
+            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                <DialogTitle as="h3" class="text-base font-semibold">
+                    {{ trans("Are you sure to pick the delivery?") }}
+                </DialogTitle>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-500">
+                        {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference }}</strong> {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
+                    </p>
+                </div>                
+                
+
+                <div class="mt-5 sm:flex sm:flex-row-reverse gap-x-2">
+                    <Button
+                        :loading="isLoadingPick"
+                        @click="() => onClickPick()"
+                        :label="trans('Yes')"
+                        full
+                    />
+
+                    <Button
+                        type="tertiary"
+                        icccon="far fa-arrow-left"
+                        :label="trans('cancel')"
+                        
+                        @click="() => (isModalPick = null)"
+                    />
+                </div>
+
+                <p v-if="isErrorPicker" class="mt-2 text-xs text-red-500 italic">
+                    *{{ isErrorPicker }}
+                </p>
+            </div>
+
+        </div>
+    </Modal>
 </template>

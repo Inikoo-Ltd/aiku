@@ -4,9 +4,11 @@
 	"name": "CTA",
 	"scope": "webpage",
 	"icon": ["fal", "rectangle-wide"],
+	"category": "block",
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
 	"data": {
 		"fieldValue": {
-			"text": "<p style=\"text-align: center\"></p><p style=\"text-align: center\"><span style=\"font-size: 20px; color: rgb(209, 209, 209)\">Incididunt sint fugiat pariatur cupidatat consectetur sit cillum anim</span></p><p style=\"text-align: center\"><span style=\"font-size: 20px; color: rgb(209, 209, 209)\">id veniam aliqua proident excepteur commodo do ea.</span></p>",
+			"text": "<p style=\"text-align: center\"></p><p style=\"text-align: center\"><span style=\"font-size: 1.5000rem; color: rgb(209, 209, 209)\">Incididunt sint fugiat pariatur cupidatat consectetur sit cillum anim</span></p><p style=\"text-align: center\"><span style=\"font-size: 1.5000rem; color: rgb(209, 209, 209)\">id veniam aliqua proident excepteur commodo do ea</span></p>",
 			"title": "<h2><strong><span style='color: #FFFFFF'>Boost your productivity today</span></strong></h2>",
 			"button": {
 				"link": {
@@ -36,6 +38,37 @@
 							},
 							"bottom": {
 								"value": 0
+							},
+							"desktop": {
+								"top": {
+									"value": 0
+								},
+								"left": {
+									"value": 0
+								},
+								"unit": "px",
+								"color": 0,
+								"right": {
+									"value": 0
+								},
+								"bottom": {
+									"value": 0
+								},
+								"rounded": {
+									"unit": "px",
+									"topleft": {
+										"value": 10
+									},
+									"topright": {
+										"value": 10
+									},
+									"bottomleft": {
+										"value": 10
+									},
+									"bottomright": {
+										"value": 10
+									}
+								}
 							},
 							"rounded": {
 								"unit": "px",
@@ -110,6 +143,37 @@
 						"bottom": {
 							"value": 0
 						},
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"color": null,
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							},
+							"rounded": {
+								"unit": "px",
+								"topleft": {
+									"value": null
+								},
+								"topright": {
+									"value": null
+								},
+								"bottomleft": {
+									"value": null
+								},
+								"bottomright": {
+									"value": null
+								}
+							}
+						},
 						"rounded": {
 							"unit": "px",
 							"topleft": {
@@ -139,6 +203,23 @@
 						},
 						"bottom": {
 							"value": null
+						}
+					},
+					"shadow": {
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							}
 						}
 					},
 					"padding": {

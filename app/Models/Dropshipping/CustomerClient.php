@@ -60,6 +60,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $platform_id
  * @property numeric $amount_in_basket
  * @property int|null $current_order_in_basket_id
+ * @property int|null $customer_sales_channel_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -69,6 +70,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read \App\Models\Dropshipping\Platform|null $platform
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $salesChannel
  * @property-read Shop|null $shop
  * @property-read \App\Models\Dropshipping\CustomerClientStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
@@ -158,6 +160,11 @@ class CustomerClient extends Model implements Auditable
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function salesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
     }
 
 }

@@ -29,7 +29,6 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
-use App\Models\Dropshipping\Platform;
 
 class ShowRetinaDropshippingOrder extends RetinaAction
 {
@@ -45,26 +44,19 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return $this->handle($order);
     }
 
-    public function inPlatform(Platform $platform, Order $order, ActionRequest $request): Order
-    {
-        $this->initialisationFromPlatform($platform, $request)->withTab(OrderTabsEnum::values());
-
-        return $this->handle($order);
-    }
-
-
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-
         $finalTimeline = ShowOrder::make()->getOrderTimeline($order);
 
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
+        $action = [];
+
 
         return Inertia::render(
-            'Dropshipping/Order',
+            'Dropshipping/RetinaDropshippingOrder',
             [
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -77,40 +69,56 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'icon'  => 'fal fa-shopping-cart',
                         'title' => __('customer client')
                     ],
-                    'actions' => []
+                    'actions' => $action,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => OrderTabsEnum::navigation()
                 ],
 
+                'routes' => [
+                    'update_route' => [
+                        'name'       => 'retina.models.order.update',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ],
+                    'submit_route' => [
+                        'name'       => 'retina.models.order.submit',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ]
+                ],
 
-                'timelines'   => $finalTimeline,
 
-                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina:true),
+                'timelines' => $finalTimeline,
+
+                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
 
 
-                'box_stats'      => ShowOrder::make()->getOrderBoxStats($order),
-                'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'           => OrderResource::make($order),
-
+                'box_stats' => ShowOrder::make()->getOrderBoxStats($order),
+                'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
+                'data'      => OrderResource::make($order),
 
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
-                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
-                     fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                     : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
+                    fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
-                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
-                     fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                     : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
+                    fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
-                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
-                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
             ]
         )
@@ -121,17 +129,23 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     prefix: OrderTabsEnum::TRANSACTIONS->value
                 )
             )
-            ->table(IndexInvoices::make()->tableStructure(
-                parent: $order,
-                prefix: OrderTabsEnum::INVOICES->value
-            ))
-            ->table(IndexAttachments::make()->tableStructure(
-                prefix: OrderTabsEnum::ATTACHMENTS->value
-            ))
-            ->table(IndexDeliveryNotes::make()->tableStructure(
-                parent: $order,
-                prefix: OrderTabsEnum::DELIVERY_NOTES->value
-            ));
+            ->table(
+                IndexInvoices::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::INVOICES->value
+                )
+            )
+            ->table(
+                IndexAttachments::make()->tableStructure(
+                    prefix: OrderTabsEnum::ATTACHMENTS->value
+                )
+            )
+            ->table(
+                IndexDeliveryNotes::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::DELIVERY_NOTES->value
+                )
+            );
     }
 
     public function jsonResponse(Order $order): OrderResource
@@ -157,17 +171,17 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         $order = Order::where('slug', $routeParameters['order'])->first();
 
         return array_merge(
-            IndexRetinaDropshippingOrders::make()->getBreadcrumbs(),
+            IndexRetinaDropshippingOrdersInPlatform::make()->getBreadcrumbs(),
             $headCrumb(
                 $order,
                 [
                     'index' => [
-                        'name' => 'retina.dropshipping.orders.index',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.index',
                         'parameters' => []
                     ],
                     'model' => [
-                        'name' => 'retina.dropshipping.orders.show',
-                        'parameters' => [$order->slug]
+                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.show',
+                        'parameters' => [$routeParameters['customerSalesChannel'], $order->slug]
                     ]
                 ],
                 $suffix

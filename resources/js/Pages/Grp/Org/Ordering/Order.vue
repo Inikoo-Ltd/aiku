@@ -362,15 +362,16 @@ const isModalUploadExcel = ref(false)
             </div>
         </template>
 
-        <template #button-upload-add="{ action }">
+        <template #button-group-upload-add="{ action }">
             <div class="relative">
                 <Button v-if="upload_excel"
-                    :style="action.style"
-                    :label="action.label"
-                    :icon="action.icon"
+                    :style="action.button[0].style"
+                    :label="action.button[0].label"
+                    :icon="action.button[0].icon"
                     @click="() => isModalUploadExcel = true"
-                    :key="`ActionButton${action.label}${action.style}`"
-                    :tooltip="action.tooltip" />
+                    :key="`ActionButton${action.button[0].label}${action.button[0].style}`"
+                    :tooltip="action.button[0].tooltip"
+                />
             </div>
         </template>
 
@@ -610,6 +611,7 @@ const isModalUploadExcel = ref(false)
 		    :addresses="address_management.addresses"
             :updateRoute="address_management.address_update_route"
             keyPayloadEdit="address"
+            @onDone="() => (isModalAddress = false)"
         />
     </Modal>
 

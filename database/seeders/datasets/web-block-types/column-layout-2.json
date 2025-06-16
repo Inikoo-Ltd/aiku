@@ -3,6 +3,8 @@
 	"code": "column-layout-2",
 	"name": "column-layout-2",
 	"scope": "webpage",
+	"category": "column",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"icon": ["fal", "rectangle-wide"],
 	"data": {
 		"fieldValue": {

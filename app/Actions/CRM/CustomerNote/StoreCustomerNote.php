@@ -57,12 +57,8 @@ class StoreCustomerNote extends OrgAction
         data_set($modelData, 'tags', Arr::get($modelData, 'tags', ['customer_notes']), overwrite: false);
 
 
-        //dd($modelData);
         /** @var CustomerNote $CustomerNote */
-        $CustomerNote = $customer->customerNotes()->create($modelData);
-
-
-        return $CustomerNote;
+        return $customer->customerNotes()->create($modelData);
     }
 
     public function authorize(ActionRequest $request): bool

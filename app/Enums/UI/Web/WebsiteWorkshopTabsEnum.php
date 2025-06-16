@@ -16,24 +16,34 @@ enum WebsiteWorkshopTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case WEBSITE_LAYOUT = 'website_layout';
-    case DEPARTMENT     = 'department';
-    case FAMILY         = 'family';
-    case PRODUCT        = 'product';
+    case WEBSITE_LAYOUT     = 'website_layout';
+    case SUB_DEPARTMENT     = 'sub_department';
+    case FAMILY             = 'families';
+    case PRODUCTS           = 'products';
+    case PRODUCT            = 'product';
+    case COLLECTION         = 'collection';
 
     public function blueprint(): array
     {
         return match ($this) {
-            WebsiteWorkshopTabsEnum::DEPARTMENT => [
-                'title' => __('department class'),
+            WebsiteWorkshopTabsEnum::SUB_DEPARTMENT => [
+                'title' => __('sub-department block'),
                 'icon'  => 'fal fa-th',
             ],
             WebsiteWorkshopTabsEnum::FAMILY => [
-                'title' => __('family class'),
+                'title' => __('families block'),
+                'icon'  => 'fal fa-folder-tree',
+            ],
+            WebsiteWorkshopTabsEnum::PRODUCTS => [
+                'title' => __('products block'),
                 'icon'  => 'fal fa-th-large',
             ],
             WebsiteWorkshopTabsEnum::PRODUCT => [
-                'title' => __('product'),
+                'title' => __('product page'),
+                'icon'  => 'fal fa-cube',
+            ],
+            WebsiteWorkshopTabsEnum::COLLECTION => [
+                'title' => __('collection page'),
                 'icon'  => 'fal fa-cube',
             ],
             WebsiteWorkshopTabsEnum::WEBSITE_LAYOUT => [

@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Http;
 class WebsiteHydrateCloudflareData implements ShouldBeUnique
 {
     use WithHydrateCommand;
+
     private Website $website;
     private Collection $siteList;
     private ?string $apiToken;
@@ -31,10 +32,10 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
 
     public function __construct(Website $website)
     {
-        $this->website = $website;
-        $this->siteList = collect();
+        $this->website        = $website;
+        $this->siteList       = collect();
         $this->zoneAccountTag = collect();
-        $this->model = Website::class;
+        $this->model          = Website::class;
     }
 
     public function getJobUniqueId(Website $website): string
@@ -47,12 +48,11 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
      */
     public function handle(Website $website): void
     {
-
         if (app()->environment('testing')) {
             return;
         }
 
-        $groupSettings = $website->group->settings;
+        $groupSettings  = $website->group->settings;
         $this->apiToken = Arr::get($groupSettings, 'cloudflare.apiToken');
         if (!$this->apiToken) {
             $this->apiToken = env('CLOUDFLARE_ANALYTICS_API_TOKEN'); // from env cause group not stored api token yet
@@ -61,7 +61,6 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
             }
             data_set($groupSettings, 'cloudflare.apiToken', $this->apiToken);
             $website->group->update(['settings' => $groupSettings]);
-
         }
         $newWebsiteData = $website->data;
 
@@ -87,9 +86,7 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
         });
 
         $website->update(['data' => $newWebsiteData]);
-
     }
-
 
 
     /**
@@ -104,9 +101,9 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
         try {
             $resultZone = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $this->apiToken",
-                'Content-Type' => 'application/json',
-            ])->get($urlCloudflareRest . "/zones", [
-            'name' => $website->domain,
+                'Content-Type'  => 'application/json',
+            ])->get($urlCloudflareRest."/zones", [
+                'name' => $website->domain,
             ])->json();
         } catch (Exception $e) {
             if (str_contains($e->getMessage(), 'Resolving timed out')) {
@@ -124,6 +121,7 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
         if (empty($resultZone['result'])) {
             return collect();
         }
+
         return collect($resultZone['result'][0]);
     }
 
@@ -134,9 +132,9 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
     {
         try {
             $urlCloudflareResAnalytic = "https://api.cloudflare.com/client/v4/accounts/$accountId/rum/site_info/list";
-            $resultAnalytic = Http::timeout(10)->withHeaders([
+            $resultAnalytic           = Http::timeout(10)->withHeaders([
                 'Authorization' => "Bearer $this->apiToken",
-                'Content-Type' => 'application/json',
+                'Content-Type'  => 'application/json',
             ])->get($urlCloudflareResAnalytic, [
                 'per_page' => Website::count(),
             ])->json();

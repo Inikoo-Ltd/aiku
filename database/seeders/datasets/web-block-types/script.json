@@ -4,6 +4,8 @@
 	"code": "script",
 	"name": "Script",
 	"show": true,
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"category": "element",
 	"visibility": {
 		"in": true,
 		"out": true

@@ -12,13 +12,16 @@ use App\Actions\Accounting\TopUp\Search\TopUpRecordSearch;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTopUps;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateTopUps;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\TopUp\TopUpStatusEnum;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\TopUp;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 class StoreTopUp extends OrgAction
@@ -33,6 +36,17 @@ class StoreTopUp extends OrgAction
         data_set($modelData, 'customer_id', $payment->customer_id);
         data_set($modelData, 'shop_id', $payment->shop_id);
 
+
+        if (!Arr::has($modelData, 'reference')) {
+            data_set(
+                $modelData,
+                'reference',
+                GetSerialReference::run(
+                    container: $payment->shop,
+                    modelType: SerialReferenceModelEnum::TOP_UP
+                )
+            );
+        }
 
         data_set(
             $modelData,
@@ -88,7 +102,7 @@ class StoreTopUp extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($payment->organisation, $modelData);
+        $this->initialisationFromShop($payment->shop, $modelData);
 
         return $this->handle($payment, $modelData);
     }

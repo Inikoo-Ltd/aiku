@@ -105,6 +105,7 @@ class UpdatePalletReturn extends OrgAction
             'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'collection_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'parcels' => ['sometimes', 'array']
         ];
     }
 

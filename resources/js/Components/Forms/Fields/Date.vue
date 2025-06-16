@@ -36,7 +36,7 @@ const _datePicker: any = ref(null)
         ref="_datePicker"
         :enable-time-picker="false"
         :format="'dd MMMM yyyy'" auto-apply
-        :clearable="!fieldData.required ?? true"
+        :clearable="!fieldData.required || true"
         keepActionRow
         
         @update:modelValue="() => form.clearErrors()"

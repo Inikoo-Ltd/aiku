@@ -14,7 +14,7 @@ import MetaLabel from "@/Components/Headings/MetaLabel.vue"
 import Container from "@/Components/Headings/Container.vue"
 import Action from "@/Components/Forms/Fields/Action.vue"
 import SubNavigation from "@//Components/Navigation/SubNavigation.vue"
-import { kebabCase } from "lodash"
+import { kebabCase } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import {faNarwhal, faReceipt} from "@fas"
 import { faLayerPlus } from "@far"
@@ -23,6 +23,8 @@ import { inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useTruncate } from '@/Composables/useTruncate'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import ButtonWithLink from "../Elements/Buttons/ButtonWithLink.vue"
+import LoadingIcon from "../Utils/LoadingIcon.vue"
 
 library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave)
 
@@ -30,6 +32,7 @@ const props = defineProps<{
     data: PageHeadingTypes
     dataToSubmit?: any
     dataToSubmitIsDirty?: any
+    isButtonGroupWithBorder?: boolean
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)
@@ -41,7 +44,6 @@ if (props.dataToSubmit && props.data.actionActualMethod) {
 const originUrl = location.origin
 const layout = inject('layout', layoutStructure)
 
-// console.log('props', props.data?.wrapped_actions)
 </script>
 
 
@@ -54,56 +56,85 @@ const layout = inject('layout', layoutStructure)
 
     </slot>
 
-    <div class="relative px-4 py-2 md:pb-2 md:pt-2 lg:py-2 grid grid-flow-col justify-between items-center">
+    <div class="relative px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2">
         <div class="flex items-end gap-x-3">
 
             <!-- Section: Main Title -->
-            <div class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight ">
-                <div v-if="data.container" class="text-slate-500 text-lg">
-                    <Link v-if="data.container.href"
-                        :href="route(data.container.href['name'], data.container.href['parameters'])">
-                    <Container :data="data.container" />
-                    </Link>
-                    <div v-else class="flex items-center gap-x-1">
-                        <Container :data="data.container" />
+            <div :class="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length ? '-mt-1.5' : ''">
+                <template v-if="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length">
+                    <div v-if="data?.parentTag?.length" class="flex gap-x-2">
+                        <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route">
+                            <template #default="{ isLoadingVisit }">
+                                <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-sm select-none px-1 py-0.5 text-xxs w-fit font-medium border"
+                                    :class="`bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-500`"
+                                >
+                                    <LoadingIcon v-if="isLoadingVisit" />
+                                    <FontAwesomeIcon v-else :icon="tag.icon" class="" fixed-width aria-hidden="true" />
+                                    {{ tag.label}}
+                                </div>
+                            </template>
+                        </ButtonWithLink>
                     </div>
-                </div>
-
-                <div v-if="data.icon" class="inline text-gray-400">
-                    <slot name="mainIcon">
-                        <FontAwesomeIcon
-                            v-tooltip="data.icon.tooltip || ''"
-                            aria-hidden="true"
-                            :icon="data.icon.icon || data.icon"
-                            size="sm"
-                            fixed-width
-                        />
-                    </slot>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center ">
-                    <h2 :class="data.noCapitalise ? '' : 'capitalize'" class="space-x-2">
-                        <span v-if="data.model" class="text-gray-400 font-medium">{{ data.model }}</span>
-                        <span class="">{{ useTruncate(data.title, 30) }}</span>
-                    </h2>
-
-                    <!-- Section: After Title -->
-                    <slot name="afterTitle">
-                        <div v-if="data.iconRight || data.afterTitle" class="flex gap-x-2 items-center">
-                            <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
-                                :icon="data.iconRight?.icon || data.iconRight" class="h-4" :class="data.iconRight.class"
-                                aria-hidden="true" />
-                            <div v-if="data.afterTitle" class="text-gray-400 font-normal text-lg leading-none">
-                                {{ data.afterTitle.label }}
+                    <ButtonWithLink v-else-if="Object.keys(data?.parentTag || {}).length" :routeTarget="data?.parentTag?.route">
+                        <template #default="{ isLoadingVisit }">
+                            <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-sm select-none px-1 py-0.5 text-xxs w-fit font-medium border"
+                                :class="`bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-500`"
+                            >
+                                <LoadingIcon v-if="isLoadingVisit" />
+                                <FontAwesomeIcon v-else :icon="data?.parentTag?.icon" class="" fixed-width aria-hidden="true" />
+                                {{ data?.parentTag?.label}}
                             </div>
+                        </template>
+                    </ButtonWithLink>
+                </template>
+
+                <div class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight ">
+                    <div v-if="data.container" class="text-slate-500 text-lg">
+                        <Link v-if="data.container.href"
+                            :href="route(data.container.href['name'], data.container.href['parameters'])">
+                        <Container :data="data.container" />
+                        </Link>
+                        <div v-else class="flex items-center gap-x-1">
+                            <Container :data="data.container" />
                         </div>
-                    </slot>
-                    <slot name="platform">
-                        <div v-if="data.platform" class="text-gray-400 font-normal text-lg leading-none">
-                            {{ data.platform.title }}
-                        </div>
-                      
-                    </slot>
+                    </div>
+                    <div v-if="data.icon" class="inline text-gray-400">
+                        <slot name="mainIcon">
+                            <FontAwesomeIcon
+                                v-tooltip="data.icon.tooltip || ''"
+                                aria-hidden="true"
+                                :icon="data.icon.icon || data.icon"
+                                :rotation="data?.icon_rotation"
+                                size="sm"
+                                fixed-width
+                            />
+                        </slot>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center ">
+                        <h2 :class="data.noCapitalise ? '' : 'capitalize'" class="space-x-2">
+                            <span v-if="data.model" class="text-gray-400 font-medium">{{ data.model }}</span>
+                            <span class="">{{ useTruncate(data.title, 30) }}</span>
+                        </h2>
+                        <!-- Section: After Title -->
+                        <slot name="afterTitle">
+                            <div v-if="data.iconRight || data.afterTitle" class="flex gap-x-2 items-center">
+                                <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
+                                    :icon="data.iconRight?.icon || data.iconRight" class="h-4" :class="data.iconRight.class"
+                                    aria-hidden="true"
+                                    :rotation="data?.iconRight?.icon_rotation"
+                                />
+                                <div v-if="data.afterTitle" class="text-gray-400 font-normal text-lg leading-none">
+                                    {{ data.afterTitle.label }}
+                                </div>
+                            </div>
+                        </slot>
+                        <slot name="platform">
+                            <div v-if="data.platform" class="text-gray-400 font-normal text-lg leading-none">
+                                {{ data.platform.title }}
+                            </div>
+                
+                        </slot>
+                    </div>
                 </div>
             </div>
 
@@ -127,7 +158,6 @@ const layout = inject('layout', layoutStructure)
                     </template>
                 </div>
             </div>
-
         </div>
 
         <!-- Section: Button and/or ButtonGroup -->
@@ -138,9 +168,11 @@ const layout = inject('layout', layoutStructure)
                 <template v-for="(action, actIndex) in data.actions">
                     <template v-if="action">
                         <!-- Button -->
+                         
                         <slot v-if="action.type == 'button'"
                             :name="`button-${kebabCase(action.key ? action.key : action.label)}`" :action="action">
                             <slot :name="`button-index-${actIndex}`" :action="action">
+                                <!-- {{ `button-${kebabCase(action.key ? action.key : action.label)}` }} -->
                                 <Action v-if="action" :action="action" :dataToSubmit="dataToSubmit" />
                             </slot>
                         </slot>
@@ -148,14 +180,18 @@ const layout = inject('layout', layoutStructure)
                         <!-- ButtonGroup -->
                         <slot v-else-if="action.type == 'buttonGroup'"
                             :name="`button-group-${action.key}`" :action="action">
+                            <!-- {{ `button-group-${action.key}` }} -->
                             <div v-if="action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
                                 (action.button?.length || 0) > 1 ? '' : '',
-                            ]" :style="{
-                                // border: `1px solid ${action?.button?.length > 1 ? layout?.app?.theme[4] + '88' : 'transparent'}`
-                            }">
+                            ]"
+                                :style="{
+                                    border: isButtonGroupWithBorder ? `1px solid ${action?.button?.length > 1 ? layout?.app?.theme[4] + '88' : 'transparent'}` : ''
+                                }"
+                            >
                                 <slot v-for="(button, index) in action.button"
                                     :name="`button-group-${kebabCase(button.key ? button.key : button.label)}`"
                                     :action="button">
+                                    <!-- {{ `button-group-${kebabCase(button.key ? button.key : button.label)}` }} -->
                                     <component :key="'buttonPH' + index + button.label"
                                         :is="button.route?.name ? Link : 'div'"
                                         :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
@@ -170,7 +206,14 @@ const layout = inject('layout', layoutStructure)
                                             :key="`ActionButton${button.label}${button.style}`"
                                             :tooltip="button.tooltip"
                                             class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
-                                            :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
+                                            :class="[
+                                                index === 0
+                                                    ? 'rounded-l-md rounded-r-none'
+                                                    :  index === action.button?.length - 1
+                                                        ? 'rounded-l-none rounded-r-md'
+                                                        : 'rounded-l-none rounded-r-none'
+                                            ]"
+                                        >
                                         </Button>
                                     </component>
                                 </slot>

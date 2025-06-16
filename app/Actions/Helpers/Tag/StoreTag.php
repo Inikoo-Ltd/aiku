@@ -1,126 +1,61 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 15 Nov 2023 12:42:09 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 23-05-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
+*/
 
 namespace App\Actions\Helpers\Tag;
 
-use App\Actions\CRM\Prospect\Tags\Hydrators\TagHydrateUniversalSearch;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCrmTags;
-use App\Http\Resources\Tag\TagResource;
-use App\Models\Catalogue\Product;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
-use App\Models\Inventory\Location;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Prospect;
-use Illuminate\Http\RedirectResponse;
+use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreTag extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
-
-    private Shop $parent;
-
-
-    public function handle(array $modelData): Tag
+    public function handle(Group|TradeUnit $parent, array $modelData): Tag
     {
-        /** @var Tag $tag */
-        $tag =  Tag::findOrCreate($modelData['name'], $modelData['type']);
-        $tag->update(
+
+        if ($parent instanceof TradeUnit) {
+            $group = $parent->group;
+            data_set($modelData, 'scope', TagScopeEnum::PRODUCT_PROPERTY);
+        } else {
+            $group = $parent;
+            data_set($modelData, 'scope', TagScopeEnum::OTHER);
+        }
+
+        data_set($modelData, 'group_id', $group->id);
+
+        $tag = Tag::create($modelData);
+
+        AttachTagsToModel::make()->handle(
+            $parent,
             [
-                'label' => $tag->name
-            ]
+                'tags_id' => [$tag->id]
+            ],
         );
-        $tag->generateTagSlug();
-        $tag->saveQuietly();
-        // if ($tag->type == 'crm') {
-        //     if (!$tag->crmStats) {
-        //         $tag->crmStats()->create();
-        //         OrganisationHydrateCrmTags::dispatch($this->organisation);
-        //     }
-        // }
-        TagHydrateUniversalSearch::dispatch($tag);
 
         return $tag;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        // Todo: this permission is wrong
-        $this->canEdit = true;
-
-        return true;
     }
 
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string'],
-            'type' => ['required', 'string']
+            'name' => ['required', 'string', 'max:255', 'unique:tags,name'],
         ];
     }
 
-    // public function htmlResponse(): RedirectResponse
-    // {
-    //     return redirect()->route(
-    //         'grp.org.shops.show.crm.prospects.tags.index',
-    //         $this->parent->slug
-    //     );
-    // }
-
-    public function jsonResponse(Tag $tag): TagResource
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request)
     {
-        return new TagResource($tag);
-    }
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
-    public function action(array $modelData): Tag
-    {
-        $this->asAction = true;
-        return $this->handle($modelData);
-    }
-
-    public function inLocation(Location $location, ActionRequest $request): Tag
-    {
-        $this->fillFromRequest($request);
-        $this->fill(['type' => 'inventory']);
-        $this->initialisationFromWarehouse($location->warehouse, $request);
-
-        return $this->handle($this->validateAttributes());
-    }
-
-    public function inProduct(Product $product, ActionRequest $request): Tag
-    {
-        $this->fillFromRequest($request);
-        $this->fill(['type' => 'catalogue']);
-        $this->initialisationFromShop($product->shop, $request);
-
-        return $this->handle($this->validateAttributes());
-    }
-
-    public function inShop(Shop $shop, ActionRequest $request): Tag
-    {
-        $this->parent = $shop;
-        $this->fillFromRequest($request);
-        $this->fill(['type' => 'crm']);
-
-        return $this->handle($this->validateAttributes());
-    }
-
-    public function inProspect(Prospect $prospect, ActionRequest $request)
-    {
-        $this->fillFromRequest($request);
-        $this->fill(['type' => 'crm']);
-        $this->initialisationFromShop($prospect->shop, $request);
-
-        $this->handle($this->validateAttributes());
+        $this->handle($tradeUnit, $this->validatedData);
     }
 
 }

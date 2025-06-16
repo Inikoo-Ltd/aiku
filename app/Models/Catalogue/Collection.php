@@ -11,16 +11,18 @@ namespace App\Models\Catalogue;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\Webpage;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -41,19 +43,28 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property string $state
+ * @property string|null $source_id
+ * @property string|null $fetched_at
+ * @property string|null $last_fetched_at
+ * @property int|null $webpage_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\CollectionCategory> $collectionCategories
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
  * @property-read Group $group
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $inCollections
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
+ * @property-read Model|\Eloquent $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $products
  * @property-read \App\Models\Catalogue\CollectionSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Shop> $shops
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $subDepartments
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newModelQuery()
@@ -64,13 +75,14 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection withoutTrashed()
  * @mixin \Eloquent
  */
-class Collection extends Model implements Auditable
+class Collection extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;
     use HasUniversalSearch;
     use HasHistory;
     use InShop;
+    use HasImage;
 
     protected $guarded = [];
 
@@ -96,7 +108,10 @@ class Collection extends Model implements Auditable
             ->slugsShouldBeNoLongerThan(128);
     }
 
-
+    public function parent(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
     public function stats(): HasOne
     {
@@ -113,42 +128,46 @@ class Collection extends Model implements Auditable
         return $this->hasOne(CollectionsOrderingStats::class);
     }
 
-    public function collectionCategories(): BelongsToMany
-    {
-        return $this->belongsToMany(CollectionCategory::class);
-    }
 
-    public function inCollections(): MorphToMany
-    {
-        return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
-    }
 
-    public function collections(): MorphToMany
+    public function shops(): MorphToMany
     {
-        return $this->morphedByMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
-    }
-
-    public function products(): MorphToMany
-    {
-        return $this->morphedByMany(Product::class, 'model', 'model_has_collections')->withTimestamps();
+        return $this->morphedByMany(Shop::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
     public function departments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'Department')
+                    ->wherePivot('type', 'department')
                     ->withTimestamps();
     }
-    public function families(): MorphToMany
+
+    public function subDepartments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'Family')
+                    ->wherePivot('type', 'sub_department')
                     ->withTimestamps();
     }
+
+    public function products(): MorphToMany
+    {
+        return $this->morphedByMany(Product::class, 'model', 'collection_has_models')
+            ->withTimestamps();
+    }
+
+    public function families(): MorphToMany
+    {
+        return $this->morphedByMany(ProductCategory::class, 'model', 'collection_has_models')
+            ->withTimestamps();
+    }
+
 
     public function webpage(): MorphOne
     {
         return $this->morphOne(Webpage::class, 'model');
     }
+
+
+
 
 }

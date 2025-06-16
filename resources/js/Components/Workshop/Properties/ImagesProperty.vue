@@ -17,6 +17,11 @@ const model = defineModel();
 
 const blueprint = [
   { key: ["source"], label: "Image", type: "upload_image" },
+    {
+    key: ["caption"],
+    label: trans("Caption"),
+    type: "text",
+  },
   { key: ["link_data"], label: "Link", type: "link" },
   { key: ["properties", "alt"], label: "Alt", type: "text" },
   {
@@ -30,6 +35,7 @@ const blueprint = [
         { label: "cover", value: "cover" },
         { label: "none", value: "none" },
         { label: "scale-down", value: "scale-down" },
+        { label: "fill", value: "fill" }
       ],
     },
   },
@@ -67,11 +73,11 @@ const blueprint = [
   },
 ];
 
-const onSaveWorkshopFromId = (blockId: number, from?: string) => {
+const onSaveWorkshopFromId = () => {
   emit("update:modelValue", model.value);
 };
 
-provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
+/* provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 </script>
 
 <template>
@@ -80,6 +86,7 @@ provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
       :blueprint="blueprint"
       v-model="model"
       :uploadImageRoute="uploadRoutes"
+      @update:modelValue="(e)=>{model = e, onSaveWorkshopFromId()}"
     />
   </div>
 </template>

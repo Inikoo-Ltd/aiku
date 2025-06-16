@@ -16,8 +16,6 @@ use App\Enums\UI\Production\ManufactureTaskTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactsResource;
 use App\Http\Resources\Production\ManufactureTasksResource;
-use App\Http\Resources\Tag\TagResource;
-use App\Models\Helpers\Tag;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -100,7 +98,6 @@ class ShowManufactureTask extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => ManufactureTaskTabsEnum::navigation(),
                 ],
-                'tagsList'      => TagResource::collection(Tag::all()),
 
                 ManufactureTaskTabsEnum::SHOWCASE->value => $this->tab == ManufactureTaskTabsEnum::SHOWCASE->value ?
                     fn () => GetManufactureTaskShowcase::run($manufactureTask)

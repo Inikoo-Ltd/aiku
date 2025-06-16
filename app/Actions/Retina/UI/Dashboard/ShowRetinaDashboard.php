@@ -36,12 +36,10 @@ class ShowRetinaDashboard extends RetinaAction
         return Inertia::render(
             $inertiaPage,
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    __('Home')
-                ),
-                'data'       => match ($this->shop->type) {
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'data'        => match ($this->shop->type) {
                     ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($this->fulfilmentCustomer, $request),
-                    ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($this->customer, $request),
+                    ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($this->customer),
                     ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer, $request),
                     default => []
                 },
@@ -63,20 +61,10 @@ class ShowRetinaDashboard extends RetinaAction
         return $this->handle($request);
     }
 
-    public function getBreadcrumbs($label = null): array
+    public function getBreadcrumbs(): array
     {
         return [
-            [
 
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-home',
-                    'route' => [
-                        'name' => 'retina.dashboard.show'
-                    ]
-                ]
-
-            ],
 
         ];
     }

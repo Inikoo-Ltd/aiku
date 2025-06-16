@@ -25,17 +25,18 @@ const props = defineProps<{
 	container: {
 		properties: Object
 	}
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 </script>
 
 <template>
-	<div :style="getStyles(fieldValue.container.properties)">
-		<div class="relative isolate px-6 py-24 text-center sm:px-16">
+	<div :style="getStyles(fieldValue.container.properties,screenType)">
+		<div class="relative  px-6 py-24 text-center sm:px-16">
 			<section v-html="fieldValue.headline" />
 
 			<div class="mt-10 flex items-center justify-center gap-x-6">
-				<a  :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" typeof="button" :style="getStyles(fieldValue.button.container.properties)"
+				<a  :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" typeof="button" :style="getStyles(fieldValue.button.container.properties,screenType)"
 					class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6">
 					{{ fieldValue.button.text }}
 			</a>

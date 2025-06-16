@@ -22,6 +22,7 @@ trait WithFamilySubNavigation
 
         $productRoute = [];
         $familyRoute  = [];
+        $collectionRoute = [];
         if ($parent instanceof Organisation) {
             $familyRoute  = [
                 'name'       => 'grp.org.shops.show.catalogue.families.show',
@@ -40,14 +41,22 @@ trait WithFamilySubNavigation
                 'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.products.index',
                 'parameters' => $routeParameters
             ];
+            $collectionRoute = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.index',
+                    'parameters' => $routeParameters
+            ];
         } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $familyRoute  = [
-                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show',
+                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                 'parameters' => $routeParameters
             ];
             $productRoute = [
-                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.show.products.index',
+                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index',
                 'parameters' => $routeParameters
+            ];
+            $collectionRoute = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index',
+                    'parameters' => $routeParameters
             ];
         } elseif ($parent->type == ProductCategoryTypeEnum::FAMILY) {
             if ($request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.families.show.products.index') {
@@ -68,11 +77,19 @@ trait WithFamilySubNavigation
                     'name'       => 'grp.org.shops.show.catalogue.families.show.products.index',
                     'parameters' => $routeParameters
                 ];
+                $collectionRoute = [
+                    'name'       => 'grp.org.shops.show.catalogue.families.show.collection.index',
+                    'parameters' => $routeParameters
+                ];
             }
         } elseif ($parent instanceof Shop) {
             $productRoute = [
                 'name'       => 'grp.org.shops.show.catalogue.families.show.products.index',
                 'parameters' => $routeParameters
+            ];
+            $collectionRoute = [
+                    'name'       => 'grp.org.shops.show.catalogue.families.show.collection.index',
+                    'parameters' => $routeParameters
             ];
         }
 
@@ -97,6 +114,16 @@ trait WithFamilySubNavigation
                     'tooltip' => __('products')
                 ]
             ],
+
+            // [
+            //     'label'    => __('Collections'),
+            //     'number'   => $family->stats->number_collections,
+            //     'route'     => $collectionRoute,
+            //     'leftIcon' => [
+            //         'icon'    => ['fal', 'fa-album-collection'],
+            //         'tooltip' => __('collections')
+            //     ]
+            // ],
         ];
     }
 

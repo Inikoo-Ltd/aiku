@@ -23,6 +23,7 @@ class StoreCollectionWebpage extends OrgAction
     {
         $webpageData = [
             'code'  => $collection->code,
+            'title'  => $collection->name,
             'url'   => strtolower($collection->code),
             'sub_type'   => WebpageSubTypeEnum::COLLECTION,
             'type'      => WebpageTypeEnum::CATALOGUE,

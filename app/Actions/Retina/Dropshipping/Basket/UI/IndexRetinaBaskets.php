@@ -11,12 +11,13 @@ namespace App\Actions\Retina\Dropshipping\Basket\UI;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Fulfilment\RetinaBasketsResources;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Ordering\Transaction;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,12 +28,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaBaskets extends RetinaAction
 {
-    public function handle(ShopifyUser|Customer $parent, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
+    private CustomerSalesChannel $customerSalesChannel;
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): \Illuminate\Pagination\LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('product_name', $value)
-                    ->orWhereWith('product_name', $value);
+                $query->whereAnyWordStartWith('orders.reference', $value)
+                    ->orWhereWith('orders.customer_reference', $value);
             });
         });
 
@@ -40,28 +42,13 @@ class IndexRetinaBaskets extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(Transaction::class);
+        $query = QueryBuilder::for(Order::class);
+        $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
+        $query->where('orders.platform_id', $customerSalesChannel->platform_id);
+        $query->where('orders.state', OrderStateEnum::CREATING);
 
-        if ($parent instanceof Customer) {
-            $query->where('customer_id', $parent->id);
-        }
-        $query->where('transactions.state', OrderStateEnum::CREATING);
-        $query->where('model_type', Product::class);
-
-        $query->leftJoin('products', 'transactions.model_id', '=', 'products.id');
-
-
-        return $query->defaultSort('products_id')
-            ->select([
-                'products.code as product_code',
-                'products.name as product_name',
-                'products.id as product_id',
-                'products.slug as product_slug',
-                'transactions.quantity_ordered as quantity',
-                'transactions.net_amount as net_amount',
-                'transactions.date as date',
-            ])
-            ->allowedSorts(['products.id'])
+        return $query->defaultSort('id')
+            ->allowedSorts(['id'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -69,33 +56,53 @@ class IndexRetinaBaskets extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        if ($this->customerSalesChannel->customer_id == $this->customer->id) {
+            return true;
+        }
+        return false;
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
+        $this->customerSalesChannel = $customerSalesChannel;
+        $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request);
 
-        $customer = $request->user()->customer;
-
-        return $this->handle($customer);
+        return $this->handle($customerSalesChannel);
     }
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
+
+        $title = __('Baskets');
+        $platformName = $this->customerSalesChannel->name;
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $platformName = __('Manual');
+        }
+
         return Inertia::render(
-            'Dropshipping/Client/CustomerClients',
+            'Dropshipping/RetinaOrders',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Baskets'),
+                'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
+                'title'       => $title,
                 'pageHead'    => [
-                    'title' => __('Baskets'),
-                    'icon'  => 'fal fa-shopping-basket'
+                    'title' => $title,
+                    'icon'  => 'fal fa-shopping-basket',
+                    'afterTitle' => [
+                        'label' => '@'.$this->platform->name
+                    ],
+                ],
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'products' => RetinaBasketsResources::collection($orders)
+                'currency' => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
+
+                'orders' => OrdersResource::collection($orders)
             ]
-        )->table($this->tableStructure('baskets'));
+        )->table($this->tableStructure('orders'));
     }
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
@@ -108,8 +115,7 @@ class IndexRetinaBaskets extends RetinaAction
             }
 
             $emptyStateData = [
-                'icons' => ['fal fa-pallet'],
-                'title' => __("No order exist"),
+                'title' => __("You dont have any baskets open"),
                 'count' => 0
             ];
 
@@ -117,16 +123,13 @@ class IndexRetinaBaskets extends RetinaAction
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
 
-            $table->column(key: 'product_code', label: __('Code'), canBeHidden: false, searchable: true);
-            $table->column(key: 'product_name', label: __('Name'), canBeHidden: false, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, searchable: true);
-            $table->column(key: 'net_amount', label: __('net amount'), canBeHidden: false, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, searchable: true);
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, searchable: true);
         };
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
         return
             array_merge(
@@ -136,7 +139,10 @@ class IndexRetinaBaskets extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.orders.index'
+                                'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                                'parameters' => [
+                                    $customerSalesChannel->slug
+                                ]
                             ],
                             'label'  => __('Baskets'),
                         ]

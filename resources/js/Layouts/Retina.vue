@@ -9,15 +9,18 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks } from '@fal'
+import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes } from '@fal'
 import { faSearch, faBell } from '@far'
-import { provide } from 'vue'
+import { faCheckCircle } from '@fas'
+import { provide, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
 import RetinaLayoutEcom from "./RetinaLayoutEcom.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { usePage } from "@inertiajs/vue3"
 
-library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
+library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell )
 
 
 provide('layout', useLayoutStore())
@@ -26,6 +29,16 @@ initialiseRetinaApp()
 
 const layout = useLayoutStore()
 
+watch(() => usePage().props?.flash?.notification, (notif) => {
+    console.log('notif ret', notif)
+    if (!notif) return
+
+    notify({
+        title: notif.title,
+        text: notif.description,
+        type: notif.status,
+    })
+})
 </script>
 
 <template>
@@ -110,9 +123,9 @@ const layout = useLayoutStore()
 }
 
 .primaryLink {
-    background: v-bind('`linear-gradient(to top, ${layout.app.theme[2]}, ${layout.app.theme[2] + "AA"})`');
+    background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
     &:hover, &:focus {
-        color: v-bind('`${layout.app.theme[3]}`');
+        color: #374151;
     }
 
     @apply focus:ring-0 focus:outline-none focus:border-none

@@ -1,42 +1,48 @@
 <script setup lang="ts">
-import { onMounted, inject } from 'vue'
+import { onMounted, ref } from 'vue'
 import PaddingMarginProperty from '@/Components/Workshop/Properties/PaddingMarginProperty.vue'
 import { trans } from 'laravel-vue-i18n'
 import { cloneDeep, defaultsDeep } from 'lodash-es'
 
-// Define model structure
-const model = defineModel<{
-  unit: string
-  top: { value: number | null }
-  left: { value: number | null }
-  right: { value: number | null }
-  bottom: { value: number | null }
-}>({ required: true })
+// Props and emits
+const props = defineProps<{
+  modelValue?: {
+    unit: string
+    top: { value: number | null }
+    left: { value: number | null }
+    right: { value: number | null }
+    bottom: { value: number | null }
+  }
+}>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: typeof props.modelValue): void
+}>()
 
-
-// Default values
+// Local default
 const localModel = {
   unit: "px",
   top: { value: null },
   left: { value: null },
   right: { value: null },
-  bottom: { value: null }
+  bottom: { value: null },
 }
 
-onMounted(() => {
-  if (!model.value || Object.keys(model.value).length === 0) {
-    model.value = cloneDeep(localModel)
-  } else {
-    model.value = defaultsDeep(cloneDeep(model.value), cloneDeep(localModel))
-  }
-})
-</script>
+// Local reactive state
+const localValue = ref(cloneDeep(localModel))
 
+// Initialize once
+onMounted(() => {
+  localValue.value = defaultsDeep(cloneDeep(props.modelValue ?? {}), cloneDeep(localModel))
+})
+
+
+</script>
 
 <template>
   <div class="pb-3">
-    <PaddingMarginProperty :modelValue="model" :scope="trans('Shadow')" @update:modelValue="(e)=>emit('update:modelValue',e)" />
+    <PaddingMarginProperty :modelValue="localValue" :scope="trans('Shadow')" @update:model-value="(value) => {
+      emit('update:modelValue', value)
+    }" />
   </div>
 </template>

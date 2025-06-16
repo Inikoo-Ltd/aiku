@@ -8,6 +8,8 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -16,6 +18,8 @@ use App\Models\Ordering\Order;
 
 trait IsOrder
 {
+    use GetPlatformLogo;
+
     public function getOrderBoxStats(Order $order): array
     {
 
@@ -23,6 +27,19 @@ trait IsOrder
         $roundedDiff = round($payAmount, 2);
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;
+
+        $customerChannel = null;
+        if ($order->customer_sales_channel_id) {
+            $customerChannel = [
+                'slug'      => $order->customerSalesChannel->slug,
+                'status'    => $order->customer_sales_channel_id,
+                'platform'  => [
+                    'name' => $order->platform?->name,
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel)
+                ]
+            ];
+        }
+
 
         return [
             'customer' => array_merge(
@@ -42,6 +59,8 @@ trait IsOrder
                     ]
                 ]
             ),
+            'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
+            'customer_channel' => $customerChannel,
             'products' => [
                 'payment'          => [
                     'routes'       => [
@@ -103,8 +122,9 @@ trait IsOrder
                     [
                         'label'       => 'Total',
                         'price_total' => $order->total_amount
-                    ]
+                    ],
                 ],
+
                 'currency' => CurrencyResource::make($order->currency),
             ],
         ];

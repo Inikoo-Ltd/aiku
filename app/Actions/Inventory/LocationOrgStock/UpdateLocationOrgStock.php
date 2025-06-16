@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStockResource;
-use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,7 +23,6 @@ class UpdateLocationOrgStock extends OrgAction
 
     private LocationOrgStock $locationOrgStock;
 
-    private Location $location;
 
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
@@ -48,7 +46,7 @@ class UpdateLocationOrgStock extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if ($this->has('type') and $this->get('type') == LocationStockTypeEnum::PICKING->value) {
+        if ($this->has('type') && $this->get('type') == LocationStockTypeEnum::PICKING->value) {
             foreach (
                 LocationOrgStock::where('type', LocationStockTypeEnum::PICKING->value)->where('org_stock_id', $this->locationOrgStock->org_stock_id)
                     ->where('id', '!=', $this->locationOrgStock->id)->get() as $locationOrgStock
@@ -61,19 +59,20 @@ class UpdateLocationOrgStock extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'data'               => ['sometimes', 'array'],
-            'settings'           => ['sometimes', 'array'],
-            'notes'              => ['sometimes', 'nullable', 'string', 'max:255'],
-            'source_stock_id'    => ['sometimes', 'string', 'max:255'],
-            'source_location_id' => ['sometimes', 'string', 'max:255'],
-            'picking_priority'   => ['sometimes', 'integer'],
-            'type'               => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'quantity'         => ['sometimes', 'numeric'],
+            'data'             => ['sometimes', 'array'],
+            'settings'         => ['sometimes', 'array'],
+            'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
+            'picking_priority' => ['sometimes', 'integer'],
+            'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
         ];
 
         if (!$this->strict) {
             $rules['audited_at']      = ['date'];
-            $rules['quantity']        = ['sometimes', 'numeric'];
             $rules['last_fetched_at'] = ['sometimes', 'date'];
+
+            $rules['source_stock_id']    = ['sometimes', 'string', 'max:255'];
+            $rules['source_location_id'] = ['sometimes', 'string', 'max:255'];
         }
 
         return $rules;

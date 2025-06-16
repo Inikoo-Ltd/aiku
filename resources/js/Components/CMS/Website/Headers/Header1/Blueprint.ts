@@ -4,22 +4,27 @@ export default {
 	blueprint: [
 		{
 			name: "Container",
-			icon: {
-				icon: "fal fa-rectangle-wide",
-				tooltip: "Container",
-			},
+			icon: { icon: "fal fa-rectangle-wide", tooltip: "Container" },
 			key: ["container", "properties"],
 			replaceForm: [
 				{
 					key: ["background"],
 					label: "Background",
 					type: "background",
+					useIn: ["desktop", "tablet", "mobile"],
 				},
-				/*   {
-                    key: ["text"],
-                    label: "Text",
-                    type: "textProperty"
-                } */
+				{
+					key: ["padding"],
+					label: "Padding",
+					type: "padding",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["margin"],
+					label: "Margin",
+					type: "margin",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
 			],
 		},
 		{
@@ -37,7 +42,7 @@ export default {
 				},
 				{
 					key: ["link"],
-					label : "Link",
+					label: "Link",
 					type: "link",
 				},
 				{
@@ -49,22 +54,22 @@ export default {
 					key: ["properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["properties", "margin"],
 					label: "Margin",
 					type: "margin",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					key: ["properties", "padding"],
 					label: "Padding",
 					type: "padding",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
-					key: ["image","attributes", "fetchpriority"],
+					key: ["image", "attributes", "fetchpriority"],
 					label: trans("Fetch Priority"),
 					information: trans(
 						"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
@@ -100,9 +105,89 @@ export default {
 					type: "VisibleLoggedIn",
 				},
 				{
-					key: [],
-					label: "Button",
-					type: "button",
+					key: ["container", "properties", "background"],
+					label: "Background",
+					type: "background",
+				},
+				{
+					key: ["link"],
+					label: "Link",
+					type: "link",
+				},
+				{
+					key: ["text"],
+					label: "Text",
+					type: "text",
+				},
+				{
+					key: ["container", "properties", "text"],
+					type: "textProperty",
+				},
+				{
+					key: ["container", "properties", "margin"],
+					label: "Margin",
+					type: "margin",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "padding"],
+					label: "Padding",
+					type: "padding",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "border"],
+					label: "Border",
+					type: "border",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "dimension"],
+					label: "Dimension",
+					type: "dimension",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+			],
+		},
+		{
+			name: "Mobile",
+			key: ["mobile"],
+			icon: {
+				icon: "fal fa-mobile",
+				tooltip: "Action",
+			},
+			replaceForm: [
+				{
+					key: ["profile"],
+					name: "Profile Icon",
+					replaceForm: [
+						{
+							key: ["icon"],
+							label: "Icon",
+							type: "icon-picker",
+						},
+						{
+							key: ["container", "properties", "text"],
+							label: "Icon Setting",
+							type: "textProperty",
+						},
+					],
+				},
+				{
+					key: ["menu"],
+					name: "Menu Icon",
+					replaceForm: [
+						{
+							key: ["icon"],
+							label: "Icon",
+							type: "icon-picker",
+						},
+						{
+							key: ["container", "properties", "text"],
+							label: "Icon Setting",
+							type: "textProperty",
+						},
+					],
 				},
 			],
 		},

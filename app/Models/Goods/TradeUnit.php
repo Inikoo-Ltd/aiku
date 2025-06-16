@@ -10,6 +10,9 @@ namespace App\Models\Goods;
 
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
+use App\Models\Helpers\Brand;
+use App\Models\Helpers\Tag;
+use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAttachments;
@@ -22,6 +25,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -57,17 +61,23 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
+ * @property string $status
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcodes
+ * @property-read Collection<int, Brand> $brands
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read Collection<int, Product> $outers
+ * @property-read Collection<int, OrgStock> $orgStocks
+ * @property-read Collection<int, Product> $products
+ * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read \App\Models\Goods\TradeUnitStats|null $stats
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, SupplierProduct> $supplierProducts
+ * @property-read Collection<int, Tag> $tags
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()
@@ -140,19 +150,43 @@ class TradeUnit extends Model implements HasMedia, Auditable
         return $this->belongsToMany(Stock::class);
     }
 
-    public function outers(): BelongsToMany
+    public function products(): MorphToMany
     {
-        return $this->belongsToMany(Product::class);
+        return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units');
+    }
+
+    public function orgStocks(): MorphToMany
+    {
+        return $this->morphedByMany(OrgStock::class, 'model', 'model_has_trade_units');
     }
 
     public function supplierProducts(): MorphToMany
     {
-        return $this->morphedByMany(SupplierProduct::class, 'model_has_trade_units');
+        return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units');
     }
 
     public function barcode(): BelongsTo
     {
         return $this->belongsTo(Barcode::class);
+    }
+
+    public function brands(): MorphToMany
+    {
+        return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
+    }
+
+    public function brand(): ?Brand
+    {
+        return $this->brands()->first();
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(
+            Tag::class,
+            'model',
+            'model_has_tags'
+        )->withTimestamps();
     }
 
     public function barcodes(): MorphToMany
@@ -175,6 +209,12 @@ class TradeUnit extends Model implements HasMedia, Auditable
                 'aroma'
             );
     }
+
+    public function stats(): HasOne
+    {
+        return $this->hasOne(TradeUnitStats::class);
+    }
+
 
 
 }

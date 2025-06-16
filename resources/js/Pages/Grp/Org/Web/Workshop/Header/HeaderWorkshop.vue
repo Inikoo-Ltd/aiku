@@ -19,17 +19,18 @@ import { set, get, debounce } from 'lodash-es'
 import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 
-import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBrowser } from "@fal"
+import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBrowser, faMobile } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeading, faHeart, faLowVision, faSignIn } from '@far'
+import { faEye } from '@fad'
 
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import Toggle from '@/Components/Pure/Toggle.vue'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
 
-library.add(faBrowser, faPresentation, faCube, faText, faHeart, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, falHeart, faLowVision)
+library.add(faBrowser, faPresentation, faCube, faText, faHeart, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, falHeart, faLowVision, faMobile)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -84,6 +85,8 @@ const selectedTab = ref(tabs[0])
 const saveCancelToken = ref<Function | null>(null)
 const isPreviewLoggedIn = ref(false)
 const _iframe = ref<IframeHTMLAttributes | null>(null)
+const currentView = ref('desktop')
+provide('currentView',currentView )
 
 const isLoadingTemplate = ref(false)
 const onSelectBlock = async (selectedBlock: object) => {
@@ -239,6 +242,9 @@ onMounted(() => {
     })
 })
 
+watch(currentView, (newValue) => {
+	iframeClass.value = setIframeView(newValue)
+})
 
 </script>
 
@@ -315,7 +321,8 @@ onMounted(() => {
                         <SideEditor v-if="usedTemplates?.[selectedTab.key]?.data?.fieldValue" :key="keySidebar"
                             v-model="usedTemplates[selectedTab.key].data.fieldValue"
                             :blueprint="getBlueprint(usedTemplates[selectedTab.key].code)"
-                            :uploadImageRoute="uploadImageRoute" :panelOpen="panelActive" />
+                            :uploadImageRoute="uploadImageRoute" :panelOpen="panelActive" 
+                            @update:model-value="e => usedTemplates[selectedTab.key].data.fieldValue = e"/>
                     </div>
                 </div>
             </div>
@@ -325,10 +332,11 @@ onMounted(() => {
             <div v-if="usedTemplates?.topBar?.code || usedTemplates?.header?.code" class="bg-white h-full">
                 <div class="flex justify-between max-w-7xl mx-auto bg-slate-200 border border-b-gray-300 pr-6">
                     <div class="flex">
-                        <ScreenView @screenView="(e) => iframeClass = setIframeView(e)" />
-                        <div class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'"
+                        <ScreenView  @screenView="(e) => {currentView = e}" v-model="currentView" />
+                        <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600" title="Desktop view"
+                            v-tooltip="trans('Open preview in new tab')"
                             @click="openFullScreenPreview">
-                            <FontAwesomeIcon :icon='faLowVision' aria-hidden='true' />
+                            <FontAwesomeIcon :icon="faEye" class="" fixed-width aria-hidden="true" />
                         </div>
                     </div>
 

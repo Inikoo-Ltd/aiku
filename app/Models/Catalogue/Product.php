@@ -13,22 +13,28 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Models\CRM\BackInStockReminder;
+use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
+use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
+use App\Models\Web\WebpageHasProduct;
+use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -36,7 +42,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Spatie\Tags\HasTags;
 
 /**
  *
@@ -82,44 +87,42 @@ use Spatie\Tags\HasTags;
  * @property string|null $source_id
  * @property string|null $historic_source_id
  * @property bool $is_for_sale For sale products including out of stock
+ * @property int|null $exclusive_for_customer_id
  * @property-read \App\Models\Catalogue\Asset|null $asset
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \Illuminate\Database\Eloquent\Collection<int, BackInStockReminder> $backInStockReminders
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read \App\Models\Helpers\Currency $currency
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
+ * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Favourite> $favourites
+ * @property-read LaravelCollection<int, Favourite> $favourites
  * @property-read Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Product|null $mainProduct
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgStock> $orgStocks
+ * @property-read LaravelCollection<int, OrgStock> $orgStocks
  * @property-read Organisation $organisation
  * @property-read Portfolio|null $portfolio
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $productVariants
- * @property \Illuminate\Database\Eloquent\Collection<int, \Spatie\Tags\Tag> $tags
+ * @property-read LaravelCollection<int, Product> $productVariants
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
- * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
+ * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAllTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAllTagsOfAnyType($tags)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAnyTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAnyTagsOfAnyType($tags)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withAnyTagsOfType(array|string $type)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTags(\ArrayAccess|\Spatie\Tags\Tag|array|string $tags, ?string $type = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTrashed()
  * @mixin \Eloquent
  */
@@ -132,7 +135,6 @@ class Product extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasFactory;
     use HasImage;
-    use HasTags;
 
     protected $guarded = [];
 
@@ -204,6 +206,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasOne(ProductStats::class);
     }
 
+    public function contents(): MorphMany
+    {
+        return $this->morphMany(ModelHasContent::class, 'model');
+    }
+
     public function orgStocks(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -214,18 +221,7 @@ class Product extends Model implements Auditable, HasMedia
 
     public function tradeUnits(): MorphToMany
     {
-        return $this->morphToMany(
-            TradeUnit::class,
-            'model',
-            'model_has_trade_units',
-            'model_id',
-            null,
-            null,
-            null,
-            'trade_units',
-        )
-            ->withPivot(['quantity', 'notes'])
-            ->withTimestamps();
+        return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
     }
 
     public function productVariants(): HasMany
@@ -273,10 +269,26 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasMany(Favourite::class);
     }
 
+    public function webpageHasProducts(): HasMany
+    {
+        return $this->hasMany(WebpageHasProduct::class);
+    }
+
     public function backInStockReminders(): HasMany
     {
         return $this->hasMany(BackInStockReminder::class);
     }
 
+    public function tradeUnitTagsViaTradeUnits(): LaravelCollection
+    {
+        return Tag::whereHas('tradeUnits', function ($query) {
+            $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
+        })->get();
+    }
+
+    public function exclusiveForCustomer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
 
 }

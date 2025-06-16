@@ -11,8 +11,6 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
-use App\Actions\Dispatching\Picking\AssignPackerToPicking;
-use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
@@ -41,29 +39,6 @@ class UpdateDeliveryNote extends OrgAction
         $changes      = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
         $deliveryNote->refresh();
-
-        if (Arr::get($modelData, 'picker_id')) {
-            foreach ($deliveryNote->deliveryNoteItems as $item) {
-                AssignPickerToPicking::make()->action(
-                    $item->pickings,
-                    [
-                        'picker_id' => $deliveryNote->picker_id
-                    ]
-                );
-            }
-        }
-
-        if (Arr::get($modelData, 'packer_id')) {
-            foreach ($deliveryNote->deliveryNoteItems as $item) {
-                AssignPackerToPicking::make()->action(
-                    $item->pickings,
-                    [
-                        'packer_id' => $deliveryNote->packer_id
-                    ]
-                );
-            }
-        }
-
 
         if (count($changes) > 0) {
             DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
@@ -99,7 +74,10 @@ class UpdateDeliveryNote extends OrgAction
             'phone'     => ['sometimes', 'nullable', 'string'],
             'date'      => ['sometimes', 'date'],
             'picker_id' => ['sometimes'],
-            'packer_id' => ['sometimes']
+            'packer_id' => ['sometimes'],
+            'picker_user_id' => ['sometimes'],
+            'packer_user_id' => ['sometimes'],
+            'parcels' => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -20,14 +21,17 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategory extends OrgAction
 {
     use WithNoStrictRules;
+    use WithImageCatalogue;
     use WithProductCategoryHydrators;
 
     /**
@@ -35,6 +39,7 @@ class StoreProductCategory extends OrgAction
      */
     public function handle(Shop|ProductCategory $parent, array $modelData): ProductCategory
     {
+        $imageData = ['image' => Arr::pull($modelData, 'image')];
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
@@ -69,6 +74,10 @@ class StoreProductCategory extends OrgAction
             return $productCategory;
         });
 
+        if ($imageData['image']) {
+            $this->processCatalogueImage($imageData, $productCategory);
+        }
+
         ProductCategoryRecordSearch::dispatch($productCategory);
         $this->productCategoryHydrators($productCategory);
         $this->masterProductCategoryUsageHydrators($productCategory, $productCategory->masterProductCategory);
@@ -88,12 +97,18 @@ class StoreProductCategory extends OrgAction
                     table: 'product_categories',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
             'name'        => ['required', 'max:250', 'string'],
             'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image'       => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
             'state'       => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
             'description' => ['sometimes', 'required', 'max:1500'],
 
@@ -164,11 +179,19 @@ class StoreProductCategory extends OrgAction
 
     public function htmlResponse(ProductCategory $productCategory, ActionRequest $request): RedirectResponse
     {
-        if (class_basename($productCategory->parent) == 'ProductCategory') {
+        if (class_basename($productCategory->parent) == 'ProductCategory' && $productCategory->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             return Redirect::route('grp.org.shops.show.catalogue.departments.show.families.show', [
                 'organisation' => $productCategory->organisation->slug,
                 'shop'         => $productCategory->shop->slug,
                 'department'   => $productCategory->parent->slug,
+                'family'       => $productCategory->slug,
+            ]);
+        } elseif (class_basename($productCategory->parent) == 'ProductCategory' && $productCategory->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            return Redirect::route('grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', [
+                'organisation' => $productCategory->organisation->slug,
+                'shop'         => $productCategory->shop->slug,
+                'department'   => $productCategory->parent->parent->slug,
+                'subDepartment' => $productCategory->parent->slug,
                 'family'       => $productCategory->slug,
             ]);
         } else {

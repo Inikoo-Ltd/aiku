@@ -24,6 +24,10 @@ const props = defineProps<{
   address_modal_title?: string
 }>();
 
+const emits = defineEmits<{
+    (e: "onDone"): void
+    (e: "onHasChange"): void
+}>()
 
 const homeAddress = computed(() => {
   return props.addresses.address_list?.data.find(
@@ -52,6 +56,7 @@ const onSubmitNewAddress = async (address: Address) => {
           isCreateNewAddress.value = false;
       },
       onSuccess: () => {
+        emits("onHasChange")
         notify({
           title: trans("Success"),
           text: trans("Successfully create new address."),
@@ -106,8 +111,10 @@ const onSubmitEditAddress = (address: Address) => {
         isCreateNewAddress.value = false;
         // isModalAddress.value = false
         isEditAddress.value = false;
+        
       },
       onSuccess: () => {
+        emits("onHasChange")
         notify({
           title: trans("Success"),
           text: trans("Successfully update the address."),
@@ -134,6 +141,9 @@ const onSelectAddress = (selectedAddress: Address) => {
     },
     {
       onStart: () => isSelectAddressLoading.value = selectedAddress.id,
+      onSuccess: () => {
+        emits("onHasChange")
+      },
       onFinish: () => isSelectAddressLoading.value = false
     }
   );
@@ -150,6 +160,9 @@ const onPinnedAddress = (addressID: number) => {
     {
       preserveScroll: true,
       onStart: () => isLoading.value = "onPinned" + addressID,
+      onSuccess: () => {
+        emits("onHasChange")
+      },
       onFinish: () => {
         isLoading.value = false;
       },
@@ -171,6 +184,9 @@ const onDeleteAddress = (addressID: number) => {
     {
       preserveScroll: true,
       onStart: () => isLoading.value = "onDelete" + addressID,
+      onSuccess: () => {
+        emits("onHasChange")
+      },
       onFinish: () => {
         isLoading.value = false;
       },
@@ -188,9 +204,9 @@ const onDeleteAddress = (addressID: number) => {
 
 <template>
   <div class="h-[600px] px-2 py-1 overflow-auto">
-    <div class="flex justify-between border-b border-gray-300">
-      <div class="text-2xl font-bold text-center mb-2 flex gap-x-2">
-        {{ address_modal_title }}
+    <div class="flex justify-between items-center border-b border-gray-300 py-2">
+      <div class="text-2xl font-bold text-center flex gap-x-2">
+        {{ address_modal_title ?? trans('Manage address') }}
 
         <div class="relative">
           <Transition name="slide-to-right">
@@ -413,7 +429,13 @@ const onDeleteAddress = (addressID: number) => {
       </div>
 
     </div>
-
+    
+  </div>
+  
+  <div class="border-t border-gray-300 pt-3">
+    <Button @click="emits('onDone')" type="tertiary" label="done" full>
+    
+    </Button>
   </div>
 </template>
 

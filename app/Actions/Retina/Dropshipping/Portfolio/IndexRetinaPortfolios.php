@@ -12,85 +12,70 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Catalogue\DropshippingPortfolioResource;
+use App\Http\Resources\Dropshipping\DropshippingPortfolioResource;
+use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\TiktokUser;
-use App\Models\Fulfilment\StoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
-    public function handle(ShopifyUser|TiktokUser|Customer|WebUser $scope, $prefix = null): LengthAwarePaginator
+    private CustomerSalesChannel $customerSalesChannel;
+
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
+        $unUploadedFilter = AllowedFilter::callback('un_upload', function ($query) {
+            $query->whereNull('platform_product_id');
+        });
+
         $query = QueryBuilder::for(Portfolio::class);
+        $query->where('customer_sales_channel_id', $customerSalesChannel->id);
+        $query->where('status', true);
 
-        if ($scope instanceof ShopifyUser || $scope instanceof TiktokUser) {
-            $customer = $scope->customer;
-            $query->where('customer_id', $customer->id);
-        } elseif ($scope instanceof WebUser) {
-            $query->where('customer_id', $scope->customer->id);
-        } elseif ($scope instanceof Customer) {
-            $query->where('customer_id', $scope->id);
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $query->with(['shopifyPortfolio', 'customerSalesChannel']);
         }
-
-        $query->where('platform_id', $this->platform->id);
-
         $query->with(['item']);
 
-        if ($this->customer->is_fulfilment) {
-            $query->where('item_type', class_basename(StoredItem::class));
-        } else {
-            $query->where('item_type', class_basename(Product::class));
-        }
 
-        return $query->withPaginator($prefix, tableName: request()->route()->getName())
+        $query->where('item_type', class_basename(Product::class));
+
+
+        return $query->defaultSort('-id')
+            ->allowedFilters([$unUploadedFilter])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        if ($customerSalesChannel->customer_id == $this->customer->id) {
             return true;
         }
 
-        return $request->user()->is_root;
+        return false;
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
-        $customer = $request->user()->customer;
+        $this->customerSalesChannel = $customerSalesChannel;
 
         $this->initialisation($request);
 
-        return $this->handle($customer);
+        return $this->handle($customerSalesChannel, 'products');
     }
 
-    public function inPlatform(Platform $platform, ActionRequest $request): LengthAwarePaginator
+    public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
     {
-        $this->initialisationFromPlatform($platform, $request);
-
-        return $this->handle($this->platformUser);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inPupil(Platform $platform, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->platformUser = $request->user();
-        $this->platform = $platform;
-        $this->asAction = true;
-        $this->initialisationFromPupil($request);
-
-        return $this->handle($this->shopifyUser);
+        return DropshippingPortfolioResource::collection($portfolios);
     }
 
     public function htmlResponse(LengthAwarePaginator $portfolios): Response
@@ -102,39 +87,73 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $title = __('My Portfolio');
 
+
+        $platformName = $this->customerSalesChannel->name;
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $platformName = __('Manual');
+        }
+
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
                 'title'       => $title,
                 'is_manual'   => $manual,
                 'pageHead'    => [
-                    'title'   => $title,
-                    'icon'    => 'fal fa-cube',
-                    'actions' => [
-                        $this->customer->is_fulfilment && ($this->platformUser instanceof ShopifyUser) ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => 'Sync Items',
-                            'route' => [
-                                'name'       => $this->asPupil ? 'pupil.models.dropshipping.shopify_user.product.sync' : 'retina.models.dropshipping.shopify_user.product.sync',
-                                'parameters' => [
-                                    'shopifyUser' => $this->platformUser->id
-                                ]
+                    'title' => $title,
+                    'model' => $platformName,
+                    'icon'  => 'fal fa-cube'
+                ],
+                'routes'      => [
+                    'bulk_upload'               => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name'       => 'retina.models.dropshipping.shopify.batch_upload',
+                            'parameters' => [
+                                'shopifyUser' => $this->customerSalesChannel->user->id
                             ]
-                        ] : [],
-                        $this->customer->is_fulfilment && ($this->platformUser instanceof TiktokUser) ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => 'Sync Items',
-                            'route' => [
-                                'name'       => 'retina.models.dropshipping.tiktok.product.sync',
-                                'parameters' => [
-                                    'tiktokUser' => $this->platformUser->id
-                                ]
+                        ],
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name'       => 'retina.models.dropshipping.woo.batch_upload',
+                            'parameters' => [
+                                'wooCommerceUser' => $this->customerSalesChannel->user->id
                             ]
-                        ] : [],
-                    ]
+                        ],
+                        PlatformTypeEnum::EBAY => [
+                            'name'       => 'retina.models.dropshipping.ebay.batch_upload',
+                            'parameters' => [
+                                'ebayUser' => $this->customerSalesChannel->user->id
+                            ]
+                        ],
+                        default => false
+                    },
+                    'itemRoute'                 => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
+                    ],
+                    'addPortfolioRoute'         => [
+                        'name'       => 'retina.models.customer_sales_channel.customer.product.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'updatePortfolioRoute'      => [
+                        'name'       => 'retina.models.portfolio.update',
+                        'parameters' => []
+                    ],
+                    'deletePortfolioRoute'      => [
+                        'name'       => 'retina.models.portfolio.delete',
+                        'parameters' => []
+                    ],
+                    'batchDeletePortfolioRoute' => [
+                        'name'       => 'retina.models.customer_sales_channel.portfolio.batch.delete',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ],
+                        'method'     => 'post'
+                    ],
                 ],
                 'download_route' => [
                     'xlsx' => [
@@ -173,12 +192,28 @@ class IndexRetinaPortfolios extends RetinaAction
                         'platform' => $this->platform->id
                     ]
                 ] : [],
+                'content'     => [
+                    'portfolio_empty' => [
+                        'title'       => __("You don't have any items in your portfolio"),
+                        'description' => __("To get started, add products to your portfolios."),
+                        'separation'  => __("or"),
+                        'add_button'  => __("Add Portfolio"),
+                    ]
+                ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'products' => DropshippingPortfolioResource::collection($portfolios)
+                'step'             => [
+                    'current' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
+                        default => 0
+                    }
+                ],
+                'platform_user_id' => $this->customerSalesChannel->user?->id,
+                'platform_data'    => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
+                'products'         => DropshippingPortfolioResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));
     }
@@ -200,16 +235,23 @@ class IndexRetinaPortfolios extends RetinaAction
                     'count' => 0
                 ]);
 
-            $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'image', label: __(''), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false);
+            $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'customer_price', label: __('RRP'), tooltip: __('Recommended retail price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
+            if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
+                $table->column(key: 'status', label: __('status'));
+            }
+
+            $table->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
         return
             array_merge(
@@ -219,7 +261,10 @@ class IndexRetinaPortfolios extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.portfolios.index'
+                                'name'       => 'retina.dropshipping.customer_sales_channels.basket.index',
+                                'parameters' => [
+                                    $customerSalesChannel->slug
+                                ]
                             ],
                             'label' => __('My Portfolio'),
                         ]

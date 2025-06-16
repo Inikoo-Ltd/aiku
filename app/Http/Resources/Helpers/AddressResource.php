@@ -28,9 +28,7 @@ class AddressResource extends JsonResource
         /** @var Address $address */
         $address = $this;
 
-        // dd($address->whenPivotLoadedAs('pivot', 'model_has_addresses', function () {
-        //     return $this->pivot->scope;
-        // }));
+
         $addressFormatRepository = new AddressFormatRepository();
         $countryRepository       = new CountryRepository();
         $subdivisionRepository   = new SubdivisionRepository();
@@ -39,14 +37,14 @@ class AddressResource extends JsonResource
 
         $adr = new Adr();
         $adr = $adr
-            ->withCountryCode($address->country_code)
-            ->withAdministrativeArea($address->administrative_area)
-            ->withDependentLocality($address->dependent_locality)
-            ->withLocality($address->locality)
-            ->withPostalCode($address->postal_code)
-            ->withSortingCode($address->sorting_code)
-            ->withAddressLine2($address->address_line_2)
-            ->withAddressLine1($address->address_line_1);
+            ->withCountryCode($address->country_code ?? '')
+            ->withAdministrativeArea($address->administrative_area ?? '')
+            ->withDependentLocality($address->dependent_locality ?? '')
+            ->withLocality($address->locality ?? '')
+            ->withPostalCode($address->postal_code ?? '')
+            ->withSortingCode($address->sorting_code ?? '')
+            ->withAddressLine2($address->address_line_2 ?? '')
+            ->withAddressLine1($address->address_line_1 ?? '');
 
         return [
             'id'                  => $address->id,

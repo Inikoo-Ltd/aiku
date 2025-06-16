@@ -6,10 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentFailure;
-use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentSuccess;
-use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
-use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
@@ -18,16 +14,12 @@ use App\Actions\Dropshipping\Shopify\Webhook\DeleteProductWebhooksShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
+use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
+use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
-    Route::name('checkout_com.')->prefix('checkout-com')->group(function () {
-        Route::get('order-payment-success/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentSuccess::class)->name('order_payment_success');
-        Route::get('order-payment-failure/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentFailure::class)->name('order_payment_failure');
-
-        Route::get('top-up-payment-success/{{paymentAccountShop:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
-        Route::get('top-up-payment-failure/{paymentAccountShop:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
-    });
 });
 
 
@@ -39,6 +31,29 @@ Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group
     Route::post('app/uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
+    });
+});
+
+Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
+    Route::post('wc-user-callback', CallbackRetinaWooCommerceUser::class)->name('callback');
+
+    Route::prefix('{wooCommerceUser:id}')->group(function () {
+        Route::prefix('products')->as('products.')->group(function () {
+            // TODO
+            Route::post('delete', DeleteProductWebhooksWooCommerce::class)->name('delete');
+        });
+
+        Route::prefix('orders')->as('orders.')->group(function () {
+            // TODO
+            Route::post('catch', CatchRetinaOrdersFromWooCommerce::class)->name('catch');
+        });
+    });
+});
+
+Route::prefix('ebay')->name('webhooks.ebay.')->group(function () {
+
+    Route::prefix('{ebayUser:id}')->group(function () {
+
     });
 });
 

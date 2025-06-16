@@ -9,7 +9,7 @@
 namespace App\Actions\Production\Production;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\Production\Hydrators\ProductionHydrateUniversalSearch;
+use App\Actions\Production\Production\Search\ProductionRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductions;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductions;
@@ -65,7 +65,7 @@ class StoreProduction extends OrgAction
 
         GroupHydrateProductions::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateProductions::dispatch($organisation)->delay($this->hydratorsDelay);
-        ProductionHydrateUniversalSearch::dispatch($production);
+        ProductionRecordSearch::dispatch($production);
 
 
         return $production;
@@ -198,7 +198,7 @@ class StoreProduction extends OrgAction
         try {
             $this->initialisation($organisation, $modelData);
             $production = $this->handle($organisation, $this->validatedData);
-        } catch (Exception|Throwable $e) {
+        } catch (Throwable $e) {
             $command->error($e->getMessage());
 
             return 1;

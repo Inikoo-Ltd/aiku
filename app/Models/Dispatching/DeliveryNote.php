@@ -20,6 +20,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;
@@ -32,7 +33,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -61,7 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $delivery_locked
  * @property int|null $address_id
  * @property int|null $delivery_country_id
- * @property string|null $weight
+ * @property int|null $weight actual weight, grams
  * @property int $number_stocks
  * @property int $number_picks
  * @property bool $has_out_of_stocks
@@ -93,6 +93,30 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_vip Indicate if delivery note is for a VIP customer
  * @property int|null $as_organisation_id Indicate if delivery note is for an organisation in this group
  * @property int|null $as_employee_id Indicate if delivery note is for an employee
+ * @property int $estimated_weight grams
+ * @property int $effective_weight Used for UI tables (e.g. sorting), effective_weight=estimated_weight if weight is null, grams
+ * @property array<array-key, mixed>|null $parcels
+ * @property int|null $platform_id
+ * @property int|null $customer_sales_channel_id
+ * @property int|null $picker_user_id
+ * @property int|null $packer_user_id
+ * @property int $number_items current number of items
+ * @property int $number_items_state_unassigned
+ * @property int $number_items_state_queued
+ * @property int $number_items_state_handling
+ * @property int $number_items_state_handling_blocked
+ * @property int $number_items_state_packed
+ * @property int $number_items_state_finalised
+ * @property int $number_items_state_dispatched
+ * @property int $number_items_state_cancelled
+ * @property int $number_items_state_out_of_stock
+ * @property int $number_items_state_no_dispatched
+ * @property int $number_items_handled
+ * @property int $number_items_need_packing
+ * @property int $number_items_packed
+ * @property int $number_items_done
+ * @property bool $is_picked
+ * @property bool $is_packed
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -105,10 +129,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Employee|null $packer
+ * @property-read User|null $packerUser
+ * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read Employee|null $picker
+ * @property-read User|null $pickerUser
+ * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
- * @property-read \App\Models\Dispatching\DeliveryNoteStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -131,6 +158,7 @@ class DeliveryNote extends Model implements Auditable
 
     protected $casts = [
         'data'  => 'array',
+        'parcels'  => 'array',
         'state' => DeliveryNoteStateEnum::class,
         'type'  => DeliveryNoteTypeEnum::class,
 
@@ -149,6 +177,7 @@ class DeliveryNote extends Model implements Auditable
 
     protected $attributes = [
         'data' => '{}',
+        'parcels' => '{}',
     ];
 
     protected $guarded = [];
@@ -186,19 +215,10 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsToMany(Order::class, 'delivery_note_order')->withTimestamps();
     }
 
-    public function stats(): HasOne
-    {
-        return $this->hasOne(DeliveryNoteStats::class);
-    }
 
     public function deliveryNoteItems(): HasMany
     {
         return $this->hasMany(DeliveryNoteItem::class);
-    }
-
-    public function shipments(): BelongsToMany
-    {
-        return $this->belongsToMany(Shipment::class);
     }
 
     public function warehouse(): BelongsTo
@@ -221,9 +241,19 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsTo(Employee::class, 'picker_id');
     }
 
+    public function pickerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'picker_user_id');
+    }
+
     public function packer(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'packer_id');
+    }
+
+    public function packerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'packer_user_id');
     }
 
     public function fixedAddresses(): MorphToMany
@@ -236,5 +266,19 @@ class DeliveryNote extends Model implements Auditable
         return $this->morphMany(Feedback::class, 'origin');
     }
 
+    public function shipments(): MorphToMany
+    {
+        return $this->morphToMany(Shipment::class, 'model', 'model_has_shipments');
+    }
+
+    public function pickings(): HasMany
+    {
+        return $this->hasMany(Picking::class);
+    }
+
+    public function packings(): HasMany
+    {
+        return $this->hasMany(Packing::class);
+    }
 
 }

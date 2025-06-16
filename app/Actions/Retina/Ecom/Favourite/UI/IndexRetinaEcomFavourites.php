@@ -66,15 +66,15 @@ class IndexRetinaEcomFavourites extends RetinaAction
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'retina.dropshipping.favourites.index'
-                            ],
-                            'label'  => __('Favourites'),
-                        ]
-                    ]
+                    // [
+                    //     'type'   => 'simple',
+                    //     'simple' => [
+                    //         'route' => [
+                    //             'name' => 'retina.dropshipping.favourites.index'
+                    //         ],
+                    //         'label'  => __('Favourites'),
+                    //     ]
+                    // ]
                 ]
             );
     }

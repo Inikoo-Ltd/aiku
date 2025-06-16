@@ -9,10 +9,11 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopFooter;
 use App\Actions\Web\Website\GetWebsiteWorkshopHeader;
 use App\Http\Resources\Web\WebpageResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
@@ -25,34 +26,30 @@ use Illuminate\Support\Arr;
 
 class ShowWebpageWorkshopPreview extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebEditAuthorisation;
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, Webpage $webpage, ActionRequest $request): Webpage
-    {
-        $this->scope = $organisation;
-        $this->initialisation($organisation, $request);
-        return $webpage;
-    }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inWebsite(Website $website, Webpage $webpage, ActionRequest $request): Webpage
+    public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
-        $this->scope = $website->organisation;
-        $this->initialisation($website->organisation, $request);
+        $this->initialisationFromShop($shop, $request);
         return $webpage;
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
-        $this->scope = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
+        return $webpage;
+    }
+
+    public function inWebsite(Website $website, Webpage $webpage, ActionRequest $request): Webpage
+    {
+        $this->initialisation($website->organisation, $request);
         return $webpage;
     }
 
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        /** @var Website $website */
         $website = $webpage->website;
 
         return Inertia::render(

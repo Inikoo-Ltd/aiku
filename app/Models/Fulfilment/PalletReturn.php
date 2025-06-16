@@ -11,13 +11,15 @@ namespace App\Models\Fulfilment;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemNoSetReasonStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Models\CRM\Customer;
+use App\Models\Dispatching\Shipment;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Inventory\Warehouse;
-use App\Models\ShopifyUserHasFulfilment;
+use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
@@ -34,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -94,14 +97,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $collection_notes
  * @property string|null $estimated_delivery_date
  * @property int|null $deleted_by
+ * @property array<array-key, mixed>|null $parcels
+ * @property int|null $customer_sales_channel_id
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Currency $currency
- * @property-read Customer|null $customer
+ * @property-read CustomerSalesChannel|null $customerSaleChannel
  * @property-read Address|null $deliveryAddress
  * @property-read mixed $discount_amount
+ * @property-read Collection<int, Address> $fixedAddresses
  * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
  * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
  * @property-read Group $group
@@ -112,6 +118,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read \App\Models\Fulfilment\RecurringBill|null $recurringBill
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
+ * @property-read SalesChannel|null $salesChannel
+ * @property-read Collection<int, Shipment> $shipments
  * @property-read ShopifyUserHasFulfilment|null $shopifyFulfilment
  * @property-read \App\Models\Fulfilment\PalletReturnStats|null $stats
  * @property-read Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
@@ -127,7 +135,6 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn withoutTrashed()
  * @mixin \Eloquent
  */
-
 class PalletReturn extends Model implements HasMedia
 {
     use HasSlug;
@@ -139,18 +146,24 @@ class PalletReturn extends Model implements HasMedia
     use HasAttachments;
 
     protected $guarded = [];
-    protected $casts   = [
-        'state'              => PalletReturnStateEnum::class,
-        'type'               => PalletReturnTypeEnum::class,
-        'not_setup_reason'   => PalletReturnItemNoSetReasonStateEnum::class,
-        'in_process_at'      => 'datetime',
-        'submitted_at'       => 'datetime',
-        'confirmed_at'       => 'datetime',
-        'picking_at'         => 'datetime',
-        'picked_at'          => 'datetime',
-        'dispatched_at'      => 'datetime',
-        'cancel_at'          => 'datetime',
-        'data'               => 'array'
+    protected $casts = [
+        'parcels'          => 'array',
+        'state'            => PalletReturnStateEnum::class,
+        'type'             => PalletReturnTypeEnum::class,
+        'not_setup_reason' => PalletReturnItemNoSetReasonStateEnum::class,
+        'in_process_at'    => 'datetime',
+        'submitted_at'     => 'datetime',
+        'confirmed_at'     => 'datetime',
+        'picking_at'       => 'datetime',
+        'picked_at'        => 'datetime',
+        'dispatched_at'    => 'datetime',
+        'cancel_at'        => 'datetime',
+        'data'             => 'array'
+    ];
+
+    protected $attributes = [
+        'data' => '{}',
+        'parcels' => '{}',
     ];
 
     public function getRouteKeyName(): string
@@ -179,10 +192,6 @@ class PalletReturn extends Model implements HasMedia
         );
     }
 
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
-    }
 
     public function warehouse(): BelongsTo
     {
@@ -259,6 +268,11 @@ class PalletReturn extends Model implements HasMedia
         return $this->belongsTo(Platform::class);
     }
 
+    public function salesChannel(): BelongsTo
+    {
+        return $this->belongsTo(SalesChannel::class);
+    }
+
     public function shopifyFulfilment(): MorphOne
     {
         return $this->morphOne(ShopifyUserHasFulfilment::class, 'model');
@@ -267,6 +281,22 @@ class PalletReturn extends Model implements HasMedia
     public function items(): HasMany
     {
         return $this->hasMany(PalletReturnItem::class);
+    }
+
+    public function shipments(): MorphToMany
+    {
+        return $this->morphToMany(Shipment::class, 'model', 'model_has_shipments');
+    }
+
+    public function fixedAddresses(): MorphToMany
+    {
+        return $this->morphToMany(Address::class, 'model', 'model_has_fixed_addresses')->withTimestamps();
+    }
+
+
+    public function customerSaleChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
     }
 
 }

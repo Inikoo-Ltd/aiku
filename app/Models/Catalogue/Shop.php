@@ -143,7 +143,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read Address|null $collectionAddress
- * @property-read LaravelCollection<int, \App\Models\Catalogue\CollectionCategory> $collectionCategories
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read \App\Models\Catalogue\ShopCommsStats|null $commsStats
  * @property-read Country $country
@@ -200,6 +199,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
  * @property-read SenderEmail|null $senderEmail
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
@@ -512,14 +512,9 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->belongsTo(SenderEmail::class);
     }
 
-    public function collectionCategories(): HasMany
+    public function collections(): MorphToMany
     {
-        return $this->hasMany(CollectionCategory::class);
-    }
-
-    public function collections(): HasMany
-    {
-        return $this->hasMany(Collection::class);
+        return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
     public function services(): HasMany

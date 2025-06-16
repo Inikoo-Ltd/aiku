@@ -26,6 +26,20 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $family_slug
  * @property mixed $family_code
  * @property mixed $family_name
+ * @property mixed $organisation_name
+ * @property mixed $organisation_code
+ * @property mixed $organisation_slug
+ * @property mixed $price
+ * @property mixed $image_thumbnail
+ * @property mixed $current_historic_asset_id
+ * @property mixed $asset_id
+ * @property mixed $available_quantity
+ * @property mixed $customers_invoiced_all
+ * @property mixed $invoices_all
+ * @property mixed $sales_all
+ * @property mixed $id
+ * @property mixed $units
+ * @property mixed $currency_code
  *
  */
 class ProductsResource extends JsonResource
@@ -44,6 +58,7 @@ class ProductsResource extends JsonResource
             'shop_code'                 => $this->shop_code,
             'shop_name'                 => $this->shop_name,
             'organisation_name'         => $this->organisation_name,
+            'organisation_code'         => $this->organisation_code,
             'organisation_slug'         => $this->organisation_slug,
             'department_slug'           => $this->department_slug,
             'department_code'           => $this->department_code,
@@ -52,14 +67,15 @@ class ProductsResource extends JsonResource
             'family_code'               => $this->family_code,
             'family_name'               => $this->family_name,
             'price'                     => $this->price,
+            'units'                     => $this->units,
             'image_thumbnail'           => $this->image_thumbnail,
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
-            'stock'                     => $this->available_quantity,
-            'tags'                      => $this->tags()->pluck('slug')->toArray(),
+            'available_quantity'        => $this->available_quantity,
             'customers_invoiced_all'    => $this->customers_invoiced_all,
             'invoices_all'              => $this->invoices_all,
             'sales_all'                 => $this->sales_all,
+            'currency_code'             => $this->currency_code
         ];
     }
 }

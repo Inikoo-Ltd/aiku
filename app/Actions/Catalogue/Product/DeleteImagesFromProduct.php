@@ -10,7 +10,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\UI\GetProductShowcase;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Organisation;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImagesFromProduct extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     public function handle(Product $product, Media $media): Product
     {

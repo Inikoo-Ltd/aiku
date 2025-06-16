@@ -11,8 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\Product;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\Platform;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
@@ -32,13 +31,13 @@ class StoreProductToTiktok extends RetinaAction
         DB::transaction(function () use ($tiktokUser, $modelData) {
             $productImages = [];
             foreach (Arr::get($modelData, 'products') as $product) {
+                $product = Product::find($product);
+
                 /** @var Portfolio $portfolio */
                 $portfolio = StorePortfolio::run(
-                    $tiktokUser->customer,
+                    $tiktokUser->customerSalesChannel,
                     $product,
-                    [
-                    'platform_id' => Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first()->id,
-                ]
+                    []
                 );
 
                 foreach ($portfolio->item?->images as $image) {

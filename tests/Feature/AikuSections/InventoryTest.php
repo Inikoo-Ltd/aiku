@@ -13,12 +13,10 @@ namespace Tests\Feature;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
-use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
 use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
 use App\Actions\Inventory\Location\StoreLocation;
-use App\Actions\Inventory\Location\Tags\SyncTagsLocation;
 use App\Actions\Inventory\Location\UpdateLocation;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
@@ -52,7 +50,6 @@ use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
-use App\Models\Helpers\Tag;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\LostAndFoundStock;
@@ -434,27 +431,6 @@ test('add lost stock', function ($location) {
     return $lostAndFound;
 })->depends('create location in warehouse area');
 
-test('add tag to location', function ($location) {
-    $tag = StoreTag::make()->action([
-        'name' => 'TAG',
-        'type' => 'inventory'
-    ]);
-
-    expect($tag)->toBeInstanceOf(Tag::class);
-
-    $location = SyncTagsLocation::make()->action($location, [
-        'tags' => [$tag->tag_slug],
-    ]);
-
-
-    expect($location)->toBeInstanceOf(Location::class)
-        ->and($location->tags)->not->toBeNull()
-        ->and($location->tags()->count())->toBe(1);
-
-    return $location;
-
-})->depends('create location in warehouse area');
-
 test('remove lost stock', function ($lostAndFoundStock) {
     $lostAndFound = RemoveLostAndFoundStock::make()->action($lostAndFoundStock, 2);
     expect($lostAndFound->quantity)->toBe(2.0);
@@ -502,8 +478,6 @@ test("UI Index locations", function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", "locations")->etc()
             )
-            ->has("tagRoute")
-            ->has("tagsList")
             ->has("data");
     });
 });
@@ -673,8 +647,7 @@ test("UI Index warehouses", function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $warehouse->name)->etc()
             )
-            ->has("tabs")
-            ->has("tagsList");
+            ->has("tabs");
     });
 });
 

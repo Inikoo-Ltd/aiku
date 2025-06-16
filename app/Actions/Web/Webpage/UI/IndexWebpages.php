@@ -10,7 +10,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
@@ -35,7 +35,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWebpages extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithWebpageSubNavigation;
 
     private Group|Organisation|Website|Fulfilment|Webpage $parent;
@@ -206,6 +206,7 @@ class IndexWebpages extends OrgAction
 
     public function handle(Group|Organisation|Website|Webpage $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
+
         if ($bucket) {
             $this->bucket = $bucket;
         }
@@ -257,6 +258,18 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($bucket == 'storefront') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
+        }
+
+        if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
+            $queryBuilder->orderByRaw("CASE 
+            WHEN webpages.sub_type = 'storefront' THEN 1
+            WHEN webpages.sub_type = 'department' THEN 2
+            WHEN webpages.sub_type = 'sub_department' THEN 3
+            WHEN webpages.sub_type = 'family' THEN 4
+            WHEN webpages.sub_type = 'catalogue' THEN 5
+            WHEN webpages.sub_type = 'product' THEN 6
+            ELSE 7
+            END, webpages.sub_type ASC");
         }
 
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
@@ -352,6 +365,14 @@ class IndexWebpages extends OrgAction
             $subNavigation = $this->getWebpageNavigation($this->parent);
         }
 
+        $routeCreate = '';
+
+        if ($this->scope instanceof Fulfilment) {
+            $routeCreate = 'grp.org.fulfilments.show.web.webpages.create';
+        } elseif ($this->scope instanceof Shop) {
+            $routeCreate = 'grp.org.shops.show.web.webpages.create';
+        }
+
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -373,7 +394,7 @@ class IndexWebpages extends OrgAction
                             'style' => 'create',
                             'label' => __('webpage'),
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.web.webpages.create',
+                                'name'       => $routeCreate,
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]

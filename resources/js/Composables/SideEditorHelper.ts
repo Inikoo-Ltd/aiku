@@ -29,7 +29,9 @@ import JustifyContent from '@/Components/CMS/Fields/JustifyContent.vue'
 import Shadow from '@/Components/CMS/Fields/Shadow.vue'
 import ColumnComponentPicker from '@/Components/CMS/Fields/ColumnComponentPicker.vue'
 import Disclosure from '@/Components/CMS/Fields/Disclosure.vue'
-
+import ArrayEdit from '@/Components/CMS/Fields/ArrayEdit/LabelAndOrderArray.vue'
+import InputNumber from 'primevue/inputnumber';
+import fontFamily from "@/Components/Workshop/Properties/TextFontFamily.vue"
 import { set } from 'lodash-es'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import TextHeader from '@/Components/CMS/Fields/TextHeader.vue'
@@ -37,7 +39,11 @@ import ColorPicker from '@/Components/CMS/Fields/ColorPicker.vue'
 import ColorProperty from '@/Components/Workshop/Properties/ColorProperty.vue'
 import TextInputSwitch from '@/Components/CMS/Fields/TextInputSwitch.vue'
 import TimelineArray from '@/Components/CMS/Fields/TimelineArray.vue'
-
+import IconPickerBox from '@/Components/CMS/Fields/IconPickerBox.vue'
+import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
+import ToggleSwitch from 'primevue/toggleswitch';
+import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
+import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -73,9 +79,15 @@ export const getComponent = (componentName: string) => {
         "column-layout" : ColumnComponentPicker,
         "disclosure" : Disclosure,
         "inputSwitch" : TextInputSwitch,
-        "timeline" : TimelineArray
+        "timeline" : TimelineArray,
+        "array-data" : ArrayEdit,
+        "icon-picker" : IconPickerBox,
+        'number' : PureInputNumber,
+        'switch' : ToggleSwitch ,
+        'fontFamily' : fontFamily,
+        'min_max_price' : MinMaxPrice, 
+        'video-settings' : VideoSettings
     }
-    
     return components[componentName] ?? NotFoundComponents
 }
 
@@ -84,7 +96,7 @@ export const getFormValue = (data: {}, fieldKeys: string | string[]) => {
     return keys.reduce((acc, key) => acc && acc[key], data) ?? null;
 };
 
-export const setFormValue = (mValue: any, fieldKeys: string | string[], newVal: any) => {
+export const setFormValue = (mValue = {} , fieldKeys: string | string[], newVal: any) => {
     const keys = Array.isArray(fieldKeys) ? fieldKeys : [fieldKeys];
     return set(mValue, keys, newVal);
 };

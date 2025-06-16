@@ -6,6 +6,7 @@ import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import axios from "axios";
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
+import { getStyles } from "@/Composables/styles";
 
 defineProps<{
   data: {
@@ -52,15 +53,18 @@ provide("onLogout", onLogoutAuth);
 <template>
   <!-- Section: Topbar -->
   <component v-if="data?.topBar?.data.fieldValue" :is="getIrisComponent(data?.topBar.code)"
-             :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" class="hidden md:block" />
+             :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" />
 
   <!-- Section: Header -->
   <component :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
              class="hidden md:block" />
 
   <!-- Section: Menu desktop -->
-  <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :navigations="menu.data.fieldValue.navigation"
+  <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :fieldValue="menu?.data?.fieldValue"
              :colorThemed="colorThemed" class="hidden md:block" />
 
-  <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue?.navigation" :screenType="screenType" />
+  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)">
+      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :screenType="screenType" />
+  </div>
+
 </template>

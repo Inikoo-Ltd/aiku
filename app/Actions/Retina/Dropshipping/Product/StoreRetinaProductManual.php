@@ -10,9 +10,10 @@
 namespace App\Actions\Retina\Dropshipping\Product;
 
 use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
+use App\Actions\Dropshipping\Shopify\Product\StorePortfolioShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,17 +28,21 @@ class StoreRetinaProductManual extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function handle(Customer $customer, array $modelData): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
-        DB::transaction(function () use ($customer, $modelData) {
-            StoreMultipleManualPortfolios::run($customer, $modelData);
+        DB::transaction(function () use ($customerSalesChannel, $modelData) {
+            if ($customerSalesChannel->platform_user_type == "ShopifyUser") {
+                StorePortfolioShopify::run($customerSalesChannel->user, $modelData);
+            } else {
+                StoreMultipleManualPortfolios::run($customerSalesChannel, $modelData);
+            }
         });
     }
 
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array']
+            'items' => ['required', 'array']
         ];
     }
 
@@ -49,10 +54,17 @@ class StoreRetinaProductManual extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function asController(Customer $customer, ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        $this->handle($customer, $this->validatedData);
+        $this->handle($customerSalesChannel, $this->validatedData);
+    }
+
+    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): void
+    {
+        $this->initialisationActions($customerSalesChannel->customer, $modelData);
+
+        $this->handle($customerSalesChannel, $this->validatedData);
     }
 }

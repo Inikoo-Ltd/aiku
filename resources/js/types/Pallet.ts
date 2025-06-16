@@ -119,14 +119,17 @@ export interface PalletReturn {
     number_stored_items: number
     number_services: number
     number_physical_goods: number
+    is_collection?: boolean  // if true then no delivery address
 }
 
 
 export interface FieldOrderSummary {
     label: string
+    label_class?: string
     quantity: number
     price_base?: number
     price_total: number | string
+    price_total_class?: string
     information_icon?: string
     information?: string
     currency: {
@@ -139,6 +142,9 @@ export interface FieldOrderSummary {
 // Box Stats in Pallet Delivery
 export interface BoxStats {
     delivery_state: Icon
+    is_platform: boolean
+    is_collection: boolean
+    platform_customer: object
     fulfilment_customer: {
         address: AddressManagement
         customer: {
@@ -173,6 +179,14 @@ export interface BoxStats {
         route: routeType
     }
     order_summary: FieldOrderSummary[][]
+    platform?: {
+        name: string
+        code: string
+    }
+    parcels: {
+        weight: number
+        dimensions: number[]
+    }[]
 }
 
 

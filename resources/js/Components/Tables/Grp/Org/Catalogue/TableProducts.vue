@@ -5,26 +5,23 @@
   -->
 
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3'
-import Table from '@/Components/Table/Table.vue'
-import { Product } from "@/types/product"
-import Icon from "@/Components/Icon.vue"
+import { Link } from "@inertiajs/vue3";
+import Table from "@/Components/Table/Table.vue";
+import { Product } from "@/types/product";
+import Icon from "@/Components/Icon.vue";
+import { remove as loRemove } from "lodash-es";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from "@fal";
+import { routeType } from "@/types/route";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import { onMounted, onUnmounted, ref, inject } from "vue";
 
-import { remove as loRemove } from 'lodash-es'
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { Invoice } from "@/types/invoice";
+import { RouteParams } from "@/types/route-params";
 
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from '@fal'
-import { routeType } from '@/types/route'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { onMounted, onUnmounted, ref } from 'vue'
-import Tag from '@/Components/Tag.vue'
-import axios from 'axios'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { notify } from '@kyvg/vue3-notification'
-import Multiselect from '@vueform/multiselect'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { inject } from 'vue'
-library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil)
+
+library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil);
 
 
 const props = defineProps<{
@@ -35,168 +32,163 @@ const props = defineProps<{
         submitAttach: routeType
         detach: routeType
     },
-    tagsList: tag[],
-    tagRoute?: {}
-}>()
-
-interface tag {
-    id: number
-    slug: string
-    name: string
-    type: string
-}
+}>();
+console.log(props)
 
 function productRoute(product: Product) {
-    console.log(route().current())
     switch (route().current()) {
-      case 'grp.org.shops.show.catalogue.products.current_products.index':
-        return route(
-          'grp.org.shops.show.catalogue.products.current_products.show',
-          [route().params['organisation'], route().params['shop'], product.slug])
-      case 'grp.org.shops.show.catalogue.products.in_process_products.index':
-        return route(
-          'grp.org.shops.show.catalogue.products.in_process_products.show',
-          [route().params['organisation'], route().params['shop'], product.slug])
-      case 'grp.org.shops.show.catalogue.products.discontinued_products.index':
-        return route(
-          'grp.org.shops.show.catalogue.products.discontinued_products.show',
-          [route().params['organisation'], route().params['shop'], product.slug])
-      case 'grp.org.shops.show.catalogue.products.all_products.index':
-        return route(
-          'grp.org.shops.show.catalogue.products.all_products.show',
-          [route().params['organisation'], route().params['shop'], product.slug])
+        case "grp.org.shops.show.catalogue.products.current_products.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.current_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]);
+        case "grp.org.shops.show.catalogue.products.in_process_products.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.in_process_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
 
+                    product.slug]);
+        case "grp.org.shops.show.catalogue.products.discontinued_products.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.discontinued_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug]);
+        case "grp.org.shops.show.catalogue.products.all_products.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.dashboard":
             return route(
-                'grp.org.shops.show.catalogue.products.all_products.show',
-                [route().params['organisation'], route().params['shop'], product.slug])
-        case 'grp.org.shops.index':
+                "grp.org.shops.show.catalogue.products.all_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug]);
+
+
+        case "grp.org.fulfilments.show.catalogue.index":
             return route(
-                'grp.org.shops.show.catalogue.products.all_products.show',
-                [route().params['organisation'], product.shop_slug, product.slug])
-        case 'grp.org.fulfilments.show.catalogue.index':
+                "grp.org.fulfilments.show.catalogue.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).fulfilment,
+                    product.slug]);
+        case "grp.org.shops.show.catalogue.departments.show":
+        case "grp.org.shops.show.catalogue.departments.show.products.index":
             return route(
-                'grp.org.fulfilments.show.catalogue.show',
-                [route().params['organisation'], route().params['fulfilment'], product.slug])
-        case 'grp.org.shops.show.catalogue.departments.show':
+                "grp.org.shops.show.catalogue.departments.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).department,
+
+
+                    product.slug]);
+        case "grp.org.shops.show.catalogue.families.show.products.index":
             return route(
-                'grp.org.shops.show.catalogue.departments.show.products.show',
-                [route().params['organisation'], route().params['shop'], route().params['department'], product.slug])
-        case 'grp.org.shops.show.catalogue.families.show.products.index':
+                "grp.org.shops.show.catalogue.families.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).family,
+
+                    product.slug]);
+        case "grp.org.shops.show.catalogue.departments.show.families.show.products.index":
             return route(
-                'grp.org.shops.show.catalogue.families.show.products.show',
-                [route().params['organisation'], route().params['shop'], route().params['family'], product.slug])
-        case 'grp.org.shops.show.catalogue.departments.show.families.show.products.index':
+                "grp.org.shops.show.catalogue.departments.show.families.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).department,
+                    (route().params as RouteParams).family,
+                    product.slug
+                ]);
+
+        case "retina.dropshipping.products.index":
             return route(
-                'grp.org.shops.show.catalogue.departments.show.families.show.products.show',
-                [route().params['organisation'], route().params['shop'], route().params['department'], route().params['family'], product.slug])
-        case 'grp.org.shops.show.catalogue.departments.show.products.index':
+                "retina.dropshipping.products.show",
+                [product.slug]);
+        case "retina.dropshipping.portfolios.index":
             return route(
-                'grp.org.shops.show.catalogue.departments.show.products.show',
-                [route().params['organisation'], route().params['shop'], route().params['department'], product.slug])
-        case 'retina.dropshipping.products.index':
+                "retina.dropshipping.portfolios.show",
+                [product.slug]);
+        case "grp.overview.catalogue.products.index":
             return route(
-                'retina.dropshipping.products.show',
-                [product.slug])
-        case 'retina.dropshipping.portfolios.index':
-            return route(
-                'retina.dropshipping.portfolios.show',
-                [product.slug])
-        case 'grp.overview.catalogue.products.index':
-            return route(
-                'grp.org.shops.show.catalogue.products.current_products.show',
-                [product.organisation_slug, product.shop_slug, product.slug])
+                "grp.org.shops.show.catalogue.products.current_products.show",
+                [product.organisation_slug, product.shop_slug, product.slug]);
         default:
-            return null
+            return null;
     }
 }
 
-const tagsListTemp = ref<tag[]>(props.tagsList)
-const onEditProduct = ref(false)
 
-const isLoadingDetach = ref<string[]>([])
-
-// Add new Tag
-const addNewTag = async (option: tag, idProduct: number) => {
-    // console.log('option', option, idLocation)
-    try {
-        const response: any = await axios.post(route('grp.models.product.tag.store', idProduct),
-            { name: option.name },
-            {
-                headers: { "Content-Type": "multipart/form-data" },
-            }
-        )
-        tagsListTemp.value.push(response.data.data)  // (manipulation) Add new data to reactive data
-        // return option
-    } catch (error: any) {
-        notify({
-            title: "Failed to add new tag",
-            text: error,
-            type: "error"
-        })
-        // return false
-    }
+function organisationRoute(invoice: Invoice) {
+    return route(
+        "grp.org.overview.products.index",
+        [invoice.organisation_slug]);
 }
 
-// On update data Tags (add tag or delete tag)
-const updateTagItemTable = async (tags: string[], idProduct: number) => {
-    try {
-        await axios.patch(route('grp.models.product.tag.attach', idProduct),
-            { tags: tags },
-        )
-
-        // Refetch the data of Table to update the item.tags (v-model doesn't work)
-        router.reload(
-            {
-                only: ['products']
-            }
-        )
-    } catch (error: any) {
-        notify({
-            title: "Failed to update tag",
-            text: error,
-            type: "error"
-        })
-        return false
-    }
+function shopRoute(invoice: Invoice) {
+    return route(
+        "grp.org.shops.show.catalogue.products.current_products.index",
+        [
+            invoice.organisation_slug,
+            invoice.shop_slug
+        ]);
 }
+
+
+const onEditProduct = ref(false);
+
+const isLoadingDetach = ref<string[]>([]);
+
 
 onMounted(() => {
-    if (typeof window !== 'undefined') {
-        document.addEventListener('keydown', (e) => e.keyCode == 27 ? onEditProduct.value = false : '')
+    if (typeof window !== "undefined") {
+        document.addEventListener("keydown", (e) => e.keyCode == 27 ? onEditProduct.value = false : "");
     }
-})
+});
 
 onUnmounted(() => {
-    document.removeEventListener('keydown', () => false)
-})
+    document.removeEventListener("keydown", () => false);
+});
 
-const locale = inject('locale', aikuLocaleStructure)
-
+const locale = inject("locale", aikuLocaleStructure);
 
 
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+
+        <template #cell(organisation_code)="{ item: refund }">
+            <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
+                {{ refund["organisation_code"] }}
+            </Link>
+        </template>
+
         <template #cell(state)="{ item: product }">
-            <Icon :data="product.state"> </Icon>
+            <Icon :data="product.state"></Icon>
         </template>
 
         <template #cell(price)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.price)  }}
+            {{ locale.currencyFormat(product.currency_code, product.price) }}
         </template>
 
         <template #cell(code)="{ item: product }">
-            <Link :href="productRoute(product)" class="primaryLink">
-                {{ product['code'] }}
+            <Link :href="productRoute(product) as string" class="primaryLink">
+                {{ product["code"] }}
             </Link>
         </template>
 
         <template #cell(shop_code)="{ item: product }">
-            <Link v-if="product['shop_slug']" :href="productRoute(product)" class="secondaryLink">
-                {{ product['shop_slug'] }}
+            <Link v-if="product['shop_slug']" :href="shopRoute(product) as string" class="secondaryLink">
+                {{ product["shop_slug"] }}
             </Link>
         </template>
 
@@ -226,7 +218,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 />
             </Link>
             <Link
-                :v-else="item?.delete_product?.name"
+                v-else="item?.delete_product?.name"
                 as="button"
                 :href="route(item.delete_product.name, item.delete_product.parameters)"
                 :method="item.delete_product.method"
@@ -246,93 +238,7 @@ const locale = inject('locale', aikuLocaleStructure)
             </Link>
         </template>
 
-        <template #cell(tags)="{ item }">
-            <div class="min-w-[200px] relative p-0">
-                <div v-if="onEditProduct !== item.slug" class="flex gap-x-1 gap-y-1.5 mb-2">
-                    <template v-if="item.tags?.length">
-                        <Tag v-for="tag in item.tags"
-                            :label="tag"
-                            :stringToColor="true"
-                            size="sm"
-                        />
-                    </template>
-                    <div v-else class="italic text-gray-400">
-                        No tags
-                    </div>
 
-                    <!-- Icon: pencil -->
-                    <div class="flex items-center px-1" @click="() => onEditProduct = item.slug">
-                        <FontAwesomeIcon icon='fal fa-pencil' class='text-gray-400 text-lg cursor-pointer hover:text-gray-500' fixed-width aria-hidden='true' />
-                    </div>
-                </div>
-
-                <div v-else>
-                    <Multiselect v-model="item.tags"
-                        :key="item.id"
-                        mode="tags"
-                        placeholder="Select the tag"
-                        valueProp="slug"
-                        trackBy="slug"
-                        label="name"
-                        @change="(tags) => (updateTagItemTable(tags, item.id))"
-                        :closeOnSelect="false"
-                        searchable
-                        createOption
-                        :onCreate="(tag: tag) => addNewTag(tag, item.id)"
-                        :caret="false"
-                        :options="tagsListTemp"
-                        noResultsText="No one left. Type to add new one."
-                        appendNewTag
-                    >
-                        <template #tag="{ option, handleTagRemove, disabled }: {option: tag, handleTagRemove: Function, disabled: boolean}">
-                            <div class="px-0.5 py-[3px]">
-                                <Tag
-                                    :label="option.name"
-                                    :closeButton="true"
-                                    :stringToColor="true"
-                                    size="sm"
-                                    @onClose="(event) => handleTagRemove(option, event)"
-                                />
-                            </div>
-                        </template>
-                    </Multiselect>
-                    <div class="text-gray-400 italic text-xs">
-                        Press Esc to finish edit or <span @click="() => onEditProduct = false" class="hover:text-gray-500 cursor-pointer">click here</span>.
-                    </div>
-                </div>
-            </div>
-        </template>
     </Table>
 </template>
 
-<style src="../../../../../../../node_modules/@vueform/multiselect/themes/default.css"></style>
-
-<style lang="scss">
-.multiselect-tags-search {
-    @apply focus:outline-none focus:ring-0 focus:border-none h-full #{!important}
-}
-
-.multiselect.is-active {
-    @apply shadow-none
-}
-
-// .multiselect-tag {
-//     @apply bg-gradient-to-r from-lime-300 to-lime-200 hover:bg-lime-400 ring-1 ring-lime-500 text-lime-600
-// }
-
-.multiselect-tags-search-wrapper {
-    @apply mb-0 #{!important}
-}
-
-.multiselect-tags {
-    @apply my-0.5 #{!important}
-}
-
-.multiselect-tags-search {
-    @apply px-1 #{!important}
-}
-
-.multiselect-tag-remove-icon {
-    @apply text-lime-800
-}
-</style>

@@ -10,24 +10,17 @@ namespace App\Actions\Goods\Stock\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithWeightFromTradeUnits;
 use App\Models\Goods\Stock;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StockHydrateGrossWeightFromTradeUnits
+class StockHydrateGrossWeightFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
     use WithWeightFromTradeUnits;
 
-    private Stock $stock;
-
-    public function __construct(Stock $stock)
+    public function getJobUniqueId(Stock $stock): string
     {
-        $this->stock = $stock;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->stock->id))->dontRelease()];
+        return $stock->id;
     }
 
     public function handle(Stock $stock): void

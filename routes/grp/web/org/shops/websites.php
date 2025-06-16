@@ -24,10 +24,10 @@ use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
-use App\Actions\Web\Webpage\UI\ShowBlueprint;
-use App\Actions\Web\Webpage\UI\ShowFooter;
-use App\Actions\Web\Webpage\UI\ShowHeader;
-use App\Actions\Web\Webpage\UI\ShowMenu;
+use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
+use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
+use App\Actions\Web\Webpage\UI\ShowHeaderWorkshop;
+use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
@@ -59,9 +59,9 @@ Route::name('websites.')->group(function () {
                 ->group(function () {
                     Route::get('', ShowWebsiteWorkshop::class)->name('');
                     Route::get('preview', ShowWebsiteWorkshopPreview::class)->name('.preview');
-                    Route::get('footer', [ShowFooter::class, 'inShop'])->name('.footer');
-                    Route::get('header', [ShowHeader::class, 'inShop'])->name('.header');
-                    Route::get('menu', [ShowMenu::class, 'inShop'])->name('.menu');
+                    Route::get('footer', ShowFooterWorkshop::class)->name('.footer');
+                    Route::get('header', ShowHeaderWorkshop::class)->name('.header');
+                    Route::get('menu', ShowMenuWorkshop::class)->name('.menu');
 
                     Route::name('.snapshots')->prefix('snapshots')
                         ->group(function () {
@@ -93,7 +93,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
         ->group(function () {
             Route::get('edit', EditWebpage::class)->name('edit');
             Route::get('', ShowWebpage::class)->name('show');
-            Route::get('blueprint', ShowBlueprint::class)->name('show.blueprint.show');
+            Route::get('blueprint', ShowWorkshopBlueprint::class)->name('show.blueprint.show');
             Route::get('workshop', ShowWebpageWorkshop::class)->name('workshop');
             Route::get('workshop/preview', ShowWebpageWorkshopPreview::class)->name('preview');
             Route::get('webpages', [IndexWebpages::class, 'inWebpage'])->name('show.webpages.index');

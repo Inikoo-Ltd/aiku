@@ -526,5 +526,10 @@ class WowsbarOrganisationService implements SourceOrganisationService
         return null;
     }
 
+    public function fetchCollection($id): ?array
+    {
+        return null;
+    }
+
 
 }

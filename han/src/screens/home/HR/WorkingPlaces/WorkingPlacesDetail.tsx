@@ -11,7 +11,7 @@ import {
 import Request from '~/utils/request';
 import {useNavigation} from '@react-navigation/native';
 import {showMessage} from 'react-native-flash-message';
-import { get } from 'lodash';
+import { get } from 'lodash-es';
 import { Avatar, Button } from 'react-native-paper';
 import {ROUTES, COLORS} from '~/constants';
 

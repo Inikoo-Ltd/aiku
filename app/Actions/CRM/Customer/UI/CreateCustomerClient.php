@@ -13,8 +13,7 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
-use App\Models\CRM\CustomerHasPlatform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -23,14 +22,17 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateCustomerClient extends OrgAction
 {
-    private Platform|Customer|CustomerHasPlatform $scope;
-
-    public function handle(Customer $customer, ActionRequest $request): Response
+    public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
+        $customer = $customerSalesChannel->customer;
+
+        $request->route()->getName();
+
         return Inertia::render(
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $customerSalesChannel,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -47,10 +49,7 @@ class CreateCustomerClient extends OrgAction
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => match ($request->route()->getName()) {
-                                    'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.create' => preg_replace('/create$/', 'manual.index', $request->route()->getName()),
-                                    default => preg_replace('/create$/', 'index', $request->route()->getName())
-                                },
+                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -97,22 +96,14 @@ class CreateCustomerClient extends OrgAction
                                 ]
                             ]
                         ],
-                    'route'     => $this->scope instanceof CustomerHasPlatform
-                        ? [
-                            'name'       => 'grp.models.customer.platform-client.store',
-                            'parameters' => [
-                                'customer' => $customer->id,
-                                'platform' => $this->scope->platform->id
-                            ]
+                    'route'     => [
+                        'name'       => 'grp.models.customer_sales_channel.client.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $customerSalesChannel->id
                         ]
-                        : [
-                            'name'       => 'grp.models.customer.client.store',
-                            'parameters' => [
-                                'customer' => $customer->id
-                            ]
-                        ]
-                ]
+                    ]
 
+                ]
             ]
         );
     }
@@ -123,21 +114,19 @@ class CreateCustomerClient extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, ActionRequest $request): Response
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->scope = $customerHasPlatform;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($customer, $request);
+        return $this->handle($customerSalesChannel, $request);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
     {
-
         return array_merge(
             IndexCustomerClients::make()->getBreadcrumbs(
-                routeName: preg_replace('/create$/', 'manual.index', $routeName),
+                parent: $customerSalesChannel,
+                routeName: preg_replace('/create$/', 'index', $routeName),
                 routeParameters: $routeParameters,
             ),
             [

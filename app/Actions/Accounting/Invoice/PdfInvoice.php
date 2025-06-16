@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
@@ -16,7 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
 
-class PdfInvoice
+class PdfInvoice extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -32,6 +33,9 @@ class PdfInvoice
 
     public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Response
     {
+
+        //$this->initialisationFromShop($invoice->shop, $request);
+
         return $this->handle($invoice);
     }
 }

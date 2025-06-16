@@ -7,11 +7,13 @@ import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { trans } from 'laravel-vue-i18n';
 library.add(faDesktop, faMobileAndroidAlt, faTabletAndroidAlt)
 
+const screenView = defineModel()
+
 const props = withDefaults(defineProps<{
-    currentView?: string
+    // currentView?: string
     showList?:Array<string>
 }>(), {
-    currentView: 'desktop',
+    // currentView: 'desktop',
     showList: ['mobile', 'tablet', 'desktop']
 })
 
@@ -21,7 +23,7 @@ defineEmits<{
 
 const layout = inject('layout', layoutStructure)
 
-const screenView = ref(props.currentView)
+// const screenView = ref(props.currentView)
 
 </script>
 

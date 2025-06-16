@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dispatching\GoodsOut\UI;
 
+use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
+use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
@@ -177,31 +179,33 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     'navigation' => $navigation
                 ],
                 'data' => PalletReturnResource::make($palletReturn),
+                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
+                 'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer),
 
-                'service_list_route'       => [
-                    'name'       => 'grp.json.fulfilment.return.services.index',
-                    'parameters' => [
-                        'fulfilment' => $palletReturn->fulfilment->slug,
-                        'scope'      => $palletReturn->slug
-                    ]
-                ],
-                'physical_good_list_route' => [
-                    'name'       => 'grp.json.fulfilment.return.physical-goods.index',
-                    'parameters' => [
-                        'fulfilment' => $palletReturn->fulfilment->slug,
-                        'scope'      => $palletReturn->slug
-                    ]
-                ],
+                // 'service_list_route'       => [
+                //     'name'       => 'grp.json.fulfilment.return.services.index',
+                //     'parameters' => [
+                //         'fulfilment' => $palletReturn->fulfilment->slug,
+                //         'scope'      => $palletReturn->slug
+                //     ]
+                // ],
+                // 'physical_good_list_route' => [
+                //     'name'       => 'grp.json.fulfilment.return.physical-goods.index',
+                //     'parameters' => [
+                //         'fulfilment' => $palletReturn->fulfilment->slug,
+                //         'scope'      => $palletReturn->slug
+                //     ]
+                // ],
 
-                'route_check_stored_items' => [
-                    'method'     => 'post',
-                    'name'       => 'grp.models.pallet-return.stored_item.store',
-                    'parameters' => [
-                        $palletReturn->id
-                    ]
-                ],
+                // 'route_check_stored_items' => [
+                //     'method'     => 'post',
+                //     'name'       => 'grp.models.pallet-return.stored_item.store',
+                //     'parameters' => [
+                //         $palletReturn->id
+                //     ]
+                // ],
 
-                'can_edit_transactions' => true,
+                'can_edit_transactions' => false,
                 'option_attach_file'    => [
                     [
                         'name' => __('Other'),
@@ -209,6 +213,28 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     ]
                 ],
                 'stored_items_count'    => $palletReturn->storedItems()->count(),
+                'shipments' => [
+                    'submit_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+
+                    'fetch_route' => [
+                        'name'       => 'grp.json.shippers.index',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ]
+                    ],
+
+                    'delete_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment.detach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+                ],
 
                 PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?
                     fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))

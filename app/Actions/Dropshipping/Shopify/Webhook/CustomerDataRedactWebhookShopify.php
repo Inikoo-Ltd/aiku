@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Webhook;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\ShopifyUserHasFulfilment;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

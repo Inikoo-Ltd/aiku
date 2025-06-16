@@ -11,6 +11,10 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
+use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
+use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
+use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -20,6 +24,7 @@ use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -36,6 +41,12 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+        if (Arr::has($modelData, 'family_id')) {
+            $family = ProductCategory::find($modelData['family_id']);
+            data_set($modelData, 'department_id', $family->department_id);
+            data_set($modelData, 'sub_department_id', $family->sub_department_id);
+        }
+
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocks = Arr::pull($modelData, 'org_stocks', []);
             $product->orgStocks()->sync($orgStocks);
@@ -58,10 +69,18 @@ class UpdateProduct extends OrgAction
             );
         }
 
+        $oldFamily = $product->family;
+        $oldDepartment = $product->department;
+        $oldSubDepartment = $product->subDepartment;
+
         UpdateAsset::run($product->asset, $assetData, $this->hydratorsDelay);
 
-        if (Arr::hasAny($changed, ['state', 'status'])) {
+        if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
+        }
+
+        if (Arr::has($changed, 'exclusive_for_customer_id')) {
+            CustomerHydrateExclusiveProducts::dispatch($product->exclusiveForCustomer)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny(
@@ -76,6 +95,31 @@ class UpdateProduct extends OrgAction
             ]
         )) {
             ProductRecordSearch::dispatch($product);
+        }
+
+        if (Arr::has($changed, 'family_id')) {
+            FamilyHydrateProducts::dispatch($product->family);
+            if ($oldFamily) {
+                FamilyHydrateProducts::dispatch($oldFamily);
+            }
+        }
+
+        if (Arr::has($changed, 'department_id')) {
+            if ($product->department) {
+                DepartmentHydrateProducts::dispatch($product->department);
+            }
+            if ($oldDepartment) {
+                DepartmentHydrateProducts::dispatch($oldDepartment);
+            }
+        }
+
+        if (Arr::has($changed, 'sub_department_id')) {
+            if ($product->department) {
+                SubDepartmentHydrateProducts::dispatch($product->oldSubDepartment);
+            }
+            if ($oldSubDepartment) {
+                SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+            }
         }
 
 
@@ -110,16 +154,25 @@ class UpdateProduct extends OrgAction
             'state'         => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'trade_config'  => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master' => ['sometimes', 'boolean'],
+            'family_id'     => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
 
+            'exclusive_for_customer_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
+            ],
 
             'org_stocks' => ['sometimes', 'present', 'array']
         ];
 
 
         if (!$this->strict) {
-            $rules['org_stocks']   = ['sometimes', 'nullable', 'array'];
-            $rules['gross_weight'] = ['sometimes', 'integer', 'gt:0'];
-            $rules                 = $this->noStrictUpdateRules($rules);
+            $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
+            $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
+            $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
+
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

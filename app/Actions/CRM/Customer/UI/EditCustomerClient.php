@@ -13,9 +13,8 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Address;
@@ -26,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditCustomerClient extends OrgAction
 {
-    private Customer|FulfilmentCustomer|CustomerHasPlatform $parent;
+    private Customer|FulfilmentCustomer|CustomerSalesChannel $parent;
 
     public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
@@ -107,7 +106,7 @@ class EditCustomerClient extends OrgAction
                         ],
                     'args' => [
                         'updateRoute'     => [
-                            'name'      => 'grp.models.customer-client.update',
+                            'name'      => 'grp.models.customer_client.update',
                             'parameters' => [
                                 'customerClient' => $customerClient->id
                             ]
@@ -125,19 +124,18 @@ class EditCustomerClient extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatform(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
-        $this->parent = $customerHasPlatform;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request);
         return $this->handle($customerClient, $request);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentPlatform(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Platform $platform, CustomerClient $customerClient, ActionRequest $request): Response
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): Response
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customerClient->id)->where('platform_id', $platform->id)->first();
-        $this->parent = $customerHasPlatform;
+
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request);
         return $this->handle($customerClient, $request);
     }

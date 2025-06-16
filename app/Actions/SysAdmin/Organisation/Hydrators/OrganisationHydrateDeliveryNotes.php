@@ -30,8 +30,8 @@ class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
 
     public function handle(Organisation $organisation): void
     {
-        $stats = $this->getDeliveryNotesStats($organisation);
 
+        $stats = [];
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
@@ -57,8 +57,6 @@ class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
                 }
             )
         );
-
-
 
         $organisation->orderingStats()->update($stats);
     }

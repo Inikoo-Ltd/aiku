@@ -9,7 +9,6 @@ import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
-import { useLiveUsers } from '@/Stores/active-users'
 
 
 export const initialiseIrisApp = () => {
@@ -17,11 +16,6 @@ export const initialiseIrisApp = () => {
     // const locale = useLocaleStore()
 
     console.log('init Iris props', usePage().props)
-    // console.log('opop', usePage().props?.environment)
-
-    // if (usePage().props.localeData) {
-    //     loadLanguageAsync(usePage().props.localeData.language.code)
-    // }
 
 
     watchEffect(() => {
@@ -47,6 +41,10 @@ export const initialiseIrisApp = () => {
 
         if (usePage().props.iris) {
             layout.iris = usePage().props.iris
+        }
+        
+        if (usePage().props.retina) {
+            layout.retina = usePage().props.retina
         }
 
         if (usePage().props?.user_auth) {

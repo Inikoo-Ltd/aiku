@@ -107,10 +107,20 @@ class EditDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $department->name
                                 ],
+                                'description' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description'),
+                                    'value' => $department->description
+                                ],
                                 'follow_master' => [
                                     'type'  => 'toggle',
                                     'label' => __('Follow Master'),
                                     'value' => $department->follow_master
+                                ],
+                                "image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("Image"),
+                                    "value"   => $department->imageSources(720, 480),
                                 ],
                             ]
                         ]
@@ -118,11 +128,9 @@ class EditDepartment extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.org.catalogue.departments.update',
+                            'name'       => 'grp.models.product_category.update',
                             'parameters' => [
-                                'organisation'      => $department->organisation_id,
-                                'shop'              => $department->shop_id,
-                                'productCategory'   => $department->id
+                                'productCategory' => $department->id
                             ]
                         ],
                     ]

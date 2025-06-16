@@ -1,7 +1,5 @@
 <script setup lang="ts">
-// import { computed } from 'vue'
 import { useStringToHex } from '@/Composables/useStringToHex'
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -68,11 +66,12 @@ const compTheme = () => {
             {{ label }}
         </slot>
 
-        <!-- Button: Close (X icon) -->
-        <div v-if="closeButton"
-            @click="(event) => {emits('onClose', event)}"
-            class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-sm">
-            <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
-        </div>
+        <slot name="closeButton">
+            <div v-if="closeButton"
+                @click="(event) => {emits('onClose', event)}"
+                class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-sm">
+                <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
+            </div>
+        </slot>
     </div>
 </template>

@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RetinaEcomUpdateTransaction extends RetinaAction
 {
-    public function handle(Transaction $transaction, array $modelData): Transaction
+    public function handle(Transaction $transaction, array $modelData)
     {
         return UpdateTransaction::run($transaction, $modelData);
     }
@@ -32,15 +32,15 @@ class RetinaEcomUpdateTransaction extends RetinaAction
     {
 
         return [
-             'quantity_ordered'    => ['sometimes', 'numeric', 'min:0'],
-         ];
+                'quantity_ordered'    => ['sometimes', 'numeric', 'min:0'],
+            ];
 
     }
 
-    public function asController(Transaction $transaction, ActionRequest $request): Transaction
+    public function asController(Transaction $transaction, ActionRequest $request)
     {
         $this->initialisation($request);
 
-        return $this->handle($transaction, $this->validatedData);
+        $this->handle($transaction, $this->validatedData);
     }
 }

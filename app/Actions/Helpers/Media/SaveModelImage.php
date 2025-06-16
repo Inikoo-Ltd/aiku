@@ -8,6 +8,8 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -18,7 +20,9 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Web\ModelHasContent;
 use App\Models\Web\WebBlockType;
+use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 use stdClass;
 
@@ -27,10 +31,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent $model,
         array $imageData,
-        string $scope = 'image'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType {
+        string $scope = 'image',
+        string $foreignkeyMedia = 'image_id'
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);
@@ -57,7 +62,7 @@ class SaveModelImage
 
 
         if ($media) {
-            $model->updateQuietly(['image_id' => $media->id]);
+            $model->updateQuietly([$foreignkeyMedia => $media->id]);
 
             $model->images()->sync(
                 [

@@ -9,7 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
-use App\Actions\Dispatching\Picking\StorePicking;
+use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Dispatching\DeliveryNote;
@@ -45,16 +45,13 @@ class StoreDeliveryNoteItem extends OrgAction
 
         /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->create($modelData);
-        if ($this->strict) {
-            StorePicking::make()->action($deliveryNoteItem, [
-                'quantity_required' => $deliveryNoteItem->quantity_required
-            ]);
-        }
 
         if ($deliveryNoteItem->transaction_id && $deliveryNoteItem->transaction->asset) {
             AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset)->delay($this->hydratorsDelay);
         }
 
+        $deliveryNote->refresh();
+        CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
 
         return $deliveryNoteItem;
     }

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
@@ -26,12 +27,14 @@ use App\Rules\AlphaDashSlash;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateWebpage extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithImageSeo;
 
     private Webpage $webpage;
 
@@ -40,10 +43,9 @@ class UpdateWebpage extends OrgAction
     {
         $currentSeoData = Arr::get($modelData, 'seo_data');
 
+        $oldSeoData = $webpage->seo_data;
+
         if ($currentSeoData) {
-            $oldSeoData = $webpage->seo_data;
-
-
             $isUseCanonicalUrl = Arr::pull($currentSeoData, 'is_use_canonical_url');
             if ($isUseCanonicalUrl) {
                 data_set($modelData, 'is_use_canonical_url', $isUseCanonicalUrl);
@@ -59,10 +61,26 @@ class UpdateWebpage extends OrgAction
             data_set($newData, 'structured_data_type', Arr::pull($currentSeoData, 'structured_data_type', Arr::get($oldSeoData, 'structured_data_type')));
             data_set($newData, 'meta_title', Arr::pull($currentSeoData, 'meta_title', Arr::get($oldSeoData, 'meta_title')));
             data_set($newData, 'meta_description', Arr::pull($currentSeoData, 'meta_description', Arr::get($oldSeoData, 'meta_description')));
-            data_set($newData, 'image', Arr::pull($currentSeoData, 'image', Arr::get($oldSeoData, 'image')));
 
             data_set($modelData, 'seo_data', $newData);
         }
+
+        $imageSeo = Arr::pull($modelData, 'seo_image');
+        if ($imageSeo) {
+            $webpage = $this->processSeo([
+                'image' => $imageSeo
+            ], $webpage);
+
+            $source = $webpage->imageSources(1200, 1200, 'seoImage');
+
+            if (!Arr::get($modelData, 'seo_data')) {
+                data_set($oldSeoData, 'image', $source);
+                data_set($modelData, 'seo_data', $oldSeoData);
+            } else {
+                data_set($modelData, 'seo_data.image', $source);
+            }
+        }
+
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
@@ -77,7 +95,7 @@ class UpdateWebpage extends OrgAction
         }
 
 
-        WebpageRecordSearch::run($webpage);
+        WebpageRecordSearch::dispatch($webpage);
 
         return $webpage;
     }
@@ -128,6 +146,12 @@ class UpdateWebpage extends OrgAction
                 ),
 
             ],
+            'seo_image'       => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
             'level'          => ['sometimes', 'integer'],
             'sub_type'       => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
             'type'           => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
@@ -139,6 +163,7 @@ class UpdateWebpage extends OrgAction
             'title'          => ['sometimes', 'string'],
             'description'    => ['sometimes', 'string'],
             'show_in_parent' => ['sometimes', 'nullable', 'boolean'],
+            'allow_fetch'    => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {

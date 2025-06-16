@@ -20,6 +20,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
+	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const emits = defineEmits<{
@@ -34,26 +35,42 @@ function onSave() {
 }
 </script>
 
+
 <template>
-	<div class="container flex flex-wrap justify-between" :style="getStyles(modelValue.container.properties)">
-		<!-- Image Section -->
-		<div class="imgBx relative w-1/2 transition-all duration-300">
-			<div class="absolute inset-0" 	@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))">
-				<img v-if="!modelValue?.image?.source" src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg" :alt="modelValue?.image?.alt" class="h-full w-full object-cover" />
-				<Image 
-					v-else
-					:src="modelValue?.image?.source" 
-					:imageCover=true 
-					:alt="modelValue?.image?.alt"
-					:imgAttributes="modelValue?.image?.attributes"
-					:style="getStyles(modelValue?.image?.properties)"
-				/>
-			</div>
+	<!-- Wrapper -->
+	<div
+		class="flex flex-col md:flex-row w-full rounded-lg overflow-hidden"
+		:style="getStyles(modelValue.container.properties, screenType)"
+	>
+		<!-- Section 1: Image -->
+		<div
+			class="w-full h-64 sm:h-72 md:h-auto md:w-1/3 lg:w-1/2 bg-cover bg-center bg-no-repeat"
+			@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))"
+		>
+			<img
+				v-if="!modelValue?.image?.source"
+				src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg"
+				:alt="modelValue?.image?.alt"
+				class="h-full w-full object-cover"
+			/>
+			<Image
+				v-else
+				:src="modelValue?.image?.source"
+				:imageCover
+				:alt="modelValue?.image?.alt"
+				:imgAttributes="modelValue?.image?.attributes"
+				:style="getStyles(modelValue?.image?.properties)"
+			/>
 		</div>
 
-		<!-- Details Section -->
-		<div class="details flex flex-col justify-center w-1/2 p-10">
-			<Editor v-model="modelValue.text" />
+		<!-- Section 2: Content -->
+		<div
+			class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white bg-opacity-90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20"
+		>
+			<Editor
+				v-model="modelValue.text"
+				@update:modelValue="() => emits('autoSave')"
+			/>
 		</div>
 	</div>
 </template>

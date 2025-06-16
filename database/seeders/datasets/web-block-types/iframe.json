@@ -4,6 +4,8 @@
 	"code": "iframe",
 	"name": "I Frame",
 	"icon": ["fal", "paperclip"],
+	"category": "element",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"data": {
 		"fieldValue": {
 			"link": null,

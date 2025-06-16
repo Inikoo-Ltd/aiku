@@ -123,11 +123,9 @@ class IndexRetinaStoredItems extends RetinaAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $fulfilmentCustomer = $request->user()->customer->fulfilmentCustomer;
-
         $this->initialisation($request);
 
-        return $this->handle($fulfilmentCustomer);
+        return $this->handle($this->fulfilmentCustomer);
     }
 
     public function getBreadcrumbs(): array

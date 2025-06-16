@@ -91,7 +91,11 @@ class FetchAuroraDeliveryNote extends FetchAurora
             ];
         }
 
-        $weight = $this->auroraModelData->{'Delivery Note Weight'};
+        $weight = null;
+        if ($this->auroraModelData->{'Delivery Note Weight'} && $this->auroraModelData->{'Delivery Note Weight'} > 0) {
+            $weight = (int) floor($this->auroraModelData->{'Delivery Note Weight'} * 1000);
+        }
+
 
         $this->parsedData['shipment'] = $shipment;
 

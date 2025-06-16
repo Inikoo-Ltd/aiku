@@ -16,7 +16,6 @@ use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Inventory\WarehouseAreaTabsEnum;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\Inventory\LocationsResource;
-use App\Http\Resources\Tag\TagResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
@@ -33,7 +32,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\Tags\Tag;
 use UnexpectedValueException;
 
 class IndexLocations extends OrgAction
@@ -184,8 +182,7 @@ class IndexLocations extends OrgAction
             }
             $table->column(key: 'max_weight', label: __('weight'), canBeHidden: false, align: 'right');
             $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, align: 'right');
-            $table->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, align: 'right');
-            $table->column(key: 'tags', label: __('tags'), canBeHidden: false)
+            $table->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, align: 'right')
                 ->defaultSort('code');
         };
     }
@@ -214,7 +211,7 @@ class IndexLocations extends OrgAction
             'max_volume',
             'barcode'
         ])->map(fn ($col) => [
-            'label' => __(str_replace('_', ' ', ucfirst($col))), // Convert _ to space and capitalize first letter
+            'label' => __(str_replace('_', ' ', ucfirst($col))), // Convert _ to space and capitalize the first letter
             'value' => $col
         ])->toArray();
 
@@ -315,17 +312,6 @@ class IndexLocations extends OrgAction
                     ]
                 ],
                 'export'           => $export,
-                'tagRoute'         => [
-                    'store'  => [
-                        'name'       => 'grp.models.location.tag.store',
-                        'parameters' => []
-                    ],
-                    'update' => [
-                        'name'       => 'grp.models.location.tag.attach',
-                        'parameters' => []
-                    ],
-                ],
-                'tagsList'         => TagResource::collection(Tag::getWithType('inventory')),
                 'data'             => LocationsResource::collection($locations),
 
             ]

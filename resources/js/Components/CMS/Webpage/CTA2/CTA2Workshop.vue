@@ -29,7 +29,7 @@ const emits = defineEmits<{
 <template>
 	<div :style="getStyles(modelValue.container.properties)">
 		<div
-			class="relative isolate px-6 py-24 text-center  l sm:px-16">
+			class="relative  px-6 py-24 text-center  l sm:px-16">
 			<Editor
 				v-model="modelValue.headline"
 				@update:modelValue="() => emits('autoSave')"

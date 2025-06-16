@@ -11,16 +11,15 @@ namespace App\Actions\Comms\Mailshot\UI;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\Organisation;
-use App\Http\Resources\Tag\TagResource;
 use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
-use Spatie\Tags\Tag;
 
 class CreateMailshot extends OrgAction
 {
@@ -29,6 +28,14 @@ class CreateMailshot extends OrgAction
      */
     public function handle(Shop|Outbox $parent, ActionRequest $request): Response
     {
+
+        if ($parent instanceof Shop) {
+            $outbox = $parent->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
+
+        } else {
+            $outbox = $parent;
+        }
+
         $fields[] = [
             'title'  => '',
             'fields' => [
@@ -80,7 +87,6 @@ class CreateMailshot extends OrgAction
                     'options'     => [
                         'query'                  => IndexProspects::run(parent:$parent, prefix: null, scope: 'all'),
                         'custom_prospects_query' => '',
-                        'tags'                   => TagResource::collection(Tag::where('type', 'crm')->get()),
                     ],
                     'full'      => true,
                     'value'     => [
@@ -124,9 +130,9 @@ class CreateMailshot extends OrgAction
                             ]
                         ],
                     'route' => [
-                        'name'       => 'grp.models.shop.mailshot.store',
+                        'name'       => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
-                            'shop'         => $parent->id,
+                            'outbox'         => $outbox->id,
                         ]
                     ]
                 ],

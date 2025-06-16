@@ -249,6 +249,7 @@ class IndexWebUsers extends OrgAction
             $table
                 ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Created at'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false)
                 ->defaultSort('username');
         };
     }

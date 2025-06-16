@@ -39,6 +39,15 @@ class EditCustomer extends OrgAction
 
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
+        $contactName = trim($customer->contact_name ?? '');
+        $firstName = '';
+        $lastName = '';
+
+        if ($contactName !== '') {
+            $parts = preg_split('/\s+/', $contactName, 2); // split into 2 parts only
+            $firstName = $parts[0];
+            $lastName = $parts[1] ?? ''; // in case there's no last name
+        }
         return Inertia::render(
             'EditModel',
             [
@@ -71,11 +80,15 @@ class EditCustomer extends OrgAction
                             'title'  => __('contact information'),
                             'label'  => __('contact'),
                             'fields' => [
-
-                                'contact_name' => [
+                                'first_name' => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
-                                    'value' => $customer->contact_name
+                                    'label' => __('first name'),
+                                    'value' => $customer->first_name ?? $firstName
+                                ],
+                                'last_name' => [
+                                    'type'  => 'input',
+                                    'label' => __('last name'),
+                                    'value' => $customer->last_name ?? $lastName
                                 ],
                                 'company_name' => [
                                     'type'  => 'input',

@@ -11,13 +11,13 @@ namespace App\Actions;
 use App\Actions\Traits\WithTab;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -37,7 +37,7 @@ class RetinaAction
     protected Website $website;
     protected Customer $customer;
     protected WebUser $webUser;
-    protected ShopifyUser|TiktokUser|WebUser $platformUser;
+    protected ShopifyUser|TiktokUser|WebUser|WooCommerceUser|null $platformUser;
     protected Platform $platform;
     protected ShopifyUser $shopifyUser;
     protected bool $asPupil = false;
@@ -132,6 +132,9 @@ class RetinaAction
         return $this;
     }
 
+
+
+
     public function initialisationFromPupil(ActionRequest $request): static
     {
         $this->asPupil = true;
@@ -145,29 +148,6 @@ class RetinaAction
         $this->fillFromRequest($request);
 
         $this->validatedData = $this->validateAttributes();
-
-        return $this;
-    }
-
-    public function initialisationFromPlatform(Platform $platform, ActionRequest $request): static
-    {
-        $this->webUser = $request->user();
-        $this->platform = $platform;
-        $this->customer = $this->webUser->customer;
-        $this->fulfilmentCustomer = $this->customer->fulfilmentCustomer;
-        $this->shop = $this->customer->shop;
-        $this->fulfilment = $this->shop->fulfilment;
-        $this->organisation = $this->shop->organisation;
-        $this->website = $this->shop->website;
-        $this->fillFromRequest($request);
-
-        $this->validatedData = $this->validateAttributes();
-
-        $this->platformUser = match ($platform->type) {
-            PlatformTypeEnum::SHOPIFY => $this->customer->shopifyUser,
-            PlatformTypeEnum::TIKTOK  => $this->customer->tiktokUser,
-            default                   => $this->webUser
-        };
 
         return $this;
     }

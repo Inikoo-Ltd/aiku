@@ -29,47 +29,43 @@ enum OutboxMergeTagsEnum: string
     {
         return [
             [
-                'name' => __('Username'),
+                'name'  => __('Username'),
                 'value' => '[Username]'
             ],
             [
-                'name' => __('Customer Name'),
+                'name'  => __('Customer Name'),
                 'value' => '[Customer Name]'
             ],
             [
-                'name' => __('Invoice URL'),
+                'name'  => __('Invoice URL'),
                 'value' => '[Invoice_Url]'
             ],
             [
-                'name' => __('Reset Password URL'),
+                'name'  => __('Reset Password URL'),
                 'value' => '[Reset_Password_URL]'
             ],
             [
-                'name' => __('Unsubscribe'),
+                'name'  => __('Unsubscribe'),
                 'value' => '[Unsubscribe]'
             ],
             [
-                'name' => __('Customer Shop'),
+                'name'  => __('Customer Shop'),
                 'value' => '[Customer Shop]'
             ],
             [
-                'name' => __('Customer Name'),
-                'value' => '[Customer Name]'
-            ],
-            [
-                'name' => __('Customer Url'),
+                'name'  => __('Customer Url'),
                 'value' => '[Customer Url]'
             ],
             [
-                'name' => __('Customer Email'),
+                'name'  => __('Customer Email'),
                 'value' => '[Customer Email]'
             ],
             [
-                'name' => __('Customer Register Date'),
+                'name'  => __('Customer Register Date'),
                 'value' => '[Customer Register Date]'
             ],
             [
-                'name' => __('Rejected Notes'),
+                'name'  => __('Rejected Notes'),
                 'value' => '[Rejected Notes]'
             ],
         ];

@@ -18,6 +18,7 @@ use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletReturns;
+use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -26,6 +27,7 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,6 +38,7 @@ class StorePalletReturn extends OrgAction
 {
     use WithDeliverableStoreProcessing;
     use WithModelAddressActions;
+    use WithFixedAddressActions;
 
     public Customer $customer;
 
@@ -61,7 +64,8 @@ class StorePalletReturn extends OrgAction
 
         data_set($modelData, 'currency_id', $fulfilmentCustomer->fulfilment->shop->currency_id, overwrite: false);
 
-        $modelData = $this->processData($modelData, $fulfilmentCustomer, SerialReferenceModelEnum::PALLET_RETURN);
+        $modelData           = $this->processData($modelData, $fulfilmentCustomer, SerialReferenceModelEnum::PALLET_RETURN);
+        $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
         /** @var PalletReturn $palletReturn */
         $palletReturn = $fulfilmentCustomer->palletReturns()->create($modelData);
@@ -75,14 +79,25 @@ class StorePalletReturn extends OrgAction
             ]);
         }
 
-        $palletReturn = $this->attachAddressToModel(
-            model: $palletReturn,
-            address: $fulfilmentCustomer->customer->deliveryAddress,
-            scope: 'delivery',
-            updateLocation: false,
-            updateAddressField: 'delivery_address_id'
-        );
+        if ($deliveryAddressData) {
+            $this->createFixedAddress(
+                $palletReturn,
+                $deliveryAddressData,
+                'Ordering',
+                'delivery',
+                'delivery_address_id'
+            );
 
+            $palletReturn->refresh();
+        } else {
+            $palletReturn = $this->attachAddressToModel(
+                model: $palletReturn,
+                address: $fulfilmentCustomer->customer->deliveryAddress,
+                scope: 'delivery',
+                updateLocation: false,
+                updateAddressField: 'delivery_address_id'
+            );
+        }
 
         $palletReturn->refresh();
 
@@ -129,15 +144,20 @@ class StorePalletReturn extends OrgAction
     public function rules(): array
     {
         return [
-            'type'           => ['sometimes', 'required', Rule::enum(PalletReturnTypeEnum::class)],
-            'warehouse_id'   => [
+            'type'                      => ['sometimes', 'required', Rule::enum(PalletReturnTypeEnum::class)],
+            'warehouse_id'              => [
                 'required',
                 'integer',
                 Rule::exists('warehouses', 'id')
                     ->where('organisation_id', $this->organisation->id),
             ],
-            'customer_notes' => ['sometimes', 'nullable', 'string'],
-            'platform_id'    => ['sometimes', 'nullable', 'integer', 'exists:platforms,id']
+            'customer_notes'            => ['sometimes', 'nullable', 'string'],
+            'platform_id'               => ['sometimes', 'nullable', 'integer'],
+            'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
+            'delivery_address'          => ['sometimes', new ValidAddress()],
+            'data'                      => ['sometimes', 'array'],
+            'is_collection'             => ['sometimes', 'boolean'],
+            'shopify_user_id'           => ['sometimes', 'integer']
         ];
     }
 

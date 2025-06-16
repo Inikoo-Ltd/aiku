@@ -65,7 +65,7 @@ class DeliveryNoteRecordSearch
                         ],
                         [
                             'type'      => 'number',
-                            'number'    => $deliveryNote->stats->number_items,
+                            'number'    => $deliveryNote->number_items,
                             'afterLabel'    => ' ' . __('Items'),
                             'tooltip'   => __('Items')
                         ],

@@ -21,7 +21,7 @@ import { Link } from '@inertiajs/vue3'
 import Tag from '@/Components/Tag.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Dialog from 'primevue/dialog';
-import { get } from 'lodash'
+import { get } from 'lodash-es'
 import ButtonPrimeVue from 'primevue/button';
 
 

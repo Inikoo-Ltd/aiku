@@ -42,6 +42,8 @@ class StoredItemResource extends JsonResource
             'location'       => $storedItem->location ? $storedItem->location['slug'] : '-',
             'state'          => $storedItem->state,
             'number_pallets' => $storedItem->number_pallets,
+            'no_price'          => true,
+            'no_code'           => true,
             'number_audits' => $storedItem->number_audits,
             'notes'          => $storedItem->notes ?? '-',
             'status'         => $storedItem->status,

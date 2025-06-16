@@ -8,7 +8,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useBannerBackgroundColor, useHeadlineText } from "@/Composables/useStockList"
 import { trans } from "laravel-vue-i18n"
-import { get, isNull } from "lodash"
+import { get, isNull } from 'lodash-es'
 import draggable from "vuedraggable"
 import { ulid } from "ulid"
 import { notify } from "@kyvg/vue3-notification"

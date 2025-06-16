@@ -10,7 +10,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -22,15 +22,11 @@ class UpdateOrderStateToCancelled extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
-    use HasOrderingAuthorisation;
+    use WithOrderingEditAuthorisation;
 
 
     private Order $order;
 
-    public function __construct()
-    {
-        $this->authorisationType = 'update';
-    }
 
     public function handle(Order $order): Order
     {

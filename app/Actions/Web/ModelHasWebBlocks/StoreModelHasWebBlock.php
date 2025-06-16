@@ -9,12 +9,10 @@
 namespace App\Actions\Web\ModelHasWebBlocks;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\WebBlock\StoreWebBlock;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Events\BroadcastPreviewWebpage;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
@@ -25,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreModelHasWebBlock extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebEditAuthorisation;
 
 
     private Webpage $webpage;
@@ -38,6 +36,7 @@ class StoreModelHasWebBlock extends OrgAction
         if (!$webBlocks->isEmpty()) {
             $positions = [];
 
+            /** @var ModelHasWebBlocks $block */
             foreach ($webBlocks as $block) {
                 if ($block->position >= $position) {
                     $positions[$block->webBlock->id] = ['position' => $block->position + 1];
@@ -65,7 +64,6 @@ class StoreModelHasWebBlock extends OrgAction
             ]
         );
         UpdateWebpageContent::run($webpage->refresh());
-        /*   BroadcastPreviewWebpage::dispatch($webpage); */
 
         return $modelHasWebBlock;
     }
@@ -85,16 +83,8 @@ class StoreModelHasWebBlock extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): void
     {
-        $this->webpage = $webpage;
-        if ($webpage->shop->type == ShopTypeEnum::FULFILMENT) {
-            $this->scope = $webpage->shop->fulfilment;
-            $this->initialisationFromFulfilment($this->scope, $request);
-        } else {
-            $this->scope = $webpage->shop;
-            $this->initialisationFromShop($this->scope, $request);
-        }
 
-
+        $this->initialisationFromShop($webpage->shop, $request);
         $this->handle($webpage, $this->validatedData);
     }
 

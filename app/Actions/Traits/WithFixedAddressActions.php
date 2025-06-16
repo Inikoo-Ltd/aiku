@@ -11,6 +11,7 @@ namespace App\Actions\Traits;
 use App\Actions\Helpers\Address\Hydrators\AddressHydrateFixedUsage;
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -26,7 +27,7 @@ trait WithFixedAddressActions
     }
 
 
-    protected function createFixedAddress(Order|Invoice|DeliveryNote $model, Address $addressTemplate, string $fixedScope, $scope, $addressField): Address
+    protected function createFixedAddress(Order|Invoice|DeliveryNote|PalletReturn $model, Address $addressTemplate, string $fixedScope, $scope, $addressField): Address
     {
         $groupId = $model->group_id;
 
@@ -61,18 +62,25 @@ trait WithFixedAddressActions
             ]
         );
 
+
         AddressHydrateFixedUsage::dispatch($address);
+
+
         $model->updateQuietly([$addressField => $address->id]);
+        $model->refresh();
 
         return $address;
     }
 
-    protected function updateFixedAddress(Order|Invoice|DeliveryNote $model, Address $currentAddress, Address $addressData, string $fixedScope, $scope, $addressField): Address
+    protected function updateFixedAddress(Order|Invoice|DeliveryNote $model, ?Address $currentAddress, Address $addressData, string $fixedScope, $scope, $addressField): Address
     {
-        if ($currentAddress->checksum != $addressData->getChecksum()) {
-            $model->fixedAddresses()->detach($currentAddress->id);
-            AddressHydrateFixedUsage::dispatch($currentAddress);
+        if (!$currentAddress  || $currentAddress->checksum != $addressData->getChecksum()) {
 
+
+            if ($currentAddress) {
+                $model->fixedAddresses()->detach($currentAddress->id);
+                AddressHydrateFixedUsage::dispatch($currentAddress);
+            }
             return $this->createFixedAddress($model, $addressData, $fixedScope, $scope, $addressField);
         }
 

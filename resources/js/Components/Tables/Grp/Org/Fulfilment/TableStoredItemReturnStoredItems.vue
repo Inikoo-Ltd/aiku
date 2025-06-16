@@ -260,7 +260,9 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                 </span>
                                 <span v-else class="text-gray-400 italic">({{ trans('No reference') }})</span>
                                 <span v-if="pallet_stored_item.location?.code" v-tooltip="trans('Location code of the pallet')" class="text-gray-400"> [{{ pallet_stored_item.location?.code }}]</span>
-                                <FontAwesomeIcon v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="trans('Will be picked')" icon='fas fa-circle' class='text-[7px] ml-1 mb-1 text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
+                                <div  v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="trans('Will be picked')" class="pl-1 pb-1 inline" >
+                                    <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
+                                </div>
                                 <div v-if="palletReturn.state === 'picking'"
                                     @xxclick="() => pallet_stored_item.picked_quantity = pallet_stored_item.quantity_in_pallet"
                                     v-tooltip="trans('Total Customer\'s SKU in this pallet')"
@@ -322,9 +324,9 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                         proxyItem.total_quantity_ordered += newVal - oldVal
                                         pallet_stored_item.selected_quantity = newVal
                                         emits('isStoredItemAdded', newVal > 0 ? true : false)
-                                        // router.reload({
-                                        //     only: ['box_stats.order_summary'],
-                                        // })
+                                        router.reload({
+                                            only: ['pageHead'],
+                                        })
                                     }"
                                     :modelValue="pallet_stored_item.selected_quantity"
                                     saveOnForm

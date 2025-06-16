@@ -22,6 +22,7 @@ import {
 	faThLarge,
 	faListUl,
 	faStar as falStar,
+	faTrashAlt,
 } from "@fal"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -44,6 +45,8 @@ import IconField from "primevue/iconfield"
 import Select from "primevue/select"
 import { faStar } from "@fas"
 import route from "../../../../../../../vendor/tightenco/ziggy/src/js/index"
+import Modal from "@/Components/Utils/Modal.vue"
+import Image from "@/Components/Image.vue"
 
 library.add(
 	faConciergeBell,
@@ -54,7 +57,8 @@ library.add(
 	faThLarge,
 	faListUl,
 	faStar,
-	falStar
+	falStar,
+	faTrashAlt
 )
 
 const props = defineProps<{
@@ -88,12 +92,12 @@ function productRoute(product: Product) {
 		case "retina.dropshipping.products.index":
 			return route("retina.dropshipping.products.show", [product.slug])
 		case "retina.dropshipping.portfolios.index":
-		case "retina.dropshipping.platforms.portfolios.index":
+		case "retina.dropshipping.customer_sales_channels.portfolios.index":
 			if (product.type == "StoredItem") {
 				return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
 			}
 
-			return route("retina.dropshipping.portfolios.show", [product.slug])
+			return route("retina.dropshipping.customer_sales_channels.portfolios.show", [route().params['customerSalesChannel'], product.slug])
 
 		case "grp.overview.catalogue.products.index":
 			return route("grp.org.shops.show.catalogue.products.current_products.show", [
@@ -127,7 +131,10 @@ const optionsView = [
 	},
 ]
 
+const isDeleting = ref(false)
+const showConfirmModal = ref(false)
 const productQuantities = ref<{ [key: number]: number }>({})
+const productToDelete = ref<any>(null)
 const isLoadingDetach = ref<string[]>([])
 const sortKey = ref()
 const sortOrder = ref()
@@ -181,6 +188,9 @@ const addNewTag = async (option: tag, idProduct: number) => {
 	}
 }
 
+const closeModal = () => {
+	showConfirmModal.value = false
+}
 // On update data Tags (add tag or delete tag)
 const updateTagItemTable = async (tags: string[], idProduct: number) => {
 	try {
@@ -232,6 +242,15 @@ const toggleItem = (id) => {
 		// If item is not found, add it
 		selectedProducts.value.push({ id: id })
 	}
+}
+
+function openConfirmModal(item: any) {
+	productToDelete.value = item
+	showConfirmModal.value = true
+}
+function cancelDelete() {
+	showConfirmModal.value = false
+	productToDelete.value = null
 }
 
 const onChangeDisplay = (type: string) => {
@@ -291,10 +310,29 @@ const onSubmitProduct = () => {
 	)
 }
 
+function confirmDelete() {
+	if (!productToDelete.value) return
+
+	const deleteDef = productToDelete.value.delete_portfolio ?? {
+		name: productToDelete.value.delete_portfolio.name,
+		parameters: productToDelete.value.delete_portfolio.parameters,
+		method: productToDelete.value.delete_portfolio.method || "delete",
+	}
+
+	const verb = deleteDef.method.toLowerCase()
+
+	isDeleting.value = true
+	router[verb](route(deleteDef.name, deleteDef.parameters), {
+		onFinish: () => {
+			isDeleting.value = false
+			cancelDelete()
+		},
+	})
+}
+
 watch(
 	() => selectedProducts.value,
 	(newVal, oldVal) => {
-		// Set default 1 untuk produk yang baru ditambahkan
 		newVal.forEach((product) => {
 			if (
 				productQuantities.value[product.item_id] === undefined ||
@@ -303,7 +341,7 @@ watch(
 				productQuantities.value[product.item_id] = 1
 			}
 		})
-		// Kosongkan quantity untuk produk yang dihapus
+
 		oldVal.forEach((product) => {
 			if (!newVal.some((p) => p.item_id === product.item_id)) {
 				productQuantities.value[product.item_id] = ""
@@ -362,18 +400,19 @@ watch(
 					:rowsPerPageOptions="[5, 10, 20, 40]"
 					currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products">
 					<template #header headerStyle="background: #ff0000">
-						<div class="flex flex-wrap gap-2 items-center justify-between">
-							<IconField>
+						<div
+							class="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch sm:items-center justify-between">
+							<IconField class="w-full sm:w-auto">
 								<InputIcon>
 									<FontAwesomeIcon
 										icon="fal fa-search"
-										class=""
 										fixed-width
 										aria-hidden="true" />
 								</InputIcon>
 								<InputText
 									v-model="filters['global'].value"
-									placeholder="Search..." />
+									placeholder="Search..."
+									class="w-full" />
 							</IconField>
 						</div>
 					</template>
@@ -388,24 +427,37 @@ watch(
 					<Column field="code" header="Code" sortable style="min-width: 12rem">
 						<template #body="{ data }">
 							<Link :href="productRoute(data)" class="primaryLink">
-							{{ data.code }}
+								{{ data.code }}
 							</Link>
 						</template>
 					</Column>
 
-					<Column
-						field="name"
-						header="Name"
-						sortable
-						style="min-width: 16rem"
-						frozen></Column>
+					<Column field="name" header="Name" sortable style="min-width: 16rem"></Column>
 
 					<Column field="quantity_left" header="Stock" style="min-width: 8rem"> </Column>
 					<Column field="weight" header="Weight" style="min-width: 8rem"> </Column>
 					<Column field="price" header="Price" style="min-width: 8rem">
 						<template #body="{ data }">
-						<div>{{ useLocaleStore().currencyFormat( data.currency_code, data.price)  }}</div>
-					</template>
+							<div>
+								{{
+									useLocaleStore().currencyFormat(data.currency_code, data.price)
+								}}
+							</div>
+						</template>
+					</Column>
+					<Column
+						field="action"
+						header="Action"
+						v-if="!props.orderMode"
+						style="min-width: 8rem; align-items: center">
+						<template #body="{ data }">
+							<FontAwesomeIcon
+								@click="openConfirmModal(data)"
+								:icon="faTrashAlt"
+								class="text-red-500"
+								fixed-width
+								aria-hidden="true" />
+						</template>
 					</Column>
 					<Column
 						field="action"
@@ -439,74 +491,52 @@ watch(
 							<div
 								v-for="(item, index) in items"
 								:key="index"
-								@click="() => toggleItem(item.id)"
-								class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3"
-								:class="[
-									isSelected(item.id)
-										? 'bg-stone-200 ring-1 ring-stone-500'
-										: 'hover:bg-stone-100',
-								]">
+								class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3">
 								<!-- == {{ isSelected(item.id) }} == -->
 								<div class="relative flex justify-center rounded">
-									<img
+									<Image
+										:src="item.source"
+										:imageCover="true"
 										class="rounded w-full"
-										:src="`https://primefaces.org/cdn/primevue/images/product/gaming-set.jpg`"
-										:alt="item.name"
-										style="max-width: 300px" />
-									<div class="absolute top-1.5 left-2">
+										style="max-width: 300px"
+										:alt="'image alt'" />
+									<!-- 	<div class="absolute top-1.5 left-2">
 										<div
 											class="capitalize text-xs inline-flex items-center gap-x-1 rounded select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500"
-											:theme="13">
+											:theme="13">xx
 											{{ item.state }}
 										</div>
-									</div>
+									</div> -->
 									<div class="absolute top-1.5 right-2">
-										<input
-											:checked="isSelected(item.id)"
-											name="checkboxProduct"
-											type="checkbox"
-											class="cursor-pointer h-5 w-5 rounded border-stone-300 text-stone-800 shadow-sm focus:ring-0 focus:outline-none" />
+										<button
+											@click.stop="openConfirmModal(item)"
+											class="p-1 bg-white rounded-full shadow hover:bg-red-500 transition-colors">
+											<FontAwesomeIcon
+												:icon="faTrashAlt"
+												class="text-red-500 hover:text-white w-4 h-4"
+												aria-hidden="true" />
+										</button>
 									</div>
 								</div>
-								<div class="py-4 px-6 h-full flex flex-col justify-between">
-									<div class="flex flex-row justify-between items-start gap-2">
-										<div>
-											<span class="text-stone-500 text-sm">{{
-												item.code
-											}}</span>
-											<div class="text-lg font-medium">{{ item.name }}</div>
-										</div>
+								<!-- Info Block -->
+								<div class="py-4 px-6 flex-1 flex flex-col justify-between">
+									<!-- Code & Name -->
+									<div>
+										<span class="text-stone-500 text-sm">{{ item.code }}</span>
+										<div class="text-lg font-medium">{{ item.name }}</div>
 									</div>
 
-									<!-- Section: Price -->
-									<div class="flex justify-between mt-6">
-										<span class="text-2xl font-semibold"
-											>${{ item.price }}</span
-										>
-										<div class="p-1" style="border-radius: 30px">
-											<div
-												class="flex items-center gap-2 justify-center py-1 px-2"
-												style="
-													border-radius: 30px;
-													box-shadow: 0 1px 2px 0px rgba(0, 0, 0, 0.04),
-														0px 1px 2px 0px rgba(0, 0, 0, 0.06);
-												">
-												<span class="font-medium text-sm">{{
-													item.rating || 0
-												}}</span>
-												<FontAwesomeIcon
-													v-if="item.rating > 0"
-													icon="fas fa-star"
-													class="text-yellow-500"
-													fixed-width
-													aria-hidden="true" />
-												<FontAwesomeIcon
-													v-else
-													icon="fal fa-star"
-													class="text-gray-500"
-													fixed-width
-													aria-hidden="true" />
-											</div>
+									<div
+										class="mt-4 grid grid-cols-3 gap-1 text-xl font-semibold text-gray-800">
+										<div class="text-center">{{ item.quantity_left }}</div>
+										<div class="text-center">{{ item.weight }}</div>
+										<div class="text-center">
+											{{
+												useLocaleStore().currencyFormat(
+													item.currency_code,
+													item.price
+												)
+											}}
 										</div>
 									</div>
 								</div>
@@ -649,6 +679,31 @@ watch(
 			</div>
 		</template>
 	</Table>
+
+	<Modal :isOpen="showConfirmModal" @onClose="closeModal" :closeButton="true" width="max-w-sm">
+		<!-- Header with Icon -->
+		<div class="flex items-center space-x-2 px-6 pt-6 pb-4 border-b border-gray-200">
+			<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="w-5 h-5 text-red-600" />
+			<h3 class="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
+		</div>
+
+		<!-- Body -->
+		<div class="px-6 py-4">
+			<p class="text-sm text-gray-700">
+				Are you sure you want to delete this product? This action cannot be undone.
+			</p>
+		</div>
+
+		<!-- Footer Buttons -->
+		<div class="flex justify-end space-x-3 px-6 pb-6 pt-2 border-t border-gray-200">
+			<Button
+				@click="cancelDelete"
+				:loading="isLoadingSubmit"
+				label="Cancel"
+				type="tertiary" />
+			<Button @click="confirmDelete" :loading="isLoadingSubmit" label="Delete" type="red" />
+		</div>
+	</Modal>
 </template>
 
 <style src="../../../../../../../node_modules/@vueform/multiselect/themes/default.css"></style>

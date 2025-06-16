@@ -24,7 +24,6 @@ use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -91,8 +90,28 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property int|null $favicon_id
+ * @property int|null $unpublished_menu_snapshot_id
+ * @property int|null $live_menu_snapshot_id
+ * @property string|null $published_menu_checksum
+ * @property int|null $unpublished_department_snapshot_id
+ * @property int|null $live_department_snapshot_id
+ * @property string|null $published_department_checksum
+ * @property int|null $unpublished_sub_department_snapshot_id
+ * @property int|null $live_sub_department_snapshot_id
+ * @property string|null $published_sub_department_checksum
+ * @property int|null $unpublished_family_snapshot_id
+ * @property int|null $live_family_snapshot_id
+ * @property string|null $published_family_checksum
+ * @property int|null $unpublished_product_snapshot_id
+ * @property int|null $live_product_snapshot_id
+ * @property string|null $published_product_checksum
+ * @property int|null $unpublished_products_snapshot_id
+ * @property int|null $live_products_snapshot_id
+ * @property string|null $published_products_checksum
+ * @property int|null $unpublished_collection_snapshot_id
+ * @property int|null $live_collection_snapshot_id
+ * @property string|null $published_collection_checksum
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read mixed $condition
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
@@ -108,8 +127,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read Snapshot|null $unpublishedCollectionSnapshot
+ * @property-read Snapshot|null $unpublishedDepartmentSnapshot
+ * @property-read Snapshot|null $unpublishedFamilySnapshot
  * @property-read Snapshot|null $unpublishedFooterSnapshot
  * @property-read Snapshot|null $unpublishedHeaderSnapshot
+ * @property-read Snapshot|null $unpublishedMenuSnapshot
+ * @property-read Snapshot|null $unpublishedProductSnapshot
+ * @property-read Snapshot|null $unpublishedProductsSnapshot
+ * @property-read Snapshot|null $unpublishedSubDepartmentSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
  * @property-read Collection<int, \App\Models\Web\Webpage> $webpages
@@ -231,18 +257,7 @@ class Website extends Model implements Auditable, HasMedia
         return null;
     }
 
-    protected function condition(): Attribute
-    {
-        return Attribute::make(
-            get: function (mixed $value, array $attributes) {
-                if ($attributes['state'] == 'live') {
-                    return $attributes['status'] ? 'live' : 'maintenance';
-                }
 
-                return $attributes['state'];
-            }
-        );
-    }
 
     public function images(): MorphToMany
     {
@@ -262,6 +277,41 @@ class Website extends Model implements Auditable, HasMedia
     public function unpublishedFooterSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_footer_snapshot_id');
+    }
+
+    public function unpublishedMenuSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_menu_snapshot_id');
+    }
+
+    public function unpublishedCollectionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_collection_snapshot_id');
+    }
+
+    public function unpublishedDepartmentSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_department_snapshot_id');
+    }
+
+    public function unpublishedSubDepartmentSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_sub_department_snapshot_id');
+    }
+
+    public function unpublishedFamilySnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_family_snapshot_id');
+    }
+
+    public function unpublishedProductSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_product_snapshot_id');
+    }
+
+    public function unpublishedProductsSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_products_snapshot_id');
     }
 
     public function liveSnapshot(): BelongsTo

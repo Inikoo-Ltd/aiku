@@ -106,7 +106,7 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Dropshipping ✊🏼');
         $command->call('hydrate:platforms');
-        $command->call('hydrate:customer_has_platforms');
+        $command->call('hydrate:customer_sales_channels');
         $command->call('hydrate:customer_clients');
         $command->call('hydrate:portfolios');
 
@@ -171,6 +171,11 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:org_post_rooms');
         $command->call('hydrate:outboxes');
         $command->call('hydrate:mailshots');
+        foreach (Shop::all() as $shop) {
+            $command->call('hydrate:mailshots', [
+                '-s' => $shop->slug
+            ]);
+        }
     }
 
     protected function hydrateSysadmin(Command $command): void

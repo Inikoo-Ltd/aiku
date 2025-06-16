@@ -8,27 +8,20 @@
 
 namespace App\Actions\Fulfilment\PalletReturn\Hydrators;
 
-use App\Actions\HydrateModel;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\PalletReturn;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PalletReturnHydrateStoredItems extends HydrateModel
+class PalletReturnHydrateStoredItems implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private PalletReturn $palletReturn;
-    public function __construct(PalletReturn $palletReturn)
+    public function getJobUniqueId(PalletReturn $palletReturn): string
     {
-        $this->palletReturn = $palletReturn;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->palletReturn->id))->dontRelease()];
+        return $palletReturn->id;
     }
 
     public function handle(PalletReturn $palletReturn): void

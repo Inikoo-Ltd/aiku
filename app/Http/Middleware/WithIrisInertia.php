@@ -35,7 +35,6 @@ trait WithIrisInertia
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
         }
 
-
         return [
             'header'       => array_merge(
                 $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
@@ -48,10 +47,12 @@ trait WithIrisInertia
             ),
             "website"      => WebsiteIrisResource::make($website)->getArray(),
             'theme'        => Arr::get($website->published_layout, 'theme'),
+            'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
             'is_logged_in' => (bool)$webUser,
             'user_auth'    => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
             'customer'     => $webUser?->customer,
             'variables'    => [
+                'reference'        => $webUser?->customer?->reference,
                 'name'             => $webUser?->contact_name,
                 'username'         => $webUser?->username,
                 'email'            => $webUser?->email,

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
@@ -30,25 +31,19 @@ class UpdateMailshot extends OrgAction
     {
         $mailshot = $this->update($mailshot, $modelData, ['data']);
 
+
         if ($mailshot->wasChanged('state')) {
             GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
             OrganisationHydrateMailshots::dispatch($mailshot->organisation)->delay($this->hydratorsDelay);
-            OutboxHydrateMailshots::dispatch($mailshot->outnox)->delay($this->hydratorsDelay);
+            OutboxHydrateMailshots::dispatch($mailshot->outbox)->delay($this->hydratorsDelay);
+            ShopHydrateMailshots::dispatch($mailshot->shop)->delay($this->hydratorsDelay);
         }
 
         return $mailshot;
 
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        //todo
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
 
-    }
 
     public function rules(): array
     {
@@ -59,6 +54,12 @@ class UpdateMailshot extends OrgAction
         ];
 
         if (!$this->strict) {
+            $rules['date']             = ['nullable', 'date'];
+            $rules['ready_at']         = ['nullable', 'date'];
+            $rules['scheduled_at']     = ['nullable', 'date'];
+            $rules['start_sending_at'] = ['nullable', 'date'];
+            $rules['sent_at']          = ['nullable', 'date'];
+            $rules['stopped_at']       = ['nullable', 'date'];
             $rules = $this->noStrictUpdateRules($rules);
         }
 

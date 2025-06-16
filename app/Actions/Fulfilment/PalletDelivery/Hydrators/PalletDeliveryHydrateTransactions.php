@@ -8,28 +8,20 @@
 
 namespace App\Actions\Fulfilment\PalletDelivery\Hydrators;
 
-use App\Actions\HydrateModel;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\FulfilmentTransaction\FulfilmentTransactionTypeEnum;
 use App\Models\Fulfilment\PalletDelivery;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PalletDeliveryHydrateTransactions extends HydrateModel
+class PalletDeliveryHydrateTransactions implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private PalletDelivery $palletDelivery;
-
-    public function __construct(PalletDelivery $palletDelivery)
+    public function getJobUniqueId(PalletDelivery $palletDelivery): string
     {
-        $this->palletDelivery = $palletDelivery;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->palletDelivery->id))->dontRelease()];
+        return $palletDelivery->id;
     }
 
     public function handle(PalletDelivery $palletDelivery): void
@@ -40,9 +32,6 @@ class PalletDeliveryHydrateTransactions extends HydrateModel
             'number_physical_goods' => $palletDelivery->transactions()->where('type', FulfilmentTransactionTypeEnum::PRODUCT)->count()
         ];
 
-
-
         $palletDelivery->stats()->update($stats);
-
     }
 }

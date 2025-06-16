@@ -104,13 +104,13 @@ class EditFulfilmentService extends OrgAction
                                     'type'     => 'input',
                                     'label'    => __('code'),
                                     'value'    => $service->code,
-                                    'readonly' => true
+
                                 ],
                                 'name'        => [
                                     'type'     => 'input',
                                     'label'    => __('label'),
                                     'value'    => $service->name,
-                                    'readonly' => true
+
                                 ],
                                 'description' => [
                                     'type'  => 'input',
@@ -121,7 +121,6 @@ class EditFulfilmentService extends OrgAction
                                     'type'     => 'input',
                                     'label'    => __('unit'),
                                     'value'    => $service->unit,
-                                    'readonly' => true
                                 ],
                                 'fixed_price' => [
                                     'type'  => 'toggle',
@@ -141,7 +140,7 @@ class EditFulfilmentService extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.services.update',
+                            'name'       => 'grp.models.fulfilment.services.update',
                             'parameters' => [
                                 'service' => $service->id
                             ]

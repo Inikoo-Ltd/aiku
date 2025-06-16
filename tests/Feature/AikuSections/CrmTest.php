@@ -34,7 +34,6 @@ use App\Actions\CRM\PollReply\StorePollReply;
 use App\Actions\CRM\PollReply\UpdatePollReply;
 use App\Actions\CRM\Prospect\Search\ReindexProspectSearch;
 use App\Actions\CRM\Prospect\StoreProspect;
-use App\Actions\CRM\Prospect\Tags\SyncTagsProspect;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\Prospect\UpdateProspectEmailClicked;
 use App\Actions\CRM\Prospect\UpdateProspectEmailHardBounced;
@@ -195,7 +194,6 @@ test('create prospect', function () {
         ->and($this->organisation->crmStats->number_prospects_state_fail)->toBe(0)
         ->and($this->organisation->crmStats->number_prospects_state_success)->toBe(0);
 
-    $this->assertDatabaseCount('tags', 3);
 
     return $prospect;
 });
@@ -231,16 +229,6 @@ test('create 2nd prospect', function () {
 
     return $prospect;
 });
-
-test('update prospect tags', function ($prospect) {
-    $modelData = [
-        'tags' => ['seo', 'social'],
-    ];
-    $prospect  = SyncTagsProspect::make()->action(prospect: $prospect, modelData: $modelData);
-    expect($prospect)->toBeInstanceOf(Prospect::class)->and($prospect->tags->count())->toBe(2);
-
-    return $prospect;
-})->depends('create 2nd prospect');
 
 test('prospect query count', function () {
     $this->artisan('query:count')->assertExitCode(0);
@@ -886,17 +874,7 @@ test('can show list of prospects', function () {
     });
 });
 
-test('can show list of tags', function () {
-    $this->withoutExceptionHandling();
-    $shop         = $this->shop;
-    $organisation = $this->organisation;
-    $response     = get(route('grp.org.shops.show.crm.prospects.tags.index', [$organisation->slug, $shop->slug]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Shop/CRM/Tags')
-            ->has('title');
-    });
-});
+
 
 test('UI get section route crm dashboard', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.index', [

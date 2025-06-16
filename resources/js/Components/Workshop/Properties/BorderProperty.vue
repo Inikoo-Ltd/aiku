@@ -1,8 +1,8 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-import { Popover, PopoverButton, PopoverPanel, Switch } from '@headlessui/vue'
-import { inject, ref } from 'vue'
+import { Switch } from '@headlessui/vue'
+import { ref } from 'vue'
 import { faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faLink, faUnlink } from "@fal"
@@ -45,15 +45,13 @@ interface Borderproperty {
 }
 
 const model = defineModel<Borderproperty>({
-    required: true
+    required: false
 })
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: string | number): void
 }>()
 
-/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') })  */
 
 const isAllValueAreSame = (scope?: {}) => {
     if (!scope) return false
@@ -68,26 +66,21 @@ const isAllValueAreSame = (scope?: {}) => {
     return aaa.every(value => value === aaa[0])
 }
 
-// Section: Border same value
 const isBorderSameValue = ref(isAllValueAreSame(model.value))
 const changeBorderValueToSame = async (newVal: number) => {
     for (let key in model.value) {
         if (model.value?.[key as keyof Borderproperty]?.hasOwnProperty('value')) {
-            // model.value[key as keyof Borderproperty].value = newVal
             set(model.value, [key, 'value'], newVal)
         }
     }
 
-    /* onSaveWorkshopFromId(side_editor_block_id, 'border') */
     emits('update:modelValue', model.value)
 }
 
-// Section: Rounded same value
 const isRoundedSameValue = ref(isAllValueAreSame(model.value?.rounded))
 const changeRoundedValueToSame = (newVal: number) => {
     for (let key in model.value?.rounded) {
         if (model.value?.rounded?.[key as keyof Borderproperty]?.hasOwnProperty('value')) {
-            // model.value.rounded[key as keyof Borderproperty].value = newVal;
             set(model.value, ['rounded', key, 'value'], newVal)
         }
     }
@@ -200,7 +193,6 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
             </div>
 
 
-            <!-- Toggle: Rounded same value -->
             <div class="px-3 flex justify-between items-center mb-2">
                 <div class="text-xs">{{ trans('Rounded same value') }}</div>
                 <Switch
@@ -210,7 +202,6 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
                     ]"
                     class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
                 >
-                    <!-- <span class="sr-only">Use setting</span> -->
                     <span aria-hidden="true" :class="isRoundedSameValue ? 'translate-x-3' : 'translate-x-0'"
                         class="pointer-events-none inline-block h-full w-1/2 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out" />
                 </Switch>

@@ -19,7 +19,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { library } from '@fortawesome/fontawesome-svg-core'
 
-import { faUsersClass, faAnalytics, faBrowser, faChartLine, faDraftingCompass, faRoad, faSlidersH, faClock, faLevelDown, faShapes, faSortAmountDownAlt, faLayerGroup, faExternalLink } from '@fal'
+import { faUsersClass, faAnalytics, faBrowser, faChartLine, faDraftingCompass, faRoad, faSlidersH, faClock, faLevelDown, faShapes, faSortAmountDownAlt, faLayerGroup, faExternalLink,faObjectGroup ,faDirections} from '@fal'
 import WebpageShowcase from "@/Components/Showcases/Org/WebpageShowcase.vue"
 import WebpageAnalytics from "@/Components/DataDisplay/WebpageAnalytics.vue"
 import TableSnapshots from "@/Components/Tables/TableSnapshots.vue"
@@ -27,7 +27,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableRedirects from '@/Components/Tables/Grp/Org/Web/TableRedirects.vue'
 
-library.add(faChartLine, faClock, faUsersClass, faAnalytics, faDraftingCompass, faSlidersH, faRoad, faLayerGroup, faBrowser, faLevelDown, faShapes, faSortAmountDownAlt, faExternalLink)
+library.add(faChartLine, faClock, faUsersClass, faAnalytics, faDraftingCompass, faSlidersH, faRoad, faLayerGroup, faBrowser, faLevelDown, faShapes, faSortAmountDownAlt, faExternalLink,faObjectGroup,faDirections)
 
 const props = defineProps<{
     title: string

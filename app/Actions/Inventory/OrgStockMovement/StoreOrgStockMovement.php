@@ -9,12 +9,14 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
@@ -33,6 +35,12 @@ class StoreOrgStockMovement extends OrgAction
 
         data_set($modelData, 'date', now(), overwrite: false);
 
+
+        if (!Arr::has($modelData, 'org_amount')) {
+            $orgAmount = $modelData['quantity'] * $orgStock->value_in_locations;
+            data_set($modelData, 'org_amount', $orgAmount);
+
+        }
 
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'org_amount') * GetCurrencyExchange::run($orgStock->organisation->currency, $orgStock->group->currency), overwrite: false);
 
@@ -54,6 +62,17 @@ class StoreOrgStockMovement extends OrgAction
 
         $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
 
+
+        $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
+
+
+        UpdateLocationOrgStock::run(
+            $locationOrgStock,
+            [
+                'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
+            ]
+        );
+
         OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
 
 
@@ -63,9 +82,9 @@ class StoreOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'date'         => ['required', 'date'],
+            'date'         => ['sometimes', 'date'],
             'quantity'     => ['required', 'numeric'],
-            'org_amount'   => ['required', 'numeric'],
+            'org_amount'   => ['sometimes', 'numeric'],
             'data'         => ['sometimes', 'array'],
             'type'         => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
             'is_delivered' => ['sometimes', 'boolean'],

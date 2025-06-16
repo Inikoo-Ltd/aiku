@@ -5,21 +5,26 @@
   -->
 
 <script setup lang="ts">
-import {Head} from '@inertiajs/vue3';
-import PageHeading from '@/Components/Headings/PageHeading.vue';
+import { Head } from "@inertiajs/vue3";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableSubDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableSubDepartments.vue";
-import { capitalize } from "@/Composables/capitalize"
+import { capitalize } from "@/Composables/capitalize";
+import { faSeedling } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
-const props = defineProps <{
+library.add(faSeedling);
+
+
+defineProps<{
     pageHead: object
     title: string
     data: object
-}>()
+}>();
 
 </script>
 
 <template>
-    <Head :title="capitalize(title)"/>
+    <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <TableSubDepartments :data="data" />
 </template>

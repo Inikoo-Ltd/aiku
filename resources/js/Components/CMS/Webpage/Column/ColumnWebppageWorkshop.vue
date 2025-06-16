@@ -11,7 +11,8 @@ library.add(faCube, faLink, faImage)
 const props = defineProps<{
 	modelValue: any
 	webpageData?: any
-	blockData?: Object
+	blockData: Object
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const emits = defineEmits<{
@@ -25,10 +26,10 @@ const updateData = (newVal: any) => {
 </script>
 
 <template>
+		
 	<section class="w-full min-h-[100px] flex items-center justify-center"
-		:style="getStyles(modelValue?.data?.fieldValue?.container?.properties)"
+		:style="getStyles(modelValue?.data?.fieldValue?.container?.properties,screenType)"
 	>
-		<!-- If no component selected -->
 		<div
 			v-if="!modelValue"
 			class="flex flex-col items-center justify-center text-center text-gray-500  rounded-xl p-8"
@@ -37,17 +38,17 @@ const updateData = (newVal: any) => {
 			<p class="text-sm">{{ trans("Please select or add a content block first.") }}</p>
 		</div>
 
-		<!-- If block is already selected (modelValue is present) -->
+	
 		<component
 			v-else
 			class="w-full"
 			:is="getComponent(modelValue.code)"
 			:webpageData="webpageData"
-			:blockData="modelValue"
+			:blockData="{...modelValue, id : blockData.id }"
 			@autoSave="() => updateData(modelValue)"
 			v-model="modelValue.data.fieldValue"
+			:screenType="screenType"
 		/>
-		<!-- <pre>{{ getStyles(modelValue?.data?.fieldValue?.container?.properties) }}</pre> -->
 	</section>
 </template>
 

@@ -35,8 +35,6 @@ class SetPalletReturnAutoServices extends OrgAction
             ->where('auto_assign_subject', 'Pallet')
             ->where('is_auto_assign', true)->get();
 
-        // todo auto calculate for stored items
-
         return $this->processAutoServices($palletReturn, $autoServices, $palletTypes, $debug);
     }
 

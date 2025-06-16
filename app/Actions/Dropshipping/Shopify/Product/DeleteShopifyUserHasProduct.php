@@ -10,7 +10,9 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\ShopifyUserHasProduct;
+use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\ShopifyUserHasProduct;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -20,8 +22,18 @@ class DeleteShopifyUserHasProduct extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(ShopifyUserHasProduct $product): int
+    public function handle(?Portfolio $portfolio, bool $forceDelete = false, bool $fromWebhook = false): ShopifyUserHasProduct|null|int
     {
-        return $product->delete();
+        if (!$portfolio) {
+            return null;
+        }
+
+        if (!$fromWebhook && $portfolio->platform_product_id) {
+            /** @var ShopifyUser $shopifyUser */
+            $shopifyUser = $portfolio->customerSalesChannel->user;
+            $shopifyUser->getShopifyClient()->request('DELETE', '/admin/api/2025-04/products/'.$portfolio->platform_product_id.'.json');
+        }
+
+        return null;
     }
 }

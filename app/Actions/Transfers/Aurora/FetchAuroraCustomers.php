@@ -8,9 +8,9 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
@@ -117,8 +117,8 @@ class FetchAuroraCustomers extends FetchAuroraAction
 
                 $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
-                if (!$customer->platforms()->where('platform_id', $platform->id)->exists()) {
-                    AttachCustomerToPlatform::make()->action($customer, $platform, [
+                if (!$customer->customerSalesChannels()->where('platform_id', $platform->id)->exists()) {
+                    StoreCustomerSalesChannel::make()->action($customer, $platform, [
                         'reference' => (string) $customer->id
                     ]);
                 }

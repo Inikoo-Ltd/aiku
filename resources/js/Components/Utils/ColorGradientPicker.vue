@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import Select from 'primevue/select'
 import PureRadio from '@/Components/Pure/PureRadio.vue'
-import { set, values } from 'lodash'
+import { set, values } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

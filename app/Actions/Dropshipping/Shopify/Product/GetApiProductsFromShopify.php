@@ -15,8 +15,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
@@ -68,20 +66,18 @@ class GetApiProductsFromShopify extends OrgAction
                     if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
                         if (!$storedItem) {
                             $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
-                                'reference' => $product['handle']
+                                'reference' => $product['handle'],
+                                'total_quantity' => $variant['inventory_quantity']
                             ]);
                         }
 
                         $portfolio = $storedItem->portfolio;
                         if (!$portfolio) {
-                            $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
                             $portfolio = StorePortfolio::make()->action(
-                                $shopifyUser->customer,
+                                $shopifyUser->customerSalesChannel,
                                 $storedItem,
-                                [
-                                'platform_id' => $platform->id
-                            ]
+                                []
                             );
                         }
 
@@ -94,8 +90,7 @@ class GetApiProductsFromShopify extends OrgAction
                         ]]);
 
                         UpdateStoredItem::run($storedItem, [
-                            'state' => StoredItemStateEnum::SUBMITTED,
-                            'total_quantity' => $variant['inventory_quantity']
+                            'state' => StoredItemStateEnum::ACTIVE
                         ]);
                     }
                 });

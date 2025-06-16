@@ -9,7 +9,7 @@
 namespace App\Actions\Web\ModelHasWebBlocks;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use Illuminate\Support\Arr;
@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class BulkUpdateModelHasWebBlocks extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithActionUpdate;
 
 

@@ -14,12 +14,16 @@ use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\CRM\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -38,7 +42,6 @@ class ShowProduct extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->asAction) {
             return true;
         }
@@ -60,6 +63,7 @@ class ShowProduct extends OrgAction
             return $request->user()->authTo("group-overview");
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
+
             return $request->user()->authTo("products.{$this->shop->id}.view");
         }
     }
@@ -131,6 +135,65 @@ class ShowProduct extends OrgAction
         return $this->handle($product);
     }
 
+    public function getProductTaxonomy(Product $product, ActionRequest $request): array
+    {
+        $routeName = $request->route()->getName();
+
+        $family = null;
+        if ($product->family) {
+            $family = [
+                'label'   => $product->family->code,
+                'tooltip' => $product->family->code,
+                 'name'   => $product->family->name,
+                'route'   => match ($routeName) {
+                    'grp.org.shops.show.catalogue.departments.show.families.show.products.show' => [
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
+                        'parameters' => [
+                            'organisation' => $this->parent->slug,
+                            'shop'         => $product->shop->slug,
+                            'department'   => $product->family->department->slug,
+                            'family'       => $product->family->slug
+                        ]
+                    ],
+
+                    default => [
+                        'name'       => 'grp.org.shops.show.catalogue.families.show',
+                        'parameters' => [
+                            'organisation' => $this->parent->slug,
+                            'shop'         => $product->shop->slug,
+                            'family'       => $product->family->slug
+                        ]
+                    ]
+                }
+
+            ];
+        }
+
+        $department = null;
+        if ($product->department) {
+            $department = [
+                'label'   => $product->department->code,
+                'name'   => $product->department->name,
+                'tooltip' => $product->department->name,
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                    'parameters' => [
+                        'organisation' => $this->parent->slug,
+                        'shop'         => $product->shop->slug,
+                        'department'   => $product->department->slug
+                    ]
+                ]
+
+            ];
+        }
+
+
+        return [
+            'family'     => $family,
+            'department' => $department
+        ];
+    }
+
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -148,39 +211,42 @@ class ShowProduct extends OrgAction
                     'next'     => $this->getNext($product, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $product->code,
-                    'icon'    =>
+                    'title'      => $product->code,
+                    'model'      => $this->parent?->code,
+                    'icon'       =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
                             'title' => __('product')
                         ],
                     'afterTitle' => [
-                       'label' => $product->name
-                        ],
-                    'actions' => [
-                        $product->webpage ?
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'tooltip' => __('To Webpage'),
-                            'label'   => __('To Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.web.webpages.show',
-                                'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'website'      => $this->shop->website->slug,
-                                    'webpage'      => $product->webpage->slug
+                        'label' => $product->name
+                    ],
+                    'actions'    => [
+                        $product->webpage
+                            ?
+                            [
+                                'type'    => 'button',
+                                'style'   => 'edit',
+                                'tooltip' => __('To Webpage'),
+                                'label'   => __('To Webpage'),
+                                'icon'    => ["fal", "fa-drafting-compass"],
+                                'route'   => [
+                                    'name'       => 'grp.org.shops.show.web.webpages.show',
+                                    'parameters' => [
+                                        'organisation' => $this->organisation->slug,
+                                        'shop'         => $this->shop->slug,
+                                        'website'      => $this->shop->website->slug,
+                                        'webpage'      => $product->webpage->slug
+                                    ]
                                 ]
                             ]
-                        ] : [
-                            'type'  => 'button',
-                            'style' => 'edit',
+                            : [
+                            'type'    => 'button',
+                            'style'   => 'edit',
                             'tooltip' => __('Create Webpage'),
                             'label'   => __('Create Webpage'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
+                            'icon'    => ["fal", "fa-drafting-compass"],
+                            'route'   => [
                                 'name'       => 'grp.models.webpages.product.store',
                                 'parameters' => $product->id,
                                 'method'     => 'post'
@@ -195,20 +261,14 @@ class ShowProduct extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        // $this->canDelete ? [
-                        //     'type'  => 'button',
-                        //     'style' => 'delete',
-                        //     'route' => [
-                        //         'name'       => 'shops.show.products.remove',
-                        //         'parameters' => $request->route()->originalParameters()
-                        //     ]
-                        // ] : false,
+
                     ]
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
                 ],
+                'taxonomy'    => $this->getProductTaxonomy($product, $request),
 
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
@@ -219,29 +279,29 @@ class ShowProduct extends OrgAction
                     fn () => OrderResource::collection(IndexOrders::run($product->asset))
                     : Inertia::lazy(fn () => OrderResource::collection(IndexOrders::run($product->asset))),
 
-                    ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
+                ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
                     fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
                     : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
 
-                    ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
+                ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
                     fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
                     : Inertia::lazy(fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
 
-                // ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
-                //     fn () => CustomersResource::collection(IndexCustomers::run($product))
-                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
+                ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
 
-                // ProductTabsEnum::MAILSHOTS->value => $this->tab == ProductTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($product))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($product))),
+                ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
+                    fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
+                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
 
             ]
         )->table(IndexOrders::make()->tableStructure($product->asset, ProductTabsEnum::ORDERS->value))
-        ->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
-        ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value));
-        // ->table(IndexCustomers::make()->tableStructure($product))
-        // ->table(IndexMailshots::make()->tableStructure($product));
+            ->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
+            ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
+            ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
+            ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value));
     }
 
     public function jsonResponse(Product $product): ProductsResource

@@ -6,8 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
-use App\Actions\UI\Iris\ShowHome;
+use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
 
 Route::get(".well-known/apple-developer-merchantid-domain-association", function () {
@@ -18,7 +18,8 @@ Route::get(".well-known/apple-developer-merchantid-domain-association", function
 Route::middleware(["iris-auth:retina"])->group(function () {
     Route::prefix("")->group(function () {
         Route::group([], __DIR__ . '/system.php');
-        Route::get('/{path?}', ShowHome::class)->where("path", ".*")->name('home');
+        Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
+        Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
     });
 });
 
@@ -29,3 +30,7 @@ Route::prefix("disclosure")
 Route::prefix("unsubscribe")
     ->name("unsubscribe.")
     ->group(__DIR__."/unsubscribe.php");
+
+Route::prefix("json")
+    ->name("json.")
+    ->group(__DIR__."/json.php");

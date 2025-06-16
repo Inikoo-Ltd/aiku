@@ -24,8 +24,8 @@ export const initialiseRetinaApp = () => {
 
 
 
-    const storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
-    layout.currentPlatform = storageLayout.currentPlatform  // { 'awa' : { currentShop: 'bali', currentWarehouse: 'ed' }, ... }
+    const storageLayout = JSON.parse(localStorage.getItem(`layout_${usePage().props.retina?.type}`) || '{}')  // Get layout from localStorage
+    layout.currentPlatform = storageLayout.currentPlatform
 
     if (usePage().props?.auth?.user) {
         layout.user = usePage().props.auth.user
@@ -36,18 +36,26 @@ export const initialiseRetinaApp = () => {
     }
     
     router.on('navigate', (event) => {
-        // console.log('layout env', layout.app.environment)
         layout.currentParams = route().v().params  // current params
         layout.currentRoute = route().current()  // current route
 
-        if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
-            layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
+        if (layout.currentParams?.customerSalesChannel && layout.currentParams?.customerSalesChannel !== layout.currentPlatform) {
+            layout.currentPlatform = layout.currentParams.customerSalesChannel
 
-            localStorage.setItem('layout', JSON.stringify({
+            localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
                 ...storageLayout,
                 currentPlatform: layout.currentPlatform
             }))
         }
+
+        // if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {
+        //     layout.currentPlatform = layout.currentParams.platform  // 'tiktok' | 'shopify'
+
+        //     localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
+        //         ...storageLayout,
+        //         currentPlatform: layout.currentPlatform
+        //     }))
+        // }
     })
 
     // Echo: Website wide websocket
@@ -57,11 +65,11 @@ export const initialiseRetinaApp = () => {
         loadLanguageAsync(usePage().props.localeData.language.code)
     }
 
+
     watchEffect(() => {
         // Set data of Navigation
         if (usePage().props.layout) {
             layout.navigation = usePage().props.layout.navigation || null
-            // layout.secondaryNavigation = usePage().props.layout.secondaryNavigation || null
         }
 
         // Set data of Locale (Language)
@@ -75,10 +83,6 @@ export const initialiseRetinaApp = () => {
             layout.website = usePage().props.layout?.website
         }
 
-        // Set data of Website
-        // if (usePage().props.layout?.web_page) {
-        //     layout.web_page = usePage().props.layout?.web_page
-        // }
 
         // Set data of Locale (Language)
         if (usePage().props.layout?.customer) {
@@ -96,13 +100,11 @@ export const initialiseRetinaApp = () => {
             layout.app.environment = usePage().props?.environment
         }
 
-        // Set Webuser count
+        // Set WebUser count
         if (usePage().props.auth?.webUser_count) {
             layout.webUser_count = usePage().props.auth?.webUser_count || null
         }
 
-        // let moduleName = (layout.currentRoute || "").split(".")
-        // layout.currentModule = moduleName.length > 1 ? moduleName[1] : ""
 
         if (usePage().props.auth?.user) {
             layout.user = usePage().props.auth.user

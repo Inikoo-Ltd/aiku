@@ -84,7 +84,7 @@ class DeleteBookedInPalletDelivery extends OrgAction
             $fulfilmentCustomer->customer->auditCustomNew = [
                 'delivery' => __("The delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
             ];
-            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+            Event::dispatch(new AuditCustom($fulfilmentCustomer->customer));
         });
 
         StoreDeletePalletDeliveryHistory::run($palletDelivery, $palletDelivery->fulfilmentCustomer->customer);

@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -22,10 +22,11 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 
 class EditWebpage extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     public function handle(Webpage $webpage): Webpage
@@ -56,7 +57,6 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        // dump($webpage->toArray());
         $redirectUrlArr = Arr::pluck($webpage->website->redirects->toArray(), 'redirect');
         return Inertia::render(
             'EditModel',
@@ -99,6 +99,19 @@ class EditWebpage extends OrgAction
                                     'value'     => $webpage->title,
                                     'required'  => true,
                                 ],
+                                'state'  => [
+                                    'type'          => 'select',
+                                    'label'         => __('State'),
+                                    'placeholder'   => __('Select webpage state'),
+                                    'value'         => $webpage->state,
+                                    'options'       => Options::forEnum(WebpageStateEnum::class),
+                                    'searchable'    => true
+                                ],
+                                'allow_fetch'  => [
+                                    'type'          => 'toggle',
+                                    'label'         => __('Allow fetch'),
+                                    'value'         =>  $webpage->allow_fetch,
+                                ],
                                 /* 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
@@ -116,12 +129,21 @@ class EditWebpage extends OrgAction
                             'label'  => __('SEO (Settings)'),
                             'icon'   => 'fab fa-google',
                             'fields' => [
+                                "seo_image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("image"),
+                                    "value"   => $webpage?->imageSources(1200, 1200, 'seoImage'),
+                                    'options' => [
+                                        "minAspectRatio" => 1,
+                                        "maxAspectRatio" => 12 / 4,
+                                    ]
+                                ],
                                 'google_search' => [
                                     'type'     => 'googleSearch',
                                     'domain'    => $webpage->website->domain . '/',
                                     'value'    => [
-                                        'image'         => [    // TODO
-                                            'original'  => 'https://socialsharepreview.com/api/image-proxy?url=https%3A%2F%2Fwww.zelolab.com%2Fwp-content%2Fuploads%2F2022%2F12%2Fhow-to-create-and-set-up-a-social-share-preview-image-on-your-website.jpg',
+                                        'image'         => [
+                                            'original'  => Arr::get($webpage->seo_data, 'image.original') ?? '',
                                         ],
                                         'meta_title'       => Arr::get($webpage->seo_data, 'meta_title')       ?? '',
                                         'meta_description' => Arr::get($webpage->seo_data, 'meta_description') ?? '',
@@ -131,7 +153,7 @@ class EditWebpage extends OrgAction
                                     ],
                                     'noTitle'  => true,
                                 ],
-                              /*   'meta_title' => [
+                                /*   'meta_title' => [
                                         'type'     => 'input',
                                         'label'    => __('Meta title'),
                                         'value'    => Arr::get($webpage->seo_data, 'meta_title')
@@ -164,6 +186,28 @@ class EditWebpage extends OrgAction
                                 ],
                             ]
                         ],
+                        [
+                            'label'  => __('Delete'),
+                            'icon'   => 'fal fa-trash-alt',
+                            'fields' => [
+                                'name' => [
+                                    'type'   => 'action',
+                                    'action' => [
+                                        'type'  => 'button',
+                                        'style' => 'delete',
+                                        'label' => __('delete webpage'),
+                                        'route' => [
+                                            'method' => 'delete',
+                                            'name'       => 'grp.models.shop.webpage.delete',
+                                            'parameters' => [
+                                                'shop' => $webpage->shop->id,
+                                                'webpage' => $webpage->id,
+                                            ]
+                                        ],
+                                    ],
+                                ]
+                            ]
+                        ]
                     ],
                     'args'      => [
                         'updateRoute' => [

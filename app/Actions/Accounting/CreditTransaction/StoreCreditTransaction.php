@@ -39,12 +39,9 @@ class StoreCreditTransaction extends OrgAction
         /** @var CreditTransaction $creditTransaction */
         $creditTransaction = $customer->creditTransactions()->create($modelData);
 
-        if ($this->hydratorsDelay > 0) {
-            CustomerHydrateCreditTransactions::dispatch($customer)->delay($this->hydratorsDelay);
 
-        } else {
-            CustomerHydrateCreditTransactions::run($customer);
-        }
+        CustomerHydrateCreditTransactions::run($customer);
+
 
         ShopHydrateCreditTransactions::dispatch($creditTransaction->shop)->delay($this->hydratorsDelay);
         OrganisationHydrateCreditTransactions::dispatch($creditTransaction->organisation)->delay($this->hydratorsDelay);
@@ -75,20 +72,19 @@ class StoreCreditTransaction extends OrgAction
         if (!$this->strict) {
             $rules['grp_exchange'] = ['sometimes', 'numeric'];
             $rules['org_exchange'] = ['sometimes', 'numeric'];
-            $rules = $this->noStrictStoreRules($rules);
+            $rules                 = $this->noStrictStoreRules($rules);
         }
 
         return $rules;
-
     }
 
     public function action(Customer $customer, $modelData, int $hydratorsDelay = 0, bool $strict = true): CreditTransaction
     {
+
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($customer->shop, $modelData);
-
         return $this->handle($customer, $modelData);
     }
 }

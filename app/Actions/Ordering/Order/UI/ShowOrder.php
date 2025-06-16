@@ -13,14 +13,14 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
-use App\Actions\Dropshipping\CustomerHasPlatforms\UI\ShowCustomerHasPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
-use App\Actions\Traits\Authorisations\HasOrderingAuthorisation;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -33,9 +33,9 @@ use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -49,17 +49,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrder extends OrgAction
 {
-    use HasOrderingAuthorisation;
     use IsOrder;
+    use WithOrderingEditAuthorisation;
 
-    private Shop|Customer|CustomerClient|Purge|CustomerHasPlatform $parent;
-    private CustomerHasPlatform $customerHasPlatform;
+    private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
+    private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(Order $order): Order
     {
         return $order;
     }
-
 
     public function inOrganisation(Organisation $organisation, Order $order, ActionRequest $request): Order
     {
@@ -88,8 +87,8 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, Order $order, ActionRequest $request): Order
     {
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
-        $this->parent        = $customerHasPlatform;
+        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
+        $this->parent        = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -98,19 +97,19 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
     {
-        $customerHasPlatform       = CustomerHasPlatform::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
+        $customerSalesChannel       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
         $this->parent              = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform, Order $order, ActionRequest $request): Order
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
         $this->parent              = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -472,18 +471,18 @@ class ShowOrder extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.customer-clients.orders.show'
+            'grp.org.shops.show.crm.customers.show.customer_clients.orders.show'
             => array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs($order->customer, 'grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs($order->customer, 'grp.org.shops.show.crm.customers.show.customer_clients.show', $routeParameters),
                 $headCrumb(
                     $order,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.orders.index',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_clients.orders.index',
                             'parameters' => Arr::except($routeParameters, ['order'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.orders.show',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_clients.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -508,36 +507,36 @@ class ShowOrder extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.orders.show'
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show'
             => array_merge(
-                (new ShowCustomerHasPlatform())->getBreadcrumbs($this->parent->platform, 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index', $routeParameters),
+                (new ShowCustomerSalesChannel())->getBreadcrumbs($this->parent->platform, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index', $routeParameters),
                 $headCrumb(
                     $order,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.index',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index',
                             'parameters' => Arr::except($routeParameters, ['order'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.orders.show',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],
                     $suffix
                 )
             ),
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.show'
+            'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show'
             => array_merge(
-                (new ShowCustomerClient())->getBreadcrumbs($this->customerHasPlatform, 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
+                (new ShowCustomerClient())->getBreadcrumbs($this->customerSalesChannel, 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show', $routeParameters),
                 $headCrumb(
                     $order,
                     [
                         'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index',
                             'parameters' => Arr::except($routeParameters, ['order'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.show',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -603,7 +602,7 @@ class ShowOrder extends OrgAction
 
                 ]
             ],
-            'grp.org.shops.show.crm.customers.show.platforms.show.orders.show' => [
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show' => [
                 'label' => $order->reference,
                 'route' => [
                     'name'       => $routeName,
@@ -630,7 +629,7 @@ class ShowOrder extends OrgAction
 
                 ]
             ],
-            'grp.org.shops.show.crm.customers.show.customer-clients.orders.show' => [
+            'grp.org.shops.show.crm.customers.show.customer_clients.orders.show' => [
                 'label' => $order->reference,
                 'route' => [
                     'name'       => $routeName,

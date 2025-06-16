@@ -14,7 +14,7 @@ use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -27,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class PublishWebsiteProductTemplate extends OrgAction
 {
     use WithActionUpdate;
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     public function handle(Website $website, array $modelData): Website
     {

@@ -10,8 +10,8 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -110,7 +110,7 @@ trait WithCustomerSubNavigation
             ],
             [
                 'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
                     'parameters' => $request->route()->originalParameters()
                 ],
                 'label'    => __('Channels'),
@@ -118,7 +118,7 @@ trait WithCustomerSubNavigation
                     'icon'    => 'fal fa-parachute-box',
                     'tooltip' => __('Channels'),
                 ],
-                'number'   => $customer->platforms->count()
+                'number'   => $customer->customerSalesChannels->count()
             ],
         ];
 
@@ -178,15 +178,15 @@ trait WithCustomerSubNavigation
         ]);
     }
 
-    protected function getCustomerClientSubNavigation(CustomerClient $customerClient, CustomerHasPlatform $customerHasPlatform): array
+    protected function getCustomerClientSubNavigation(CustomerClient $customerClient, CustomerSalesChannel $customerSalesChannel): array
     {
         return [
             [
                 'isAnchor' => true,
                 'label'    => __('Client'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerSalesChannel->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
@@ -197,8 +197,8 @@ trait WithCustomerSubNavigation
                 'label'    => __('Orders'),
                 'number'   => $customerClient->stats->number_orders ?? 0,
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.index',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerHasPlatform->id, $customerClient->ulid]
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index',
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerSalesChannel->id, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-shopping-cart'],

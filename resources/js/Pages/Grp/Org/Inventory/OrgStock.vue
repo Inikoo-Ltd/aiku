@@ -58,9 +58,9 @@ const props = defineProps<{
     }
     showcase: object;
     supplier_products: object;
-    products: object;
     locations: object;
     purchase_orders: {};
+    product?: {}
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -72,7 +72,7 @@ const component = computed(() => {
         showcase: StockShowcase,
         locations: TableLocations,
         supplier_products: TableSupplierProducts,
-        products: TableProducts,
+        product: TableProducts,
         details: ModelDetails,
         history: ModelChangelog,
         purchase_orders: TablePurchaseOrders,

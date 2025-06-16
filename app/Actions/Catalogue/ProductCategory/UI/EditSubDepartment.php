@@ -41,6 +41,7 @@ class EditSubDepartment extends OrgAction
             );
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
+
             return $request->user()->authTo("products.{$this->shop->id}.view");
         }
     }
@@ -74,16 +75,16 @@ class EditSubDepartment extends OrgAction
             [
                 'title'       => __('Sub-department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
+                    $subDepartment,
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
-                    'previous' => $this->getPrevious($subDepartment, $request),
-                    'next'     => $this->getNext($subDepartment, $request),
+                'navigation'  => [
+                    'previous' => ShowSubDepartment::make()->getPrevious($subDepartment, $request),
+                    'next'     => ShowSubDepartment::make()->getNext($subDepartment, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $subDepartment->code,
-                    'actions'  => [
+                    'title'   => $subDepartment->code,
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -110,15 +111,20 @@ class EditSubDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $subDepartment->name
                                 ],
+                                "image"         => [
+                                    "type"    => "image_crop_square",
+                                    "label"   => __("Image"),
+                                    "value"   => $subDepartment->imageSources(720, 480),
+                                ],
                             ]
                         ]
 
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.sub-department.update',
+                            'name'       => 'grp.models.product_category.update',
                             'parameters' => [
-                                'productCategory'   => $subDepartment->id
+                                'productCategory' => $subDepartment->id
                             ]
                         ],
                     ]
@@ -128,54 +134,14 @@ class EditSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(ProductCategory $subDepartment, array $routeParameters): array
     {
         return ShowSubDepartment::make()->getBreadcrumbs(
-            routeName: preg_replace('/edit$/', 'show', $routeName),
+            subDepartment: $subDepartment,
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );
     }
 
-    public function getPrevious(ProductCategory $subDepartment, ActionRequest $request): ?array
-    {
-        $previous = ProductCategory::where('code', '<', $subDepartment->code)->orderBy('code', 'desc')->first();
-        return $this->getNavigation($previous, $request->route()->getName());
 
-    }
-
-    public function getNext(ProductCategory $subDepartment, ActionRequest $request): ?array
-    {
-        $next = ProductCategory::where('code', '>', $subDepartment->code)->orderBy('code')->first();
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?ProductCategory $subDepartment, string $routeName): ?array
-    {
-        if (!$subDepartment) {
-            return null;
-        }
-        return match ($routeName) {
-            'shops.families.edit' => [
-                'label' => $subDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'department' => $subDepartment->slug
-                    ]
-                ]
-            ],
-            'shops.show.families.edit' => [
-                'label' => $subDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'shop'       => $subDepartment->shop->slug,
-                        'department' => $subDepartment->slug
-                    ]
-                ]
-            ],
-            default => []
-        };
-    }
 }

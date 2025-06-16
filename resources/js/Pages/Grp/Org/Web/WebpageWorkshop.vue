@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, onMounted, IframeHTMLAttributes, provide, watch, toRaw} from "vue"
+import { ref, onMounted, IframeHTMLAttributes, provide, watch, toRaw, computed, inject} from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -21,18 +21,22 @@ import ButtonPreviewLogin from "@/Components/Workshop/Tools/ButtonPreviewLogin.v
 import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-import { debounce } from 'lodash';
-import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, } from "@fal"
+import { debounce } from 'lodash-es';
+import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop"
+/* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
+import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from "primevue/useconfirm";
+import ToggleSwitch from 'primevue/toggleswitch';
 
 
 import { routeType } from "@/types/route"
-import { faLowVision } from "@far"
+import { faEye } from "@fad"
+import { useLiveUsers } from "@/Stores/active-users"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faLowVision)
+library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars)
 
 const props = defineProps<{
 	title: string
@@ -42,7 +46,7 @@ const props = defineProps<{
 }>()
 
 provide('isInWorkshop', true)
-
+const layout = inject('layout', layoutStructure)
 const confirm = useConfirm();
 const data = ref(props.webpage)
 const iframeClass = ref("w-full h-full")
@@ -57,12 +61,13 @@ const addBlockCancelToken = ref<Function | null>(null)
 const orderBlockCancelToken = ref<Function | null>(null)
 const deleteBlockCancelToken = ref<Function | null>(null)
 const addBlockParentIndex = ref(0)
+const currentView = ref('desktop')
 
 const openedBlockSideEditor = ref<number | null>(null)
 provide('openedBlockSideEditor', openedBlockSideEditor)
 const openedChildSideEditor = ref<number | null>(null)
 provide('openedChildSideEditor', openedChildSideEditor)
-
+provide('currentView',currentView )
 // Method: Add block
 const isAddBlockLoading = ref<string | null>(null)
 
@@ -418,6 +423,7 @@ const setHideBlock = (block: Daum) => {
         message: 'You Dont have title/ h1 in code, are you sure to publish ?',
         header: 'Confirmation',
         icon: 'pi pi-exclamation-triangle',
+		group:"alert-publish",
         rejectProps: {
             label: 'Cancel',
             severity: 'secondary',
@@ -468,7 +474,53 @@ watch(openedBlockSideEditor, (newValue) => {
 	sendToIframe({ key: 'activeBlock', value: newValue })
 })
 
+watch(currentView, (newValue) => {
+	iframeClass.value = setIframeView(newValue)
+})
 
+const fullScreeen = ref(false)
+
+const compUsersEditThisPage = computed(() => {
+	return useLiveUsers().liveUsersArray.filter(user => user.current_page?.route_name === layout.currentRoute).map(user => user.name ?? user.username)
+})
+
+const filterBlock = ref('all')
+
+watch(filterBlock, (newValue) => {
+	sendToIframe({ key: 'isPreviewLoggedIn', value: newValue })
+})
+
+
+
+const SyncAurora = () => {
+	router.patch(
+		route(props.webpage.route_webpage_edit.name,props.webpage.route_webpage_edit.parameters),
+		{ allow_fetch: props.webpage.allow_fetch },
+		{
+			onStart: () => {
+				console.log('========== start save ')
+				isSavingBlock.value = true
+			},
+			onFinish: () => {
+				isSavingBlock.value = false
+			},
+			onSuccess: () => {
+				sendToIframe({ key: 'reload', value: {} })
+			},
+			onError: (error) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message,
+					type: "error",
+				});
+				isSavingBlock.value = false
+			},
+			preserveScroll: true,
+		}
+	);
+}
+
+console.log('webpage workshop props :',props)
 </script>
 
 <template>
@@ -489,13 +541,14 @@ watch(openedBlockSideEditor, (newValue) => {
 			</div>
 		</template>
 	</PageHeading>
-	<ConfirmDialog></ConfirmDialog>
+	<ConfirmDialog group="alert-publish"></ConfirmDialog>
 	<div class="flex gap-x-2">
 		<!-- Section: Side editor -->
-		<div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
+		<div v-if="!fullScreeen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
 			<WebpageSideEditor v-model="isModalBlockList" :isLoadingblock :isLoadingDeleteBlock :isAddBlockLoading
 				:webpage="data" :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock"
-				@add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock" ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings"/>
+				v-model:filterBlock="filterBlock" @add="addNewBlock" @order="sendOrderBlock" @setVisible="setHideBlock"
+				ref="_WebpageSideEditor" @onSaveSiteSettings="onSaveSiteSettings" />
 		</div>
 
 		<!-- Section: Preview -->
@@ -503,9 +556,14 @@ watch(openedBlockSideEditor, (newValue) => {
 			<div class="flex justify-between">
 				<!-- Section: Screenview -->
 				<div class="flex">
-					<ScreenView @screenView="(e) => iframeClass = setIframeView(e)" />
-					<div class="py-1 px-2 cursor-pointer" v-tooltip="'Preview'" @click="openFullScreenPreview">
-						<FontAwesomeIcon :icon="faLowVision" fixed-width aria-hidden="true" />
+					<ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
+					<div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
+						v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview">
+						<FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
+					</div>
+					<div class="py-1 px-2 cursor-pointer" v-tooltip="'fullScreeen'" @click="fullScreeen = !fullScreeen">
+						<FontAwesomeIcon :icon="!fullScreeen  ? faExpandWide : faCompressWide" fixed-width
+							aria-hidden="true" />
 					</div>
 					<!-- <div class="py-1 px-2 cursor-pointer" v-tooltip="'undo'" @click="undo">
 						<FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
@@ -514,27 +572,39 @@ watch(openedBlockSideEditor, (newValue) => {
 						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
 					</div> -->
 				</div>
+				<!-- Users edit same page -->
+				<div v-if="compUsersEditThisPage?.length > 1"
+					v-tooltip="compUsersEditThisPage.join(', ') + trans('. Your changes may conflict each others.')"
+					class="text-center bg-yellow-300 rounded my-1 flex items-center gap-x-1 px-2">
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width
+						aria-hidden="true" />
+					{{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-700" fixed-width
+						aria-hidden="true" />
+				</div>
 
 				<!-- Tools: login-logout, edit-preview -->
-				<div class="flex gap-3 items-center px-4">
-					<ButtonPreviewLogin v-model="isPreviewLoggedIn"
-						@update:model-value="(e) => sendToIframe({ key: 'isPreviewLoggedIn', value: e })" />
+				<div class="flex items-center px-3">
+					<div class="flex items-center gap-2 px-3 text-sm text-gray-700">
+						<label for="sync-toggle">Sync with aurora</label>
+						<ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch" @update:modelValue="(e)=>SyncAurora(e)" />
+					</div>
 
 				</div>
+
 			</div>
 
 			<div class="border-2 h-full w-full relative">
 				<div class="h-full w-full bg-white overflow-auto">
 					<!-- Loading Icon di Tengah -->
-					<div v-if="isIframeLoading"
-						class="absolute inset-0 flex items-center justify-center bg-white">
+					<div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
 						<LoadingIcon class="w-24 h-24 text-6xl" />
 					</div>
 
 					<!-- Iframe -->
 					<iframe ref="_iframe" :src="iframeSrc" :title="props.title"
-						:class="[iframeClass, isIframeLoading ? 'hidden' : '']"
-						@load="isIframeLoading = false"  allowfullscreen/>
+						:class="[iframeClass, isIframeLoading ? 'hidden' : '']" @load="isIframeLoading = false"
+						allowfullscreen />
 				</div>
 			</div>
 

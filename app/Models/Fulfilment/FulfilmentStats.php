@@ -121,6 +121,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_spaces_state_renting
  * @property int $number_spaces_state_finished
  * @property int $number_customers_status_pending_approval
+ * @property int $number_customers_status_pre_registration
  * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats newQuery()

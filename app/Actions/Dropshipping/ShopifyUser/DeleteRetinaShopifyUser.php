@@ -8,12 +8,12 @@
 
 namespace App\Actions\Dropshipping\ShopifyUser;
 
-use App\Actions\CRM\Customer\DetachCustomerToPlatform;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,19 +29,24 @@ class DeleteRetinaShopifyUser extends OrgAction
     /**
      * @throws RandomException
      */
-    public function handle(ShopifyUser $shopifyUser)
+    public function handle(ShopifyUser $shopifyUser): void
     {
+        DeleteWebhooksFromShopify::dispatch($shopifyUser);
+
         $randomNumber = random_int(00, 99);
+        $deletedSuffix = 'deleted-' . $randomNumber;
 
         $this->update($shopifyUser, [
-            'name' => $shopifyUser->name . '-deleted-' . $randomNumber,
-            'slug' => $shopifyUser->slug . '-deleted-' . $randomNumber,
-            'email' => $shopifyUser->email . '-deleted-' . $randomNumber,
+            'name' => $shopifyUser->name . $deletedSuffix,
+            'slug' => $shopifyUser->slug . $deletedSuffix,
+            'email' => $shopifyUser->email . $deletedSuffix,
             'status' => false
         ]);
 
-        if ($shopifyUser->customer) {
-            DetachCustomerToPlatform::run($shopifyUser->customer, Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first());
+        if ($shopifyUser->customerSalesChannel) {
+            UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
+                'status' => CustomerSalesChannelStatusEnum::CLOSED
+            ]);
         }
 
         $shopifyUser->delete();
@@ -56,6 +61,9 @@ class DeleteRetinaShopifyUser extends OrgAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
+    /**
+     * @throws \Random\RandomException
+     */
     public function asController(ActionRequest $request): void
     {
         /** @var \App\Models\CRM\Customer $customer */
@@ -66,7 +74,10 @@ class DeleteRetinaShopifyUser extends OrgAction
         $this->handle($customer->shopifyUser);
     }
 
-    public function inWebhook(ShopifyUser $shopifyUser, ActionRequest $request): void
+    /**
+     * @throws \Random\RandomException
+     */
+    public function inWebhook(ShopifyUser $shopifyUser): void
     {
         $this->handle($shopifyUser);
     }

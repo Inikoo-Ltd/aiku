@@ -1,0 +1,13 @@
+{
+	"slug": "family-1",
+	"scope": "webpage",
+	"code": "family-1",
+	"name": "family",
+	"category": "",
+	"fixed": true,
+	"icon": ["fal", "folder"],
+	"website_type" : ["info","b2b","b2","dropshipping","digital_agency"],
+	"data": {
+		"fieldValue": {}
+	}
+}

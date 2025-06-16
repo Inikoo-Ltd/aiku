@@ -29,6 +29,7 @@ class RetinaTopupResources extends JsonResource
         return [
             'reference'                => $this->reference,
             'amount'                => $this->amount,
+            'currency_code'           => $this->currency->code,
             'status'                => $this->status,
             'payment_url'                => Arr::get($this->payment, 'data.payment_url'),
         ];

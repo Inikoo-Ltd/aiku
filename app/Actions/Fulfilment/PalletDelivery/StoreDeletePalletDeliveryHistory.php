@@ -21,17 +21,15 @@ class StoreDeletePalletDeliveryHistory
 
     public function handle(PalletDelivery $palletDelivery, RecurringBill|Customer $model): void
     {
-        $model->auditEvent                    = 'delete';
-        $model->isCustomEvent                 = true;
+        $model->auditEvent     = 'delete';
+        $model->isCustomEvent  = true;
         $model->auditCustomOld = [
             'delivery' => $palletDelivery->reference
         ];
         $model->auditCustomNew = [
             'delivery' => __("Pallet delivery :ref has been deleted.", ['ref' => $palletDelivery->reference])
         ];
-        Event::dispatch(AuditCustom::class, [
-            $model
-        ]);
+        Event::dispatch(new AuditCustom($model));
     }
 
 }

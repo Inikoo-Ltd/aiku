@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowWebsiteWorkshopPreview extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website

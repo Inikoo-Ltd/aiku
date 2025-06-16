@@ -25,7 +25,6 @@ use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\CollectionCategory;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -145,7 +144,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
- * @property-read LaravelCollection<int, CollectionCategory> $collectionCategories
  * @property-read LaravelCollection<int, Collection> $collections
  * @property-read \App\Models\SysAdmin\GroupCommsStats|null $commsStats
  * @property-read LaravelCollection<int, CreditTransaction> $creditTransactions
@@ -227,6 +225,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\SysAdmin\GroupSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
  * @property-read LaravelCollection<int, ShippingZone> $shippingZones
@@ -580,11 +579,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
-    }
-
-    public function collectionCategories(): HasMany
-    {
-        return $this->hasMany(CollectionCategory::class);
     }
 
     public function collections(): HasMany

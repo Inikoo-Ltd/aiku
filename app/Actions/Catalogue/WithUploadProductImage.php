@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue;
 
 use App\Actions\Helpers\Media\StoreMediaFromFile;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
@@ -18,10 +18,10 @@ use Illuminate\Support\Collection;
 
 trait WithUploadProductImage
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
     use WithAttachMediaToModel;
 
-    public function handle(Product $model, string $scope, array $modelData): Collection
+    public function handle(Product $model, string $scope, array $modelData): array
     {
         $medias = [];
 
@@ -40,8 +40,7 @@ trait WithUploadProductImage
 
         }
 
-
-        return collect($medias);
+        return $medias;
     }
 
     public function rules(): array
@@ -52,8 +51,8 @@ trait WithUploadProductImage
         ];
     }
 
-    public function jsonResponse($medias): AnonymousResourceCollection
-    {
-        return ImageResource::collection($medias);
-    }
+    // public function jsonResponse($medias): AnonymousResourceCollection
+    // {
+    //     return ImageResource::collection($medias);
+    // }
 }

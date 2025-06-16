@@ -11,11 +11,13 @@ namespace App\Actions\Web\Website\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Website\GetWebsiteWorkshopCollection;
 use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
+use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartment;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -27,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowWebsiteWorkshop extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     private Fulfilment|Shop $parent;
 
@@ -60,15 +62,17 @@ class ShowWebsiteWorkshop extends OrgAction
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
         $product    = $website->shop->products()->first();
-        $families     = $website->shop->getFamilies();
-        $departments = $website->shop->departments();
+
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
 
         if ($this->scope instanceof Fulfilment) {
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCT->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::DEPARTMENT->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::PRODUCT->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::COLLECTION->value]);
         }
 
         $tabs = [
@@ -86,23 +90,75 @@ class ShowWebsiteWorkshop extends OrgAction
                         fn () => GetWebsiteWorkshopProduct::run($website, $product)
                     );
         }
+        $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
+                ?
+                fn () => GetWebsiteWorkshopSubDepartment::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopSubDepartment::run($website)
+                );
 
-        if (!blank($families)) {
-            $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
-                    ?
-                    fn () => GetWebsiteWorkshopFamily::run($website, $families)
-                    : Inertia::lazy(
-                        fn () => GetWebsiteWorkshopFamily::run($website, $families)
-                    );
-        }
+        $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
+                ?
+                fn () => GetWebsiteWorkshopFamily::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopFamily::run($website)
+                );
 
-        if (!blank($departments)) {
-            $tabs[WebsiteWorkshopTabsEnum::DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::DEPARTMENT->value
-                    ?
-                    fn () => GetWebsiteWorkshopDepartment::run($website, $departments)
-                    : Inertia::lazy(
-                        fn () => GetWebsiteWorkshopDepartment::run($website, $departments)
-                    );
+        $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
+                ?
+                fn () => GetWebsiteWorkshopDepartment::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopDepartment::run($website)
+                );
+
+        $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
+                ?
+                fn () => GetWebsiteWorkshopCollection::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopCollection::run($website)
+                );
+
+
+        $publishRoute = [
+                'method'     => 'patch',
+                'name'       => 'grp.models.website.update',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+
+        if ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.sub_department',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::FAMILY->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.family',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.product',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
+            $publishRoute = [
+                'method'     => 'post',
+                'name'       => 'grp.models.website.publish.products',
+                'parameters' => [
+                    'website' => $website->id
+                ]
+            ];
         }
 
         return Inertia::render(
@@ -138,13 +194,7 @@ class ShowWebsiteWorkshop extends OrgAction
                             'style' => 'primary',
                             'icon'  => ["fas", "fa-save"],
                             'label' => __('publish'),
-                            'route' => [
-                                'method'     => 'patch',
-                                'name'       => 'grp.models.website.update',
-                                'parameters' => [
-                                    'website' => $website->id
-                                ]
-                            ]
+                            'route' => $publishRoute
                         ]
                     ],
                 ],

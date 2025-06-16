@@ -9,6 +9,8 @@
 
 namespace App\Http\Resources\Fulfilment;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -19,22 +21,28 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $slug
  * @property mixed $state
  * @property mixed $number_item_transactions
+ * @property mixed $client_name
+ * @property mixed $total_amount
+ * @property mixed $platform_name
  */
 class RetinaDropshippingOrdersResources extends JsonResource
 {
+    use HasSelfCall;
+
     public function toArray($request): array
     {
         return [
             'id'                       => $this->id,
             'date'                     => $this->date,
-            'name'                     => $this->name,
+            'platform_order_id'        => $this->platform_order_id,
             'reference'                => $this->reference,
             'slug'                     => $this->slug,
-            'client_name'              => $this->customerClient?->contact_name,
+            'client_name'              => $this->client_name,
             'state'                    => $this->state,
+            'total_amount'             => $this->total_amount,
             'number_item_transactions' => $this->number_item_transactions,
-            'state_label'              => $this->state->labels()[$this->state->value],
-            'state_icon'               => $this->state->stateIcon()[$this->state->value]
+            'state_label'              => OrderStateEnum::labels()[$this->state->value],
+            'state_icon'               => OrderStateEnum::stateIcon()[$this->state->value]
         ];
     }
 }

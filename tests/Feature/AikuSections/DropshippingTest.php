@@ -9,10 +9,10 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Analytics\GetSectionRoute;
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetPictureSources;
@@ -25,6 +25,7 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformStats;
 use App\Models\Dropshipping\Portfolio;
@@ -43,23 +44,22 @@ beforeEach(function () {
     \Tests\Helpers\setupDropshippingTest($this);
 });
 
-test('test platform were seeded ', function () {
-    expect($this->group->platforms()->count())->toBe(4);
+test('test platform were seeded', function () {
+    expect($this->group->platforms()->count())->toBe(5);
     $platform = Platform::first();
     expect($platform)->toBeInstanceOf(Platform::class)
         ->and($platform->stats)->toBeInstanceOf(PlatformStats::class);
 
     $this->artisan('group:seed-platforms')->assertExitCode(0);
-    expect($this->group->platforms()->count())->toBe(4);
+    expect($this->group->platforms()->count())->toBe(5);
 });
 
-test('add platform to customer', function () {
+test('add sales channel to customer', function () {
     $platform = $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first();
 
 
-    expect($this->customer->platforms->count())->toBe(0)
-        ->and($this->customer->getMainPlatform())->toBeNull();
-    $customer = AttachCustomerToPlatform::make()->action(
+    expect($this->customer->customerSalesChannels()->count())->toBe(0);
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
         $this->customer,
         $platform,
         [
@@ -68,25 +68,21 @@ test('add platform to customer', function () {
     );
 
 
-    $customer->refresh();
+    $customer = $customerSalesChannel->customer;
 
 
-    expect($customer->platforms->first())->toBeInstanceOf(Platform::class)
-        ->and($customer->getMainPlatform())->toBeInstanceOf(Platform::class)
-        ->and($customer->getMainPlatform()->type)->toBe(PlatformTypeEnum::SHOPIFY);
+    expect($customer->customerSalesChannels()->first())->toBeInstanceOf(CustomerSalesChannel::class);
 
 
     return $customer;
 });
 
 test('create customer client', function () {
-    $platform = $this->customer->getMainPlatform();
+    $customerSalesChannel = $this->customer->customerSalesChannels()->first();
 
     $customerClient = StoreCustomerClient::make()->action(
-        $this->customer,
-        array_merge(CustomerClient::factory()->definition(), [
-            'platform_id' => $platform->id,
-        ])
+        $customerSalesChannel,
+        CustomerClient::factory()->definition()
     );
 
     expect($customerClient)->toBeInstanceOf(CustomerClient::class);
@@ -100,14 +96,12 @@ test('update customer client', function ($customerClient) {
 })->depends('create customer client');
 
 test('add product to customer portfolio', function () {
-    $platform = $this->customer->platforms()->first();
-    expect($platform)->toBeInstanceOf(Platform::class);
+    $customerSalesChannel = $this->customer->customerSalesChannels()->first();
+    expect($customerSalesChannel)->toBeInstanceOf(CustomerSalesChannel::class);
     $dropshippingCustomerPortfolio = StorePortfolio::make()->action(
-        $this->customer,
+        $customerSalesChannel,
         $this->product,
-        [
-            'platform_id' => $platform->id,
-        ]
+        []
     );
     expect($dropshippingCustomerPortfolio)->toBeInstanceOf(Portfolio::class);
 
@@ -174,7 +168,7 @@ test('get product 1s1 images', function () {
 
     $imageSources1 = GetPictureSources::run($image);
 
-    expect($imageSources1)->toBeArray()->toHaveCount(3);
+    expect($imageSources1)->toBeArray()->toHaveCount(4);
 })->depends('add 2nd image to product');
 
 test('get product 2nd images and show resized sources', function () {
@@ -186,7 +180,7 @@ test('get product 2nd images and show resized sources', function () {
     expect($image2)->toBeInstanceOf(Image::class);
 
     $imageSources2 = GetPictureSources::run($image2);
-    expect($imageSources2)->toBeArray()->toHaveCount(6);
+    expect($imageSources2)->toBeArray()->toHaveCount(8);
 })->depends('add 2nd image to product');
 
 
@@ -211,14 +205,14 @@ test('get dropshipping access token', function () {
 
 test('UI Index customer clients', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
-    $customer            = $customerClient->customer;
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+    $customer             = $customerClient->customer;
+    $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', [
         $customerClient->organisation->slug,
         $customerClient->shop->slug,
         $customerClient->customer->slug,
-        $customerHasPlatform->platform->slug,
+        $customerSalesChannel->slug,
     ]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
@@ -241,14 +235,14 @@ test('UI Index customer clients', function (CustomerClient $customerClient) {
 test('UI Show customer client', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
 
-    $customer            = $customerClient->customer;
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+    $customer             = $customerClient->customer;
+    $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->platform->slug,
+        $customerSalesChannel->slug,
         $customerClient->ulid
     ]));
 
@@ -269,14 +263,14 @@ test('UI Show customer client', function (CustomerClient $customerClient) {
 })->depends('create customer client');
 
 test('UI create customer client', function (CustomerClient $customerClient) {
-    $customer            = $customerClient->customer;
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+    $customer             = $customerClient->customer;
+    $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.create', [
+    $response = get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->platform->slug,
+        $customerSalesChannel->slug,
     ]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -287,14 +281,14 @@ test('UI create customer client', function (CustomerClient $customerClient) {
 
 test('UI edit customer client', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
-    $customer            = $customerClient->customer;
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+    $customer             = $customerClient->customer;
+    $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
-    $response = get(route('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.edit', [
+    $response = get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.edit', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->platform->slug,
+        $customerSalesChannel->slug,
         $customerClient->ulid
     ]));
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
@@ -332,17 +326,17 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
 })->depends('create customer client');
 
 test('UI Index customer portfolios', function (CustomerClient $customerClient) {
-    $customer = Customer::first();
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
+    $customer             = Customer::first();
+    $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = $this->get(
         route(
-            'grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index',
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index',
             [
                 $this->organisation->slug,
                 $this->shop->slug,
                 $customer->slug,
-                $customerHasPlatform->platform->slug,
+                $customerSalesChannel->slug,
             ]
         )
     );
@@ -366,14 +360,14 @@ test('UI Index customer portfolios', function (CustomerClient $customerClient) {
 test('UI get section route client dropshipping', function (CustomerClient $customerClient) {
     $customer = $customerClient->customer;
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
-    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.manual.index', [
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index', [
         'organisation' => $customer->organisation->slug,
         'shop'         => $customer->shop->slug,
         'customer'     => $customer->slug
     ]);
 
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
-        ->and($sectionScope->code)->toBe(AikuSectionEnum::DROPSHIPPING->value)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_CRM->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 })->depends('create customer client');
 
@@ -382,31 +376,28 @@ test('UI index customer client order', function () {
     $this->withoutExceptionHandling();
     $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
 
-    $customer = AttachCustomerToPlatform::make()->action(
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
         $this->customer,
         $platform,
         []
     );
 
     $customerClient = StoreCustomerClient::make()->action(
-        $this->customer,
-        array_merge(CustomerClient::factory()->definition(), [
-            'platform_id' => $platform->id,
-        ])
+        $customerSalesChannel,
+        CustomerClient::factory()->definition()
     );
 
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
-    $response            = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.orders.index', [
-        $customer->organisation->slug,
-        $customer->shop->slug,
-        $customer->slug,
-        $customerHasPlatform->platform->slug,
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index', [
+        $customerSalesChannel->organisation->slug,
+        $customerSalesChannel->shop->slug,
+        $customerSalesChannel->customer->slug,
+        $customerSalesChannel->slug,
 
     ]));
 
-    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
+    $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Dropshipping/OrdersInCustomerHasPlatform')
+            ->component('Org/Dropshipping/OrdersInCustomerSalesChannel')
             ->has('title')
             ->has('breadcrumbs', 5)
             ->has('pageHead')
@@ -426,12 +417,12 @@ test('UI index customer client portfolios', function (CustomerClient $customerCl
     $this->withoutExceptionHandling();
     $customer = $customerClient->customer;
 
-    $customerHasPlatform = $customer->customerHasPlatforms()->where('platform_id', $customerClient->platform_id)->first();
-    $response            = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.show.portfolios.index', [
+    $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
+    $response             = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
-        $customerHasPlatform->platform->slug,
+        $customerSalesChannel->slug,
 
     ]));
 
@@ -457,7 +448,7 @@ test('UI index customer platforms', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
     $customer = $customerClient->customer;
 
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.platforms.index', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.index', [
         $customer->organisation->slug,
         $customer->shop->slug,
         $customer->slug,
@@ -466,7 +457,7 @@ test('UI index customer platforms', function (CustomerClient $customerClient) {
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page
-            ->component('Org/Shop/CRM/PlatformsInCustomer')
+            ->component('Org/Dropshipping/CustomerSalesChannels')
             ->has('title')
             ->has('breadcrumbs', 4)
             ->has('pageHead')

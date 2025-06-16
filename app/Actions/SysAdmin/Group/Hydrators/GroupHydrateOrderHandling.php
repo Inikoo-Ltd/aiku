@@ -11,8 +11,6 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Packing\PackingStateEnum;
-use App\Enums\Dispatching\Picking\PickingStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\SysAdmin\Group;
 use Carbon\Carbon;
@@ -140,15 +138,7 @@ class GroupHydrateOrderHandling implements ShouldBeUnique
                                                                 ->distinct('delivery_note_items.id')
                                                                 ->count('delivery_note_items.id'),
 
-            'number_pickings_state_queued'              => $group->pickings()->where('state', PickingStateEnum::QUEUED)->count(),
-            'number_pickings_state_picking'             => $group->pickings()->where('state', PickingStateEnum::PICKING)->count(),
-            'number_pickings_state_picking_blocked'     => $group->pickings()->where('state', PickingStateEnum::PICKING_BLOCKED)->count(),
-            'number_pickings_done_today'                => $group->pickings()->whereDate('done_at', Carbon::today())->count(),
 
-            'number_packings_state_queued'              => $group->packings()->where('state', PackingStateEnum::QUEUED)->count(),
-            'number_packings_state_packing'             => $group->packings()->where('state', PackingStateEnum::PACKING)->count(),
-            'number_packings_state_packing_blocked'     => $group->packings()->where('state', PackingStateEnum::PACKING_BLOCKED)->count(),
-            'number_packings_done_today'                => $group->packings()->whereDate('done_at', Carbon::today())->count(),
         ];
 
         $group->orderHandlingStats()->update($stats);

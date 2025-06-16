@@ -6,12 +6,14 @@
 
 <script setup lang="ts">
 import JsBarcode from "jsbarcode"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, inject, toRaw } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
-import { Link, router } from "@inertiajs/vue3"
+import { cloneDeep, set } from "lodash-es"
+import { Link, router, useForm } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import DatePicker from '@vuepic/vue-datepicker'
 import Modal from "@/Components/Utils/Modal.vue"
@@ -20,28 +22,38 @@ import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay } from "@fal"
+import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink } from "@fal"
+import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import PalletEditCustomerReference from "@/Components/Pallet/PalletEditCustomerReference.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Textarea from "primevue/textarea"
+
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+
+import InputNumber from "primevue/inputnumber"
+import Fieldset from "primevue/fieldset"
 import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useFormatTime"
-import { inject } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
-library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay)
+import { useTruncate } from "@/Composables/useTruncate"
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faCubes)
 
 const props = defineProps<{
 
 	dataPalletReturn: PalletReturn
 	boxStats: BoxStats
-  address_management:{
-    updateRoute: routeType
-    addresses: AddressManagement
-    address_update_route: routeType
-    address_modal_title: string
-  },
+	address_management:{
+		updateRoute: routeType
+		addresses: AddressManagement
+		address_update_route: routeType
+		address_modal_title: string
+	},
+	shipments: {
+		delete_route: routeType
+	}
 
 }>()
 
@@ -245,6 +257,145 @@ const disableBeforeToday = (date: Date) => {
 	today.setHours(0, 0, 0, 0)
 	return date < today
 }
+
+// Section: Parcels
+const isLoadingSubmitParcels = ref(false)
+const isModalParcels = ref(false)
+const parcelsCopy = ref([...toRaw(props.boxStats?.parcels || [])])
+const onDeleteParcel = (index: number) => {
+	parcelsCopy.value.splice(index, 1)
+}
+const onSubmitParcels = () => {
+	router.patch(route(props.address_management.updateRoute.name, { ...props.address_management.updateRoute.parameters }),
+		{
+			parcels: parcelsCopy.value,
+			// parcels: [{
+			// 	weight: 1,
+			// 	dimensions: [40, 40, 40],
+			// }],
+		},
+		{
+			preserveScroll: true,
+			onStart: () => {
+				isLoadingSubmitParcels.value = true
+			},
+			onSuccess: () => {
+				isModalParcels.value = false
+				set(listError, 'box_stats_parcel', false)
+			},
+			onError: (errors) => {
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to add Shipment. Please try again or contact administrator."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingSubmitParcels.value = false
+			},
+		})
+}
+
+// Section: Shipment
+const isDeleteShipment = ref<number | null>(null)
+const onDeleteShipment = (idShipment: number) => {
+	router.delete(route(props.shipments.delete_route.name, { 
+		...props.shipments.delete_route.parameters,
+		shipment: idShipment,
+	}),
+	{
+		preserveScroll: true,
+		onStart: () => {
+			isDeleteShipment.value = idShipment
+		},
+		onSuccess: () => {
+			notify({
+				title: trans("Success!"),
+				text: trans("Shipment has deleted."),
+				type: "success",
+			})
+		},
+		onError: (errors) => {
+			notify({
+				title: trans("Something went wrong."),
+				text: trans("Failed to delete shipment. Please try again or contact administrator."),
+				type: "error",
+			})
+		},
+		onFinish: () => {
+			isDeleteShipment.value = null
+			isLoadingSubmitParcels.value = false
+		},
+	})
+}
+
+const listError = inject('listError', {})
+
+const base64ToPdf = (base: string) => {
+	// Convert base64 to byte array
+	const byteCharacters = atob(base);
+	const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0));
+	const byteArray = new Uint8Array(byteNumbers);
+
+	// Create a Blob and generate object URL
+	const blob = new Blob([byteArray], { type: 'application/pdf' });
+	const blobUrl = URL.createObjectURL(blob);
+
+	// Create a temporary link to trigger download
+	const link = document.createElement('a');
+	link.href = blobUrl;
+	link.download = 'file.pdf';
+	link.click();
+
+	// Clean up the object URL
+	URL.revokeObjectURL(blobUrl);
+}
+
+const isLoadingBarcodeHtml = ref(null)
+const base64HtmlToPdf = async (base64: string, index) => {
+	isLoadingBarcodeHtml.value = index;
+
+	// Decode the Base64 HTML
+	const htmlContent = atob(base64);
+	
+	// console.log("HTML Content:", htmlContent);
+
+	// Create a hidden container to render the HTML
+	const container = document.createElement('div');
+	container.innerHTML = htmlContent;
+	container.style.position = 'fixed';
+	container.style.left = '-9999px';
+	container.style.marginTop = '0';
+	container.style.top = '0';
+	container.style.width = '794px'; // A4 width at 96dpi
+	container.style.background = 'white';
+	container.style.padding = '0';
+	document.body.appendChild(container);
+	
+	await new Promise(resolve => setTimeout(resolve, 100)); // Wait for styles to render
+
+	// Render the HTML to canvas
+	const canvas = await html2canvas(container, { scale: 2, backgroundColor: null, useCORS: true });
+
+	// Create PDF from canvas image
+	const imgData = canvas.toDataURL('image/png');
+	const pdf = new jsPDF('p', 'px', 'a4');
+
+	const pageWidth = pdf.internal.pageSize.getWidth();
+	const imgWidth = pageWidth;
+	const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+	pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+	// Output the PDF as blob URL and open in new tab
+	const blob = pdf.output('blob');
+	const blobUrl = URL.createObjectURL(blob);
+	window.open(blobUrl, '_blank');
+
+	// Clean up the hidden container
+	document.body.removeChild(container);
+	isLoadingBarcodeHtml.value = null;
+}
 </script>
 
 <template>
@@ -252,10 +403,29 @@ const disableBeforeToday = (date: Date) => {
 		class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
 		<!-- Box: Customer -->
 		<BoxStatPallet class="py-1 sm:py-2 px-3">
+			<!-- Field: Platform -->
+			<div v-if="boxStats?.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
+				<div v-tooltip="trans('Platform')" class="flex-none">
+					<FontAwesomeIcon
+						icon="fal fa-parachute-box"
+						size="xs"
+						class="text-gray-400"
+						fixed-width
+						aria-hidden="true" />
+				</div>
+				<div class="flex items-center gap-x-2">
+					{{ boxStats.platform.name }}
+					<img v-if="boxStats.platform.code === 'tiktok'" v-tooltip="boxStats.platform.name" src="https://cdn-icons-png.flaticon.com/512/3046/3046126.png" alt="" class="h-6">
+					<img v-if="boxStats.platform.code === 'shopify'" v-tooltip="boxStats.platform.name" src="https://cdn-icons-png.flaticon.com/256/5968/5968919.png" alt="" class="h-6">
+					<img v-if="boxStats.platform.code === 'woocommerce'" v-tooltip="boxStats.platform.name" src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png" alt="" class="h-12">
+				</div>
+			</div>
+
+
 			<!-- Field: Reference -->
 			<Link
 				as="a"
-				v-if="boxStats?.fulfilment_customer?.customer?.reference"
+				v-if="boxStats.is_platform ? boxStats.platform_customer?.id : boxStats?.fulfilment_customer?.customer?.reference"
 				:href="
 					route('grp.org.fulfilments.show.crm.customers.show', [
 						route().params.organisation,
@@ -273,12 +443,13 @@ const disableBeforeToday = (date: Date) => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<dd>{{ boxStats.fulfilment_customer.customer.reference }}</dd>
+				<dd v-if="boxStats.is_platform">{{ boxStats.platform_customer?.id }}</dd>
+				<dd v-else>{{ boxStats.fulfilment_customer.customer.reference }}</dd>
 			</Link>
 
 			<!-- Field: Contact name -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer?.contact_name"
+				v-if="boxStats.is_platform ? (boxStats.platform_customer?.first_name || boxStats.platform_customer?.last_name) : boxStats?.fulfilment_customer?.customer?.contact_name"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Contact name')" class="flex-none">
 					<span class="sr-only">Contact name</span>
@@ -289,12 +460,13 @@ const disableBeforeToday = (date: Date) => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<dd>{{ boxStats.fulfilment_customer.customer.contact_name }}</dd>
+				<dd v-if="boxStats.is_platform">{{ boxStats.platform_customer?.first_name + ' ' + boxStats.platform_customer?.last_name }}</dd>
+				<dd v-else>{{ boxStats.fulfilment_customer.customer.contact_name }}</dd>
 			</div>
 
 			<!-- Field: Company name -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer?.company_name"
+				v-if="boxStats?.fulfilment_customer?.customer?.company_name && !boxStats.is_platform"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Company name')" class="flex-none">
 					<span class="sr-only">Company name</span>
@@ -310,7 +482,7 @@ const disableBeforeToday = (date: Date) => {
 
 			<!-- Field: Email -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer.email"
+				v-if="boxStats.is_platform ? boxStats.platform_customer?.email : boxStats?.fulfilment_customer?.customer.email"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Email')" class="flex-none">
 					<span class="sr-only">Email</span>
@@ -322,6 +494,13 @@ const disableBeforeToday = (date: Date) => {
 						aria-hidden="true" />
 				</dt>
 				<a
+                    v-if="boxStats.is_platform"
+					:href="`mailto:${boxStats.platform_customer?.email}`"
+					class="hover:underline w-full pr-4 break-words leading-none">
+					{{ boxStats.platform_customer?.email }}
+				</a>
+                <a
+                    v-else
 					:href="`mailto:${boxStats.fulfilment_customer?.customer.email}`"
 					class="hover:underline w-full pr-4 break-words leading-none">
 					{{ boxStats.fulfilment_customer?.customer.email }}
@@ -330,7 +509,7 @@ const disableBeforeToday = (date: Date) => {
 
 			<!-- Field: Phone -->
 			<div
-				v-if="boxStats?.fulfilment_customer?.customer.phone"
+				v-if="boxStats?.is_platform ? boxStats?.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone"
 				class="flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="trans('Phone')" class="flex-none">
 					<span class="sr-only">Phone</span>
@@ -341,24 +520,25 @@ const disableBeforeToday = (date: Date) => {
 						fixed-width
 						aria-hidden="true" />
 				</dt>
-				<a>{{ boxStats.fulfilment_customer?.customer.phone }}</a>
+				<a v-if="boxStats?.is_platform">{{ boxStats?.platform_customer?.phone }}</a>
+				<a v-else>{{ boxStats?.fulfilment_customer?.customer.phone }}</a>
 			</div>
-
-			<!-- Field: Delivery Address -->
-			<div class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
-				<dt class="flex-none">
-					<span class="sr-only">{{ boxStats.delivery_state.tooltip }}</span>
-					<FontAwesomeIcon :icon="['fal', 'calendar-day']" :class="boxStats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
+		
+			<!-- Field: Estimated delivery date -->
+			<div v-if="!boxStats?.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
+				<dt v-tooltip="trans('Estimated delivery date')" class="flex-none">
+					<span class="sr-only">{{ boxStats?.delivery_state?.tooltip }}</span>
+					<FontAwesomeIcon :icon="['fal', 'calendar-day']" class="text-gray-400" :class="boxStats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
 				</dt>
 				<Popover v-if="dataPalletReturn.state === 'in_process'" position="">
 					<template #button>
 						<div v-if="dataPalletReturn?.estimated_delivery_date"
 							v-tooltip="retinaUseDaysLeftFromToday(dataPalletReturn?.estimated_delivery_date)"
-							class="group text-sm text-gray-500">
+							class="group ">
 							{{ useFormatTime(dataPalletReturn?.estimated_delivery_date) }}
 							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400 group-hover:text-gray-600" fixed-width aria-hidden="true" />
 						</div>
-						<div v-else class="text-sm text-gray-500 hover:text-gray-600 underline">
+						<div v-else class=" hover:text-gray-600 underline">
 							{{ trans('Set estimated delivery') }}
 						</div>
 					</template>
@@ -372,15 +552,16 @@ const disableBeforeToday = (date: Date) => {
 					</template>
 				</Popover>
 				<div v-else>
-					<dd class="text-sm text-gray-500">
-						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('Not Set') }}
+					<dd :class="dataPalletReturn?.estimated_delivery_date ? '' : 'text-gray-400'">
+						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('(Not Set)') }}
 					</dd>
 				</div>
 			</div>
+
 			<!-- Delivery Address / Collection by Section -->
 			<div class="flex flex-col w-full gap-y-2 mb-1">
 				<!-- Top Row: Icon dan Switch -->
-				<div class="flex items-center gap-x-2">
+				<div v-if="!boxStats?.is_platform" class="flex items-center gap-x-2">
 					<dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
 						<span class="sr-only">Delivery address</span>
 						<FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -400,7 +581,7 @@ const disableBeforeToday = (date: Date) => {
 						</SwitchLabel>
 					</SwitchGroup>
 				</div>
-			
+
 				<div v-if="dataPalletReturn.is_collection" class="w-full">
 					<span class="block mb-1">{{ trans("Collection by:") }}</span>
 					<div class="flex space-x-4">
@@ -425,7 +606,7 @@ const disableBeforeToday = (date: Date) => {
 							<span class="ml-2">{{ trans("Third Party") }}</span>
 						</label>
 					</div>
-					
+
 					<div v-if="collectionBy === 'thirdParty'" class="mt-3">
 						<Textarea
 							v-model="textValue"
@@ -438,10 +619,11 @@ const disableBeforeToday = (date: Date) => {
 						/>
 					</div>
 				</div>
-				<div v-else class="w-full text-xs text-gray-500">
+
+				<div v-else class="w-full text-xs text-gray-500" :class="listError.box_stats_delivery_address ? 'errorShake' : ''">
 					Send to:
 					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-						<span v-html="boxStats.fulfilment_customer?.address?.value?.formatted_address" />
+						<span v-html="boxStats?.fulfilment_customer?.address?.value?.formatted_address" />
 						<div
 							@click="() => (isDeliveryAddressManagementModal = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
@@ -457,13 +639,126 @@ const disableBeforeToday = (date: Date) => {
 			class="py-1 sm:py-2 px-3"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
+
+			<!-- Section: Parcels -->
+			<div v-if="dataPalletReturn?.state === 'picked' || dataPalletReturn?.state === 'dispatched'" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<div class="group w-full">
+					<div class="leading-4 text-base flex justify-between w-full py-1">
+						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+
+						<!-- Can't edit Parcels if Shipment has set AND already dispatched-->
+						<template v-if="(boxStats?.shipments?.length < 1) && dataPalletReturn?.state === 'picked'">
+							<div v-if="boxStats?.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
+								{{ trans("Edit") }}
+								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+							</div>
+							<div v-else @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [40, 40, 40]}], onSubmitParcels())" class="cursor-pointer text-gray-400 hover:text-gray-600">
+								{{ trans("Add") }}
+								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+							</div>
+						</template>
+					</div>
+					
+					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
+						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx" class="text-sm tabular-nums">
+							<span class="truncate">
+								{{ parcel.weight }} kg
+							</span>
+
+							<span class="text-gray-500 truncate">
+								({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }} cm)
+							</span>
+						</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Section: Shipments -->
+			<div v-if="!dataPalletReturn.is_collection && boxStats.shipments.length" class="flex gap-x-1 py-0.5" xxclass="listError.box_stats_parcel ? 'errorShake' : ''">
+				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
+				<div class="group w-full">
+					<div class="leading-4 text-base flex justify-between w-full py-1">
+						<div>{{ trans("Shipments") }} ({{ boxStats.shipments.length ?? 0 }})</div>
+
+					</div>
+					
+					<ul v-if="boxStats.shipments" class="list-disc pl-4">
+						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums relative">
+							<div class="flex justify-between">
+								<div v-if="sments.combined_label_url">
+									{{ sments.name }}
+
+									<a v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+										<span class="">Open barcode</span>
+										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
+									</a>
+								</div>
+								
+								<!-- Type PDF -->
+								<div v-else-if="sments.label && sments.label_type === 'pdf'" class="group">
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ useTruncate(sments.tracking, 14) }})
+									</span>
+
+									<div @click="base64ToPdf(sments.label)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+										<span class="">Open barcode</span>
+										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
+									</div>
+								</div>
+								
+								<!-- Type HTML -->
+								<div v-else-if="sments.label && sments.label_type === 'html'" class="group">
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ useTruncate(sments.tracking, 14) }})
+									</span>
+
+									<div @click="() => base64HtmlToPdf(sments.label, shipmentIdx)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+										<span class="">Open barcode</span>
+										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
+									</div>
+
+									<div
+										v-if="isLoadingBarcodeHtml === shipmentIdx"
+										class="bg-black/20 text-black text-2xl inset-0 absolute flex items-center justify-center"
+									>
+										<LoadingIcon />
+									</div>
+								</div>
+								
+								<div v-else>
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ useTruncate(sments.tracking, 14) }})
+									</span>
+								</div>
+
+								<div v-if="isDeleteShipment === sments.id" class="px-1">
+									<LoadingIcon />
+								</div>
+								<div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
+									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+
 			<!-- Customer reference -->
-			<div class="mb-1">
+			<div class="mb-1" v-if="address_management && !boxStats.is_platform">
 				<PalletEditCustomerReference
           :dataPalletDelivery="dataPalletReturn"
           :updateRoute="address_management.updateRoute"
         />
-				<!-- :disabled="dataPalletReturn?.state !== 'in_process' && dataPalletReturn?.state !== 'submit'"-->
 			</div>
 
 			<!-- Barcode -->
@@ -549,12 +844,111 @@ const disableBeforeToday = (date: Date) => {
       :updateRoute="address_management.updateRoute"
     />
 	</Modal>
-	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)">
+	<Modal :isOpen="isDeliveryAddressManagementModal" @onClose="() => (isDeliveryAddressManagementModal = false)" width="w-full max-w-4xl">
 		<DeliveryAddressManagementModal
-    	:address_modal_title="address_management.address_modal_title"
-		:addresses="address_management.addresses"
-		:updateRoute="address_management.address_update_route"
-    />
+			:address_modal_title="address_management.address_modal_title"
+			:addresses="address_management.addresses"
+			:updateRoute="address_management.address_update_route"
+			@onDone="() => (isDeliveryAddressManagementModal = false)"
+			@onHasChange="() => listError.box_stats_delivery_address = false"
+		/>
+	</Modal>
+
+	<!-- Modal: Shipment -->
+	<Modal
+		v-if="true"
+		:isOpen="isModalParcels"
+		@onClose="isModalParcels = false"
+		width="w-full max-w-lg"
+	>
+		<div class="text-center font-bold mb-4">
+			{{ trans('Add shipment') }}
+		</div>
+
+		<div>
+			<Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+				<!-- Header Row -->
+				<div class="grid grid-cols-12 items-center gap-x-6 mb-2">
+					<div class="flex justify-center">
+						<!-- <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" /> -->
+					</div>
+
+					<div class="col-span-2 flex items-center space-x-1">
+						<FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" />
+						<span>kg</span>
+					</div>
+					<div class="col-span-9 flex items-center space-x-1">
+						<FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" />
+						<span>cm</span>
+					</div>
+				</div>
+
+				<!--  -->
+				<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+					<!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
+					<TransitionGroup v-if="parcelsCopy?.length" name="list">
+						<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex" class="grid grid-cols-12 items-center gap-x-6">
+							<div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
+								<FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
+							</div>
+							<div class="col-span-2 flex items-center space-x-2">
+								<InputNumber :min="0.001" v-model="parcel.weight" class="w-16" size="small" placeholder="0" fluid />
+							</div>
+							<div class="col-span-9 flex items-center gap-x-1 font-light">
+								<InputNumber :min="0.001" v-model="parcel.dimensions[0]" class="w-16" size="small" placeholder="0" fluid />
+								<div class="text-gray-400">x</div>
+								<InputNumber :min="0.001" v-model="parcel.dimensions[1]" class="w-16" size="small" placeholder="0" fluid />
+								<div class="text-gray-400">x</div>
+								<InputNumber :min="0.001" v-model="parcel.dimensions[2]" class="w-16" size="small" placeholder="0" fluid />
+								<!-- <button class="text-gray-600">≡</button> -->
+
+								<!-- <Popover>
+									<template #button="{ open }">
+										<Button
+											@click="() => (open ? false : onOpenModalAddService())"
+											:style="action.style"
+											:label="action.label"
+											:icon="action.icon"
+											:key="`ActionButton${action.label}${action.style}`"
+											:tooltip="action.tooltip" />
+									</template>
+
+									<template #content="{ close: closed }">
+										<div class="w-[350px]">
+											
+										</div>
+									</template>
+								</Popover> -->
+							</div>
+						</div>
+					</TransitionGroup>
+					<div v-else class="text-center text-gray-400">
+						{{ trans('No parcels') }}
+					</div>
+				</div>
+
+				<!-- Repeat for more rows -->
+				<div class=" grid grid-cols-12 mt-2">
+					<div></div>
+					<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [40, 40, 40]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
+						{{ trans("Add another parcel") }}
+					</div>
+				</div>
+			</Fieldset>
+
+			<div class="flex justify-end mt-3">
+				<Button
+					:style="'save'"
+					:loading="isLoadingSubmitParcels"
+					:label="'save'"
+					xdisabled="
+						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
+					"
+					full
+					@click="() => onSubmitParcels()" />
+			</div>
+		</div>
 	</Modal>
 </template>
 

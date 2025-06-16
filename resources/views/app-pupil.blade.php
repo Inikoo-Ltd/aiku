@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="h-full"  lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html class="h-full text-[10px] lg:text-[16px]"  lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <!-- <meta name="csrf-token" content="{{ csrf_token() }}"> -->
@@ -29,7 +29,8 @@
         {{Vite::useHotFile('pupil.hot')->useBuildDirectory('pupil')->withEntryPoints(['resources/js/app-pupil.js'])}}
         @inertiaHead
     </head>
-    <body class="font-sans antialiased h-full text-slate-700">
+    <!-- <body class="font-sans antialiased h-full text-slate-700"> -->
+    <body class="font-sans antialiased text-slate-700">
         @if(\Osiset\ShopifyApp\Util::useNativeAppBridge())
             @include('shopify-app::partials.token_handler')
         @endif

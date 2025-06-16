@@ -35,6 +35,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_dispatched_emails_state_delay
+ * @property int $number_try_send_failure
+ * @property int $number_try_send_success
+ * @property int $number_try_send_total
+ * @property int $number_deliveries_failure
+ * @property int $number_deliveries_success
+ * @property int $number_delivered_open_failure
+ * @property int $number_delivered_open_success
+ * @property int $number_opened_interact_failure
+ * @property int $number_opened_interact_success
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
  * @method static Builder<static>|MailshotStats newModelQuery()
  * @method static Builder<static>|MailshotStats newQuery()

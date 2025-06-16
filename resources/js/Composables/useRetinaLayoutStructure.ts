@@ -18,7 +18,7 @@ export const retinaLayoutStructure = {
     app: {
         name: "",  // For styling navigation depend on which App
         color: null as unknown | Colors,  // Styling layout color
-        theme: useColorTheme[0] as string[],  // For styling app color
+        theme: useColorTheme[3] as string[],  // For styling app color
         url: null as string | null, // For url on logo top left
         environment: null as string | null, // 'local' | 'staging' 
     },
@@ -46,7 +46,9 @@ export const retinaLayoutStructure = {
             show: false
         }
     },
-
+    retina: {
+        type: '' as string  // 'dropshipping' | 'fulfilment' | 'ecom'
+    },
     root_active: null as string | null,
     stackedComponents: [] as StackedComponent[],
     user: {} as {

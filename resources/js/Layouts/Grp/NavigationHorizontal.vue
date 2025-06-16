@@ -168,7 +168,7 @@ const isShowHorizontal = () => {
     const isShopOpen = activeNav() == 'shop' && layout.organisations.data.find(organisation => organisation.slug == layout.currentParams.organisation)?.authorised_shops.find(shop => shop.slug === layout.organisationsState[layout.currentParams.organisation]?.currentShop)?.state === 'open'
     const isFulfilmentOpen = activeNav() == 'fulfilment' && layout.organisations.data.find(organisation => organisation.slug == layout.currentParams.organisation)?.authorised_fulfilments.find(fulfilment => fulfilment.slug === layout.organisationsState[layout.currentParams.organisation]?.currentFulfilment)?.state === 'open'
 
-    return (true || isShopOpen || isFulfilmentOpen) 
+    return (true || isShopOpen || isFulfilmentOpen)
 }
 
 // Route for label 'UK (Shop)'
@@ -194,7 +194,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
         <span v-if="false" class="text-white">
             {{ previousNavigation() }}
         </span>
-        
+
         <!-- Label: Icon shops/warehouses and slug -->
         <div v-if="!!currentNavigation()" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
             :style="{ color: layout.app.theme[1] + '99' }">
@@ -216,7 +216,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                         </Transition> -->
                     </div>
                 </Transition>
-                
+
                 <Transition name="spin-to-down">
                     <FontAwesomeIcon v-if="currentNavigation()?.value.type === 'b2b'" icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('E-commerce')" />
                     <FontAwesomeIcon v-else-if="currentNavigation()?.value.type === 'fulfilment'" icon="fal fa-hand-holding-box" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Fulfilment')" />
@@ -231,7 +231,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 </Transition>
             </div>
 
-            
+
             <!-- Section: Arrow left-right -->
             <Transition name="slide-to-left">
                 <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-2 flex text-white text-xxs"
@@ -247,7 +247,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                         <LoadingIcon v-if="isLoadingNavigation == 'prevNav'" />
                         <FontAwesomeIcon v-else icon='fas fa-chevron-left' class='' fixed-width aria-hidden='true' />
                     </component>
-                    
+
                     <component
                         :is="nextNavigation() ? Link : 'div'"
                         :href="routeArrow(nextNavigation())"

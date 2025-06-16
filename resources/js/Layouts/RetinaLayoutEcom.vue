@@ -5,7 +5,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { ref, provide } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import { useColorTheme } from "@/Composables/useStockList"
-import { isArray } from "lodash"
+import { isArray } from 'lodash-es'
 
 import IrisHeader from '@/Layouts/Iris/Header.vue'
 import IrisFooter from '@/Layouts/Iris/Footer.vue'
@@ -52,7 +52,7 @@ const isStaging = layout.app.environment === 'staging'
         >
             <div class="bg-white shadow-lg rounded-md h-full relative flex flex-col pb-6 text-gray-700">
                 <!-- Section: Subsections (Something will teleport to this section) -->
-                <div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 h-full" />
+                <div id="RetinaTopBarSubsections" class="pl-2 flex gap-x-2 h-full" />
                 
                 <slot name="default" />
             </div>
@@ -76,5 +76,9 @@ const isStaging = layout.app.environment === 'staging'
     &:hover {
         background-color: v-bind('layout.app.theme[4] + "25"');
     }
+}
+
+#RetinaTopBarSubsections:has(> *) {
+    @apply pb-2;
 }
 </style>

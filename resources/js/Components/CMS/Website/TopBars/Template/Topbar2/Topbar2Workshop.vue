@@ -75,7 +75,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <div id="top_bar" class="py-2 px-4 grid md:grid-cols-5"
+    <div id="top_bar_2_workshop" class="py-2 px-4 grid md:grid-cols-5"
         :style="getStyles(model?.container?.properties)"
     >
 
@@ -85,7 +85,7 @@ const emits = defineEmits<{
         
         <div class="md:col-span-2 action_buttons flex justify-center md:justify-start ">
             <!-- Section: Main title -->
-            <div v-if="checkVisible(model?.main_title.visible || null, isLoggedIn)"
+            <div v-if="!isLoggedIn"
                 @click="()=> emits('setPanelActive', 'main_title')"
                 class="hover-dashed text-center flex items-center"
                 v-html="textReplaceVariables(model.main_title.text, layout.iris_variables)"
@@ -185,8 +185,8 @@ const emits = defineEmits<{
             </a>
 
             <!-- Register -->
-             <span @click="()=> emits('setPanelActive', 'register')" class="hover-dashed">
-                <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
+             <span v-if="checkVisible(model?.register?.visible || null, isLoggedIn)" @click="()=> emits('setPanelActive', 'register')" class="hover-dashed">
+                <a
                     class="space-x-1.5 cursor-pointer"
                     id=""
                     :style="getStyles(model?.register.container?.properties)"
@@ -198,11 +198,11 @@ const emits = defineEmits<{
 
 
             <!-- Login -->
-            <span class="hover-dashed"
+            <span v-if="checkVisible(model?.login?.visible || null, isLoggedIn)" class="hover-dashed"
                 @click="()=> emits('setPanelActive', 'login')"
             >
                 <a
-                    v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
+                    
                     class="space-x-1.5 cursor-pointer"
                     id=""
                     :style="getStyles(model?.login?.container?.properties)"

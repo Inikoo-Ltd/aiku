@@ -21,12 +21,13 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Helpers\UniversalSearch;
-use App\Models\ShopifyUserHasFulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
@@ -52,7 +53,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- * App\Models\Ordering\Order
+ *
  *
  * @property int $id
  * @property int $group_id
@@ -124,6 +125,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_by_customer_at
  * @property OrderShippingEngineEnum $shipping_engine
  * @property OrderChargesEngineEnum $charges_engine
+ * @property int|null $customer_sales_channel_id
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -132,6 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Currency $currency
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read CustomerClient|null $customerClient
+ * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
@@ -330,6 +333,11 @@ class Order extends Model implements HasMedia, Auditable
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
     }
 
     public function orderPaymentApiPoint(): HasMany

@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\UI\WithFavicon;
 use App\Actions\Traits\UI\WithLogo;
 use App\Actions\Traits\WithActionUpdate;
@@ -27,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateWebsite extends OrgAction
 {
     use WithActionUpdate;
-    use HasWebAuthorisation;
+    // use WithWebAuthorisation;
     use WithLogo;
     use WithFavicon;
 
@@ -47,6 +47,26 @@ class UpdateWebsite extends OrgAction
 
         if (Arr::has($modelData, "catalogue_template")) {
             data_set($modelData, "settings.catalogue_template", Arr::pull($modelData, "catalogue_template"));
+        }
+
+        if (Arr::has($modelData, "luigisbox_tracker_id")) {
+            data_set($modelData, "settings.luigisbox.tracker_id", Arr::pull($modelData, "luigisbox_tracker_id"));
+        }
+
+        if (Arr::has($modelData, "luigisbox_script_lbx")) {
+            data_set($modelData, "settings.luigisbox.script_lbx", Arr::pull($modelData, "luigisbox_script_lbx"));
+        }
+
+        if (Arr::has($modelData, "luigisbox_private_key")) {
+            data_set($modelData, "settings.luigisbox.private_key", Arr::pull($modelData, "luigisbox_private_key"));
+        }
+
+        if (Arr::has($modelData, "return_policy")) {
+            data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
+        }
+
+        if (Arr::has($modelData, "script_website")) {
+            data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
         }
 
         $website = $this->update($website, $modelData, ['data', 'settings']);
@@ -110,8 +130,23 @@ class UpdateWebsite extends OrgAction
             'launched_at'   => ['sometimes', 'date'],
             'state'         => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
             'status'        => ['sometimes', 'boolean'],
-            'google_tag_id' => ['sometimes', 'string'],
+            'google_tag_id' => [
+                'sometimes',
+                'string',
+                'regex:/^(G-[A-Z0-9]{10}|UA-\d{4,10}-\d{1,4}|GTM-[A-Z0-9]{8}|AW-\d{9,11})$/'
+            ],
             'catalogue_template' => ['sometimes', 'array'],
+            'luigisbox_tracker_id' => [
+                'sometimes',
+                'string',
+                'regex:/^\d{6}-\d{6}$/'
+            ],
+            'luigisbox_script_lbx' => [
+                'sometimes',
+                'string',
+            ],
+            'luigisbox_private_key' => ['sometimes', 'string'],
+            'return_policy' => ['sometimes', 'string'],
             'image'       => [
                 'sometimes',
                 'nullable',
@@ -123,7 +158,12 @@ class UpdateWebsite extends OrgAction
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
-            ]
+            ],
+            'script_website' => [
+                'sometimes',
+                'nullable',
+                'string',
+            ],
         ];
 
         if (!$this->strict) {

@@ -9,11 +9,17 @@
 namespace App\Actions\SysAdmin\User\Hydrators;
 
 use App\Models\SysAdmin\User;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UserHydrateModels
+class UserHydrateModels implements ShouldBeUnique
 {
     use AsAction;
+
+    public function getJobUniqueId(User $user): string
+    {
+        return $user->id;
+    }
 
     public function handle(User $user): void
     {

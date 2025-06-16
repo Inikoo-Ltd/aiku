@@ -3,6 +3,8 @@
 	"slug": "banner",
 	"code": "banner",
 	"name": "Banner",
+	"category": "block",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"icon": ["fal", "presentation"],
 	"data": {
 		"fieldValue": {

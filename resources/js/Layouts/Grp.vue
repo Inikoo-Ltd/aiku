@@ -25,11 +25,11 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faAsterisk } from '@fal'
+import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faAsterisk } from '@fal'
 import { faSearch, faBell } from '@far'
 import { faAsterisk as fasAsterisk } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(fasAsterisk, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faAsterisk)
+library.add(fasAsterisk, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faAsterisk)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
@@ -46,7 +46,7 @@ const sidebarOpen = ref(false)
 </script>
 
 <template>
-    <div class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
+    <div id="grp_app" class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
 
         <TopBar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen"

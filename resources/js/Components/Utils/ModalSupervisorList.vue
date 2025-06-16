@@ -12,6 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "../Pure/PureInput.vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
+import Image from "../Image.vue"
 
 // Assumed notify function from your notification/notification library
 // import { notify } from "your-notification-lib"
@@ -168,7 +169,9 @@ const onConfirm = () => {
 													icon="fal fa-exclamation-triangle" />
 											</div>
 											<p class="text-sm text-yellow-800 font-medium">
-												You do not have the necessary permissions to perform this action. Kindly contact your supervisor for authorization.
+												You do not have the necessary permissions to perform
+												this action. Kindly contact your supervisor for
+												authorization.
 											</p>
 										</div>
 										<template v-if="isLoadingSupervisors">
@@ -179,16 +182,45 @@ const onConfirm = () => {
 												<p>
 													Please contact one of the following supervisors:
 												</p>
-												<ul class="list-disc pl-5 space-y-2">
-													<li
-														v-for="sup in supervisors"
-														:key="sup.id || sup.email">
-														{{ sup.name }}
-													</li>
-												</ul>
+
+												<!-- Scrollable wrapper -->
+												<div
+													class="mt-2 max-h-48 sm:max-h-64 overflow-y-auto pr-2">
+													<ul class="list-none space-y-3">
+														<li
+															v-for="sup in supervisors"
+															:key="sup.id"
+															class="flex items-center space-x-3">
+															<!-- Avatar -->
+															<Image
+																:src="
+																	sup.image.original ||
+																	'/images/avatar-placeholder.png'
+																"
+																:srcset="`${sup.image.webp_2x} 2x`"
+																class="w-8 h-8 rounded-full object-cover"
+																:alt="`Avatar of ${
+																	sup.contact_name || sup.username
+																}`" />
+															<!-- Name & Email -->
+															<div class="flex flex-col">
+																<span
+																	class="font-medium text-gray-800">
+																	{{
+																		sup.contact_name ||
+																		sup.username
+																	}}
+																</span>
+																<span class="text-sm text-gray-500">
+																	{{ sup.email }}
+																</span>
+															</div>
+														</li>
+													</ul>
+												</div>
 											</template>
 											<template v-else>
-												<p class="text-sm text-red-700 justify-center">
+												<p class="text-sm text-red-700 text-center">
 													No supervisors available
 												</p>
 											</template>

@@ -24,6 +24,7 @@ use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemsUIResource;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
@@ -140,6 +141,29 @@ class ShowPalletReturn extends OrgAction
                         ]
                     ] : false,
                     'actions'       => $actions
+                ],
+
+                'shipments' => [
+                    'submit_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment_from_fulfilment.store',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
+
+                    'fetch_route' => [
+                        'name'       => 'grp.json.shippers.index',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ]
+                    ],
+
+                    'delete_route' => [
+                        'name'       => 'grp.models.pallet-return.shipment.detach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ],
                 ],
 
                 'interest' => [
@@ -407,12 +431,14 @@ class ShowPalletReturn extends OrgAction
         };
     }
 
-    public function getPrevious(Warehouse|FulfilmentCustomer|Fulfilment $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getPrevious(Warehouse|FulfilmentCustomer|Fulfilment|CustomerSalesChannel $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
     {
         if ($parent instanceof FulfilmentCustomer) {
             $previous = PalletReturn::where('fulfilment_customer_id', $parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
         } elseif ($parent instanceof Fulfilment) {
             $previous = PalletReturn::where('fulfilment_id', $parent->id)->where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
+        } elseif ($parent instanceof CustomerSalesChannel) {
+            $previous = PalletReturn::where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)->where('platform_id', $parent->platform_id)->where('id', '<', $palletReturn->id)->orderBy('id', 'desc')->first();
         } else {
             $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
         }
@@ -420,12 +446,14 @@ class ShowPalletReturn extends OrgAction
         return $this->getNavigation($parent, $previous, $request->route()->getName());
     }
 
-    public function getNext(Warehouse|FulfilmentCustomer|Fulfilment $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
+    public function getNext(Warehouse|FulfilmentCustomer|Fulfilment|CustomerSalesChannel $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
     {
         if ($parent instanceof FulfilmentCustomer) {
             $next = PalletReturn::where('fulfilment_customer_id', $parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
         } elseif ($parent instanceof Fulfilment) {
             $next = PalletReturn::where('fulfilment_id', $parent->id)->where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
+        } elseif ($parent instanceof CustomerSalesChannel) {
+            $next = PalletReturn::where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id)->where('platform_id', $parent->platform_id)->where('id', '>', $palletReturn->id)->orderBy('id')->first();
         } else {
             $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
         }
@@ -433,7 +461,7 @@ class ShowPalletReturn extends OrgAction
         return $this->getNavigation($parent, $next, $request->route()->getName());
     }
 
-    private function getNavigation(Warehouse|FulfilmentCustomer|Fulfilment $parent, ?PalletReturn $palletReturn, string $routeName): ?array
+    private function getNavigation(Warehouse|FulfilmentCustomer|Fulfilment|CustomerSalesChannel $parent, ?PalletReturn $palletReturn, string $routeName): ?array
     {
         if (!$palletReturn) {
             return null;
@@ -461,6 +489,20 @@ class ShowPalletReturn extends OrgAction
                         'organisation'       => $palletReturn->organisation->slug,
                         'fulfilment'         => $palletReturn->fulfilment->slug,
                         'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                        'palletReturn'       => $palletReturn->reference
+                    ]
+
+                ]
+            ],
+            'StoreCustomerSalesChannel' => [
+                'label' => $palletReturn->reference,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'organisation'       => $palletReturn->organisation->slug,
+                        'fulfilment'         => $palletReturn->fulfilment->slug,
+                        'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                        'customerSalesChannel' => $parent,
                         'palletReturn'       => $palletReturn->reference
                     ]
 

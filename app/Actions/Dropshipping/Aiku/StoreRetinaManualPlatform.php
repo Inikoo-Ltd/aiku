@@ -8,53 +8,56 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
-use App\Actions\CRM\Customer\AttachCustomerToPlatform;
-use App\Actions\Dropshipping\CustomerHasPlatforms\Hydrators\CustomerHasPlatformsHydratePortfolios;
-use App\Actions\OrgAction;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
-use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Symfony\Component\HttpFoundation\Response;
 
-class StoreRetinaManualPlatform extends OrgAction
+class StoreRetinaManualPlatform extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer): void
+    public function handle(Customer $customer): CustomerSalesChannel
     {
         $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
-        $customer = AttachCustomerToPlatform::make()->action($customer, $platform, []);
-
-        $customerHasPlatform = CustomerHasPlatform::where('customer_id', $customer->customer_id)
-        ->where('platform_id', $platform->id)
-        ->first();
-
-        CustomerHasPlatformsHydratePortfolios::dispatch($customerHasPlatform);
 
 
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+            $this->customer,
+            $platform,
+            [
+                'reference' => (string)$customer->id,
+            ]
+        );
+
+
+        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
+
+        return $customerSalesChannel;
     }
 
-    public function authorize(ActionRequest $request): bool
+    public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
-        if ($this->asAction || $request->user() instanceof WebUser) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+        return Inertia::location(route('retina.dropshipping.customer_sales_channels.show', [
+            'customerSalesChannel' => $customerSalesChannel->slug
+        ]));
     }
 
-    public function asController(ActionRequest $request): void
+    public function asController(ActionRequest $request): CustomerSalesChannel
     {
-        $customer = $request->user()->customer;
-        $this->initialisationFromShop($customer->shop, $request);
+        $this->initialisation($request);
 
-        $this->handle($customer);
+        return $this->handle($this->customer);
     }
 }

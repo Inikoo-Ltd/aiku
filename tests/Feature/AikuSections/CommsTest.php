@@ -13,12 +13,12 @@ namespace Tests\Feature;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
 use App\Actions\Comms\Email\StoreEmail;
+use App\Actions\Comms\Mailshot\HydrateMailshots;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\Outbox\StoreOutbox;
 use App\Actions\CRM\WebUser\StoreWebUser;
-use App\Actions\Helpers\Snapshot\StoreEmailSnapshot;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Comms\Email\EmailBuilderEnum;
@@ -345,7 +345,7 @@ test('UI Index Newsletter Mailshots', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'newsletter')
+                    ->where('title', 'Newsletters')
                     ->etc()
             )
             ->has('data')
@@ -400,7 +400,7 @@ test('UI Index Newsletter Overview', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'newsletter')
+                    ->where('title', 'Newsletters')
                     ->etc()
             )
             ->has('data')
@@ -587,7 +587,10 @@ test('UI create mailshot', function () {
         $this->shop
     ]));
 
-    $response->assertInertia(function (AssertableInertia $page) {
+
+    $outbox = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
+
+    $response->assertInertia(function (AssertableInertia $page) use ($outbox) {
         $page
             ->component('CreateModel')
             ->has('title')
@@ -595,9 +598,9 @@ test('UI create mailshot', function () {
                 'formData',
                 fn (AssertableInertia $page) => $page
                     ->where('route', [
-                        'name' => 'grp.models.shop.mailshot.store',
+                        'name' => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
-                            'shop' => $this->shop->id
+                            'outbox' => $outbox->id
                         ]
                     ])
                     ->etc()
@@ -642,12 +645,7 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
         'snapshot_first_commit' => true,
     ], strict: false);
 
-    $snapshot = StoreEmailSnapshot::make()->action($email, [
-        'builder' => EmailBuilderEnum::BEEFREE->value,
-        'layout' => [
-            'xx' => 'xx'
-        ],
-    ], strict: false);
+
 
     $mailShot->update([
         'email_id' => $email->id
@@ -659,11 +657,11 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
         $mailShot->slug
     ]));
 
-    $response->assertInertia(function (AssertableInertia $page) use ($snapshot) {
+    $response->assertInertia(function (AssertableInertia $page) use ($mailShot) {
         $page
             ->component('Org/Web/Workshop/Outbox/OutboxWorkshop')
             ->has('title')
-            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', $snapshot->parent->subject)->etc())
+            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', $mailShot->subject)->etc())
             ->has('snapshot')
             ->has('builder')
             ->has('imagesUploadRoute')
@@ -672,4 +670,10 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
             ->has('publishRoute')
             ->has('breadcrumbs');
     });
+})->depends('update mailshot');
+
+test('mailshot hydrate', function (Mailshot $mailShot) {
+    HydrateMailshots::run($mailShot);
+    $this->artisan('hydrate:mailshots --slugs '.$mailShot->slug)->assertExitCode(0);
+    expect($mailShot->stats->number_dispatched_emails)->toBe(0);
 })->depends('update mailshot');

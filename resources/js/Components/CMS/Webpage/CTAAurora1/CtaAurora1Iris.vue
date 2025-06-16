@@ -16,20 +16,21 @@ const props = defineProps<{
         
     }
 	webpageData?: any
+    screenType: "mobile" | "tablet" | "desktop"
 	blockData?: Object
 }>()
-console.log(props)
+
 </script>
 
 <template>
-	<div :style="getStyles(fieldValue.container.properties)">
+	<div :style="getStyles(fieldValue.container.properties,screenType)">
         <div class="w-full">
-            <div class="relative isolate px-6 py-16 md:py-24 text-center sm:px-16">
+            <div class="relative  px-6 py-16 md:py-24 text-center sm:px-16">
 				<section v-html="fieldValue.title"></section>
 				<section v-html="fieldValue.text"></section>
 
                 <div class="flex justify-center">
-                    <a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" typeof="button" :style="getStyles(fieldValue.button.container.properties)"
+                    <a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" typeof="button" :style="getStyles(fieldValue.button.container.properties,screenType)"
                         class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6">
                         {{fieldValue.button.text}}
                     </a>

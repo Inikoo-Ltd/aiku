@@ -8,17 +8,22 @@
 
 namespace App\Actions\Retina\Dropshipping\Client\UI;
 
+use App\Actions\CRM\Customer\UI\GetCustomerClientShowcase;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\CRM\CustomerClientTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaCustomerClient extends RetinaAction
 {
+    use WithActionButtons;
+
     public function handle(CustomerClient $customerClient): CustomerClient
     {
         return $customerClient;
@@ -32,6 +37,7 @@ class ShowRetinaCustomerClient extends RetinaAction
 
 
     public function asController(
+        CustomerSalesChannel $customerSalesChannel,
         CustomerClient $customerClient,
         ActionRequest $request
     ): CustomerClient {
@@ -48,7 +54,7 @@ class ShowRetinaCustomerClient extends RetinaAction
             'Dropshipping/Client/CustomerClient',
             [
                 'title'       => __('customer client'),
-                'breadcrumbs' => $this->getBreadcrumbs($customerClient),
+                'breadcrumbs' => $this->getBreadcrumbs($customerClient, $request->route()->getName(), $request->route()->originalParameters()),
                 'pageHead' => [
                     'title'     => $customerClient->name,
                     'model'     => __($customerClient->customer->name),
@@ -56,12 +62,31 @@ class ShowRetinaCustomerClient extends RetinaAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('customer client')
                     ],
+                    'actions'    => [
+                        $this->getEditActionIcon($request, 'Profile'),
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Create Order'),
+                            'route' => [
+                                'name'       => 'retina.models.customer-client.order.store',
+                                'parameters' => [
+                                    'customerClient' => $customerClient->id,
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ]
+                    ]
                 ],
                 'tabs'          => [
                     'current'    => $this->tab,
                     'navigation' => CustomerClientTabsEnum::navigation()
 
                 ],
+
+                CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
+                    fn () => GetCustomerClientShowcase::run($customerClient)
+                    : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
 
 
 
@@ -76,24 +101,27 @@ class ShowRetinaCustomerClient extends RetinaAction
         return new CustomerClientResource($customerClient);
     }
 
-    public function getBreadcrumbs(CustomerClient $customerClient): array
+
+    public function getBreadcrumbs(CustomerClient $customerClient, $routeName, $routeParameters): array
     {
-        return
-            array_merge(
-                IndexRetinaCustomerClients::make()->getBreadcrumbs(),
-                [
+        return array_merge(
+            IndexRetinaCustomerClientsInCustomerSalesChannel::make()->getBreadcrumbs($routeName, $routeParameters),
+            [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.client.show',
-                                'parameters' => [$customerClient->ulid]
+                                'name'       => 'retina.dropshipping.customer_sales_channels.client.show',
+                                'parameters' => [
+                                    'customerSalesChannel' => $routeParameters['customerSalesChannel'],
+                                    'customerClient' => $customerClient->ulid
+                                ]
                             ],
                             'label' => $customerClient->name,
                         ]
                     ]
                 ]
-            );
+        );
     }
 
 

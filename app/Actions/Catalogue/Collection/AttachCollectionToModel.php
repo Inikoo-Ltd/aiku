@@ -8,48 +8,62 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 
 class AttachCollectionToModel extends OrgAction
 {
-    public function handle(Product|ProductCategory|Collection $model, Collection $collection): Collection
+    public function handle(Shop|ProductCategory $parent, Collection $collection): Collection
     {
-        if ($model instanceof ProductCategory) {
-            if ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $model->collections()->attach($collection->id, [
-                    'type' => 'Department',
+        if ($parent instanceof ProductCategory) {
+            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $parent->collections()->attach($collection->id, [
+                    'type' => 'department',
                 ]);
             }
 
-            if ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                $model->collections()->attach($collection->id, [
-                    'type' => 'Family',
+            if ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $parent->collections()->attach($collection->id, [
+                    'type' => 'sub_department',
                 ]);
             }
-        } elseif ($model instanceof Product) {
-            $model->collections()->attach($collection->id, [
-                'type' => 'Product',
-            ]);
-        } else {
-            $model->inCollections()->attach($collection->id, [
-                'type' => 'Collection',
+        }
+        if ($parent instanceof Shop) {
+            $parent->collections()->attach($collection->id, [
+                'type' => 'shop',
             ]);
         }
 
-        CollectionHydrateItems::dispatch($collection);
+
         return $collection;
     }
 
-    public function action(Product|ProductCategory|Collection $model, Collection $collection): Collection
+    public function htmlResponse()
     {
-        $this->asAction       = true;
-        $this->initialisationFromShop($model->shop, []);
+        return back();
+    }
 
-        return $this->handle($model, $collection);
+    public function action(Shop|ProductCategory $parent, Collection $collection): Collection
+    {
+        if ($parent instanceof ProductCategory) {
+            $shop = $parent->shop;
+        } else {
+            $shop = $parent;
+        }
+
+        $this->asAction = true;
+        $this->initialisationFromShop($shop, []);
+
+        return $this->handle($parent, $collection);
+    }
+
+    public function asController(ProductCategory $productCategory, Collection $collection): Collection
+    {
+        $this->initialisationFromShop($productCategory->shop, []);
+
+        return $this->handle($productCategory, $collection);
     }
 }

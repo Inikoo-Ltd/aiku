@@ -8,6 +8,7 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -17,6 +18,7 @@ use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWebsite;
 use Eloquent;
@@ -33,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -46,7 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $parent_id
  * @property int $website_id
  * @property string|null $model_type
- * @property string|null $model_id
+ * @property int|null $model_id
  * @property string $slug
  * @property string $code
  * @property string $url
@@ -80,16 +83,21 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $seo_data
  * @property bool $allow_fetch If false changes in Aurora webpages will not be fetched
  * @property bool|null $show_in_parent
+ * @property int|null $seo_image_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Group $group
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Collection<int, Webpage> $linkedWebpages
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Model|\Eloquent|null $model
  * @property-read Collection<int, ModelHasWebBlocks> $modelHasWebBlocks
  * @property-read Organisation $organisation
  * @property-read Webpage|null $parent
  * @property-read Collection<int, \App\Models\Web\Redirect> $redirects
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\WebpageStats|null $stats
@@ -97,6 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
+ * @property-read Collection<int, \App\Models\Web\WebpageHasProduct> $webpageHasProducts
  * @property-read Collection<int, Webpage> $webpages
  * @property-read \App\Models\Web\Website $website
  * @method static \Database\Factories\Web\WebpageFactory factory($count = null, $state = [])
@@ -108,7 +117,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Webpage withoutTrashed()
  * @mixin Eloquent
  */
-class Webpage extends Model implements Auditable
+class Webpage extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use HasFactory;
@@ -116,6 +125,7 @@ class Webpage extends Model implements Auditable
     use SoftDeletes;
     use InWebsite;
     use HasHistory;
+    use HasImage;
 
     protected $casts = [
         'data'             => 'array',
@@ -233,9 +243,16 @@ class Webpage extends Model implements Auditable
     }
 
 
-    public function getFullUrl(): string
+    public function getUrl(): string
     {
-        return 'https://'.$this->website->domain.'/'.$this->url;
+        return match (app()->environment()) {
+            'production' => 'https://'.$this->website->domain.'/'.$this->url,
+            'staging' => 'https://canary.'.$this->website->domain.'/'.$this->url,
+            default => match ($this->shop->type) {
+                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/'.$this->url,
+                default => 'https://fulfilment.test/'.$this->url
+            }
+        };
     }
 
     public function externalLinks()
@@ -248,6 +265,12 @@ class Webpage extends Model implements Auditable
     public function timeSeries(): HasMany
     {
         return $this->hasMany(WebpageTimeSeries::class);
+    }
+
+
+    public function webpageHasProducts(): HasMany
+    {
+        return $this->hasMany(WebpageHasProduct::class);
     }
 
     /**
@@ -263,7 +286,5 @@ class Webpage extends Model implements Auditable
     {
         return $this->hasMany(Redirect::class);
     }
-
-
 
 }

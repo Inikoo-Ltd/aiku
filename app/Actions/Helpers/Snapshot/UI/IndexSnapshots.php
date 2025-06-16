@@ -9,9 +9,9 @@
 namespace App\Actions\Helpers\Snapshot\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Web\Webpage\UI\ShowFooter;
-use App\Actions\Web\Webpage\UI\ShowHeader;
-use App\Actions\Web\Webpage\UI\ShowMenu;
+use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
+use App\Actions\Web\Webpage\UI\ShowHeaderWorkshop;
+use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
 use App\Actions\Web\Webpage\UI\WithFooterSubNavigation;
 use App\Actions\Web\Webpage\UI\WithHeaderSubNavigation;
 use App\Actions\Web\Webpage\UI\WithMenuSubNavigation;
@@ -215,8 +215,7 @@ class IndexSnapshots extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.web.websites.workshop.snapshots.footer' =>
             array_merge(
-                ShowFooter::make()->getBreadcrumbs(
-                    $this->website,
+                ShowFooterWorkshop::make()->getBreadcrumbs(
                     'grp.org.shops.show.web.websites.workshop.footer',
                     $routeParameters
                 ),
@@ -229,8 +228,7 @@ class IndexSnapshots extends OrgAction
             ),
             'grp.org.shops.show.web.websites.workshop.snapshots.header' =>
             array_merge(
-                ShowHeader::make()->getBreadcrumbs(
-                    $this->website,
+                ShowHeaderWorkshop::make()->getBreadcrumbs(
                     'grp.org.shops.show.web.websites.workshop.header',
                     $routeParameters
                 ),
@@ -243,8 +241,7 @@ class IndexSnapshots extends OrgAction
             ),
             'grp.org.shops.show.web.websites.workshop.snapshots.menu' =>
             array_merge(
-                ShowMenu::make()->getBreadcrumbs(
-                    $this->website,
+                ShowMenuWorkshop::make()->getBreadcrumbs(
                     'grp.org.shops.show.web.websites.workshop.menu',
                     $routeParameters
                 ),

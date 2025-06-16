@@ -12,24 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ClockingMachineHydrateClockings
+class ClockingMachineHydrateClockings implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private ClockingMachine $clockingMachine;
-
-    public function __construct(ClockingMachine $clockingMachine)
+    public function getJobUniqueId(ClockingMachine $clockingMachine): string
     {
-        $this->clockingMachine = $clockingMachine;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->clockingMachine->id))->dontRelease()];
+        return $clockingMachine->id;
     }
 
     public function handle(ClockingMachine $clockingMachine): void

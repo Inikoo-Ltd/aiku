@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import {provide, ref, onMounted, onBeforeUnmount } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -15,9 +15,12 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
+import { faHome } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-library.add(faExclamationTriangle, faWhatsapp)
+import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
+import { getStyles } from '@/Composables/styles'
+library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
 const layout = useIrisLayoutStore()
@@ -58,21 +61,21 @@ const setFirstVisitToFalse = () => {
 };
 
 const checkScreenType = () => {
-  const width = window.innerWidth
-  if (width < 640) screenType.value = 'mobile'
-  else if (width >= 640 && width < 1024) screenType.value = 'tablet'
-  else screenType.value = 'desktop'
+    const width = window.innerWidth
+    if (width < 640) screenType.value = 'mobile'
+    else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+    else screenType.value = 'desktop'
 }
 
 
 
 onMounted(() => {
-  checkScreenType()
-  window.addEventListener('resize', checkScreenType)
+    checkScreenType()
+    window.addEventListener('resize', checkScreenType)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkScreenType)
+    window.removeEventListener('resize', checkScreenType)
 })
 
 </script>
@@ -106,12 +109,23 @@ onBeforeUnmount(() => {
             </div>
         </Modal>
 
-        <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']"
-            :style="{ fontFamily: theme.fontFamily }">
-            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation" :screen-type="screenType"/>
+        <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
+
+            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation"
+                :screen-type="screenType" />
+
+            <Breadcrumbs v-if="usePage().props.breadcrumbs && usePage().props.navigation" id="iris_breadcrumbs"
+                class="md:py-4 px-2 w-full border-b-0 mx-auto transition-all xbg-gray-100"
+                :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
+                :layout="layout" />
+
             <main>
-                <slot />
+                <div :style="getStyles(theme.container?.properties, screenType)">
+                    <slot />
+                </div>
+
             </main>
+
             <Footer v-if="footer && !isArray(footer)" :data="footer" :colorThemed="theme" />
         </div>
     </div>
@@ -128,3 +142,19 @@ onBeforeUnmount(() => {
 
 </template>
 
+<style lang="scss">
+#iris_breadcrumbs ol,
+#iris_breadcrumbs ul {
+    margin-left: 0;
+    margin-top: 0;
+    list-style-position: outside;
+}
+
+#iris_breadcrumbs ol li,
+#iris_breadcrumbs ul li {
+    margin-left: 0;
+    margin-top: 0;
+    padding-left: 0;
+    padding-top: 0;
+}
+</style>

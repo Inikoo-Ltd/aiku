@@ -32,7 +32,6 @@ class GetRetinaPalletReturnActions
     {
         if (in_array($palletReturn->state, [
             PalletReturnStateEnum::IN_PROCESS,
-            PalletReturnStateEnum::SUBMITTED
         ])) {
             $actions = array_merge(
                 $actions,
@@ -116,7 +115,17 @@ class GetRetinaPalletReturnActions
                         ]
                     ]
                 ];
-
+        } else {
+            $actions[] =
+                [
+                    'type'     => 'button',
+                    'style'    => 'save',
+                    'tooltip'  => __('Add pallet to pick before submit'),
+                    'label'    => __('submit'),
+                    'icon'     => 'fad fa-save',
+                    'key'      => 'action',
+                    'disabled' => true,
+                ];
         }
 
         return $actions;

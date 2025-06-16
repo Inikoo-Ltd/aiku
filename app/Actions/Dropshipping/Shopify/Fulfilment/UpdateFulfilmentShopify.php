@@ -10,8 +10,8 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Ordering\Order;
-use App\Models\ShopifyUserHasFulfilment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;

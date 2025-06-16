@@ -15,18 +15,23 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\MitSavedCard;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\TopUp;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Catalogue\Asset;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Goods\Stock;
@@ -46,7 +51,6 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
-use App\Models\WooCommerceUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -58,6 +62,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -118,6 +124,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $approved_at
  * @property numeric $amount_in_basket
  * @property int|null $current_order_in_basket_id
+ * @property string|null $first_name
+ * @property string|null $last_name
+ * @property int $number_exclusive_products
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
@@ -127,10 +136,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerClient> $clients
  * @property-read \App\Models\CRM\CustomerComms|null $comms
  * @property-read Collection<int, CreditTransaction> $creditTransactions
- * @property-read Collection<int, \App\Models\CRM\CustomerHasPlatform> $customerHasPlatforms
  * @property-read Collection<int, \App\Models\CRM\CustomerNote> $customerNotes
+ * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
+ * @property-read Collection<int, Platform> $customerSalesChannelsXXX
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read EbayUser|null $ebayUser
+ * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
  * @property-read Group $group
@@ -138,15 +150,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, Invoice> $invoices
  * @property-read MediaCollection<int, Media> $media
+ * @property-read Collection<int, MitSavedCard> $mitSavedCard
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read Order|null $orderInBasket
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
- * @property-read Collection<int, Platform> $platforms
  * @property-read Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read Collection<int, Portfolio> $portfolios
  * @property-read Collection<int, Asset> $products
+ * @property-read Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read ShopifyUser|null $shopifyUser
  * @property-read \App\Models\CRM\CustomerStats|null $stats
@@ -155,6 +168,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
  * @property-read TaxNumber|null $taxNumber
  * @property-read TiktokUser|null $tiktokUser
+ * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
  * @property-read Collection<int, Transaction> $transactions
@@ -183,23 +197,25 @@ class Customer extends Model implements HasMedia, Auditable
     use InShop;
     use HasAttachments;
     use HasEmail;
+    use HasApiTokens;
+    use Notifiable;
 
     protected $casts = [
-        'data'                          => 'array',
-        'settings'                      => 'array',
-        'location'                      => 'array',
-        'migration_data'                => 'array',
-        'state'                         => CustomerStateEnum::class,
-        'status'                        => CustomerStatusEnum::class,
-        'trade_state'                   => CustomerTradeStateEnum::class,
-        'rejected_reason'               => CustomerRejectReasonEnum::class,
-        'last_submitted_order_at'       => 'datetime',
-        'last_dispatched_delivery_at'   => 'datetime',
-        'last_invoiced_at'              => 'datetime',
-        'fetched_at'                    => 'datetime',
-        'rejected_at'                   => 'datetime',
-        'last_fetched_at'               => 'datetime',
-        'amount_in_basket'              => 'decimal:2'
+        'data'                        => 'array',
+        'settings'                    => 'array',
+        'location'                    => 'array',
+        'migration_data'              => 'array',
+        'state'                       => CustomerStateEnum::class,
+        'status'                      => CustomerStatusEnum::class,
+        'trade_state'                 => CustomerTradeStateEnum::class,
+        'rejected_reason'             => CustomerRejectReasonEnum::class,
+        'last_submitted_order_at'     => 'datetime',
+        'last_dispatched_delivery_at' => 'datetime',
+        'last_invoiced_at'            => 'datetime',
+        'fetched_at'                  => 'datetime',
+        'rejected_at'                 => 'datetime',
+        'last_fetched_at'             => 'datetime',
+        'amount_in_basket'            => 'decimal:2'
     ];
 
 
@@ -366,21 +382,18 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Portfolio::class);
     }
 
-    public function platforms(): BelongsToMany
+    public function customerSalesChannelsXXX(): BelongsToMany
     {
-        return $this->belongsToMany(Platform::class, 'customer_has_platforms')
+        return $this->belongsToMany(Platform::class, 'customer_sales_channels')
             ->withPivot('id', 'platform_id', 'group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
     }
 
-    public function customerHasPlatforms(): HasMany
+    public function customerSalesChannels(): HasMany
     {
-        return $this->hasMany(CustomerHasPlatform::class);
+        return $this->hasMany(CustomerSalesChannel::class);
     }
 
-    public function getMainPlatform(): Platform|null
-    {
-        return $this->platforms()->first();
-    }
+
 
     public function transactions(): HasMany
     {
@@ -405,6 +418,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function wooCommerceUser(): HasOne
     {
         return $this->hasOne(WooCommerceUser::class);
+    }
+
+    public function ebayUser(): HasOne
+    {
+        return $this->hasOne(EbayUser::class);
     }
 
     public function tiktokUser(): HasOne
@@ -450,5 +468,15 @@ class Customer extends Model implements HasMedia, Auditable
     public function topUpPaymentApiPoint(): HasMany
     {
         return $this->hasMany(TopUpPaymentApiPoint::class);
+    }
+
+    public function mitSavedCard(): HasMany
+    {
+        return $this->hasMany(MitSavedCard::class);
+    }
+
+    public function exclusiveProducts(): HasMany
+    {
+        return $this->hasMany(Product::class, 'exclusive_for_customer_id');
     }
 }

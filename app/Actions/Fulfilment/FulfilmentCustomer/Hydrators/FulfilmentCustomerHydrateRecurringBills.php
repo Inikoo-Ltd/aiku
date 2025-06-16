@@ -12,24 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\RecurringBill;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class FulfilmentCustomerHydrateRecurringBills
+class FulfilmentCustomerHydrateRecurringBills implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private FulfilmentCustomer $fulfilmentCustomer;
-
-    public function __construct(FulfilmentCustomer $fulfilmentCustomer)
+    public function getJobUniqueId(FulfilmentCustomer $fulfilmentCustomer): string
     {
-        $this->fulfilmentCustomer = $fulfilmentCustomer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->fulfilmentCustomer->id))->dontRelease()];
+        return $fulfilmentCustomer->id;
     }
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void

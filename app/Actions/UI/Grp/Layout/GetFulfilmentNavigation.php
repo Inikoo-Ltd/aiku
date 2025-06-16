@@ -23,7 +23,7 @@ class GetFulfilmentNavigation
         if ($user->authTo([
             "fulfilment-shop.$fulfilment->id.view",
             "supervisor-fulfilment-shop.".$fulfilment->id,
-            "accounting.$fulfilment->organisation_id.view"
+            "accounting.$fulfilment->organisation_id.view",
         ])) {
             $navigation['operations'] = [
                 'root'  => 'grp.org.fulfilments.show.operations.',
@@ -157,91 +157,100 @@ class GetFulfilmentNavigation
                 ]
 
             ];
+        }
 
 
-            if ($fulfilment->shop->website and $user->authTo([
-                    "fulfilment-shop.$fulfilment->id.view",
-                    "supervisor-fulfilment-shop.".$fulfilment->id,
-                ])) {
-                $navigation['web'] = [
-                    'root'    => 'grp.org.fulfilments.show.web.',
-                    'scope'   => 'websites',
-                    'icon'    => ['fal', 'fa-globe'],
-                    'label'   => __('Website'),
-                    'route'   =>
+        if ($fulfilment->shop->website
+            && $user->authTo([
+                "fulfilment-shop.$fulfilment->id.view",
+                "supervisor-fulfilment-shop.".$fulfilment->id,
+                "group-webmaster.view"
+            ])) {
+            $navigation['web'] = [
+                'root'    => 'grp.org.fulfilments.show.web.',
+                'scope'   => 'websites',
+                'icon'    => ['fal', 'fa-globe'],
+                'label'   => __('Website'),
+                'route'   =>
 
-                        $fulfilment->shop->website
-                            ?
-                            [
-                                'name'       => 'grp.org.fulfilments.show.web.websites.show',
-                                'parameters' => [
-                                    $fulfilment->organisation->slug,
-                                    $fulfilment->slug,
-                                    $fulfilment->shop->website->slug
-                                ]
-
+                    $fulfilment->shop->website
+                        ?
+                        [
+                            'name'       => 'grp.org.fulfilments.show.web.websites.show',
+                            'parameters' => [
+                                $fulfilment->organisation->slug,
+                                $fulfilment->slug,
+                                $fulfilment->shop->website->slug
                             ]
-                            :
-                            [
-                                'name'       => 'grp.org.fulfilments.show.web.websites.index',
-                                'parameters' => [
-                                    $fulfilment->organisation->slug,
-                                    $fulfilment->slug,
-                                ]
 
+                        ]
+                        :
+                        [
+                            'name'       => 'grp.org.fulfilments.show.web.websites.index',
+                            'parameters' => [
+                                $fulfilment->organisation->slug,
+                                $fulfilment->slug,
+                            ]
+
+                        ],
+                'topMenu' => [
+                    'subSections' =>
+
+                        [
+                            [
+                                "label"   => __("Website"),
+                                "tooltip" => __("website"),
+                                "icon"    => ["fal", "fa-globe"],
+                                'root'    => 'grp.org.fulfilments.show.web.websites.',
+                                "route"   => [
+                                    "name"       => "grp.org.fulfilments.show.web.websites.show",
+                                    "parameters" => [
+                                        $fulfilment->organisation->slug,
+                                        $fulfilment->slug,
+                                        $fulfilment->shop->website->slug
+                                    ],
+                                ],
                             ],
-                    'topMenu' => [
-                        'subSections' =>
+
 
                             [
-                                [
-                                    "label"   => __("Website"),
-                                    "tooltip" => __("website"),
-                                    "icon"    => ["fal", "fa-globe"],
-                                    'root'    => 'grp.org.fulfilments.show.web.websites.',
-                                    "route"   => [
-                                        "name"       => "grp.org.fulfilments.show.web.websites.show",
-                                        "parameters" => [
-                                            $fulfilment->organisation->slug,
-                                            $fulfilment->slug,
-                                            $fulfilment->shop->website->slug
-                                        ],
-                                    ],
-                                ],
-
-
-                                [
-                                    'label'   => __('webpages'),
-                                    'tooltip' => __('Webpages'),
-                                    'icon'    => ['fal', 'fa-browser'],
-                                    'root'    => 'grp.org.fulfilments.show.web.webpages.',
-                                    'route'   => [
-                                        'name'       => 'grp.org.fulfilments.show.web.webpages.index',
-                                        'parameters' => [
-                                            $fulfilment->organisation->slug,
-                                            $fulfilment->slug,
-                                            $fulfilment->shop->website->slug
-                                        ]
-
+                                'label'   => __('webpages'),
+                                'tooltip' => __('Webpages'),
+                                'icon'    => ['fal', 'fa-browser'],
+                                'root'    => 'grp.org.fulfilments.show.web.webpages.',
+                                'route'   => [
+                                    'name'       => 'grp.org.fulfilments.show.web.webpages.index',
+                                    'parameters' => [
+                                        $fulfilment->organisation->slug,
+                                        $fulfilment->slug,
+                                        $fulfilment->shop->website->slug
                                     ]
+
+                                ]
+                            ],
+
+                            [
+                                "label"   => __("banners"),
+                                "tooltip" => __("banners"),
+                                "icon"    => ["fal", "fa-sign"],
+                                'root'    => 'grp.org.fulfilments.show.web.banners.index',
+                                "route"   => [
+                                    "name"       => "grp.org.fulfilments.show.web.banners.index",
+                                    "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug, $fulfilment->shop->website->slug],
                                 ],
-
-                                [
-                                    "label"   => __("banners"),
-                                    "tooltip" => __("banners"),
-                                    "icon"    => ["fal", "fa-sign"],
-                                    'root'    => 'grp.org.fulfilments.show.web.banners.index',
-                                    "route"   => [
-                                        "name"       => "grp.org.fulfilments.show.web.banners.index",
-                                        "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug, $fulfilment->shop->website->slug],
-                                    ],
-                                ],
-                            ]
-                    ],
+                            ],
+                        ]
+                ],
 
 
-                ];
-            }
+            ];
+        }
+
+        if ($user->authTo([
+            "fulfilment-shop.$fulfilment->id.view",
+            "supervisor-fulfilment-shop.".$fulfilment->id,
+            "accounting.$fulfilment->organisation_id.view",
+        ])) {
             $navigation['crm'] = [
                 'scope' => 'shops',
                 'label' => __('Customers'),

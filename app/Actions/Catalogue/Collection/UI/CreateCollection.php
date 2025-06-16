@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -19,8 +20,9 @@ use Lorisleiva\Actions\ActionRequest;
 class CreateCollection extends OrgAction
 {
     use WithCatalogueAuthorisation;
+    private Shop|ProductCategory $parent;
 
-    public function handle(Shop $shop, ActionRequest $request): Response
+    public function handle(Shop|ProductCategory $parent, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
@@ -62,19 +64,29 @@ class CreateCollection extends OrgAction
                                         'required' => true,
                                     ],
                                     'description' => [
-                                        'type'     => 'textEditor',
+                                        'type'     => 'textarea',
                                         'label'    => __('description'),
                                         'required' => false,
-                                    ]
+                                    ],
+                                        "image"         => [
+                                        "type"    => "image_crop_square",
+                                        "label"   => __("Image"),
+                                        "required" => false,
+                                    ],
 
                                 ]
                             ]
                         ],
-                    'route' => [
+                    'route' => $parent instanceof Shop ? [
                         'name'       => 'grp.models.org.catalogue.collections.store',
                         'parameters' => [
-                            'organisation' => $shop->organisation_id,
-                            'shop'         => $shop->id,
+                            'organisation' => $parent->organisation_id,
+                            'shop'         => $parent->id,
+                        ]
+                    ] : [
+                        'name'       => 'grp.models.product_category.collection.store',
+                        'parameters' => [
+                            'productCategory'         => $parent->id,
                         ]
                     ]
                 ],
@@ -85,15 +97,57 @@ class CreateCollection extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response
     {
+        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $request);
     }
 
+    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): Response
+    {
+        $this->parent = $department;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($department, $request);
+    }
+
+    public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): Response
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($family, $request);
+    }
+
+    public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): Response
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($family, $request);
+    }
+
+    public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): Response
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($family, $request);
+    }
+
+    public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): Response
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($subDepartment, $request);
+    }
+
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexCollection::make()->getBreadcrumbs(
+            IndexCollections::make()->getBreadcrumbs(
+                parent: $this->parent,
                 routeName: preg_replace('/create$/', 'index', $routeName),
                 routeParameters: $routeParameters,
             ),

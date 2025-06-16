@@ -21,6 +21,8 @@ import {
 	faFileAlt,
 } from "@fas"
 import { faHeart } from "@far"
+import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(
 	faPresentation,
@@ -45,26 +47,27 @@ library.add(
 const props = defineProps<{
 	fieldValue: {
 		headerText: string
-        logo: {
-            alt: string,
-            image: {
-                source: object
-            },
-        }
-        container: {
-            properties: Object
-        }
-        button_1: {
-            visible: boolean
-            text: string
-            container: {
-                properties: Object
-            }
-        }
+		logo: {
+			alt: string,
+			image: {
+				source: object
+			},
+		}
+		container: {
+			properties: Object
+		}
+		button_1: {
+			visible: boolean
+			text: string
+			container: {
+				properties: Object
+			}
+		}
 	}
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+const layout = inject('layout', layoutStructure)
 const isLoggedIn = inject("isPreviewLoggedIn", false)
 </script>
 
@@ -73,40 +76,39 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 		<div class="flex flex-col justify-between items-center py-4 px-6">
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
-				<component
-					v-if="fieldValue?.logo?.image?.source"
-					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
-					:href="fieldValue?.logo?.link?.href || '#'"
-					:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer" class="block w-full h-full">
-
-
-					<Image
-						:style="getStyles(fieldValue.logo.properties)"
-						:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt"
-						:imageCover="true"
-						:src="fieldValue?.logo?.image?.source"
-						:imgAttributes="fieldValue?.logo.image?.attributes">
-					</Image>
-				</component>
+				<div>
+					<component v-if="fieldValue?.logo?.image?.source" :is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
+						:href="fieldValue?.logo?.link?.href || '#'" :target="fieldValue?.logo?.link?.target || '_self'"
+						rel="noopener noreferrer" class="block w-full h-full">
+						<Image :style="getStyles(fieldValue.logo.properties)"
+							:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
+							:src="fieldValue?.logo?.image?.source" :imgAttributes="fieldValue?.logo.image?.attributes">
+						</Image>
+					</component>
+				</div>
 
 				<!-- Search Bar -->
-				<div class="relative justify-self-center w-full max-w-md">
-					<!-- Search bar can be added here if needed -->
-				</div>
+				<div class="relative justify-self-center w-full max-w-80">
+					<LuigiSearch v-if="layout?.app?.environment === 'local'"></LuigiSearch>
+                    <!--
+                    <FontAwesomeIcon icon="fas fa-search"
+                        class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500" fixed-width /> -->
+                </div>
 
 				<!-- Gold Member Button -->
 				<div class="justify-self-end w-fit">
-					<div
-						v-if="checkVisible(fieldValue.button_1.visible, isLoggedIn)"
-						class="space-x-1.5 cursor-pointer whitespace-nowrap"
-						:style="getStyles(fieldValue.button_1.container.properties)">
-						<span v-html="fieldValue.button_1.text" />
-					</div>
+					<a :href="fieldValue?.button_1?.link?.href" :target="fieldValue?.button_1?.link?.target">
+						<div v-if="checkVisible(fieldValue.button_1.visible, isLoggedIn)"
+							class="space-x-1.5 cursor-pointer whitespace-nowrap"
+							:style="getStyles(fieldValue.button_1.container.properties)">
+							<span v-html="fieldValue.button_1.text" />
+						</div>
+					</a>
+
 				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

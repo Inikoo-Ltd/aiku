@@ -25,8 +25,8 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\CRM\CustomerHasPlatform;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -49,7 +49,7 @@ class IndexOrders extends OrgAction
     use WithOrdersSubNavigation;
 
     private Organisation|Shop|Customer|CustomerClient|Asset|ShopifyUser $parent;
-    private CustomerHasPlatform $customerHasPlatform;
+    private CustomerSalesChannel $customerSalesChannel;
 
     private string $bucket;
 
@@ -170,6 +170,7 @@ class IndexOrders extends OrgAction
         return $query->defaultSort('orders.id')  // Change the default sort column to match DISTINCT ON
         ->select([
             'orders.id',
+            'orders.slug',
             'orders.reference',
             'orders.date',
             'orders.state',
@@ -190,6 +191,8 @@ class IndexOrders extends OrgAction
             'shops.slug as shop_slug',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'customers.slug as customer_slug',
+            'customers.name as customer_name',
         ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date']) // Ensure `id` is the first sort column
@@ -280,7 +283,7 @@ class IndexOrders extends OrgAction
         $subNavigation = null;
         if ($this->parent instanceof CustomerClient) {
             unset($navigation[OrdersTabsEnum::STATS->value]);
-            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerHasPlatform);
+            $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerSalesChannel);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -322,7 +325,7 @@ class IndexOrders extends OrgAction
                     'fullLoading' => true,
                     'route'       => [
                         'method'     => 'post',
-                        'name'       => 'grp.models.customer-client.order.store',
+                        'name'       => 'grp.models.customer_client.order.store',
                         'parameters' => [
                             'customerClient' => $this->parent->id
                         ]
@@ -434,21 +437,21 @@ class IndexOrders extends OrgAction
 
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerHasPlatform $customerHasPlatform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket              = 'all';
         $this->parent              = $customerClient;
-        $this->customerHasPlatform = $customerHasPlatform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(OrdersTabsEnum::values());
 
         return $this->handle(parent: $customerClient, prefix: OrdersTabsEnum::ORDERS->value);
     }
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerHasPlatform $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket              = 'all';
         $this->parent              = $customerClient;
-        $this->customerHasPlatform = $platform;
+        $this->customerSalesChannel = $platform;
         $this->initialisationFromShop($shop, $request)->withTab(OrdersTabsEnum::values());
 
         return $this->handle(parent: $customerClient, prefix: OrdersTabsEnum::ORDERS->value);
@@ -490,22 +493,22 @@ class IndexOrders extends OrgAction
                     ]
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.index' =>
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index' =>
             array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerSalesChannel, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show', $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.platforms.show.customer_clients.show.orders.index',
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index',
                         'parameters' => $routeParameters
                     ]
                 )
             ),
-            'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.index' =>
+            'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index' =>
             array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs($this->customerHasPlatform, 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs($this->customerSalesChannel, 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show', $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.platforms.show.customer-clients.show.orders.index',
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index',
                         'parameters' => $routeParameters
                     ]
                 )

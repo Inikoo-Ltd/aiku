@@ -20,6 +20,7 @@ const props = defineProps<{
     icon?: Icon
     yesLabel?: string
     noLabel?: string
+    noIcon?: string
     routeDelete?: routeType
     isFullLoading?: boolean
     isWithMessage?: boolean
@@ -135,7 +136,7 @@ const messageDelete = ref('')
                                         </DialogTitle>
                                         <div class="mt-2">
                                             <p class="text-sm text-gray-500">
-                                                {{ description || trans("The data will be permanently 😥 .This action cannot be undone.")}}
+                                                {{ description || trans("The data will be permanently delete 😥 .This action cannot be undone.")}}
                                             </p>
                                         </div>
                                       
@@ -156,9 +157,9 @@ const messageDelete = ref('')
                                                 :loading="isLoadingdelete"
                                                 @click="() => (onClickDelete(), emits('onYes'))"
                                                 type="red"
-                                                :label="trans('Delete')"
+                                                :label="props.noLabel ?? trans('Delete')"
                                                 :disabled="isWithMessage ? !messageDelete : false"
-                                                icon="far fa-trash-alt"
+                                                :icon="props.noIcon ?? 'far fa-trash-alt'"
                                             />
         
                                             <!-- <button type="button"
@@ -168,7 +169,7 @@ const messageDelete = ref('')
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
                                                 :label="trans('cancel')"
-                                                
+                                                full
                                                 @click="() => (isOpenModal = false, emits('onNo'))"
                                             />
                                             <!-- <button type="button"

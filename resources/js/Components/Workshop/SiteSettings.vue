@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { ref, provide } from 'vue'
-import { set as setLodash, get, merge, cloneDeep, isObject } from 'lodash-es'
+import { ref } from 'vue'
+import { merge, cloneDeep, isObject } from 'lodash-es'
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
-import { getFormValue } from '@/Composables/SideEditorHelper'
 import { blueprint } from '@/Components/Workshop/BlueprintSiteSettings'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { Root as RootWebpage } from '@/types/webpageTypes'
-import { router } from '@inertiajs/vue3'
-import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
 
 const props = defineProps<{ webpage: RootWebpage }>();
 
@@ -119,7 +115,7 @@ const onSaveWorkshopFromId = () => {
     console.log('Final Data Web Block', props.webpage.layout.web_blocks);
 };
 
-provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
+/* provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 
 const debounceSaveWorkshop = () => {
     const data = cloneDeep(props.webpage.layout.web_blocks)
@@ -134,27 +130,12 @@ const debounceSaveWorkshop = () => {
         })
     }
     emits('onSaveSiteSettings', finalData)
-    /* router.patch(
-        route('grp.models.model_has_web_block.bulk.update'),
-        { web_blocks : finalData},
-        {
-            onSuccess: (e) => { },
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error.message,
-                    type: "error",
-                });
-            },
-            preserveScroll: true,
-        }
-    ); */
 }
 
 </script>
 
 <template>
-    <SideEditor v-model="value" :blueprint="blueprint" />
+    <SideEditor v-model="value" :blueprint="blueprint" @update:model-value="e=>{value = e, onSaveWorkshopFromId()}"/>
 </template>
 
 <style scoped></style>

@@ -8,29 +8,22 @@
 
 namespace App\Actions\Fulfilment\Pallet\Hydrators;
 
-use App\Actions\HydrateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\Pallet;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 
-class PalletHydrateStoredItems extends HydrateModel
+class PalletHydrateStoredItems implements ShouldBeUnique
 {
     use WithActionUpdate;
     use WithEnumStats;
 
-    private Pallet $pallet;
-
-    public function __construct(Pallet $pallet)
+    public function getJobUniqueId(Pallet $pallet): string
     {
-        $this->pallet = $pallet;
+        return $pallet->id;
     }
 
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->pallet->id))->dontRelease()];
-    }
 
     public function handle(Pallet $pallet): void
     {
@@ -40,7 +33,7 @@ class PalletHydrateStoredItems extends HydrateModel
             'with_stored_items'                       => $numberStoredItems > 0,
             'number_stored_items_state_in_process'    => $pallet->storedItems()
                 ->where('stored_items.state', StoredItemStateEnum::IN_PROCESS)->count(),
-            'number_stored_items_state_submitted'    => $pallet->storedItems()
+            'number_stored_items_state_submitted'     => $pallet->storedItems()
                 ->where('stored_items.state', StoredItemStateEnum::SUBMITTED)->count(),
             'number_stored_items_state_discontinuing' => $pallet->storedItems()
                 ->where('stored_items.state', StoredItemStateEnum::DISCONTINUING)->count(),

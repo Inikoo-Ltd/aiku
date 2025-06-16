@@ -214,7 +214,7 @@ const onClickDelete = () => {
 												<!-- Button disabled until the user types in the text area -->
 												<Button
 													full
-													type="tertiary"
+													type="negative"
 													:label="trans('I Have read and understand these effects')"
 													:disabled="!confirmationRead"
 													@click="onConfirm" />
@@ -240,7 +240,7 @@ const onClickDelete = () => {
 													:label="trans('Cancel')"
 													@click="closeModal" />
 												<Button
-													type="tertiary"
+													 type="delete"
 													:label="trans('Delete')"
 													:disabled="messageDelete !== (data?.reference || invoice?.reference)"
 													@click="onClickDelete" />

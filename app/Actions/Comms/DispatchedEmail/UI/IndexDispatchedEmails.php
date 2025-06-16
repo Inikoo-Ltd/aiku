@@ -12,7 +12,7 @@ use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\UI\Marketing\MarketingHub;
-use App\Http\Resources\Mail\DispatchedEmailResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
@@ -62,7 +62,8 @@ class IndexDispatchedEmails extends OrgAction
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':
-                $queryBuilder->where('dispatched_emails.mailshot_id', $parent->id);
+                $queryBuilder->where('dispatched_emails.parent_type', 'Mailshot');
+                $queryBuilder->where('dispatched_emails.parent_id', $parent->id);
                 break;
             case 'Organisation':
                 $queryBuilder->where('dispatched_emails.organisation_id', $parent->id);
@@ -73,19 +74,10 @@ class IndexDispatchedEmails extends OrgAction
             case 'Shop':
                 $queryBuilder->where('dispatched_emails.shop_id', $parent->id);
                 break;
+            default:
+                abort(404);
         }
 
-
-        //        if (is_array($this->elementGroups) || is_object($this->elementGroups) && !($parent instanceof Group)) {
-        //            foreach ($this->elementGroups as $key => $elementGroup) {
-        //                $queryBuilder->whereElementGroup(
-        //                    key: $key,
-        //                    allowedElements: array_keys($elementGroup['elements']),
-        //                    engine: $elementGroup['engine'],
-        //                    prefix: $prefix
-        //                );
-        //            }
-        //        }
 
         return $queryBuilder
             ->defaultSort('-sent_at')
@@ -149,9 +141,9 @@ class IndexDispatchedEmails extends OrgAction
                 ...array_merge(
                     ($this->parent instanceof Group)
                         ?
-                        ['data' => DispatchedEmailResource::collection($dispatched_emails)]
+                        ['data' => DispatchedEmailsResource::collection($dispatched_emails)]
                         :
-                        ['dispatched_emails' => DispatchedEmailResource::collection($dispatched_emails)]
+                        ['dispatched_emails' => DispatchedEmailsResource::collection($dispatched_emails)]
                 ),
             ]
         )->table($this->tableStructure($this->parent));
@@ -183,7 +175,7 @@ class IndexDispatchedEmails extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (array $routeParameters = []) use ($routeName) {
+        $headCrumb = function (array $routeParameters = []) {
             return [
                 [
                     'type'   => 'simple',

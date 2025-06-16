@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAdjustments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
@@ -20,7 +21,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSubDepartments;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollectionCategories;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCreditTransactions;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
@@ -57,7 +57,6 @@ class HydrateShops
 
     public function handle(Shop $shop): void
     {
-
         ShopHydratePaymentAccounts::run($shop);
         ShopHydratePayments::run($shop);
         ShopHydrateCustomers::run($shop);
@@ -70,7 +69,6 @@ class HydrateShops
         ShopHydrateInvoices::run($shop);
         ShopHydrateSales::run($shop);
         ShopHydrateProducts::run($shop);
-        ShopHydrateCollectionCategories::run($shop);
         ShopHydrateCollections::run($shop);
         ShopHydrateAssets::run($shop);
         ShopHydrateVariants::run($shop);
@@ -89,11 +87,9 @@ class HydrateShops
         ShopHydrateOrderIntervals::run($shop);
         ShopHydrateRegistrationIntervals::run($shop);
         ShopHydrateOrderIntervals::run($shop);
-
+        ShopHydrateMailshots::run($shop);
         ShopHydrateOrderInBasketAtCreatedIntervals::run($shop);
         ShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($shop);
-
-
     }
 
 }

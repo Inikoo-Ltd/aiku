@@ -10,13 +10,35 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraDepartment extends FetchAurora
 {
+    use WithAuroraImages;
+
     protected function parseModel(): void
     {
-        $this->parsedData['shop'] = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
+
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return;
+        }
+
+        $departmentsRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
+            ->select('Category Key', 'Category Code', 'Category Subject')
+            ->where('Category Branch Type', 'Root')
+            ->where('Category Scope', 'Product')
+            ->where('Category Code', 'like', 'Web.%')
+            ->where('Category Subject', 'Category')
+            ->get()->pluck('Category Key')->toArray();
+
+        if (in_array($this->auroraModelData->{'Category Root Key'}, $departmentsRootAuroraIDs)) {
+            return;
+        }
+
+
+        $this->parsedData['shop'] = $shop;
 
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Category Code'});
 
@@ -28,7 +50,6 @@ class FetchAuroraDepartment extends FetchAurora
             $code = Abbreviate::run($code, 32);
         }
 
-
         $this->parsedData['department'] = [
             'type'                 => ProductCategoryTypeEnum::DEPARTMENT,
             'code'                 => $code,
@@ -36,12 +57,25 @@ class FetchAuroraDepartment extends FetchAurora
             'source_department_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
             'fetched_at'           => now(),
             'last_fetched_at'      => now(),
+            'images'               => $this->parseImages(),
         ];
 
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Product Category Valid From'});
         if ($createdAt) {
             $this->parsedData['department']['created_at'] = $createdAt;
         }
+    }
+
+    private function parseImages(): array
+    {
+        $images = $this->getModelImagesCollection(
+            'Category',
+            $this->auroraModelData->{'Category Key'}
+        )->map(function ($auroraImage) {
+            return $this->fetchImage($auroraImage);
+        });
+
+        return $images->toArray();
     }
 
     protected function fetchData($id): object|null

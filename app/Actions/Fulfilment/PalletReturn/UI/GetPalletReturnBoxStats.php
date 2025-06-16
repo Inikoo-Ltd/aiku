@@ -9,11 +9,13 @@
 namespace App\Actions\Fulfilment\PalletReturn\UI;
 
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Fulfilment\FulfilmentCustomerResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPalletReturnBoxStats
@@ -32,6 +34,16 @@ class GetPalletReturnBoxStats
                 FulfilmentCustomerResource::make($palletReturn->fulfilmentCustomer)->getArray(),
                 GetPalletReturnAddressManagement::make()->boxStatsAddressData(palletReturn: $palletReturn, forRetina: $fromRetina)
             ),
+            'is_platform' => !blank($palletReturn->platform_id),
+            'platform' => $palletReturn->platform ? [
+                'id' => $palletReturn->platform->id,
+                'code' => $palletReturn->platform->code,
+                'slug' => $palletReturn->platform->slug,
+                'name' => $palletReturn->platform->name
+            ] : null,
+            'parcels'   => $palletReturn->parcels,
+            'shipments' => $palletReturn?->shipments ? ShipmentsResource::collection($palletReturn->shipments()->with('shipper')->get())->toArray(request()) : null,
+            'platform_customer' => Arr::get($palletReturn->data, 'destination'),
             'delivery_state'      => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value],
             'order_summary'       => [
                 [

@@ -43,6 +43,27 @@ function collectionRoute(collection: {}) {
             return route(
                 'grp.org.shops.show.catalogue.collections.show',
                 [collection.organisation_slug, collection.shop_slug, collection.slug])
+
+        case "grp.org.shops.show.catalogue.departments.show.collection.index":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show.collection.show",
+                [route().params["organisation"], route().params['shop'], route().params['department'], collection.slug])
+        case "grp.org.shops.show.catalogue.departments.show.families.show.collection.index":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show.families.show.collection.show",
+                [route().params["organisation"], route().params['shop'], route().params['department'], route().params['family'], collection.slug])
+        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show",
+                [route().params["organisation"], route().params['shop'], route().params['department'], route().params['subDepartment'], collection.slug])
+        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.show",
+                [route().params["organisation"], route().params['shop'], route().params['department'], route().params['subDepartment'], route().params['family'],  collection.slug])
+        case "grp.org.shops.show.catalogue.families.show.collection.index":
+            return route(
+                "grp.org.shops.show.catalogue.families.show.collection.show",
+                [route().params["organisation"], route().params['shop'], route().params['family'],  collection.slug])
     }
 }
 

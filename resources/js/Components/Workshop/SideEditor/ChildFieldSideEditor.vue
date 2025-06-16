@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
 import Accordion from 'primevue/accordion'
-import { ref, computed } from 'vue'
-import { getFormValue } from '@/Composables/SideEditorHelper'
+import { ref } from 'vue'
 
 import { routeType } from '@/types/route'
 const props = defineProps<{
-    blueprint: Array<{ key: string; label?: string; type?: string, replaceForm: Array<any> }>
+    blueprint: {
+        replaceForm : Array<any>
+    }
     uploadImageRoute?: routeType
 }>()
 
-
-
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: number): void
+}>()
 const modelValue = defineModel()
 const openPanel = ref(0)
 
@@ -26,6 +28,7 @@ const openPanel = ref(0)
                     :blueprint="form" 
                     :modelValue="modelValue"
                     :uploadImageRoute="uploadImageRoute" 
+                    @update:modelValue="e =>   emits('update:modelValue', e)"
                 />
             </template>
         </Accordion>
@@ -35,6 +38,7 @@ const openPanel = ref(0)
                 :blueprint="form" 
                 :modelValue="modelValue"
                 :uploadImageRoute="uploadImageRoute" 
+                @update:modelValue="e =>  emits('update:modelValue', e)"
             />
         </div>
     </div>

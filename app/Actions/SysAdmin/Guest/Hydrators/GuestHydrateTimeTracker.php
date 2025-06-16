@@ -12,24 +12,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\SysAdmin\Guest;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GuestHydrateTimeTracker
+class GuestHydrateTimeTracker implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Guest $guest;
-
-    public function __construct(Guest $guest)
+    public function getJobUniqueId(Guest $guest): string
     {
-        $this->guest = $guest;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->guest->id))->dontRelease()];
+        return $guest->id;
     }
 
     public function handle(Guest $guest): void

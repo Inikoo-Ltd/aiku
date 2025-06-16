@@ -11,7 +11,6 @@ namespace App\Actions\SysAdmin\Organisation;
 use App\Actions\HydrateModel;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateAdjustments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateAudits;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollectionCategories;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransactions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerBalances;
@@ -57,6 +56,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateServices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurges;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRedirects;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSpaces;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStoredItemAudits;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStoredItems;
@@ -69,6 +69,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouses;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebsites;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 
@@ -85,6 +86,7 @@ class HydrateOrganisations extends HydrateModel
 
     public function handle(Organisation $organisation): void
     {
+
         OrganisationHydrateAudits::run($organisation);
         OrganisationHydrateEmployees::run($organisation);
         OrganisationHydrateShops::run($organisation);
@@ -121,7 +123,6 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateDepartments::run($organisation);
             OrganisationHydrateSubDepartments::run($organisation);
             OrganisationHydrateFamilies::run($organisation);
-            OrganisationHydrateCollectionCategories::run($organisation);
             OrganisationHydrateCollections::run($organisation);
             OrganisationHydrateProductions::run($organisation);
             OrganisationHydrateWarehouses::run($organisation);
@@ -154,6 +155,15 @@ class HydrateOrganisations extends HydrateModel
 
             OrganisationHydrateOrderInBasketAtCreatedIntervals::run($organisation);
             OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::run($organisation);
+
+
+            foreach (ShopTypeEnum::cases() as $type) {
+                if ($type != ShopTypeEnum::FULFILMENT) {
+                    OrganisationHydrateShopTypeDeliveryNotes::run($organisation, $type);
+                }
+
+            }
+
 
         }
     }

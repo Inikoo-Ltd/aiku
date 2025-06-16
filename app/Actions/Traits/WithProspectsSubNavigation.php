@@ -72,18 +72,7 @@ trait WithProspectsSubNavigation
             ]
         ];
 
-        $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.prospects.tags.index',
-                'parameters' => $request->route()->originalParameters()
-            ],
-            'number'   => $parent->crmStats->number_tags,
-            'label'    => __('Tags'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-tags',
-                'tooltip' => __('tags')
-            ]
-        ];
+
 
         return $meta;
     }

@@ -8,40 +8,29 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Web\Webpage\UI\IndexChangesWebpages;
+use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
-use App\Models\Web\Banner;
 
+/**
+ * @property mixed $id
+ */
 class WebpageResource extends JsonResource
 {
     use HasSelfCall;
+    use WithGetWebpageWebBlocks;
 
     public function toArray($request): array
     {
         /** @var Webpage $webpage */
-        $webpage = $this;
+        $webpage = Webpage::find($this->id);
 
         $webPageLayout = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
-
-        $webBlocks = collect(Arr::get($webPageLayout, 'web_blocks'));
-        foreach ($webBlocks as $key => $webBlock) {
-            if (Arr::get($webBlock, 'type') === 'banner') {
-                $fieldValue = Arr::get($webBlock, 'web_block.layout.data.fieldValue', []);
-                $bannerId = Arr::get($fieldValue, 'banner_id');
-
-                if ($banner = Banner::find($bannerId)) {
-                    $fieldValue['compiled_layout'] = $banner->compiled_layout;
-                    data_set($webBlock, 'web_block.layout.data.fieldValue', $fieldValue);
-                }
-
-                $webBlocks[$key] = $webBlock;
-            }
-        }
-
-        $webPageLayout['web_blocks'] = $webBlocks->toArray();
+        $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
 
         return [
             'id'                  => $webpage->id,
@@ -58,6 +47,7 @@ class WebpageResource extends JsonResource
                 WebpageTypeEnum::BLOG       => ['fal', 'fa-newspaper'],
                 default                     => ['fal', 'fa-browser']
             },
+            'changes_webpage' =>  $this?->resource ? WebpagesResource::collection(IndexChangesWebpages::make()->handle($this->resource))->toArray(request()) : null,
             'is_dirty'                   => $webpage->is_dirty,
             'web_blocks_parameters'      => WebBlockParametersResource::collection($webpage->webBlocks),
             'layout'                     => $webPageLayout,
@@ -87,4 +77,5 @@ class WebpageResource extends JsonResource
             ],
         ];
     }
+
 }

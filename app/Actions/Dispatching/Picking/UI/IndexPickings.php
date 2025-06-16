@@ -186,12 +186,12 @@ class IndexPickings extends OrgAction
                     ]
                 )
             ),
-            'grp.org.shops.show.crm.customers.show.customer-clients.orders.index' =>
+            'grp.org.shops.show.crm.customers.show.customer_clients.orders.index' =>
             array_merge(
-                ShowCustomerClient::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show.customer-clients.show', $routeParameters),
+                ShowCustomerClient::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show.customer_clients.show', $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer-clients.orders.index',
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_clients.orders.index',
                         'parameters' => $routeParameters
                     ]
                 )

@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Models\Helpers\Media;
+use App\Actions\Helpers\Images\GetPictureSources;
 
 /**
  * @property string $slug
@@ -25,12 +27,24 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $department_code
  * @property mixed $department_name
  * @property int $number_current_products
- *
+ * @property-read \App\Models\Helpers\Media|null $image
  */
 class FamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
+
+        $imageSources = null;
+        $media        = Media::find($this->image_id);
+        if ($media) {
+            $width  = 720;
+            $height = 720;
+
+
+            $image        = $media->getImage()->resize($width, $height);
+            $imageSources = GetPictureSources::run($image);
+        }
+
         return [
             'id'                 => $this->id,
             'slug'               => $this->slug,
@@ -40,6 +54,10 @@ class FamiliesResource extends JsonResource
             'department_slug'    => $this->department_slug,
             'department_code'    => $this->department_code,
             'department_name'    => $this->department_name,
+            'sub_department_slug'    => $this->sub_department_slug,
+            'sub_department_code'    => $this->sub_department_code,
+            'sub_department_name'    => $this->sub_department_name,
+            'image'              =>  $imageSources ,
             'state'              => [
                 'tooltip' => $this->state->labels()[$this->state->value],
                 'icon'    => $this->state->stateIcon()[$this->state->value]['icon'],

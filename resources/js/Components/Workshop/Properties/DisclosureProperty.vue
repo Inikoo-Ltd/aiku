@@ -28,16 +28,21 @@ const blueprint = [
 ];
 
 
-const onSaveWorkshopFromId = (blockId: number, from?: string) => {
+const onSaveWorkshopFromId = () => {
     emit("update:modelValue", model.value);
 };
 
-provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
+/* provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 </script>
 
 <template>
     <div>
-        <SideEditor :blueprint="blueprint" v-model="model" :uploadImageRoute="uploadRoutes" />
+        <SideEditor 
+            :blueprint="blueprint" 
+            v-model="model" 
+            :uploadImageRoute="uploadRoutes" 
+            @update:modelValue="e => {model = e,onSaveWorkshopFromId()} "
+        />
     </div>
 </template>
 

@@ -9,7 +9,8 @@
 namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -24,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditWebsite extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     private Fulfilment|Shop $parent;
 
@@ -36,7 +37,6 @@ class EditWebsite extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $shop;
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
@@ -46,7 +46,6 @@ class EditWebsite extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $fulfilment;
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -59,12 +58,12 @@ class EditWebsite extends OrgAction
      */
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        if ($this->scope instanceof Fulfilment) {
+        if ($website->shop->type == ShopTypeEnum::FULFILMENT) {
             $args = [
                 'updateRoute' => [
                     'name'       => 'grp.models.fulfilment.website.update',
                     'parameters' => [
-                        $this->scope->id,
+                        $website->shop->fulfilment->id,
                         $website->id,
                     ]
                 ],
@@ -114,6 +113,31 @@ class EditWebsite extends OrgAction
                     'type'     => 'input',
                     'label'    => __('google tag id'),
                     'value'    => Arr::get($website->settings, "google_tag_id"),
+                    'placeholder' => 'GTM-ABC456GH',
+                    'required' => false,
+                ],
+                'luigisbox_private_key' => [
+                    'information' => __('Private key for API Luigi search'),
+                    'type'     => 'purePassword',
+                    'label'    => __('Luigi Search Private Key'),
+                    'value'    => Arr::get($website->settings, "luigisbox.private_key"),
+                    'placeholder' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    'required' => false,
+                ],
+                'luigisbox_tracker_id' => [
+                    'information' => __('For Luigi search in the header'),
+                    'type'     => 'input',
+                    'label'    => __('Luigi Search Tracker ID'),
+                    'value'    => Arr::get($website->settings, "luigisbox.tracker_id"),
+                    'placeholder' => '123456-123456',
+                    'required' => false,
+                ],
+                'luigisbox_script_lbx' => [
+                    'information' => __('Script for Luigi search in the header'),
+                    'type'     => 'input',
+                    'label'    => __('Script LBX Luigi Search'),
+                    'value'    => Arr::get($website->settings, "luigisbox.script_lbx"),
+                    'placeholder' => '<script async src="https://scripts.luigisbox.com/LBX-xxxxxx.js"></script>',
                     'required' => false,
                 ],
                 "image"         => [
@@ -126,9 +150,10 @@ class EditWebsite extends OrgAction
                     ]
                 ],
                 "favicon"       => [
+                    "information"   => __("Will show on browsers tab icon in size 18x18 pixels."),
                     "type"    => "image_crop_square",
                     "label"   => __("favicon"),
-                    "value"   => $website->imageSources(320, 320),
+                    "value"   => $website->faviconSources(160, 160),
                     'options' => [
                         'aspectRatio' => 1
                     ]
@@ -280,7 +305,32 @@ class EditWebsite extends OrgAction
                     ]
                 ]
             ];
+            $blueprints[] = [
+                'label'  => __('Return Policy'),
+                'icon'   => 'fa-light fa-exchange',
+                'fields' => [
+                    'return_policy' => [
+                        'type'     => 'editor',
+                        'label'    => __('Return Policy'),
+                        'value'    => Arr::get($website->settings, 'return_policy'),
+                        'required' => false,
+                    ],
+                ]
+            ];
         }
+
+        $blueprints[] = [
+               'label'  => __('Script'),
+               'icon'   => 'fa-light fa-code',
+               'fields' => [
+                   'script_website' => [
+                       'type'     => 'editor',
+                       'label'    => __('Script'),
+                       'value'    => Arr::get($website->settings, 'script_website.header'),
+                       'required' => false,
+                   ],
+               ]
+           ];
 
 
         return Inertia::render(

@@ -6,15 +6,16 @@ import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
 import { router } from '@inertiajs/vue3';
 import { notify } from '@kyvg/vue3-notification';
+import EmptyState from '../Utils/EmptyState.vue';
 
 
 const props = withDefaults(defineProps<{
     title: string,
     list_data: Array<any>,
     updateRoute: routeType,
-    disable?: boolean,
+    disabled?: boolean,
 }>(), {
-    disable: false,
+    disabled: false,
 })
 
 
@@ -46,7 +47,7 @@ const confirmHideAndShow = (event: MouseEvent, item: { id: number; name: string;
 
 const SaveShowAndHide = (item) => {
     router.patch(
-        route(props.updateRoute.name, { masterProductCategory: item.id }),
+        route(props.updateRoute.name, { ...props.updateRoute.parameters, masterProductCategory: item.id }),
         {
             show_in_website: !item.show_in_website
         },
@@ -79,12 +80,12 @@ const SaveShowAndHide = (item) => {
     <div>
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 ">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
-                <h3 class="text-xl font-semibold">Families List</h3>
+                <h3 class="text-xl font-semibold">{{ title }}</h3>
                 <!-- <Button label="Preview" :size="'xs'" :type="'tertiary'" :icon="faEye"
                 @click="isModalFamiliesPreview = true" /> -->
             </div>
 
-            <ul class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
+            <ul v-if="list_data?.length > 0" class="divide-y divide-gray-100 max-h-[calc(100vh-30vh)] min-h-12 overflow-auto">
                 <li v-for="(item, index) in list_data" :key="item.slug"
                     class="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded-lg transition">
                     <div class="flex items-center gap-4">
@@ -99,12 +100,14 @@ const SaveShowAndHide = (item) => {
                         </div>
                     </div>
 
-                    <div class="text-gray-500 hover:text-primary cursor-pointer transition" title="Toggle visibility"
-                        v-tooltip="'halooo'" @click="(e) => confirmHideAndShow(e, item)">
+                    <div v-if="!disabled" class="text-gray-500 hover:text-primary cursor-pointer transition" title="Toggle visibility"
+                        v-tooltip="'visibility'" @click="(e) => disabled ? null : confirmHideAndShow(e, item)">
                         <FontAwesomeIcon :icon="item.show_in_website ? faEye : faEyeSlash" />
                     </div>
                 </li>
             </ul>
+
+            <EmptyState v-else />
         </div>
     </div>
 

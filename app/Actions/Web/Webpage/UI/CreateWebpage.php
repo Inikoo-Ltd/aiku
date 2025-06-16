@@ -9,10 +9,9 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\HasWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
@@ -24,17 +23,19 @@ use Spatie\LaravelOptions\Options;
 
 class CreateWebpage extends OrgAction
 {
-    use HasWebAuthorisation;
+    use WithWebAuthorisation;
 
     protected Fulfilment|Website|Webpage $parent;
 
 
 
-    public function asController(Website $website, ActionRequest $request): Webpage
+    public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
-        $this->initialisation($website->organisation, $request);
+        $this->scope = $shop;
+        $this->parent = $website;
+        $this->initialisationFromShop($shop, $request);
 
-        return $website->storefront;
+        return $website;
     }
 
 
@@ -51,6 +52,18 @@ class CreateWebpage extends OrgAction
 
     public function htmlResponse(Webpage|Website $parent, ActionRequest $request): Response
     {
+        $route = [];
+        if ($this->scope instanceof Fulfilment) {
+            $route = [
+                'name'       => 'grp.models.fulfilment.webpage.store',
+                'parameters' => [$this->scope->id, $parent->id]
+            ];
+        } else {
+            $route = [
+                'name'       => 'grp.models.shop.webpage.store',
+                'parameters' => [$this->scope->id, $parent->id]
+            ];
+        }
         return Inertia::render(
             'CreateModel',
             [
@@ -138,11 +151,7 @@ class CreateWebpage extends OrgAction
                             ]
                         ]
                     ],
-                    'route'     => [
-                        'name'       => 'grp.models.fulfilment.webpage.store',
-                        'parameters' => [$this->fulfilment->id, $parent->id]
-                    ],
-
+                    'route'     => $route,
 
                 ],
 

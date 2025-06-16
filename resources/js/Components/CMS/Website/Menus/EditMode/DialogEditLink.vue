@@ -4,7 +4,7 @@ import PureInput from '@/Components/Pure/PureInput.vue';
 import { trans } from 'laravel-vue-i18n';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import RadioButton from "primevue/radiobutton"
-import { set } from "lodash"
+import { set } from 'lodash-es'
 import SelectQuery from "@/Components/SelectQuery.vue"
 
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -149,4 +149,7 @@ const selectQueryOnChange = (e) => {
     </div>
 
 </template>
-<style scss></style>
+<style scss scoped>
+
+
+</style>

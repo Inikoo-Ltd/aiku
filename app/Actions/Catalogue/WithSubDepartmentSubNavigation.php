@@ -19,7 +19,7 @@ trait WithSubDepartmentSubNavigation
                 'isAnchor'   => true,
                 'label'    => __('Sub-department'),
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show',
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                     'parameters' => [$this->organisation->slug, $subDepartment->shop->slug, $subDepartment->parent->slug, $subDepartment->slug]
                 ],
                 'leftIcon' => [
@@ -31,7 +31,7 @@ trait WithSubDepartmentSubNavigation
                 'label'    => __('Families'),
                 'number'   => $subDepartment->stats->number_families,
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub-departments.show.family.index',
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
                     'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
                 ],
                 'leftIcon' => [
@@ -39,6 +39,18 @@ trait WithSubDepartmentSubNavigation
                     'tooltip' => __('families')
                 ]
             ],
+             [
+                 'label'    => __('Collections'),
+                 'number'   => $subDepartment->stats->number_collections,
+                 'route'     => [
+                     'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+                     'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
+                 ],
+                 'leftIcon' => [
+                     'icon'    => ['fal', 'fa-album-collection'],
+                     'tooltip' => __('collections')
+                 ]
+             ],
         ];
     }
 

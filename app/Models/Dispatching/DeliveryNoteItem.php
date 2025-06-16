@@ -17,7 +17,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * App\Models\Dispatching\DeliveryNoteItem
@@ -68,12 +68,19 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int|null $customer_id
  * @property int|null $order_id
  * @property int|null $invoice_id
+ * @property int $estimated_required_weight grams
+ * @property int $estimated_picked_weight grams
+ * @property string $quantity_not_picked
+ * @property bool $is_handled
+ * @property bool|null $need_packing
+ * @property bool|null $is_packed
+ * @property bool $is_done
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Dispatching\Packing|null $packings
- * @property-read \App\Models\Dispatching\Picking|null $pickings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Packing> $packings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Transaction|null $transaction
  * @method static Builder<static>|DeliveryNoteItem newModelQuery()
@@ -115,14 +122,14 @@ class DeliveryNoteItem extends Model
 
     protected $guarded = [];
 
-    public function pickings(): HasOne
+    public function pickings(): HasMany
     {
-        return $this->hasOne(Picking::class);
+        return $this->hasMany(Picking::class);
     }
 
-    public function packings(): HasOne
+    public function packings(): HasMany
     {
-        return $this->hasOne(Packing::class);
+        return $this->hasMany(Packing::class);
     }
 
     public function deliveryNote(): BelongsTo

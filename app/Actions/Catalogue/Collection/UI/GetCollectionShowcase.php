@@ -8,6 +8,9 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
+use App\Http\Resources\Api\Dropshipping\ShopResource;
+use App\Http\Resources\Catalogue\DepartmentResource;
+use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -17,10 +20,18 @@ class GetCollectionShowcase
 
     public function handle(Collection $collection): array
     {
-        // dd($collection);
+
+
+
+
         return [
-            'description' => $collection->description,
-            'stats'       => [
+
+            'image'                 => $collection->imageSources(720, 480),
+            'description'           => $collection->description,
+            'name'                  => $collection->name,
+            'id'                    => $collection->id,
+            'slug'                  => $collection->slug,
+            'stats'                 => [
                 [
                     'label' => __('Department'),
                     'icon'  => 'fal fa-folder-tree',
@@ -56,6 +67,40 @@ class GetCollectionShowcase
                         'value' => '+4',
                         'label' => __('from last month'),
                     ]
+                ],
+            ],
+            'parent_departments'    => DepartmentResource::collection($collection->departments)->toArray(request()),
+            'parent_subdepartments' => SubDepartmentResource::collection($collection->subDepartments)->toArray(request()),
+            'shop'                  => ShopResource::make($collection->shop)->toArray(request()),
+
+            'routes' => [
+                'departments_route'     => [
+                    'name'       => 'grp.json.shop.catalogue.departments',
+                    'parameters' => [
+                        'shop'  => $collection->shop->slug,
+                        'scope' => $collection->slug,
+                    ],
+                ],
+                'sub_departments_route' => [
+                    'name'       => 'grp.json.shop.catalogue.sub-departments',
+                    'parameters' => [
+                        'shop'  => $collection->shop->slug,
+                        'scope' => $collection->slug,
+                    ],
+                ],
+                'attach_parent'         => [
+                    'name'       => 'grp.models.product_category.collection.attach_parents',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
+                    'method'     => 'post'
+                ],
+                'detach_parent'         => [
+                    'name'       => 'grp.models.product_category.collection.detach',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
+                    'method'     => 'delete'
                 ],
             ],
         ];

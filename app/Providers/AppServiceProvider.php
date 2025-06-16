@@ -33,11 +33,15 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(TelescopeServiceProvider::class);
         }
 
-        $this->app->singleton(BasicShopifyAPI::class, function () {
-            $opts    = app(Options::class);
+        $this->app->singleton('shopify.api', function () {
+            $opts = new Options();
+            $opts->setGuzzleOptions(['timeout' => 90.0]);
+
             $tsClass = config('shopify-app.api_time_store');
             $lsClass = config('shopify-app.api_limit_store');
             $sdClass = config('shopify-app.api_deferrer');
+
+            $opts->setGuzzleOptions(['timeout' => 90.0]);
 
             return new BasicShopifyAPI(
                 $opts,
@@ -70,6 +74,9 @@ class AppServiceProvider extends ServiceProvider
                 'PaymentAccount'                => 'App\Models\Accounting\PaymentAccount',
                 'PaymentAccountShop'            => 'App\Models\Accounting\PaymentAccountShop',
                 'PaymentServiceProvider'        => 'App\Models\Accounting\PaymentServiceProvider',
+                'TopUpPaymentApiPoint'          => 'App\Models\Accounting\TopUpPaymentApiPoint',
+                'MiscPaymentApiPoint'           => 'App\Models\Accounting\MiscPaymentApiPoint',
+                'OrderPaymentApiPoint'          => 'App\Models\Accounting\OrderPaymentApiPoint',
 
                 // Assets
                 'Country'                       => 'App\Models\Helpers\Country',
@@ -108,6 +115,8 @@ class AppServiceProvider extends ServiceProvider
                 'Portfolio'                     => 'App\Models\Dropshipping\Portfolio',
                 'ShopifyUser'                   => 'App\Models\Dropshipping\ShopifyUser',
                 'TiktokUser'                    => 'App\Models\Dropshipping\TiktokUser',
+                'WooCommerceUser'               => 'App\Models\Dropshipping\WooCommerceUser',
+                'EbayUser'               => 'App\Models\Dropshipping\EbayUser',
 
                 // Fulfilment
                 'FulfilmentCustomer'            => 'App\Models\Fulfilment\FulfilmentCustomer',

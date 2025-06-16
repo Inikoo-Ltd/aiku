@@ -16,8 +16,6 @@ use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\WarehouseResource;
-use App\Http\Resources\Tag\TagResource;
-use App\Models\Helpers\Tag;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -94,7 +92,6 @@ class ShowWarehouse extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => WarehouseTabsEnum::navigation(),
                 ],
-                'tagsList' => TagResource::collection(Tag::all()),
 
                 WarehouseTabsEnum::SHOWCASE->value => $this->tab == WarehouseTabsEnum::SHOWCASE->value ?
                     fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)

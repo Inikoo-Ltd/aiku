@@ -188,7 +188,22 @@ class EditShop extends OrgAction
                                     'value' => Arr::get($shop->settings, 'registration.require_approval', false),
                                 ],
                             ],
-
+                        ],
+                        [
+                            'label'  => __('Account Treblle'),
+                            'icon'   => 'fal fa-code',
+                            'fields' => [
+                                'treblle_api_key' => [
+                                    'type'  => 'purePassword',
+                                    'label' => __('API Key'),
+                                    'value' => Arr::get($shop->settings, 'treblle.api_key', ''),
+                                ],
+                                'treblle_project_id' => [
+                                    'type'  => 'input',
+                                    'label' => __('Project ID'),
+                                    'value' => Arr::get($shop->settings, 'treblle.project_id', ''),
+                                ],
+                            ],
                         ],
                     ],
                     'args'      => [

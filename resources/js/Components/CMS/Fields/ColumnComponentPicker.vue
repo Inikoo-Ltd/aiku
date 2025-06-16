@@ -3,9 +3,7 @@ import { ref, onMounted, provide } from 'vue'
 import { trans } from "laravel-vue-i18n"
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import Modal from "@/Components/Utils/Modal.vue"
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
-import { router } from '@inertiajs/vue3'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import Image from '@/Components/Image.vue'
 import axios from 'axios'
@@ -27,7 +25,8 @@ const onPickBlock = (block: any) => {
 const getWebBlockTypes = async () => {
 	try {
 		const { data } = await axios.get(route('grp.json.web-block-types.index'))
-		webBlockTypes.value = data
+		const setdata = data.data.filter((item)=>item.scope == 'webpage')
+		webBlockTypes.value = {data :setdata }
 	} catch (error) {
 		notify({
 			title: trans("Something went wrong"),
@@ -38,11 +37,11 @@ const getWebBlockTypes = async () => {
 }
 
 
-const onSaveWorkshopFromId = (blockId: number, from?: string) => {
+/* const onSaveWorkshopFromId = (blockId: number, from?: string) => {
   emit("update:modelValue", model.value);
 };
 
-provide("onSaveWorkshopFromId", onSaveWorkshopFromId);
+provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 
 
 onMounted(() => {
@@ -70,22 +69,19 @@ onMounted(() => {
 	</div>
 
 
-	<div v-if="model" class="w-full mt-2">
+	<div v-if="model?.data?.fieldValue" class="w-full mt-2">
 		<SideEditor 
 			v-model="model.data.fieldValue" 
 			:blueprint="getBlueprint(model.code)" 
-			@update:modelValue="(e) =>{emit('update:modelValue', e)}"
+			@update:modelValue="(e) =>{model.data.fieldValue = e , emit('update:modelValue', model)}"
 			:uploadImageRoute="uploadRoutes" 
 		/>
 	</div>
 		
 	<Modal :isOpen="modelModalBlocklist" @onClose="modelModalBlocklist = false">
-		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="webpage" />
+		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes"   />
 	</Modal>
 </template>
 
 <style scoped>
-.aspect-w-4 {
-	aspect-ratio: 4 / 3;
-}
 </style>

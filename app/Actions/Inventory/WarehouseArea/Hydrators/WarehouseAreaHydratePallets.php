@@ -14,23 +14,17 @@ use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\WarehouseArea;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WarehouseAreaHydratePallets
+class WarehouseAreaHydratePallets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private WarehouseArea $warehouseArea;
-    public function __construct(WarehouseArea $warehouseArea)
+    public function getJobUniqueId(WarehouseArea $warehouseArea): string
     {
-        $this->warehouseArea = $warehouseArea;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->warehouseArea->id))->dontRelease()];
+        return $warehouseArea->id;
     }
 
     public function handle(WarehouseArea $warehouseArea): void

@@ -1,9 +1,14 @@
-<script>
+<script setup lang="ts">
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+
+import { faArrowRight } from "@far"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faArrowRight)
 
 </script>
 
 <template>
-    <div class="relative isolate overflow-hidden bg-white">
+    <div class="relative isolate overflow-hidden">
         <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
             aria-hidden="true">
             <defs>
@@ -17,13 +22,13 @@
         
         <div class="mx-auto max-w-7xl px-6 pb-12 pt-10 lg:flex lg:px-14 ">
             <div class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
-                <div class="">
+                <!-- <div class="">
                     <a href="#" class="inline-flex space-x-6">
                         <span class="rounded-full bg-indigo-600/10 px-3 py-1 text-sm/6 font-semibold text-indigo-600 ring-1 ring-inset ring-indigo-600/10">
                             What's new?
                         </span>
                     </a>
-                </div>
+                </div> -->
 
                 <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
                     Manage your orders and products
@@ -32,12 +37,13 @@
                     Control your orders and products with our easy-to-use dashboard. You can manage your orders, products, and customers all in one place.
                 </p>
                 <div class="mt-10 flex items-center gap-x-6">
-                    <a href="#" class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                        Get started
-                    </a>
-                    <!-- <a href="#" class="text-sm/6 font-semibold">
-                        Learn more <span aria-hidden="true">→</span>
-                    </a> -->
+                    <ButtonWithLink
+                        :routeTarget="{
+                            name: 'retina.dropshipping.customer_sales_channels.create'
+                        }"
+                        label="Get started"
+                        iconRight="far fa-arrow-right"
+                    />
                 </div>
             </div>
             

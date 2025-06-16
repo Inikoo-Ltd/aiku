@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customers_who_un_reminded
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_parent_webpages
  * @property-read \App\Models\Catalogue\Product $product
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductStats newQuery()

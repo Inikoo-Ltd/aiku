@@ -29,7 +29,6 @@ class LocationsResource extends JsonResource
             'code'                   => $location->code,
             'stock_value'            => $location->stock_value ?? 0,
             'stock_commercial_value' => $location->stock_commercial_value,
-            'tags'                   => $location->tags()->pluck('slug')->toArray(),
             'allow_stocks'           => $location->allow_stocks,
             'allow_fulfilment'       => $location->allow_fulfilment,
             'allow_dropshipping'     => $location->allow_dropshipping,
