@@ -156,7 +156,7 @@ class RegisterRetinaWithGoogleCustomer extends IrisAction
     public function asController(ActionRequest $request): RedirectResponse
     {
         $this->initialisation($request);
-        $this->handle(request()->user(), $this->validatedData);
+        $this->handle($this->validatedData);
         return redirect()->route('retina.dashboard.show');
     }
 }
