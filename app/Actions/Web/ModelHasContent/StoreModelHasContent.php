@@ -12,6 +12,7 @@ namespace App\Actions\Web\ModelHasContent;
 use App\Actions\OrgAction;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Web\ModelHasContent\ModelHasContentTypeEnum;
+use App\Http\Resources\Web\ModelHasContentsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\ModelHasContent;
@@ -42,7 +43,7 @@ class StoreModelHasContent extends OrgAction
                     $positions[$content->id] = ['position' => $content->position];
                 }
             }
-            
+
             ReorderModelHasContent::make()->action($parent, ['positions' => $positions]);
         }
         
@@ -77,5 +78,10 @@ class StoreModelHasContent extends OrgAction
     {
         $this->initialisationFromShop($productCategory->shop, $request);
         $this->handle($productCategory, $this->validatedData);
+    }
+
+    public function jsonResponse(ModelHasContent $content)
+    {
+        return ModelHasContentsResource::make($content);
     }
 }
