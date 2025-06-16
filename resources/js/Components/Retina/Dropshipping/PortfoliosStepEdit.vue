@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from '@/Components/Image.vue'
+import { useTruncate } from '@/Composables/useTruncate'
 library.add(faSearch)
 
 const props = defineProps<{
@@ -38,6 +39,7 @@ const isIncludeVat = ref(false)
     <DataTable :value="portfolios" tableStyle="min-width: 50rem"
         :globalFilterFields="['code', 'name', 'category', 'price', 'description']"
         v-model:filters="valueTableFilter"
+        removableSort
     >
         <template #header>
             <div class="flex justify-between items-center">
@@ -57,7 +59,7 @@ const isIncludeVat = ref(false)
             </div>
         </template>
 
-        <Column field="code" header="Image" style="max-width: 90px;">
+        <Column field="image" header="Image" style="max-width: 90px;">
             <template #body="{ data }">
                 <div class="w-20 h-20">
                     <Image :src="data.image" imageCover :alt="data.code" />
@@ -65,7 +67,7 @@ const isIncludeVat = ref(false)
             </template>
         </Column>
 
-        <Column field="code" header="Code" style="max-width: 90px;">
+        <Column field="code" header="Code" style="max-width: 90px;" sortable>
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="truncate relative pr-2">
                     {{ data.code }}
@@ -73,11 +75,15 @@ const isIncludeVat = ref(false)
             </template>
         </Column>
 
-        <Column field="category" header="Category" style="max-width: 200px;">
-
+        <Column field="category" header="Category" style="max-width: 100px;">
+            <template #body="{ data }">
+                <div v-tooltip="data.category" class="relative pr-2">
+                    {{ useTruncate(data.category, 15) }}
+                </div>
+            </template>
         </Column>
 
-        <Column field="name" header="Name">
+        <Column field="name" header="Name" sortable removeableSort>
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <textarea
@@ -92,7 +98,7 @@ const isIncludeVat = ref(false)
             </template>
         </Column>
 
-        <Column field="quantity_left" header="Stock" style="max-width: 200px;">
+        <Column field="quantity_left" header="Stock" style="max-width: 200px;" sortable>
             <template #body="{ data }">
                 <div class="">
                     {{ locale.number(data.quantity_left) }}
