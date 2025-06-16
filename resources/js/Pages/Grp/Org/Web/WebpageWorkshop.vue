@@ -495,7 +495,7 @@ watch(filterBlock, (newValue) => {
 const SyncAurora = () => {
 	router.patch(
 		route(props.webpage.route_webpage_edit.name,props.webpage.route_webpage_edit.parameters),
-		{ allow_fetch: props.webpage.allow_fetching },
+		{ allow_fetch: props.webpage.allow_fetch },
 		{
 			onStart: () => {
 				console.log('========== start save ')
@@ -587,7 +587,7 @@ console.log('webpage workshop props :',props)
 				<div class="flex items-center px-3">
 					<div class="flex items-center gap-2 px-3 text-sm text-gray-700">
 						<label for="sync-toggle">Sync with aurora</label>
-						<ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetching" @update:modelValue="(e)=>SyncAurora(e)" />
+						<ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch" @update:modelValue="(e)=>SyncAurora(e)" />
 					</div>
 
 				</div>
