@@ -304,7 +304,7 @@ const onSubmitSubscribe = async () => {
         </div>
 
         <!-- Subscribe down -->
-        <div v-if="modelValue?.subscribe?.is_show"
+        <div v-if="modelValue?.subscribe?.is_show && !layout.iris?.is_logged_in"
             class="mt-16 border-t border-white/10 px-8 md:px-0 pt-8 md:mt-8 flex flex-col md:flex-row items-center md:justify-between">
             <div class="w-fit text-center md:text-left ">
                 <h3 class="text-sm/6 font-semibold text-white" v-html="modelValue.subscribe?.headline ?? 'Subscribe to our newsletter'"></h3>
