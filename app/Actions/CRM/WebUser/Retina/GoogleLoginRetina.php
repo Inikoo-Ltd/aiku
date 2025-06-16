@@ -35,11 +35,9 @@ class GoogleLoginRetina extends RetinaAction
 
     protected Shop $shop;
 
-    public function handle(Shop $shop)
+    public function handle(Shop $shop): void
     {
-        if ($shop->type == ShopTypeEnum::FULFILMENT) {
-            abort(404);
-        }
+
 
         $googleUser = $this->google_user ?? [];
 
@@ -131,10 +129,10 @@ class GoogleLoginRetina extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function asController(Shop $shop, ActionRequest $request)
+    public function asController(Shop $shop, ActionRequest $request): RedirectResponse
     {
         $this->registerDropshippingInitialisation($shop, $request);
-        $this->handle($shop, $this->validatedData);
+        $this->handle($shop);
         return $this->postProcessRetinaLoginGoogle($request);
     }
 }

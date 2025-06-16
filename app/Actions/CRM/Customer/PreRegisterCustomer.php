@@ -60,11 +60,6 @@ class PreRegisterCustomer extends OrgAction
             'is_root'      => true,
         ]));
 
-        // SendCustomerWelcomeEmail::run($customer);
-
-        // SendNewCustomerNotification::run($customer);
-
-        // ShopHydrateCrmStats::run($shop);
 
 
         auth('retina')->login($webUser);
