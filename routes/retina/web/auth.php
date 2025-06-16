@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\CRM\Customer\PreRegisterCustomer;
 use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
 use App\Actions\CRM\WebUser\Retina\LogoutRetina;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
@@ -32,7 +33,7 @@ Route::middleware('guest:retina')->group(function () {
 
     Route::post('{shop:id}/register-pre-customer', PreRegisterRetinaCustomer::class)->name('register_pre_customer.store');
     Route::post('{shop:id}/login-google', GoogleLoginRetina::class)->name('login_google');
-    Route::post('{shop:id}/register-google', PreRegisterRetinaCustomer::class)->name('register_pre_customer_google.store');
+    Route::post('{shop:id}/register-google', PreRegisterCustomer::class)->name('register_pre_customer_google.store');
 
 
     Route::get('register', ShowRetinaRegister::class)->name('register');
