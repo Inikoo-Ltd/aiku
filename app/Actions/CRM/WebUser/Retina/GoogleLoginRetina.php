@@ -10,10 +10,8 @@
 
 namespace App\Actions\CRM\WebUser\Retina;
 
-use App\Actions\CRM\Customer\PreRegisterCustomer;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
-use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\IrisAction;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use Google_Client;
@@ -25,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GoogleLoginRetina extends RetinaAction
+class GoogleLoginRetina extends IrisAction
 {
     /**
      * @throws \Throwable
@@ -35,7 +33,7 @@ class GoogleLoginRetina extends RetinaAction
 
     protected Shop $shop;
 
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop): array|WebUser
     {
 
 
@@ -46,24 +44,20 @@ class GoogleLoginRetina extends RetinaAction
             ->first();
 
         if (!$webUser) {
-            PreRegisterCustomer::run($shop, [
-                'google_user' => $googleUser,
-            ]);
-            return;
+            return $googleUser;
         }
 
         $webUser->update([
             'google_id' => Arr::get($googleUser, 'id'),
-            'email' => Arr::get($googleUser, 'email'),
-            'contact_name' => Arr::get($googleUser, 'name'),
         ]);
-        $webUser->refresh();
 
         auth('retina')->login($webUser);
+        return $webUser;
     }
 
     public function postProcessRetinaLoginGoogle($request): RedirectResponse
     {
+        /** @var WebUser $webUser */
         $webUser = auth('retina')->user();
 
         LogWebUserLogin::dispatch(
@@ -114,7 +108,7 @@ class GoogleLoginRetina extends RetinaAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        $googleCredential = $request->input('google_credential', null);
+        $googleCredential = $request->input('google_credential');
         if ($googleCredential) {
             try {
                 $googleUser = $this->verifyGoogleCredential($googleCredential);
@@ -129,10 +123,14 @@ class GoogleLoginRetina extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function asController(Shop $shop, ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): RedirectResponse|array
     {
-        $this->registerDropshippingInitialisation($shop, $request);
-        $this->handle($shop);
+        $this->initialisation($request);
+        $result = $this->handle($this->shop);
+        if (is_array($result)) {
+            return $result;
+        }
+
         return $this->postProcessRetinaLoginGoogle($request);
     }
 }
