@@ -9,14 +9,13 @@
 namespace App\Actions\Traits\UI;
 
 use App\Actions\Helpers\Media\SaveModelLogo;
-use App\Models\Helpers\Brand;
 use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 
 trait WithLogo
 {
-    public function processWebsiteLogo(array $modelData, Website|Brand $model): Website|Brand
+    public function processWebsiteLogo(array $modelData, Website $model): Website
     {
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */

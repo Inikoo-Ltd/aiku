@@ -10,11 +10,14 @@
 
 namespace App\Actions\Helpers\Tag;
 
+use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTag extends OrgAction
@@ -34,6 +37,20 @@ class StoreTag extends OrgAction
 
         $tag = Tag::create($modelData);
 
+        $image = Arr::pull($modelData, 'image', null);
+        if ($image) {
+            $imageData = [
+                'path'         => $image->getPathName(),
+                'originalName' => $image->getClientOriginalName(),
+                'extension'    => $image->getClientOriginalExtension(),
+            ];
+            $tag     = SaveModelImage::run(
+                model: $tag,
+                imageData: $imageData,
+                scope: 'image',
+            );
+        }
+
         AttachTagsToModel::make()->handle(
             $parent,
             [
@@ -48,6 +65,12 @@ class StoreTag extends OrgAction
     {
         return [
             'name' => ['required', 'string', 'max:255', 'unique:tags,name'],
+            'image'                    => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
         ];
     }
 
