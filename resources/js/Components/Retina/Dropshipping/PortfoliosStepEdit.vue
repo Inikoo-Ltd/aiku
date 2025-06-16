@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
-import { get, set } from 'lodash-es'
+import { debounce, get, set } from 'lodash-es'
 import { Checkbox, Column, ColumnGroup, DataTable, IconField, InputIcon, InputNumber, InputText, RadioButton, Row } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
 
+import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
+import { EditorContent } from '@tiptap/vue-3'
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch } from "@fal"
+import { faSearch, faText } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from '@/Components/Image.vue'
 import { useTruncate } from '@/Composables/useTruncate'
-library.add(faSearch)
+import Modal from '@/Components/Utils/Modal.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+library.add(faSearch, faText)
 
 const props = defineProps<{
     portfolios: {}[]
@@ -33,6 +38,13 @@ onMounted(() => {
 const valueTableFilter = ref({})
 
 const isIncludeVat = ref(false)
+
+const isModalDescription = ref(false)
+const selectedDataToEditDescription = ref({})
+
+const debounceUpdateDescription = debounce((description: string) => {
+    emits('updateSelectedProducts', selectedDataToEditDescription.value, {customer_description: selectedDataToEditDescription.value.description}, 'customer_description')
+}, 1000)
 </script>
 
 <template>
@@ -240,10 +252,14 @@ const isIncludeVat = ref(false)
 
         <Column field="description" header="Description">
             <template #body="{ data }">
-                <FontAwesomeIcon
+                <!-- <FontAwesomeIcon
+                    @click="() => {
+                        isModalDescription = true
+                        selectedDataToEditDescription = data
+                    }"
                     class="text-blue-500"
                     icon="fal fa-bars"
-                    aria-hidden="true" />
+                    aria-hidden="true" /> -->
 <!--                <div class="whitespace-nowrap relative pr-2">
                     <textarea
                         v-model="data.description"
@@ -254,7 +270,58 @@ const isIncludeVat = ref(false)
                     </textarea>
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], undefined)" />
                 </div>-->
+                <Button
+                    type="tertiary"
+                    icon="fal fa-text"
+                    size="xs"
+                    label="Edit description"
+                    @click="() => {
+                        isModalDescription = true
+                        selectedDataToEditDescription = data
+                    }"
+                />
             </template>
         </Column>
     </DataTable>
+
+    <Modal :isOpen="isModalDescription" aonClose="isModalDescription = false" width="w-full max-w-3xl max-h-[85vh]">
+        <div>
+            <div class=" text-lg text-center mb-4">
+                Edit Description for <span class="font-semibold">{{ selectedDataToEditDescription.code }}</span>
+            </div>
+
+            <div class="relative">
+                <Editor
+                    v-model="selectedDataToEditDescription.description"
+                    @update:modelValue="() => debounceUpdateDescription(selectedDataToEditDescription.description)"
+                    :toogle="[
+                        'heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'fontFamily',
+                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', 
+                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    ]"
+                >
+                    <template #editor-content="{ editor }">
+                        <div class="border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-gray-400"
+                            :class="get(listState, [selectedDataToEditDescription?.id, 'customer_description'], undefined) === 'error' ? 'errorShake' : ''"
+                        >
+                            <EditorContent :editor="editor" class="h-80 overflow-y-auto focus:outline-none" />
+                        </div>
+                    </template>
+                </Editor>
+
+                <ConditionIcon class="absolute right-3 bottom-1" :state="get(listState, [selectedDataToEditDescription.id, 'customer_description'], undefined)" />
+            </div>
+
+
+            <div class="mt-4">
+                <Button
+                    @click="() => isModalDescription = false"
+                    type="tertiary"
+                    label="Done"
+                    full
+                />
+            </div>
+        </div>
+    </Modal>
+
 </template>

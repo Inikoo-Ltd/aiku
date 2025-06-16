@@ -575,7 +575,7 @@ const convertRemToPx = (remString) => {
 
                                 <!-- Dropdown -->
                                 <div
-                                    class="w-min h-32 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
+                                    class="w-min h-48 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
                                     <div v-for="fontsize in ['8', '9', '12', '14', '16', '18', '20', '24', '28', '36', '44', '52', '64']"
                                         :key="fontsize"
                                         class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center"
