@@ -8,24 +8,24 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/vue"
 import { inject, ref, computed, watch } from "vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit } from "@fal"
+import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { useLocaleStore } from "@/Stores/locale"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
-import { Fieldset } from "primevue"
+import { Fieldset, Select } from "primevue"
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faPlay, faPlus)
+library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
 
 const props = defineProps<{
 	taxonomy: any
@@ -170,6 +170,10 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 	)
 }
 
+const selectedTradeUnit = ref(props.data.trade_units.length > 0 ? props.data.trade_units[0].tradeUnit.code : null)
+const compSelectedTradeUnit = computed(() => {
+	return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
+})
 </script>
 
 <template>
@@ -250,23 +254,40 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 				xtoggleable
 				xcollapsed
 			>
+				<template #legend>
+					<div class="flex items-center gap-2 font-bold">
+						<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400 text-lg" fixed-width aria-hidden="true" />
+						Trade units
+					</div>
+				</template>
+
 				<template #default>
 					<div class="px-4">
-						<div v-for="tradeUnit in props.data.trade_units" class="">
-							<div>
-								<!-- <pre>{{ tradeUnit.tradeUnit }}</pre> -->
-								<h2 class="text-lg font-semibold mb-2">
-									{{ tradeUnit.tradeUnit.name }}
-									<span class="font-normal text-gray-500">({{ tradeUnit.tradeUnit.code }})</span>
-								</h2>
-							</div>
-			
+						<div class="flex items-center gap-x-2 mb-4">
+							<Select
+								v-model="selectedTradeUnit"
+								:options="props.data.trade_units"
+								optionLabel="tradeUnit.name"
+								optionValue="tradeUnit.code"
+								placeholder="Select a City"
+								class="w-full md:w-80"
+							/>
+							<Link
+								:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
+								v-tooltip="trans('Open trade unit')"
+								class="text-gray-400 hover:text-gray-600 cursor-pointer"
+							>
+								<FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />
+							</Link>
+						</div>
+
+						<div v-if="compSelectedTradeUnit" class="">
 							<EditTradeUnit
-								:tags_selected_id="tradeUnit.tags_selected_id"
-								:brand="tradeUnit.brand"
-								:brand_routes="tradeUnit.brand_routes"
-								:tags="tradeUnit.tags"
-								:tag_routes="tradeUnit.tag_routes"
+								:tags_selected_id="compSelectedTradeUnit.tags_selected_id"
+								:brand="compSelectedTradeUnit.brand"
+								:brand_routes="compSelectedTradeUnit.brand_routes"
+								:tags="compSelectedTradeUnit.tags"
+								:tag_routes="compSelectedTradeUnit.tag_routes"
 							/>
 						</div>
 					</div>
