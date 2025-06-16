@@ -2,13 +2,14 @@
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import { get, set } from 'lodash-es'
-import { Column, DataTable, IconField, InputIcon, InputNumber, InputText, RadioButton } from 'primevue'
+import { Checkbox, Column, ColumnGroup, DataTable, IconField, InputIcon, InputNumber, InputText, RadioButton, Row } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from '@/Components/Image.vue'
+import { useTruncate } from '@/Composables/useTruncate'
 library.add(faSearch)
 
 const props = defineProps<{
@@ -30,12 +31,15 @@ onMounted(() => {
 
 
 const valueTableFilter = ref({})
+
+const isIncludeVat = ref(false)
 </script>
 
 <template>
     <DataTable :value="portfolios" tableStyle="min-width: 50rem"
         :globalFilterFields="['code', 'name', 'category', 'price', 'description']"
         v-model:filters="valueTableFilter"
+        removableSort
     >
         <template #header>
             <div class="flex justify-between items-center">
@@ -55,7 +59,7 @@ const valueTableFilter = ref({})
             </div>
         </template>
 
-        <Column field="code" header="" style="max-width: 90px;">
+        <Column field="image" header="Image" style="max-width: 90px;">
             <template #body="{ data }">
                 <div class="w-20 h-20">
                     <Image :src="data.image" imageCover :alt="data.code" />
@@ -63,7 +67,7 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="code" header="Code" style="max-width: 90px;">
+        <Column field="code" header="Code" style="max-width: 90px;" sortable>
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="truncate relative pr-2">
                     {{ data.code }}
@@ -71,11 +75,15 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="category" header="Category" style="max-width: 200px;">
-
+        <Column field="category" header="Category" style="max-width: 100px;">
+            <template #body="{ data }">
+                <div v-tooltip="data.category" class="relative pr-2">
+                    {{ useTruncate(data.category, 15) }}
+                </div>
+            </template>
         </Column>
 
-        <Column field="name" header="Name">
+        <Column field="name" header="Name" sortable removeableSort>
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <textarea
@@ -90,7 +98,7 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="quantity_left" header="Stock" style="max-width: 200px;">
+        <Column field="quantity_left" header="Stock" style="max-width: 200px;" sortable>
             <template #body="{ data }">
                 <div class="">
                     {{ locale.number(data.quantity_left) }}
@@ -98,45 +106,77 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
+        <!-- <ColumnGroup type="header">
+            <Row>
+                <Column header="Sale Rate" :colspan="4" />
+            </Row>
+            <Row>
+                <Column header="Sales" :colspan="2" />
+                <Column header="Profits" :colspan="2" />
+            </Row>
+            <Row>
+                <Column header="Last Year" sortable field="lastYearSale" />
+                <Column header="This Year" sortable field="thisYearSale" />
+                <Column header="Last Year" sortable field="lastYearProfit" />
+                <Column header="This Year" sortable field="thisYearProfit" />
+            </Row>
+        </ColumnGroup> -->
+
         <!-- Column: Exc VAT -->
-        <Column field="price" header="Cost Price (Exc VAT)" style="max-width: 250px;">
+        <Column field="price" xheader="Cost Price (Exc VAT)" style="max-width: 250px;">
+            <template #header="{ column }">
+                <div v-tooltip="isIncludeVat ? trans('Include VAT') : trans('Exclude VAT')">
+                    <div class="font-semibold">
+                        Cost Price
+                    </div>
+
+                    <div class="text-center flex items-center justify-center gap-x-1">
+                        <span :class="isIncludeVat ? 'text-gray-600' : 'text-gray-400'">VAT</span>
+                        <Checkbox
+                            v-model="isIncludeVat"
+                            binary
+                        />
+                    </div>
+                </div>
+            </template>
+
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
-                    <RadioButton
-                        v-model="data.is_inc_exc"
-                        value="exc"
-                        variant="filled"
-                        size="small"
-                    />
-
                     <InputNumber
+                        v-if="isIncludeVat"
+                        v-model="data.price_inc_vat"
+                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
+                        mode="currency"
+                        :placeholder="data.price_inc_vat"
+                        :currency="data.currency_code"
+                        locale="en-GB"
+                        fluid
+                        :inputStyle="{textAlign: 'right'}"
+                        xdisabled="data.is_inc_exc !== 'inc'"
+                        class="min-w-12"
+                    />
+                    <InputNumber
+                        v-else
                         v-model="data.price"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'exc_vat')"
+                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
                         mode="currency"
                         :placeholder="data.price"
                         :currency="data.currency_code"
                         locale="en-GB"
                         fluid
                         :inputStyle="{textAlign: 'right'}"
-                        :disabled="data.is_inc_exc !== 'exc'"
+                        xdisabled="data.is_inc_exc !== 'exc'"
                         class="min-w-12"
                     />
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'exc_vat'], undefined)" />
+                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'inc_exc_vat'], undefined)" />
                 </div>
             </template>
         </Column>
 
         <!-- Column: Inc VAT -->
-        <Column field="price" header="Cost Price (Inc VAT)" style="max-width: 250px;">
+        <!-- <Column field="price" header="Cost Price (Inc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
-                    <RadioButton
-                        v-model="data.is_inc_exc"
-                        value="inc"
-                        variant="filled"
-                        size="small"
-                    />
-                    
+                <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">                    
                     <InputNumber
                         v-model="data.price_inc_vat"
                         @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_vat')"
@@ -152,7 +192,7 @@ const valueTableFilter = ref({})
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'inc_vat'], undefined)" />
                 </div>
             </template>
-        </Column>
+        </Column> -->
 
         <!-- <Column field="platform_handle" header="Handled" style="max-width: 100px;">
             <template #body="{ data }">
