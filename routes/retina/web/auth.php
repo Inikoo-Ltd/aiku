@@ -8,6 +8,7 @@
 
 use App\Actions\CRM\Customer\PreRegisterCustomer;
 use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
+use App\Actions\CRM\WebUser\Retina\GoogleRegisterRetina;
 use App\Actions\CRM\WebUser\Retina\LogoutRetina;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
@@ -15,7 +16,7 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowStandAloneRegistration;
 use App\Actions\CRM\WebUser\Retina\UI\ShowFinishPreRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaPrepareAccount;
-use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegister;
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterWithGoogle;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
@@ -35,13 +36,15 @@ Route::middleware('guest:retina')->group(function () {
 
     Route::post('{shop:id}/register-pre-customer', PreRegisterRetinaCustomer::class)->name('register_pre_customer.store');
     Route::post('login-google', GoogleLoginRetina::class)->name('login_google');
-    Route::post('register-google', PreRegisterCustomer::class)->name('register_pre_customer_google.store');
+    Route::post('register-google', GoogleRegisterRetina::class)->name('register_google');
+
+   // Route::post('register-google', PreRegisterCustomer::class)->name('register_pre_customer_google.store');
 
 
-    Route::get('register', ShowRetinaRegisterChooseMethod::class)->name('register_choose_method');
+    Route::get('register', ShowRetinaRegisterChooseMethod::class)->name('register');
     Route::get('register-step-2', ShowStandAloneRegistration::class)->name('register_standalone');
 
-    Route::get('register-step-3', ShowRetinaRegister::class)->name('register_step_3');
+    Route::get('register-step-3', ShowRetinaRegisterWithGoogle::class)->name('register_step_3');
 
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
 

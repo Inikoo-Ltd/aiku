@@ -108,6 +108,7 @@ const onCallbackGoogleLogin = (e) => {
 					label="Register"
 				/>
 
+               
 
                 <!-- Google Login -->
                 <div class="mx-auto w-fit">
