@@ -7,27 +7,23 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
-import { ref, inject } from "vue"
+import { ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { GoogleLogin, decodeCredential  } from 'vue3-google-login'
+import { GoogleLogin  } from 'vue3-google-login'
 import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
-import { notify } from "@kyvg/vue3-notification"
-import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import axios from "axios"
 import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
-// Set default layout
 defineOptions({ layout: RetinaShowIris })
 
-const props = defineProps<{
+defineProps<{
 
 
 	registerRoute: {
@@ -40,49 +36,27 @@ const props = defineProps<{
 	
 }>()
 
-const layout = inject('layout', retinaLayoutStructure)
+interface GoogleLoginResponse {
+    credential: string;
+}
+
+interface RegisterAccount {
+    name: string;
+    email: string;
+}
 
 
-
-// Define reactive variables
 const isLoading = ref(false)
 
-
-const registerAccount = ref(null)
+const registerAccount = ref<RegisterAccount | null>(null)
 const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
-const onCallbackGoogleLogin = async (e) => {
-    // console.log('xxxxxx Google login callback', e)
-    const userData = decodeCredential(e.credential)
-    // console.log("zzz Handle the userData", userData)
+const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
 	isLoadingGoogle.value = true
-
-    router.get(route('retina.register_step_3'), {
+    router.get(route('retina.register_from_google'), {
 		google_credential: e.credential
 	})
-
-    // if(data.status === 200) {
-    //     notify({
-    //         title: trans("Success"),
-    //         text: trans("Successfully login"),
-    //         type: "success"
-    //     })
-
-    //     if ('not registered yes') {
-    //         isOpenModalRegistration.value = true
-    //         registerAccount.value = data.response?.data
-    //     } else {
-
-    //     }
-
-    // } else {
-    //     notify({
-    //         title: trans("Something went wrong"),
-    //         text: trans("Failed to login with Google. Please contact administrator."),
-    //         type: "error"
-    //     })
-    // }
 
     isLoadingGoogle.value = false
 
@@ -117,14 +91,13 @@ const onCallbackGoogleLogin = async (e) => {
 
                     <GoogleLogin
                         :clientId="google.client_id"
-                        :callback="(e) => onCallbackGoogleLogin(e)"
-                        :error="(e) => console.log('yyyyyy error', e)"
+                        :callback="(e: GoogleLoginResponse) => onCallbackGoogleLogin(e)"
+                        :error="(e: Error) => console.log('error', e)"
                     >
                     
                     </GoogleLogin>
                 </div>
 
-                <!-- Registration Link -->
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
                         <span class="font-normal">{{ trans("Already have an account?") }}</span>

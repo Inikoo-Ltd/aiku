@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3"
-import { ref, onMounted, nextTick, watch, computed } from "vue"
+import { ref, onMounted, nextTick, computed } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-// import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
 import { trans } from "laravel-vue-i18n"
-import Multiselect from "@vueform/multiselect"
 import Address from "@/Components/Forms/Fields/Address.vue"
-import FulfilmentCustomer from "@/Pages/Grp/Org/Fulfilment/FulfilmentCustomer.vue"
-import CustomerDataForm from "@/Components/CustomerDataForm.vue"
 import Textarea from "primevue/textarea"
 import Select from "primevue/select"
 import IconField from "primevue/iconfield"
@@ -17,7 +13,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
-import Timeline from "@/Components/Utils/Timeline.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 
@@ -41,7 +36,6 @@ const props = defineProps<{
 	}
 }>()
 
-// console.log('client', props.client)
 
 // di <script setup lang="ts">
 const initialPollReplies = props.polls.map((poll) => ({
@@ -78,7 +72,7 @@ const submit = () => {
 				isLoading.value = false
 			},
 			onFinish: () => {
-				/* form.reset(); */
+
 			},
 		})
 	} else {
@@ -86,11 +80,6 @@ const submit = () => {
 	}
 }
 
-const interestsList = ref([
-	{ label: "Pallets Storage", value: "pallets_storage" },
-	{ label: "Dropshipping", value: "dropshipping" },
-	{ label: "Space (Parking)", value: "rental_space" },
-])
 
 const addressFieldData = {
 	type: "address",
@@ -129,11 +118,7 @@ simplePolls.value.forEach((poll) => {
 <template>
 	
 	<div class="pt-8">
-		<!-- <Timeline
-			:options="timeline"
-			:state="current_timeline"
-			:slidesPerView="3"
-		/> -->
+
 
 		<div class="max-w-2xl mx-auto my-8">
 			
@@ -145,7 +130,7 @@ simplePolls.value.forEach((poll) => {
 			<div class="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
 				<!-- Card header -->
 				<div class="px-6 py-4 border-b border-gray-200">
-					<h2 class="text-lg xfont-semibold">
+					<h2 class="text-lg">
 						{{ trans("Fill the form to complete your registration") }}
 					</h2>
 				</div>
@@ -157,9 +142,8 @@ simplePolls.value.forEach((poll) => {
 							<div class="sm:col-span-6">
 								<label
 									for="email"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Email") }}</label
-								>
+									class="block text-sm font-medium text-gray-700"
+                                >{{ trans("Email") }} <small class="pl-1">{{ trans("will be used as your username as well") }}</small></label>
 								<div class="mt-2">
 									<!-- make IconField full-width -->
 									<IconField class="w-full">
@@ -398,7 +382,7 @@ simplePolls.value.forEach((poll) => {
 								<span v-if="isLoading" class="loader mr-2">
 									<LoadingIcon />
 								</span>
-								{{ trans("Finish Registration") }}
+								{{ trans("Register") }}
 							</button>
 						</div>
 					</div>

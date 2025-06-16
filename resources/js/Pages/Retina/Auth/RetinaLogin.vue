@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
@@ -8,16 +8,15 @@ import { onMounted, ref, nextTick, inject } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import Background from '@/Components/CMS/Fields/Background.vue'
 import { GoogleLogin, decodeCredential  } from 'vue3-google-login'
 import { notify } from '@kyvg/vue3-notification'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
-import Modal from '@/Components/Utils/Modal.vue'
 
 defineOptions({ layout: RetinaShowIris })
-const props = defineProps<{
+
+defineProps<{
     google: {
         client_id: string
     }
@@ -50,34 +49,35 @@ onMounted(async () => {
     inputUsername.value?._inputRef?.focus()
 })
 
+interface GoogleLoginResponse {
+    credential: string;
+}
+
 const registerAccount = ref(null)
 const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
-const onCallbackGoogleLogin = async (e) => {
-    // console.log('xxxxxx Google login callback', e)
+const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
     const userData = decodeCredential(e.credential)
-    // console.log("zzz Handle the userData", userData)
 
     // Section: Submit
     isLoadingGoogle.value = true
-    const data = await  axios.post(route('retina.login_google', {
-        shop: layout.website?.id
-    }), {
+    const data = await  axios.post(route('retina.login_google', {}), {
         google_credential: e.credential,
     })
 
     if(data.status === 200) {
-        notify({
-            title: trans("Success"),
-            text: trans("Successfully login"),
-            type: "success"
-        })
+
 
         if ('not registered yes') {
+            //todo: here open the modal ask if want to register, if yes redirect to: /register-from-google
             isOpenModalRegistration.value = true
             registerAccount.value = data.response?.data
         } else {
-
+            notify({
+                title: trans("Success"),
+                text: trans("Successfully login"),
+                type: "success"
+            })
         }
 
     } else {
@@ -89,40 +89,7 @@ const onCallbackGoogleLogin = async (e) => {
     }
 
     isLoadingGoogle.value = false
-    
 
-    // router.post(
-    //     route('retina.login_google', {
-    //         shop: layout.website?.id
-    //     }),
-    //     {
-    //         google_credential: e.credential,
-    //     },
-    //     {
-    //         preserveScroll: true,
-    //         preserveState: true,
-    //         onStart: () => {
-    //             isLoadingGoogle.value = true
-    //         },
-    //         onSuccess: () => {
-    //             notify({
-    //                 title: trans("Success"),
-    //                 text: trans("Successfully login"),
-    //                 type: "success"
-    //             })
-    //         },
-    //         onError: errors => {
-    //             notify({
-    //                 title: trans("Something went wrong"),
-    //                 text: trans("Failed to login with Google. Please contact administrator."),
-    //                 type: "error"
-    //             })
-    //         },
-    //         onFinish: () => {
-    //             isLoadingGoogle.value = false
-    //         },
-    //     }
-    // )
 }
 </script>
 
@@ -186,8 +153,8 @@ const onCallbackGoogleLogin = async (e) => {
 
                     <GoogleLogin
                         :clientId="google?.client_id"
-                        :callback="(e) => onCallbackGoogleLogin(e)"
-                        :error="(e) => console.log('yyyyyy error', e)"
+                        :callback="(e: GoogleLoginResponse) => onCallbackGoogleLogin(e)"
+                        :error="(e: Error) => console.log('error', e)"
                     >
 
                     </GoogleLogin>

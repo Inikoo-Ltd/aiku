@@ -22,8 +22,6 @@ use Illuminate\Http\RedirectResponse;
 
 class ShowStandAloneRegistration extends IrisAction
 {
-
-
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
         $shop = $this->shop;
@@ -42,33 +40,9 @@ class ShowStandAloneRegistration extends IrisAction
                 'polls' => $pollsResource,
                 'client' => $webUser,
                 'registerRoute' => [
-                    'name' => 'retina.finish_pre_register.store',
-                    'parameters' => [
-                        'shop' => $shop->id
-                    ],
+                    'name' => 'retina.register_from_standalone.store',
                     'method' => 'POST'
                 ],
-                'timeline'  => [
-                    "register" => [
-                        "label" => "Register",
-                        "tooltip" => "Registered",
-                        "key" => "register",
-                        "timestamp" => now(),
-                    ],
-                    "complete" => [
-                        "label" => "Complete Registration",
-                        "tooltip" => "Complete Registration",
-                        "key" => "complete",
-                        "timestamp" => null
-                    ],
-                    "finish" => [
-                        "label" => "Finish",
-                        "tooltip" => "Finished",
-                        "key" => "finish",
-                        "timestamp" => null
-                    ],
-                ],
-                'current_timeline'  => 'complete',
             ]
         );
     }

@@ -36,7 +36,7 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
                 'countriesAddressData' => GetAddressData::run(),
                 'polls'                => $pollsResource,
                 'registerRoute'        => [
-                    'name'       => 'retina.register_step_3.store',
+                    'name'       => 'retina.register_from_google.store',
                 ],
 
                 'googleData' => $modeData,
@@ -48,12 +48,6 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
         );
     }
 
-    // public function rules(): array
-    // {
-    //     return [
-    //         'google_credential'     => ['required', 'string', 'max:2048'],
-    //     ];
-    // }
 
     public function asController(ActionRequest $request): Response
     {

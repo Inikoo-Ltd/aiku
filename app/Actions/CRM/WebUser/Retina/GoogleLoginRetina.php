@@ -20,19 +20,10 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Exceptions\GoogleCredentialVerificationException;
 
 class GoogleLoginRetina extends IrisAction
 {
-    /**
-     * @throws \Throwable
-     */
-    use AsAction;
-    use WithAttributes;
-
-    protected Shop $shop;
-
     public function handle(Shop $shop): array|WebUser
     {
 
@@ -53,6 +44,25 @@ class GoogleLoginRetina extends IrisAction
 
         auth('retina')->login($webUser);
         return $webUser;
+    }
+
+
+
+
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(ActionRequest $request): RedirectResponse|array
+    {
+        $this->initialisation($request);
+        $result = $this->handle($this->shop);
+        if (is_array($result)) {
+            return $result;
+        }
+
+        return $this->postProcessRetinaLoginGoogle($request);
     }
 
     public function postProcessRetinaLoginGoogle($request): RedirectResponse
@@ -80,11 +90,10 @@ class GoogleLoginRetina extends IrisAction
         return redirect()->intended('/app/dashboard');
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-    }
 
+    /**
+     * @throws \App\Exceptions\GoogleCredentialVerificationException
+     */
     private function verifyGoogleCredential(string $credential): array
     {
         $client = new Google_Client(['client_id' => config('services.google.client_id')]);
@@ -96,8 +105,9 @@ class GoogleLoginRetina extends IrisAction
                 'name' => $payload['name'],
             ];
         }
-        throw new \Exception('Invalid Google credential provided!');
+        throw new GoogleCredentialVerificationException();
     }
+
 
     public function rules(): array
     {
@@ -119,18 +129,4 @@ class GoogleLoginRetina extends IrisAction
         }
     }
 
-
-    /**
-     * @throws \Throwable
-     */
-    public function asController(ActionRequest $request): RedirectResponse|array
-    {
-        $this->initialisation($request);
-        $result = $this->handle($this->shop);
-        if (is_array($result)) {
-            return $result;
-        }
-
-        return $this->postProcessRetinaLoginGoogle($request);
-    }
 }

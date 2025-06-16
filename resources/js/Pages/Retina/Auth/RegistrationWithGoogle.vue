@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3"
-import { ref, onMounted, nextTick, watch, computed } from "vue"
+import { ref, onMounted, nextTick, computed } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-// import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
 import { trans } from "laravel-vue-i18n"
-import Multiselect from "@vueform/multiselect"
 import Address from "@/Components/Forms/Fields/Address.vue"
-import FulfilmentCustomer from "@/Pages/Grp/Org/Fulfilment/FulfilmentCustomer.vue"
-import CustomerDataForm from "@/Components/CustomerDataForm.vue"
 import Textarea from "primevue/textarea"
 import Select from "primevue/select"
 import IconField from "primevue/iconfield"
@@ -17,7 +13,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
-import Timeline from "@/Components/Utils/Timeline.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 
@@ -79,7 +74,6 @@ const submit = () => {
 				isLoading.value = false
 			},
 			onFinish: () => {
-				/* form.reset(); */
 			},
 		})
 	} else {
@@ -130,18 +124,12 @@ simplePolls.value.forEach((poll) => {
 <template>
 	
 	<div class="pt-8">
-		<!-- <Timeline
-			:options="timeline"
-			:state="current_timeline"
-			:slidesPerView="3"
-		/> -->
 
-		<!-- {{ googleData }} -->
 
 		<div class="max-w-2xl mx-auto my-8">
 			
 			<div class="text-4xl font-semibold flex justify-center mb-8">
-				{{ trans("One last step to access the full system") }}
+				{{ trans("Registration form") }}
 			</div>
 
 			<!-- Card container -->
@@ -392,7 +380,7 @@ simplePolls.value.forEach((poll) => {
 								<span v-if="isLoading" class="loader mr-2">
 									<LoadingIcon />
 								</span>
-								{{ trans("Finish Registration") }}
+								{{ trans("Register") }}
 							</button>
 						</div>
 					</div>

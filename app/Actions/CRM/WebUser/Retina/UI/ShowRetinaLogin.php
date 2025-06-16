@@ -19,6 +19,7 @@ class ShowRetinaLogin
 
     public function handle(): Response
     {
+
         return Inertia::render('Auth/RetinaLogin', [
             'google'    => [
                 'client_id' => config('services.google.client_id')
