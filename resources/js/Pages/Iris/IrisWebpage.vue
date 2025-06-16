@@ -82,9 +82,9 @@ onMounted(() => {
   document.head.appendChild(script)
 
   // ✅ Inject custom meta tag if valid
-  if (props.script_website) {
-    injectMetaTagFromString(props.script_website)
-  }
+  // if (props.script_website) {
+  //   injectMetaTagFromString(props.script_website)
+  // }
 
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
