@@ -5,46 +5,49 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faTh, faCircle, faChevronRight, faChevronDown } from "@fas";
 import { faEmptySet } from "@fal";
 import type { routeType } from "@/types/route";
+import axios from "axios";
 
 library.add(faTh, faCircle, faChevronRight, faChevronDown, faEmptySet);
 
-type WebpageItem = {
-  key: string | number;
-  slug: string;
-  code: string;
-  name: string;
-  collections?: Array<{
-    key: string | number;
-    name: string;
-  }>;
-  families_route: routeType;
-};
 
 const props = defineProps<{
-  dataList: { data: WebpageItem[] };
+  dataList: Array<any>
   active: string;
 }>();
 
 const emits = defineEmits<{
-  (e: "changeDepartment", value: { collections: WebpageItem["collections"] }): void;
+  (e: "onChangeWebpage", value: { collections: any}): void;
 }>();
 
 const openIndex = ref<number | null>(null);
 const loading = ref(false);
-const collections = ref<WebpageItem["collections"]>([]);
+const collections = ref([]);
 
-function toggle(index: number) {
-  const webpage = props.dataList.data[index];
+async function toggle(index: number) {
+  const dept = props.dataList[index];
+
   if (openIndex.value === index) {
-    // Toggle collapse
     openIndex.value = null;
     collections.value = [];
     return;
   }
 
   openIndex.value = index;
-  collections.value = webpage.collections ?? [];
-  emits("changeDepartment", { webpage : webpage, collections: collections.value });
+  loading.value = true;
+
+  try {
+    const response = await axios.get(route(
+      dept.collections_route.name,
+      dept.collections_route.parameters
+    ));
+    collections.value = response.data.data || [];
+    emits("onChangeWebpage", { ...dept, collections: collections.value });
+  } catch (err) {
+    console.error("Error fetching sub-departments", err);
+    collections.value = [];
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
@@ -52,7 +55,7 @@ function toggle(index: number) {
   <div class="mx-auto">
     <ul class="space-y-3">
       <li
-        v-for="(webpage, index) in props.dataList.data"
+        v-for="(webpage, index) in props.dataList"
         :key="webpage.key"
         :class="[
           'border rounded-lg shadow-sm transition-shadow',

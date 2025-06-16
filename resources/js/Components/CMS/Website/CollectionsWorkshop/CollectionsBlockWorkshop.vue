@@ -21,16 +21,19 @@ const props = defineProps<{
     web_block_types: any;
     autosaveRoute: routeType;
     layout: any;
-    webpages: any[]; // renamed from sub_departements
+    departments: {
+      data: Array<any>
+    };
+    subDepartments: {
+      data: Array<any>
+    };
     update_family_route: routeType;
   }
 }>()
-
 const layoutTheme = inject('layout', layoutStructure)
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 const visibleDrawer = ref(false);
-console.log('layoutTheme', props.data);
 // Make layout editable
 const layout = ref(props.data.layout);
 
@@ -43,7 +46,6 @@ const onPickTemplate = (template: any) => {
 
 const onChangeWebpage = (value: any) => {
   if (layout.value?.data?.fieldValue) {
-    layout.value.data.fieldValue.webpage = value.webpage;
     layout.value.data.fieldValue.collections = value.collections || [];
   }
 };
@@ -53,7 +55,6 @@ const autosave = () => {
 
   if (payload.data?.fieldValue) {
     delete payload.data.fieldValue.collections;
-    delete payload.data.fieldValue.webpage;
   }
 
   router.patch(
@@ -83,19 +84,15 @@ const autosave = () => {
 
 const currentView = ref("desktop");
 provide("currentView", currentView);
+
+console.log(props)
 </script>
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-auto border">
-      <SideMenuFamiliesCollectionsWorkshop
-        :data="layout"
-        :webBlockTypes="data.web_block_types"
-        @auto-save="autosave"
-        @set-up-template="onPickTemplate"
-        :dataList="data.webpages"
-        @onChangeDepartment="onChangeWebpage"
-      />
+      <SideMenuFamiliesCollectionsWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
+        @set-up-template="onPickTemplate" :dataList="data.webpages" />
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
@@ -113,19 +110,12 @@ provide("currentView", currentView);
       </div>
 
       <div v-if="layout?.code" class="relative flex-1 overflow-auto">
-        <component
-          class="w-full relative flex-1 overflow-auto border-4 border-[#4F46E5] active-block"
-          :is="getComponent(layout.code)"
-          :modelValue="{
-            ...layout.data.fieldValue,
-            webpage: layout.data.fieldValue?.webpage || null,
-            families: layout.data.fieldValue?.families || []
-          }"
-          :routeEditfamily="data.update_family_route"
-        />
+        <component class="w-full relative flex-1 overflow-auto border-4 border-[#4F46E5] active-block"
+          :is="getComponent(layout.code)" :modelValue="layout.data.fieldValue" :routeEditfamily="data.update_family_route" />
       </div>
 
-      <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]">
+      <div v-else
+        class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]">
         <div class="flex flex-col items-center gap-2">
           <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
           <h3 class="text-lg font-semibold">No webpage selected</h3>
@@ -141,18 +131,14 @@ provide("currentView", currentView);
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">Departement or sub-departement  Overview</h2>
-        <p class="text-xs text-gray-500">Choose a Departement or sub-departement  to preview</p>
+        <h2 class="text-base font-semibold">Departement or sub-departement Overview</h2>
+        <p class="text-xs text-gray-500">Choose a Departement or sub-departement to preview</p>
       </div>
     </template>
 
-    <!-- You can uncomment this if using WebpageList -->
-    <EmptyState />
-    <!-- <WebpageList 
-      :dataList="data.webpages"
-      @changeDepartment="onChangeWebpage"
-      :active="layout?.data?.fieldValue?.webpage?.slug"
-    />  -->
-   
+    <!-- <EmptyState /> -->
+    <WebpageList :dataList="[...data?.departments?.data, ...data?.subDepartments?.data]"
+      @onChangeWebpage="onChangeWebpage" :active="layout?.data?.fieldValue?.webpage?.slug" />
+
   </Drawer>
 </template>
