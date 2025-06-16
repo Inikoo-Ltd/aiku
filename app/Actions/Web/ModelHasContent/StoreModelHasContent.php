@@ -42,10 +42,10 @@ class StoreModelHasContent extends OrgAction
                     $positions[$content->id] = ['position' => $content->position];
                 }
             }
-            
+
             ReorderModelHasContent::make()->action($parent, ['positions' => $positions]);
         }
-        
+
         $modelHasContent = $parent->contents()->create($modelData);
 
         if (Arr::exists($imageData, 'image')) {
