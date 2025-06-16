@@ -64,27 +64,28 @@ const addInformation = () => {
         title: 'Product Information',
         text: 'Write your product details here.',
         type: 'information',
-        position: 1,
+        position: 0, // Always zero for information
     }
     onAddContent(data)
 }
 
 const addFAQ = () => {
+    const position = faqContents.value.length + 1 // Or use any custom logic
     const data = {
         title: 'New FAQ',
         text: 'Answer your customer questions here.',
         type: 'faq',
+        position,
     }
     onAddContent(data)
 }
+
 </script>
 
 <template>
     <div class="w-full relative group">
         <!-- Product Information Section -->
         <div class="mb-6">
-            <div class="text-sm text-gray-500 mb-1 font-semibold">Product Information</div>
-
             <div v-if="informationContents.length === 0"
                 class="text-center text-gray-500 text-sm py-6 italic border border-dashed border-gray-300 rounded">
                 <div class="py-2">No product information yet. Click the add button to insert new content.</div>
@@ -101,7 +102,7 @@ const addFAQ = () => {
                                 class="text-sm text-gray-500 transform transition-transform duration-200"
                                 :class="{ 'rotate-180': open }" />
                         </DisclosureButton>
-                        <DisclosurePanel class="text-sm text-gray-600 px-1">
+                        <DisclosurePanel class="text-sm text-gray-600">
                             <p v-html="content.text" />
                         </DisclosurePanel>
                     </div>
@@ -129,7 +130,7 @@ const addFAQ = () => {
                                 class="text-sm text-gray-500 transform transition-transform duration-200"
                                 :class="{ 'rotate-180': open }" />
                         </DisclosureButton>
-                        <DisclosurePanel class="text-sm text-gray-600 px-1">
+                        <DisclosurePanel class="text-sm text-gray-600">
                             <p v-html="content.text" />
                         </DisclosurePanel>
                     </div>
