@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { faChevronDown, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faChevronDown, faPlus, faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { useConfirm } from 'primevue/useconfirm'
+import ConfirmDialog from 'primevue/confirmdialog'
+import cloneDeep from 'lodash-es/cloneDeep'
+import { debounce } from 'lodash-es'
 
 const props = defineProps<{
     product: {
@@ -19,34 +24,29 @@ const props = defineProps<{
     }
 }>()
 
+const confirm = useConfirm()
 const cancelToken = ref<any>(null)
+const localContents = ref(cloneDeep(props.product.contents.data))
 
 const informationContents = computed(() =>
-    props.product.contents.data.filter((item) => item.type === 'information')
+    localContents.value.filter((item) => item.type === 'information')
 )
 
 const faqContents = computed(() =>
-    props.product.contents.data.filter((item) => item.type === 'faq')
+    localContents.value.filter((item) => item.type === 'faq')
 )
 
-const onAddContent = (data: { title: string; text: string; type: 'information' | 'faq' }) => {
+const onAddContent = (data: { title: string; text: string; type: 'information' | 'faq'; position: number }) => {
     router.post(
-        route('grp.models.product.content.store',{product: props.product.id}),
+        route('grp.models.product.content.store', { product: props.product.id }),
         data,
         {
             preserveScroll: false,
-            onCancelToken: (token) => {
-                cancelToken.value = token.cancel
-            },
-            onFinish: () => {
-                cancelToken.value = null
-            },
+            onCancelToken: (token) => (cancelToken.value = token.cancel),
+            onFinish: () => (cancelToken.value = null),
             onSuccess: () => {
-                notify({
-                    title: 'Success',
-                    text: 'Content added successfully.',
-                    type: 'success',
-                })
+                notify({ title: 'Success', text: 'Content added successfully.', type: 'success' })
+                router.reload({ only: ['product'] })
             },
             onError: (error) => {
                 notify({
@@ -59,27 +59,68 @@ const onAddContent = (data: { title: string; text: string; type: 'information' |
     )
 }
 
+const onUpdateContent = (id: number, payload: { title?: string; text?: string }) => {
+    router.patch(route('grp.models.model_has_content.update', { modelHasContent: id }), payload, {
+        preserveScroll: true,
+        onSuccess: () => {
+            notify({ title: 'Updated', text: 'Content updated successfully.', type: 'success' })
+        },
+        onError: () => {
+            notify({ title: 'Error', text: 'Failed to update content.', type: 'error' })
+        },
+    })
+}
+
+const debouncedUpdate = debounce((id: number, payload) => {
+    onUpdateContent(id, payload)
+}, 800)
+
+const updateLocalContent = (id: number, key: 'title' | 'text', value: string) => {
+    const item = localContents.value.find((c) => c.id === id)
+    if (item) item[key] = value
+    debouncedUpdate(id, { [key]: value })
+}
+
 const addInformation = () => {
-    const data = {
+    onAddContent({
         title: 'Product Information',
         text: 'Write your product details here.',
         type: 'information',
-        position: 0, // Always zero for information
-    }
-    onAddContent(data)
+        position: 0,
+    })
 }
 
 const addFAQ = () => {
-    const position = faqContents.value.length + 1 // Or use any custom logic
-    const data = {
+    onAddContent({
         title: 'New FAQ',
         text: 'Answer your customer questions here.',
         type: 'faq',
-        position,
-    }
-    onAddContent(data)
+        position: faqContents.value.length + 1,
+    })
 }
 
+const onDeleteContent = (id: number) => {
+    router.delete(route('grp.models.model_has_content.delete', { modelHasContent: id }), {
+        preserveScroll: true,
+        onSuccess: () => {
+            notify({ title: 'Deleted', text: 'Content has been deleted.', type: 'success' })
+            router.reload({ only: ['product'] })
+        },
+        onError: () => {
+            notify({ title: 'Error', text: 'Failed to delete content.', type: 'error' })
+        },
+    })
+}
+
+const confirmDelete = (id: number) => {
+    confirm.require({
+        message: 'Are you sure you want to delete this content?',
+        header: 'Confirm Delete',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: () => onDeleteContent(id),
+    })
+}
 </script>
 
 <template>
@@ -96,14 +137,20 @@ const addFAQ = () => {
                 <Disclosure v-for="content in informationContents" :key="content.id" v-slot="{ open }">
                     <div>
                         <DisclosureButton
-                            class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
-                            {{ content.title }}
+                            class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
+                            <EditorV2
+                                :modelValue="content.title"
+                                @update:model-value="(value) => updateLocalContent(content.id, 'title', value)"
+                            />
                             <FontAwesomeIcon :icon="faChevronDown"
                                 class="text-sm text-gray-500 transform transition-transform duration-200"
                                 :class="{ 'rotate-180': open }" />
                         </DisclosureButton>
                         <DisclosurePanel class="text-sm text-gray-600">
-                            <p v-html="content.text" />
+                            <EditorV2
+                                :modelValue="content.text"
+                                @update:model-value="(value) => updateLocalContent(content.id, 'text', value)"
+                            />
                         </DisclosurePanel>
                     </div>
                 </Disclosure>
@@ -122,16 +169,29 @@ const addFAQ = () => {
 
             <div v-else class="space-y-3">
                 <Disclosure v-for="content in faqContents" :key="content.id" v-slot="{ open }">
-                    <div>
+                    <div class="relative group">
                         <DisclosureButton
-                            class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
-                            {{ content.title }}
-                            <FontAwesomeIcon :icon="faChevronDown"
-                                class="text-sm text-gray-500 transform transition-transform duration-200"
-                                :class="{ 'rotate-180': open }" />
+                            class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
+                            <EditorV2
+                                :modelValue="content.title"
+                                @update:model-value="(value) => updateLocalContent(content.id, 'title', value)"
+                            />
+                            <div class="flex items-center gap-4">
+                                <button @click.stop="confirmDelete(content.id)"
+                                    class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Delete Content">
+                                    <FontAwesomeIcon :icon="faTrash" />
+                                </button>
+                                <FontAwesomeIcon :icon="faChevronDown"
+                                    class="text-sm text-gray-500 transform transition-transform duration-200"
+                                    :class="{ 'rotate-180': open }" />
+                            </div>
                         </DisclosureButton>
                         <DisclosurePanel class="text-sm text-gray-600">
-                            <p v-html="content.text" />
+                            <EditorV2
+                                :modelValue="content.text"
+                                @update:model-value="(value) => updateLocalContent(content.id, 'text', value)"
+                            />
                         </DisclosurePanel>
                     </div>
                 </Disclosure>
@@ -149,4 +209,10 @@ const addFAQ = () => {
             </button>
         </div>
     </div>
+
+    <ConfirmDialog>
+        <template #icon>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+        </template>
+    </ConfirmDialog>
 </template>
