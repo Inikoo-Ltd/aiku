@@ -1,0 +1,75 @@
+{
+	"slug": "user-subscribe",
+	"code": "user-subscribe",
+	"name": "User Subscribe",
+	"scope": "webpage",
+	"category": "column",
+	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
+	"icon": ["far", "rss"],
+	"data": {
+		"fieldValue": {
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+                        "color": "#334155",
+						"image": {
+							"original": null
+						}
+					},
+					"text": {
+						"desktop": {
+							"color": "rgba(255, 255, 255, 1)",
+							"fontSize": null,
+							"fontFamily": "Inter, sans-serif"
+						}
+					}
+				}
+			},
+			"value": {
+				"headline": "<p>Subscribe to our newsletter</p>",
+				"description": "<p>The latest news, articles, and resources, sent to your inbox weekly.</p>",
+				"input": {
+					"placeholder": "Enter your email address"
+				}
+			},
+			"button": {
+				"text": "Subscribe",
+				"container": {
+					"properties": {
+						"text": {
+							"desktop": {
+								"color": "rgba(255, 255, 255, 1)",
+								"fontFamily": "Inter, sans-serif"
+							}
+						},
+						"padding": {
+							"top": {
+								"value": 7
+							},
+							"left": {
+								"value": 15
+							},
+							"unit": "px",
+							"right": {
+								"value": 15
+							},
+							"bottom": {
+								"value": 7
+							}
+						},
+						"background": {
+							"desktop": {
+								"type": "color",
+								"color": "#0f172a",
+								"image": {
+									"original": null
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

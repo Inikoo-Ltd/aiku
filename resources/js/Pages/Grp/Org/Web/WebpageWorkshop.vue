@@ -36,7 +36,7 @@ import { faEye } from "@fad"
 import { useLiveUsers } from "@/Stores/active-users"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars)
+library.add(faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars, faBars)
 
 const props = defineProps<{
 	title: string

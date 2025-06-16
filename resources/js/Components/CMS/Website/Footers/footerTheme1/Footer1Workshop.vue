@@ -158,7 +158,7 @@ provide('onSaveWorkshop', onSaveWorkshop)
         :style="getStyles(modelValue?.container?.properties)">
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-gray-700">
-            <div class="flex-1 flex items-center justify-center md:justify-start border-solid "
+            <div class="flex-1 flex items-center justify-center md:justify-start border-solid hover-dashed"
                 @click="() => sendMessageToParent('panelOpen', 'logo')">
                 <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true"
                     :alt="modelValue?.logo?.alt" :imgAttributes="modelValue?.logo?.attributes"
@@ -489,8 +489,51 @@ provide('onSaveWorkshop', onSaveWorkshop)
             </div>
         </div>
 
+        
+        <div v-if="modelValue?.subscribe?.is_show"
+            @click="() => sendMessageToParent('panelOpen', 'subscribe')"
+            class="mt-16 border-t border-white/10 px-8 md:px-0 pt-8 md:mt-8 flex flex-col md:flex-row items-center md:justify-between">
+            <div class="w-fit text-center md:text-left ">
+                <h3 class="text-sm/6 font-semibold text-white hover-dashed" v-html="modelValue.subscribe?.headline ?? 'Subscribe to our newsletter'"></h3>
+                <p class="mt-2 text-sm/6 text-gray-300 hover-dashed"  v-html="modelValue.subscribe?.description ?? 'The latest news, articles, and resources, sent to your inbox weekly.'"></p>
+            </div>
+            
+            <!-- <Transition> -->
+                <div xv-if="currentState != 'success'" class="flex flex-col items-start">
+                    <form @submit.prevent="() => false" class="w-full max-w-md md:w-fit mt-6 sm:flex sm:max-w-md lg:mt-0 ">
+                        <label for="email-address" class="sr-only">Email address</label>
+                        <input
+                            xv-model="inputEmail"
+                            type="email"
+                            name="email-address"
+                            id="email-address"
+                            autocomplete="email"
+                            required
+                            class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
+                            :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
+                        />
+                        <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
+                            <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+                                <!-- <LoadingIcon v-if="isLoadingSubmit" class="mr-2" /> -->
+                                Subscribe
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- <div v-if="currentState === 'error'" class="text-red-500 mt-2 italic">
+                        *{{ errorMessage }}
+                    </div> -->
+                </div>
+
+                <!-- <div v-else class="ml-auto mt-6 text-center text-green-500 flex flex-col items-center gap-y-2">
+                    <FontAwesomeIcon icon="fas fa-check-circle" class="text-4xl" fixed-width aria-hidden="true" />
+                    {{ trans("You have successfully subscribed") }}!
+                </div> -->
+            <!-- </Transition> -->
+        </div>
+
         <div
-            class="mt-8 border-0 border-t border-solid border-gray-700 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8 ">
+            class="mt-8 border-0 border-t border-solid border-white/10 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8 ">
             <div class="grid gap-y-2 text-center md:text-left ">
                 <div class="group relative flex gap-x-6 justify-center hover-dashed">
                     <a v-for="item of modelValue.socialMedia" target="_blank" :key="item.icon"><font-awesome-icon
@@ -500,7 +543,7 @@ provide('onSaveWorkshop', onSaveWorkshop)
             </div>
 
             <div id="footer_copyright" class="text-[14px] md:text-[12px] text-center">
-                <Editor :class="'model border border-transparent hover-dashed border-dashed cursor-text'"
+                <Editor :class="'model border border-transparent hover-text-input border-dashed cursor-text'"
                     :key="editorKey" v-model="modelValue.copyright" :editable="editable"
                     @update:model-value="(e) => { modelValue.copyright = e, emits('update:modelValue', props.modelValue) }" />
             </div>

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
+use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Fulfilment\FulfilmentResource;
 use App\Http\Resources\SysAdmin\Group\GroupResource;
@@ -31,6 +32,14 @@ class GetRetinaLayout
             ];
         }
 
+        $isPreRegistration = false;
+        if ($webUser) {
+            $customer = $webUser->customer;
+            if ($customer && $customer->status === CustomerStatusEnum::PRE_REGISTRATION) {
+                $isPreRegistration = true;
+            }
+        }
+
         $additionalData = [];
         if ($fulfilment = $website->shop?->fulfilment) {
             $additionalData = [
@@ -44,7 +53,7 @@ class GetRetinaLayout
             'customer'  => CustomersResource::make($webUser->customer)->getArray(),
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
 
-            'navigation' => match ($request->get('website')->type->value) {
+            'navigation' => $isPreRegistration ? null : match ($request->get('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),
                 'dropshipping' => GetRetinaDropshippingNavigation::run($webUser),
                 'b2b' => GetRetinaB2bNavigation::run($webUser),

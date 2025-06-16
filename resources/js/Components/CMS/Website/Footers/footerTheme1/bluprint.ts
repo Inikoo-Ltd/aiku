@@ -1,5 +1,6 @@
 import { trans } from "laravel-vue-i18n"
 import { faRectangleLandscape, faPhone, faEnvelope, faShare } from "@fal"
+import { faRss } from "@far"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
 export default {
@@ -141,6 +142,62 @@ export default {
 			key: ["paymentData","data"],
 			name: "Payment",
 			type: "payment_templates",
+		},
+		{
+			key: ["subscribe"],
+			name: "Newsletter Subscribe",
+			show_new_until: "2025-07-04",
+			icon: {
+				icon: faRss,
+				tooltip: "Newsletter Subscribe",
+			},
+			replaceForm: [
+				{
+					key: ["is_show"],
+					label: "Show in footer?",
+					// props_data: {
+					// 	placeholder: "Enter your email",
+					// },
+					// reset_value: {
+					// 	value: "Enter your email",
+					// },
+					// information: "The text that will be displayed when the input box empty.",
+					type: "switch",
+				},
+				{
+					key: ["placeholder"],
+					label: "Placeholder",
+					props_data: {
+						placeholder: "Enter your email",
+					},
+					reset_value: {
+						value: "Enter your email",
+					},
+					information: "The text that will be displayed when the input box empty.",
+					type: "text",
+				},
+				{
+					key: ["headline"],
+					label: "Headline",
+					props_data: {
+						placeholder: "Subscribe to our newsletter",
+					},
+					reset_value: {
+						value: "Subscribe to our newsletter",
+						is_refresh_field_on_reset: true,
+					},
+					type: "editorhtml",
+				},
+				{
+					key: ["description"],
+					label: "Description",
+					reset_value: {
+						value: "The latest news, articles, and resources, sent to your inbox weekly.",
+						is_refresh_field_on_reset: true,
+					},
+					type: "editorhtml",
+				},
+			],
 		},
 	],
 }

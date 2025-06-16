@@ -112,6 +112,12 @@ class StoreWebUser extends OrgAction
                     'required',
                     app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)
                 ],
+            'google_id' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+            ],
 
         ];
 

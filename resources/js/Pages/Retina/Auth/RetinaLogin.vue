@@ -1,20 +1,32 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref, nextTick } from 'vue'
+import { onMounted, ref, nextTick, inject } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import Background from '@/Components/CMS/Fields/Background.vue'
+import { GoogleLogin, decodeCredential  } from 'vue3-google-login'
+import { notify } from '@kyvg/vue3-notification'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 defineOptions({ layout: RetinaShowIris })
+const props = defineProps<{
+    google: {
+        client_id: string
+    }
+}>()
 const form = useForm({
     username: '',
     password: '',
     remember: false,
 })
+
+const layout = inject('layout', retinaLayoutStructure)
 
 const isLoading = ref(false)
 
@@ -32,10 +44,50 @@ const inputUsername = ref(null)
 
 onMounted(async () => {
     await nextTick()
+    // console.log('ff', inputUsername.value?._inputRef)
     inputUsername.value?._inputRef?.focus()
 })
 
+const isLoadingGoogle = ref(false)
+const onCallbackGoogleLogin = (e) => {
+    // console.log('xxxxxx Google login callback', e)
+    const userData = decodeCredential(e.credential)
+    // console.log("zzz Handle the userData", userData)
 
+    // Section: Submit
+    router.post(
+        route('retina.login_google', {
+            shop: layout.website?.id
+        }),
+        {
+            google_credential: e.credential,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingGoogle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully login"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to login with Google. Please contact administrator."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingGoogle.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -43,7 +95,11 @@ onMounted(async () => {
     <Head title="Login" />
 
     <div class="rounded-md flex items-center justify-center w-full px-6 py-12 lg:px-8">
-        <div class="w-full max-w-sm bg-transparent">
+        <div class="relative w-full max-w-lg bg-transparent px-4 py-3">
+            <div v-if="isLoadingGoogle" class="absolute inset-0 bg-black/50 text-white z-10 flex justify-center items-center">
+                <LoadingIcon class="text-4xl" />
+            </div>
+
             <form class="space-y-6">
                 <!-- Username Field -->
                 <div>
@@ -79,15 +135,30 @@ onMounted(async () => {
                     </div>
                 </div>
 
-
+                <ValidationErrors />
 
                 <!-- Submit Button -->
                 <div class="space-y-2">
                     <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :type="'tertiary'" :class="'!bg-[#C1A027] !text-white'" />
                 </div>
 
+                <!-- Google Login -->
+                <div v-if="layout?.iris?.website?.type !== 'fulfilment'" class="mx-auto w-fit">
+                    <div class="text-center mb-4 text-sm">
+                        Or
+                    </div>
+
+                    <GoogleLogin
+                        :clientId="google?.client_id"
+                        :callback="(e) => onCallbackGoogleLogin(e)"
+                        :error="(e) => console.log('yyyyyy error', e)"
+                    >
+
+                    </GoogleLogin>
+                </div>
+
                 <!-- Registration Link -->
-                <div class="flex justify-center items-center mt-4">
+                <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
                         {{ trans("Don\'t have an account") }}?
                         <Link :href="route('retina.register')"
@@ -97,7 +168,6 @@ onMounted(async () => {
                     </p>
                 </div>
             </form>
-            <ValidationErrors />
         </div>
     </div>
 </template>

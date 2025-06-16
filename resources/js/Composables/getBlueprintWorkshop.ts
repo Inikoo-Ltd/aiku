@@ -42,6 +42,7 @@ import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CTAVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
+import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 
 import { data } from "autoprefixer"
 import CTAVideo1Workshop from "@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue"
@@ -105,6 +106,7 @@ export const getBlueprint = (componentName: string) => {
 		"cta-video-1" : CTAVideo1Blueprint.blueprint,
 		'video-1': VideoBlueprint.blueprint,
 		'collections-1': CollectionBluprint.blueprint,
+    "user-subscribe": UserSubscribe.blueprint,
 	}
 	return components[componentName] ?? []
 }
