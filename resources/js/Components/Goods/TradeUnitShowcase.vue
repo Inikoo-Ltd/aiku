@@ -30,8 +30,9 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div>
+    <div class="px-8 grid grid-cols-2">
         <EditTradeUnit
+            :tags_selected_id="props.data.tags_selected_id"
             :brand="props.data.brand"
             :brand_routes="props.data.brand_routes"
             :tags="props.data.tags"

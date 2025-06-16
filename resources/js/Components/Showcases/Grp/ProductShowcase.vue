@@ -22,6 +22,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
+import { Fieldset } from "primevue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faPlay, faPlus)
@@ -76,9 +77,10 @@ const props = defineProps<{
 			}
 			tags: {}[]
 			tags_selected_id: number[]
-		}
+		}[]
 	}
 }>()
+console.log('qqq', props.data.trade_units)
 
 const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
@@ -238,13 +240,38 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 		</div>
 		
 		<div>
-			<EditTradeUnit
-				v-if="props.data.trade_units"
-				:brand="props.data.trade_units.brand"
-				:brand_routes="props.data.trade_units.brand_routes"
-				:tags="props.data.trade_units.tags"
-				:tag_routes="props.data.trade_units.tag_routes"
-			/>
+
+		</div>
+
+		<div class="md:col-span-2 pr-6">
+			<Fieldset
+				class="p-5 space-y-5 h-fit w-full max-w-lg"
+				legend="Trade units"
+				xtoggleable
+				xcollapsed
+			>
+				<template #default>
+					<div class="px-4">
+						<div v-for="tradeUnit in props.data.trade_units" class="">
+							<div>
+								<!-- <pre>{{ tradeUnit.tradeUnit }}</pre> -->
+								<h2 class="text-lg font-semibold mb-2">
+									{{ tradeUnit.tradeUnit.name }}
+									<span class="font-normal text-gray-500">({{ tradeUnit.tradeUnit.code }})</span>
+								</h2>
+							</div>
+			
+							<EditTradeUnit
+								:tags_selected_id="tradeUnit.tags_selected_id"
+								:brand="tradeUnit.brand"
+								:brand_routes="tradeUnit.brand_routes"
+								:tags="tradeUnit.tags"
+								:tag_routes="tradeUnit.tag_routes"
+							/>
+						</div>
+					</div>
+				</template>
+			</Fieldset>
 		</div>
 
 		<!-- Revenue Stats -->

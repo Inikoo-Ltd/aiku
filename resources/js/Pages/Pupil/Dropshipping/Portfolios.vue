@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import Tabs from "@/Components/Navigation/Tabs.vue"
-
-import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import { computed, defineAsyncComponent, ref } from 'vue'
-import type { Component } from 'vue'
+
 
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
-import PupilTablePortofolios from "@/Components/Tables/Retina/PupilTablePortofolios.vue";
-// import FileShowcase from '@/xxxxxxxxxxxx'
+import PupilTablePortfolios from "@/Components/Tables/Retina/PupilTablePortfolios.vue";
 
 const props = defineProps<{
     title: string,
@@ -20,19 +15,7 @@ const props = defineProps<{
     products: {}
 }>()
 
-const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const component = computed(() => {
-
-    const components: Component = {
-        // showcase: FileShowcase
-        // products: TableProducts
-    }
-
-    return components[currentTab.value]
-
-})
 
 </script>
 
@@ -41,7 +24,5 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-<!--     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
-<!--     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-    <PupilTablePortofolios :data="props.products" :location="'pupil'" :tab="'products'" />
+    <PupilTablePortfolios :data="props.products" :location="'pupil'" :tab="'products'" />
 </template>

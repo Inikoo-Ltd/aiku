@@ -24,7 +24,7 @@ function tradeUnitRoute(tradeUnit: {}) {
     }
 }
 
-
+console.log("asfdasfd",props.data)
 
 
 </script>
@@ -40,7 +40,7 @@ function tradeUnitRoute(tradeUnit: {}) {
             {{ tradeUnit['name'] }}
         </template>
         <template #cell(net_weight)="{ item: tradeUnit }">
-            {{ tradeUnit['net_weight'] }}
+            {{ tradeUnit['weight'] }}
         </template>
         <template #cell(type)="{ item: tradeUnit }">
             {{ tradeUnit['type'] }}
