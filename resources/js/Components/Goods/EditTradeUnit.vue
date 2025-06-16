@@ -47,6 +47,7 @@ const props = defineProps<{
 // Section: modal create new tag
 const isModalTag = ref(false)
 const _multiselect_tags = ref(null)
+const newTagImg = ref<File | null>(null)
 const newTagName = ref('')
 const isLoadingCreateTag = ref(false)
 const onCreateNewTag = () => {
@@ -54,6 +55,7 @@ const onCreateNewTag = () => {
         route(props.tag_routes.store_tag.name, props.tag_routes.store_tag.parameters),
         {
             name: newTagName.value,
+            image: newTagImg.value,
         },
         {
             onStart: () => {
@@ -475,6 +477,18 @@ const onEditBrand = () => {
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
+                        {{ trans('Image') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureImageCrop
+                            :aspectRatio="1/1"
+                            @cropped="(e) => newTagImg = e"
+                        />
+                    </div>
+                </div>
+
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
                         <span class="text-red-500">*</span> {{ trans('Name') }}
                     </label>
                     <div class="mt-1">
@@ -504,6 +518,19 @@ const onEditBrand = () => {
             </div>
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureImageCrop
+                            :src_image="selectedUpdateTag?.image"
+                            :aspectRatio="1/1"
+                            @cropped="(e) => selectedUpdateTag.image = e"
+                        />
+                    </div>
+                </div>
+
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
                         <span class="text-red-500">*</span> {{ trans('Name') }}
@@ -590,6 +617,19 @@ const onEditBrand = () => {
             </div>
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                <div class="col-span-2">
+                    <label for="first-name" class="block text-sm font-medium leading-6">
+                        {{ trans('Image') }}
+                    </label>
+                    <div class="mt-1">
+                        <PureImageCrop
+                            :src_image="selectedBrandToUpdate?.image"
+                            :aspectRatio="1/1"
+                            @cropped="(e) => selectedBrandToUpdate.image = e"
+                        />
+                    </div>
+                </div>
+
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
                         <span class="text-red-500">*</span> {{ trans('Reference') }}
