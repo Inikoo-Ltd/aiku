@@ -32,7 +32,7 @@ class StoreModelHasContent extends OrgAction
 
         $modelHasContent = $parent->contents()->create($modelData);
 
-        if ($imageData['image']) {
+        if (Arr::exists($imageData, 'image')) {
             $this->processCatalogueImage($imageData, $modelHasContent);
         }
         return $modelHasContent;
