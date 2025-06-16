@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getComponent } from "@/Composables/getWorkshopComponents"
-import { ref, onMounted, onBeforeUnmount, watch } from "vue"
+import { ref, onMounted, onBeforeUnmount, provide } from "vue"
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -76,6 +76,15 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenType)
   window.removeEventListener("message", handleMessage)
 })
+
+
+const reloadPage = () =>{ 
+ router.reload({ only: ["footer", "header", "webpage"] })
+  console.log('ionininion',props.webpage)
+};
+
+provide("reloadPage", reloadPage);
+
 </script>
 
 <template>
