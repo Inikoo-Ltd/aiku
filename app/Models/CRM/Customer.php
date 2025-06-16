@@ -159,6 +159,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read Collection<int, Portfolio> $portfolios
  * @property-read Collection<int, Asset> $products
+ * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
  * @property-read Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read ShopifyUser|null $shopifyUser

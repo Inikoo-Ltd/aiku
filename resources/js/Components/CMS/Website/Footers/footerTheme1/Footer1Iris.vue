@@ -9,8 +9,7 @@ import { faShieldAlt, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faTrian
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from '@fal'
 import Image from '@/Components/Image.vue'
-import { ref } from 'vue'
-import { inject } from 'vue'
+import { inject ,ref} from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
@@ -50,7 +49,7 @@ const onSubmitSubscribe = async () => {
 	} else {  // If in Iris or Retina
 		try {
 			await axios.post(
-				window.origin + '/app/webhooks/subscribe-newsletter/' + layout?.iris?.shop?.id,
+				window.origin + '/app/webhooks/subscribe-newsletter',
 				{
 					email: inputEmail.value,
 				},
@@ -274,19 +273,6 @@ const onSubmitSubscribe = async () => {
                             </div>
                         </section>
 
-                        <!-- Subscribe column -->
-                        <!-- <div class="mt-10 xl:mt-0">
-                            <h3 class="text-sm/6 font-semibold text-white">Subscribe to our newsletter</h3>
-                            <p class="mt-2 text-sm/6 text-gray-300">The latest news, articles, and resources, sent to your inbox weekly.</p>
-                            <form class="mt-6 sm:flex sm:max-w-md">
-                                <label for="email-address" class="sr-only">Email address</label>
-                                <input type="email" name="email-address" id="email-address" autocomplete="email" required="" class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:w-28 sm:text-sm/6" placeholder="First name" />
-                                <input type="email" name="email-address" id="email-address" autocomplete="email" required="" class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:w-64 sm:text-sm/6 ml-2" placeholder="Email" />
-                            </form>
-                            <div class="mt-4 sm:mt-2 sm:shrink-0 w-full max-w-96 pr-2">
-                                <button type="submit" class="flex w-full items-center justify-center rounded-md bg-gray-200 text-gray-700 px-3 py-2 text-sm font-semibold shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">Subscribe</button>
-                            </div>
-                        </div> -->
                     </div>
                 </div>
 

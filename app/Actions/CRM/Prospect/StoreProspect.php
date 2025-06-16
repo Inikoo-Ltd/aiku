@@ -117,14 +117,14 @@ class StoreProspect extends OrgAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
-    public function afterValidator(Validator $validator)
+    public function afterValidator(Validator $validator): void
     {
         if (!trim($this->get('contact_name'))) {
             $firstName = trim($this->get('first_name'));
             $lastName  = trim($this->get('last_name'));
 
             if ($firstName || $lastName) {
-                $this->set('contact_name', trim($firstName . ' ' . $lastName));
+                $this->set('contact_name', trim($firstName.' '.$lastName));
             }
         }
     }
@@ -141,10 +141,10 @@ class StoreProspect extends OrgAction
             'last_contacted_at' => 'sometimes|nullable|date',
             'address'           => ['sometimes', 'nullable', new ValidAddress()],
             'contact_name'      => ['nullable', 'string', 'max:255'],
-            'first_name'       => ['nullable', 'string', 'max:255'],
-            'last_name'        => ['nullable', 'string', 'max:255'],
+            'first_name'        => ['nullable', 'string', 'max:255'],
+            'last_name'         => ['nullable', 'string', 'max:255'],
             'company_name'      => ['nullable', 'string', 'max:255'],
-            'is_opt_in'       => ['sometimes', 'boolean'],
+            'is_opt_in'         => ['sometimes', 'boolean'],
             'email'             => [
                 $this->strict ? 'email' : 'string:500',
                 new IUnique(
@@ -180,7 +180,7 @@ class StoreProspect extends OrgAction
             $rules['customer_id'] = [
                 'sometimes',
                 'nullable',
-                'exists:customers,id,shop_id,' . $this->shop->id,
+                'exists:customers,id,shop_id,'.$this->shop->id,
             ];
         }
 

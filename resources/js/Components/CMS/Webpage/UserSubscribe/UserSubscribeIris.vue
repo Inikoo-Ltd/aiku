@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles"
-import { router } from "@inertiajs/vue3"
 import { inject, ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -12,15 +11,13 @@ import axios from "axios"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 library.add(faCheck, faEnvelope, faCheckCircle)
 
-
-const props = defineProps<{
+defineProps<{
 	fieldValue: {}
 	theme?: any
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-// console.log('layozzut', layout?.iris?.website?.slug)
 
 const isLoadingSubmit = ref(false)
 const currentState = ref("")
@@ -46,7 +43,7 @@ const onSubmitSubscribe = async () => {
 	} else {  // If in Iris or Retina
 		try {
 			await axios.post(
-				window.origin + '/app/webhooks/subscribe-newsletter/' + layout?.iris?.shop?.id,
+				window.origin + '/app/webhooks/subscribe-newsletter',
 				{
 					email: inputEmail.value,
 				},
