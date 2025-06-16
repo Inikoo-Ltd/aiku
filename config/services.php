@@ -52,7 +52,7 @@ return [
         'client_secret' => env('AMAZON_CLIENT_SECRET'),
         'redirect_uri' => env('AMAZON_REDIRECT_URI', env('APP_URL') . '/oauth/amazon/callback'),
         'region' => env('AMAZON_REGION', 'na'),
-        'sandbox' => env('AMAZON_SANDBOX', false),
+        'sandbox' => env('AMAZON_SANDBOX', true),
         'marketplace_id' => env('AMAZON_MARKETPLACE_ID'),
         'refresh_token' => env('AMAZON_REFRESH_TOKEN'),
     ],

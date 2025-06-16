@@ -128,7 +128,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::AMAZON => [
                             'name'       => 'retina.models.dropshipping.amazon.batch_upload',
                             'parameters' => [
-                                'ebayUser' => $this->customerSalesChannel->user->id
+                                'amazonUser' => $this->customerSalesChannel->user->id
                             ]
                         ],
                         default => false

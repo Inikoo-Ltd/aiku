@@ -24,6 +24,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
@@ -428,6 +429,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function tiktokUser(): HasOne
     {
         return $this->hasOne(TiktokUser::class);
+    }
+
+    public function amazonUsers(): HasMany
+    {
+        return $this->hasMany(AmazonUser::class);
     }
 
     public function deliveryNotes(): HasMany

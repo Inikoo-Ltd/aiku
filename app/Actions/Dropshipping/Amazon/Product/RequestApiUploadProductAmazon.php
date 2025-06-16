@@ -18,6 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -63,6 +64,7 @@ class RequestApiUploadProductAmazon extends RetinaAction
 
             UploadProductToAmazonProgressEvent::dispatch($amazonUser, $portfolio);
         } catch (\Exception $e) {
+            Log::info("Failed to upload product due to: " . $e->getMessage());
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
         }
     }

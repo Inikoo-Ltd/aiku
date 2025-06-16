@@ -47,6 +47,11 @@ const selectSocketi = (porto: {}) => {
             event: `ebay.${props.platid}.upload-product.${porto.id}`,
             action: '.ebay-upload-progress'
         }
+    } else if (props.platform_data.type === 'amazon') {
+        return {
+            event: `amazon.${props.platid}.upload-product.${porto.id}`,
+            action: '.amazon-upload-progress'
+        }
     }
 }
 

@@ -21,19 +21,19 @@ trait WithAmazonApiRequest
      */
     protected function getAmazonConfig()
     {
-        $sandbox = config('services.amazon.sandbox');
-
         $config = [
             'app_id' => config('services.amazon.app_id'),
             'client_id' => config('services.amazon.client_id'),
             'client_secret' => config('services.amazon.client_secret'),
             'redirect_uri' => config('services.amazon.redirect_uri'),
             'region' => config('services.amazon.region', 'eu'),
-            'sandbox' => $sandbox,
+            'sandbox' => config('services.amazon.sandbox'),
+            'access_token' => Arr::get($this->settings, 'credentials.amazon_access_token'),
+            'refresh_token' => Arr::get($this->settings, 'credentials.amazon_refresh_token'),
         ];
 
         // Set token sources based on environment
-        if ($sandbox) {
+        /*if ($sandbox) {
             $storedAccessToken = config('services.amazon.access_token', null);
             if ($storedAccessToken) {
                 $config['access_token'] = $storedAccessToken;
@@ -58,7 +58,7 @@ trait WithAmazonApiRequest
         } else {
             $config['access_token'] = Arr::get($this->settings, 'credentials.amazon_access_token');
             $config['refresh_token'] = Arr::get($this->settings, 'credentials.amazon_refresh_token');
-        }
+        }*/
 
         return $config;
     }
@@ -117,23 +117,22 @@ trait WithAmazonApiRequest
         };
     }
 
-    public function getAmazonMarketplaceId($config = null): string
+    public function getAmazonMarketplaceId(): string
     {
-        if (!$config) {
-            $config = $this->getAmazonConfig();
-        }
+        $config = $this->getAmazonConfig();
+
         $res = Http::withHeaders([
             'x-amz-access-token' => $config['access_token'],
         ])->get("{$this->getAmazonBaseUrl()}/sellers/v1/marketplaceParticipations");
 
         if ($res->successful()) {
             $data = $res->json();
-            dd($data);
+
             if (isset($data['payload']) && is_array($data['payload']) && count($data['payload']) > 0) {
-                return Arr::get($data['payload'][0], 'marketplaceId');
+                return Arr::get($data, 'payload.0.marketplace.id');
             }
         }
-        return "";
+        return $res;
     }
 
     /**
@@ -194,7 +193,7 @@ trait WithAmazonApiRequest
                 'client_id' => $config['client_id'],
                 'client_secret' => $config['client_secret']
             ]);
-
+            dd($response->body());
             if ($response->successful()) {
                 $tokenData = $response->json();
 
