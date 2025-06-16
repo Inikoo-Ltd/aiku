@@ -18,7 +18,6 @@
 
 
         @if(request()->get('website'))
-            {!! \Arr::get(request()->get('website')->settings, 'script_website.header') !!}
             @cache('iris-favicon-'.request()->get('website')->id, 3600)
             <link rel="icon" type="image/png" sizes="16x16" href="{{ request()->get('website')->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png') }}">
             <link rel="icon" type="image/png" sizes="32x32" href="{{ request()->get('website')->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png') }}">
