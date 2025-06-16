@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faCube, faHeadSide, faLink, faSeedling, faHeart } from "@fal"
+import { faCube, faLink, faSeedling, faHeart } from "@fal"
 import { faBox, faPlus, faVial } from "@far"
-import { faChevronDown, faCircle, faMedal, faStar } from "@fas"
+import { faChevronDown, faCircle, faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
@@ -12,7 +12,7 @@ import { useLocaleStore } from '@/Stores/locale'
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { ConfirmPopupStyle } from "primevue"
+import ProductContents from "./ProductContents.vue"
 
 import btree from '@/../art/payment_service_providers/btree.svg'
 import cash from '@/../art/payment_service_providers/cash.svg'
@@ -34,64 +34,20 @@ const props = defineProps<{
     modelValue: any
     webpageData?: any
     blockData?: Object
-    fieldValue: {}
 }>()
 
 const locale = useLocaleStore()
-const orderQuantity = ref(0)
 const isFavorite = ref(false)
 const cancelToken = ref<Function | null>(null)
-console.log('poprs', props)
 const product = ref({
     labels: ['Vegan', 'Handmade', 'Cruelty Free', 'Plastic Free'],
-    images: [
-        'https://media.aiku.io/QE3VZW2yBT-RO4qWYuaa3ouc5WtTsBochW4VDw9sKJQ/bG9jYWw6Ly9tZWRpYS85US8wQy82MFIzMEMxSDc0VzMwQzlRL2E1OTg0NGJjLmpwZw.avif',
-        'http://media.aiku.io/W2GnpCzQywkUCdpi-VUFxoLjTU7wRTWnjKjoTBr3ELQ/bG9jYWw6Ly9tZWRpYS85Ui8wQy82MFIzMEMxSDc0VzMwQzlSL2U0NWU0Mzc3LnBuZw.avif',
-        'https://media.aiku.io/SpnYAGPOMaubSosNwaGX85QdiumKFscavJl76q-9twk/bG9jYWw6Ly9tZWRpYS85Uy8wQy82MFIzMEMxSDc0VzMwQzlTL2E0ZmYxMmJlLmpwZw.avif',
-        'https://media.aiku.io/zM4hxmcha55ajZYIraLElQKQslHD8g8OZjqDNoquktg/bG9jYWw6Ly9tZWRpYS9IRy8wQy82MFIzMEMxSDc0VzMwQ0hHLzZiZTc2ZTJkLmpwZw.avif',
-        'https://media.aiku.io/QE3VZW2yBT-RO4qWYuaa3ouc5WtTsBochW4VDw9sKJQ/bG9jYWw6Ly9tZWRpYS85US8wQy82MFIzMEMxSDc0VzMwQzlRL2E1OTg0NGJjLmpwZw.avif',
-        'http://media.aiku.io/W2GnpCzQywkUCdpi-VUFxoLjTU7wRTWnjKjoTBr3ELQ/bG9jYWw6Ly9tZWRpYS85Ui8wQy82MFIzMEMxSDc0VzMwQzlSL2U0NWU0Mzc3LnBuZw.avif'
-    ],
-    paymentLogos: [
-        { alt: 'Paypal', src: 'https://e7.pngegg.com/pngimages/292/77/png-clipart-paypal-logo-illustration-paypal-logo-icons-logos-emojis-tech-companies.png' },
-        { alt: 'Visa', src: 'https://e7.pngegg.com/pngimages/687/457/png-clipart-visa-credit-card-logo-payment-mastercard-usa-visa-blue-company.png' },
-        { alt: 'Mastercard', src: 'https://i.pinimg.com/736x/38/2f/0a/382f0a8cbcec2f9d791702ef4b151443.jpg' }
-    ]
 })
 
 const toggleFavorite = () => {
     isFavorite.value = !isFavorite.value
 }
 
-const increaseQuantity = () => {
-    orderQuantity.value++
-}
 
-const decreaseQuantity = () => {
-    if (product.value.orderQuantity > 1) {
-        product.value.orderQuantity--
-    }
-}
-
-// src/data/faqs.ts
-const productFaqs = [
-    {
-        question: 'How do they come packaged?',
-        answer: 'These bath bombs come individually wrapped in recyclable packaging for freshness and protection during transit.'
-    },
-    {
-        question: 'Are these bath bombs safe for sensitive skin?',
-        answer: 'Yes, they are made with skin-friendly ingredients and free from harsh chemicals, but a patch test is always recommended.'
-    },
-    {
-        question: 'Can I use these bath bombs in a Jacuzzi?',
-        answer: 'We do not recommend using bath bombs in Jacuzzis as they may interfere with the jets or filter systems.'
-    },
-    {
-        question: 'What is the shelf life of the bath bombs?',
-        answer: 'Our bath bombs have a shelf life of up to 12 months when stored in a cool, dry place.'
-    }
-]
 
 const debounceTimer = ref(null)
 const onDescriptionUpdate = (val) => {
@@ -162,15 +118,12 @@ const selectImage = (code: string) => {
     }
 }
 
-
-const productSpec = "Lorem Ipsum s been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not onheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-
 console.log(props)
 </script>
 
 <template>
     <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6">
-        <div class="grid grid-cols-12 gap-x-10 mb-12">
+        <div class="grid grid-cols-12 gap-x-10 mb-2">
             <!-- Left Column (7/12) -->
             <div class="col-span-7">
                 <!-- Informasi Produk -->
@@ -223,65 +176,7 @@ console.log(props)
                         <span>{{ label }}</span>
                     </div>
                 </div>
-
-                <!-- Spesifikasi Produk -->
-                <!-- Wrapper -->
-<div class="max-w-md w-full space-y-4">
-
-    <!-- Spesifikasi Produk -->
-    <Disclosure v-slot="{ open }">
-        <DisclosureButton
-            class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
-            Product Specification & Documentation
-            <FontAwesomeIcon
-                :icon="faChevronDown"
-                class="text-sm text-gray-500 transform transition-transform duration-200"
-                :class="{ 'rotate-180': open }"
-            />
-        </DisclosureButton>
-        <DisclosurePanel class="text-sm text-gray-600">
-            <p>{{ productSpec }}</p>
-        </DisclosurePanel>
-    </Disclosure>
-
-    <!-- FAQ -->
-    <div>
-        <div class="text-sm text-gray-500 mb-1 font-semibold">Frequently Asked Questions (FAQs)</div>
-        <div class="space-y-2">
-            <Disclosure v-for="(faq, i) of productFaqs" :key="i" v-slot="{ open }">
-                <DisclosureButton
-                    class="w-full py-1 border-b border-gray-400 font-bold text-gray-800 flex justify-between items-center">
-                    {{ faq.question }}
-                    <FontAwesomeIcon
-                        :icon="faChevronDown"
-                        class="text-sm text-gray-500 transform transition-transform duration-200"
-                        :class="{ 'rotate-180': open }"
-                    />
-                </DisclosureButton>
-                <DisclosurePanel class="text-sm text-gray-600 py-2">
-                    <p>{{ faq.answer }}</p>
-                </DisclosurePanel>
-            </Disclosure>
-        </div>
-    </div>
-
-    <!-- Review -->
-    <div class="flex items-center justify-between font-bold cursor-pointer border-t pt-4 border-gray-300">
-        <div>Customer Reviews</div>
-        <div class="flex items-center gap-[1px]">
-            <FontAwesomeIcon
-                :icon="faStar"
-                class="text-[9px] text-gray-600"
-                v-for="n in 5"
-                :key="'star-' + n"
-            />
-            <span class="ml-1 font-normal text-xs">{{ 31 }}</span>
-        </div>
-        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
-    </div>
-
-</div>
-</div>
+            </div>
 
 
             <!-- Right Column (5/12) -->
@@ -360,7 +255,15 @@ console.log(props)
 
                 </div>
             </div>
+
+
+
+            <!-- Wrapper -->
+
         </div>
+
+        <ProductContents :product="props.modelValue.product"/>
+
 
     </div>
 </template>
