@@ -32,7 +32,7 @@ class UpdateBrand extends OrgAction
             $brand     = SaveModelImage::run(
                 model: $brand,
                 imageData: $imageData,
-                scope: 'brand',
+                scope: 'image',
             );
         }
         $brand->update($modelData);

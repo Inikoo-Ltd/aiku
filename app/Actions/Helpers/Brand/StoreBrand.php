@@ -41,7 +41,7 @@ class StoreBrand extends OrgAction
             $brand     = SaveModelImage::run(
                 model: $brand,
                 imageData: $imageData,
-                scope: 'brand',
+                scope: 'image',
             );
 
         }
