@@ -38,38 +38,38 @@ class ShowStandAloneRegistration extends IrisAction
         return Inertia::render(
             'Auth/StandAloneRegistration',
             [
-            'countriesAddressData' => GetAddressData::run(),
-            'polls' => $pollsResource,
-            'client' => $webUser,
-            'registerRoute' => [
-                'name' => 'retina.finish_pre_register.store',
-                'parameters' => [
-                    'shop' => $shop->id
+                'countriesAddressData' => GetAddressData::run(),
+                'polls' => $pollsResource,
+                'client' => $webUser,
+                'registerRoute' => [
+                    'name' => 'retina.finish_pre_register.store',
+                    'parameters' => [
+                        'shop' => $shop->id
+                    ],
+                    'method' => 'POST'
                 ],
-                'method' => 'POST'
-            ],
-            'timeline'  => [
-                "register" => [
-                    "label" => "Register",
-                    "tooltip" => "Registered",
-                    "key" => "register",
-                    "timestamp" => now(),
+                'timeline'  => [
+                    "register" => [
+                        "label" => "Register",
+                        "tooltip" => "Registered",
+                        "key" => "register",
+                        "timestamp" => now(),
+                    ],
+                    "complete" => [
+                        "label" => "Complete Registration",
+                        "tooltip" => "Complete Registration",
+                        "key" => "complete",
+                        "timestamp" => null
+                    ],
+                    "finish" => [
+                        "label" => "Finish",
+                        "tooltip" => "Finished",
+                        "key" => "finish",
+                        "timestamp" => null
+                    ],
                 ],
-                "complete" => [
-                    "label" => "Complete Registration",
-                    "tooltip" => "Complete Registration",
-                    "key" => "complete",
-                    "timestamp" => null
-                ],
-                "finish" => [
-                    "label" => "Finish",
-                    "tooltip" => "Finished",
-                    "key" => "finish",
-                    "timestamp" => null
-                ],
-            ],
-            'current_timeline'  => 'complete',
-        ]
+                'current_timeline'  => 'complete',
+            ]
         );
     }
 

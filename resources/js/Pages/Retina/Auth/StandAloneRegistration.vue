@@ -153,6 +153,76 @@ simplePolls.value.forEach((poll) => {
 				<form @submit.prevent="submit" class="space-y-12 px-14 pb-10">
 					<div class="border-b border-gray-900/10 pb-12">
 						<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+							<!-- Email -->
+							<div class="sm:col-span-6">
+								<label
+									for="email"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>{{ trans("Email") }}</label
+								>
+								<div class="mt-2">
+									<!-- make IconField full-width -->
+									<IconField class="w-full">
+										<InputIcon>
+											<FontAwesomeIcon :icon="faEnvelope" />
+										</InputIcon>
+
+										<!-- and make the input itself full-width -->
+										<InputText
+											v-model="form.email"
+											type="email"
+											id="email"
+											name="email"
+											class="w-full"
+											xdisabled
+											required />
+									</IconField>
+
+									<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
+										{{ form.errors.email }}
+									</p>
+								</div>
+							</div>
+
+							<!-- Password -->
+							<div class="sm:col-span-3">
+								<label
+									for="password"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>Password</label
+								>
+								<div class="mt-2 password">
+									<PureInput
+										v-model="form.password"
+										@update:modelValue="(e) => form.clearErrors('password')"
+										:type="'password'"
+										required />
+									<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
+										{{ form.errors.password }}
+									</p>
+								</div>
+							</div>
+							
+							<!-- Retype Password -->
+							<div class="sm:col-span-3">
+								<label
+									for="password-confirmation"
+									class="capitalize block text-sm font-medium text-gray-700"
+									>Retype Password</label
+								>
+								<div class="mt-2 password">
+									<PureInput
+										v-model="form.password_confirmation"
+										:type="'password'"
+										required />
+									<p
+										v-if="form.errors.password_confirmation"
+										class="text-sm text-red-600 mt-1">
+										{{ form.errors.password_confirmation }}
+									</p>
+								</div>
+							</div>
+
 							<!-- First Name -->
 							<div class="sm:col-span-6">
 								<label
@@ -176,37 +246,6 @@ simplePolls.value.forEach((poll) => {
 										v-if="form.errors.contact_name"
 										class="text-sm text-red-600 mt-1">
 										{{ form.errors.contact_name }}
-									</p>
-								</div>
-							</div>
-
-							<!-- Email -->
-							<div class="sm:col-span-3">
-								<label
-									for="email"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Email") }}</label
-								>
-								<div class="mt-2">
-									<!-- make IconField full-width -->
-									<IconField class="w-full">
-										<InputIcon>
-											<FontAwesomeIcon :icon="faEnvelope" />
-										</InputIcon>
-
-										<!-- and make the input itself full-width -->
-										<InputText
-											v-model="form.email"
-											type="email"
-											id="email"
-											name="email"
-											class="w-full"
-											disabled
-											required />
-									</IconField>
-
-									<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
-										{{ form.errors.email }}
 									</p>
 								</div>
 							</div>
@@ -235,6 +274,7 @@ simplePolls.value.forEach((poll) => {
 									</p>
 								</div>
 							</div>
+
 							<!-- Business Name -->
 							<div class="sm:col-span-6">
 								<label
@@ -261,6 +301,7 @@ simplePolls.value.forEach((poll) => {
 									</p>
 								</div>
 							</div>
+
 							<!-- Website -->
 							<div class="sm:col-span-6">
 								<label
@@ -280,9 +321,11 @@ simplePolls.value.forEach((poll) => {
 									</p>
 								</div>
 							</div>
+
 							<div class="sm:col-span-6">
 								<hr />
 							</div>
+
 							<div class="sm:col-span-6">
 								<label for="address" class="capitalize block text-sm font-medium text-gray-700" >{{ trans("Country") }}</label >
 								<Address
@@ -292,9 +335,11 @@ simplePolls.value.forEach((poll) => {
 									:options="{ countriesAddressData: countriesAddressData }"
 									:fieldData="addressFieldData" />
 							</div>
+
 							<div class="sm:col-span-6">
 								<hr />
 							</div>
+
 							<div
 								v-for="(pollReply, idx) in form.poll_replies"
 								:key="pollReply.id"
@@ -325,45 +370,9 @@ simplePolls.value.forEach((poll) => {
 									*{{ form.errors[`poll_replies.${idx}`] }}
 								</p>
 							</div>
+
 							<div class="sm:col-span-6">
 								<hr />
-							</div>
-							<!-- Password -->
-							<div class="sm:col-span-3">
-								<label
-									for="password"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>Password</label
-								>
-								<div class="mt-2 password">
-									<PureInput
-										v-model="form.password"
-										@update:modelValue="(e) => form.clearErrors('password')"
-										:type="'password'"
-										required />
-									<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
-										{{ form.errors.password }}
-									</p>
-								</div>
-							</div>
-							<!-- Retype Password -->
-							<div class="sm:col-span-3">
-								<label
-									for="password-confirmation"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>Retype Password</label
-								>
-								<div class="mt-2 password">
-									<PureInput
-										v-model="form.password_confirmation"
-										:type="'password'"
-										required />
-									<p
-										v-if="form.errors.password_confirmation"
-										class="text-sm text-red-600 mt-1">
-										{{ form.errors.password_confirmation }}
-									</p>
-								</div>
 							</div>
 							
 							<!-- Opt in newsletter -->

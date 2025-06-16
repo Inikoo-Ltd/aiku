@@ -18,6 +18,7 @@ import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
@@ -97,8 +98,16 @@ const onCallbackGoogleLogin = (e) => {
 
             <form class="flex flex-col gap-y-6">
 
+				<!-- Submit Button -->
+				<ButtonWithLink
+					:routeTarget="{
+						name: 'retina.register_standalone'
+					}"
+					full
+					:loading="isLoading"
+					label="Register"
+				/>
 
-               
 
                 <!-- Google Login -->
                 <div class="mx-auto w-fit">
