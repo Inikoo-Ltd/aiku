@@ -222,6 +222,7 @@ use App\Actions\Web\Banner\UpdateBanner;
 use App\Actions\Web\Banner\UpdateBannerState;
 use App\Actions\Web\Banner\UpdateUnpublishedBannerSnapshot;
 use App\Actions\Web\Banner\UploadImagesToBanner;
+use App\Actions\Web\ModelHasContent\DeleteModelHasContent;
 use App\Actions\Web\ModelHasContent\StoreModelHasContent;
 use App\Actions\Web\ModelHasContent\UpdateModelHasContent;
 use App\Actions\Web\ModelHasWebBlocks\BulkUpdateModelHasWebBlocks;
@@ -784,6 +785,7 @@ Route::name('product_category.')->group(function () {
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');
+    Route::delete('delete', DeleteModelHasContent::class)->name('delete');
 });
 
 
