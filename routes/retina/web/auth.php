@@ -18,7 +18,6 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
 use App\Actions\Retina\SysAdmin\FinishPreRegisterRetinaCustomer;
-use App\Actions\Retina\SysAdmin\PreRegisterRetina;
 use App\Actions\Retina\SysAdmin\PreRegisterRetinaCustomer;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
@@ -33,7 +32,7 @@ Route::middleware('guest:retina')->group(function () {
 
     Route::post('{shop:id}/register-pre-customer', PreRegisterRetinaCustomer::class)->name('register_pre_customer.store');
     Route::post('{shop:id}/login-google', GoogleLoginRetina::class)->name('login_google');
-    Route::post('{shop:id}/register-google', PreRegisterRetina::class)->name('register_pre_customer_google.store');
+    Route::post('{shop:id}/register-google', PreRegisterRetinaCustomer::class)->name('register_pre_customer_google.store');
 
 
     Route::get('register', ShowRetinaRegister::class)->name('register');
