@@ -24,7 +24,7 @@ class ReorderModelHasContent extends OrgAction
             $content = $parent->contents()->find($id);
 
             if ($content) {
-                $content->update(['position' => $newPosition]);
+                $content->update($newPosition);
             }
         }
     }
@@ -34,5 +34,11 @@ class ReorderModelHasContent extends OrgAction
         return [
             'positions' => ['required', 'array']
         ];
+    }
+
+    public function action(Product|ProductCategory $parent, array $modelData)
+    {
+        $this->initialisationFromShop($parent->shop, $modelData);
+        return $this->handle($parent, $this->validatedData);
     }
 }
