@@ -68,20 +68,20 @@ class StoreModelHasContent extends OrgAction
         ];
     }
 
-    public function inProduct(Product $product, ActionRequest $request): void
+    public function inProduct(Product $product, ActionRequest $request): ModelHasContent
     {
         $this->initialisationFromShop($product->shop, $request);
-        $this->handle($product, $this->validatedData);
+        return $this->handle($product, $this->validatedData);
     }
 
-    public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): void
+    public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): ModelHasContent
     {
         $this->initialisationFromShop($productCategory->shop, $request);
-        $this->handle($productCategory, $this->validatedData);
+        return $this->handle($productCategory, $this->validatedData);
     }
 
-    public function jsonResponse(ModelHasContent $content)
+    public function jsonResponse(ModelHasContent $modelHasContent)
     {
-        return ModelHasContentsResource::make($content);
+        return ModelHasContentsResource::make($modelHasContent);
     }
 }
