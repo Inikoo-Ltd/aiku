@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
+use App\Actions\IrisAction;
 use App\Actions\CRM\Customer\FinishPreRegisterCustomer;
 use App\Actions\RetinaAction;
 use App\Enums\CRM\Poll\PollTypeEnum;
@@ -26,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class FinishPreRegisterRetinaCustomer extends RetinaAction
+class FinishPreRegisterRetinaCustomer extends IrisAction
 {
     /**
      * @throws \Throwable
@@ -138,9 +139,9 @@ class FinishPreRegisterRetinaCustomer extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function asController(Shop $shop, ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): RedirectResponse
     {
-        $this->registerDropshippingInitialisation($shop, $request);
+        $this->initialisation($request);
         $this->handle(request()->user(), $this->validatedData);
         return redirect()->route('retina.dashboard.show');
     }

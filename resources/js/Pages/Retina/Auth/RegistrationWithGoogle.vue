@@ -39,6 +39,7 @@ const props = defineProps<{
 		contact_name: string
 
 	}
+	googleData: {}
 }>()
 
 // console.log('client', props.client)
@@ -53,8 +54,8 @@ const initialPollReplies = props.polls.map((poll) => ({
 
 // Define form using Inertia's useForm
 const form = useForm({
-	contact_name: props.client?.contact_name || "",
-	email: props.client?.email || "",
+	contact_name: props.googleData?.name || "",
+	email: props.googleData?.email || "",
 	phone: "",
 	company_name: "",
 	website: "",
@@ -134,6 +135,8 @@ simplePolls.value.forEach((poll) => {
 			:state="current_timeline"
 			:slidesPerView="3"
 		/> -->
+
+		<!-- {{ googleData }} -->
 
 		<div class="max-w-2xl mx-auto my-8">
 			

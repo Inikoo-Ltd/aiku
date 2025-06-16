@@ -36,10 +36,7 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
                 'countriesAddressData' => GetAddressData::run(),
                 'polls'                => $pollsResource,
                 'registerRoute'        => [
-                    'name'       => 'retina.register_pre_customer.store',
-                    'parameters' => [
-                        'shop' => $shop->id
-                    ]
+                    'name'       => 'retina.finish_pre_register.store',
                 ],
 
                 'googleData'=>$modeData,
@@ -51,19 +48,19 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
         );
     }
 
-    public function rules(): array
-    {
-        return [
-            'google_credential'     => ['required', 'string', 'max:2048'],
-        ];
-    }
+    // public function rules(): array
+    // {
+    //     return [
+    //         'google_credential'     => ['required', 'string', 'max:2048'],
+    //     ];
+    // }
 
-    public function asController(string $googleCredential, ActionRequest $request): Response
+    public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
 
         $client  = new Google_Client(['client_id' => config('services.google.client_id')]);
-        $payload = $client->verifyIdToken($this->validatedData['google_credential']);
+        $payload = $client->verifyIdToken($request->input('google_credential'));
         if (!$payload) {
             // give vike error
         }

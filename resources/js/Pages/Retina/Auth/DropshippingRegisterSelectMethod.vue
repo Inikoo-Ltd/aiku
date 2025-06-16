@@ -19,6 +19,8 @@ import { notify } from "@kyvg/vue3-notification"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import axios from "axios"
+import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
@@ -46,46 +48,44 @@ const layout = inject('layout', retinaLayoutStructure)
 const isLoading = ref(false)
 
 
-
+const registerAccount = ref(null)
+const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
-const onCallbackGoogleLogin = (e) => {
+const onCallbackGoogleLogin = async (e) => {
     // console.log('xxxxxx Google login callback', e)
     const userData = decodeCredential(e.credential)
     // console.log("zzz Handle the userData", userData)
 
-    // Section: Submit
-    router.post(
-        route('retina.login_google', {
-            shop: layout.website?.id
-        }),
-        {
-            google_credential: e.credential,
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingGoogle.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully register"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to login with Google. Please contact administrator."),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingGoogle.value = false
-            },
-        }
-    )
+	isLoadingGoogle.value = true
+
+    router.get(route('retina.register_step_3'), {
+		google_credential: e.credential
+	})
+
+    // if(data.status === 200) {
+    //     notify({
+    //         title: trans("Success"),
+    //         text: trans("Successfully login"),
+    //         type: "success"
+    //     })
+
+    //     if ('not registered yes') {
+    //         isOpenModalRegistration.value = true
+    //         registerAccount.value = data.response?.data
+    //     } else {
+
+    //     }
+
+    // } else {
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: trans("Failed to login with Google. Please contact administrator."),
+    //         type: "error"
+    //     })
+    // }
+
+    isLoadingGoogle.value = false
+
 }
 </script>
 
@@ -108,13 +108,12 @@ const onCallbackGoogleLogin = (e) => {
 					label="Register"
 				/>
 
-               
+				<div class="text-center text-sm">
+					{{trans('or use your google account to start registration process')}}
+				</div>
 
                 <!-- Google Login -->
                 <div class="mx-auto w-fit">
-                    <div class="text-center mb-4 text-sm">
-                        {{trans('or use your google account to start registration process')}}
-                    </div>
 
                     <GoogleLogin
                         :clientId="google.client_id"
@@ -137,6 +136,27 @@ const onCallbackGoogleLogin = (e) => {
                 </div>
             </form>
         </div>
+
+
+
+		<Modal :isOpen="isOpenModalRegistration" @close="isOpenModalRegistration = false" width="max-w-2xl w-full">
+			<div class="p-6">
+				<h2 class="text-lg mb-2">
+					Hello, <span class="font-semibold">{{ registerAccount?.name }}</span>!
+				</h2>
+
+				<div class="text-gray-600 mb-4">
+					Your email <span class="italic">{{ registerAccount?.email }}</span> is not registered yet.
+					Do you want to register this account?
+				</div>
+
+				<div class="flex gap-x-2">
+					<Button label="No, thanks" type="tertiary" />
+					<Button label="Yes, register" full />
+				</div>
+			</div>
+
+		</Modal>
     </div>
 	
 

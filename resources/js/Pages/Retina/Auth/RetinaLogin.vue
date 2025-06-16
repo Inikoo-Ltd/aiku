@@ -13,6 +13,8 @@ import { GoogleLogin, decodeCredential  } from 'vue3-google-login'
 import { notify } from '@kyvg/vue3-notification'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import axios from 'axios'
+import Modal from '@/Components/Utils/Modal.vue'
 
 defineOptions({ layout: RetinaShowIris })
 const props = defineProps<{
@@ -48,45 +50,79 @@ onMounted(async () => {
     inputUsername.value?._inputRef?.focus()
 })
 
+const registerAccount = ref(null)
+const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
-const onCallbackGoogleLogin = (e) => {
+const onCallbackGoogleLogin = async (e) => {
     // console.log('xxxxxx Google login callback', e)
     const userData = decodeCredential(e.credential)
     // console.log("zzz Handle the userData", userData)
 
     // Section: Submit
-    router.post(
-        route('retina.login_google', {
-            shop: layout.website?.id
-        }),
-        {
-            google_credential: e.credential,
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingGoogle.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully login"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to login with Google. Please contact administrator."),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingGoogle.value = false
-            },
+    isLoadingGoogle.value = true
+    const data = await  axios.post(route('retina.login_google', {
+        shop: layout.website?.id
+    }), {
+        google_credential: e.credential,
+    })
+
+    if(data.status === 200) {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully login"),
+            type: "success"
+        })
+
+        if ('not registered yes') {
+            isOpenModalRegistration.value = true
+            registerAccount.value = data.response?.data
+        } else {
+
         }
-    )
+
+    } else {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to login with Google. Please contact administrator."),
+            type: "error"
+        })
+    }
+
+    isLoadingGoogle.value = false
+    
+
+    // router.post(
+    //     route('retina.login_google', {
+    //         shop: layout.website?.id
+    //     }),
+    //     {
+    //         google_credential: e.credential,
+    //     },
+    //     {
+    //         preserveScroll: true,
+    //         preserveState: true,
+    //         onStart: () => {
+    //             isLoadingGoogle.value = true
+    //         },
+    //         onSuccess: () => {
+    //             notify({
+    //                 title: trans("Success"),
+    //                 text: trans("Successfully login"),
+    //                 type: "success"
+    //             })
+    //         },
+    //         onError: errors => {
+    //             notify({
+    //                 title: trans("Something went wrong"),
+    //                 text: trans("Failed to login with Google. Please contact administrator."),
+    //                 type: "error"
+    //             })
+    //         },
+    //         onFinish: () => {
+    //             isLoadingGoogle.value = false
+    //         },
+    //     }
+    // )
 }
 </script>
 

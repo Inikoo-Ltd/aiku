@@ -53,6 +53,7 @@ Route::middleware('guest:retina')->group(function () {
     Route::get('reset-password-error', ShowRetinaResetWebUserPasswordError::class)->name('reset-password.error');
     Route::post('reset-password-send', SendRetinaResetPasswordEmail::class)->name('reset-password.send');
     Route::patch('reset-password', UpdateRetinaWebUserPassword::class)->name('reset-password.update');
+    Route::post('finish-pre-register', FinishPreRegisterRetinaCustomer::class)->name('finish_pre_register.store');
 });
 
 Route::middleware('retina-auth:retina')->group(function () {
@@ -60,5 +61,4 @@ Route::middleware('retina-auth:retina')->group(function () {
     Route::get('prepare-account', ShowRetinaPrepareAccount::class)->name('prepare-account.show');
 
     Route::get('finish-pre-register', ShowFinishPreRetinaRegister::class)->name('finish_pre_register');
-    Route::post('{shop:id}/finish-pre-register', FinishPreRegisterRetinaCustomer::class)->name('finish_pre_register.store');
 });
