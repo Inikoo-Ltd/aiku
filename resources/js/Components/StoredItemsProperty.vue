@@ -6,7 +6,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import CreateStoredItems from "./CreateStoredItems.vue"
 import Tag from '@/Components/Tag.vue'
-import { get } from "lodash"
+import { get } from 'lodash-es'
 import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
 

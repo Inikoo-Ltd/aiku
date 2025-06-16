@@ -9,7 +9,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { localesCode, OptionsTime, useFormatTime as useFormatTimeComposables } from '@/Composables/useFormatTime'
-/* import { useFormatTime } from '@/Composables/useFormatTime'; */
 library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling)
 import type { Timeline } from '@/types/Timeline'
 
@@ -108,10 +107,13 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                         </div>
                     </div>
 
+                    <!-- <pre>{{ step }}</pre> -->
+
                     <!-- Step: Description -->
                     <div v-tooltip="useFormatTimeComposables(step.timestamp, { formatTime: 'PPPPpp' })"
                         class="text-xxs md:text-xs text-[#555] text-center select-none">
-                        {{ useFormatTime(step.timestamp) }}
+                        <span v-if="step.format_time">{{ useFormatTimeComposables(step.timestamp, { formatTime: step.format_time }) }}</span>
+                        <span v-else>{{ useFormatTime(step.timestamp) }}</span>
                     </div>
                 </SwiperSlide>
             </template>

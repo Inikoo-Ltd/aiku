@@ -113,7 +113,7 @@ class EditWebsite extends OrgAction
                     'type'     => 'input',
                     'label'    => __('google tag id'),
                     'value'    => Arr::get($website->settings, "google_tag_id"),
-                    'placeholder' => 'G-XXXXXXXXXX',
+                    'placeholder' => 'GTM-ABC456GH',
                     'required' => false,
                 ],
                 'luigisbox_private_key' => [
@@ -305,7 +305,32 @@ class EditWebsite extends OrgAction
                     ]
                 ]
             ];
+            $blueprints[] = [
+                'label'  => __('Return Policy'),
+                'icon'   => 'fa-light fa-exchange',
+                'fields' => [
+                    'return_policy' => [
+                        'type'     => 'editor',
+                        'label'    => __('Return Policy'),
+                        'value'    => Arr::get($website->settings, 'return_policy'),
+                        'required' => false,
+                    ],
+                ]
+            ];
         }
+
+        $blueprints[] = [
+               'label'  => __('Script'),
+               'icon'   => 'fa-light fa-code',
+               'fields' => [
+                   'script_website' => [
+                       'type'     => 'editor',
+                       'label'    => __('Script'),
+                       'value'    => Arr::get($website->settings, 'script_website.header'),
+                       'required' => false,
+                   ],
+               ]
+           ];
 
 
         return Inertia::render(

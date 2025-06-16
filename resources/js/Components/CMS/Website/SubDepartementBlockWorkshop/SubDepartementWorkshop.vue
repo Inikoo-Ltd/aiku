@@ -46,7 +46,7 @@ const onChangeDepartment = (value: any) => {
 const autosave = () => {
   // Deep clone to safely modify payload without touching reactive data
   const payload = JSON.parse(JSON.stringify(toRaw(layout.value)));
-
+   console.log('autosave payload', layout.value);
   // Remove departement & sub_departments before sending to backend
   if (payload.data?.fieldValue) {
     delete payload.data.fieldValue.departement;

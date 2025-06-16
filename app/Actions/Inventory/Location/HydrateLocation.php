@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\Location;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateTotalWeight;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\Location;
 
@@ -30,6 +31,7 @@ class HydrateLocation
         LocationHydrateStocks::run($location);
         LocationHydrateStockValue::run($location);
         LocationHydratePallets::run($location);
+        LocationHydrateTotalWeight::run($location);
     }
 
 

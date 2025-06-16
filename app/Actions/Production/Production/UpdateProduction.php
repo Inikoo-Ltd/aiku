@@ -8,8 +8,8 @@
 
 namespace App\Actions\Production\Production;
 
-use App\Actions\Production\Production\Hydrators\ProductionHydrateUniversalSearch;
 use App\Actions\OrgAction;
+use App\Actions\Production\Production\Search\ProductionRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductions;
 use App\Actions\Traits\WithActionUpdate;
@@ -31,7 +31,7 @@ class UpdateProduction extends OrgAction
             GroupHydrateProductions::run($production->group);
             OrganisationHydrateProductions::dispatch($production->organisation);
         }
-        ProductionHydrateUniversalSearch::dispatch($production);
+        ProductionRecordSearch::dispatch($production);
 
         return $production;
     }

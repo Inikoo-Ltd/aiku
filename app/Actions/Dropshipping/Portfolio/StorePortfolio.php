@@ -37,6 +37,9 @@ class StorePortfolio extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
+        // TODO: Change with corret vat rate
+        $vatRate = 0.2;
+        $priceIncVat = $item->price + ($item->price * $vatRate);
         data_set($modelData, 'last_added_at', now(), overwrite: false);
 
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
@@ -45,14 +48,16 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'customer_id', $customerSalesChannel->customer_id);
         data_set($modelData, 'platform_id', $customerSalesChannel->platform_id);
 
-
         data_set($modelData, 'item_id', $item->id);
         data_set($modelData, 'item_type', class_basename($item));
         data_set($modelData, 'item_code', $item instanceof StoredItem ? $item->reference : $item->code);
         data_set($modelData, 'item_name', $item->name);
         data_set($modelData, 'customer_product_name', $item->name);
-        data_set($modelData, 'customer_price', $item->price);
-        // data_set($modelData, 'customer_description', $item->description);
+        data_set($modelData, 'customer_description', $item->description);
+        data_set($modelData, 'customer_price', $priceIncVat);
+        data_set($modelData, 'selling_price', $priceIncVat);
+        data_set($modelData, 'price_inc_vat', $priceIncVat);
+        data_set($modelData, 'margin', CalculationsProfitMargin::run($priceIncVat, $item->price, $vatRate));
 
         $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
             /** @var Portfolio $portfolio */

@@ -115,15 +115,15 @@ trait WithFamilySubNavigation
                 ]
             ],
 
-            [
-                'label'    => __('Collections'),
-                'number'   => $family->stats->number_collections,
-                'route'     => $collectionRoute,
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-album-collection'],
-                    'tooltip' => __('collections')
-                ]
-            ],
+            // [
+            //     'label'    => __('Collections'),
+            //     'number'   => $family->stats->number_collections,
+            //     'route'     => $collectionRoute,
+            //     'leftIcon' => [
+            //         'icon'    => ['fal', 'fa-album-collection'],
+            //         'tooltip' => __('collections')
+            //     ]
+            // ],
         ];
     }
 

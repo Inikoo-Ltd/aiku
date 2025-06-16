@@ -1,3 +1,4 @@
+import { Family } from './../types/family';
 import type { Component } from 'vue'
 
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
@@ -32,11 +33,14 @@ import ColumnIris from '@/Components/CMS/Webpage/Column/ColumnIris.vue'
 import DisclosureIris from '@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue'
 import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-import FamilyIris1 from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
+import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
+import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
+import CTAVideo1Iris from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Iris.vue'
+import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 
@@ -103,7 +107,11 @@ const components: Record<string, Component> = {
     'timeline': Timeline,
     'step-1' : Step2Iris,
     'carousel-1' : Carousel1Iris,
+    'collections-1': Collections1Iris,
+    'cta-video-1' : CTAVideo1Iris,
+    'video-1'  : Video1Iris,
     "user-subscribe": UserSubscribeIris,
+
 }
 
 

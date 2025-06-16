@@ -36,6 +36,7 @@ use App\Actions\HumanResources\Workplace\UI\CreateWorkplace;
 use App\Actions\HumanResources\Workplace\UI\EditWorkplace;
 use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
+use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\IndexUsers;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
@@ -60,6 +61,7 @@ Route::prefix('employees')->as('employees.')->group(function () {
             Route::get('/positions', [IndexJobPositions::class,'inEmployee'])->name('positions.index');
             Route::get('/users', [IndexUsers::class,'inEmployee'])->name('users.index');
             Route::get('/users/{user:slug}', [ShowUser::class,'inEmployee'])->name('users.show');
+            Route::get('/users/{user:slug}/edit', [EditUser::class,'inEmployee'])->name('users.edit');
 
             Route::get('/timesheets-pdf', [PdfTimesheet::class, 'inEmployee'])->name('timesheets.pdf');
             Route::get('timesheets', [IndexTimesheets::class,'inEmployee'])->name('timesheets.index');

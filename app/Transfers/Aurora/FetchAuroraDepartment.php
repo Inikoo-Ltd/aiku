@@ -19,12 +19,24 @@ class FetchAuroraDepartment extends FetchAurora
 
     protected function parseModel(): void
     {
-
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
 
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             return;
         }
+
+        $departmentsRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
+            ->select('Category Key', 'Category Code', 'Category Subject')
+            ->where('Category Branch Type', 'Root')
+            ->where('Category Scope', 'Product')
+            ->where('Category Code', 'like', 'Web.%')
+            ->where('Category Subject', 'Category')
+            ->get()->pluck('Category Key')->toArray();
+
+        if (in_array($this->auroraModelData->{'Category Root Key'}, $departmentsRootAuroraIDs)) {
+            return;
+        }
+
 
         $this->parsedData['shop'] = $shop;
 

@@ -54,11 +54,15 @@ const props = defineProps<{
         connectRoute: routeType
         isConnected: boolean
     }
+    type_ebay: {
+        connectRoute: routeType
+    }
     total_channels: {
         manual: number
         shopify: number
         woocommerce: number
         tiktok: number
+        ebay: number
     }
 }>();
 
@@ -111,6 +115,14 @@ const onSubmitWoocommerce = async () => {
     isModalWooCommerce.value = false;
     wooCommerceInput.value.name = null;
     wooCommerceInput.value.url = null;
+
+    window.location.href = response.data;
+};
+
+// Section: ebay
+const onSubmitEbay = async () => {
+    const response = await axios.post(
+        route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters));
 
     window.location.href = response.data;
 };
@@ -193,14 +205,40 @@ const onSubmitWoocommerce = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
 
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+
+                </div>
+            </div>
+            <!-- Section: Ebay -->
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+                <div
+                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <img src="https://e7.pngegg.com/pngimages/325/220/png-clipart-ebay-logo-ebay-online-shopping-amazon-com-sales-ebay-logo-text-logo-thumbnail.png"
+                         alt="" class="h-12">
+
+                    <div class="flex flex-col">
+                        <div class="font-semibold">Ebay</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}</div>
+                    </div>
+                </div>
+
+                <div class="w-full flex justify-end">
+                    <Button
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="onSubmitEbay"
+                    />
+
+                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
 
                 </div>
             </div>

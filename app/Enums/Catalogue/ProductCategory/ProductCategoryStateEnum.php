@@ -19,27 +19,27 @@ enum ProductCategoryStateEnum: string
 {
     use EnumHelperTrait;
 
-    case IN_PROCESS    = 'in_process';
-    case ACTIVE        = 'active';
-    case INACTIVE     = 'inactive';
+    case IN_PROCESS = 'in_process';
+    case ACTIVE = 'active';
+    case INACTIVE = 'inactive';
     case DISCONTINUING = 'discontinuing';
-    case DISCONTINUED  = 'discontinued';
+    case DISCONTINUED = 'discontinued';
 
-    public static function labels($forElements = false): array
+    public static function labels(): array
     {
         return [
-            'in_process'            => __('In Process'),
-            'active'                => __('Active'),
-            'inactive'             => __('Inactive'),
-            'discontinuing'         => __('Discontinuing'),
-            'discontinued'          => __('Discontinued'),
+            'in_process'    => __('In Process'),
+            'active'        => __('Active'),
+            'inactive'      => __('Inactive'),
+            'discontinuing' => __('Discontinuing'),
+            'discontinued'  => __('Discontinued'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'in_process' => [
+            'in_process'    => [
                 'tooltip' => __('In process'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-lime-500',
@@ -49,7 +49,7 @@ enum ProductCategoryStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'active' => [
+            'active'        => [
                 'tooltip' => __('Active'),
                 'icon'    => 'fal fa-check',
                 'class'   => 'text-emerald-500',
@@ -59,7 +59,7 @@ enum ProductCategoryStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'inactive' => [
+            'inactive'      => [
                 'tooltip' => __('Inactive'),
                 'icon'    => 'fal fa-ban',
                 'class'   => 'text-gray-500',
@@ -93,18 +93,18 @@ enum ProductCategoryStateEnum: string
 
     public static function countDepartments(Group|Shop|Organisation|Collection $parent): array
     {
-        if ($parent instanceof Organisation) {
+        if ($parent instanceof Organisation | $parent instanceof Group) {
             $stats = $parent->catalogueStats;
         } else {
             $stats = $parent->stats;
         }
 
         return [
-            'in_process'            => $stats->number_departments_state_in_process,
-            'active'                => $stats->number_departments_state_active,
-            'inactive'             => $stats->number_departments_state_inactive,
-            'discontinuing'         => $stats->number_departments_state_discontinuing,
-            'discontinued'          => $stats->number_departments_state_discontinued,
+            'in_process'    => $stats->number_departments_state_in_process,
+            'active'        => $stats->number_departments_state_active,
+            'inactive'      => $stats->number_departments_state_inactive,
+            'discontinuing' => $stats->number_departments_state_discontinuing,
+            'discontinued'  => $stats->number_departments_state_discontinued,
         ];
     }
 
@@ -117,24 +117,24 @@ enum ProductCategoryStateEnum: string
         }
 
         return [
-            'in_process'            => $stats->number_families_state_in_process,
-            'active'                => $stats->number_families_state_active,
-            'inactive'             => $stats->number_families_state_inactive,
-            'discontinuing'         => $stats->number_families_state_discontinuing,
-            'discontinued'          => $stats->number_families_state_discontinued,
+            'in_process'    => $stats->number_families_state_in_process,
+            'active'        => $stats->number_families_state_active,
+            'inactive'      => $stats->number_families_state_inactive,
+            'discontinuing' => $stats->number_families_state_discontinuing,
+            'discontinued'  => $stats->number_families_state_discontinued,
         ];
     }
 
-    public static function countSubDepartment(ProductCategory $parent): array
+    public static function countSubDepartment(Group|Organisation|ProductCategory $parent): array
     {
         $stats = $parent->stats;
 
         return [
-            'in_process'            => $stats->number_sub_departments_state_in_process,
-            'active'                => $stats->number_sub_departments_state_active,
-            'inactive'             => $stats->number_sub_departments_state_inactive,
-            'discontinuing'         => $stats->number_sub_departments_state_discontinuing,
-            'discontinued'          => $stats->number_sub_departments_state_discontinued,
+            'in_process'    => $stats->number_sub_departments_state_in_process,
+            'active'        => $stats->number_sub_departments_state_active,
+            'inactive'      => $stats->number_sub_departments_state_inactive,
+            'discontinuing' => $stats->number_sub_departments_state_discontinuing,
+            'discontinued'  => $stats->number_sub_departments_state_discontinued,
         ];
     }
 }

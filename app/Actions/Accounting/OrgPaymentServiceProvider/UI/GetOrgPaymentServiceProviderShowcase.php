@@ -17,7 +17,6 @@ class GetOrgPaymentServiceProviderShowcase
 
     public function handle(OrgPaymentServiceProvider $orgPaymentServiceProvider): array
     {
-        // dd($orgPaymentServiceProvider);
         return [
             'type'   => $orgPaymentServiceProvider->type,
             'slug'   => $orgPaymentServiceProvider->slug,

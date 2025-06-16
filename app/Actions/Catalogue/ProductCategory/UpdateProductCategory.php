@@ -20,8 +20,6 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -39,19 +37,32 @@ class UpdateProductCategory extends OrgAction
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY && Arr::has($modelData, 'department_id')) {
+            $productCategory = UpdateFamilyDepartment::make()->action($productCategory, [
+                'department_id' => Arr::pull($modelData, 'department_id'),
+            ]);
+
+        }
+
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         if ($imageData['image']) {
-            $this->processCatalogue($imageData, $productCategory);
+            $this->processCatalogueImage($imageData, $productCategory);
         }
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
+
+
+
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $changes         = $productCategory->getChanges();
 
-        ProductCategoryRecordSearch::dispatch($productCategory);
+        if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
+            ProductCategoryRecordSearch::dispatch($productCategory);
+        }
 
         if (Arr::has($changes, 'state')) {
             $this->productCategoryHydrators($productCategory);
@@ -73,6 +84,7 @@ class UpdateProductCategory extends OrgAction
             $this->productCategoryHydrators($productCategory);
         }
         $productCategory->refresh();
+
         return $productCategory;
     }
 
@@ -107,11 +119,22 @@ class UpdateProductCategory extends OrgAction
             'name'              => ['sometimes', 'max:250', 'string'],
             'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
-            'description'       => ['sometimes', 'required', 'max:1500'],
-            'department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
-            'sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
+            'description'       => ['sometimes', 'required', 'max:65500'],
+            'department_id' => [
+                'sometimes',
+                Rule::exists('product_categories', 'id')
+                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                    ->where('shop_id', $this->shop->id)
+            ],
+            'sub_department_id' => [
+                'sometimes',
+                Rule::exists('product_categories', 'id')
+                    ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+                    ->where('shop_id', $this->shop->id)
+            ],
+
             'follow_master'     => ['sometimes', 'boolean'],
-            'image'       => [
+            'image'             => [
                 'sometimes',
                 'nullable',
                 File::image()
@@ -129,12 +152,6 @@ class UpdateProductCategory extends OrgAction
         return $rules;
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if ($this->productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $this->set('department_id', null);
-        }
-    }
 
     public function action(ProductCategory $productCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): ProductCategory
     {
@@ -150,25 +167,16 @@ class UpdateProductCategory extends OrgAction
         return $this->handle($productCategory, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ProductCategory $productCategory, ActionRequest $request): ProductCategory
+    public function asController(ProductCategory $productCategory, ActionRequest $request): ProductCategory
     {
+
         $this->productCategory = $productCategory;
 
-        $this->initialisationFromShop($shop, $request);
-
+        $this->initialisationFromShop($productCategory->shop, $request);
         return $this->handle($productCategory, $this->validatedData);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function inSubDepartment(ProductCategory $productCategory, ActionRequest $request): ProductCategory
-    {
-        $this->productCategory = $productCategory;
-        $this->initialisationFromShop($productCategory->shop, $request);
 
-        return $this->handle($productCategory, modelData: $this->validatedData);
-    }
 
     public function jsonResponse(ProductCategory $productCategory): DepartmentsResource|SubDepartmentResource|FamilyResource
     {

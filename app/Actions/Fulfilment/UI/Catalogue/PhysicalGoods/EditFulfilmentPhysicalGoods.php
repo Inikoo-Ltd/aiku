@@ -8,16 +8,15 @@
 
 namespace App\Actions\Fulfilment\UI\Catalogue\PhysicalGoods;
 
+use App\Actions\Catalogue\Product\UI\EditProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
-use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditFulfilmentPhysicalGoods extends OrgAction
 {
@@ -71,54 +70,7 @@ class EditFulfilmentPhysicalGoods extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('id'),
-                            'fields' => [
-                                'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => $product->code,
-                                    'readonly' => true
-                                ],
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('label'),
-                                    'value' => $product->name,
-                                ],
-                                'description' => [
-                                    'type'  => 'input',
-                                    'label' => __('description'),
-                                    'value' => $product->description
-                                ],
-                                'unit' => [
-                                    'type'     => 'input',
-                                    'label'    => __('unit'),
-                                    'value'    => $product->unit,
-                                ],
-                                'units' => [
-                                    'type'     => 'input',
-                                    'label'    => __('units'),
-                                    'value'    => $product->units,
-                                ],
-                                'price' => [
-                                    'type'    => 'input',
-                                    'label'   => __('price'),
-                                    'required' => true,
-                                    'value'   => $product->price
-                                ],
-                                'state' => [
-                                    'type'    => 'select',
-                                    'label'   => __('state'),
-                                    'required' => true,
-                                    'value'   => $product->state,
-                                    'options' => Options::forEnum(AssetStateEnum::class)
-                                ],
-
-                            ]
-                        ]
-
-                    ],
+                    'blueprint' => EditProduct::make()->getBlueprint($product),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.product.update',

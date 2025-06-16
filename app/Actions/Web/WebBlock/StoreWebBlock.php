@@ -39,6 +39,7 @@ class StoreWebBlock extends OrgAction
         /** @var WebBlock $webBlock */
         $webBlock = $webBlockType->webBlocks()->create($modelData);
 
+
         foreach ($models as $model) {
             if ($model instanceof Product) {
                 $webBlock->products()->attach($model->id);

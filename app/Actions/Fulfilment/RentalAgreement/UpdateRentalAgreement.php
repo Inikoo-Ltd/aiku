@@ -83,7 +83,7 @@ class UpdateRentalAgreement extends OrgAction
             $customer->isCustomEvent = true;
             $customer->auditCustomOld = $oldData;
             $customer->auditCustomNew = $newData;
-            Event::dispatch(AuditCustom::class, [$customer]);
+            Event::dispatch(new AuditCustom($customer));
         }
 
 

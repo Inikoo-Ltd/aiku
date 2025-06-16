@@ -71,7 +71,6 @@ class IndexSubDepartments extends OrgAction
         $queryBuilder->where('product_categories.department_id', $department->id);
         $queryBuilder->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
 
-
         return $queryBuilder
             ->defaultSort('product_categories.code')
             ->select([
@@ -86,6 +85,7 @@ class IndexSubDepartments extends OrgAction
                 'departments.slug as department_slug',
                 'departments.code as department_code',
                 'departments.name as department_name',
+                'product_category_stats.number_families as number_families',
 
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
@@ -151,7 +151,8 @@ class IndexSubDepartments extends OrgAction
 
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_families', label: __('families'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

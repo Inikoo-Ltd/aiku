@@ -281,7 +281,7 @@ trait WithWooCommerceApiRequest
      *
      * @return array|null Orders data
      */
-    public function getWooCommerceOrders(array $params = [], bool $useCache = true): ?array
+    public function getWooCommerceOrders(array $params = [], bool $useCache = false): ?array
     {
         return $this->makeWooCommerceRequest('GET', 'orders', $params, $useCache);
     }

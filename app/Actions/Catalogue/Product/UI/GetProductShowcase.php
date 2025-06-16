@@ -8,8 +8,10 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
+use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetProductShowcase
@@ -18,6 +20,10 @@ class GetProductShowcase
 
     public function handle(Product $product): array
     {
+        $dataTradeUnits = [];
+        if ($product->tradeUnits) {
+            $dataTradeUnits = $this->getDataTradeUnit($product->tradeUnits);
+        }
         return [
             'imagesUploadedRoutes' => [
                 'name'       => 'grp.org.shops.show.catalogue.products.all_products.images',
@@ -53,7 +59,15 @@ class GetProductShowcase
                 ]
             ],
             'product' => ProductResource::make($product),
-            'stats'   => $product->salesIntervals
+            'stats'   => $product->salesIntervals,
+            'trade_units' => $dataTradeUnits,
         ];
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
+            return GetTradeUnitShowcase::run($tradeUnit);
+        })->toArray();
     }
 }

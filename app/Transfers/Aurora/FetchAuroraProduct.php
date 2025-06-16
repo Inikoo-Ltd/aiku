@@ -36,28 +36,27 @@ class FetchAuroraProduct extends FetchAurora
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
 
-
-
-        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
-            if ($this->auroraModelData->{'Product Family Category Key'}) {
-                $family = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Product Family Category Key'});
-                if ($family) {
-                    if ($family->shop_id != $this->parsedData['shop']->id) {
-                        dd('Wrong family - shop');
-                    }
-                    $this->parsedData['parent'] = $family;
+        $family = null;
+        if ($this->auroraModelData->{'Product Family Category Key'}) {
+            $family = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Product Family Category Key'});
+            if ($family) {
+                if ($family->shop_id != $this->parsedData['shop']->id) {
+                    dd('Wrong family - shop');
                 }
             }
         }
 
-        if ($this->auroraModelData->{'Product Customer Key'}) {
-            $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Product Customer Key'});
+        $this->parsedData['family'] = $family;
+        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
+            $this->parsedData['parent'] = $family;
+        }
 
-            $owner_type = 'Customer';
-            $owner_id   = $customer->id;
-        } else {
-            $owner_type = 'Shop';
-            $owner_id   = $this->parsedData['shop']->id;
+
+        $exclusiveForCustomerID = null;
+
+        if ($this->auroraModelData->{'Product Customer Key'}) {
+            $customer               = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Product Customer Key'});
+            $exclusiveForCustomerID = $customer->id;
         }
 
 
@@ -128,26 +127,25 @@ class FetchAuroraProduct extends FetchAurora
         $grossWeight = $this->auroraModelData->{'Product Package Weight'};
 
         $this->parsedData['product'] = [
-            'is_main'                => true,
-            'type'                   => AssetTypeEnum::PRODUCT,
-            'owner_type'             => $owner_type,
-            'owner_id'               => $owner_id,
-            'code'                   => $code,
-            'name'                   => $name,
-            'price'                  => round($unit_price, 2),
-            'status'                 => $status,
-            'unit'                   => $this->auroraModelData->{'Product Unit Label'},
-            'state'                  => $state,
-            'trade_config'           => $tradeConfig,
-            'data'                   => $data,
-            'settings'               => $settings,
-            'created_at'             => $created_at,
-            'trade_unit_composition' => ProductUnitRelationshipType::SINGLE,
-            'source_id'              => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
-            'historic_source_id'     => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
-            'images'                 => $this->parseImages(),
-            'fetched_at'             => now(),
-            'last_fetched_at'        => now(),
+            'exclusive_for_customer_id' => $exclusiveForCustomerID,
+            'is_main'                   => true,
+            'type'                      => AssetTypeEnum::PRODUCT,
+            'code'                      => $code,
+            'name'                      => $name,
+            'price'                     => round($unit_price, 2),
+            'status'                    => $status,
+            'unit'                      => $this->auroraModelData->{'Product Unit Label'},
+            'state'                     => $state,
+            'trade_config'              => $tradeConfig,
+            'data'                      => $data,
+            'settings'                  => $settings,
+            'created_at'                => $created_at,
+            'trade_unit_composition'    => ProductUnitRelationshipType::SINGLE,
+            'source_id'                 => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
+            'historic_source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
+            'images'                    => $this->parseImages(),
+            'fetched_at'                => now(),
+            'last_fetched_at'           => now(),
         ];
 
 
@@ -165,6 +163,8 @@ class FetchAuroraProduct extends FetchAurora
             $this->parsedData['product']['variant_is_visible'] = $this->auroraModelData->{'Product Show Variant'} == 'Yes';
             $this->parsedData['product']['main_product_id']    = $mainProduct->id;
         }
+
+        $this->parsedData['au_data'] = $this->auroraModelData;
     }
 
     private function parseImages(): array

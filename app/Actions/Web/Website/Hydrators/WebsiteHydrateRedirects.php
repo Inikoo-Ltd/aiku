@@ -14,23 +14,17 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Website;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebsiteHydrateRedirects
+class WebsiteHydrateRedirects implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Website $website;
 
-    public function __construct(Website $website)
+    public function getJobUniqueId(Website $website): string
     {
-        $this->website = $website;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->website->id))->dontRelease()];
+        return $website->id;
     }
 
     public function handle(Website $website): void

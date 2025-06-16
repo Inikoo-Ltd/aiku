@@ -9,16 +9,21 @@
 namespace App\Actions\Goods\Stock\Hydrators;
 
 use App\Models\Goods\Stock;
+use App\Models\Helpers\Media;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Fill image_id if id null and stocks has images (to be run after trade units set up or first image added)
+ * Fill image_id if id null, and stocks have images (to be run after trade units set up or the first image added)
  */
 class StockInitialiseImageID implements ShouldBeUnique
 {
     use AsAction;
 
+    public function getJobUniqueId(Stock $stock): string
+    {
+        return $stock->id;
+    }
 
     public function handle(Stock $stock): void
     {
@@ -27,6 +32,7 @@ class StockInitialiseImageID implements ShouldBeUnique
                 return;
             }
 
+            /** @var Media $image */
             $image = $stock->images()->first();
 
             if ($image) {
@@ -39,8 +45,4 @@ class StockInitialiseImageID implements ShouldBeUnique
         }
     }
 
-    public function getJobUniqueId(Stock $stock): string
-    {
-        return $stock->id;
-    }
 }

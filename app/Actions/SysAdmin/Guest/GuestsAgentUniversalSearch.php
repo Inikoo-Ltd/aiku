@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Guest;
 
-use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateUniversalSearch;
+use App\Actions\SysAdmin\Guest\Search\GuestReindexSearch;
 use App\Models\SysAdmin\Guest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -21,7 +21,7 @@ class GuestsAgentUniversalSearch
 
     public function handle(Guest $agent): void
     {
-        GuestHydrateUniversalSearch::run($agent);
+        GuestReindexSearch::run($agent);
     }
 
     public function asCommand(): int

@@ -71,7 +71,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $estimated_required_weight grams
  * @property int $estimated_picked_weight grams
  * @property string $quantity_not_picked
- * @property bool $is_completed
+ * @property bool $is_handled
+ * @property bool|null $need_packing
+ * @property bool|null $is_packed
+ * @property bool $is_done
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock

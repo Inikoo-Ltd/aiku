@@ -1,15 +1,14 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
-import PureInput from '@/Components/Pure/PureInput.vue'
 import Table from '@/Components/Table/Table.vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import Tag from '@/Components/Tag.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
 import { Table as TableTS} from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import { inject, ref } from 'vue'
 
 const props = defineProps<{
@@ -20,6 +19,9 @@ const props = defineProps<{
     readonly?: boolean
 }>()
     
+
+const locale = inject('locale', retinaLayoutStructure)
+
 function productRoute(product) {
     // console.log(route().current())
     switch (route().current()) {
@@ -48,7 +50,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
         {
             onStart: () => isLoading.value = 'quantity' + idTransaction,
             onFinish: () => isLoading.value = false,
-            only: ['transactions', 'box_stats'],
+            only: ['transactions', 'box_stats', 'total_to_pay', 'balance'],
             preserveScroll: true,
         }
     )
@@ -73,9 +75,18 @@ const debounceUpdateQuantity = debounce(
         </template>
 
         <!-- Column: Net -->
-        <!-- <template #cell(net_amount)="{ item }">
-            {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
-        </template> -->
+        <template #cell(asset_name)="{ item }">
+            <div>
+                <div>{{ item.asset_name }}</div>
+                <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
+                    <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
+                </div>
+                <div v-else class="text-gray-500 italic text-xs">
+                    Stock: {{ locale.number(item.available_quantity || 0) }} available
+                </div>
+                
+            </div>
+        </template>
 
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">

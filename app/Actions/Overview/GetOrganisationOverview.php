@@ -133,9 +133,15 @@ class GetOrganisationOverview extends OrgAction
     {
         return [
             [
+                'name'  => __('Shops'),
+                'icon'  => 'fal fa-store-alt',
+                'route' => route('grp.org.overview.shops.index', $organisation),
+                'count' => $organisation->catalogueStats->number_shops ?? 0
+            ],
+            [
                 'name'  => __('Departments'),
                 'icon'  => 'fal fa-folder-tree',
-                'route' => '',
+                'route' => route('grp.org.overview.departments.index', $organisation),
                 'count' => $organisation->catalogueStats->number_departments ?? 0
             ],
             [

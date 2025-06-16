@@ -8,30 +8,23 @@
 
 namespace App\Actions\Fulfilment\PalletDelivery\Hydrators;
 
-use App\Actions\HydrateModel;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PalletDeliveryHydratePallets extends HydrateModel
+class PalletDeliveryHydratePallets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private PalletDelivery $palletDelivery;
-    public function __construct(PalletDelivery $palletDelivery)
+    public function getJobUniqueId(PalletDelivery $palletDelivery): string
     {
-        $this->palletDelivery = $palletDelivery;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->palletDelivery->id))->dontRelease()];
+        return $palletDelivery->id;
     }
 
     public function handle(PalletDelivery $palletDelivery): void

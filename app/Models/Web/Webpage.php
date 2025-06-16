@@ -8,6 +8,7 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -104,6 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
+ * @property-read Collection<int, \App\Models\Web\WebpageHasProduct> $webpageHasProducts
  * @property-read Collection<int, Webpage> $webpages
  * @property-read \App\Models\Web\Website $website
  * @method static \Database\Factories\Web\WebpageFactory factory($count = null, $state = [])
@@ -241,9 +243,16 @@ class Webpage extends Model implements Auditable, HasMedia
     }
 
 
-    public function getFullUrl(): string
+    public function getUrl(): string
     {
-        return 'https://'.$this->website->domain.'/'.$this->url;
+        return match (app()->environment()) {
+            'production' => 'https://'.$this->website->domain.'/'.$this->url,
+            'staging' => 'https://canary.'.$this->website->domain.'/'.$this->url,
+            default => match ($this->shop->type) {
+                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/'.$this->url,
+                default => 'https://fulfilment.test/'.$this->url
+            }
+        };
     }
 
     public function externalLinks()
@@ -256,6 +265,12 @@ class Webpage extends Model implements Auditable, HasMedia
     public function timeSeries(): HasMany
     {
         return $this->hasMany(WebpageTimeSeries::class);
+    }
+
+
+    public function webpageHasProducts(): HasMany
+    {
+        return $this->hasMany(WebpageHasProduct::class);
     }
 
     /**

@@ -39,7 +39,7 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
             if (app()->isProduction()) {
                 foreach ($product->images as $image) {
                     $images[] = [
-                        'src' => GetImgProxyUrl::run($image->getImage())
+                        'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
                     ];
                 }
             }

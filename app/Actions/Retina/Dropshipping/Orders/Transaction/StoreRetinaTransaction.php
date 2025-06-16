@@ -10,51 +10,51 @@ namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
 
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Product;
+use App\Models\Catalogue\HistoricAsset;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreRetinaTransaction extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithActionUpdate;
-
-    public function handle(Order $order, array $modelData): Order
+    public function handle(Order $order, array $modelData): Transaction
     {
-        foreach (Arr::get($modelData, 'products') as $productData) {
-            $product = Product::find(Arr::get($productData, 'id'));
+        $historicAsset = HistoricAsset::find($modelData['historic_asset_id']);
 
-            if ($product) {
-                StoreTransaction::make()->action($order, $product->historicAsset, [
-                    'quantity_ordered' => Arr::get($productData, 'quantity')
-                ]);
-            }
-        }
-
-        return $order;
+        return StoreTransaction::make()->action($order, $historicAsset, [
+            'quantity_ordered' => Arr::get($modelData, 'quantity')
+        ]);
     }
 
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array']
+            'quantity'          => ['required', 'numeric', 'min:0'],
+            'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')],
         ];
     }
 
     public function authorize(ActionRequest $request): bool
     {
+        $order = $request->route('order');
+        if ($order->customer_id !== $this->customer->id) {
+            return false;
+        }
         return true;
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(Order $order, ActionRequest $request): Transaction
     {
         $this->initialisation($request);
 
         return $this->handle($order, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

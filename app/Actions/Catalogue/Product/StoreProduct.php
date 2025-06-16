@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
@@ -105,6 +106,11 @@ class StoreProduct extends OrgAction
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
+
+        if ($product->exclusive_for_customer_id) {
+            CustomerHydrateExclusiveProducts::dispatch($product->exclusiveForCustomer)->delay($this->hydratorsDelay);
+        }
+
         $this->productHydrators($product);
 
 
@@ -127,13 +133,10 @@ class StoreProduct extends OrgAction
 
         foreach ($tradeUnits as $tradeUnitId => $tradeUnitData) {
             $tradeUnit = TradeUnit::find($tradeUnitId);
-            $product->tradeUnits()->attach(
-                $tradeUnit,
-                [
-                    'quantity' => $tradeUnitData['quantity'],
-                    'notes'    => Arr::get($tradeUnitData, 'notes'),
-                ]
-            );
+            AttachTradeUnitToProduct::run($product, $tradeUnit, [
+                'quantity' => $tradeUnitData['quantity'],
+                'notes'    => Arr::get($tradeUnitData, 'notes'),
+            ]);
         }
 
         return $product;
@@ -197,7 +200,7 @@ class StoreProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'               => [
+            'code'                      => [
                 'required',
                 'max:32',
                 new AlphaDashDot(),
@@ -211,39 +214,44 @@ class StoreProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'               => ['required', 'max:250', 'string'],
-            'state'              => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'family_id'          => [
+            'name'                      => ['required', 'max:250', 'string'],
+            'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'family_id'                 => [
                 'sometimes',
                 'required',
                 Rule::exists('product_categories', 'id')
                     ->where('shop_id', $this->shop->id)
                     ->where('type', ProductCategoryTypeEnum::FAMILY)
             ],
-            'department_id'      => [
+            'department_id'             => [
                 'sometimes',
                 'required',
                 Rule::exists('product_categories', 'id')
                     ->where('shop_id', $this->shop->id)
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
-            'image_id'           => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
-            'price'              => ['required', 'numeric', 'min:0'],
-            'unit'               => ['sometimes', 'required', 'string'],
-            'rrp'                => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'        => ['sometimes', 'required', 'max:1500'],
-            'data'               => ['sometimes', 'array'],
-            'settings'           => ['sometimes', 'array'],
-            'is_main'            => ['required', 'boolean'],
-            'main_product_id'    => [
+            'image_id'                  => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'price'                     => ['required', 'numeric', 'min:0'],
+            'unit'                      => ['sometimes', 'required', 'string'],
+            'rrp'                       => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description'               => ['sometimes', 'required', 'max:1500'],
+            'data'                      => ['sometimes', 'array'],
+            'settings'                  => ['sometimes', 'array'],
+            'is_main'                   => ['required', 'boolean'],
+            'main_product_id'           => [
                 'sometimes',
                 'nullable',
                 Rule::exists('products', 'id')
                     ->where('shop_id', $this->shop->id)
             ],
-            'variant_ratio'      => ['sometimes', 'required', 'numeric', 'gt:0'],
-            'variant_is_visible' => ['sometimes', 'required', 'boolean'],
-
+            'variant_ratio'             => ['sometimes', 'required', 'numeric', 'gt:0'],
+            'variant_is_visible'        => ['sometimes', 'required', 'boolean'],
+            'exclusive_for_customer_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
+            ]
         ];
 
         if ($this->state == ProductStateEnum::DISCONTINUED) {
@@ -258,12 +266,13 @@ class StoreProduct extends OrgAction
         $rules['org_stocks'] = ['present', 'array'];
 
         if (!$this->strict) {
-            $rules                       = $this->noStrictStoreRules($rules);
-            $rules['historic_source_id'] = ['sometimes', 'required', 'string', 'max:255'];
-            $rules['state']              = ['required', Rule::enum(ProductStateEnum::class)];
-            $rules['status']             = ['required', Rule::enum(ProductStatusEnum::class)];
-            $rules['trade_config']       = ['required', Rule::enum(ProductTradeConfigEnum::class)];
-            $rules['gross_weight']       = ['sometimes', 'integer', 'gt:0'];
+            $rules                              = $this->noStrictStoreRules($rules);
+            $rules['historic_source_id']        = ['sometimes', 'required', 'string', 'max:255'];
+            $rules['state']                     = ['required', Rule::enum(ProductStateEnum::class)];
+            $rules['status']                    = ['required', Rule::enum(ProductStatusEnum::class)];
+            $rules['trade_config']              = ['required', Rule::enum(ProductTradeConfigEnum::class)];
+            $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
+            $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
         }
 
         return $rules;

@@ -26,11 +26,11 @@ return new class () extends Migration {
             $table->foreign('customer_id')->references('id')->on('customers');
             $table->unsignedInteger('product_id')->index();
             $table->foreign('product_id')->references('id')->on('products');
-            $table->unsignedSmallInteger('family_id')->index()->nullable();
+            $table->unsignedInteger('family_id')->index()->nullable();
             $table->foreign('family_id')->references('id')->on('product_categories');
-            $table->unsignedSmallInteger('sub_department_id')->index()->nullable();
+            $table->unsignedInteger('sub_department_id')->index()->nullable();
             $table->foreign('sub_department_id')->references('id')->on('product_categories');
-            $table->unsignedSmallInteger('department_id')->index()->nullable();
+            $table->unsignedInteger('department_id')->index()->nullable();
             $table->foreign('department_id')->references('id')->on('product_categories');
 
             $table->timestampsTz();

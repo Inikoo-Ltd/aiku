@@ -57,7 +57,6 @@ class StoreDeliveryNote extends OrgAction
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress) {
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->create($modelData);
-            $deliveryNote->stats()->create();
 
             if ($deliveryNote->delivery_locked) {
                 $this->createFixedAddress(

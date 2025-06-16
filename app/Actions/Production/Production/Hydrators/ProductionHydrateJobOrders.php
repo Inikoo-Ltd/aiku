@@ -10,26 +10,18 @@ namespace App\Actions\Production\Production\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Production\Production;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductionHydrateJobOrders
+class ProductionHydrateJobOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Production $production;
-
-    public function __construct(Production $production)
+    public function getJobUniqueId(Production $production): string
     {
-        $this->production = $production;
+        return $production->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->production->id))->dontRelease()];
-    }
-
 
     public function handle(Production $production): void
     {

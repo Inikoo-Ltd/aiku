@@ -151,6 +151,12 @@ class GetGroupOverview extends OrgAction
     {
         return [
             [
+                'name'  => __('Shops'),
+                'icon'  => 'fal fa-store-alt',
+                'route' => route('grp.overview.catalogue.shops.index'),
+                'count' => $group->catalogueStats->number_shops ?? 0
+            ],
+            [
                 'name'  => __('Departments'),
                 'icon'  => 'fal fa-folder-tree',
                 'route' => route('grp.overview.catalogue.departments.index'),

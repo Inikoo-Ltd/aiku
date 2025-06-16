@@ -10,17 +10,17 @@ import { faImage } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Image from '@/Components/Image.vue'
 import { ulid } from 'ulid'
+import { FieldValue } from '@/types/webpageTypes'
 
 const props = defineProps<{
-    fieldValue: FieldValue
+    fieldValue: {
+        
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const emits = defineEmits<{
-    (e: 'autoSave'): void
-}>()
 
 const keySwiper = ulid()
 
@@ -32,20 +32,33 @@ const getHref = (item: number) => {
 </script>
 
 <template>
-    <Swiper :key="keySwiper" :slides-per-view="fieldValue.carousel_data.carousel_setting.slidesPerView.desktop" 
-     :loop="fieldValue?.carousel_data?.carousel_setting?.loop"  direction="horizontal" :passiveListeners="true" 
-      :autoplay="fieldValue?.carousel_data?.carousel_setting?.autoplay"  :touch-angle="30" :touch-start-prevent-default="false"
-        :simulate-touch="false" :touch-ratio="1" :pagination="{ clickable: true }" :modules="[Pagination, Autoplay]"
+    <Swiper
+        :id="'carousel_1_iris_' + keySwiper"
+        :key="keySwiper"
+        :slides-per-view="fieldValue.carousel_data.carousel_setting.slidesPerView.desktop" 
+        :loop="fieldValue?.carousel_data?.carousel_setting?.loop"  direction="horizontal"
+        :passiveListeners="true" 
+        :autoplay="fieldValue?.carousel_data?.carousel_setting?.autoplay" 
+        :touch-angle="30"
+        :touch-start-prevent-default="false"
+        :simulate-touch="false"
+        :touch-ratio="1"
+        :pagination="{ clickable: true }"
+        :modules="[Pagination, Autoplay]"
         :spaceBetween="fieldValue.carousel_data.carousel_setting.spaceBetween" class="touch-pan-x touch-pan-y"
-        :style="getStyles(fieldValue.container?.properties, screenType)" :breakpoints="{
+        :style="getStyles(fieldValue.container?.properties, screenType)"
+        :breakpoints="{
             0: { slidesPerView: fieldValue.carousel_data.carousel_setting.slidesPerView.mobile },
             640: { slidesPerView: fieldValue.carousel_data.carousel_setting.slidesPerView.mobile },
             768: { slidesPerView: fieldValue.carousel_data.carousel_setting.slidesPerView.tablet },
             1024: { slidesPerView: fieldValue.carousel_data.carousel_setting.slidesPerView.desktop }
         }">
-        <SwiperSlide v-for="(card, index) in fieldValue.carousel_data.cards" :key="index"
+        <SwiperSlide
+            v-for="(card, index) in fieldValue.carousel_data.cards"
+            :key="index"
             :style="getStyles(fieldValue.carousel_data.card_container.properties, screenType)"
-            class=" flex flex-col">
+            class=" flex flex-col"
+        >
             <component :is="getHref(card) ? 'a' : 'div'" :href="card?.link?.href" :target="card?.link?.target"  class="flex-1 flex flex-col">
               <div class="flex justify-center overflow-visible" :style="getStyles(fieldValue?.carousel_data?.card_container?.container_image, screenType)">
                 <div :style="getStyles(fieldValue?.carousel_data?.card_container?.image_properties, screenType)"

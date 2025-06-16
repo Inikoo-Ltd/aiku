@@ -5,7 +5,7 @@ import DashboardWidget from "./DashboardWidget.vue"
 import { ref, provide } from "vue"
 import { faTriangle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { set } from "lodash"
+import { set } from 'lodash-es'
 library.add(faTriangle)
 
 const props = defineProps<{

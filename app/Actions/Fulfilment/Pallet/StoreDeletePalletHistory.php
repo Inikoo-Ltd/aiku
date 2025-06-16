@@ -29,9 +29,8 @@ class StoreDeletePalletHistory
         $model->auditCustomNew = [
             'pallet' => __("The pallet :ref has been deleted.", ['ref' => $pallet->reference])
         ];
-        Event::dispatch(AuditCustom::class, [
-            $model
-        ]);
+
+        Event::dispatch(new AuditCustom($model));
     }
 
 }

@@ -13,15 +13,21 @@ use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\StoredItem;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class FulfilmentCustomerHydrateStoredItems
+class FulfilmentCustomerHydrateStoredItems implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
     public string $jobQueue = 'urgent';
+
+    public function getJobUniqueId(FulfilmentCustomer $fulfilmentCustomer): string
+    {
+        return $fulfilmentCustomer->id;
+    }
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void
     {

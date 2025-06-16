@@ -8,35 +8,26 @@
 
 namespace App\Actions\Fulfilment\StoredItem\Hydrators;
 
-use App\Actions\HydrateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\StoredItem;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 
-class StoreItemHydratePallets extends HydrateModel
+class StoreItemHydratePallets implements ShouldBeUnique
 {
     use WithActionUpdate;
     use WithEnumStats;
 
-    private StoredItem $storedItem;
-
-    public function __construct(StoredItem $storedItem)
+    public function getJobUniqueId(StoredItem $storedItem): string
     {
-        $this->storedItem = $storedItem;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->storedItem->id))->dontRelease()];
+        return $storedItem->id;
     }
 
     public function handle(StoredItem $storedItem): void
     {
 
-        // dd($storedItem->palletStoredItems()->where('in_process', false)->get());
         $stats = [
             'number_pallets' => DB::table('pallet_stored_items')
             ->join('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id')
@@ -45,7 +36,6 @@ class StoreItemHydratePallets extends HydrateModel
             ->whereIn('pallets.status', [PalletStatusEnum::STORING, PalletStatusEnum::RETURNING])
             ->count(),
         ];
-        // dd($stats);
         $storedItem->update($stats);
     }
 }

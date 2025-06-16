@@ -14,7 +14,7 @@ import MetaLabel from "@/Components/Headings/MetaLabel.vue"
 import Container from "@/Components/Headings/Container.vue"
 import Action from "@/Components/Forms/Fields/Action.vue"
 import SubNavigation from "@//Components/Navigation/SubNavigation.vue"
-import { kebabCase } from "lodash"
+import { kebabCase } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import {faNarwhal, faReceipt} from "@fas"
 import { faLayerPlus } from "@far"
@@ -32,6 +32,7 @@ const props = defineProps<{
     data: PageHeadingTypes
     dataToSubmit?: any
     dataToSubmitIsDirty?: any
+    isButtonGroupWithBorder?: boolean
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)
@@ -167,6 +168,7 @@ const layout = inject('layout', layoutStructure)
                 <template v-for="(action, actIndex) in data.actions">
                     <template v-if="action">
                         <!-- Button -->
+                         
                         <slot v-if="action.type == 'button'"
                             :name="`button-${kebabCase(action.key ? action.key : action.label)}`" :action="action">
                             <slot :name="`button-index-${actIndex}`" :action="action">
@@ -181,12 +183,15 @@ const layout = inject('layout', layoutStructure)
                             <!-- {{ `button-group-${action.key}` }} -->
                             <div v-if="action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
                                 (action.button?.length || 0) > 1 ? '' : '',
-                            ]" :style="{
-                                // border: `1px solid ${action?.button?.length > 1 ? layout?.app?.theme[4] + '88' : 'transparent'}`
-                            }">
+                            ]"
+                                :style="{
+                                    border: isButtonGroupWithBorder ? `1px solid ${action?.button?.length > 1 ? layout?.app?.theme[4] + '88' : 'transparent'}` : ''
+                                }"
+                            >
                                 <slot v-for="(button, index) in action.button"
                                     :name="`button-group-${kebabCase(button.key ? button.key : button.label)}`"
                                     :action="button">
+                                    <!-- {{ `button-group-${kebabCase(button.key ? button.key : button.label)}` }} -->
                                     <component :key="'buttonPH' + index + button.label"
                                         :is="button.route?.name ? Link : 'div'"
                                         :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
@@ -201,7 +206,14 @@ const layout = inject('layout', layoutStructure)
                                             :key="`ActionButton${button.label}${button.style}`"
                                             :tooltip="button.tooltip"
                                             class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
-                                            :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
+                                            :class="[
+                                                index === 0
+                                                    ? 'rounded-l-md rounded-r-none'
+                                                    :  index === action.button?.length - 1
+                                                        ? 'rounded-l-none rounded-r-md'
+                                                        : 'rounded-l-none rounded-r-none'
+                                            ]"
+                                        >
                                         </Button>
                                     </component>
                                 </slot>

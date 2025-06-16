@@ -11,6 +11,7 @@ import { useConfirm } from "primevue/useconfirm"
 import "@/../css/Iris/editor.css"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { trans } from "laravel-vue-i18n"
+import { getStyles } from "@/Composables/styles"
 
 defineOptions({ layout: WebPreview })
 
@@ -23,6 +24,8 @@ const props = defineProps<{
 }>()
 
 const confirm = useConfirm()
+
+console.log(props)
 
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
@@ -80,7 +83,7 @@ onBeforeUnmount(() => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </Head>
 
-  <div class="editor-class">
+  <div class="editor-class" :style="getStyles(layout.container?.properties, screenType)">
     <div class="shadow-xl px-1">
       <div v-if="webpage">
         <div v-if="props.webpage?.layout?.web_blocks.length">

@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData;
+use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
@@ -34,16 +35,14 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     {
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
 
-        $paymentMethods = [];
 
-        if ($order) {
-            $paymentMethods = $this->getPaymentMethods($order, $orderPaymentApiPoint);
-        }
+        $paymentMethods = $this->getPaymentMethods($order, $orderPaymentApiPoint);
+
 
         return [
             'order'          => $order,
             'paymentMethods' => $paymentMethods,
-            'balance' => $customer?->balance,
+            'balance'        => $customer?->balance,
         ];
     }
 
@@ -63,7 +62,6 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
             $paymentAccountShopData = GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop, $orderPaymentApiPoint);
 
             if ($paymentAccountShopData) {
-
                 if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
                     $paymentMethodsData[$paymentAccountShop->type->value] = $paymentAccountShop->id;
                 }
@@ -71,9 +69,11 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
             }
         }
 
-        $orderPaymentApiPoint->update(['data' => [
-            'payment_methods' => $paymentMethodsData,
-        ]]);
+        $orderPaymentApiPoint->update([
+            'data' => [
+                'payment_methods' => $paymentMethodsData,
+            ]
+        ]);
 
         return $paymentMethods;
     }
@@ -87,22 +87,71 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 
     public function htmlResponse(array $checkoutData): Response
     {
+        /** @var Order $order */
         $order = Arr::get($checkoutData, 'order');
 
+
+        $toPay          = (float) ($order->total_amount > 0 ? $order->total_amount : 0.0);
+        $toPayByBalance = min((float) $this->customer->balance, $toPay);
+        $toPayByOther   = max($toPay - $toPayByBalance, 0.0);
+
+
         return Inertia::render(
-            'Ecom/Checkout',
+            'Dropshipping/RetinaDropshippingCheckout',
             [
                 'breadcrumbs'    => $this->getBreadcrumbs($order),
-                'title'          => __('Basket'),
-                'pageHead'       => [
-                    'title' => __('Basket'),
-                    'icon'  => 'fal fa-shopping-basket'
+                'title'          => __('Checkout'),
+                'pageHead'    => [
+                    'title'      => $order->reference,
+                    'model'      => __('Checkout'),
+                    // 'icon'       => [
+                    //     'icon'  => 'fal fa-shopping-basket',
+                    //     'title' => __('customer client')
+                    // ],
+                    // 'afterTitle' => [
+                    //     'label' => ' @'.$this->platform->name
+                    // ],
+                    // 'actions'   => [
+                    //     [
+                    //         'type'   => 'buttonGroup',
+                    //         'button' => [
+                    //             [
+                    //                 'type'    => 'button',
+                    //                 'key'     => 'upload-add',
+                    //                 'icon'      => 'fal fa-upload',
+                    //             ],
+                    //         ],
+                    //     ],
+                    // ]
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
-                'summary'        => $order ? $this->getOrderBoxStats($order) : null,
+                'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer?->balance,
-                'total_amount'   => $order->total_amount
+                'total_amount'   => $order->total_amount,
+                'currency_code'  => $order->currency->code,
+                'to_pay_data'    => [
+                    'total'      => $toPay,
+                    'by_balance' => $toPayByBalance,
+                    'by_other'   => $toPayByOther
+
+                ],
+                'routes'         => [
+                    'pay_with_balance' => [
+                        'name'       => 'retina.models.order.pay_with_balance',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ],
+                    'back_to_basket' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.basket.show',
+                        'parameters' => [
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'order'                => $order->slug
+                        ]
+                    ]
+                ]
             ]
         );
     }
@@ -117,7 +166,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.checkout.show',
+                                'name'       => 'retina.dropshipping.checkout.show',
                                 'parameters' => [
                                     'order' => $order->slug
                                 ]

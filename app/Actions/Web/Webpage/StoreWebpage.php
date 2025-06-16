@@ -22,8 +22,11 @@ use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Enums\Web\Website\WebsiteTypeEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\Website;
 use App\Models\Web\Webpage;
@@ -108,6 +111,9 @@ class StoreWebpage extends OrgAction
                 $model = $webpage->model;
                 if ($model instanceof Product) {
                     $this->createWebBlock($webpage, 'product-1', $model);
+                } elseif ($model instanceof Collection) {
+                    $webpage = $this->createWebBlock($webpage, 'families-1', $model);
+                    $webpage = $this->createWebBlock($webpage, 'products-1', $model);
                 } elseif ($model instanceof ProductCategory) {
                     if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                         $webpage = $this->createWebBlock($webpage, 'families-1', $model);
@@ -115,13 +121,12 @@ class StoreWebpage extends OrgAction
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         $webpage = $this->createWebBlock($webpage, 'sub-departments-1', $model);
                         $webpage = $this->createWebBlock($webpage, 'products-1', $model);
-
+                        $webpage = $this->createWebBlock($webpage, 'families-1', $model);
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         $webpage = $this->createWebBlock($webpage, 'family-1', $model);
                         $webpage = $this->createWebBlock($webpage, 'products-1', $model);
                     }
                 }
-
             }
 
 
@@ -141,12 +146,20 @@ class StoreWebpage extends OrgAction
 
     public function htmlResponse(Webpage $webpage): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
     {
-        return Inertia::location(route('grp.org.fulfilments.show.web.webpages.show', [
+        return match($webpage->website->type) {
+            WebsiteTypeEnum::FULFILMENT => Inertia::location(route('grp.org.fulfilments.show.web.webpages.show', [
             'organisation' => $this->fulfilment->organisation->slug,
             'fulfilment'   => $this->fulfilment->slug,
             'website'      => $webpage->website->slug,
             'webpage'      => $webpage->slug
-        ]));
+            ])),
+            default => Inertia::location(route('grp.org.shops.show.web.webpages.show', [
+                'organisation' => $this->shop->organisation->slug,
+                'shop'   => $this->shop->slug,
+                'website'      => $webpage->website->slug,
+                'webpage'      => $webpage->slug
+            ]))
+        };
     }
 
     public function authorize(ActionRequest $request): bool
@@ -155,7 +168,7 @@ class StoreWebpage extends OrgAction
             return true;
         }
 
-        if (!blank($this->fulfilment)) {
+        if (property_exists($this, 'fulfilment') && isset($this->fulfilment)) {
             return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
         }
 
@@ -247,6 +260,19 @@ class StoreWebpage extends OrgAction
 
         return $this->handle($website, $this->validatedData);
     }
+
+    /**
+     * @throws \Throwable
+    */
+    public function inShop(Shop $shop, Website $website, ActionRequest $request): Webpage
+    {
+        $this->parent  = $website;
+        $this->website = $website;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($website, $this->validatedData);
+    }
+
 
     /**
      * @throws \Throwable

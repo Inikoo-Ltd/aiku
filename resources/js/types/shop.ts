@@ -14,5 +14,6 @@ export interface Shop {
     domain?: string
     created_at?: string
     updated_at?: string
+    organisation_slug: string
 
 }

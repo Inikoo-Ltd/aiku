@@ -6,77 +6,44 @@
 -->
 
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { Component } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
-// import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-// import TablePalletDeliveryPallets from '@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveryPallets.vue'
-// import Timeline from '@/Components/Utils/Timeline.vue'
-// import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-// import PureInput from '@/Components/Pure/PureInput.vue'
-// import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { get, debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
-// import { Table as TableTS } from '@/types/Table'
+import { UploadPallet } from '@/types/Pallet'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
-
 import '@/Composables/Icon/PalletDeliveryStateEnum'
-
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-
-// import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-// import { Timeline as TSTimeline } from "@/types/Timeline"
-
 import axios from 'axios'
-// import { Action } from '@/types/Action'
-// import TableFulfilmentTransactions from "@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentTransactions.vue"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from '@kyvg/vue3-notification'
 import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
-// import { Button as TSButton } from '@/types/Button'
-// import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-// import NeedToPay from '@/Components/Utils/NeedToPay.vue'
-// import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
-
-// import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-// import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
-
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { inject } from 'vue'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-// import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-// import AlertMessage from '@/Components/Utils/AlertMessage.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
-// import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
-
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { faExclamationTriangle, faExclamation } from '@fas'
 import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
-// import ModalProductList from '@/Components/Utils/ModalProductList.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
-import ProductsSelectorAutoSubmit from '@/Components/Dropshipping/ProductsSelectorAutoSubmit.vue'
-import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
-// import CheckoutSummary from '@/Components/Retina/Ecom/CheckoutSummary.vue'
+import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
-
 
 const props = defineProps<{
     title: string
@@ -120,6 +87,7 @@ const props = defineProps<{
     }
     
     routes?: {
+        select_products: routeType
         update_route: routeType
         submit_route: routeType
         pay_with_balance: routeType
@@ -145,7 +113,6 @@ const props = defineProps<{
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
-const locale = inject('locale', aikuLocaleStructure)
 
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -163,111 +130,10 @@ const component = computed(() => {
 })
 
 
-const isLoadingButton = ref<string | boolean>(false)
-// const isLoadingData = ref<string | boolean>(false)
-const isModalAddress = ref<boolean>(false)
-
-// Tabs: Products
-// const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1, })
-// const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
-//     isLoadingButton.value = 'addProducts'
-
-//     formProducts
-//         .transform((data) => ({
-//             quantity_ordered: data.quantity_ordered,
-//         }))
-//         .post(
-//             route(data.route?.name || '#', { ...data.route?.parameters, historicAsset: formProducts.historicAssetId }),
-//             {
-//                 preserveScroll: true,
-//                 onSuccess: () => {
-//                     closedPopover()
-//                     formProducts.reset()
-//                 },
-//                 onError: (errors) => {
-//                     notify({
-//                         title: trans('Something went wrong.'),
-//                         text: trans('Failed to add service, please try again.'),
-//                         type: 'error',
-//                     })
-//                 },
-//                 onFinish: () => {
-//                     isLoadingButton.value = false
-//                 }
-//             }
-//         )
-// }
-
-
-// Section: Payment invoice
-const listPaymentMethod = ref([])
-const isLoadingFetch = ref(false)
-const fetchPaymentMethod = async () => {
-    try {
-        isLoadingFetch.value = true
-        const { data } = await axios.get(route(props.box_stats.products.payment.routes.fetch_payment_accounts.name, props.box_stats.products.payment.routes.fetch_payment_accounts.parameters))
-        listPaymentMethod.value = data.data
-    } catch (error) {
-        console.log('erropr', error)
-        notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to fetch payment method list'),
-            type: 'error',
-        })
-    }
-    finally {
-        isLoadingFetch.value = false
-    }
-}
-
-const paymentData = ref({
-    payment_method: null as number | null,
-    payment_amount: 0 as number | null,
-    payment_reference: ''
-})
 const currentAction = ref(null);
-const isOpenModalPayment = ref(false)
-const isLoadingPayment = ref(false)
-const errorPaymentMethod = ref<null | unknown>(null)
-const onSubmitPayment = () => {
-    try {
-        router[props.box_stats.products.payment.routes.submit_payment.method || 'post'](
-            route(props.box_stats.products.payment.routes.submit_payment.name, {
-                ...props.box_stats.products.payment.routes.submit_payment.parameters,
-                paymentAccount: paymentData.value.payment_method
-            }),
-            {
-                amount: paymentData.value.payment_amount,
-                reference: paymentData.value.payment_reference,
-                status: 'success',
-                state: 'completed',
-            },
-            {
-                onStart: () => isLoadingPayment.value = true,
-                onFinish: (response) => {
-                    isLoadingPayment.value = false,
-                        isOpenModalPayment.value = false,
-                        notify({
-                            title: trans('Success'),
-                            text: trans('Successfully add payment invoice'),
-                            type: 'success',
-                        })
-                },
-                onSuccess: (response) => {
-                    paymentData.value.payment_method = null,
-                        paymentData.value.payment_amount = 0,
-                        paymentData.value.payment_reference = ''
-                }
-            }
-        )
-
-    } catch (error: unknown) {
-        errorPaymentMethod.value = error
-    }
-}
 
 
-// Section: add notes (on popup pageheading)
+
 const noteToSubmit = ref(props.data.data.public_notes)
 const recentlySuccessNote = ref(false)
 const recentlyErrorNote = ref(false)
@@ -279,18 +145,7 @@ const onSubmitNote = async () => {
             public_notes: noteToSubmit.value
         })
 
-        // {
-        //     headers: { "Content-Type": 'application/json' },
-        //     onStart: () => isLoadingButton.value = 'submitNote',
-        //     onError: (error) => errorNote.value = error,
-        //     onFinish: () => isLoadingButton.value = false,
-        //     onSuccess: () => {
-        //         recentlySuccessNote.value = true
-        //         setTimeout(() => {
-        //             recentlySuccessNote.value = false
-        //         }, 3000)
-        //     },
-        // })
+
         isLoadingNote.value = false
         recentlySuccessNote.value = true
         setTimeout(() => {
@@ -311,48 +166,57 @@ const onSubmitNote = async () => {
 }
 const debounceSubmitNote = debounce(onSubmitNote, 800)
 
-const openModal = (action :any) => {
-	currentAction.value = action;
-    isModalProductListOpen.value = true;
-};
 
 
-
-// Method: Submit the selected item
 const isLoadingSubmit = ref(false)
-const onAddProducts = async (products: number[]) => {
-    // console.log('products', products)
+
+
+
+const onAddProducts = async (product: {}) => {
+    console.log('products zzzz', product.transaction_id)
     // return 
 
-    const productsMapped = products.map((product: any) => {
-        return {
-            id: product.item_id,
-            quantity: product.quantity_selected ?? 1
-        }
-    })
 
-    router.post(route('retina.models.order.transaction.store', { order: props?.data?.data?.id} ), {
-        products: productsMapped
-    }, {
-        onBefore: () => isLoadingSubmit.value = true,
-        onError: (error) => {
-            notify({
-                title: "Something went wrong.",
-                text: error.products || undefined,
-                type: "error"
-            })
-        },
-        onSuccess: () => {
-            router.reload({only: ['data']})
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
-                type: "success"
-            })
-            isModalProductListOpen.value = false
-        },
-        onFinish: () => isLoadingSubmit.value = false
-    })
+    const routePost = product?.transaction_id ? 
+        {
+            route_post: route('retina.models.transaction.update', {transaction: product.transaction_id }),
+            method: 'patch',
+            body: {
+                quantity_ordered: product.quantity_selected ?? 1,
+            }
+        } : {
+            route_post: route('retina.models.order.transaction.store', { order: props?.data?.data?.id }),
+            method: 'post',
+            body: {
+                quantity: product.quantity_selected ?? 1,
+                historic_asset_id: product.historic_asset_id,
+            }
+        }
+
+    // return
+
+    router[routePost.method](
+        routePost.route_post,
+        routePost.body,
+        {
+            only: ['transactions', 'box_stats'],
+            onBefore: () => 'isLoadingSubmit.value = true',
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: error.products || undefined,
+                    type: "error"
+                })
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Successfully added portfolios"),
+                    type: "success"
+                })
+            },
+            onFinish: () => isLoadingSubmit.value = false
+        })
 }
 
 const isModalUploadSpreadsheet = ref(false)
@@ -383,11 +247,6 @@ console.log('basket ds', props)
 
         <template #other>
             <Button
-                v-if="currentTab === 'attachments'"
-                @click="() => isModalUploadOpen = true"
-                :label="trans('Attach')"
-                icon="upload" />
-            <Button
                 v-if="is_in_basket"
                 @click="() => isModalProductListOpen = true"
                 :label="trans('Add products')"
@@ -405,7 +264,7 @@ console.log('basket ds', props)
 
     <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
-    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200">
+    <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
         <component :is="component"
             :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
@@ -416,33 +275,40 @@ console.log('basket ds', props)
 			@update:tab="handleTabUpdate"/>
     </div>
 
-    <div v-if="total_products > 0" class="flex justify-end px-6">
+    <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
         <div class="w-72">
+            <div class="text-sm text-gray-500">{{ trans("Special instructions") }}:</div>
             <PureTextarea
                 v-model="noteToSubmit"
                 @update:modelValue="() => debounceSubmitNote()"
-                :placeholder="trans('Special instructions if needed')"
+                :placeholder="trans('Add if needed')"
                 xkeydown.enter="() => onSubmitNote(closed)"
                 rows="4"
                 :disabled="!is_in_basket"
                 :loading="isLoadingNote"
                 :isSuccess="recentlySuccessNote"
                 :isError="recentlyErrorNote"
-                class="mb-2"
+                xclass="mb-2"
             />
-            
+            <!-- <Fieldset legend="Special instructions" class="-mt-4">
+            </Fieldset> -->
+        </div>
+
+
+        <div class="w-72 pt-5">
             <!-- Place Order -->
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
                     :label="trans('Place order')"
-                    :routeTarget="routes.pay_with_balance"
+                    :routeTarget="routes?.pay_with_balance"
                     class="w-full"
                     full
                 >
                 </ButtonWithLink>
-                <div class="text-sm text-gray-500 mt-2 italic flex items-start gap-x-1">
-                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[1px]" fixed-width aria-hidden="true" />
+
+                <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
                     <div class="leading-5">
                         {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
                     </div>
@@ -463,37 +329,22 @@ console.log('basket ds', props)
                 class="w-full"
                 full
             />
-
-
         </div>
     </div>
 
 
-
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
-        <ProductsSelector
+        <ProductsSelectorAutoSelect
             :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
-            :routeFetch="{
-                name: 'retina.dropshipping.portfolios.index',
-            }"
+            :routeFetch="props.routes.select_products"
             :isLoadingSubmit
-            @submit="(products: {}[]) => onAddProducts(products)"
+            @submit="(products: {}) => onAddProducts(products)"
             withQuantity
         >
-        </ProductsSelector>
+        </ProductsSelectorAutoSelect>
     </Modal>
 
-    <!-- Section: Address -->
-    <!-- <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-        <CustomerAddressManagementModal
-            :addresses="addresses"
-            :updateRoute="address_update_route"
-            keyPayloadEdit="delivery_address"
-        />
-    </Modal> -->
-
-    
 
     <UploadExcel
         v-if="upload_spreadsheet"
@@ -505,8 +356,4 @@ console.log('basket ds', props)
         xxxadditionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
     />
 
-    <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
-        label: 'Upload your file',
-        information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" /> -->
 </template>

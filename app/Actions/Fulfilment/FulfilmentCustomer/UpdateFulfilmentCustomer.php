@@ -105,7 +105,7 @@ class UpdateFulfilmentCustomer extends OrgAction
 
             $fulfilmentCustomer->customer->auditCustomOld = $oldData;
             $fulfilmentCustomer->customer->auditCustomNew = $newData;
-            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+            Event::dispatch(new AuditCustom($fulfilmentCustomer->customer));
         }
 
 

@@ -114,7 +114,7 @@ const deleteImage = () => {
     <div @dragover="dragOver" @dragleave="dragLeave" @drop="drop"
         class="group hover:bg-gray-100 relative border border-gray-400 border-dashed overflow-hidden rounded-md text-center cursor-pointer"
         @click="() => fileInput?.click()">
-        <input type="file" multiple ref="fileInput" class="hidden" @change="onFileChange" />
+        <input type="file" accept="image/*" multiple ref="fileInput" class="hidden" @change="onFileChange" />
 
         <div v-if="!modelValue" class="text-sm">
             <div class="py-3">

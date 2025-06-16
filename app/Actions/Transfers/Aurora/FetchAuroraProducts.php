@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Helpers\Media\SaveModelImages;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -44,6 +45,15 @@ class FetchAuroraProducts extends FetchAuroraAction
         /** @var Product $product */
         if ($product = Product::withTrashed()->where('source_id', $productData['product']['source_id'])->first()) {
             try {
+                if ($productData['family']) {
+                    if ($product->shop->type != ShopTypeEnum::DROPSHIPPING) {
+                        $productData['product']['family_id'] = $productData['family']->id;
+                    } elseif (!$product->family) {
+                        $productData['product']['family_id'] = $productData['family']->id;
+                    }
+                }
+
+
                 $product = UpdateProduct::make()->action(
                     product: $product,
                     modelData: $productData['product'],
@@ -132,7 +142,6 @@ class FetchAuroraProducts extends FetchAuroraAction
         $query = DB::connection('aurora')
             ->table('Product Dimension')
             ->where('Product Type', 'Product')
-            ->whereNull('Product Customer Key')
             ->select('Product ID as source_id')
             ->orderBy('Product Valid From');
 
@@ -151,7 +160,6 @@ class FetchAuroraProducts extends FetchAuroraAction
     public function count(): ?int
     {
         $query = DB::connection('aurora')->table('Product Dimension')
-            ->whereNull('Product Customer Key')
             //    ->where('is_variant', 'No')
             ->where('Product Type', 'Product');
 

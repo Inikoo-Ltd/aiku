@@ -4,7 +4,7 @@ import { trans } from "laravel-vue-i18n"
 import RadioButton from "primevue/radiobutton"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import SelectQuery from "@/Components/SelectQuery.vue"
-import { set } from "lodash"
+import { set } from 'lodash-es'
 
 const props = withDefaults(defineProps<{
 	modelValue?: {

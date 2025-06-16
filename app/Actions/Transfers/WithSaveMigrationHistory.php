@@ -19,6 +19,6 @@ trait WithSaveMigrationHistory
         $model->isCustomEvent = true;
         $model->auditCustomOld = [];
         $model->auditCustomNew = $data;
-        Event::dispatch(AuditCustom::class, [$model]);
+        Event::dispatch(new AuditCustom($model));
     }
 }

@@ -10,27 +10,18 @@ namespace App\Actions\Procurement\OrgAgent\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateOrgSupplierProducts;
 use App\Models\Procurement\OrgAgent;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrgAgentHydrateOrgSupplierProducts
+class OrgAgentHydrateOrgSupplierProducts implements ShouldBeUnique
 {
     use AsAction;
     use WithHydrateOrgSupplierProducts;
 
-
-    private OrgAgent $orgAgent;
-
-    public function __construct(OrgAgent $orgAgent)
+    public function getJobUniqueId(OrgAgent $orgAgent): string
     {
-        $this->orgAgent = $orgAgent;
+        return $orgAgent->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->orgAgent->id))->dontRelease()];
-    }
-
 
     public function handle(OrgAgent $orgAgent): void
     {

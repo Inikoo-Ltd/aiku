@@ -13,32 +13,25 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SubDepartmentHydrateProducts
+class SubDepartmentHydrateProducts implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
     use HasGetProductCategoryState;
 
-    private ProductCategory $subDepartment;
-
-    public function __construct(ProductCategory $department)
+    public function getJobUniqueId(ProductCategory $subDepartment): string
     {
-        $this->subDepartment = $department;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->subDepartment->id))->dontRelease()];
+        return $subDepartment->id;
     }
 
     public function handle(ProductCategory $subDepartment): void
     {
         $stats = [
-            'number_products' => $subDepartment->getProducts()->where('is_main', true)->count()
+            'number_products' => $subDepartment->getproducts()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
         ];
 
         $stats = array_merge(

@@ -13,6 +13,7 @@ use App\Actions\Transfers\Aurora\FetchAuroraAgents;
 use App\Actions\Transfers\Aurora\FetchAuroraBarcodes;
 use App\Actions\Transfers\Aurora\FetchAuroraCharges;
 use App\Actions\Transfers\Aurora\FetchAuroraClockingMachines;
+use App\Actions\Transfers\Aurora\FetchAuroraCollections;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedCustomers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedEmployees;
@@ -75,6 +76,7 @@ use App\Models\Accounting\PaymentAccount;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -1145,6 +1147,17 @@ trait WithAuroraParsers
         }
 
         return $invoiceCategory;
+    }
+
+    public function parseCollection(string $sourceId): ?Collection
+    {
+        $collection = Collection::where('source_id', $sourceId)->first();
+        if (!$collection) {
+            $sourceData = explode(':', $sourceId);
+            $collection     = FetchAuroraCollections::run($this->organisationSource, $sourceData[1]);
+        }
+
+        return $collection;
     }
 
 

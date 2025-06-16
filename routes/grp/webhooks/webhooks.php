@@ -50,6 +50,13 @@ Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
     });
 });
 
+Route::prefix('ebay')->name('webhooks.ebay.')->group(function () {
+
+    Route::prefix('{ebayUser:id}')->group(function () {
+
+    });
+});
+
 Route::middleware('verify.shopify.webhook')->group(function () {
     Route::prefix('customers')->as('customers.')->group(function () {
         Route::post('data_request', CustomerDataRequestWebhookShopify::class)->name('data_request');

@@ -6,7 +6,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { get, set } from 'lodash'
+import { get, set } from 'lodash-es'
 import { Column, DataTable, IconField, InputIcon, InputText } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
 
@@ -41,6 +41,11 @@ const selectSocketi = (porto: {}) => {
         return {
             event: `woo.${props.platid}.upload-product.${porto.id}`,
             action: '.woo-upload-progress'
+        }
+    } else if (props.platform_data.type === 'ebay') {
+        return {
+            event: `ebay.${props.platid}.upload-product.${porto.id}`,
+            action: '.ebay-upload-progress'
         }
     }
 }
@@ -160,7 +165,7 @@ const valueTableFilter = ref({})
         <Column field="description" header="Description">
             <template #body="{ data }">
                 <div v-if="data.description" v-html="data.description" class="h-fit max-h-32 overflow-y-auto shadow border border-gray-300 px-1 rounded">
-                    
+
                 </div>
                 <div v-else class="text-gray-400 italic text-sm">
                     (No description)

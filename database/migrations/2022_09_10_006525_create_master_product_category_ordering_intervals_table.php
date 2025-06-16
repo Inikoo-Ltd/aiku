@@ -17,7 +17,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::create('master_product_category_ordering_intervals', function (Blueprint $table) {
-            $table->smallIncrements('id');
+            $table->increments('id');
             $table->unsignedInteger('master_product_category_id')->index();
             $table->foreign('master_product_category_id')->references('id')->on('master_product_categories')->onDelete('cascade')->onUpdate('cascade');
             $table = $this->unsignedIntegerDateIntervals($table, [

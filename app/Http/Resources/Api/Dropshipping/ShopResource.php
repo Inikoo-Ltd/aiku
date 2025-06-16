@@ -11,14 +11,6 @@ namespace App\Http\Resources\Api\Dropshipping;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property string $code
- * @property int $id
- * @property string $slug
- * @property string $name
- * @property string $warehouse_area_slug
- * @property mixed $type
- */
 class ShopResource extends JsonResource
 {
     public function toArray($request): array
@@ -34,7 +26,7 @@ class ShopResource extends JsonResource
             'state'   => $shop->state,
             'created' => $shop->created_at,
             'updated' => $shop->updated_at,
-            'website' => WebsitesResource::make($shop->website),
+            'website' => $shop->website ? WebsitesResource::make($shop->website) : null,
         ];
     }
 }

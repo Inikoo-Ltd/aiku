@@ -63,6 +63,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_ingredients
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_trade_units_status_in_process
+ * @property int $number_trade_units_status_active
+ * @property int $number_trade_units_status_discontinued
+ * @property int $number_trade_units_status_anomaly
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newQuery()

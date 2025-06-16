@@ -90,4 +90,9 @@ watch(
 :deep(.swiper-pagination-bullet-active) {
     background: #4b5563 !important;
 }
+
+.swiper {
+  touch-action: pan-y;
+}
+
 </style>

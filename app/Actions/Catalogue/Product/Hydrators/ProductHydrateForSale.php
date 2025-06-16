@@ -27,7 +27,10 @@ class ProductHydrateForSale implements ShouldBeUnique
 
     public function handle(Product $product): Product
     {
-        $isForSale = in_array($product->status, [
+        $isForSale =
+            !$product->exclusive_for_customer_id
+            &&
+            in_array($product->status, [
                 ProductStatusEnum::FOR_SALE,
                 ProductStatusEnum::OUT_OF_STOCK
             ])

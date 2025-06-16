@@ -38,7 +38,6 @@ class DeletePalletReturn extends OrgAction
 
     private bool $action = false;
     private FulfilmentCustomer $fulfilmentCustomer;
-    private PalletReturn $palletReturn;
 
 
     public function handle(PalletReturn $palletReturn, array $modelData = []): void
@@ -78,7 +77,7 @@ class DeletePalletReturn extends OrgAction
                 'return' => __("The return has been deleted due to: $palletReturn->deleted_note.")
             ];
 
-            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+            Event::dispatch(new AuditCustom($fulfilmentCustomer->customer));
 
             if ($palletReturn->fulfilmentCustomer->customer->shopifyUser !== null) {
                 CancelFulfilmentRequestToShopify::dispatch($palletReturn);

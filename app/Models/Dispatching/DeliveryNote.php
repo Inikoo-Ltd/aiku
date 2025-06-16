@@ -33,7 +33,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -101,6 +100,23 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property int|null $picker_user_id
  * @property int|null $packer_user_id
+ * @property int $number_items current number of items
+ * @property int $number_items_state_unassigned
+ * @property int $number_items_state_queued
+ * @property int $number_items_state_handling
+ * @property int $number_items_state_handling_blocked
+ * @property int $number_items_state_packed
+ * @property int $number_items_state_finalised
+ * @property int $number_items_state_dispatched
+ * @property int $number_items_state_cancelled
+ * @property int $number_items_state_out_of_stock
+ * @property int $number_items_state_no_dispatched
+ * @property int $number_items_handled
+ * @property int $number_items_need_packing
+ * @property int $number_items_packed
+ * @property int $number_items_done
+ * @property bool $is_picked
+ * @property bool $is_packed
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -120,7 +136,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
- * @property-read \App\Models\Dispatching\DeliveryNoteStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -200,10 +215,6 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsToMany(Order::class, 'delivery_note_order')->withTimestamps();
     }
 
-    public function stats(): HasOne
-    {
-        return $this->hasOne(DeliveryNoteStats::class);
-    }
 
     public function deliveryNoteItems(): HasMany
     {

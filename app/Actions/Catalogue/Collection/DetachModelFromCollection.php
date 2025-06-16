@@ -8,67 +8,70 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateItems;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class DetachModelFromCollection extends OrgAction
 {
-    public function handle(Collection $collection, array $modelData): Collection
+    public function handle(Collection $collection, Product|ProductCategory $model): Collection
     {
-        $modelTypes = [
-            'product'    => Product::class,
-            'family'     => ProductCategory::class,
-            'department' => ProductCategory::class,
-            'collection' => Collection::class,
-        ];
-
-        foreach ($modelTypes as $key => $modelClass) {
-            $id = Arr::get($modelData, $key);
-            $model = $modelClass::find($id);
-
-            if ($model) {
-                $this->detachModel($collection, $model);
-            }
+        if ($model instanceof Product) {
+            $collection->products()->detach($model->id);
+            CollectionHydrateProducts::dispatch($collection);
+        } else {
+            $collection->families()->detach($model->id);
+            CollectionHydrateFamilies::dispatch($collection);
         }
 
-        CollectionHydrateItems::dispatch($collection);
+
+
+
         return $collection;
     }
 
-    private function detachModel(Collection $collection, Product|ProductCategory|Collection $model): void
+    public function rules(): array
     {
-        if ($model instanceof ProductCategory) {
-            if ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $collection->departments()->detach($model->id);
-            }
-
-            if ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                $collection->families()->detach($model->id);
-            }
-        } elseif ($model instanceof Product) {
-            $collection->products()->detach($model->id);
-        } else {
-            $collection->collections()->detach($model->id);
-        }
+        return [
+            'family'   => ['sometimes', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)->where('shop_id', $this->shop->id)],
+            'products' => ['sometimes', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
+        ];
     }
 
-    public function action(Collection $collection, array $modelData): Collection
-    {
-        $this->asAction       = true;
-        $this->initialisationFromShop($collection->shop, $modelData);
 
-        return $this->handle($collection, $modelData);
+    public function action(Collection $collection, Product|ProductCategory $model): Collection
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($collection->shop, []);
+
+        return $this->handle($collection, $model);
     }
 
-    public function asController(Collection $collection, ActionRequest $request)
+    public function asController(Collection $collection, ActionRequest $request): Collection
     {
         $this->initialisationFromShop($collection->shop, $request);
-        $this->handle($collection, $request->all());
+
+        $modelData = $this->validatedData;
+        $model     = null;
+        if (Arr::has($modelData, 'family')) {
+            $model = ProductCategory::findOrFail(Arr::get($modelData, 'family'));
+        } elseif (Arr::has($modelData, 'product')) {
+            $model = Product::findOrFail(Arr::get($modelData, 'product'));
+        }
+
+        return $this->handle($collection, $model);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

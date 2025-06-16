@@ -75,7 +75,7 @@ class StoreProductCategory extends OrgAction
         });
 
         if ($imageData['image']) {
-            $this->processCatalogue($imageData, $productCategory);
+            $this->processCatalogueImage($imageData, $productCategory);
         }
 
         ProductCategoryRecordSearch::dispatch($productCategory);
@@ -97,7 +97,7 @@ class StoreProductCategory extends OrgAction
                     table: 'product_categories',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

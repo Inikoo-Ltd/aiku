@@ -10,6 +10,7 @@ namespace App\Http\Resources\Web;
 
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Helpers\Media;
 
@@ -19,8 +20,11 @@ class WebBlockFamilyResource extends JsonResource
 
     public function toArray($request): array
     {
+        /** @var ProductCategory $family */
+        $family = $this;
+
         $imageSources = null;
-        $media        = Media::find($this->image_id);
+        $media        = Media::find($family->image_id);
         if ($media) {
             $width  = 0;
             $height = 0;
@@ -32,11 +36,13 @@ class WebBlockFamilyResource extends JsonResource
 
 
         return [
-            'slug'  => $this->slug,
-            'code'  => $this->code,
-            'name'  => $this->name,
-            'image' => $imageSources,
-            'url'   => $this->url
+            'slug'        => $family->slug,
+            'code'        => $family->code,
+            'name'        => $family->name,
+            'description' => $family->description,
+            'id'          => $family->id,
+            'image'       => $imageSources,
+            'url'         => $family->webpage->url
         ];
     }
 }

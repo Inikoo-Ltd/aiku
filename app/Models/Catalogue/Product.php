@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Models\CRM\BackInStockReminder;
+use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
@@ -25,6 +26,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
+use App\Models\Web\WebpageHasProduct;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -85,6 +87,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $historic_source_id
  * @property bool $is_for_sale For sale products including out of stock
+ * @property int|null $exclusive_for_customer_id
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
@@ -92,6 +95,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read \App\Models\Helpers\Currency $currency
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
+ * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
  * @property-read Group $group
@@ -112,6 +116,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
@@ -264,6 +269,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasMany(Favourite::class);
     }
 
+    public function webpageHasProducts(): HasMany
+    {
+        return $this->hasMany(WebpageHasProduct::class);
+    }
+
     public function backInStockReminders(): HasMany
     {
         return $this->hasMany(BackInStockReminder::class);
@@ -274,6 +284,11 @@ class Product extends Model implements Auditable, HasMedia
         return Tag::whereHas('tradeUnits', function ($query) {
             $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
         })->get();
+    }
+
+    public function exclusiveForCustomer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
 }

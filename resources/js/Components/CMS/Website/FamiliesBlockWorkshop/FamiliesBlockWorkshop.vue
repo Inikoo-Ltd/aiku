@@ -92,7 +92,6 @@ const autosave = () => {
 };
 
 
-console.log('props.data.layout', props)
 
 
 const currentView = ref("desktop");

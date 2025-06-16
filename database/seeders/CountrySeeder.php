@@ -102,7 +102,6 @@ class CountrySeeder extends Seeder
 
             $addressFormat = $addressFormatRepository->get($countryCode);
             $data          = $country->data;
-            //$data['used_fields']     = $addressFormat->getUsedFields();
 
             $data['required_fields']      = $addressFormat->getRequiredFields();
             $data['administrative_areas'] = [];
@@ -152,7 +151,7 @@ class CountrySeeder extends Seeder
 
             $tmp = [];
             foreach ($data['fields'] as $key => $value) {
-                $_key       = Str::snake(preg_replace('/addressLine/', 'addressLine_', $key));
+                $_key = Str::snake(str_replace('addressLine', 'addressLine_', $key));
                 $tmp[$_key] = $value;
             }
             $data['fields'] = $tmp;
@@ -162,7 +161,7 @@ class CountrySeeder extends Seeder
                 $data['administrative_areas'][] = [
                     'name'     => $subDivision->getName(),
                     'code'     => $subDivision->getCode(),
-                    'iso_code' => $subDivision->getIsoCode()
+                    'iso_code' => $subDivision->getId()
                 ];
             }
 

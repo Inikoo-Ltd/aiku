@@ -90,14 +90,18 @@ class ShowSubDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canDelete ? [
+                        !$subDepartment->children()->exists() ? [
                             'type'  => 'button',
                             'style' => 'delete',
+                            'key'   => 'delete',
                             'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
+                                'name'       => 'grp.models.product_category.delete',
+                                'parameters' => [
+                                    'productCategory' => $subDepartment->id,
+                                ],
+                                'method' => 'delete',
                             ]
-                        ] : false
+                        ] : false,
                     ],
                     'parentTag' => $parentTag,
                     'subNavigation' => $this->getSubDepartmentSubNavigation($subDepartment)
@@ -123,6 +127,23 @@ class ShowSubDepartment extends OrgAction
                         ]
                     ],
                 ],
+
+                'collections_route' => [
+                    'name'       => 'grp.json.shop.catalogue.collections',
+                    'parameters' => [
+                        'shop'         => $subDepartment->shop->slug,
+                        'scope'   => $subDepartment->shop->slug
+                    ],
+                    'method' => 'get'
+                ],
+
+                'attach_collections_route' => $subDepartment->webpage ? [
+                    'name'       => 'grp.models.webpage.attach_collection',
+                    'parameters' => [
+                        'webpage'  => $subDepartment->webpage->id,
+                    ],
+                    'method' => 'post'
+                ] : [],
 
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($subDepartment)

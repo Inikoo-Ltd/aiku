@@ -65,7 +65,7 @@ const onCallbackGoogleLogin = (e) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingGoogle.value = true
             },
             onSuccess: () => {
@@ -153,7 +153,7 @@ const onCallbackGoogleLogin = (e) => {
                         :callback="(e) => onCallbackGoogleLogin(e)"
                         :error="(e) => console.log('yyyyyy error', e)"
                     >
-                    
+
                     </GoogleLogin>
                 </div>
 

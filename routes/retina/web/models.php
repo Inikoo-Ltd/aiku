@@ -15,6 +15,9 @@ use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfolioToSh
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
+use App\Actions\Dropshipping\Ebay\Orders\Webhooks\CatchRetinaOrdersFromEbay;
+use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfoliosToEbay;
+use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfolioToEbay;
 use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfoliosToWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfolioToWooCommerce;
@@ -176,15 +179,17 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
 
-    Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
-        Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
-        Route::patch('', UpdateRetinaTransaction::class)->name('update')->withoutScopedBindings();
-    });
+
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
         Route::post('upload', ImportRetinaOrderTransaction::class)->name('upload');
         Route::post('/', StoreRetinaTransaction::class)->name('store')->withoutScopedBindings();
     });
+});
+
+Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+    Route::delete('', DeleteRetinaTransaction::class)->name('delete')->withoutScopedBindings();
+    Route::patch('', UpdateRetinaTransaction::class)->name('update')->withoutScopedBindings();
 });
 
 Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCustomer:id}')->group(function () {
@@ -229,11 +234,16 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{wooCommerceUser:id}/woo-batch-upload', SyncronisePortfoliosToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', SyncronisePortfolioToWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();
 
+    Route::post('{ebayUser:id}/ebay-batch-upload', SyncronisePortfoliosToEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
+    Route::post('{ebayUser:id}/ebay-single-upload/{portfolio:id}', SyncronisePortfolioToEbay::class)->name('ebay.single_upload')->withoutScopedBindings();
+
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
 
     Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CatchRetinaOrdersFromWooCommerce::class)->name('woocommerce.orders.catch')->withoutScopedBindings();
+
+    Route::get('ebay/{ebayUser:id}/catch-orders', CatchRetinaOrdersFromEbay::class)->name('ebay.orders.catch')->withoutScopedBindings();
 
 
 });

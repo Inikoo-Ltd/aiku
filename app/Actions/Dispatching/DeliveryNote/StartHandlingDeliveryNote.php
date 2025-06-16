@@ -9,14 +9,14 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class StartHandlingDeliveryNote extends OrgAction
@@ -25,44 +25,44 @@ class StartHandlingDeliveryNote extends OrgAction
 
     protected User $user;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED) {
+            $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
+        }
+
+
         data_set($modelData, 'handling_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING->value);
+        data_set($modelData, 'picker_user_id', $this->user->id);
 
-        if ($this->user->id != $deliveryNote->picker_user_id) {
-            data_set($modelData, 'picker_user_id', $this->user->id);
-        }
 
-        foreach ($deliveryNote->deliveryNoteItems as $item) {
-            UpdateDeliveryNoteItem::make()->action($item, [
-                'state' => DeliveryNoteItemStateEnum::HANDLING
-            ]);
-        }
 
-        return $this->update($deliveryNote, $modelData);
-    }
+        return DB::transaction(function () use ($deliveryNote, $modelData) {
 
-    public function prepareForValidation()
-    {
-        if (!$this->asAction) {
-            $employee = $this->user->employees()->first();
-            if ($employee) {
-                $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
-                if (!$pickerEmployee) {
-                    throw ValidationException::withMessages([
-                        'messages' => __('You cannot start handling this delivery note. You Are Not A Picker')
-                    ]);
-                }
-            } elseif (!$employee) {
-                throw ValidationException::withMessages([
-                    'messages' => __('You Are Not An Employee')
-                ]);
-            }
-        }
+            UpdateDeliveryNote::run($deliveryNote, $modelData);
+
+            DB::table('delivery_note_items')
+                ->where('delivery_note_id', $deliveryNote->id)
+                ->update(['state' => DeliveryNoteItemStateEnum::HANDLING->value]);
+
+            DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
+
+            return $deliveryNote;
+
+        });
+
+
+
     }
 
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->user = $request->user();
@@ -71,9 +71,12 @@ class StartHandlingDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
-        $this->user = $user;
+        $this->user     = $user;
         $this->asAction = true;
         $this->initialisationFromShop($deliveryNote->shop, []);
 

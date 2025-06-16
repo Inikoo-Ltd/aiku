@@ -11,14 +11,11 @@ import { faArrowLeft, faArrowRight } from "@fal"
 import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Image from "@/Components/Image.vue"
-import { debounce } from "lodash"
 import { Head, Link } from "@inertiajs/vue3"
 import { ref } from "vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
-import IftaLabel from "primevue/iftalabel"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import InputText from "primevue/inputtext"
@@ -28,6 +25,8 @@ import { faTag } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Textarea from "primevue/textarea"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { debounce } from 'lodash-es';
+//import { debounce } from 'lodash-es'; // WOWOWOW
 library.add(faTag)
 
 const props = defineProps<{
@@ -52,7 +51,6 @@ const props = defineProps<{
     }
 }>()
 
-// console.log('ewewew', props.order)
 const debSubmitForm = debounce((save: Function) => {
     save()
 }, 500)
@@ -60,7 +58,6 @@ const debSubmitForm = debounce((save: Function) => {
 const isLoading = ref<string | boolean>(false)
 
 
-// Section: add notes (on popup pageheading)
 const noteToSubmit = ref(props.order?.public_notes)
 const recentlySuccessNote = ref(false)
 const recentlyErrorNote = ref(false)
@@ -72,18 +69,7 @@ const onSubmitNote = async () => {
             public_notes: noteToSubmit.value
         })
 
-        // {
-        //     headers: { "Content-Type": 'application/json' },
-        //     onStart: () => isLoadingButton.value = 'submitNote',
-        //     onError: (error) => errorNote.value = error,
-        //     onFinish: () => isLoadingButton.value = false,
-        //     onSuccess: () => {
-        //         recentlySuccessNote.value = true
-        //         setTimeout(() => {
-        //             recentlySuccessNote.value = false
-        //         }, 3000)
-        //     },
-        // })
+
         isLoadingNote.value = false
         recentlySuccessNote.value = true
         setTimeout(() => {
@@ -337,9 +323,7 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
                 </div>
             </div>
             
-            <!-- <div class="flex flex-col items-end gap-y-1.5">
-                
-            </div> -->
+
         </div>
 
     </div>

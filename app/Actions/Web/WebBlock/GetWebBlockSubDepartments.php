@@ -29,9 +29,25 @@ class GetWebBlockSubDepartments
             ->select(['product_categories.slug', 'product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.image_id', 'webpages.url as url'])
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('product_categories.show_in_website', true)
+            ->whereNull('product_categories.deleted_at')
             ->get();
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue',  $webpage->website->published_layout['sub_department']['data']['fieldValue']);
+        $productRoute = [
+            'workshop' => [
+                'name' => 'grp.json.product_category.products.index',
+                'parameters' => [$webpage->model->slug],
+            ],
+            'iris' => [
+                'name' => 'iris.json.product_category.products.index',
+                'parameters' => [$webpage->model->slug],
+            ],
+        ];
+
+        $permissions =  [];
+
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
 
         return $webBlock;

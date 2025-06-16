@@ -8,9 +8,10 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Api\Dropshipping\ShopResource;
+use App\Http\Resources\Catalogue\DepartmentResource;
+use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetCollectionShowcase
@@ -19,57 +20,18 @@ class GetCollectionShowcase
 
     public function handle(Collection $collection): array
     {
-        // dd($collection);
-        $parentRoute = null;
 
-        if ($collection->parent) {
-            if ($collection->parent instanceof ProductCategory) {
-                if ($collection->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                    $parentRoute = [
-                        'name' => 'grp.org.shops.show.catalogue.departments.show',
-                        'parameters' => [
-                            'organisation' => $collection->parent->shop->organisation->slug,
-                            'shop'         => $collection->parent->shop->slug,
-                            'department'   => $collection->parent->slug
-                        ],
-                        'method' => 'get'
-                    ];
-                } elseif ($collection->parent->type == ProductCategoryTypeEnum::FAMILY) {
-                    $parentRoute = [
-                        'name' => 'grp.org.shops.show.catalogue.families.show',
-                        'parameters' => [
-                            'organisation' => $collection->parent->shop->organisation->slug,
-                            'shop'         => $collection->parent->shop->slug,
-                            'family'       => $collection->parent->slug
-                        ],
-                        'method' => 'get'
-                    ];
-                } elseif ($collection->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                    $parentRoute = [
-                        'name' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
-                        'parameters' => [
-                            'organisation' => $collection->parent->shop->organisation->slug,
-                            'shop'         => $collection->parent->shop->slug,
-                            'department'      => $collection->parent->department->slug,
-                            'subDepartment'  => $collection->parent->slug
-                        ],
-                        'method' => 'get'
-                    ];
-                }
-            }
-        }
+
+
 
         return [
-            'parent'      => $collection->parent ? [
-                'id'   => $collection->parent->id,
-                'name' => $collection->parent->name,
-                'slug' => $collection->parent->slug,
-                'route' => $parentRoute
-            ] : [],
-            'image'           => $collection->imageSources(720, 480),
-            'description' => $collection->description,
-            'name'        => $collection->name,
-            'stats'       => [
+
+            'image'                 => $collection->imageSources(720, 480),
+            'description'           => $collection->description,
+            'name'                  => $collection->name,
+            'id'                    => $collection->id,
+            'slug'                  => $collection->slug,
+            'stats'                 => [
                 [
                     'label' => __('Department'),
                     'icon'  => 'fal fa-folder-tree',
@@ -105,6 +67,40 @@ class GetCollectionShowcase
                         'value' => '+4',
                         'label' => __('from last month'),
                     ]
+                ],
+            ],
+            'parent_departments'    => DepartmentResource::collection($collection->departments)->toArray(request()),
+            'parent_subdepartments' => SubDepartmentResource::collection($collection->subDepartments)->toArray(request()),
+            'shop'                  => ShopResource::make($collection->shop)->toArray(request()),
+
+            'routes' => [
+                'departments_route'     => [
+                    'name'       => 'grp.json.shop.catalogue.departments',
+                    'parameters' => [
+                        'shop'  => $collection->shop->slug,
+                        'scope' => $collection->slug,
+                    ],
+                ],
+                'sub_departments_route' => [
+                    'name'       => 'grp.json.shop.catalogue.sub-departments',
+                    'parameters' => [
+                        'shop'  => $collection->shop->slug,
+                        'scope' => $collection->slug,
+                    ],
+                ],
+                'attach_parent'         => [
+                    'name'       => 'grp.models.product_category.collection.attach_parents',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
+                    'method'     => 'post'
+                ],
+                'detach_parent'         => [
+                    'name'       => 'grp.models.product_category.collection.detach',
+                    'parameters' => [
+                        'collection' => $collection->id,
+                    ],
+                    'method'     => 'delete'
                 ],
             ],
         ];

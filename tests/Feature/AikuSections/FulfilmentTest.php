@@ -70,6 +70,7 @@ use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemInPalletReturnWithStoredItem;
 use App\Actions\Fulfilment\RecurringBill\ConsolidateRecurringBill;
+use App\Actions\Fulfilment\RecurringBill\HydrateRecurringBill;
 use App\Actions\Fulfilment\RecurringBill\StoreRecurringBill;
 use App\Actions\Fulfilment\RentalAgreement\StoreRentalAgreement;
 use App\Actions\Fulfilment\RentalAgreement\UpdateRentalAgreement;
@@ -2686,6 +2687,17 @@ test('hydrate pallet delivery command', function () {
 
 test('hydrate rental agreements command', function () {
     $this->artisan('hydrate:rental_agreements  '.$this->organisation->slug)->assertExitCode(0);
+});
+
+test('hydrate recurring bills command', function () {
+    $this->artisan('hydrate:recurring_bills '.$this->organisation->slug)->assertExitCode(0);
+});
+
+test('hydrate recurring bill', function () {
+    $recurringBill = RecurringBill::first();
+    HydrateRecurringBill::run($recurringBill);
+
+    expect($recurringBill)->toBeInstanceOf(RecurringBill::class);
 });
 
 

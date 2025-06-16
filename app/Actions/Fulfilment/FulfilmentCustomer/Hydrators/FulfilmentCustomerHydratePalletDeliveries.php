@@ -12,25 +12,19 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class FulfilmentCustomerHydratePalletDeliveries
+class FulfilmentCustomerHydratePalletDeliveries implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
     public string $jobQueue = 'urgent';
 
-    private FulfilmentCustomer $fulfilmentCustomer;
-    public function __construct(FulfilmentCustomer $fulfilmentCustomer)
+    public function getJobUniqueId(FulfilmentCustomer $fulfilmentCustomer): string
     {
-        $this->fulfilmentCustomer = $fulfilmentCustomer;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->fulfilmentCustomer->id))->dontRelease()];
+        return $fulfilmentCustomer->id;
     }
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void

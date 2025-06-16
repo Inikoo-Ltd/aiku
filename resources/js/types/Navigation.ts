@@ -26,7 +26,8 @@ export interface Navigation {
     icon?: string[] | string
     route?: routeType
     right_label?: {
-        label: string
+        label?: string
+        number?: number
         icon?: string[]
         icon_rotation?: number
         is_important?: boolean

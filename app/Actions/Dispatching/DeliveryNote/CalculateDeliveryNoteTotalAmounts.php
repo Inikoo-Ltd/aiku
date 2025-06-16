@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrganisationsArgument;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -40,9 +41,8 @@ class CalculateDeliveryNoteTotalAmounts extends OrgAction
         ]);
 
 
-        $deliveryNote->stats->update([
-            'number_items' => $deliveryNote->deliveryNoteItems()->count()
-        ]);
+        DeliveryNoteHydrateItems::run($deliveryNote);
+
 
     }
 

@@ -110,7 +110,7 @@ provide('isPreviewMode', isPreviewMode)
                 />
             </div>
 
-            <div  class="bg-white">
+            <div  class="bg-white" :style="getStyles(layout.container?.properties, screenType)">
                 <template v-if="webpage?.layout?.web_blocks?.length">
                     <div v-for="(activityItem, activityItemIdx) in webpage?.layout?.web_blocks"
                         :key="'block' + activityItem.id" class="w-full">

@@ -9,25 +9,17 @@
 namespace App\Actions\Fulfilment\Fulfilment\Hydrators;
 
 use App\Models\Fulfilment\Fulfilment;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class FulfilmentHydrateWarehouses
+class FulfilmentHydrateWarehouses implements ShouldBeUnique
 {
     use AsAction;
 
-    private Fulfilment $fulfilment;
-
-    public function __construct(Fulfilment $fulfilment)
+    public function getJobUniqueId(Fulfilment $fulfilment): string
     {
-        $this->fulfilment = $fulfilment;
+        return $fulfilment->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->fulfilment->id))->dontRelease()];
-    }
-
 
     public function handle(Fulfilment $fulfilment): void
     {

@@ -5,110 +5,144 @@
   -->
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3'
-import Table from '@/Components/Table/Table.vue'
-import { Department } from "@/types/department"
-import Icon from "@/Components/Icon.vue"
-import { remove as loRemove } from 'lodash-es'
-import { routeType } from '@/types/route'
-import { ref } from 'vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faSeedling }  from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
+import { Link } from "@inertiajs/vue3";
+import Table from "@/Components/Table/Table.vue";
+import { Department } from "@/types/department";
+import Icon from "@/Components/Icon.vue";
+import { remove as loRemove } from "lodash-es";
+import { ref } from "vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import { faSeedling } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import routes from "../../../../../../../han/src/constants/Routes";
+import { RouteParams } from "@/types/route-params";
 
-library.add(faSeedling)
+library.add(faSeedling);
 
 defineProps<{
-    data: object,
+    data: {}
     tab?: string
-    routes: {
-        dataList: routeType
-        submitAttach: routeType
-        detach: routeType
-    }
-}>()
+}>();
 
-// console.log(route().current())
 function departmentRoute(department: Department) {
     switch (route().current()) {
         case "grp.org.shops.show.catalogue.departments.index":
         case "grp.org.shops.show.catalogue.collections.show":
-        case 'grp.org.shops.show.catalogue.dashboard':
+        case "grp.org.shops.show.catalogue.dashboard":
             return route(
-                'grp.org.shops.show.catalogue.departments.show',
-                [route().params['organisation'], route().params['shop'], department.slug])
-        case 'grp.org.shops.index':
+                "grp.org.shops.show.catalogue.departments.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    department.slug]);
+        case "grp.org.shops.index":
             return route(
-                'grp.org.shops.show.catalogue.departments.show',
-                [route().params['organisation'], department.shop_slug, department.slug])
+                "grp.org.shops.show.catalogue.departments.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    department.shop_slug,
+                    department.slug]);
 
-        case 'grp.overview.catalogue.departments.index':
+        case "grp.overview.catalogue.departments.index":
             return route(
-                'grp.org.shops.show.catalogue.departments.show',
-                [department.organisation_slug, department.shop_slug, department.slug])
+                "grp.org.shops.show.catalogue.departments.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    department.shop_slug,
+                    department.slug]);
 
         default:
-            return null
+            return null;
     }
 }
 
 function shopRoute(department: Department) {
-    switch (route().current()) {
-        case 'grp.org.shops.index':
-            return route(
-                "grp.org.shops.show.catalogue.dashboard",
-                [route().params["organisation"], department.shop_slug])
+    if (route().current() === "grp.org.shops.index") {
+        return route(
+            "grp.org.shops.show.catalogue.dashboard",
+            [
+                (route().params as RouteParams).organisation,
+                department.shop_slug]);
     }
+    return undefined;
 }
 
 function familyRoute(department: Department) {
-    switch (route().current()) {
-        case 'grp.org.shops.show.catalogue.departments.index':
-            return route(
-                "grp.org.shops.show.catalogue.departments.show.families.index",
-                [route().params["organisation"], route().params['shop'], department.slug])
+    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+        return route(
+            "grp.org.shops.show.catalogue.departments.show.families.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                department.slug]);
     }
+    return undefined;
 }
 
 function productRoute(department: Department) {
-    switch (route().current()) {
-        case 'grp.org.shops.show.catalogue.departments.index':
-            return route(
-                "grp.org.shops.show.catalogue.departments.show.products.index",
-                [route().params["organisation"], route().params['shop'], department.slug])
+    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+        return route(
+            "grp.org.shops.show.catalogue.departments.show.products.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                department.slug]);
     }
+    return undefined;
 }
 
-const isLoadingDetach = ref<string[]>([])
+function organisationRoute(department: Department) {
+    return route(
+        "grp.org.overview.departments.index",
+        [department.organisation_slug]);
+}
+
+function departmentsInShopRoute(department: Department) {
+    return route(
+        "grp.org.shops.show.catalogue.departments.index",
+        [department.organisation_slug,department.shop_slug]);
+}
+
+
+const isLoadingDetach = ref<string[]>([]);
 
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+
+        <template #cell(organisation_code)="{ item: department }">
+            <Link v-tooltip='department["organisation_name"]' :href="organisationRoute(department)" class="secondaryLink">
+                {{ department["organisation_code"] }}
+            </Link>
+        </template>
+
+        <template #cell(shop_code)="{ item: department }">
+            <Link v-tooltip='department["shop_name"]' :href="departmentsInShopRoute(department) as string" class="secondaryLink">
+                {{ department["shop_code"] }}
+            </Link>
+        </template>
+
         <template #cell(state)="{ item: department }">
             <Icon :data="department.state">
             </Icon>
         </template>
         <template #cell(code)="{ item: department }">
-            <Link :href="departmentRoute(department)" class="primaryLink">
-                {{ department['code'] }}
+            <Link :href="departmentRoute(department) as string" class="primaryLink">
+                {{ department["code"] }}
             </Link>
         </template>
         <template #cell(number_current_families)="{ item: department }">
-            <Link :href="familyRoute(department)" class="secondaryLink">
-                {{ department['number_current_families'] }}
+            <Link :href="familyRoute(department) as string" class="secondaryLink">
+                {{ department["number_current_families"] }}
             </Link>
         </template>
         <template #cell(number_current_products)="{ item: department }">
-            <Link :href="productRoute(department)" class="secondaryLink">
-                {{ department['number_current_products'] }}
+            <Link :href="productRoute(department) as string" class="secondaryLink">
+                {{ department["number_current_products"] }}
             </Link>
         </template>
-        <template #cell(shop_code)="{ item: department }">
-            <Link :href="shopRoute(department)" class="secondaryLink">
-                {{ department["shop_code"] }}
-            </Link>
-        </template>
+
 
         <template #cell(actions)="{ item }">
             <Link

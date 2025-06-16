@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Website\GetWebsiteWorkshopCollection;
 use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
@@ -71,6 +72,7 @@ class ShowWebsiteWorkshop extends OrgAction
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::COLLECTION->value]);
         }
 
         $tabs = [
@@ -109,6 +111,13 @@ class ShowWebsiteWorkshop extends OrgAction
                     fn () => GetWebsiteWorkshopDepartment::run($website)
                 );
 
+        $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
+                ?
+                fn () => GetWebsiteWorkshopCollection::run($website)
+                : Inertia::lazy(
+                    fn () => GetWebsiteWorkshopCollection::run($website)
+                );
+
 
         $publishRoute = [
                 'method'     => 'patch',
@@ -142,7 +151,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     'website' => $website->id
                 ]
             ];
-        }  elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
+        } elseif ($this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value) {
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.products',

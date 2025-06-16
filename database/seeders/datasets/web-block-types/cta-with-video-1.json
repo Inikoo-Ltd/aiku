@@ -1,0 +1,257 @@
+{
+	"slug": "cta-video-1",
+	"code": "cta-video-1",
+	"name": "CTA (with video)",
+	"scope": "webpage",
+	"category": "block",
+	"icon": ["fal", "rectangle-wide"],
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
+	"data": {
+		"fieldValue": {
+			"video": {
+				"video_setup": {
+					"by_url": true,
+					"source": null,
+					"embed_code": null
+				}
+			},
+			"text": "<p style=\"text-align: center\"></p><p style=\"text-align: center\"><span style=\"font-size: 1.2500rem; color: rgb(209, 209, 209)\">Incididunt sint fugiat pariatur cupidatat consectetur sit cillum anim</span></p><p style=\"text-align: center\"><span style=\"font-size: 1.2500rem; color: rgb(209, 209, 209)\">id veniam aliqua proident excepteur commodo do ea.</span></p>",
+			"button": {
+				"link": {
+					"id": 9,
+					"url": "https://ancientwisdom.biz/showroom",
+					"href": "https://ancientwisdom.biz/showroom",
+					"type": "internal"
+				},
+				"text": "Get Started",
+				"container": {
+					"properties": {
+						"text": {
+							"color": "rgba(0, 0, 0, 1)",
+							"fontFamily": null
+						},
+						"border": {
+							"top": {
+								"value": 0
+							},
+							"left": {
+								"value": 0
+							},
+							"unit": "px",
+							"color": "#000000",
+							"right": {
+								"value": 0
+							},
+							"bottom": {
+								"value": 0
+							},
+							"desktop": {
+								"top": {
+									"value": 0
+								},
+								"left": {
+									"value": 0
+								},
+								"unit": "px",
+								"color": 0,
+								"right": {
+									"value": 0
+								},
+								"bottom": {
+									"value": 0
+								},
+								"rounded": {
+									"unit": "px",
+									"topleft": {
+										"value": 10
+									},
+									"topright": {
+										"value": 10
+									},
+									"bottomleft": {
+										"value": 10
+									},
+									"bottomright": {
+										"value": 10
+									}
+								}
+							},
+							"rounded": {
+								"unit": "px",
+								"topleft": {
+									"value": 10
+								},
+								"topright": {
+									"value": 10
+								},
+								"bottomleft": {
+									"value": 10
+								},
+								"bottomright": {
+									"value": 10
+								}
+							}
+						},
+						"margin": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							}
+						},
+						"padding": {
+							"top": {
+								"value": 10
+							},
+							"left": {
+								"value": 10
+							},
+							"unit": "px",
+							"right": {
+								"value": 10
+							},
+							"bottom": {
+								"value": 10
+							}
+						},
+						"background": {
+							"type": "color",
+							"color": "#ffffff",
+							"image": {
+								"original": null
+							}
+						}
+					}
+				}
+			},
+			"container": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"color": null,
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							},
+							"rounded": {
+								"unit": "px",
+								"topleft": {
+									"value": null
+								},
+								"topright": {
+									"value": null
+								},
+								"bottomleft": {
+									"value": null
+								},
+								"bottomright": {
+									"value": null
+								}
+							}
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 0
+							},
+							"topright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							}
+						}
+					},
+					"margin": {
+						"top": {
+							"value": null
+						},
+						"left": {
+							"value": null
+						},
+						"unit": "px",
+						"right": {
+							"value": null
+						},
+						"bottom": {
+							"value": null
+						}
+					},
+					"shadow": {
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							}
+						}
+					},
+					"padding": {
+						"top": {
+							"value": null
+						},
+						"left": {
+							"value": null
+						},
+						"unit": "px",
+						"right": {
+							"value": null
+						},
+						"bottom": {
+							"value": null
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#111827",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			}
+		}
+	}
+}

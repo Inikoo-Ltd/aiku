@@ -43,9 +43,8 @@ class IndexTradeUnits extends GrpAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('stocks.code', $value)
-                    ->orWhereStartWith('stock_families.code', $value)
-                    ->orWhereAnyWordStartWith('stocks.name', $value);
+                $query->whereStartWith('trade_units.code', $value)
+                    ->orWhereAnyWordStartWith('trade_units.name', $value);
             });
         });
 

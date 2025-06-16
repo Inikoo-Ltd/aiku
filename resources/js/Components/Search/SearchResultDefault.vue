@@ -12,7 +12,7 @@ import Icon from "@/Components/Icon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useTruncate } from "@/Composables/useTruncate"
-import { capitalize } from "lodash"
+import { capitalize } from 'lodash-es'
 import { Icon as IconTS } from "@/types/Utils/Icon"
 
 const props = defineProps<{
@@ -78,7 +78,7 @@ const isLoading = ref(false)
 
                 <div class="flex py-1 flex-row items-center gap-y-1.5">
 
-                    <h2 :class="data?.noCapitalise ? '' : 'capitalize'" class="leading-none font-semibold text-base mr-2">
+                    <h2 xclass="data?.noCapitalise ? '' : 'capitalize'" class="leading-none font-semibold text-base mr-2">
                         <span v-if="data?.model" class="leading-none text-gray-400 mr-2 block sm:inline">
                             {{ data?.model }}
                         </span>
@@ -91,15 +91,15 @@ const isLoading = ref(false)
 
                     <!-- Section: After Title -->
                     <div class="flex gap-x-2 items-center ml-2">
-                        <div v-if="data?.description" class="font-semibold text-base leading-none">
+                        <div v-if="data?.description" class="xfont-semibold text-base leading-none">
                             {{ data?.description.label }}
                         </div>
                     </div>
 
-                    <div
-                        class="border-[2px] hidden border-gray-400 text-gray-500 rounded-md h-10 aspect-square flex items-center justify-center">
+                    <!-- <div
+                        class="border-[2px] border-gray-400 text-gray-500 rounded-md h-10 aspect-square flex items-center justify-center">
                         <Image :src="data?.image" />
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- Section: mini Tabs -->

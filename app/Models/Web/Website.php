@@ -105,6 +105,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_product_snapshot_id
  * @property int|null $live_product_snapshot_id
  * @property string|null $published_product_checksum
+ * @property int|null $unpublished_products_snapshot_id
+ * @property int|null $live_products_snapshot_id
+ * @property string|null $published_products_checksum
+ * @property int|null $unpublished_collection_snapshot_id
+ * @property int|null $live_collection_snapshot_id
+ * @property string|null $published_collection_checksum
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -121,12 +127,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read Snapshot|null $unpublishedCollectionSnapshot
  * @property-read Snapshot|null $unpublishedDepartmentSnapshot
  * @property-read Snapshot|null $unpublishedFamilySnapshot
  * @property-read Snapshot|null $unpublishedFooterSnapshot
  * @property-read Snapshot|null $unpublishedHeaderSnapshot
  * @property-read Snapshot|null $unpublishedMenuSnapshot
  * @property-read Snapshot|null $unpublishedProductSnapshot
+ * @property-read Snapshot|null $unpublishedProductsSnapshot
  * @property-read Snapshot|null $unpublishedSubDepartmentSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
@@ -274,6 +282,11 @@ class Website extends Model implements Auditable, HasMedia
     public function unpublishedMenuSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_menu_snapshot_id');
+    }
+
+    public function unpublishedCollectionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_collection_snapshot_id');
     }
 
     public function unpublishedDepartmentSnapshot(): BelongsTo

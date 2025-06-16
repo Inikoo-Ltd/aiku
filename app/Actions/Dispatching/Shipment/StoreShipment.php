@@ -9,9 +9,10 @@
 namespace App\Actions\Dispatching\Shipment;
 
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
+use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
+use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSKShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\DpdGbCallShipperApi;
-use App\Actions\Dispatching\Shipment\ApiCalls\DpdSkCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\PostmenCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\WhistlGbCallShipperApi;
 use App\Actions\Dispatching\Shipment\Hydrators\ShipmentHydrateUniversalSearch;
@@ -48,8 +49,9 @@ class StoreShipment extends OrgAction
         if ($shipper->api_shipper) {
             $shipmentData = match ($shipper->api_shipper) {
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
+                'gls-sk' => CallApiGlsSKShipping::run($parent, $shipper),
                 'dpd-gb' => DpdGbCallShipperApi::run($parent, $shipper),
-                'dpd-sk' => DpdSkCallShipperApi::run($parent, $shipper),
+                'dpd-sk' => CallApiDpdGbShipping::run($parent, $shipper),
                 'pst-mn' => PostmenCallShipperApi::run($parent, $shipper),
                 'whl-gb' => WhistlGbCallShipperApi::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),

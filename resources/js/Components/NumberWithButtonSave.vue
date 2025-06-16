@@ -20,7 +20,7 @@ import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { debounce } from "lodash"
+import { debounce } from 'lodash-es'
 
 library.add(
 	faRobot,
@@ -220,8 +220,12 @@ const onClickPlusButton = () => {
 				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
 				<!-- Button: Minus -->
 				<div
-					@click.stop="() => props.readonly ? null : onClickMinusButton()"
-					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+					@click.stop="() => props.readonly || form.processing ? null : onClickMinusButton()"
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-1 py-1.5 text-xs justify-self-center"
+					:class="[
+						props.readonly || form.processing ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
+					]"	
+				>
 					<FontAwesomeIcon
 						icon="fas fa-minus"
 						:class="form.quantity < 1 ? 'text-gray-400' : ''"
@@ -247,7 +251,7 @@ const onClickPlusButton = () => {
 						:inputStyle="{
 							padding: '0px',
 							width: bindToTarget?.fluid ? undefined : '50px',
-							color: colorTheme ?? '#374151',
+							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',
 							border: 'none',
 							textAlign: 'center',
 							background: (colorTheme ? colorTheme + '22' : null) ?? 'transparent',
@@ -257,8 +261,12 @@ const onClickPlusButton = () => {
 
 				<!-- Button: Plus -->
 				<div
-					@click.stop="() => props.readonly ? null : onClickPlusButton()"
-					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+					@click.stop="() => props.readonly || form.processing ? null : onClickPlusButton()"
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-1 py-1.5 text-xs justify-self-center"
+					:class="[
+						props.readonly || form.processing ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
+					]"	
+				>
 					<FontAwesomeIcon icon="fas fa-plus" fixed-width aria-hidden="true" />
 				</div>
 			</div>
