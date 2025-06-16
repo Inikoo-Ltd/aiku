@@ -15,19 +15,10 @@ class GetWebsiteWorkshopProduct
 {
     use AsObject;
 
-    public function handle(Website $website, Product $product): array
+    public function handle(Website $website): array
     {
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
-
-        $webBlockTypes->each(function ($blockType) use ($product) {
-            $data = $blockType->data ?? [];
-            $fieldValue = $data['fieldValue'] ?? [];
-
-            $fieldValue['product'] = ProductResource::make($product);
-            $data['fieldValue'] = $fieldValue;
-            $blockType->data = $data;
-        });
 
         $propsValue = [
             'layout' => Arr::get($website->unpublishedProductSnapshot, 'layout.product', []),
@@ -38,6 +29,12 @@ class GetWebsiteWorkshopProduct
                     'website' => $website->id
                 ]
             ],
+            'products' => [
+                'name' => 'grp.json.shop.products',
+                'parameters' => [
+                    'shop' => $website->shop->slug
+                ]
+            ]
         ];
         $updateRoute = [
             'updateRoute' => [
