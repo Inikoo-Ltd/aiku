@@ -169,7 +169,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
             </Link>
         </template>
 
-        <!-- Column: Reference -->
+        <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
             <span v-tooltip="item.quantity_required">{{ locale.number(item.quantity_required) }}</span>
 
@@ -229,6 +229,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                         <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                         {{ picking.quantity_picked }}
                     </div>
+                    <!-- <pre>{{ picking }}</pre> -->
 
                     <ButtonWithLink
                         v-if="!item.is_packed"
