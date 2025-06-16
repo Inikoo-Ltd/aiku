@@ -106,7 +106,7 @@ class GetTradeUnitShowcase
         ];
 
         return [
-            'tradeUnit' => TradeUnitResource::make($tradeUnit),
+            'tradeUnit' => TradeUnitResource::make($tradeUnit)->toArray(request()),
             'brand_routes' => $brandRoute,
             'brand' => $tradeUnit->brand(),
             'tag_routes' => $tagRoute,
