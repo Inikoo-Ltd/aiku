@@ -15,6 +15,7 @@ const props = defineProps<{
 
 function tradeUnitRoute(tradeUnit: {}) {
     switch (route().current()) {
+        case 'grp.org.shops.show.catalogue.products.current_products.show':
         case 'grp.goods.trade-units.index':
             return route(
                 'grp.goods.trade-units.show',
