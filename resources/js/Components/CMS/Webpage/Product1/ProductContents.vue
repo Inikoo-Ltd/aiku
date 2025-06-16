@@ -158,16 +158,16 @@ const reloadPage = inject<() => void>('reloadPage')
                     <Skeleton v-if="loadingDeleteIds.includes(content.id)" height="3rem" class="rounded-md mb-3" />
                     <div v-else class="relative">
                         <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
-                            class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
+                            class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
                             <EditorV2 :modelValue="content.title"
-                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                                @update:model-value="(value) => updateLocalContent(content.id, {...content,title : value })" />
                             <FontAwesomeIcon :icon="faChevronDown"
                                 class="text-sm text-gray-500 transform transition-transform duration-200"
                                 :class="{ 'rotate-180': openDisclosureId === content.id }" />
                         </div>
                         <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
                             <EditorV2 :modelValue="content.text"
-                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                                @update:model-value="(value) => updateLocalContent(content.id, {...content,text : value })" />
                         </div>
                     </div>
                 </template>
@@ -197,9 +197,9 @@ const reloadPage = inject<() => void>('reloadPage')
                     <Skeleton v-if="loadingDeleteIds.includes(content.id)" height="3rem" class="rounded-md" />
                     <div v-else class="relative hover:bg-gray-50 rounded transition">
                         <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
-                            class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
+                            class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
                             <EditorV2 :modelValue="content.title"
-                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                               @update:model-value="(value) => updateLocalContent(content.id, {...content,title : value })" />
                             <div class="flex items-center gap-4">
                                 <button @click.stop="confirmDelete(content.id)"
                                     class="text-red-500 hover:text-red-700 transition-opacity text-xs"
@@ -213,7 +213,7 @@ const reloadPage = inject<() => void>('reloadPage')
                         </div>
                         <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
                             <EditorV2 :modelValue="content.text"
-                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                             @update:model-value="(value) => updateLocalContent(content.id, {...content,text : value })" />
                         </div>
                     </div>
                 </template>
