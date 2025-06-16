@@ -102,7 +102,7 @@ const messageDelete = ref('')
         </slot>
 
         <TransitionRoot as="template" :show="isOpenModal">
-            <Dialog class="relative z-20" @close="isOpenModal = false">
+            <Dialog class="relative z-30" @close="isOpenModal = false">
                 <TransitionChild as="template" enter="ease-out duration-150" enter-from="opacity-0" enter-to="opacity-100"
                     leave="ease-in duration-100" leave-from="opacity-100" leave-to="opacity-0">
                     <div class="z-10 fixed inset-0 bg-gray-500/75 transition-opacity" />
