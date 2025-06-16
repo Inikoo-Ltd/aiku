@@ -25,6 +25,6 @@ class DeleteModelHasContent extends OrgAction
     {
         $this->initialisationFromShop($modelHasContent->model->shop, $request);
 
-        return $this->handle($modelHasContent);
+        $this->handle($modelHasContent);
     }
 }

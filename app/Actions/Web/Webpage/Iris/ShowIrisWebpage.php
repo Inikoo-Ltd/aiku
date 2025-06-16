@@ -36,8 +36,6 @@ class ShowIrisWebpage
         );
 
 
-
-
         return [
             'meta'   => $webpage->seo_data,
             'script_website' => Arr::get($webpage->website->settings, 'script_website.header', null),
