@@ -315,6 +315,7 @@ onMounted(() => {
                 />
             </div>
         </div>
+
         <!-- 0: Select Product -->
         <KeepAlive>
             <ProductsSelector
@@ -350,6 +351,7 @@ onMounted(() => {
                 </template>
             </ProductsSelector>
         </KeepAlive>
+
         <!-- 1: Edit Product -->
         <KeepAlive>
             <div v-if="step.current === 1">
@@ -384,6 +386,7 @@ onMounted(() => {
                 </div>
             </div>
         </KeepAlive>
+        
         <!-- 2: Upload product to Shopify -->
         <KeepAlive>
             <div v-if="step.current === 2">
