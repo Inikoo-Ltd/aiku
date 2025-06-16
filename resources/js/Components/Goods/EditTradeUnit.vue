@@ -15,6 +15,7 @@ import Tag from '../Tag.vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import axios from 'axios'
 import { set } from 'lodash-es'
+import PureImageCrop from '@/Components/Pure/PureImageCrop.vue'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { routeType } from '@/types/route'
@@ -199,6 +200,7 @@ const onEditTag = () => {
 // Section: modal create new brand
 const isModalBrand = ref(false)
 // const _multiselect_tags = ref(null)
+const newBrandImg = ref<File | null>(null)
 const newBrandName = ref('')
 const newBrandReference = ref('')
 const isLoadingCreateBrand = ref(false)
@@ -208,6 +210,7 @@ const onCreateNewBrand = () => {
         {
             name: newBrandName.value,
             reference: newBrandReference.value,
+            image: newBrandImg.value,
         },
         {
             onStart: () => {
@@ -541,7 +544,10 @@ const onEditBrand = () => {
                             {{ trans('Image') }}
                         </label>
                         <div class="mt-1">
-                            <PureInput v-model="newBrandReference" placeholder="1-16 characters" />
+                            <PureImageCrop
+                                :aspectRatio="1/1"
+                                @cropped="(e) => newBrandImg = e"
+                            />
                         </div>
                     </div>
                 </div>
