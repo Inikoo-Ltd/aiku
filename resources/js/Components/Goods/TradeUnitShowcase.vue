@@ -30,7 +30,6 @@ const props = defineProps<{
 </script>
 
 <template>
-<!-- <pre>{{ props.data.tag_routes }}</pre> -->
     <div>
         <EditTradeUnit
             :brand="props.data.brand"
