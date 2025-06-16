@@ -61,6 +61,9 @@ class ShowWebsiteWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
+        $product    = $website->shop->products()->first();
+
+
         $navigation = WebsiteWorkshopTabsEnum::navigation();
 
         if ($this->scope instanceof Fulfilment) {
@@ -79,14 +82,14 @@ class ShowWebsiteWorkshop extends OrgAction
 
         ];
 
-      
-        $tabs[WebsiteWorkshopTabsEnum::PRODUCT->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value
-                ?
-                fn () => GetWebsiteWorkshopProduct::run($website)
-                : Inertia::lazy(
-                    fn () => GetWebsiteWorkshopProduct::run($website)
-                );
-        
+        if ($product) {
+            $tabs[WebsiteWorkshopTabsEnum::PRODUCT->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value
+                    ?
+                    fn () => GetWebsiteWorkshopProduct::run($website, $product)
+                    : Inertia::lazy(
+                        fn () => GetWebsiteWorkshopProduct::run($website, $product)
+                    );
+        }
         $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
                 ?
                 fn () => GetWebsiteWorkshopSubDepartment::run($website)

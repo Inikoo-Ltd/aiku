@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\Json\GetProducts;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInShop;
+use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
@@ -78,7 +79,7 @@ Route::get('email/templates/{emailTemplate:id}/compiled_layout', GetEmailTemplat
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
 
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
-Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.products');
+Route::get('shop/{shop}/products', GetProductsInWorkshop::class)->name('shop.products');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
 

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Http\Resources\Web\ModelHasContentsResource;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Catalogue\ProductCategory;
@@ -42,6 +43,7 @@ class WorkshopProductsResource extends JsonResource
             'description'       => $this->description,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
+            'contents'          => ModelHasContentsResource::collection($this->contents())->resolve(),
         ];
     }
 }

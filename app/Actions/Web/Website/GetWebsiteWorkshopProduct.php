@@ -4,6 +4,7 @@ namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\ProductResource;
+use App\Http\Resources\Web\WebBlockProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\WebBlockType;
@@ -15,10 +16,19 @@ class GetWebsiteWorkshopProduct
 {
     use AsObject;
 
-    public function handle(Website $website): array
+    public function handle(Website $website, Product $product): array
     {
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
+
+        $webBlockTypes->each(function ($blockType) use ($product) {
+            $data = $blockType->data ?? [];
+            $fieldValue = $data['fieldValue'] ?? [];
+
+            $fieldValue['product'] = WebBlockProductResource::make($product);
+            $data['fieldValue'] = $fieldValue;
+            $blockType->data = $data;
+        });
 
         $propsValue = [
             'layout' => Arr::get($website->unpublishedProductSnapshot, 'layout.product', []),
@@ -29,12 +39,6 @@ class GetWebsiteWorkshopProduct
                     'website' => $website->id
                 ]
             ],
-            'products' => [
-                'name' => 'grp.json.shop.products',
-                'parameters' => [
-                    'shop' => $website->shop->slug
-                ]
-            ]
         ];
         $updateRoute = [
             'updateRoute' => [

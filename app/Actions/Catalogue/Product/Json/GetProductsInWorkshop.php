@@ -22,7 +22,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetProductsInShop extends OrgAction
+class GetProductsInWorkshop extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
@@ -51,6 +51,7 @@ class GetProductsInShop extends OrgAction
                 'products.description',
                 'products.name',
                 'products.state',
+                'products.image_id',
                 'products.created_at',
                 'products.updated_at',
                 'products.available_quantity'
