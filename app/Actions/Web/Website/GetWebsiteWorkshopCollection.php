@@ -48,7 +48,7 @@ class GetWebsiteWorkshopCollection
             'departments'   => WebsiteDepartmentsResource::collection($departments),
             'subDepartments'   => WorkshopSubDepartmentsResource::collection($subDepartments),
             'layout'    => Arr::get($website->unpublishedCollectionSnapshot, 'layout.collection', []),
-            'webpages'  => WebpagesResource::collection(GetWebpagesWithCollection::run($website)),
+            /* 'webpages'  => WebpagesResource::collection(GetWebpagesWithCollection::run($website)), */
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.collection',
                 'parameters' => [
