@@ -228,6 +228,7 @@ provide("listError", listError.value);
                 type="tertiary"
             />
         </template>
+        
         <template #button-to-queue="{ action }">
             <Button
                 @click="isModalToQueue = true"
@@ -237,6 +238,7 @@ provide("listError", listError.value);
                 :type="action.type"
             />
         </template>
+
         <template #button-group-change-picker ="{ action }">
             <Button
                 @click="isModalToQueue = true"
@@ -244,6 +246,15 @@ provide("listError", listError.value);
                 :icon="action.icon"
                 type="tertiary"
                 class="border-transparent rounded-l-none"
+            />
+        </template>
+
+        <template #button-change-picker ="{ action }">
+            <Button
+                @click="isModalToQueue = true"
+                :label="action.label"
+                :icon="action.icon"
+                type="tertiary"
             />
         </template>
     </PageHeading>
