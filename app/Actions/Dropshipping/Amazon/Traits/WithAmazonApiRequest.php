@@ -21,16 +21,17 @@ trait WithAmazonApiRequest
      */
     protected function getAmazonConfig()
     {
-        $sandbox = config('services.amazon.sandbox', false);
-        
+        $sandbox = config('services.amazon.sandbox');
+
         $config = [
+            'app_id' => config('services.amazon.app_id'),
             'client_id' => config('services.amazon.client_id'),
             'client_secret' => config('services.amazon.client_secret'),
             'redirect_uri' => config('services.amazon.redirect_uri'),
             'region' => config('services.amazon.region', 'eu'),
             'sandbox' => $sandbox,
         ];
-        
+
         // Set token sources based on environment
         if ($sandbox) {
             $storedAccessToken = config('services.amazon.access_token', null);
@@ -43,8 +44,8 @@ trait WithAmazonApiRequest
                     'client_secret' => config('services.amazon.client_secret'),
                     'refresh_token' => config('services.amazon.refresh_token')
                 ]);
-                config(['services.amazon.access_token' => 
-                    $config['access_token']   
+                config(['services.amazon.access_token' =>
+                    $config['access_token']
                 ]);
             }
             $marketplaceId = config('services.amazon.marketplace_id', null);
@@ -58,7 +59,7 @@ trait WithAmazonApiRequest
             $config['access_token'] = Arr::get($this->settings, 'credentials.amazon_access_token');
             $config['refresh_token'] = Arr::get($this->settings, 'credentials.amazon_refresh_token');
         }
-        
+
         return $config;
     }
 
@@ -103,7 +104,7 @@ trait WithAmazonApiRequest
         $config = $this->getAmazonConfig();
 
         $params = [
-            'application_id' => $config['client_id'],
+            'application_id' => $config['app_id'],
             'amazon_callback_uri' => $config['redirect_uri'],
             'state' => $state ?? md5(time()),
         ];
@@ -111,7 +112,7 @@ trait WithAmazonApiRequest
         $queryString = http_build_query($params);
 
         return match ($config['sandbox']) {
-            true => "https://seller-sandbox.amazon.com/apps/authorize/consent?version=beta&{$queryString}",
+            true => "https://sellercentral.amazon.com/apps/authorize/consent?version=beta&{$queryString}",
             default => "https://sellercentral.amazon.com/apps/authorize/consent?{$queryString}"
         };
     }
@@ -335,7 +336,7 @@ trait WithAmazonApiRequest
 
 
             $response = Http::withHeaders($headers)->withQueryParameters($queryParams)->$method($url, $data);
-            
+
             if ($response->successful()) {
                 return $response->json();
             }

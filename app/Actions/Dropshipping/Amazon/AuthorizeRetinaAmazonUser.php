@@ -15,7 +15,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use Illuminate\Console\Command;
-use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -31,8 +30,7 @@ class AuthorizeRetinaAmazonUser extends OrgAction
 
     public function handle(): string
     {
-        dd($this->getAmazonAuthUrl());
-        return $this->getAmazonOAuthUrl();
+        return $this->getAmazonAuthUrl();
     }
 
     public function jsonResponse(string $url): string
@@ -49,12 +47,12 @@ class AuthorizeRetinaAmazonUser extends OrgAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
-    public function asController(ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): string
     {
         $customer = $request->user()->customer;
         $this->initialisationFromShop($customer->shop, $request);
 
-        return redirect()->away($this->handle());
+        return $this->handle();
     }
 
     public function asCommand(Command $command): void
