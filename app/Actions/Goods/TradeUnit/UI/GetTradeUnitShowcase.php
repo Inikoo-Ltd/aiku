@@ -11,6 +11,7 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Http\Resources\Catalogue\TagsResource;
+use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -105,6 +106,7 @@ class GetTradeUnitShowcase
         ];
 
         return [
+            'tradeUnit' => TradeUnitResource::make($tradeUnit),
             'brand_routes' => $brandRoute,
             'brand' => $tradeUnit->brand(),
             'tag_routes' => $tagRoute,
