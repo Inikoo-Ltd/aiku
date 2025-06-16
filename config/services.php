@@ -52,7 +52,7 @@ return [
         'redirect_uri' => env('AMAZON_REDIRECT_URI', env('APP_URL') . '/oauth/amazon/callback'),
         'region' => env('AMAZON_REGION', 'na'),
         'sandbox' => env('AMAZON_SANDBOX', false),
-        'marketplace_id' => env('AMAZON_MARKETPLACE_ID', 'ATVPDKIKX0DER'),
+        'marketplace_id' => env('AMAZON_MARKETPLACE_ID'),
         'refresh_token' => env('AMAZON_REFRESH_TOKEN'),
     ],
     'apple_pay' => [
