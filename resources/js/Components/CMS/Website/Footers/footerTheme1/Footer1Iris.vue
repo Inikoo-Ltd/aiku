@@ -28,15 +28,15 @@ const isLoadingSubmit = ref(false)
 const currentState = ref("")
 const inputEmail = ref("")
 const errorMessage = ref("")
-const hiddenField = ref("")
+// const hiddenField = ref("")
 const onSubmitSubscribe = async () => {
 	isLoadingSubmit.value = true
 	errorMessage.value = ""
 	currentState.value = ""
-    if (hiddenField.value) {  // If hidden field is filled, do not submit (it's may be a bot autofill the field)
-        isLoadingSubmit.value = false
-        return
-    }
+    // if (hiddenField.value) {  // If hidden field is filled, do not submit (it's may be a bot autofill the field)
+    //     isLoadingSubmit.value = false
+    //     return
+    // }
 
 
 	if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
@@ -304,7 +304,7 @@ const onSubmitSubscribe = async () => {
         </div>
 
         <!-- Subscribe down -->
-        <div v-if="modelValue?.subscribe?.is_show"
+        <div v-if="modelValue?.subscribe?.is_show && !layout.iris?.is_logged_in"
             class="mt-16 border-t border-white/10 px-8 md:px-0 pt-8 md:mt-8 flex flex-col md:flex-row items-center md:justify-between">
             <div class="w-fit text-center md:text-left ">
                 <h3 class="text-sm/6 font-semibold text-white" v-html="modelValue.subscribe?.headline ?? 'Subscribe to our newsletter'"></h3>
@@ -315,11 +315,11 @@ const onSubmitSubscribe = async () => {
                 <div v-if="currentState != 'success'" class="flex flex-col items-start">
                     <form @submit.prevent="() => onSubmitSubscribe()" class="w-full max-w-md md:w-fit mt-6 sm:flex sm:max-w-md lg:mt-0 ">
                         <label for="email-address" class="sr-only">Email address</label>
-                        <input
+                        <!-- <input
                             v-model="hiddenField"
                             type="text"
                             class="sr-only"
-                        />
+                        /> -->
                         <input
                             v-model="inputEmail"
                             type="email"
