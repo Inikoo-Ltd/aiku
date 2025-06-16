@@ -30,7 +30,7 @@ const props = defineProps<{
         attach_brand: routeType
         detach_brand: routeType
     }
-    tag_routes: {
+    tag_routes?: {
         index_tag: routeType
         store_tag: routeType
         update_tag: routeType
@@ -42,7 +42,6 @@ const props = defineProps<{
     tags_selected_id: number[]
 }>()
 
-console.log('props brand route', props.tag_routes.index_tag.name)
 
 // Section: modal create new tag
 const isModalTag = ref(false)
@@ -327,6 +326,7 @@ const onEditBrand = () => {
             <div for="">
                 Tags:
             </div>
+
             <div class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
                 <Tag v-for="tag in props.tags" :key="tag.id" :label="tag.name" @click.self="() => (isModalUpdateTag = true, selectedUpdateTag = {...tag})" stringToColor style="cursor: pointer">
                     <template #closeButton>
@@ -351,7 +351,7 @@ const onEditBrand = () => {
                 </Tag>
             </div>
 
-            <div class="w-full max-w-64">
+            <div v-if="props.tag_routes?.index_tag?.name" class="w-full max-w-64">
                 <MultiSelect
                     ref="_multiselect_tags"
                     v-model="formSelectedTags.tags_id"
@@ -384,7 +384,7 @@ const onEditBrand = () => {
             </div>
         </div>
 
-        <div class="w-full max-w-md px-8 py-4 gap-x-3 ">
+        <div v-if="props.brand_routes?.index_brand" class="w-full max-w-md px-8 py-4 gap-x-3 ">
             <div>
                 {{ trans("Brand") }}:
             </div>

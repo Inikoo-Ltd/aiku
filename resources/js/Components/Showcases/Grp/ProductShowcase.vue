@@ -56,7 +56,7 @@ const props = defineProps<{
 			name: string
 			percentage: number | null
 		}[] | null
-		trade_unit: {
+		trade_units: {
 			brand: {}
 			brand_routes: {
 				index_brand: routeType
@@ -239,11 +239,11 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 		
 		<div>
 			<EditTradeUnit
-				v-if="props.data.trade_unit"
-				:brand="props.data.trade_unit.brand"
-				:brand_routes="props.data.trade_unit.brand_routes"
-				:tags="props.data.trade_unit.tags"
-				:tag_routes="props.data.trade_unit.tag_routes"
+				v-if="props.data.trade_units"
+				:brand="props.data.trade_units.brand"
+				:brand_routes="props.data.trade_units.brand_routes"
+				:tags="props.data.trade_units.tags"
+				:tag_routes="props.data.trade_units.tag_routes"
 			/>
 		</div>
 
