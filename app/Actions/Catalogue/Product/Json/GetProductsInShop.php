@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\WorkshopProductsResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -46,11 +47,12 @@ class GetProductsInShop extends OrgAction
                 'products.current_historic_asset_id',
                 'products.asset_id',
                 'products.code',
+                'products.slug',
+                'products.description',
                 'products.name',
                 'products.state',
                 'products.created_at',
                 'products.updated_at',
-                'products.slug',
                 'products.available_quantity'
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
@@ -64,7 +66,7 @@ class GetProductsInShop extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
-        return ProductsResource::collection($products);
+        return WorkshopProductsResource::collection($products);
     }
 
     public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator
