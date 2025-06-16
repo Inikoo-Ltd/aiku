@@ -10,8 +10,8 @@
 
 namespace App\Actions\Helpers\Brand;
 
+use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
-use App\Actions\Traits\UI\WithLogo;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use Illuminate\Support\Arr;
@@ -20,12 +20,20 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBrand extends OrgAction
 {
-    use WithLogo;
     public function handle(Brand $brand, array $modelData): Brand
     {
         $image = Arr::pull($modelData, 'image', null);
         if ($image) {
-            $brand = $this->processWebsiteLogo(['image' => $image ], $brand);
+            $imageData = [
+                'path'         => $image->getPathName(),
+                'originalName' => $image->getClientOriginalName(),
+                'extension'    => $image->getClientOriginalExtension(),
+            ];
+            $brand     = SaveModelImage::run(
+                model: $brand,
+                imageData: $imageData,
+                scope: 'brand',
+            );
         }
         $brand->update($modelData);
         return $brand;
