@@ -72,7 +72,8 @@ const onAddContent = async (data: {
     }
 }
 
-const onUpdateContent = (id: number, payload: { title?: string; text?: string }) => {
+const onUpdateContent = (id: number, payload: any) => {
+    delete payload.image  // ✅ correct way to remove a property
     router.patch(route('grp.models.model_has_content.update', { modelHasContent: id }), payload, {
         preserveScroll: true,
         onSuccess: () => {
@@ -88,10 +89,8 @@ const debouncedUpdate = debounce((id: number, payload) => {
     onUpdateContent(id, payload)
 }, 800)
 
-const updateLocalContent = (id: number, key: 'title' | 'text', value: string) => {
-    const item = localContents.value.find((c) => c.id === id)
-    if (item) item[key] = value
-    debouncedUpdate(id, { [key]: value })
+const updateLocalContent = (id: number, value: string) => {
+    debouncedUpdate(id,  value )
 }
 
 const addInformation = () => {
@@ -141,7 +140,7 @@ const confirmDelete = (id: number) => {
         accept: () => onDeleteContent(id),
     })
 }
-
+const openDisclosureId = ref<number | null>(null)
 const reloadPage = inject<() => void>('reloadPage')
 </script>
 
@@ -157,23 +156,22 @@ const reloadPage = inject<() => void>('reloadPage')
             <div v-else class="space-y-3">
                 <template v-for="content in informationContents" :key="content.id">
                     <Skeleton v-if="loadingDeleteIds.includes(content.id)" height="3rem" class="rounded-md mb-3" />
-                    <Disclosure v-else v-slot="{ open }">
-                        <div>
-                            <DisclosureButton
-                                class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
-                                <EditorV2 :modelValue="content.title"
-                                    @update:model-value="(value) => updateLocalContent(content.id, 'title', value)" />
-                                <FontAwesomeIcon :icon="faChevronDown"
-                                    class="text-sm text-gray-500 transform transition-transform duration-200"
-                                    :class="{ 'rotate-180': open }" />
-                            </DisclosureButton>
-                            <DisclosurePanel class="text-sm text-gray-600">
-                                <EditorV2 :modelValue="content.text"
-                                    @update:model-value="(value) => updateLocalContent(content.id, 'text', value)" />
-                            </DisclosurePanel>
+                    <div v-else class="relative">
+                        <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
+                            class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
+                            <EditorV2 :modelValue="content.title"
+                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                            <FontAwesomeIcon :icon="faChevronDown"
+                                class="text-sm text-gray-500 transform transition-transform duration-200"
+                                :class="{ 'rotate-180': openDisclosureId === content.id }" />
                         </div>
-                    </Disclosure>
+                        <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
+                            <EditorV2 :modelValue="content.text"
+                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                        </div>
+                    </div>
                 </template>
+
             </div>
 
             <!-- Add Information Button (independent hover) -->
@@ -197,30 +195,29 @@ const reloadPage = inject<() => void>('reloadPage')
             <div v-else class="space-y-2">
                 <template v-for="content in faqContents" :key="content.id">
                     <Skeleton v-if="loadingDeleteIds.includes(content.id)" height="3rem" class="rounded-md" />
-                    <Disclosure v-else v-slot="{ open }">
-                        <div class="relative hover:bg-gray-50 rounded transition">
-                            <DisclosureButton
-                                class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center">
-                                <EditorV2 :modelValue="content.title"
-                                    @update:model-value="(value) => updateLocalContent(content.id, 'title', value)" />
-                                <div class="flex items-center gap-4">
-                                    <button @click.stop="confirmDelete(content.id)"
-                                        class="text-red-500 hover:text-red-700 transition-opacity text-xs"
-                                        title="Delete Content">
-                                        <FontAwesomeIcon :icon="faTrash" />
-                                    </button>
-                                    <FontAwesomeIcon :icon="faChevronDown"
-                                        class="text-sm text-gray-500 transform transition-transform duration-200"
-                                        :class="{ 'rotate-180': open }" />
-                                </div>
-                            </DisclosureButton>
-                            <DisclosurePanel class="text-sm text-gray-600">
-                                <EditorV2 :modelValue="content.text"
-                                    @update:model-value="(value) => updateLocalContent(content.id, 'text', value)" />
-                            </DisclosurePanel>
+                    <div v-else class="relative hover:bg-gray-50 rounded transition">
+                        <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
+                            class="w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
+                            <EditorV2 :modelValue="content.title"
+                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                            <div class="flex items-center gap-4">
+                                <button @click.stop="confirmDelete(content.id)"
+                                    class="text-red-500 hover:text-red-700 transition-opacity text-xs"
+                                    title="Delete Content">
+                                    <FontAwesomeIcon :icon="faTrash" />
+                                </button>
+                                <FontAwesomeIcon :icon="faChevronDown"
+                                    class="text-sm text-gray-500 transform transition-transform duration-200"
+                                    :class="{ 'rotate-180': openDisclosureId === content.id }" />
+                            </div>
                         </div>
-                    </Disclosure>
+                        <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
+                            <EditorV2 :modelValue="content.text"
+                                @update:model-value="(value) => updateLocalContent(content.id, content)" />
+                        </div>
+                    </div>
                 </template>
+
 
                 <Skeleton v-if="loadingAdd" height="3rem" class="rounded-md mb-3" />
             </div>
