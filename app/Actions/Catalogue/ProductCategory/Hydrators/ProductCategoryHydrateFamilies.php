@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProductCategoryHydrateFamilies implements ShouldBeUnique
@@ -33,7 +34,17 @@ class ProductCategoryHydrateFamilies implements ShouldBeUnique
         }
 
         $stats = [
-            'number_families' => $productCategory->getFamilies()->count(),
+            'number_families' =>  DB::table('product_categories')
+                ->where(function ($query) use ($productCategory) {
+                    if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                        $query->where('department_id', $productCategory->id);
+                    } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                        $query->where('sub_department_id', $productCategory->id);
+                    }
+                })
+                ->where('type', ProductCategoryTypeEnum::FAMILY->value)
+                ->where('deleted_at', null)
+                ->count()
         ];
 
         $stats = array_merge(
@@ -44,7 +55,13 @@ class ProductCategoryHydrateFamilies implements ShouldBeUnique
                 enum: ProductCategoryStateEnum::class,
                 models: ProductCategory::class,
                 where: function ($q) use ($productCategory) {
-                    $q->where('parent_id', $productCategory->id)->where('type', ProductCategoryTypeEnum::FAMILY);
+                    $q->where(function ($query) use ($productCategory) {
+                        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                            $query->where('department_id', $productCategory->id);
+                        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                            $query->where('sub_department_id', $productCategory->id);
+                        }
+                    })->where('type', ProductCategoryTypeEnum::FAMILY);
                 }
             )
         );
@@ -54,6 +71,5 @@ class ProductCategoryHydrateFamilies implements ShouldBeUnique
 
         $productCategory->stats()->update($stats);
     }
-
 
 }
