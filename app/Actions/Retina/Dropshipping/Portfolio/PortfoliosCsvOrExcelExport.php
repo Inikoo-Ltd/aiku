@@ -13,7 +13,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Web\Webpage;
@@ -30,12 +30,12 @@ class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings
     use Exportable;
 
     private Customer $customer;
-    private Platform $platform;
+    private CustomerSalesChannel $customerSalesChannel;
 
-    public function __construct(Customer $customer, Platform $platform)
+    public function __construct(Customer $customer, CustomerSalesChannel $customerSalesChannel)
     {
-        $this->customer = $customer;
-        $this->platform = $platform;
+        $this->customer             = $customer;
+        $this->customerSalesChannel = $customerSalesChannel;
     }
 
     public function map($row): array
@@ -108,12 +108,12 @@ class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings
         ];
     }
 
-    public function query()
+    public function query(): \Illuminate\Database\Eloquent\Relations\Relation|\Illuminate\Database\Eloquent\Builder|\Laravel\Scout\Builder|\Illuminate\Database\Query\Builder|Portfolio
     {
         $query = Portfolio::query();
 
         $query->where('customer_id', $this->customer->id);
-        $query->where('platform_id', $this->platform->id);
+        $query->where('customer_sales_channel', $this->customerSalesChannel->id);
 
         $query->with(['item']);
         $query->with(['item.image']);

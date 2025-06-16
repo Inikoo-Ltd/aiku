@@ -12,7 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,12 +20,12 @@ class PortfoliosJsonExport
 {
     use AsAction;
 
-    public function handle(Customer $customer, Platform $platform): array
+    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
     {
 
         return [
             'schema' => $this->schema(),
-            'data' => $this->getData($customer, $platform),
+            'data' => $this->getData($customer, $customerSalesChannel),
         ];
 
     }
@@ -63,10 +63,10 @@ class PortfoliosJsonExport
         ];
     }
 
-    private function getData(Customer $customer, Platform $platform): array
+    private function getData(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
     {
         $portfolios = $customer->portfolios()
-            ->where('platform_id', $platform->id)
+            ->where('customer_sales_channel', $customerSalesChannel->id)
 
             ->with(['item.family', 'item.currency'])
             ->with(['item.image'])
@@ -82,7 +82,7 @@ class PortfoliosJsonExport
                 $row->item?->family?->name,
                 $row->item?->barcode,
                 '', // TODO: CPNP number
-                '', // TODO: need add column for total price in protfolio
+                '', // TODO: need add column for total price in portfolio
                 $row->item?->units,
                 $row->item?->unit,
                 $row->item?->price,

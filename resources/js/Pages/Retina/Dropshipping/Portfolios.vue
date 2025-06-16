@@ -114,8 +114,6 @@ const onUploadToShopify = () => {
 	})
 }
 
-	return components[currentTab.value]
-})
 
 const downloadUrl = (type: string) => {
 	return route(props.download_route[type].name, props.download_route[type].parameters)
@@ -127,31 +125,8 @@ const downloadUrl = (type: string) => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template #other="{ action }">
-			<a :href="downloadUrl('csv')" rel="noopener">
-				<Button
-					:icon="faFileCsv"
-					label="Download CSV"
-					:style="'tertiary'" />
-			</a>
-			<a :href="downloadUrl('xlsx')" rel="noopener">
-				<Button
-					:icon="faFileExcel"
-					label="Download Excel"
-					:style="'tertiary'" />
-			</a>
-			<a :href="downloadUrl('json')" rel="noopener">
-				<Button
-					:icon="faBracketsCurly"
-					label="Download JSON"
-					:style="'tertiary'" />
-			</a>
-			<a :href="downloadUrl('images')" rel="noopener">
-				<Button
-					:icon="faImage"
-					label="Download Image"
-					:style="'tertiary'" />
-			</a>
+
+
 		<template #button-upload-to-shopify="{ action }">
 			<Button
 				@click="onUploadToShopify()"
@@ -164,13 +139,42 @@ const downloadUrl = (type: string) => {
 		</template>
 
 		<template v-if="props.products?.data?.length" #other>
-			<Button
+
+
+                <a :href="downloadUrl('csv')" rel="noopener">
+                    <Button
+                        :icon="faFileCsv"
+                        label="CSV"
+                        :style="'tertiary'" />
+                </a>
+                <a :href="downloadUrl('xlsx')" rel="noopener">
+                    <Button
+                        :icon="faFileExcel"
+                        label="Excel"
+                        :style="'tertiary'" />
+                </a>
+                <a :href="downloadUrl('json')" rel="noopener">
+                    <Button
+                        :icon="faBracketsCurly"
+                        label="JSON"
+                        :style="'tertiary'" />
+                </a>
+                <a :href="downloadUrl('images')" rel="noopener">
+                    <Button
+                        :icon="faImage"
+                        :label="trans('Images')"
+                        :style="'tertiary'" />
+                </a>
+
+
+            <Button
 				@click="() => (isOpenModalPortfolios = true)"
 				:label="trans('Add portfolio')"
 				:icon="'fas fa-plus'"
 			/>
 		</template>
 	</PageHeading>
+
 
 
 	<div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">

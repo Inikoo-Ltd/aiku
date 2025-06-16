@@ -12,7 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -24,16 +24,17 @@ class DownloadPortfolios extends RetinaAction
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     * @throws \Exception
      */
-    public function handle(Customer $customer, Platform $platform, string $type): BinaryFileResponse|Response
+    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel, string $type): BinaryFileResponse|Response
     {
-        $filename =  'portofolio' . '_' . now()->format('Ymd');
+        $filename =  'portfolio' . '_' . now()->format('Ymd');
 
         if ($type == 'portfolio_json') {
             $filename .= '_json.txt';
 
-            return response()->streamDownload(function () use ($customer, $platform) {
-                $jsonData = PortfoliosJsonExport::make()->handle($customer, $platform);
+            return response()->streamDownload(function () use ($customer, $customerSalesChannel) {
+                $jsonData = PortfoliosJsonExport::make()->handle($customer, $customerSalesChannel);
                 echo json_encode($jsonData, JSON_PRETTY_PRINT);
             }, $filename, [
                 'Content-Type' => 'application/json; charset=utf-8',
@@ -42,7 +43,7 @@ class DownloadPortfolios extends RetinaAction
         } elseif ($type == 'portfolio_images') {
             $filename .= '_images.zip';
 
-            [$zipPath, $zipFilePathRelative] = PortfoliosZipExport::make()->handle($customer, $platform);
+            [$zipPath, $zipFilePathRelative] = PortfoliosZipExport::make()->handle($customer, $customerSalesChannel);
             return response()->streamDownload(function () use ($zipPath, $zipFilePathRelative) {
                 readfile($zipPath);
                 Storage::disk('local')->delete($zipFilePathRelative);
@@ -52,14 +53,14 @@ class DownloadPortfolios extends RetinaAction
             ]);
         } elseif ($type == 'portfolio_xlsx') {
             $filename .= '.xlsx';
-            return Excel::download(new PortfoliosCsvOrExcelExport($customer, $platform), $filename, null, [
+            return Excel::download(new PortfoliosCsvOrExcelExport($customer, $customerSalesChannel), $filename, null, [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'Cache-Control' => 'max-age=0',
             ]);
         }
 
         $filename .= '.csv';
-        return Excel::download(new PortfoliosCsvOrExcelExport($customer, $platform), $filename, null, [
+        return Excel::download(new PortfoliosCsvOrExcelExport($customer, $customerSalesChannel), $filename, null, [
             'Content-Type' => 'text/csv',
             'Cache-Control' => 'max-age=0',
         ]);
@@ -69,9 +70,8 @@ class DownloadPortfolios extends RetinaAction
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      */
 
-    public function asController(Platform $platform, ActionRequest $request): BinaryFileResponse|Response
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): BinaryFileResponse|Response
     {
-        // dd("test", $platform);
         $customer = $request->user()->customer;
 
         $type = $request->query('type', 'portfolio_csv');
@@ -82,6 +82,6 @@ class DownloadPortfolios extends RetinaAction
 
         $this->initialisation($request);
 
-        return $this->handle($customer, $platform, $type);
+        return $this->handle($customer, $customerSalesChannel, $type);
     }
 }

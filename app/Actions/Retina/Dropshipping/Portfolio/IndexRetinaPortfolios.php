@@ -157,30 +157,30 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 'download_route' => [
                     'xlsx' => [
-                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
-                            'platform' => $this->platform->slug,
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
                             'type'     => 'portfolio_xlsx'
                         ]
                     ],
                     'csv' => [
-                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
-                            'platform' => $this->platform->slug,
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
                             'type'     => 'portfolio_csv'
                         ]
                     ],
                     'json' => [
-                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
-                            'platform' => $this->platform->slug,
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
                             'type'     => 'portfolio_json'
                         ]
                     ],
                     'images' => [
-                        'name'       => 'retina.dropshipping.platforms.portfolios.download',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
-                            'platform' => $this->platform->slug,
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
                             'type'     => 'portfolio_images'
                         ]
                     ]
@@ -235,7 +235,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     'count' => 0
                 ]);
 
-            $table->column(key: 'image', label: __(''), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);

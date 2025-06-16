@@ -11,7 +11,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Storage;
 
@@ -19,12 +19,12 @@ class PortfoliosZipExport
 {
     use AsAction;
 
-    public function handle(Customer $customer, Platform $platform): array
+    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
     {
 
 
         $imageItems = $customer->portfolios()
-            ->where('platform_id', $platform->id)
+            ->where('customer_sales_channel', $customerSalesChannel->id)
             ->with(['item'])
             ->with(['item.images'])
             ->get()
