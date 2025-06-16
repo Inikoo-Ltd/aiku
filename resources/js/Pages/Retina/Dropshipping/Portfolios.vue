@@ -163,7 +163,7 @@ const onUploadToShopify = () => {
 
 	<RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
-	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto py-43">
+	<Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto">
 		<AddPortfolios
 			v-if="platform_data?.type === 'manual'"
 			:step="step"
