@@ -60,7 +60,7 @@ class GetProductShowcase
             ],
             'product' => ProductResource::make($product),
             'stats'   => $product->salesIntervals,
-            'tradeUnits' => $dataTradeUnits,
+            'trade_units' => $dataTradeUnits,
         ];
     }
 

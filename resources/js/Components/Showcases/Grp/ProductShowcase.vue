@@ -21,6 +21,7 @@ import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
+import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faPlay, faPlus)
@@ -55,6 +56,27 @@ const props = defineProps<{
 			name: string
 			percentage: number | null
 		}[] | null
+		trade_units: {
+			brand: {}
+			brand_routes: {
+				index_brand: routeType
+				store_brand: routeType
+				update_brand: routeType
+				delete_brand: routeType
+				attach_brand: routeType
+				detach_brand: routeType
+			}
+			tag_routes: {
+				index_tag: routeType
+				store_tag: routeType
+				update_tag: routeType
+				delete_tag: routeType
+				attach_tag: routeType
+				detach_tag: routeType
+			}
+			tags: {}[]
+			tags_selected_id: number[]
+		}
 	}
 }>()
 
@@ -214,9 +236,19 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 				</dl>
 			</section>
 		</div>
+		
+		<div>
+			<EditTradeUnit
+				v-if="props.data.trade_units"
+				:brand="props.data.trade_units.brand"
+				:brand_routes="props.data.trade_units.brand_routes"
+				:tags="props.data.trade_units.tags"
+				:tag_routes="props.data.trade_units.tag_routes"
+			/>
+		</div>
 
 		<!-- Revenue Stats -->
-		<div v-if="data.stats" class="pt-8 p-4 md:col-span-3">
+		<div v-if="false && data.stats" class="pt-8 p-4 md:col-span-3">
 			<h3 class="text-lg font-semibold">
 				{{ trans("All Sales") }}:
 				{{ useLocaleStore().currencyFormat(data.product.data.currency_code || "usd", data?.stats?.[0]?.amount ??
