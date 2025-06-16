@@ -11,6 +11,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
@@ -29,17 +30,55 @@ class IndexTradeUnits extends GrpAction
     use WithGoodsAuthorisation;
 
     private Group $parent;
+    private string $bucket;
 
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
+        $this->bucket = 'all';
         $this->parent = group();
         $this->initialisation($this->parent, $request);
 
-        return $this->handle();
+        return $this->handle(bucket: 'all');
     }
 
-    public function handle($prefix = null): LengthAwarePaginator
+    public function inProcess(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'in_process';
+        $this->parent = group();
+        $this->initialisation($this->parent, $request);
+
+        return $this->handle(bucket: 'in_process');
+    }
+
+    public function active(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'active';
+        $this->parent = group();
+        $this->initialisation($this->parent, $request);
+
+        return $this->handle(bucket: 'active');
+    }
+
+    public function discontinued(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'discontinued';
+        $this->parent = group();
+        $this->initialisation($this->parent, $request);
+
+        return $this->handle(bucket: 'discontinued');
+    }
+
+    public function anomality(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'anomality';
+        $this->parent = group();
+        $this->initialisation($this->parent, $request);
+
+        return $this->handle(bucket: 'anomality');
+    }
+
+    public function handle($prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -55,6 +94,15 @@ class IndexTradeUnits extends GrpAction
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $this->group->id);
 
+        if($bucket == 'in_process') {
+            $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::IN_PROCESS);
+        } elseif ($bucket == 'active') {
+            $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::ACTIVE);
+        } elseif ($bucket == 'discontinued') {
+            $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::DISCONTINUED);
+        } elseif ($bucket == 'anomality') {
+            $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::ANOMALITY);
+        }
 
         $queryBuilder
             ->defaultSort('trade_units.code')
@@ -113,8 +161,13 @@ class IndexTradeUnits extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $tradeUnit, ActionRequest $request): Response
     {
-        $title = __('Trade Units');
-
+        $title = match ($this->bucket) {
+            'active' => __('Active Trade Units'),
+            'in_process' => __('In process Trade Units'),
+            'discontinued' => __('Discontinued Trade Units'),
+            'anomality' => __('Anomality Trade Units'),
+            default => __('Trade Units')
+        };
         return Inertia::render(
             'Goods/TradeUnits',
             [
@@ -124,10 +177,11 @@ class IndexTradeUnits extends GrpAction
                 ),
                 'title'       => $title,
                 'pageHead'    => [
+                    'subNavigation' => $this->getTradeUnitsSubNavigation(),
                     'title'     => $title,
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-atom'],
-                        'title' => $title
+                        'title' => $title,
                     ],
                 ],
                 'data'        => TradeUnitsResource::collection($tradeUnit),
@@ -163,5 +217,62 @@ class IndexTradeUnits extends GrpAction
                 $suffix
             )
         );
+    }
+
+    public function getTradeUnitsSubNavigation(): array
+    {
+        return [
+
+            [
+                'label'  => __('Active'),
+                'root'   => 'grp.goods.trade-units.active',
+                'route'  => [
+                    'name'       => 'grp.goods.trade-units.active',
+                    'parameters' => []
+                ],
+                'number' => $this->group->goodsStats->number_trade_units_status_active
+            ],
+            [
+                'label'  => __('In process'),
+                'root'   => 'grp.goods.trade-units.in_process',
+                'route'  => [
+                    'name'       => 'grp.goods.trade-units.in_process',
+                    'parameters' => []
+                ],
+                'number' => $this->group->goodsStats->number_trade_units_status_in_process
+            ],
+            [
+                'label'  => __('Discontinued'),
+                'root'   => 'grp.goods.trade-units.discontinued',
+                'route'  => [
+                    'name'       => 'grp.goods.trade-units.discontinued',
+                    'parameters' => []
+                ],
+                'number' => $this->group->goodsStats->number_trade_units_status_discontinued
+            ],
+            [
+                'label'  => __('Anomality'),
+                'root'   => 'grp.goods.trade-units.anomality',
+                'align'  => 'right',
+                'route'  => [
+                    'name'       => 'grp.goods.trade-units.anomality',
+                    'parameters' => []
+                ],
+                'number' => $this->group->goodsStats->number_trade_units_status_anomaly
+            ],
+            [
+                'label'  => __('All'),
+                'icon'   => 'fal fa-bars',
+                'root'   => 'grp.goods.trade-units.index',
+                'align'  => 'right',
+                'route'  => [
+                    'name'       => 'grp.goods.trade-units.index',
+                    'parameters' => []
+                ],
+                'number' => $this->group->goodsStats->number_trade_units
+
+            ],
+
+        ];
     }
 }
