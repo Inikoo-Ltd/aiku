@@ -364,7 +364,7 @@ trait WithAmazonApiRequest
     /**
      * Get user's Amazon catalog items
      */
-    public function getProducts($limit = 50, $nextToken = null, $keywords = "shoes")
+    public function getProducts($limit = 50, $nextToken = null, $keywords = "")
     {
         try {
             $queryParams = [
@@ -615,48 +615,51 @@ trait WithAmazonApiRequest
         try {
             $formattedData = [
                 'attributes' => [
-                    'title' => $productData['title'] ?? null,
-                    'product_type' => $productData['product_type'] ?? null,
-                    'brand' => $productData['brand'] ?? null,
-                    'description' => $productData['description'] ?? null,
-                    'bullet_points' => $productData['bullet_points'] ?? [],
+                    'title' => Arr::get($productData, 'title'),
+                    'product_type' => Arr::get($productData, 'product_type'),
+                    'brand' => Arr::get($productData, 'brand'),
+                    'description' => Arr::get($productData, 'description'),
+                    'bullet_points' => Arr::get($productData, 'bullet_points', []),
                     'item_package_dimensions' => [
                         'length' => [
-                            'value' => $productData['dimensions']['length'] ?? 1,
+                            'value' => Arr::get($productData, 'dimensions.length', 1),
                             'unit' => 'inches'
                         ],
                         'width' => [
-                            'value' => $productData['dimensions']['width'] ?? 1,
+                            'value' => Arr::get($productData, 'dimensions.width', 1),
                             'unit' => 'inches'
                         ],
                         'height' => [
-                            'value' => $productData['dimensions']['height'] ?? 1,
+                            'value' => Arr::get($productData, 'dimensions.height', 1),
                             'unit' => 'inches'
                         ],
                         'weight' => [
-                            'value' => $productData['dimensions']['weight'] ?? 1,
+                            'value' => Arr::get($productData, 'dimensions.weight', 1),
                             'unit' => 'pounds'
                         ]
                     ],
                     'fulfillment_availability' => [
                         [
-                            'quantity' => $productData['quantity'] ?? 0,
+                            'quantity' => Arr::get($productData, 'quantity', 0),
                             'fulfillment_channel_code' => 'DEFAULT'
                         ]
                     ],
                     'price' => [
-                        'value' => $productData['price'] ?? 0,
-                        'currency' => $productData['currency'] ?? 'USD'
+                        'value' => Arr::get($productData, 'price', 0),
+                        'currency' => Arr::get($productData, 'currency', 'USD')
                     ]
                 ]
             ];
 
             // Add images if present
-            if (isset($productData['images']) && is_array($productData['images'])) {
+            $images = Arr::get($productData, 'images', []);
+
+            if (is_array($images)) {
                 $formattedData['attributes']['images'] = [];
 
-                foreach ($productData['images'] as $index => $imageUrl) {
+                foreach ($images as $index => $imageUrl) {
                     $imageType = $index === 0 ? 'MAIN' : 'PT' . $index;
+
                     $formattedData['attributes']['images'][] = [
                         'link' => $imageUrl,
                         'height' => 500,

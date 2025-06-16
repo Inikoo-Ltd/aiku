@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Dropshipping\Ebay\Product;
+namespace App\Actions\Dropshipping\Amazon\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
@@ -17,6 +17,7 @@ use App\Events\UploadProductToAmazonProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -35,40 +36,29 @@ class RequestApiUploadProductAmazon extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $imageUrls = [];
-            $images = [];
-            if (app()->isProduction()) {
-                foreach ($product->images as $image) {
-                    $images[] = [
-                        'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
-                    ];
-                }
-
-                $imageUrls = [
-                    'imageUrls' => $images
-                ];
-            }
-
-            $inventoryItem = [
-                'sku' => $product->code,
-                'availability' => [
-                    'shipToLocationAvailability' => [
-                        'quantity' => $product->available_quantity
-                    ]
+            $productData = [
+                'title' => $portfolio->customer_product_name,
+                'description' => $portfolio->customer_description,
+                'product_type' => $product->type ?? null,
+                'brand' => $product->brand ?? null,
+                'bullet_points' => $product->bullet_points ?? [],
+                'dimensions' => [
+                    'weight' => $product->gross_weight,
                 ],
-                'condition' => 'NEW',
-                'product' => [
-                    'title' => $portfolio->customer_product_name,
-                    'description' => $portfolio->customer_description,
-                    ...$imageUrls
-                ]
+                'quantity' => $product->available_quantity,
+                'price' => $product->price,
+                'currency' => $product->currency,
+                'images' => app()->isProduction()
+                    ? collect($product->images)->map(function ($image) {
+                        return GetImgProxyUrl::run($image->getImage()->extension('jpg'));
+                    })->toArray()
+                    : [],
             ];
 
-            $amazonUser->storeProduct($inventoryItem);
-            // $amazonUser->storeOffer($amazonProduct);
+            $product = $amazonUser->createFullProduct($product->code, $productData);
 
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => $inventoryItem['sku'],
+                'platform_product_id' => Arr::get($product, 'id'),
             ]);
 
             UploadProductToAmazonProgressEvent::dispatch($amazonUser, $portfolio);
