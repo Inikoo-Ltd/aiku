@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 16 Jun 2025 15:18:47 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,27 +8,25 @@
 
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
+use App\Actions\IrisAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsController;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 
-class ShowRetinaRegisterChooseMethod
+class ShowRetinaRegisterChooseMethod extends IrisAction
 {
-    use AsController;
-
-
     public function handle(ActionRequest $request): Response
     {
-        $shop = $request->website->shop;
-        $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
-        $pollsResource = PollsResource::collection($polls)->toArray($request);
+        $shop = $this->shop;
 
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
+            $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
+            $pollsResource = PollsResource::collection($polls)->toArray($request);
+
             return Inertia::render(
                 'Auth/Register',
                 [
@@ -46,7 +45,6 @@ class ShowRetinaRegisterChooseMethod
                 'Auth/DropshippingRegisterSelectMethod',
                 [
                     'countriesAddressData' => GetAddressData::run(),
-                    'polls' => $pollsResource,
                     'registerRoute' => [
                         'name' => 'retina.register_pre_customer.store',
                         'parameters' => [
@@ -61,6 +59,13 @@ class ShowRetinaRegisterChooseMethod
         }
 
 
+    }
+
+    public function asController(ActionRequest $request): Response
+    {
+        $this->initialisation($request);
+
+        return $this->handle($request);
     }
 
 }

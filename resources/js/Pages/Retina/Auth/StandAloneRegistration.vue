@@ -138,7 +138,7 @@ simplePolls.value.forEach((poll) => {
 		<div class="max-w-2xl mx-auto my-8">
 			
 			<div class="text-4xl font-semibold flex justify-center mb-8">
-				{{ trans("One last step to access the full system") }}
+				{{ trans("Register") }}
 			</div>
 
 			<!-- Card container -->

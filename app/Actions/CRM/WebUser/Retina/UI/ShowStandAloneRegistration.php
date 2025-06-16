@@ -10,24 +10,23 @@
 
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
+use App\Actions\IrisAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsController;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
 
-class ShowDropshippingStandAloneRegistration
+class ShowStandAloneRegistration extends IrisAction
 {
-    use AsController;
 
 
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
-        $shop = $request->website->shop;
+        $shop = $this->shop;
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
@@ -37,7 +36,7 @@ class ShowDropshippingStandAloneRegistration
 
         $webUser = $request->user();
         return Inertia::render(
-            'Auth/DropshippingStandAloneRegistration',
+            'Auth/StandAloneRegistration',
             [
             'countriesAddressData' => GetAddressData::run(),
             'polls' => $pollsResource,
@@ -73,5 +72,13 @@ class ShowDropshippingStandAloneRegistration
         ]
         );
     }
+
+    public function asController(ActionRequest $request): Response
+    {
+        $this->initialisation($request);
+
+        return $this->handle($request);
+    }
+
 
 }

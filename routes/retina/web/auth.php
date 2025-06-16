@@ -11,6 +11,7 @@ use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
 use App\Actions\CRM\WebUser\Retina\LogoutRetina;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
+use App\Actions\CRM\WebUser\Retina\UI\ShowStandAloneRegistration;
 use App\Actions\CRM\WebUser\Retina\UI\ShowFinishPreRetinaRegister;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaPrepareAccount;
@@ -38,8 +39,9 @@ Route::middleware('guest:retina')->group(function () {
 
 
     Route::get('register', ShowRetinaRegisterChooseMethod::class)->name('register_choose_method');
+    Route::get('register-step-2', ShowStandAloneRegistration::class)->name('register_standalone');
 
-    Route::get('register-step-2', ShowRetinaRegister::class)->name('register');
+    Route::get('register-step-3', ShowRetinaRegister::class)->name('register_step_3');
 
     Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
 
