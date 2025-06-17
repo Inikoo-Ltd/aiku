@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,7 +24,6 @@ class CollectionResource extends JsonResource
             'id'                => $collection->id,
             'slug'              => $collection->slug,
             'state'             =>  $collection->state,
-            'state_icon'             =>  CollectionStateEnum::from($collection->state)->stateIcon()[$collection->state],
             'shop'              => $collection->shop_slug,
             'code'              => $collection->code,
             'name'              => $collection->name,
