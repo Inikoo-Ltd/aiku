@@ -8,6 +8,7 @@
 
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
+use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
 use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
@@ -247,8 +248,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
 
     Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CatchRetinaOrdersFromWooCommerce::class)->name('woocommerce.orders.catch')->withoutScopedBindings();
-
     Route::get('ebay/{ebayUser:id}/catch-orders', CatchRetinaOrdersFromEbay::class)->name('ebay.orders.catch')->withoutScopedBindings();
+    Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings();
 
 
 });

@@ -120,10 +120,10 @@ trait WithAmazonApiRequest
 
     public function getAmazonMarketplaceId(): string
     {
-        $config = $this->getAmazonConfig();
+        $token = $this->refreshAmazonToken()['access_token'];
 
         $res = Http::withHeaders([
-            'x-amz-access-token' => $config['access_token'],
+            'x-amz-access-token' => $token,
         ])->get("{$this->getAmazonBaseUrl()}/sellers/v1/marketplaceParticipations");
 
         if ($res->successful()) {
@@ -235,6 +235,17 @@ trait WithAmazonApiRequest
         // Try to refresh token if we have a refresh token
         if ($config['refresh_token']) {
             $tokenData = $this->refreshAmazonToken();
+
+            UpdateAmazonUser::run($this, [
+                'settings' => [
+                    'credentials' => [
+                        ...Arr::get($this->settings, 'credentials', []),
+                        'amazon_access_token' => $tokenData['access_token'],
+                        'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                    ]
+                ]
+            ]);
+
             return $tokenData['access_token'];
         }
 
@@ -326,6 +337,10 @@ trait WithAmazonApiRequest
                 $queryParams['MarketplaceIds'] = $config['marketplace_id'];
             }
 
+            if ($config['sandbox']) {
+                $queryParams['CreatedAfter'] = 'TEST_CASE_200';
+            }
+
             // Note: In production, you would need to implement the proper AWS Signature V4 here
             $headers = [
                 'Authorization' => 'Bearer ' . $token,
@@ -333,7 +348,6 @@ trait WithAmazonApiRequest
                 'Accept' => 'application/json',
                 'x-amz-access-token' => $token
             ];
-
 
             $response = Http::withHeaders($headers)->withQueryParameters($queryParams)->$method($url, $data);
 
@@ -528,7 +542,7 @@ trait WithAmazonApiRequest
     {
         try {
             $queryParams = [
-                'OrderStatuses' => 'PendingAvailability,Unshipped,Pending,PartiallyShipped,Shipped,Canceled,Unfulfillable,InvoiceUnconfirmed',
+                // 'OrderStatuses' => 'PendingAvailability,Unshipped,Pending,PartiallyShipped,Shipped,Canceled,Unfulfillable,InvoiceUnconfirmed'
             ];
 
             if ($createdAfter) {
