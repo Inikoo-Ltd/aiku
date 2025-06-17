@@ -59,7 +59,7 @@ class RequestApiUploadProductAmazon extends RetinaAction
             $product = $amazonUser->createFullProduct($product->code, $productData);
 
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($product, 'id'),
+                'platform_product_id' => Arr::get($product, 'sku'),
             ]);
 
             UploadProductToAmazonProgressEvent::dispatch($amazonUser, $portfolio);

@@ -30,6 +30,7 @@ trait WithAmazonApiRequest
             'sandbox' => config('services.amazon.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.amazon_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.amazon_refresh_token'),
+            'marketplace_id' => Arr::get($this->settings, 'credentials.marketplace_id'),
         ];
 
         // Set token sources based on environment
@@ -193,7 +194,7 @@ trait WithAmazonApiRequest
                 'client_id' => $config['client_id'],
                 'client_secret' => $config['client_secret']
             ]);
-            dd($response->body());
+
             if ($response->successful()) {
                 $tokenData = $response->json();
 
@@ -444,7 +445,8 @@ trait WithAmazonApiRequest
     public function upsertProduct($sku, $productData)
     {
         try {
-            $endpoint = "/listings/2021-08-01/items/{$sku}";
+            $sellerId = $this->id;
+            $endpoint = "/listings/2021-08-01/items/{$sellerId}/{$sku}";
 
             return $this->makeAmazonRequest('put', $endpoint, $productData);
         } catch (Exception $e) {
