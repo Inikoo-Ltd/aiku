@@ -18,8 +18,10 @@ use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
+use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
+use App\Actions\Catalogue\Collection\DisableCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\AttachImagesToProduct;
@@ -714,6 +716,8 @@ Route::delete('/guest/{guest:id}', DeleteGuest::class)->name('guest.delete');
 Route::name('collection.')->prefix('collection/{collection:id}')->group(function () {
     Route::post('attach-models', AttachModelsToCollection::class)->name('attach-models');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
+    Route::delete('delete', DeleteCollection::class)->name('delete');
+    Route::patch('disable', DisableCollection::class)->name('disable');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
