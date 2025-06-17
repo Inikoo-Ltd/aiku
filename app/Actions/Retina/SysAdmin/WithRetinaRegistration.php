@@ -8,6 +8,9 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
+use App\Actions\CRM\Customer\RegisterCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
@@ -20,6 +23,22 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithRetinaRegistration
 {
+    public function handle(array $modelData): void
+    {
+        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            RegisterFulfilmentCustomer::run(
+                $this->shop->fulfilment,
+                $modelData
+            );
+        } else {
+            RegisterCustomer::run(
+                $this->shop,
+                $modelData
+            );
+        }
+
+    }
+
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         $pollReplies = $request->input('poll_replies', []);
@@ -80,7 +99,15 @@ trait WithRetinaRegistration
 
     public function rules(): array
     {
-        return [
+
+        $fulfilmentRules = [
+            'product'                           => ['required', 'string'],
+            'shipments_per_week'                 => ['required', 'string'],
+            'size_and_weight'                   => ['required', 'string'],
+            'interest'                 => ['required', 'required'],
+        ];
+
+        $rules = [
             'contact_name'    => ['required', 'string', 'max:255'],
             'company_name'    => ['required', 'string', 'max:255'],
             'email'           => [
@@ -107,6 +134,12 @@ trait WithRetinaRegistration
                     app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
                 ],
         ];
+
+        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            $rules = array_merge($rules, $fulfilmentRules);
+        }
+
+        return $rules;
     }
 
 }
