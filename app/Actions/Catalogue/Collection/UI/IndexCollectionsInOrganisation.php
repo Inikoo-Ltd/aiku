@@ -1,20 +1,20 @@
 <?php
 
 /*
- * Author: Jonathan Lopez Sanchez <jonathan@ancientwisdom.biz>
- * Created: Mon, 13 Mar 2023 15:05:41 Central European Standard Time, Malaga, Spain
- * Copyright (c) 2023, Inikoo LTD
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 17 Jun 2025 22:20:51 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
+use App\Actions\Overview\ShowOrganisationOverviewHub;
+use App\Actions\Traits\Authorisations\Inventory\WithOrganisationOverviewAuthorisation;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
-use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -23,18 +23,19 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexCollectionsInGroup extends OrgAction
+class IndexCollectionsInOrganisation extends OrgAction
 {
-    use WithGroupOverviewAuthorisation;
+    use WithOrganisationOverviewAuthorisation;
 
-    public function handle(Group $group, $prefix = null): LengthAwarePaginator
+
+    public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
         $queryBuilder = QueryBuilder::for(Collection::class);
-        $queryBuilder->where('collections.group_id', $group->id);
+        $queryBuilder->where('collections.organisation_id', $organisation->id);
         $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
 
 
@@ -57,36 +58,36 @@ class IndexCollectionsInGroup extends OrgAction
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
-                'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'organisations.code as organisation_code',
+                'organisations.name as organisation_name',
             ]);
 
 
         return $queryBuilder
-            ->allowedSorts(['organisation_code', 'shop_code', 'code', 'name', 'number_families', 'number_products'])
+            ->allowedSorts(['shop_code', 'code', 'name', 'number_families', 'number_products'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Group $group, $prefix = null): Closure
+    public function tableStructure(Organisation $organisation, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($group, $prefix) {
+        return function (InertiaTable $table) use ($organisation, $prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
+
 
             $table
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
                         'title' => __('No collections found'),
-                        'count' => $group->catalogueStats->number_collections
+                        'count' => $organisation->catalogueStats->number_collections
                     ]
                 );
 
             $table
-                ->column(key: 'organisation_code', label: __('org'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
@@ -121,22 +122,24 @@ class IndexCollectionsInGroup extends OrgAction
                 'pageHead'    => [
                     'title'      => $title,
                     'icon'       => $icon,
-                    'afterTitle' => [
-                        'label' => '@ '.__('group')
+                    'afterTitle'    => [
+                        'label'     => '@ '.__('organisation').' '.$this->organisation->code,
                     ],
                     'actions'    => [],
                 ],
                 'routes'      => null,
                 'data'        => CollectionsResource::collection($collections),
+
             ]
-        )->table($this->tableStructure($this->group));
+        )->table($this->tableStructure($this->organisation));
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->group);
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle(organisation: $organisation);
     }
 
 
@@ -157,7 +160,7 @@ class IndexCollectionsInGroup extends OrgAction
         };
 
         return array_merge(
-            ShowGroupOverviewHub::make()->getBreadcrumbs(),
+            ShowOrganisationOverviewHub::make()->getBreadcrumbs($routeParameters),
             $headCrumb(
                 [
                     'name'       => $routeName,

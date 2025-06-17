@@ -118,11 +118,17 @@ function collectionRoute(collection: {}) {
 }
 
 function shopRoute(collection: Collection) {
-    if (route().current() === "grp.org.shops.index") {
         return route(
-            "grp.org.shops.show.catalogue.dashboard",
-            [(route().params as RouteParams).organisation, collection.shop_slug]);
-    }
+            "grp.org.shops.show.catalogue.collections.index",
+            [collection.organisation_slug, collection.shop_slug]);
+
+}
+
+function organisationRoute(collection: Collection) {
+    return route(
+        "grp.org.overview.collections.index",
+        [collection.organisation_slug]);
+
 }
 
 function webpageRoute(collection: Collection) {
@@ -225,6 +231,17 @@ watch(showOfflineModal, (visible) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(organisation_code)="{ item: collection }">
+            <Link :href="organisationRoute(collection) as string" class="secondaryLink">
+                {{ collection["organisation_code"] }}
+            </Link>
+        </template>
+        <template #cell(shop_code)="{ item: collection }">
+            <Link :href="shopRoute(collection) as string" class="secondaryLink">
+                {{ collection["shop_code"] }}
+            </Link>
+        </template>
+
         <template #cell(state_icon)="{ item: collection }">
             <Icon :data="collection.state_icon" />
         </template>
@@ -233,11 +250,8 @@ watch(showOfflineModal, (visible) => {
                 {{ collection["code"] }}
             </Link>
         </template>
-        <template #cell(shop_code)="{ item: collection }">
-            <Link :href="shopRoute(collection) as string" class="secondaryLink">
-                {{ collection["shop_code"] }}
-            </Link>
-        </template>
+
+
         <template #cell(department_code)="{ item: collection }">
             <Link :href="departmentRoute(collection) as string" class="secondaryLink">
                 {{ collection["department_code"] }}

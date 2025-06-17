@@ -159,7 +159,7 @@ class GetOrganisationOverview extends OrgAction
             [
                 'name'  => __('Collections'),
                 'icon'  => 'fal fa-album-collection',
-                'route' => '',
+                'route' => route('grp.org.overview.collections.index', $organisation->slug),
                 'count' => $organisation->catalogueStats->number_collections ?? 0
             ],
         ];
