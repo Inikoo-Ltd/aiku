@@ -13,7 +13,7 @@ import { remove as loRemove } from "lodash-es";
 import { ref } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Icon from "@/Components/Icon.vue";
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faTrash, faPowerOff, faExclamationTriangle, faTrashAlt } from "@fal";
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faTrash, faPowerOff, faExclamationTriangle, faTrashAlt, faGameConsoleHandheld } from "@fal";
 import { faPlay } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Dialog from "primevue/dialog";
@@ -178,8 +178,17 @@ const SetOffline = () => {
     );
 };
 
+const onErrorDeleteCollection = (error) => {
+    console.log(error)
+    notify({
+        title: "Failed to Delete",
+        text: error ? error:"Please check your Collection.",
+        type: "error"
+    });
+}
+
 const isConfirmOpen = ref(false)
-console.log(props)
+
 </script>
 
 <template>
@@ -223,7 +232,7 @@ console.log(props)
                 <Link v-if="item.route_delete_collection" as="button"
                       :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                       :method="item.route_delete_collection.method" preserve-scroll
-                      @start="() => isLoadingDetach.push('detach' + item.id)"
+                      @start="() => isLoadingDetach.push('detach' + item.id)" @Error="(e)=>onErrorDeleteCollection(e)"
                       @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
                     <Button :icon="faTrashAlt" type="negative" size="xs" v-tooltip="'Delete collection'"
                             :loading="isLoadingDetach.includes('detach' + item.id)" />
