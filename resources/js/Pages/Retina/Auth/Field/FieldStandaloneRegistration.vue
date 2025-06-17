@@ -171,7 +171,7 @@ const toggleInterest = (interestValue: string) => {
                 <InputIcon>
                     <FontAwesomeIcon :icon="faGlobe" />
                 </InputIcon>
-                <InputText v-model="form.contact_website" class="w-full" />
+                <InputText v-model="form.contact_website" @update:model-value="form.clearErrors('contact_website')" class="w-full" />
             </IconField>
             <p v-if="form.errors.contact_website" class="text-sm text-red-600 mt-1">
                 {{ form.errors.contact_website }}
