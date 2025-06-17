@@ -54,12 +54,16 @@ const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
 const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
-	isLoadingGoogle.value = true
     router.get(route('retina.register_from_google'), {
 		google_credential: e.credential
-	})
-
-    isLoadingGoogle.value = false
+	}, {
+        onStart: () => {
+            isLoadingGoogle.value = true
+        },
+        onSuccess: (page) => {
+            isLoadingGoogle.value = false
+        }
+    })
 
 }
 </script>

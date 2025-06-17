@@ -46,10 +46,9 @@ const autosave = () => {
     { layout: payload },
     {
       onStart: () => isLoadingSave.value = true,
-      onFinish: () => isLoadingSave.value = false,
+      onFinish: () => {isLoadingSave.value = false,  reload?.()},
       onSuccess: () => {
         props.data.layout = payload;
-        reload?.()
         notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
@@ -70,29 +69,28 @@ const autosave = () => {
 const currentView = ref("desktop");
 provide("currentView", currentView);
 
-console.log('ss',props)
 </script>
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuProductWorkshop :data="props.data.layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate"  />
+      <SideMenuProductWorkshop 
+        :data="props.data.layout" 
+        :webBlockTypes="data.web_block_types" 
+        @auto-save="autosave"
+        @set-up-template="onPickTemplate"  
+      />
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
       <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-        <!-- Desktop View Preview -->
-        <div class="flex items-center gap-2 py-1 px-2 cursor-pointer lg:flex hidden selected-bg"
-          v-tooltip="'Desktop view'">
+        <div class="flex items-center gap-2 py-1 px-2 cursor-pointer lg:flex hidden selected-bg" v-tooltip="'Desktop view'">
           <FontAwesomeIcon icon="fas fa-desktop" fixed-width aria-hidden="true" />
-
         </div>
       </div>
 
-      <!--  {{  layout?.data?.fieldValue }} -->
       <div v-if="layout?.data?.fieldValue?.product" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getComponent(layout.code)" :modelValue="layout.data.fieldValue" />
+        <component class="w-full" :is="getComponent(layout.code)" :modelValue="props.data.layout.data.fieldValue" />
       </div>
 
       <div v-else>
@@ -100,5 +98,4 @@ console.log('ss',props)
       </div>
     </div>
   </div>
-
 </template>

@@ -51,7 +51,8 @@ const form = useForm({
 	website: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
-	is_opt_in: false
+	is_opt_in: false,
+	interest: []
 })
 
 // Define reactive variables
@@ -60,7 +61,14 @@ const isLoading = ref(false)
 const submit = () => {
 	isLoading.value = true
 
-	form.post(route(props.registerRoute.name, props.registerRoute.parameters), {
+	const { isDirty, errors, __rememberable, hasErrors, progress, wasSuccessful, ...xxx } = form
+
+	form
+	.transform((data) => ({
+		...data,
+		...xxx
+	}))
+	.post(route(props.registerRoute.name, props.registerRoute.parameters), {
 		preserveScroll: true,
 		onError: () => {
 			isLoading.value = false
@@ -156,6 +164,7 @@ onMounted(async () => {
 						<div class="flex justify-end">
 							<button
 								type="submit"
+								:disabled="isLoading"
 								class="w-full inline-flex justify-center items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
 								<span v-if="isLoading" class="loader mr-2">
 									<LoadingIcon />

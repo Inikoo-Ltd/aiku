@@ -12,6 +12,7 @@ import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import ProductContents from "./ProductContents.vue"
+import InformationSideProduct from "./InformationSideProduct.vue"
 
 import btree from '@/../art/payment_service_providers/btree.svg'
 import cash from '@/../art/payment_service_providers/cash.svg'
@@ -96,6 +97,8 @@ const selectImage = (code: string) => {
         default: return null
     }
 }
+
+console.log('pppp',props)
 </script>
 
 <template>
@@ -168,16 +171,7 @@ const selectImage = (code: string) => {
                         @update:model-value="(e) => onDescriptionUpdate(e)" />
                 </div>
                 <div class="mb-4 space-y-2">
-                    <div
-                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-gray-400 cursor-pointer">
-                        Delivery Info
-                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
-                    </div>
-                    <div
-                        class="flex justify-between items-center gap-4 font-bold text-gray-800 py-1 border-t border-gray-400 cursor-pointer">
-                        Return Policy
-                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm text-gray-500" />
-                    </div>
+                    <InformationSideProduct :informations="modelValue.information"/>
                     <div class="items-center gap-3 border-t border-gray-400 font-bold text-gray-800 py-2">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
