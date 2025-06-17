@@ -17,7 +17,7 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\CollectionResource;
+use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -109,7 +109,7 @@ class IndexCollectionsInProductCategory extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $collections): AnonymousResourceCollection
     {
-        return CollectionResource::collection($collections);
+        return CollectionsResource::collection($collections);
     }
 
     public function htmlResponse(LengthAwarePaginator $collections, ActionRequest $request): Response
@@ -207,7 +207,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'      => null,
-                'data'        => CollectionResource::collection($collections),
+                'data'        => CollectionsResource::collection($collections),
                 'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  => [

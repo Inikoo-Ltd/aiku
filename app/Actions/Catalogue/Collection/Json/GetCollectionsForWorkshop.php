@@ -11,7 +11,7 @@ namespace App\Actions\Catalogue\Collection\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Http\Resources\Catalogue\CollectionResource;
+use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
@@ -58,7 +58,7 @@ class GetCollectionsForWorkshop extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $collections): AnonymousResourceCollection
     {
-        return CollectionResource::collection($collections);
+        return CollectionsResource::collection($collections);
     }
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator

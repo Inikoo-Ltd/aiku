@@ -30,7 +30,7 @@ class DisableCollection extends OrgAction
 
     public function asController(Collection $collection, ActionRequest $request)
     {
-        dd("disable collection");
+        dd($request->all());
         // return $this->handle($collection, $forceDelete);
     }
 }
