@@ -33,7 +33,7 @@ class CloseWebpage extends OrgAction
             $webpage,
             [
                 'type' => Arr::get($modelData, 'redirect_type', RedirectTypeEnum::PERMANENT->value),
-                'path' => Arr::get($modelData, 'path', ''),
+                'path' => Arr::get($modelData, 'redirect_path', ''),
             ]
         );
 

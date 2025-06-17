@@ -52,10 +52,7 @@ class DisableCollection extends OrgAction
         ];
     }
 
-    public function prepareForValidation(): void
-    {
-        $this->set('path', $this->get('path', ''));
-    }
+
 
     public function afterValidator(Validator $validator): void
     {
