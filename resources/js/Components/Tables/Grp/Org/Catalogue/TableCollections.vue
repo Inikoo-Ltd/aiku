@@ -10,7 +10,7 @@ import Table from "@/Components/Table/Table.vue";
 import { Family } from "@/types/family";
 import { routeType } from "@/types/route";
 import { remove as loRemove } from "lodash-es";
-import { ref } from "vue";
+import { ref,watch,nextTick  } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Icon from "@/Components/Icon.vue";
 import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faTrash, faPowerOff, faExclamationTriangle, faTrashAlt, faGameConsoleHandheld } from "@fal";
@@ -189,7 +189,15 @@ const onErrorDeleteCollection = (error) => {
 }
 
 const isConfirmOpen = ref(false)
-
+const rerouteInputRef = ref<HTMLInputElement | null>(null);
+watch(showOfflineModal, (visible) => {
+    if (visible) {
+        nextTick(() => {
+            console.log( rerouteInputRef.value._inputRef)
+            rerouteInputRef.value?._inputRef?.focus();
+        });
+    }
+});
 </script>
 
 <template>
@@ -215,15 +223,15 @@ const isConfirmOpen = ref(false)
 
         <template #cell(state_webpage)="{ item: collection }">
             <div v-if="collection?.state_webpage">
-                <Link v-if="collection.state_webpage === 'live'" as="button" :href="collection.url_webpage">
+                <Link v-if="collection.state_webpage == 'live'" as="button" :href="collection.url_webpage">
                 <div class="flex  w-fit items-center gap-2 text-xs font-medium">
                     <Icon :data="collection.state_webpage_icon" />
                     <span class="cursor-pointer">
                         {{ collection.url_webpage }}
                     </span>
-                    </div>
+                </div>
                 </Link>
-                <div v-if="collection.state_webpage == 'closed'">
+                <div v-else-if="collection.state_webpage == 'closed'">
                 <div class="flex w-fit items-center gap-2 text-xs font-medium">
                     <Icon :data="collection.state_webpage_icon" />
                     <span class="cursor-pointer">
@@ -277,7 +285,7 @@ const isConfirmOpen = ref(false)
             Please confirm where it should redirect to.
         </div>
 
-        <PureInput :prefix="{label : `${website_domain}/`, icon : null}"  v-model="reroute" class="w-full" >
+        <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}"  v-model="reroute" class="w-full" >
         </PureInput>
 
         <div class="flex justify-end mt-4 mb-2 gap-2">
