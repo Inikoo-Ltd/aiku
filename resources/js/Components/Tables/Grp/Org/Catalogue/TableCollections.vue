@@ -21,9 +21,10 @@ import { useConfirm } from 'primevue/useconfirm'
 import InputLink from "@/Components/CMS/Fields/Link.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { notify } from "@kyvg/vue3-notification"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer)
+library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle)
 
 const props = defineProps<{
     data: {}
@@ -195,7 +196,7 @@ const SetOffline = () => {
         </template>
 
         <template #cell(actions)="{ item }">
-            <div v-if="!item.state_webpage">
+            <div v-if="!item.state_webpage || item.state_webpage != 'live'">
                 <Link v-if="item.route_delete_collection" as="button"
                     :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                     :method="item.route_delete_collection.method" preserve-scroll
