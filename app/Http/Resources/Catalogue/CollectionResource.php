@@ -48,8 +48,8 @@ class CollectionResource extends JsonResource
                 ],
                 'method'     => 'delete'
             ],
-            'route_disable_collection' => [
-                'name'       => 'grp.models.collection.disable',
+            'route_disable_webpage' => [
+                'name'       => 'grp.models.collection.webpage_disable',
                 'parameters' => [
                     'collection' => $collection->id
                 ],

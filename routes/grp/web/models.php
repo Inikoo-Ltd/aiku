@@ -717,7 +717,7 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
     Route::post('attach-models', AttachModelsToCollection::class)->name('attach-models');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
     Route::delete('delete', DeleteCollection::class)->name('delete');
-    Route::patch('disable', DisableCollection::class)->name('disable');
+    Route::patch('webpage-disable', DisableCollection::class)->name('webpage_disable');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
