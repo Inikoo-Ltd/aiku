@@ -65,10 +65,6 @@ class IndexCollections extends OrgAction
                 'collections.id',
                 'collections.code',
                 'collections.state',
-                'webpages.id as webpage_id',
-                'webpages.state as webpage_state',
-                'webpages.url as webpage_url',
-                'webpages.slug as webpage_slug',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
@@ -82,6 +78,10 @@ class IndexCollections extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                'webpages.id as webpage_id',
+                'webpages.state as webpage_state',
+                'webpages.url as webpage_url',
+                'webpages.slug as webpage_slug',
                 'websites.slug as website_slug',
             ])
             ->selectRaw(

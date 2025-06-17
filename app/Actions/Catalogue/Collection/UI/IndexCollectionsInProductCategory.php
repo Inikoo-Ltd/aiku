@@ -57,25 +57,43 @@ class IndexCollectionsInProductCategory extends OrgAction
         $queryBuilder->where('model_has_collections.model_type', 'ProductCategory');
 
         $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
+
+        $queryBuilder
+            ->leftJoin('webpages', function ($join) {
+                $join->on('collections.id', '=', 'webpages.model_id')
+                    ->where('webpages.model_type', '=', 'Collection');
+            });
+
+        $queryBuilder
+            ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id')
+            ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id');
+
+
         $queryBuilder
             ->defaultSort('collections.code')
             ->select([
                 'collections.id',
                 'collections.code',
+                'collections.state',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
                 'collections.updated_at',
                 'collections.slug',
-                'collection_stats.number_departments',
                 'collection_stats.number_families',
                 'collection_stats.number_products',
-                'collection_stats.number_collections'
+                'collection_stats.number_parents',
+                'webpages.id as webpage_id',
+                'webpages.state as webpage_state',
+                'webpages.url as webpage_url',
+                'webpages.slug as webpage_slug',
+                'websites.slug as website_slug',
             ]);
 
 
+
         return $queryBuilder
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'number_families', 'number_products'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -99,11 +117,15 @@ class IndexCollectionsInProductCategory extends OrgAction
                 );
 
             $table
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
+            ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
 
             $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
             $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
+            $table->column(key: 'actions', label: '', searchable: true);
+
         };
     }
 
