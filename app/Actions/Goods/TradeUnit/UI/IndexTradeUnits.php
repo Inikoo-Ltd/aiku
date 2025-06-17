@@ -94,7 +94,7 @@ class IndexTradeUnits extends GrpAction
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $this->group->id);
 
-        if($bucket == 'in_process') {
+        if ($bucket == 'in_process') {
             $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::IN_PROCESS);
         } elseif ($bucket == 'active') {
             $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::ACTIVE);

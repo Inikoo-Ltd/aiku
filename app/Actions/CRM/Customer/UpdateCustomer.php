@@ -21,6 +21,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -60,6 +61,7 @@ class UpdateCustomer extends OrgAction
                 }
             }
 
+            $customer->refresh();
             data_set($modelData, 'location', $customer->address->getLocation());
         }
         if (Arr::has($modelData, 'delivery_address')) {
@@ -198,6 +200,10 @@ class UpdateCustomer extends OrgAction
             'state'                                                  => ['sometimes', Rule::enum(CustomerStateEnum::class)]
 
         ];
+
+        if ($this?->asAction) {
+            $rules['status'] = ['sometimes', 'nullable', Rule::enum(CustomerStatusEnum::class)];
+        }
 
 
         if (!$this->strict) {

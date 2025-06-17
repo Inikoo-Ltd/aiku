@@ -48,5 +48,9 @@ return [
     ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),
-    ]
+    ],
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+    ],
 ];

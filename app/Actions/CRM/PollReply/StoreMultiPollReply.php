@@ -69,7 +69,7 @@ class StoreMultiPollReply extends OrgAction
     }
 
 
-    public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true)
+    public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true): void
     {
         $this->asAction       = true;
         $this->strict         = $strict;
