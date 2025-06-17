@@ -264,21 +264,27 @@ const compSelectedTradeUnit = computed(() => {
 				<template #default>
 					<div class="px-4">
 						<div class="flex items-center gap-x-2 mb-4">
-							<Select
-								v-model="selectedTradeUnit"
-								:options="props.data.trade_units"
-								optionLabel="tradeUnit.name"
-								optionValue="tradeUnit.code"
-								placeholder="Select a City"
-								class="w-full md:w-80"
-							/>
-							<Link
-								:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
-								v-tooltip="trans('Open trade unit')"
-								class="text-gray-400 hover:text-gray-600 cursor-pointer"
-							>
-								<FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />
-							</Link>
+							<template v-if="props.data.trade_units.length">
+								<Select
+									v-model="selectedTradeUnit"
+									:options="props.data.trade_units"
+									optionLabel="tradeUnit.name"
+									optionValue="tradeUnit.code"
+									placeholder="Select a City"
+									class="w-full md:w-80"
+								/>
+								<Link
+									v-if="compSelectedTradeUnit?.tradeUnit?.slug"
+									:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
+									v-tooltip="trans('Open trade unit')"
+									class="text-gray-400 hover:text-gray-600 cursor-pointer"
+								>
+									<FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />
+								</Link>
+							</template>
+							<div v-else class="text-gray-500 text-center mx-auto">
+								No trade units for this product
+							</div>
 						</div>
 
 						<div v-if="compSelectedTradeUnit" class="">
