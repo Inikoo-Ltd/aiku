@@ -55,10 +55,18 @@ class IndexCollections extends OrgAction
         $queryBuilder = QueryBuilder::for(Collection::class);
         $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
         $queryBuilder
+            ->leftJoin('webpages', function ($join) {
+                $join->on('collections.id', '=', 'webpages.model_id')
+                    ->where('webpages.model_type', '=', 'Collection');
+            });
+        $queryBuilder
             ->defaultSort('collections.code')
             ->select([
                 'collections.id',
                 'collections.code',
+                'collections.state as state_collection',
+                'webpages.id as webpage_id',
+                'webpages.state as state_webpage',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
@@ -67,6 +75,7 @@ class IndexCollections extends OrgAction
                 'collection_stats.number_families',
                 'collection_stats.number_products',
             ]);
+
 
         if ($parent instanceof Group) {
             $queryBuilder->where('collections.group_id', $parent->id)
@@ -163,17 +172,19 @@ class IndexCollections extends OrgAction
                 );
 
             $table
+                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
+            $table->column(key: 'state_webpage', label: __('Webpages'), canBeHidden: false);
             $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
             $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
-            if ($parent instanceof Collection) {
-                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
-            }
+            $table->column(key: 'actions', label: __('action'), searchable: true);
+            // if ($parent instanceof Collection) {
+            // }
         };
     }
 

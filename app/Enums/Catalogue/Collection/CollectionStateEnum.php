@@ -31,5 +31,35 @@ enum CollectionStateEnum: string
         ];
     }
 
+    public static function stateIcon(): array
+    {
+        return [
+            'in_process' => [
+                'tooltip' => __('in process'),
+                'icon'    => 'fal fa-seedling',
+                'class'   => 'text-emerald-500'
+            ],
+            'active' => [
+                'tooltip' => __('active'),
+                'icon'    => 'fal fa-broadcast-tower',
+                'class'   => 'text-green-600 animate-pulse'
+            ],
+            'inactive' => [
+                'tooltip' => __('inactive'),
+                'icon'    => 'fal fa-pause-circle',
+                'class'   => 'text-gray-500'
+            ],
+            'discontinuing' => [
+                'tooltip' => __('discontinuing'),
+                'icon'    => 'fal fa-sunset',
+                'class'   => 'text-amber-500'
+            ],
+            'discontinued' => [
+                'tooltip' => __('discontinued'),
+                'icon'    => 'fal fa-skull',
+                'class'   => 'text-gray-700'
+            ],
+        ];
+    }
 
 }

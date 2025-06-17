@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -43,7 +44,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
- * @property string $state
+ * @property CollectionStateEnum $state
  * @property string|null $source_id
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
@@ -88,6 +89,7 @@ class Collection extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'  => 'array',
+        'state' => CollectionStateEnum::class,
     ];
 
     protected $attributes = [
