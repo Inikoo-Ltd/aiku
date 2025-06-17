@@ -42,6 +42,16 @@ class CollectionResource extends JsonResource
             'state_webpage' => $collection->state_webpage,
             'state_webpage_icon' => $collection?->state_webpage ? WebpageStateEnum::from($collection->state_webpage)->stateIcon()[$collection->state_webpage] : null,
             'url_webpage' => $collection->url_webpage,
+            'route_webpage_show' => [
+                'name'       => 'grp.org.shops.show.web.webpages.show',
+                'parameters' => [
+                    'organisation' => $collection->organisation_slug,
+                    'shop'        => $collection->shop_slug,
+                    'website'     => $collection->website_slug,
+                    'collection'  => $collection->id
+                ],
+                'method'     => 'get'
+            ],
             'route_delete_collection' => [
                 'name'       => 'grp.models.collection.delete',
                 'parameters' => [
