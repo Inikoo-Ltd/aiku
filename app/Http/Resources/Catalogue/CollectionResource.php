@@ -41,6 +41,7 @@ class CollectionResource extends JsonResource
             'number_collections' => $this->number_collections,
             'state_webpage' => $collection->state_webpage,
             'state_webpage_icon' => $collection?->state_webpage ? WebpageStateEnum::from($collection->state_webpage)->stateIcon()[$collection->state_webpage] : null,
+            'url_webpage' => $collection->url_webpage,
             'route_delete_collection' => [
                 'name'       => 'grp.models.collection.delete',
                 'parameters' => [

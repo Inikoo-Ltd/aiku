@@ -67,6 +67,7 @@ class IndexCollections extends OrgAction
                 'collections.state as state_collection',
                 'webpages.id as webpage_id',
                 'webpages.state as state_webpage',
+                'webpages.url as url_webpage',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
