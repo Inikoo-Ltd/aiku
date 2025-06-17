@@ -22,7 +22,7 @@ class SaveWebsitesSitemap extends OrgAction
 
         /** @var Website $website */
         foreach (Website::where('state', WebpageStateEnum::LIVE)->get() as $website) {
-            $numberItems=SaveWebsiteSitemap::run($website);
+            $numberItems = SaveWebsiteSitemap::run($website);
             $command?->info("Sitemap for website ID $website->domain has been saved. ($numberItems)");
         }
 

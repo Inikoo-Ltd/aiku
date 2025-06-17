@@ -30,6 +30,7 @@ Route::get('redirect-shops-from-dashboard/{shop:id}', RedirectShopInShopFromDash
 
 Route::get('redirect-portfolio-item/{portfolio:id}', RedirectPortfolioItemLink::class)->name('redirect_portfolio_item');
 
+Route::get('redirect-product-category/{productCategory:slug}', RedirectPortfolioItemLink::class)->name('redirect_product_category');
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {

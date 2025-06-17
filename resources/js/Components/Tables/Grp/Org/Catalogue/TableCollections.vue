@@ -7,24 +7,23 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
-import { Family } from "@/types/family";
 import { routeType } from "@/types/route";
 import { remove as loRemove } from "lodash-es";
-import { ref,watch,nextTick  } from "vue";
+import { ref, watch, nextTick } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Icon from "@/Components/Icon.vue";
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faTrash, faPowerOff, faExclamationTriangle, faTrashAlt, faGameConsoleHandheld } from "@fal";
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt } from "@fal";
 import { faPlay } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Dialog from "primevue/dialog";
 import ConfirmPopup from "primevue/confirmpopup";
 import { useConfirm } from "primevue/useconfirm";
-import InputLink from "@/Components/CMS/Fields/Link.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import { notify } from "@kyvg/vue3-notification";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { RouteParams } from "@/types/route-params";
-
+import { Collection } from "@/types/collection";
+import collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
 
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay);
@@ -37,7 +36,7 @@ const props = defineProps<{
         submitAttach: routeType
         detach: routeType
     }
-    website_domain?: String
+    website_domain?: string
 }>();
 
 const confirm = useConfirm();
@@ -47,14 +46,14 @@ const selectedCollection = ref<any | null>(null);
 function openOfflineModal(event: MouseEvent, item: any) {
     const target = event.currentTarget as HTMLElement;
 
-    isConfirmOpen.value = true
+    isConfirmOpen.value = true;
 
     confirm.require({
         target,
-        message: 'Are you sure you want to inactive this collection (webpage will set offline)?',
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Yes',
-        rejectLabel: 'Cancel',
+        message: "Are you sure you want to inactive this collection (webpage will set offline)?",
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: "Yes",
+        rejectLabel: "Cancel",
         rejectProps: {
             label: "No",
             severity: "secondary",
@@ -67,72 +66,96 @@ function openOfflineModal(event: MouseEvent, item: any) {
         accept: () => {
             selectedCollection.value = item;
             showOfflineModal.value = true;
-            isConfirmOpen.value = false
+            isConfirmOpen.value = false;
         },
         reject: () => {
-            isConfirmOpen.value = false
+            isConfirmOpen.value = false;
         },
         onHide: () => {
-            isConfirmOpen.value = false
+            isConfirmOpen.value = false;
         }
     });
 }
 
 // TODO: FIX TS
 function collectionRoute(collection: {}) {
-    switch (route().current()) {
-        case "grp.org.shops.show.catalogue.collections.show":
-        case "grp.org.shops.show.catalogue.collections.index":
-        case "grp.org.shops.show.catalogue.dashboard":
-            return route(
-                "grp.org.shops.show.catalogue.collections.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    collection.slug
-                ]);
-        case "grp.overview.catalogue.collections.index":
-            return route(
-                "grp.org.shops.show.catalogue.collections.show",
-                [collection.organisation_slug, collection.shop_slug, collection.slug]);
+    const currentRoute = route().current();
 
-        case "grp.org.shops.show.catalogue.departments.show.collection.index":
-            return route(
-                "grp.org.shops.show.catalogue.departments.show.collection.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).department,
-                    collection.slug]);
+    if (currentRoute === "grp.org.shops.show.catalogue.collections.show" ||
+        currentRoute === "grp.org.shops.show.catalogue.collections.index" ||
+        currentRoute === "grp.org.shops.show.catalogue.dashboard") {
+        return route(
+            "grp.org.shops.show.catalogue.collections.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                collection.slug
+            ]);
+    } else if (currentRoute === "grp.overview.catalogue.collections.index") {
+        return route(
+            "grp.org.shops.show.catalogue.collections.show",
+            [collection.organisation_slug, collection.shop_slug, collection.slug]);
+    } else if (currentRoute === "grp.org.shops.show.catalogue.departments.show.collection.index") {
+        return route(
+            "grp.org.shops.show.catalogue.departments.show.collection.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).department,
+                collection.slug]);
+    } else if (currentRoute === "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index") {
+        return route(
+            "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).department,
+                (route().params as RouteParams).subDepartment,
+                collection.slug]);
+    }
+    // The empty case for "grp.org.shops.show.catalogue.families.show.collection.index" is omitted as it had no implementation
+}
 
-        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index":
-            return route(
-                "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).department,
-                    (route().params as RouteParams).subDepartment,
-                    collection.slug]);
-        case "grp.org.shops.show.catalogue.families.show.collection.index":
+function shopRoute(collection: Collection) {
+    if (route().current() === "grp.org.shops.index") {
+        return route(
+            "grp.org.shops.show.catalogue.dashboard",
+            [(route().params as RouteParams).organisation, collection.shop_slug]);
     }
 }
 
-function shopRoute(family: Family) {
-    switch (route().current()) {
-        case "grp.org.shops.index":
-            return route(
-                "grp.org.shops.show.catalogue.dashboard",
-                [(route().params as RouteParams).organisation, family.shop_slug]);
-    }
+function webpageRoute(collection: Collection) {
+    return route(
+        "grp.org.shops.show.web.webpages.show",
+            [
+            (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                collection.website_slug,
+                collection.webpage_slug,
+
+            ]
+    );
+
 }
 
-function departmentRoute(family: Family) {
-    switch (route().current()) {
-        case "grp.org.shops.index":
-            return route(
-                "grp.org.shops.show.catalogue.departments.index",
-                [(route().params as RouteParams).organisation, family.shop_slug, family.department_slug]);
+function parentRoute(slug: string) {
+
+    return route(
+        "grp.helpers.redirect_product_category",
+        [
+            slug
+
+        ]
+    );
+
+}
+
+
+function departmentRoute(family: Collection) {
+    if (route().current() === "grp.org.shops.index") {
+        return route(
+            "grp.org.shops.show.catalogue.departments.index",
+            [(route().params as RouteParams).organisation, collection.shop_slug, collection.department_slug]);
     }
 }
 
@@ -180,20 +203,20 @@ const SetOffline = () => {
 
 
 const onErrorDeleteCollection = (error) => {
-    console.log(error)
+    console.log(error);
     notify({
         title: "Failed to Delete",
-        text: error.webpage ? error.webpage  :"Please check your Collection.",
+        text: error.webpage ? error.webpage : "Please check your Collection.",
         type: "error"
     });
-}
+};
 
-const isConfirmOpen = ref(false)
+const isConfirmOpen = ref(false);
 const rerouteInputRef = ref<HTMLInputElement | null>(null);
 watch(showOfflineModal, (visible) => {
     if (visible) {
         nextTick(() => {
-            console.log( rerouteInputRef.value._inputRef)
+            console.log(rerouteInputRef.value._inputRef);
             rerouteInputRef.value?._inputRef?.focus();
         });
     }
@@ -221,31 +244,44 @@ watch(showOfflineModal, (visible) => {
             </Link>
         </template>
 
-        <template #cell(state_webpage)="{ item: collection }">
-            <div v-if="collection?.state_webpage">
-                <Link v-if="collection.state_webpage == 'live'" as="button" :href="collection.url_webpage">
-                <div class="flex  w-fit items-center gap-2 text-xs font-medium">
-                    <Icon :data="collection.state_webpage_icon" />
-                    <span class="cursor-pointer">
-                        {{ collection.url_webpage }}
-                    </span>
-                </div>
+        <template #cell(parents)="{ item: collection }">
+
+            <template v-for="(parent) in collection.parents_data" :key="index">
+                <Link  :href="parentRoute(parent.slug) as string" class="secondaryLink">
+                    {{ parent.code }}
                 </Link>
-                <div v-else-if="collection.state_webpage == 'closed'">
-                <div class="flex w-fit items-center gap-2 text-xs font-medium">
-                    <Icon :data="collection.state_webpage_icon" />
-                    <span class="cursor-pointer">
-                        {{ collection.url_webpage }}
+
+
+            </template>
+
+
+
+        </template>
+
+        <template #cell(webpage)="{ item: collection }">
+
+            <template v-if="collection.webpage_slug">
+                <Icon :data="collection.webpage_state_icon" :Tooltip="collection.webpage_state_label" />
+
+                <Link as="button"  :href="webpageRoute(collection) as string" class="secondaryLink ml-2">
+
+                    <div class="flex  w-fit items-center gap-2 ">
+                        <span class="cursor-pointer">
+                        {{ collection.webpage_url && collection.webpage_url.length > 16 ? collection.webpage_url.substring(0, 16) + '...' : collection.webpage_url }}
                     </span>
                     </div>
-                </div>
-                <Icon v-else :data="collection.state_webpage_icon" />
-            </div>
+                </Link>
+            </template>
+
+
+
+
+
         </template>
 
 
         <template #cell(actions)="{ item }">
-            <div v-if="!item.state_webpage && item.state_webpage != 'live' && item.state_webpage != 'closed'">
+            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed'">
                 <Link v-if="item.route_delete_collection " as="button"
                       :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                       :method="item.route_delete_collection.method" preserve-scroll
@@ -261,10 +297,10 @@ watch(showOfflineModal, (visible) => {
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
                 </template>
             </ConfirmPopup>
-            <div v-if="item.state_webpage == 'live'">
-                <Button :icon="faPowerOff" type="tertiary" size="xs" :key="item.state_webpage"
-                    @click="(e) => openOfflineModal(e, item)"
-                    v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
+            <div v-if="item.webpage_state == 'live'">
+                <Button :icon="faPowerOff" type="tertiary" size="xs" :key="item.webpage_state"
+                        @click="(e) => openOfflineModal(e, item)"
+                        v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
             </div>
 
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
@@ -285,7 +321,7 @@ watch(showOfflineModal, (visible) => {
             Please confirm where it should redirect to.
         </div>
 
-        <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}"  v-model="reroute" class="w-full" >
+        <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}" v-model="reroute" class="w-full">
         </PureInput>
 
         <div class="flex justify-end mt-4 mb-2 gap-2">

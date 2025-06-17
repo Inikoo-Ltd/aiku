@@ -45,6 +45,7 @@ class CollectionHydrateFamilies implements ShouldBeUnique
         }
 
         $collectionStats = $collection->stats;
+
         $collectionStats->update($stats);
 
         $changed = Arr::except($collectionStats->getChanges(), ['updated_at', 'last_fetched_at']);

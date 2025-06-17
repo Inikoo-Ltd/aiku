@@ -38,7 +38,6 @@ class IndexCollections extends OrgAction
     use WithFamilySubNavigation;
 
 
-
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
@@ -58,7 +57,8 @@ class IndexCollections extends OrgAction
 
         $queryBuilder
             ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
-            ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id');
+            ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id')
+            ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id');
         $queryBuilder
             ->defaultSort('collections.code')
             ->select([
@@ -66,8 +66,9 @@ class IndexCollections extends OrgAction
                 'collections.code',
                 'collections.state',
                 'webpages.id as webpage_id',
-                'webpages.state as state_webpage',
-                'webpages.url as url_webpage',
+                'webpages.state as webpage_state',
+                'webpages.url as webpage_url',
+                'webpages.slug as webpage_slug',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
@@ -75,18 +76,28 @@ class IndexCollections extends OrgAction
                 'collections.slug',
                 'collection_stats.number_families',
                 'collection_stats.number_products',
+                'collection_stats.number_parents',
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-            ]);
-
-
+                'websites.slug as website_slug',
+            ])
+            ->selectRaw(
+                '(
+        SELECT concat(string_agg(product_categories.slug,\',\'),\'|\',string_agg(product_categories.type,\',\'),\'|\',string_agg(product_categories.code,\',\'),\'|\',string_agg(product_categories.name,\',\')) FROM model_has_collections
+        left join product_categories on model_has_collections.model_id = product_categories.id
+        WHERE model_has_collections.collection_id = collections.id
+   
+        AND model_has_collections.model_type = ?
+    ) as parents_data',
+                ['ProductCategory', ]
+            );
 
 
         return $queryBuilder
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'number_parents', 'number_families', 'number_products'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -97,7 +108,7 @@ class IndexCollections extends OrgAction
     ): Closure {
         return function (InertiaTable $table) use ($shop, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
@@ -111,14 +122,15 @@ class IndexCollections extends OrgAction
                 );
 
             $table
-                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
+            $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
+
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'state_webpage', label: __('Webpage'), canBeHidden: false);
+            $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
             $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
             $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
-            $table->column(key: 'actions', label: __('action'), searchable: true);
-
+            $table->column(key: 'actions', label: '', searchable: true);
         };
     }
 
@@ -129,19 +141,18 @@ class IndexCollections extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $collections, ActionRequest $request): Response
     {
-
         $container = null;
 
 
         $subNavigation = null;
 
-        $title = __('Collections');
-        $icon  = [
+        $title      = __('Collections');
+        $icon       = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('collections')
         ];
         $afterTitle = null;
-        $iconRight = null;
+        $iconRight  = null;
 
 
         $routes = null;
@@ -156,12 +167,12 @@ class IndexCollections extends OrgAction
                     }
 
                     $routes = [
-                        'grp.org.shops.show.catalogue.collections.index'                                      => 'grp.org.shops.show.catalogue.collections.create',
-                        'grp.org.shops.show.catalogue.departments.show.collection.index'                     => 'grp.org.shops.show.catalogue.departments.show.collection.create',
-                        'grp.org.shops.show.catalogue.departments.show.families.show.collection.index'       => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
-                        'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                        'grp.org.shops.show.catalogue.collections.index'                                                  => 'grp.org.shops.show.catalogue.collections.create',
+                        'grp.org.shops.show.catalogue.departments.show.collection.index'                                  => 'grp.org.shops.show.catalogue.departments.show.collection.create',
+                        'grp.org.shops.show.catalogue.departments.show.families.show.collection.index'                    => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
+                        'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'             => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
                         'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
-                        'grp.org.shops.show.catalogue.families.show.collection.index'                        => 'grp.org.shops.show.catalogue.families.show.collection.create',
+                        'grp.org.shops.show.catalogue.families.show.collection.index'                                     => 'grp.org.shops.show.catalogue.families.show.collection.create',
                     ];
 
                     $currentRoute = $request->route()->getName();
@@ -170,16 +181,18 @@ class IndexCollections extends OrgAction
                         return [];
                     }
 
-                    return [[
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new collection'),
-                                'label'   => __('collection'),
-                                'route'   => [
-                                    'name'       => $routes[$currentRoute],
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
-                            ]];
+                    return [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new collection'),
+                            'label'   => __('collection'),
+                            'route'   => [
+                                'name'       => $routes[$currentRoute],
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ];
                 })(),
 
 
@@ -189,12 +202,12 @@ class IndexCollections extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Collections',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'    => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('Collections'),
-                'pageHead' => [
+                'title'          => __('Collections'),
+                'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
@@ -203,20 +216,20 @@ class IndexCollections extends OrgAction
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
-                'routes'        => $routes,
-                'data'          => CollectionsResource::collection($collections),
-                'formData' => [
+                'routes'         => $routes,
+                'data'           => CollectionsResource::collection($collections),
+                'formData'       => [
                     'fullLayout' => true,
                     'blueprint'  => [
                         [
                             'title'  => __('New Collection'),
                             'fields' => [
-                                'code' => [
-                                    'type'       => 'input',
-                                    'label'      => __('code'),
-                                    'required'   => true
+                                'code'        => [
+                                    'type'     => 'input',
+                                    'label'    => __('code'),
+                                    'required' => true
                                 ],
-                                'name' => [
+                                'name'        => [
                                     'type'     => 'input',
                                     'label'    => __('name'),
                                     'required' => true,
@@ -226,16 +239,16 @@ class IndexCollections extends OrgAction
                                     'label'    => __('description'),
                                     'required' => false,
                                 ],
-                                "image"         => [
-                                    "type"    => "image_crop_square",
-                                    "label"   => __("Image"),
+                                "image"       => [
+                                    "type"     => "image_crop_square",
+                                    "label"    => __("Image"),
                                     "required" => false,
                                 ],
 
                             ]
                         ]
                     ],
-                    'route' => [
+                    'route'      => [
                         'name'       => 'grp.models.org.catalogue.collections.store',
                         'parameters' => [
                             'organisation' => $this->shop->organisation_id,
@@ -249,14 +262,12 @@ class IndexCollections extends OrgAction
     }
 
 
-
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle(shop: $shop);
     }
-
-
 
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
@@ -274,6 +285,7 @@ class IndexCollections extends OrgAction
                 ]
             ];
         };
+
         return match ($routeName) {
             'grp.org.shops.show.catalogue.collections.index' =>
             array_merge(

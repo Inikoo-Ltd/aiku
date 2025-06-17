@@ -29,17 +29,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_families
  * @property mixed $number_products
  * @property mixed $number_collections
- * @property mixed $state_webpage
- * @property mixed $url_webpage
  * @property mixed $website_slug
  * @property mixed $state
+ * @property mixed $webpage_state
+ * @property mixed $webpage_url
+ * @property mixed $webpage_slug
+ * @property mixed $number_parents
+ * @property mixed $parents_data
  */
 class CollectionsResource extends JsonResource
 {
     public function toArray($request): array
     {
-
-
         return [
             'id'                => $this->id,
             'slug'              => $this->slug,
@@ -53,27 +54,20 @@ class CollectionsResource extends JsonResource
             'updated_at'        => $this->updated_at,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
+            'website_slug'      => $this->website_slug,
+
 
             'state'      => $this->state,
             'state_icon' => $this->state ? CollectionStateEnum::from($this->state->value)->stateIcon()[$this->state->value] : null,
 
-            'number_departments'      => $this->number_departments,
+            'number_parents'          => $this->number_parents,
             'number_families'         => $this->number_families,
             'number_products'         => $this->number_products,
-            'number_collections'      => $this->number_collections,
-            'state_webpage'           => $this->state_webpage,
-            'state_webpage_icon'      => $this?->state_webpage ? WebpageStateEnum::from($this->state_webpage)->stateIcon()[$this->state_webpage] : null,
-            'url_webpage'             => $this->url_webpage,
-            'route_webpage_show'      => [
-                'name'       => 'grp.org.shops.show.web.webpages.show',
-                'parameters' => [
-                    'organisation' => $this->organisation_slug,
-                    'shop'         => $this->shop_slug,
-                    'website'      => $this->website_slug,
-                    'collection'   => $this->slug
-                ],
-                'method'     => 'get'
-            ],
+            'webpage_state'           => $this->webpage_state,
+            'webpage_state_icon'      => $this->webpage_state ? WebpageStateEnum::from($this->webpage_state)->stateIcon()[$this->webpage_state] : null,
+            'webpage_state_label'     => $this->webpage_state ? WebpageStateEnum::from($this->webpage_state)->labels()[$this->webpage_state] : null,
+            'webpage_url'             => $this->webpage_url,
+            'webpage_slug'            => $this->webpage_slug,
             'route_delete_collection' => [
                 'name'       => 'grp.models.collection.delete',
                 'parameters' => [
@@ -88,8 +82,34 @@ class CollectionsResource extends JsonResource
                 ],
                 'method'     => 'patch'
             ],
-
+            'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
 
         ];
+    }
+
+    private function parseCollectionParentsData(string $parentsData): array
+    {
+        $parents = [];
+        if ($parentsData == '|||') {
+            return $parents;
+        }
+
+
+        list($slugsData, $typesData, $codesData, $namesData) = explode('|', $parentsData);
+        $slugs = explode(',', $slugsData);
+        $types = explode(',', $typesData);
+        $codes = explode(',', $codesData);
+        $names = explode(',', $namesData);
+
+        foreach ($slugs as $key => $slug) {
+            $parents[] = [
+                'slug'   => $slug,
+                'type' => $types[$key] ?? null,
+                'code' => $codes[$key] ?? null,
+                'name' => $names[$key] ?? null,
+            ];
+        }
+
+        return $parents;
     }
 }

@@ -130,8 +130,6 @@ class Collection extends Model implements Auditable, HasMedia
         return $this->hasOne(CollectionsOrderingStats::class);
     }
 
-
-
     public function shops(): MorphToMany
     {
         return $this->morphedByMany(Shop::class, 'model', 'model_has_collections')->withTimestamps();
