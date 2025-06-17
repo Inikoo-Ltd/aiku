@@ -3,20 +3,19 @@ import { useForm } from "@inertiajs/vue3"
 import { ref, onMounted, nextTick, computed } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { trans } from "laravel-vue-i18n"
-import Address from "@/Components/Forms/Fields/Address.vue"
-import Textarea from "primevue/textarea"
-import Select from "primevue/select"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
+import { faBuilding, faGlobe, faPhone, faUser, faInfoCircle } from "@fal"
+import { faAsterisk } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
+import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
 
-library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
+library.add(faEnvelope, faUser, faAsterisk, faInfoCircle, faPhone, faBuilding, faGlobe)
 
 // Set default layout
 // defineOptions({ layout: RetinaShowIris })
@@ -43,6 +42,7 @@ const initialPollReplies = props.polls.map((poll) => ({
 	type: poll.type,
 	label: poll.label,
 	answer: poll.type === "option" ? null : "",
+	is_required: poll.in_registration_required,
 }))
 
 // Define form using Inertia's useForm
@@ -81,22 +81,6 @@ const submit = () => {
 }
 
 
-const addressFieldData = {
-	type: "address",
-	label: "Address",
-	value: {
-		address_line_1: null,
-		address_line_2: null,
-		sorting_code: null,
-		postal_code: null,
-		locality: null,
-		dependent_locality: null,
-		administrative_area: null,
-		country_code: null,
-		country_id: 48,
-	},
-	options: props.countriesAddressData,
-}
 
 // Autofocus first PureInput on mount
 onMounted(async () => {
@@ -104,14 +88,6 @@ onMounted(async () => {
 	document.getElementById("contact_name")?.focus()
 })
 
-const simplePolls = computed(() =>
-	props.polls.map(({ name, label, options }) => ({ name, label, options }))
-)
-
-const initialPolls: Record<string, string | null> = {}
-simplePolls.value.forEach((poll) => {
-	initialPolls[poll.name] = poll.options.length > 1 ? null : ""
-})
 
 </script>
 
@@ -143,7 +119,12 @@ simplePolls.value.forEach((poll) => {
 								<label
 									for="email"
 									class="block text-sm font-medium text-gray-700"
-                                >{{ trans("Email") }} <small class="pl-1">{{ trans("will be used as your username as well") }}</small></label>
+                                >
+									<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+									{{ trans("Email") }}
+									<FontAwesomeIcon v-tooltip="trans('Will be used as your username as well')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+								</label>
+
 								<div class="mt-2">
 									<!-- make IconField full-width -->
 									<IconField class="w-full">
@@ -207,157 +188,11 @@ simplePolls.value.forEach((poll) => {
 								</div>
 							</div>
 
-							<!-- First Name -->
-							<div class="sm:col-span-6">
-								<label
-									for="name"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Name") }}</label
-								>
-								<div class="mt-2">
-									<IconField>
-										<InputIcon>
-											<FontAwesomeIcon :icon="faUser" />
-										</InputIcon>
-										<InputText
-											v-model="form.contact_name"
-											id="contact_name"
-											name="contact_name"
-											class="w-full"
-											required />
-									</IconField>
-									<p
-										v-if="form.errors.contact_name"
-										class="text-sm text-red-600 mt-1">
-										{{ form.errors.contact_name }}
-									</p>
-								</div>
-							</div>
-
-							<div class="sm:col-span-3">
-								<label
-									for="phone-number"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Phone Number") }}</label
-								>
-								<div class="mt-2">
-									<IconField class="w-full">
-										<InputIcon>
-											<FontAwesomeIcon :icon="faPhone" />
-										</InputIcon>
-										<InputText
-											v-model="form.phone"
-											type="text"
-											id="phone-number"
-											name="phone"
-											class="w-full"
-											required />
-									</IconField>
-									<p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
-										{{ form.errors.phone }}
-									</p>
-								</div>
-							</div>
-
-							<!-- Business Name -->
-							<div class="sm:col-span-6">
-								<label
-									for="business-name"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Business Name") }}</label
-								>
-								<div class="mt-2">
-									<IconField class="w-full">
-										<InputIcon>
-											<FontAwesomeIcon :icon="faBuilding" />
-										</InputIcon>
-										<InputText
-											v-model="form.company_name"
-											type="text"
-											id="business-name"
-											name="company_name"
-											class="w-full" />
-									</IconField>
-									<p
-										v-if="form.errors.company_name"
-										class="text-sm text-red-600 mt-1">
-										{{ form.errors.company_name }}
-									</p>
-								</div>
-							</div>
-
-							<!-- Website -->
-							<div class="sm:col-span-6">
-								<label
-									for="website"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Website") }}</label
-								>
-								<div class="mt-2">
-									<IconField class="w-full">
-										<InputIcon>
-											<FontAwesomeIcon :icon="faGlobe" />
-										</InputIcon>
-										<InputText v-model="form.website" class="w-full" />
-									</IconField>
-									<p v-if="form.errors.website" class="text-sm text-red-600 mt-1">
-										{{ form.errors.website }}
-									</p>
-								</div>
-							</div>
-
-							<div class="sm:col-span-6">
-								<hr />
-							</div>
-
-							<div class="sm:col-span-6">
-								<label for="address" class="capitalize block text-sm font-medium text-gray-700" >{{ trans("Country") }}</label >
-								<Address
-									v-model="form[contact_address]"
-									fieldName="contact_address"
-									:form="form"
-									:options="{ countriesAddressData: countriesAddressData }"
-									:fieldData="addressFieldData" />
-							</div>
-
-							<div class="sm:col-span-6">
-								<hr />
-							</div>
-
-							<div
-								v-for="(pollReply, idx) in form.poll_replies"
-								:key="pollReply.id"
-								class="sm:col-span-6">
-								<label class="block text-sm font-medium text-gray-700 capitalize">
-									{{ pollReply.label }}
-								</label>
-								<div class="mt-2" :class="form.errors?.[`poll_replies.${idx}`] ? 'errorShake' : ''">
-									<Select
-										v-if="pollReply.type === 'option'"
-										v-model="form.poll_replies[idx].answer"
-										@update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-										:options="props.polls[idx].options"
-										optionLabel="label"
-										optionValue="id"
-										:placeholder="`Please Choose One`"
-										class="w-full" />
-									<Textarea
-										v-else
-										v-model="form.poll_replies[idx].answer"
-										@update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-										rows="5"
-										cols="30"
-										placeholder="Your answer…"
-										class="w-full border rounded-md p-2" />
-								</div>
-								<p v-if="form.errors[`poll_replies.${idx}`]" class="mt-1 text-sm text-red-600">
-									*{{ form.errors[`poll_replies.${idx}`] }}
-								</p>
-							</div>
-
-							<div class="sm:col-span-6">
-								<hr />
-							</div>
+							<FieldStandaloneRegistration
+								:countriesAddressData
+								:polls
+								:form
+							/>
 							
 							<!-- Opt in newsletter -->
 							<div class="flex items-center gap-2 sm:col-span-6">
