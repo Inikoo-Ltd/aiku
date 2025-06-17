@@ -37,12 +37,12 @@ enum CollectionStateEnum: string
             'in_process' => [
                 'tooltip' => __('in process'),
                 'icon'    => 'fal fa-seedling',
-                'class'   => 'text-emerald-500'
+                'class'   => 'text-gray-400'
             ],
             'active' => [
                 'tooltip' => __('active'),
                 'icon'    => 'fal fa-broadcast-tower',
-                'class'   => 'text-green-600 animate-pulse'
+                'class'   => 'text-green-700 animate-pulse'
             ],
             'inactive' => [
                 'tooltip' => __('inactive'),
@@ -57,7 +57,7 @@ enum CollectionStateEnum: string
             'discontinued' => [
                 'tooltip' => __('discontinued'),
                 'icon'    => 'fal fa-skull',
-                'class'   => 'text-gray-700'
+                'class'   => 'text-red-700'
             ],
         ];
     }
