@@ -41,6 +41,7 @@ import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDep
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
 import CTAVideo1Iris from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
+import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 
@@ -76,7 +77,7 @@ const components: Record<string, Component> = {
 
     //family
     'family-1' : FamilyIris1,
-    'families-1' : FamilyIris1,
+    'families-1' : families1Iris,
 
     //product
     'product-1' : ProductIris1,

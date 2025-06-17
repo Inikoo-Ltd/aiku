@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed } from "vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
-import SetMenuListWorkshop from "@/Components/CMS/Fields/SetMenuListWorkshop.vue"
-import axios from "axios"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -17,14 +15,11 @@ import {
 	faPlusCircle,
 	faBars,
 	faThLarge,
-	faList,
 	faPaintBrushAlt,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
-import FamilyListTree from "@/Components/CMS/Website/Family/FamilyListTree.vue"
-/* import DepartementListTree from "./DepartementListTree.vue" */
 
 library.add(
 	faChevronRight,
@@ -63,7 +58,6 @@ const selectedTab = ref(props.data ? 1 : 0)
 
 const tabs = [
 	{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
-	{ label: 'Menu', icon: faList, tooltip: 'menu' },
 	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
 ]
 
@@ -77,12 +71,6 @@ const computedTabs = computed(() => {
 		: [tabs[0]]
 })
 
-const onPickBlock = (value: object) => {
-	emits('setUpTemplate', value)
-}
-
-
-console.log('props.data', props)
 
 </script>
 
@@ -114,9 +102,6 @@ console.log('props.data', props)
             @pick-block="onPickBlock"
             :selectedWeblock="data?.code"
           />
-        </TabPanel>
-        <TabPanel v-if="data" class="p-4">
-         <!--  <FamilyListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" /> -->
         </TabPanel>
         <TabPanel v-if="data?.data?.fieldValue" class="p-4">
           <SideEditor 

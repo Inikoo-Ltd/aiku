@@ -100,7 +100,7 @@ const selectImage = (code: string) => {
 
 <template>
     <!-- Desktop Layout -->
-    <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden lg:block">
+    <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="flex justify-between mb-4 items-start">
@@ -189,11 +189,11 @@ const selectImage = (code: string) => {
             </div>
         </div>
 
-        <ProductContents :product="props.modelValue.product" />
+        <!-- <ProductContents :product="props.modelValue.product" /> -->
     </div>
 
     <!-- Mobile Layout -->
-    <div class="block lg:hidden px-4 py-6 text-gray-800">
+    <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
         <ImageProducts :images="modelValue.product.images.data" />
         <div class="flex justify-between items-start gap-4 mt-4">
@@ -248,7 +248,7 @@ const selectImage = (code: string) => {
             </div>
         </div>
 
-        <ProductContents :product="props.modelValue.product" />
+        <!-- <ProductContents :product="props.modelValue.product" /> -->
     </div>
 
 </template>
