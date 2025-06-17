@@ -114,6 +114,5 @@ const components: Record<string, Component> = {
 
 
 export const getIrisComponent = (componentName: string) => {
-        console.log(componentName)
     return components[componentName] ?? NotFoundComponent
 }
