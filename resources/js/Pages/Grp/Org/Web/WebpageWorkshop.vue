@@ -17,15 +17,13 @@ import WebpageSideEditor from "@/Components/Workshop/WebpageSideEditor.vue"
 import { setIframeView } from "@/Composables/Workshop"
 import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import ButtonPreviewLogin from "@/Components/Workshop/Tools/ButtonPreviewLogin.vue"
 import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { debounce } from 'lodash-es';
-import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faTimes, faExpandWide, faCompressWide, } from "@fal"
+import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faTimes,faBars, faExternalLink,  faExpandWide, faCompressWide, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-/* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from "primevue/useconfirm";
 import ToggleSwitch from 'primevue/toggleswitch';
