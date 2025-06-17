@@ -1,3 +1,5 @@
+
+
 export default {
 	blueprint: [
 		{
@@ -30,6 +32,30 @@ export default {
 				},
 			],
 		},
+		{
+		 	key: ["paymentData", "data"],
+			name: "Payment",
+			type: "payment_templates",
+		},
+		/* {
+							key: ["cards"],
+							name: "Cards  Data",
+							type: "array-data",
+							props_data: {
+								blueprint: CardBlueprint.blueprint,
+								order_name: "card",
+								can_drag: true,
+								can_delete: true,
+								can_add: true,
+								new_value_data: {
+									text: "Lorem Ipsum",
+									image: {
+										source: null,
+										alt: "Image",
+									},
+								},
+							},
+						}, */
 		{
 			name: "Layout",
 			key: ["container", "properties"],
