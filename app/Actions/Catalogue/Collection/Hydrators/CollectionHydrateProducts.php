@@ -43,7 +43,7 @@ class CollectionHydrateProducts implements ShouldBeUnique
             $stats["number_products_state_".$case->snake()] = Arr::get($count, $case->value, 0);
         }
 
-        $collectionStats=$collection->stats;
+        $collectionStats = $collection->stats;
         $collectionStats->update($stats);
 
         $changed = Arr::except($collectionStats->getChanges(), ['updated_at', 'last_fetched_at']);

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Collection\Hydrators;
 
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatus;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\Collection;
@@ -45,7 +44,8 @@ class CollectionHydrateFamilies implements ShouldBeUnique
             $stats["number_families_state_".$case->snake()] = Arr::get($count, $case->value, 0);
         }
 
-        $collectionStats=$collection->stats;
+        $collectionStats = $collection->stats;
+
         $collectionStats->update($stats);
 
         $changed = Arr::except($collectionStats->getChanges(), ['updated_at', 'last_fetched_at']);

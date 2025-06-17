@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 30 Apr 2025 01:57:28 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 17 Jun 2025 19:51:47 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -13,17 +13,16 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-
-        Schema::table('webpages', function (Blueprint $table) {
-            $table->boolean('allow_fetch')->default(true)->index()->comment('If false changes in Aurora webpages are not fetched');
+        Schema::table('collection_stats', function (Blueprint $table) {
+            $table->unsignedSmallInteger('number_parents')->default(0);
         });
     }
 
 
     public function down(): void
     {
-        Schema::table('webpages', function (Blueprint $table) {
-            $table->dropColumn('allow_fetch');
+        Schema::table('collection_stats', function (Blueprint $table) {
+            $table->dropColumn('number_parents');
         });
     }
 };

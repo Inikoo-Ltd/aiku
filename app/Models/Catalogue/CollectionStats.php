@@ -67,6 +67,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_sub_departments_state_inactive
  * @property int $number_sub_departments_state_discontinuing
  * @property int $number_sub_departments_state_discontinued
+ * @property int $number_parents
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats query()

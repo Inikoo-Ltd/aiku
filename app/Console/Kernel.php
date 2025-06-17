@@ -13,6 +13,7 @@ use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
+use App\Actions\Web\Website\SaveWebsitesSitemap;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -84,6 +85,10 @@ class Kernel extends ConsoleKernel
 
         $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'ProcessFetchStacks',
+        );
+
+        $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'SaveWebsitesSitemap',
         );
 
     }

@@ -13,11 +13,10 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
-use App\Rules\NoDomainString;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,12 +30,12 @@ class StoreRedirect extends OrgAction
         data_set($modelData, 'shop_id', $webpage->shop_id);
         data_set($modelData, 'website_id', $webpage->website_id);
 
-        $path = Arr::get($modelData, 'path');
-        $url = $webpage->website->domain . '/' . $path;
+        $url = 'https:://'.$webpage->website->domain . '/' . $webpage->url;
 
-        data_set($modelData, 'url', $url);
+        data_set($modelData, 'from_url', $url);
+        data_set($modelData, 'from_path', $webpage->url);
 
-        return $webpage->redirects()->create($modelData);
+        return $webpage->redirectedTo()->create($modelData);
 
     }
 
@@ -44,7 +43,10 @@ class StoreRedirect extends OrgAction
     {
         return [
             'type'                     => ['required', Rule::enum(RedirectTypeEnum::class)],
-            'path'                     => ['required', 'string', new NoDomainString()],
+            'to_webpage_id' => [
+                'required',
+                Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
+            ],
         ];
     }
 

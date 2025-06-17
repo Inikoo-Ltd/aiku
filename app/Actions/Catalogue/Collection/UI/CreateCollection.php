@@ -20,45 +20,46 @@ use Lorisleiva\Actions\ActionRequest;
 class CreateCollection extends OrgAction
 {
     use WithCatalogueAuthorisation;
-    private Shop|ProductCategory $parent;
 
     public function handle(Shop|ProductCategory $parent, ActionRequest $request): Response
     {
+
         return Inertia::render(
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $parent,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new collection'),
-                'pageHead' => [
-                    'title'        => __('new collection'),
-                    'actions'      => [
+                'title'       => __('new collection'),
+                'pageHead'    => [
+                    'title'   => __('new collection'),
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.collections.index',
+                                'name'       => preg_replace('/.create/', '.index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
                     ]
                 ],
-                'formData' => [
+                'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
                         [
                             [
                                 'title'  => __('New Collection'),
                                 'fields' => [
-                                    'code' => [
-                                        'type'       => 'input',
-                                        'label'      => __('code'),
-                                        'required'   => true
+                                    'code'        => [
+                                        'type'     => 'input',
+                                        'label'    => __('code'),
+                                        'required' => true
                                     ],
-                                    'name' => [
+                                    'name'        => [
                                         'type'     => 'input',
                                         'label'    => __('name'),
                                         'required' => true,
@@ -68,27 +69,29 @@ class CreateCollection extends OrgAction
                                         'label'    => __('description'),
                                         'required' => false,
                                     ],
-                                        "image"         => [
-                                        "type"    => "image_crop_square",
-                                        "label"   => __("Image"),
+                                    "image"       => [
+                                        "type"     => "image_crop_square",
+                                        "label"    => __("Image"),
                                         "required" => false,
                                     ],
 
                                 ]
                             ]
                         ],
-                    'route' => $parent instanceof Shop ? [
-                        'name'       => 'grp.models.org.catalogue.collections.store',
-                        'parameters' => [
-                            'organisation' => $parent->organisation_id,
-                            'shop'         => $parent->id,
+                    'route'      => $parent instanceof Shop
+                        ? [
+                            'name'       => 'grp.models.org.catalogue.collections.store',
+                            'parameters' => [
+                                'organisation' => $parent->organisation_id,
+                                'shop'         => $parent->id,
+                            ]
                         ]
-                    ] : [
-                        'name'       => 'grp.models.product_category.collection.store',
-                        'parameters' => [
-                            'productCategory'         => $parent->id,
+                        : [
+                            'name'       => 'grp.models.product_category.collection.store',
+                            'parameters' => [
+                                'productCategory' => $parent->id,
+                            ]
                         ]
-                    ]
                 ],
 
             ]
@@ -97,68 +100,77 @@ class CreateCollection extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response
     {
-        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): Response
     {
-        $this->parent = $department;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($department, $request);
     }
 
-    public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): Response
-    {
-        $this->parent = $family;
-        $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($family, $request);
-    }
-
-    public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): Response
-    {
-        $this->parent = $family;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($family, $request);
-    }
-
-    public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): Response
-    {
-        $this->parent = $family;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($family, $request);
-    }
-
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): Response
     {
-        $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($subDepartment, $request);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            IndexCollections::make()->getBreadcrumbs(
-                parent: $this->parent,
-                routeName: preg_replace('/create$/', 'index', $routeName),
-                routeParameters: $routeParameters,
-            ),
-            [
+        $label = __('Creating collection');
+
+        return match ($routeName) {
+            'grp.org.shops.show.catalogue.collections.create' => array_merge(
+                IndexCollections::make()->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters,
+                ),
                 [
-                    'type'         => 'creatingModel',
-                    'creatingModel' => [
-                        'label' => __('Creating collection'),
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => $label,
+                        ]
                     ]
                 ]
-            ]
-        );
+            ),
+            'grp.org.shops.show.catalogue.departments.show.collection.create' => array_merge(
+                IndexCollectionsInProductCategory::make()->getBreadcrumbs(
+                    $parent,
+                    'grp.org.shops.show.catalogue.departments.show.collection.index',
+                    $routeParameters,
+                ),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => $label,
+                        ]
+                    ]
+                ]
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create' => array_merge(
+                IndexCollectionsInProductCategory::make()->getBreadcrumbs(
+                    $parent,
+                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+                    $routeParameters,
+                ),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => $label,
+                        ]
+                    ]
+                ]
+            ),
+        };
     }
 }

@@ -7,12 +7,14 @@
  */
 
 use App\Actions\Helpers\RedirectAssetLink;
+use App\Actions\Helpers\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\RedirectInvoicesInShopLink;
 use App\Actions\Helpers\RedirectPortfolioItemLink;
+use App\Actions\Helpers\RedirectProductCategoryLink;
 use App\Actions\Helpers\RedirectShopInShopFromDashboard;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
@@ -30,6 +32,8 @@ Route::get('redirect-shops-from-dashboard/{shop:id}', RedirectShopInShopFromDash
 
 Route::get('redirect-portfolio-item/{portfolio:id}', RedirectPortfolioItemLink::class)->name('redirect_portfolio_item');
 
+Route::get('redirect-product-category/{productCategory:slug}', RedirectProductCategoryLink::class)->name('redirect_product_category');
+Route::get('redirect-collections-in-product-category/{productCategory:slug}', RedirectCollectionsInProductCategoryLink::class)->name('redirect_collections_in_product_category');
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {

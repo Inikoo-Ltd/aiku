@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateParents;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateState;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
@@ -32,5 +33,6 @@ class HydrateCollection
         CollectionHydrateProducts::run($collection);
         CollectionHydrateFamilies::run($collection);
         CollectionHydrateState::run($collection);
+        CollectionHydrateParents::run($collection);
     }
 }

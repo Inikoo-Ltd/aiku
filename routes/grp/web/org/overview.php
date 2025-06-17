@@ -10,6 +10,7 @@
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrganisation;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
+use App\Actions\Catalogue\Collection\UI\IndexCollectionsInOrganisation;
 use App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInOrganisation;
 use App\Actions\Catalogue\Shop\UI\IndexShopsInOrganisation;
@@ -30,6 +31,7 @@ Route::get('/orders-in-basket', IndexOrdersInBasketInOrganisation::class)->name(
 Route::get('/shops', IndexShopsInOrganisation::class)->name('shops.index');
 Route::get('/departments', IndexDepartmentsInOrganisation::class)->name('departments.index');
 Route::get('/products', IndexProductsInOrganisation::class)->name('products.index');
+Route::get('/collections', IndexCollectionsInOrganisation::class)->name('collections.index');
 
 
 Route::get('/customers', [IndexCustomersInOverview::class, 'inOrganisation'])->name('customers.index');

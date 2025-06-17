@@ -50,5 +50,31 @@ enum WebpageStateEnum: string
         ];
     }
 
+    public static function stateIcon(): array
+    {
+        return [
+            'in_process' => [
+                'tooltip' => __('In construction'),
+                'icon'    => 'fal fa-hammer',
+                'class'   => 'text-amber-500'
+            ],
+            'ready' => [
+                'tooltip' => __('Ready'),
+                'icon'    => 'fal fa-check-circle',
+                'class'   => 'text-blue-500'
+            ],
+            'live' => [
+                'tooltip' => __('Live'),
+                'icon'    => 'fal fa-broadcast-tower',
+                'class'   => 'text-green-600 animate-pulse'
+            ],
+            'closed' => [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fal fa-skull',
+                'class'   => 'text-gray-500'
+            ],
+        ];
+    }
+
 
 }
