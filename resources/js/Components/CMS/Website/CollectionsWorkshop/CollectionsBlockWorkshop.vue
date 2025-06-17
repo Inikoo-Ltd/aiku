@@ -136,7 +136,6 @@ console.log(props)
       </div>
     </template>
 
-    <!-- <EmptyState /> -->
     <WebpageList :dataList="[...data?.departments?.data, ...data?.subDepartments?.data]"
       @onChangeWebpage="onChangeWebpage" :active="layout?.data?.fieldValue?.webpage?.slug" />
 
