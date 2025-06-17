@@ -18,13 +18,14 @@ class CollectionResource extends JsonResource
     public function toArray($request): array
     {
 
-        /** @var Collection $collection */
+        // /** @var Collection $collection */
         $collection = $this;
 
         return [
             'id'                => $collection->id,
             'slug'              => $collection->slug,
-            'state_icon'             =>  CollectionStateEnum::from($collection->state_collection)->stateIcon()[$collection->state_collection],
+            'state'             =>  $collection->state,
+            'state_icon'             =>  CollectionStateEnum::from($collection->state)->stateIcon()[$collection->state],
             'shop'              => $collection->shop_slug,
             'code'              => $collection->code,
             'name'              => $collection->name,

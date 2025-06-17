@@ -71,7 +71,7 @@ class IndexCollections extends OrgAction
             ->select([
                 'collections.id',
                 'collections.code',
-                'collections.state as state_collection',
+                'collections.state',
                 'webpages.id as webpage_id',
                 'webpages.state as state_webpage',
                 'webpages.url as url_webpage',
