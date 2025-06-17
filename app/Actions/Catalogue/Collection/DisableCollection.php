@@ -11,7 +11,12 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Webpage\CloseWebpage;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Catalogue\Collection;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,14 +28,37 @@ class DisableCollection extends OrgAction
 
     private ?Collection $collection;
 
-    public function handle(Collection $collection, bool $forceDelete = false): Collection
+    public function handle(Collection $collection, array $modelData): void
     {
-        return $collection;
+        $collection->update([
+            'state' => CollectionStateEnum::INACTIVE->value,
+        ]);
+
+        CloseWebpage::run($collection->webpage);
+
+        StoreRedirect::make()->action(
+            $collection->webpage,
+            [
+                'type' => RedirectTypeEnum::PERMANENT,
+                'path' => Arr::get($modelData, 'path'),
+            ]
+        );
     }
 
+    public function rules()
+    {
+        return [
+            'path' => ['required', 'string'],
+        ];
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->set('path', $this->get('data.path', ''));
+    }
     public function asController(Collection $collection, ActionRequest $request)
     {
-        dd($request->all());
-        // return $this->handle($collection, $forceDelete);
+        $this->initialisation($collection->organisation, $request);
+        $this->handle($collection, $this->validatedData);
     }
 }

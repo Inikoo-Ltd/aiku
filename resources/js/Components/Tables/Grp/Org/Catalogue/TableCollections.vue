@@ -155,7 +155,7 @@ const SetOffline = () => {
         {
             preserveScroll: true,
             data: {
-                description: reroute.value
+                path: reroute.value
             },
             onSuccess: () => {
                 resetModalState();
