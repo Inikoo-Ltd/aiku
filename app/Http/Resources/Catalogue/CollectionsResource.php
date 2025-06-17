@@ -87,10 +87,10 @@ class CollectionsResource extends JsonResource
         ];
     }
 
-    private function parseCollectionParentsData(string $parentsData): array
+    private function parseCollectionParentsData(string|null $parentsData): array
     {
         $parents = [];
-        if ($parentsData == '|||') {
+        if ($parentsData == '|||' || $parentsData === null) {
             return $parents;
         }
 

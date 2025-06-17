@@ -9,7 +9,7 @@ import { capitalize } from '@/Composables/capitalize.js'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Icon as IconTS } from "@/types/Utils/Icon"
 
-const props = defineProps<{
+defineProps<{
     data: IconTS
     title?: string
 }>()

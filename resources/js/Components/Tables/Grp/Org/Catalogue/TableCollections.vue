@@ -12,7 +12,7 @@ import { remove as loRemove } from "lodash-es";
 import { ref, watch, nextTick } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Icon from "@/Components/Icon.vue";
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt } from "@fal";
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree } from "@fal";
 import { faPlay } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Dialog from "primevue/dialog";
@@ -24,11 +24,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { RouteParams } from "@/types/route-params";
 import { Collection } from "@/types/collection";
 import collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
+import { trans } from "laravel-vue-i18n";
 
 
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay);
+library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree);
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
     routes: {
@@ -127,13 +128,13 @@ function shopRoute(collection: Collection) {
 function webpageRoute(collection: Collection) {
     return route(
         "grp.org.shops.show.web.webpages.show",
-            [
+        [
             (route().params as RouteParams).organisation,
-                (route().params as RouteParams).shop,
-                collection.website_slug,
-                collection.webpage_slug,
+            (route().params as RouteParams).shop,
+            collection.website_slug,
+            collection.webpage_slug
 
-            ]
+        ]
     );
 
 }
@@ -141,10 +142,9 @@ function webpageRoute(collection: Collection) {
 function parentRoute(slug: string) {
 
     return route(
-        "grp.helpers.redirect_product_category",
+        "grp.helpers.redirect_collections_in_product_category",
         [
             slug
-
         ]
     );
 
@@ -246,14 +246,15 @@ watch(showOfflineModal, (visible) => {
 
         <template #cell(parents)="{ item: collection }">
 
-            <template v-for="(parent) in collection.parents_data" :key="index">
-                <Link  :href="parentRoute(parent.slug) as string" class="secondaryLink">
-                    {{ parent.code }}
+            <template v-for="(parent, index) in collection.parents_data" :key="index">
+                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
+                <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1" v-tooltip="trans('Sub Department')" />
+                <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
+                    {{ parent.code && parent.code.length > 6 ? parent.code.substring(0, 6) + "..." : parent.code }}
                 </Link>
 
 
             </template>
-
 
 
         </template>
@@ -263,18 +264,15 @@ watch(showOfflineModal, (visible) => {
             <template v-if="collection.webpage_slug">
                 <Icon :data="collection.webpage_state_icon" :Tooltip="collection.webpage_state_label" />
 
-                <Link as="button"  :href="webpageRoute(collection) as string" class="secondaryLink ml-2">
+                <Link as="button" :href="webpageRoute(collection) as string" class="secondaryLink ml-2">
 
                     <div class="flex  w-fit items-center gap-2 ">
                         <span class="cursor-pointer">
-                        {{ collection.webpage_url && collection.webpage_url.length > 16 ? collection.webpage_url.substring(0, 16) + '...' : collection.webpage_url }}
+                        {{ collection.webpage_url && collection.webpage_url.length > 16 ? collection.webpage_url.substring(0, 16) + "..." : collection.webpage_url }}
                     </span>
                     </div>
                 </Link>
             </template>
-
-
-
 
 
         </template>
