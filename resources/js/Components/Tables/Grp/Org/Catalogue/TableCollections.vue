@@ -151,13 +151,14 @@ const SetOffline = () => {
     const routeInfo = selectedCollection.value.route_disable_webpage;
     if (!routeInfo) return;
 
-    router[routeInfo.method](
+    router.patch(
+
         route(routeInfo.name, routeInfo.parameters),
         {
+            path: reroute.value
+        },
+        {
             preserveScroll: true,
-            data: {
-                path: reroute.value
-            },
             onSuccess: () => {
                 resetModalState();
                 notify({
