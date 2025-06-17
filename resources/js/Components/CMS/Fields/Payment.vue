@@ -24,7 +24,18 @@ import cond from '@/../art/payment_service_providers/cond.svg'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faTimes, faTrash);
 
-const props = defineProps<{ modelValue: any }>();
+type PaymentItem = {
+  name: string
+  value: string
+  image?: string
+}
+
+const props = withDefaults(defineProps<{
+  modelValue?: PaymentItem[]
+}>(), {
+  modelValue: () => []
+});
+
 const emits = defineEmits<{ (e: 'update:modelValue', value: any[]): void }>();
 
 const payments = ref<any[]>([]);
