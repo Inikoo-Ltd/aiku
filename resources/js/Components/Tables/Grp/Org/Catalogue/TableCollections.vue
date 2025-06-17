@@ -37,6 +37,7 @@ const props = defineProps<{
         submitAttach: routeType
         detach: routeType
     }
+    website_domain?: String
 }>();
 
 const confirm = useConfirm();
@@ -178,7 +179,7 @@ const SetOffline = () => {
 };
 
 const isConfirmOpen = ref(false)
-
+console.log(props)
 </script>
 
 <template>
@@ -258,7 +259,8 @@ const isConfirmOpen = ref(false)
             Please confirm where it should redirect to.
         </div>
 
-        <PureInput :prefix="{label : 'https://', icon : null}" placeholder="example" v-model="reroute" class="w-full" />
+        <PureInput :prefix="{label : `${website_domain}/`, icon : null}"  v-model="reroute" class="w-full" >
+        </PureInput>
 
         <div class="flex justify-end mt-4 mb-2 gap-2">
             <Button type="secondary" label="Cancel" @click="resetModalState" />
