@@ -72,8 +72,8 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 
         <template v-else>
             <IrisHeader
-                class="relative z-50 md:z-0"
                 v-if="layout.iris?.header?.header"
+                class="relative z-50 md:z-0"
                 :data="layout.iris.header"
                 :colorThemed="irisTheme"
                 :menu="layout.iris.menu"
