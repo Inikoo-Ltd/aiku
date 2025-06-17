@@ -49,7 +49,7 @@ console.log('sdsd',props)
               :id="'disclosure-' + content.id"
               class="text-sm text-gray-600"
             >
-              {{ content.text }}
+              <div v-html="content.text "></div>
             </div>
           </transition>
         </div>

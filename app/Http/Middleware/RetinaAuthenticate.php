@@ -12,6 +12,13 @@ use Illuminate\Auth\Middleware\Authenticate as Middleware;
 
 class RetinaAuthenticate extends Middleware
 {
+    public function handle($request, \Closure $next, ...$guards)
+    {
+
+        $this->authenticate($request, $guards);
+
+        return $next($request);
+    }
     protected function redirectTo($request): ?string
     {
         if (!$request->expectsJson()) {

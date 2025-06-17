@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 16-06-2025-16h-25m
@@ -11,7 +12,6 @@ namespace App\Http\Resources\Catalogue;
 use App\Http\Resources\Web\ModelHasContentsResource;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Models\Catalogue\ProductCategory;
 
 /**
  * @property string $slug

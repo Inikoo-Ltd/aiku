@@ -21,7 +21,7 @@ defineProps<{
     blueprint: object
   }
   colorThemed: object
-  screenType: "mobile" | "tablet" | "desktop"
+  screenType?: "mobile" | "tablet" | "desktop"
 }>();
 
 
