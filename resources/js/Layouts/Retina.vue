@@ -19,7 +19,9 @@ import RetinaLayoutDs from "./RetinaLayoutDs.vue"
 import RetinaLayoutEcom from "./RetinaLayoutEcom.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { usePage } from "@inertiajs/vue3"
-
+import IrisHeader from "@/Layouts/Iris/Header.vue"
+import IrisFooter from "@/Layouts/Iris/Footer.vue"
+import { isArray } from "lodash"
 library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell )
 
 
@@ -68,13 +70,30 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
             </template>
         </RetinaLayoutFulfilment>
 
-        <main v-else
+        <template v-else>
+            <IrisHeader
+                class="relative z-50 md:z-0"
+                v-if="layout.iris?.header?.header"
+                :data="layout.iris.header"
+                :colorThemed="irisTheme"
+                :menu="layout.iris.menu"
+            />
+
+            <slot />
+
+            <IrisFooter
+                v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
+                :data="layout.iris.footer"
+                :colorThemed="irisTheme"
+            />
+        </template>
+        <!-- <main v-else
             class="bg-gray-50 min-h-screen pt-16 pb-10 mx-auto flex justify-center transition-all px-8 lg:px-0"
         >
             <div class="bg-white border border-gray-300 w-full mx-auto max-w-5xl shadow-lg rounded-md h-fit relative flex flex-col text-gray-700">
                 <slot name="default" />
             </div>
-        </main>
+        </main> -->
     </template>
 
     <div v-else class="fixed inset-0 bg-slate-100 flex items-center justify-center">
