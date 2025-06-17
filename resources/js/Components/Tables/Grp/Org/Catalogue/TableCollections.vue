@@ -152,10 +152,9 @@ const SetOffline = () => {
     if (!routeInfo) return;
 
     router.patch(
-
         route(routeInfo.name, routeInfo.parameters),
         {
-            path: reroute.value
+            path: reroute.value // ← ini dikirim sebagai data body PATCH
         },
         {
             preserveScroll: true,
@@ -179,11 +178,12 @@ const SetOffline = () => {
     );
 };
 
+
 const onErrorDeleteCollection = (error) => {
     console.log(error)
     notify({
         title: "Failed to Delete",
-        text: error ? error:"Please check your Collection.",
+        text: error.webpage ? error.webpage  :"Please check your Collection.",
         type: "error"
     });
 }
