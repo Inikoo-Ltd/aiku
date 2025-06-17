@@ -154,6 +154,20 @@ class IndexCollections extends OrgAction
         $iconRight = null;
         $routes    = null;
         $actions   = [];
+        if ($this->canEdit) {
+            $actions[]= [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('new collection'),
+                'label'   => __('collection'),
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.catalogue.collections.create',
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ];
+        }
+
+
 
 
         return Inertia::render(
