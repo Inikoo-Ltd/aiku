@@ -42,7 +42,7 @@ class TradeUnitHydrateStatus implements ShouldBeUnique
 
     public function getTradeUnitStatusFromOrgStocks(TradeUnitStats $stats): TradeUnitStatusEnum
     {
-        if ($stats->number_org_stocks_state_active > 0 | $stats->number_org_stocks_state_discontinuing > 0) {
+        if ($stats->number_org_stocks_state_active > 0 || $stats->number_org_stocks_state_discontinuing > 0) {
             return TradeUnitStatusEnum::ACTIVE;
         }
 
