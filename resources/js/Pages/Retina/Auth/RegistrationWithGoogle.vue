@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3"
-import { ref, onMounted, nextTick, computed } from "vue"
-import PureInput from "@/Components/Pure/PureInput.vue"
+import { ref, onMounted, nextTick } from "vue"
 import { trans } from "laravel-vue-i18n"
-import Address from "@/Components/Forms/Fields/Address.vue"
-import Textarea from "primevue/textarea"
-import Select from "primevue/select"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope } from "@far"
+import { faAsterisk } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
+import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
 
-library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
+library.add(faEnvelope, faAsterisk, faUser, faPhone, faBuilding, faGlobe)
 
 // Set default layout
 // defineOptions({ layout: RetinaShowIris })
@@ -37,9 +35,6 @@ const props = defineProps<{
 	googleData: {}
 }>()
 
-// console.log('client', props.client)
-
-// di <script setup lang="ts">
 const initialPollReplies = props.polls.map((poll) => ({
 	id: poll.id,
 	type: poll.type,
@@ -54,11 +49,9 @@ const form = useForm({
 	phone: "",
 	company_name: "",
 	website: "",
-	password: "",
-	password_confirmation: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
-	is_opt_in: true
+	is_opt_in: false
 })
 
 // Define reactive variables
@@ -67,56 +60,20 @@ const isLoading = ref(false)
 const submit = () => {
 	isLoading.value = true
 
-	if (form.password == form.password_confirmation) {
-		form.post(route(props.registerRoute.name, props.registerRoute.parameters), {
-			preserveScroll: true,
-			onError: () => {
-				isLoading.value = false
-			},
-			onFinish: () => {
-			},
-		})
-	} else {
-		form.setError("password", "password not match")
-	}
-}
-
-const interestsList = ref([
-	{ label: "Pallets Storage", value: "pallets_storage" },
-	{ label: "Dropshipping", value: "dropshipping" },
-	{ label: "Space (Parking)", value: "rental_space" },
-])
-
-const addressFieldData = {
-	type: "address",
-	label: "Address",
-	value: {
-		address_line_1: null,
-		address_line_2: null,
-		sorting_code: null,
-		postal_code: null,
-		locality: null,
-		dependent_locality: null,
-		administrative_area: null,
-		country_code: null,
-		country_id: 48,
-	},
-	options: props.countriesAddressData,
+	form.post(route(props.registerRoute.name, props.registerRoute.parameters), {
+		preserveScroll: true,
+		onError: () => {
+			isLoading.value = false
+		},
+		onFinish: () => {
+		},
+	})
 }
 
 // Autofocus first PureInput on mount
 onMounted(async () => {
 	await nextTick()
 	document.getElementById("contact_name")?.focus()
-})
-
-const simplePolls = computed(() =>
-	props.polls.map(({ name, label, options }) => ({ name, label, options }))
-)
-
-const initialPolls: Record<string, string | null> = {}
-simplePolls.value.forEach((poll) => {
-	initialPolls[poll.name] = poll.options.length > 1 ? null : ""
 })
 
 </script>
@@ -144,35 +101,8 @@ simplePolls.value.forEach((poll) => {
 				<form @submit.prevent="submit" class="space-y-12 px-14 pb-10">
 					<div class="border-b border-gray-900/10 pb-12">
 						<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-							<!-- First Name -->
-							<div class="sm:col-span-6">
-								<label
-									for="name"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Name") }}</label
-								>
-								<div class="mt-2">
-									<IconField>
-										<InputIcon>
-											<FontAwesomeIcon :icon="faUser" />
-										</InputIcon>
-										<InputText
-											v-model="form.contact_name"
-											id="contact_name"
-											name="contact_name"
-											class="w-full"
-											required />
-									</IconField>
-									<p
-										v-if="form.errors.contact_name"
-										class="text-sm text-red-600 mt-1">
-										{{ form.errors.contact_name }}
-									</p>
-								</div>
-							</div>
-
 							<!-- Email -->
-							<div class="sm:col-span-3">
+							<div class="sm:col-span-6">
 								<label
 									for="email"
 									class="capitalize block text-sm font-medium text-gray-700"
@@ -185,7 +115,6 @@ simplePolls.value.forEach((poll) => {
 											<FontAwesomeIcon :icon="faEnvelope" />
 										</InputIcon>
 
-										<!-- and make the input itself full-width -->
 										<InputText
 											v-model="form.email"
 											type="email"
@@ -202,160 +131,11 @@ simplePolls.value.forEach((poll) => {
 								</div>
 							</div>
 
-							<div class="sm:col-span-3">
-								<label
-									for="phone-number"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Phone Number") }}</label
-								>
-								<div class="mt-2">
-									<IconField class="w-full">
-										<InputIcon>
-											<FontAwesomeIcon :icon="faPhone" />
-										</InputIcon>
-										<InputText
-											v-model="form.phone"
-											type="text"
-											id="phone-number"
-											name="phone"
-											class="w-full"
-											required />
-									</IconField>
-									<p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
-										{{ form.errors.phone }}
-									</p>
-								</div>
-							</div>
-							<!-- Business Name -->
-							<div class="sm:col-span-6">
-								<label
-									for="business-name"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Business Name") }}</label
-								>
-								<div class="mt-2">
-									<IconField class="w-full">
-										<InputIcon>
-											<FontAwesomeIcon :icon="faBuilding" />
-										</InputIcon>
-										<InputText
-											v-model="form.company_name"
-											type="text"
-											id="business-name"
-											name="company_name"
-											class="w-full" />
-									</IconField>
-									<p
-										v-if="form.errors.company_name"
-										class="text-sm text-red-600 mt-1">
-										{{ form.errors.company_name }}
-									</p>
-								</div>
-							</div>
-							<!-- Website -->
-							<div class="sm:col-span-6">
-								<label
-									for="website"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Website") }}</label
-								>
-								<div class="mt-2">
-									<IconField class="w-full">
-										<InputIcon>
-											<FontAwesomeIcon :icon="faGlobe" />
-										</InputIcon>
-										<InputText v-model="form.website" class="w-full" />
-									</IconField>
-									<p v-if="form.errors.website" class="text-sm text-red-600 mt-1">
-										{{ form.errors.website }}
-									</p>
-								</div>
-							</div>
-							<div class="sm:col-span-6">
-								<hr />
-							</div>
-							<div class="sm:col-span-6">
-								<label for="address" class="capitalize block text-sm font-medium text-gray-700" >{{ trans("Country") }}</label >
-								<Address
-									v-model="form[contact_address]"
-									fieldName="contact_address"
-									:form="form"
-									:options="{ countriesAddressData: countriesAddressData }"
-									:fieldData="addressFieldData" />
-							</div>
-							<div class="sm:col-span-6">
-								<hr />
-							</div>
-							<div
-								v-for="(pollReply, idx) in form.poll_replies"
-								:key="pollReply.id"
-								class="sm:col-span-6">
-								<label class="block text-sm font-medium text-gray-700 capitalize">
-									{{ pollReply.label }}
-								</label>
-								<div class="mt-2" :class="form.errors?.[`poll_replies.${idx}`] ? 'errorShake' : ''">
-									<Select
-										v-if="pollReply.type === 'option'"
-										v-model="form.poll_replies[idx].answer"
-										@update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-										:options="props.polls[idx].options"
-										optionLabel="label"
-										optionValue="id"
-										:placeholder="`Please Choose One`"
-										class="w-full" />
-									<Textarea
-										v-else
-										v-model="form.poll_replies[idx].answer"
-										@update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-										rows="5"
-										cols="30"
-										placeholder="Your answer…"
-										class="w-full border rounded-md p-2" />
-								</div>
-								<p v-if="form.errors[`poll_replies.${idx}`]" class="mt-1 text-sm text-red-600">
-									*{{ form.errors[`poll_replies.${idx}`] }}
-								</p>
-							</div>
-							<div class="sm:col-span-6">
-								<hr />
-							</div>
-							<!-- Password -->
-							<div class="sm:col-span-3">
-								<label
-									for="password"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>Password</label
-								>
-								<div class="mt-2 password">
-									<PureInput
-										v-model="form.password"
-										@update:modelValue="(e) => form.clearErrors('password')"
-										:type="'password'"
-										required />
-									<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
-										{{ form.errors.password }}
-									</p>
-								</div>
-							</div>
-							<!-- Retype Password -->
-							<div class="sm:col-span-3">
-								<label
-									for="password-confirmation"
-									class="capitalize block text-sm font-medium text-gray-700"
-									>Retype Password</label
-								>
-								<div class="mt-2 password">
-									<PureInput
-										v-model="form.password_confirmation"
-										:type="'password'"
-										required />
-									<p
-										v-if="form.errors.password_confirmation"
-										class="text-sm text-red-600 mt-1">
-										{{ form.errors.password_confirmation }}
-									</p>
-								</div>
-							</div>
+							<FieldStandaloneRegistration
+								:countriesAddressData
+								:polls
+								:form
+							/>
 							
 							<!-- Opt in newsletter -->
 							<div class="flex items-center gap-2 sm:col-span-6">

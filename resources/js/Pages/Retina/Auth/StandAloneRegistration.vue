@@ -56,7 +56,7 @@ const form = useForm({
 	password_confirmation: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
-	is_opt_in: true
+	is_opt_in: false
 })
 
 // Define reactive variables

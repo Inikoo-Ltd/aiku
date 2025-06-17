@@ -50,7 +50,7 @@ simplePolls.value.forEach((poll) => {
 <template>
     
     <!-- First Name -->
-    <div class="sm:col-span-6">
+    <div class="sm:col-span-3">
         <label
             for="name"
             class="capitalize block text-sm font-medium text-gray-700"
@@ -83,15 +83,18 @@ simplePolls.value.forEach((poll) => {
         <label
             for="phone-number"
             class="capitalize block text-sm font-medium text-gray-700"
-            >{{ trans("Phone Number") }}</label
         >
+            <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            {{ trans("Phone Number") }}
+        </label>
         <div class="mt-2">
-            <IconField class="w-full">
+            <IconField class="w-full" :class="form.errors.phone ? 'errorShake' : ''">
                 <InputIcon>
                     <FontAwesomeIcon :icon="faPhone" />
                 </InputIcon>
                 <InputText
                     v-model="form.phone"
+                    @update:model-value="(e) => form.clearErrors('phone')"
                     type="text"
                     id="phone-number"
                     name="phone"
@@ -109,15 +112,18 @@ simplePolls.value.forEach((poll) => {
         <label
             for="business-name"
             class="capitalize block text-sm font-medium text-gray-700"
-            >{{ trans("Business Name") }}</label
         >
+            <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            {{ trans("Business Name") }}
+        </label>
         <div class="mt-2">
-            <IconField class="w-full">
+            <IconField class="w-full" :class="form.errors.company_name ? 'errorShake' : ''">
                 <InputIcon>
                     <FontAwesomeIcon :icon="faBuilding" />
                 </InputIcon>
                 <InputText
                     v-model="form.company_name"
+                    @update:model-value="(e) => form.clearErrors('company_name')"
                     type="text"
                     id="business-name"
                     name="company_name"
