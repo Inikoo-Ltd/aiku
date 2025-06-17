@@ -53,9 +53,9 @@ class CreateProspectFromWebBlock extends IrisAction
             abort(404);
         }
 
-        if(Customer::where('email',$this->get('email'))
+        if (Customer::where('email', $this->get('email'))
             ->where('shop_id', $this->shop->id)
-            ->exists()){
+            ->exists()) {
             $validator->errors()->add('email', __('This email is already registered as a customer in this shop.'));
         }
 

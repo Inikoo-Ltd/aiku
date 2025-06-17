@@ -44,11 +44,12 @@ class RegisterCustomer extends OrgAction
 
         if (Arr::get($modelData, 'is_opt_in', false)) {
             data_set($modelData, 'email_subscriptions.is_subscribed_to_newsletter', true);
+            data_set($modelData, 'email_subscriptions.is_subscribed_to_marketing', true);
         }
 
-        $customer = DB::transaction(function () use ($shop, $modelData, $password) {
+        list($customer, $webUser) = DB::transaction(function () use ($shop, $modelData, $password) {
             $customer = StoreCustomer::make()->action($shop, $modelData);
-            StoreWebUser::make()->action($customer, [
+            $webUser  = StoreWebUser::make()->action($customer, [
                 'contact_name' => Arr::get($modelData, 'contact_name'),
                 'username'     => Arr::get($modelData, 'email'),
                 'email'        => Arr::get($modelData, 'email'),
@@ -62,15 +63,17 @@ class RegisterCustomer extends OrgAction
                 ];
                 StoreMultiPollReply::make()->action($shop, $storePollyRepliesData);
             }
+            $customer->refresh();
 
-            return $customer;
+            return [$customer, $webUser];
         });
 
         SendCustomerWelcomeEmail::run($customer);
         SendNewCustomerNotification::run($customer);
         ShopHydrateCrmStats::run($shop);
 
-        auth('retina')->login($customer->webUser, true);
+
+        auth('retina')->login($webUser);
 
         return $customer;
     }

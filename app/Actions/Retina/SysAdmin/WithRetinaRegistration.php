@@ -36,7 +36,6 @@ trait WithRetinaRegistration
                 $modelData
             );
         }
-
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
@@ -99,17 +98,17 @@ trait WithRetinaRegistration
 
     public function rules(): array
     {
-
         $fulfilmentRules = [
-            'product'                           => ['required', 'string'],
-            'shipments_per_week'                 => ['required', 'string'],
-            'size_and_weight'                   => ['required', 'string'],
-            'interest'                 => ['required', 'required'],
+            'product'            => ['required', 'string'],
+            'shipments_per_week' => ['required', 'string'],
+            'size_and_weight'    => ['required', 'string'],
+            'interest'           => ['required', 'required'],
         ];
 
         $rules = [
             'contact_name'    => ['required', 'string', 'max:255'],
-            'company_name'    => ['required', 'string', 'max:255'],
+            'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_website'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => [
                 'required',
                 'string',
@@ -125,11 +124,11 @@ trait WithRetinaRegistration
             ],
             'phone'           => ['required', 'max:255'],
             'contact_address' => ['required', new ValidAddress()],
-            'is_opt_in'       => ['sometimes', 'boolean'],
-            'poll_replies'    => ['sometimes', 'required', 'array'],
-            'password'                 =>
+            'is_opt_in'       => ['required', 'boolean'],
+            'poll_replies'    => ['sometimes', 'array'],
+            'password'        =>
                 [
-                    'sometimes',
+                    'required',
                     'required',
                     app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
                 ],
