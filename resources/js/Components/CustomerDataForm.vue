@@ -43,7 +43,7 @@ defineExpose({
 
 
 <template>
-    <div class="border-gray-900/10 pb-12">
+    <div class="border-gray-900/10 xpb-12">
       <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
 
         <!-- What Do You Sell -->

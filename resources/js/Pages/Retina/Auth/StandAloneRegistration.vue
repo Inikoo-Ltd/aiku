@@ -36,7 +36,7 @@ const props = defineProps<{
 }>()
 
 
-// di <script setup lang="ts">
+
 const initialPollReplies = props.polls.map((poll) => ({
 	id: poll.id,
 	type: poll.type,
@@ -45,7 +45,7 @@ const initialPollReplies = props.polls.map((poll) => ({
 	is_required: poll.in_registration_required,
 }))
 
-// Define form using Inertia's useForm
+
 const form = useForm({
 	contact_name: props.client?.contact_name || "",
 	email: props.client?.email || "",
@@ -56,7 +56,8 @@ const form = useForm({
 	password_confirmation: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
-	is_opt_in: false
+	is_opt_in: false,
+	interest: [],
 })
 
 // Define reactive variables

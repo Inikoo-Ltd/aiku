@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
-import { computed } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import Address from "@/Components/Forms/Fields/Address.vue"
 import Textarea from "primevue/textarea"
@@ -11,6 +11,8 @@ import { faBuilding, faGlobe, faPhone, faUser, faInfoCircle } from "@fal"
 import { faExclamationCircle } from "@fas"
 import { IconField, InputIcon, InputText } from 'primevue'
 import { library } from "@fortawesome/fontawesome-svg-core"
+import CustomerDataForm from '@/Components/CustomerDataForm.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 library.add(faExclamationCircle)
 
 const props = defineProps<{
@@ -18,6 +20,9 @@ const props = defineProps<{
     polls: []
     form: {}
 }>()
+
+const layout = inject('layout', retinaLayoutStructure)
+console.log('layout', layout.retina.type)
 
 const addressFieldData = {
     type: "address",
@@ -45,6 +50,21 @@ const initialPolls: Record<string, string | null> = {}
 simplePolls.value.forEach((poll) => {
     initialPolls[poll.name] = poll.options.length > 1 ? null : ""
 })
+
+const interestsList = ref([
+    { label: 'Pallets Storage', value: 'pallets_storage' },
+    { label: 'Dropshipping', value: 'dropshipping' },
+    { label: 'Space (Parking)', value: 'rental_space' },
+]);
+
+const toggleInterest = (interestValue: string) => {
+    const index = props.form.interest.indexOf(interestValue);
+    if (index > -1) {
+        props.form.interest.splice(index, 1);
+    } else {
+        props.form.interest.push(interestValue);
+    }
+};
 </script>
 
 <template>
@@ -212,6 +232,40 @@ simplePolls.value.forEach((poll) => {
             *{{ form.errors[`poll_replies.${idx}`] }}
         </p>
     </div>
+
+    <template v-if="layout.retina.type === 'fulfilment'">
+        <div class="sm:col-span-6 flex flex-col">
+            <CustomerDataForm :form="form" />
+        </div>
+        
+        <div class="sm:col-span-6 flex flex-col">
+            <label class="capitalize block text-sm font-medium text-gray-700">{{ trans("User Interests") }}</label>
+            <div class="mt-2 gap-6 grid grid-cols-2">
+                <!-- Loop through the interests -->
+                <div
+                    v-for="interest in interestsList"
+                    :key="interest.value"
+                    class="flex items-center space-x-3 border-2 py-3 px-6 rounded-lg transition-all duration-200 ease-in-out hover:bg-indigo-50 hover:shadow-lg cursor-pointer"
+                    :class="{ 'bg-indigo-50 shadow-lg': form.interest.includes(interest.value) }"
+                    @click="toggleInterest(interest.value)"
+                >
+                    <!-- Checkbox -->
+                    <input
+                        v-model="form.interest"
+                        type="checkbox"
+                        :id="interest.value"
+                        :value="interest.value"
+                        class="h-5 w-5 text-indigo-600 border-gray-300 rounded-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                        @click.stop
+                    />
+                    <label xfor="interest.value" class="select-none text-sm font-medium text-gray-900 cursor-pointer">
+                        {{ interest.label }}
+                    </label>
+                </div>
+                <p v-if="form.errors.interest" class="text-sm text-red-600 mt-1">{{ form.errors.interest }}</p>
+            </div>
+        </div>
+    </template>
 
     <div class="sm:col-span-6">
         <hr />
