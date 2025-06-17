@@ -25,6 +25,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\InertiaTable\InertiaTable;
+use App\Models\Fulfilment\PalletStoredItem;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Services\QueryBuilder;
 
@@ -71,11 +72,11 @@ class IndexStoredItemPallets extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for($storedItem->pallets());
-
+        $query = QueryBuilder::for(PalletStoredItem::class);
+        $query->leftJoin('pallets', 'pallets.id', 'pallet_stored_items.pallet_id');
         $query->leftJoin('locations', 'locations.id', 'pallets.location_id');
         $query->leftJoin('fulfilment_customers', 'fulfilment_customers.id', 'pallets.fulfilment_customer_id');
-
+        $query->where('pallet_stored_items.stored_item_id', $storedItem->id);
         $query->defaultSort('pallets.id')
             ->select(
                 'pallets.id',
@@ -83,7 +84,7 @@ class IndexStoredItemPallets extends OrgAction
                 'pallets.reference',
                 'pallets.customer_reference',
                 'pallets.notes',
-                'pallets.state',
+                'pallets.state as pallet_state',
                 'pallets.status',
                 'pallets.rental_id',
                 'pallets.type',
@@ -97,6 +98,7 @@ class IndexStoredItemPallets extends OrgAction
                 'locations.slug as location_slug',
                 'locations.slug as location_code',
                 'fulfilment_customers.slug as fulfilment_customer_slug',
+                'pallet_stored_items.quantity as pivot_quantity'
             );
 
         return $query->defaultSort('pallets.id')
