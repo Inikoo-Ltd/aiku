@@ -54,6 +54,7 @@ class CollectionsResource extends JsonResource
             'updated_at'        => $this->updated_at,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
+            'organisation_code' => $this->organisation_code,
             'website_slug'      => $this->website_slug,
 
 
