@@ -72,7 +72,7 @@ class FetchAuroraWebpage extends FetchAurora
 
         $website = $this->parseWebsite($this->organisation->id.':'.$this->auroraModelData->{'Webpage Website Key'});
 
-        if ($website->shop->type == ShopTypeEnum::FULFILMENT ) {
+        if ($website->shop->type == ShopTypeEnum::FULFILMENT || $website->shop->type == ShopTypeEnum::DROPSHIPPING) {
             return;
         }
 
