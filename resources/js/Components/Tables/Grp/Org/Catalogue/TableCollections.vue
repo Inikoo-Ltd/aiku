@@ -13,7 +13,8 @@ import { remove as loRemove } from 'lodash-es'
 import { ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faTrash, faPowerOff, faExclamationTriangle } from "@fal"
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faTrash, faPowerOff, faExclamationTriangle, faTrashAlt } from "@fal"
+import { faPlay } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Dialog from 'primevue/dialog'
 import ConfirmPopup from 'primevue/confirmpopup'
@@ -24,7 +25,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle)
+library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay)
 
 const props = defineProps<{
     data: {}
@@ -43,7 +44,7 @@ const selectedCollection = ref<any | null>(null)
 function openOfflineModal(event: MouseEvent, item: any) {
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: 'Are you sure you want to set this webpage offline?',
+        message: 'are you sure you want to invivate this collection (webpage will set offline)?',
         icon: 'pi pi-exclamation-triangle',
         acceptLabel: 'Yes',
         rejectLabel: 'Cancel',
@@ -188,12 +189,20 @@ const SetOffline = () => {
         </template>
 
         <template #cell(state_webpage)="{ item: collection }">
-            <Icon v-if="collection?.state_webpage_icon" :data="collection.state_webpage_icon" />
-            <div v-else class="text-xs text-gray-400 italic">
-                Doesn’t have a webpage
+            <div v-if="collection?.state_webpage">
+                <Link v-if="collection.state_webpage === 'live'" as="button" :href="collection.url_webpage">
+                <div
+                    class="flex cursor-pointer w-fit items-center gap-2 bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                    <Icon :data="collection.state_webpage_icon" />
+                    <span class="">
+                        {{ collection.url_webpage }}
+                    </span>
+                </div>
+                </Link>
+                <Icon v-else :data="collection.state_webpage_icon" />
             </div>
-
         </template>
+
 
         <template #cell(actions)="{ item }">
             <div v-if="!item.state_webpage || item.state_webpage != 'live'">
@@ -202,7 +211,7 @@ const SetOffline = () => {
                     :method="item.route_delete_collection.method" preserve-scroll
                     @start="() => isLoadingDetach.push('detach' + item.id)"
                     @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-                <Button :icon="faTrash" type="negative" size="xs"
+                <Button :icon="faTrashAlt" type="negative" size="xs" v-tooltip="'Delete collection'"
                     :loading="isLoadingDetach.includes('detach' + item.id)" />
                 </Link>
             </div>
@@ -213,8 +222,8 @@ const SetOffline = () => {
                 </template>
             </ConfirmPopup>
             <div v-if="item.state_webpage == 'live'">
-                <Button :icon="faPowerOff" type="tertiary" size="xs" label="Set Offline"
-                    @click="(e) => openOfflineModal(e, item)" />
+                <Button :icon="faPowerOff" type="tertiary" size="xs" @click="(e) => openOfflineModal(e, item)"
+                    v-tooltip="'Set collection as inactive'" />
             </div>
 
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
@@ -222,7 +231,7 @@ const SetOffline = () => {
                     collection: item.id
                 }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
                 @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-            <Button icon="fal fa-times" type="negative" size="xs"
+            <Button icon="fal fa-times" type="negative" size="xs" v-tooltip="'Delete collection'"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>

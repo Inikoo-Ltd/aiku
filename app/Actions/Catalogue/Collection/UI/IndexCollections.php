@@ -60,6 +60,13 @@ class IndexCollections extends OrgAction
                     ->where('webpages.model_type', '=', 'Collection');
             });
         $queryBuilder
+            ->leftJoin('websites', function ($join) {
+                $join->on('webpages.website_id', '=', 'websites.id');
+            });
+        $queryBuilder
+            ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
+            ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id');
+        $queryBuilder
             ->defaultSort('collections.code')
             ->select([
                 'collections.id',
@@ -67,6 +74,7 @@ class IndexCollections extends OrgAction
                 'collections.state as state_collection',
                 'webpages.id as webpage_id',
                 'webpages.state as state_webpage',
+                'webpages.url as url_webpage',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
@@ -74,27 +82,33 @@ class IndexCollections extends OrgAction
                 'collections.slug',
                 'collection_stats.number_families',
                 'collection_stats.number_products',
+                'websites.slug as website_slug',
+                'shops.slug as shop_slug',
+                'shops.code as shop_code',
+                'shops.name as shop_name',
+                'organisations.name as organisation_name',
+                'organisations.slug as organisation_slug',
             ]);
 
 
         if ($parent instanceof Group) {
-            $queryBuilder->where('collections.group_id', $parent->id)
-                            ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
-                            ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id')
-                            ->addSelect([
-                                'shops.name as shop_name',
-                                'shops.slug as shop_slug',
-                                'organisations.name as organisation_name',
-                                'organisations.slug as organisation_slug',
-                            ]);
+            // $queryBuilder->where('collections.group_id', $parent->id)
+            //                 ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
+            //                 ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id')
+            //                 ->addSelect([
+            //                     'shops.name as shop_name',
+            //                     'shops.slug as shop_slug',
+            //                     'organisations.name as organisation_name',
+            //                     'organisations.slug as organisation_slug',
+            //                 ]);
         } elseif (class_basename($parent) == 'Shop') {
-            $queryBuilder->where('collections.shop_id', $parent->id);
-            $queryBuilder->leftJoin('shops', 'collections.shop_id', 'shops.id');
-            $queryBuilder->addSelect(
-                'shops.slug as shop_slug',
-                'shops.code as shop_code',
-                'shops.name as shop_name',
-            );
+            // $queryBuilder->where('collections.shop_id', $parent->id);
+            // $queryBuilder->leftJoin('shops', 'collections.shop_id', 'shops.id');
+            // $queryBuilder->addSelect(
+            //     'shops.slug as shop_slug',
+            //     'shops.code as shop_code',
+            //     'shops.name as shop_name',
+            // );
         } elseif (class_basename($parent) == 'Organisation') {
             $queryBuilder->where('collections.organisation_id', $parent->id);
 
