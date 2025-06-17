@@ -10,7 +10,6 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
@@ -65,15 +64,14 @@ class ShowMasterSubDepartment extends GrpAction
         }
 
         return Inertia::render(
-            'Org/Catalogue/Department',
+            'Masters/MasterSubDepartment',
             [
                 'title'       => __('Sub-department'),
-                // 'breadcrumbs' => $this->getBreadcrumbs(
-                //     $masterSubDepartment,
-                //     $this->parent,
-                //     $request->route()->getName(),
-                //     $request->route()->originalParameters()
-                // ),
+                 'breadcrumbs' => $this->getBreadcrumbs(
+                     $masterSubDepartment,
+                     $request->route()->getName(),
+                     $request->route()->originalParameters()
+                 ),
                 'navigation'  => [
                     'previous' => $this->getPrevious($masterSubDepartment, $request),
                     'next'     => $this->getNext($masterSubDepartment, $request),
@@ -130,7 +128,7 @@ class ShowMasterSubDepartment extends GrpAction
         return new DepartmentsResource($masterSubDepartment);
     }
 
-    public function getBreadcrumbs(MasterProductCategory $masterSubDepartment, MasterShop $parent, string $routeName, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(MasterProductCategory $masterSubDepartment, string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (MasterProductCategory $masterSubDepartment, array $routeParameters, $suffix) {
             return [
@@ -155,28 +153,12 @@ class ShowMasterSubDepartment extends GrpAction
         };
 
 
+
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.departments.show' =>
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $masterSubDepartment,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
+
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show' =>
             array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs($parent, $masterSubDepartment, 'grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                (new ShowMasterDepartment())->getBreadcrumbs($masterSubDepartment->masterShop, $masterSubDepartment->masterDepartment, 'grp.org.shops.show.catalogue.departments.show', $routeParameters),
                 $headCrumb(
                     $masterSubDepartment,
                     [

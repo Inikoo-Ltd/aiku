@@ -50,6 +50,14 @@ class StoreMasterSubDepartment extends OrgAction
     }
 
 
+    public function action(MasterProductCategory $masterDepartment, array $modelData): MasterProductCategory
+    {
+        $this->asAction= true;
+        $this->initialisationFromGroup(group(), $modelData);
+
+        return $this->handle($masterDepartment, $this->validatedData);
+    }
+
     public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): MasterProductCategory
     {
         $this->initialisationFromGroup(group(), $request);
