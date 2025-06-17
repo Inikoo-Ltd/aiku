@@ -30,7 +30,7 @@ class WebpageHydrateRedirects implements ShouldBeUnique
     public function handle(Webpage $webpage): void
     {
         $stats = [
-            'number_redirects' => $webpage->redirects()->count(),
+            'number_redirects' => $webpage->incomingRedirects()->count(),
         ];
 
         $stats = array_merge(

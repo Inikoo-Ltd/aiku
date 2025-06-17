@@ -15,7 +15,7 @@ return new class () extends Migration {
     {
 
         Schema::table('webpages', function (Blueprint $table) {
-            $table->boolean('allow_fetch')->default(true)->index()->comment('If false changes in Aurora webpages will not be fetched');
+            $table->boolean('allow_fetch')->default(true)->index()->comment('If false changes in Aurora webpages are not fetched');
         });
     }
 

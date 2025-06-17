@@ -33,7 +33,7 @@ class CloseWebpage extends OrgAction
             $webpage,
             [
                 'type' => Arr::get($modelData, 'redirect_type', RedirectTypeEnum::PERMANENT->value),
-                'path' => Arr::get($modelData, 'redirect_path', ''),
+                'to_webpage_id' => Arr::get($modelData, 'to_webpage_id'),
             ]
         );
 
@@ -48,18 +48,20 @@ class CloseWebpage extends OrgAction
     public function rules(): array
     {
         return [
-            'redirect_type',
-            ['required', Rule::enum(RedirectTypeEnum::class)],
+            'redirect_type', ['required', Rule::enum(RedirectTypeEnum::class)],
 
-            'redirect_path' => [
-                'nullable',
-                'string'
+            'to_webpage_id' => [
+                'required',
+                Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
             ],
         ];
     }
 
     public function action(Webpage $webpage, array $modelData): Webpage
     {
+        $this->asAction = true;
+        $this->initialisationFromShop($webpage->shop, $modelData);
+
         return $this->handle($webpage, $modelData);
     }
 }

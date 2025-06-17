@@ -608,4 +608,3 @@ class IndexCollectionsInGroup extends OrgAction
         };
     }
 }
-

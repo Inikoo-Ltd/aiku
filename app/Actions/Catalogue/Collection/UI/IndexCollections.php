@@ -94,7 +94,6 @@ class IndexCollections extends OrgAction
     public function tableStructure(
         Shop $shop,
         $prefix = null,
-
     ): Closure {
         return function (InertiaTable $table) use ($shop, $prefix) {
             if ($prefix) {
@@ -244,7 +243,7 @@ class IndexCollections extends OrgAction
                         ]
                     ]
                 ],
-                'website_domain'=>'https://'.$this->shop->website->domain,
+                'website_domain' => 'https://'.$this->shop->website->domain,
             ]
         )->table($this->tableStructure($this->shop));
     }
