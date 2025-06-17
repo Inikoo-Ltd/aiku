@@ -11,7 +11,6 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\IrisAction;
-use App\Actions\CRM\Customer\RegisterCustomer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,15 +18,6 @@ use Lorisleiva\Actions\ActionRequest;
 class RegisterRetinaFromGoogle extends IrisAction
 {
     use WithRetinaRegistration;
-
-
-    public function handle(array $modelData): void
-    {
-        RegisterCustomer::run(
-            $this->shop,
-            $modelData
-        );
-    }
 
     public function prepareForValidation(): void
     {

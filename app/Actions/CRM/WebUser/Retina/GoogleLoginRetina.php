@@ -15,20 +15,17 @@ use App\Actions\IrisAction;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use Google_Client;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Http\JsonResponse;
 use App\Exceptions\GoogleCredentialVerificationException;
 
 class GoogleLoginRetina extends IrisAction
 {
     public function handle(Shop $shop): array|WebUser
     {
-
-
         $googleUser = $this->google_user ?? [];
 
         $webUser = WebUser::where('shop_id', $shop->id)
@@ -44,33 +41,36 @@ class GoogleLoginRetina extends IrisAction
         ]);
 
         auth('retina')->login($webUser);
+
         return $webUser;
     }
 
 
+    public function jsonResponse(array|WebUser $result, ActionRequest $request): JsonResponse
+    {
+        if (is_array($result)) {
+            return response()->json([
+                'logged_in'         => false,
+                'google_user'       => $result,
+                'google_credential' => $request->input('google_credential'),
+            ]);
+        }
 
-
-
+        return $this->postProcessRetinaLoginGoogle($result, $request);
+    }
 
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): array|WebUser
     {
         $this->initialisation($request);
-        $result = $this->handle($this->shop);
-        if (is_array($result)) {
-            return $result;
-        }
 
-        return $this->postProcessRetinaLoginGoogle($request);
+        return $this->handle($this->shop);
     }
 
-    public function postProcessRetinaLoginGoogle($request)
+    public function postProcessRetinaLoginGoogle(WebUser $webUser, $request): JsonResponse
     {
-        /** @var WebUser $webUser */
-        $webUser = auth('retina')->user();
-
         LogWebUserLogin::dispatch(
             webUser: $webUser,
             ip: request()->ip(),
@@ -88,18 +88,9 @@ class GoogleLoginRetina extends IrisAction
             app()->setLocale($language->code);
         }
 
-        if ($webUser) {
-            return response()->json([
-                'is_registered' => true,
-            ]);
-        } else {
-            return response()->json([
-                'google_user' => $this->google_user,
-                'google_credential' => $request->input('google_credential'),
-                'is_registered' => false,
-            ]);
-        }
-
+        return response()->json([
+            'logged_in' => true,
+        ]);
     }
 
 
@@ -108,13 +99,13 @@ class GoogleLoginRetina extends IrisAction
      */
     private function verifyGoogleCredential(string $credential): array
     {
-        $client = new Google_Client(['client_id' => config('services.google.client_id')]);
+        $client  = new Google_Client(['client_id' => config('services.google.client_id')]);
         $payload = $client->verifyIdToken($credential);
         if ($payload) {
             return [
-                'id' => $payload['sub'],
+                'id'    => $payload['sub'],
                 'email' => $payload['email'],
-                'name' => $payload['name'],
+                'name'  => $payload['name'],
             ];
         }
         throw new GoogleCredentialVerificationException();
@@ -124,7 +115,7 @@ class GoogleLoginRetina extends IrisAction
     public function rules(): array
     {
         return [
-            'google_credential'     => ['required', 'string', 'max:2048'],
+            'google_credential' => ['required', 'string', 'max:2048'],
         ];
     }
 
@@ -134,6 +125,7 @@ class GoogleLoginRetina extends IrisAction
         if ($googleCredential) {
             try {
                 $googleUser = $this->verifyGoogleCredential($googleCredential);
+                $googleUser['google_credential'] = $googleCredential;
                 $this->set('google_user', $googleUser);
             } catch (\Exception $e) {
                 $validator->errors()->add('google_credential', $e->getMessage());

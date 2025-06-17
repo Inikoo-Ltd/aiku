@@ -21,7 +21,6 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromGoogle;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromStandalone;
-use App\Actions\Retina\SysAdmin\RegisterRetinaFulfilmentCustomer;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
 use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
 use Illuminate\Support\Facades\Route;
@@ -35,8 +34,6 @@ Route::middleware('guest:retina')->group(function () {
 
     Route::post('register-from-google', RegisterRetinaFromGoogle::class)->name('register_from_google.store');
     Route::post('register-from-standalone', RegisterRetinaFromStandalone::class)->name('register_from_standalone.store');
-
-    //Route::post('{fulfilment:id}/register', RegisterRetinaFulfilmentCustomer::class)->name('register.store');
 
     Route::post('reset-password-send', SendRetinaResetPasswordEmail::class)->name('reset-password.send');
     Route::patch('reset-password', UpdateRetinaWebUserPassword::class)->name('reset-password.update');

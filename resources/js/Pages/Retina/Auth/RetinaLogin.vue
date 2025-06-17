@@ -4,13 +4,12 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref, nextTick, inject } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { GoogleLogin, decodeCredential  } from 'vue3-google-login'
+import { GoogleLogin  } from 'vue3-google-login'
 import { notify } from '@kyvg/vue3-notification'
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -29,7 +28,6 @@ const form = useForm({
     remember: false,
 })
 
-const layout = inject('layout', retinaLayoutStructure)
 
 const isLoading = ref(false)
 
@@ -58,7 +56,6 @@ const registerAccount = ref(null)
 const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
 const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
-    const userData = decodeCredential(e.credential)
 
     // Section: Submit
     isLoadingGoogle.value = true
@@ -70,12 +67,8 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
     if(data.status === 200) {
 
 
-        if (data.data.is_registered) {
-            notify({
-                title: trans("Success"),
-                text: trans("Successfully login"),
-                type: "success"
-            })
+        if (data.data.logged_in) {
+
 
             router.get(route('retina.dashboard.show'))
         } else {
@@ -180,17 +173,18 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
         
 		<Modal :isOpen="isOpenModalRegistration" @close="isOpenModalRegistration = false" width="max-w-2xl w-full">
 			<div class="p-6">
-				<h2 class="text-lg mb-2">
+				<h2 class="text-lg mb-2 text-center">
 					Hello, <span class="font-semibold">{{ registerAccount?.name }}</span>!
 				</h2>
 
-				<div class="text-gray-600 mb-4">
-					Your email <span class="italic">{{ registerAccount?.email }}</span> is not registered yet.
-					Do you want to register this account?
+				<div class="text-gray-600 mb-4 text-center">
+					<div class="italic mb-3">{{ registerAccount?.email }}</div>
+                    <p>{{trans('This email was not found in our database')}}</p>
+					<p>{{trans('Do you want to create an account?')}}</p>
 				</div>
 
 				<div class="flex gap-x-2">
-					<Button label="No, thanks" type="tertiary" />
+					<Button :label="trans('No, thanks')" type="tertiary" />
                     <ButtonWithLink
                         :routeTarget="{
                             name: 'retina.register_from_google',
@@ -198,7 +192,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                                 google_credential: registerAccount?.google_credential
                             }
                         }"
-                        label="Yes, register"
+                        :label="trans('Yes')"
                         full
                         class="!bg-[#C1A027] !text-white"
                     />
