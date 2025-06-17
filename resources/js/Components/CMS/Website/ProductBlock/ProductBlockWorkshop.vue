@@ -24,6 +24,7 @@ const props = defineProps<{
   }
 }>()
 console.log(props)
+const reload = inject('reload') as () => void
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
 const layout = ref(props.data.layout);
@@ -48,6 +49,7 @@ const autosave = () => {
       onFinish: () => isLoadingSave.value = false,
       onSuccess: () => {
         props.data.layout = payload;
+        reload?.()
         notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
@@ -74,7 +76,7 @@ console.log('ss',props)
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuProductWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
+      <SideMenuProductWorkshop :data="props.data.layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
         @set-up-template="onPickTemplate"  />
     </div>
 

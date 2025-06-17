@@ -1,4 +1,4 @@
-
+import BlueprintSideInformation from "./BlueprintSideInformation"
 
 export default {
 	blueprint: [
@@ -25,37 +25,34 @@ export default {
 					props_data: {},
 				},
 				{
-					key: ["payments_and_policy"],
+					key: ["information"],
 					type: "switch",
-					label: "Show Payments and Policy",
+					label: "Show information",
 					props_data: {},
 				},
 			],
 		},
 		{
-		 	key: ["paymentData", "data"],
+			key: ["paymentData", "data"],
 			name: "Payment",
 			type: "payment_templates",
 		},
-		/* {
-							key: ["cards"],
-							name: "Cards  Data",
-							type: "array-data",
-							props_data: {
-								blueprint: CardBlueprint.blueprint,
-								order_name: "card",
-								can_drag: true,
-								can_delete: true,
-								can_add: true,
-								new_value_data: {
-									text: "Lorem Ipsum",
-									image: {
-										source: null,
-										alt: "Image",
-									},
-								},
-							},
-						}, */
+		{
+			key: ["information"],
+			name: "Information",
+			type: "array-data",
+			props_data: {
+				blueprint: BlueprintSideInformation.blueprint,
+				order_name: "information",
+				can_drag: true,
+				can_delete: true,
+				can_add: true,
+				new_value_data: {
+					text: "Lorem Ipsum",
+					title : "Lorem Ipsum"
+				},
+			},
+		},
 		{
 			name: "Layout",
 			key: ["container", "properties"],

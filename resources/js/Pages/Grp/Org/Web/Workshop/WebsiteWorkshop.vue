@@ -3,7 +3,7 @@ import { Head, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow } from '@fal'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { computed, ref, toRaw } from "vue"
+import { computed, ref, provide } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import LayoutWorkshop from "@/Components/CMS/Website/Layout/LayoutWorkshop.vue"
@@ -91,6 +91,9 @@ const onPublish = (action: {
     }
   )
 }
+
+provide('reload', router.reload())
+
 
 </script>
 
