@@ -285,9 +285,9 @@ class IndexCollections extends OrgAction
                 ]
             ];
         };
-
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.collections.index' =>
+            'grp.org.shops.show.catalogue.collections.index' ,
+            'grp.org.shops.show.catalogue.collections.create' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
