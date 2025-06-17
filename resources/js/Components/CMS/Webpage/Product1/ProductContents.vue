@@ -30,7 +30,7 @@ const confirm = useConfirm()
 const cancelToken = ref<any>(null)
 const loadingAdd = ref(false)
 const loadingDeleteIds = ref<number[]>([])
-const localContents = ref(props.product.contents.data)
+const localContents = ref(props.product.contents)
 
 const informationContents = computed(() =>
     localContents.value.filter((item) => item.type === 'information')

@@ -126,7 +126,7 @@ const selectImage = (code: string) => {
                     </div>
                 </div>
                 <div class="py-1 w-full">
-                    <ImageProducts :images="modelValue.product.images.data" />
+                    <ImageProducts :images="modelValue.product.images" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="label in product.labels" :key="label">
@@ -189,13 +189,13 @@ const selectImage = (code: string) => {
             </div>
         </div>
 
-        <!-- <ProductContents :product="props.modelValue.product" /> -->
+        <ProductContents :product="props.modelValue.product" />
     </div>
 
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
-        <ImageProducts :images="modelValue.product.images.data" />
+        <ImageProducts :images="modelValue.product.images" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
             <div>
@@ -248,7 +248,7 @@ const selectImage = (code: string) => {
             </div>
         </div>
 
-        <!-- <ProductContents :product="props.modelValue.product" /> -->
+        <ProductContents :product="props.modelValue.product" />
     </div>
 
 </template>
