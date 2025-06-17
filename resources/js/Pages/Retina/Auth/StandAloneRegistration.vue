@@ -51,7 +51,7 @@ const form = useForm({
 	email: props.client?.email || "",
 	phone: "",
 	company_name: "",
-	website: "",
+	contact_website: "",
 	password: "",
 	password_confirmation: "",
 	contact_address: {},
@@ -66,8 +66,15 @@ const isLoading = ref(false)
 const submit = () => {
 	isLoading.value = true
 
+	const { isDirty, errors, __rememberable, hasErrors, progress, wasSuccessful, ...xxx } = form
+	console.log('fooooorm', xxx)
 	if (form.password == form.password_confirmation) {
-		form.post(route(props.registerRoute.name, props.registerRoute.parameters), {
+		form
+		.transform((data) => ({
+			...data,
+			...xxx
+		}))
+		.post(route(props.registerRoute.name, props.registerRoute.parameters), {
 			preserveScroll: true,
 			onError: () => {
 				isLoading.value = false
@@ -155,8 +162,10 @@ onMounted(async () => {
 								<label
 									for="password"
 									class="capitalize block text-sm font-medium text-gray-700"
-									>Password</label
 								>
+									<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+									Password
+									</label>
 								<div class="mt-2 password">
 									<PureInput
 										v-model="form.password"
@@ -174,8 +183,10 @@ onMounted(async () => {
 								<label
 									for="password-confirmation"
 									class="capitalize block text-sm font-medium text-gray-700"
-									>Retype Password</label
 								>
+									<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+									Retype Password
+								</label>
 								<div class="mt-2 password">
 									<PureInput
 										v-model="form.password_confirmation"

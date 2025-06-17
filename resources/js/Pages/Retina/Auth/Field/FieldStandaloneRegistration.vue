@@ -64,6 +64,7 @@ const toggleInterest = (interestValue: string) => {
     } else {
         props.form.interest.push(interestValue);
     }
+    props.form.clearErrors('interest');
 };
 </script>
 
@@ -75,6 +76,7 @@ const toggleInterest = (interestValue: string) => {
             for="name"
             class="capitalize block text-sm font-medium text-gray-700"
         >
+            <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ trans("Name") }}
         </label>
 
@@ -133,7 +135,7 @@ const toggleInterest = (interestValue: string) => {
             for="business-name"
             class="capitalize block text-sm font-medium text-gray-700"
         >
-            <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            <!-- <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" /> -->
             {{ trans("Business Name") }}
         </label>
         <div class="mt-2">
@@ -169,10 +171,10 @@ const toggleInterest = (interestValue: string) => {
                 <InputIcon>
                     <FontAwesomeIcon :icon="faGlobe" />
                 </InputIcon>
-                <InputText v-model="form.website" class="w-full" />
+                <InputText v-model="form.contact_website" class="w-full" />
             </IconField>
-            <p v-if="form.errors.website" class="text-sm text-red-600 mt-1">
-                {{ form.errors.website }}
+            <p v-if="form.errors.contact_website" class="text-sm text-red-600 mt-1">
+                {{ form.errors.contact_website }}
             </p>
         </div>
     </div>
@@ -205,7 +207,7 @@ const toggleInterest = (interestValue: string) => {
         :key="pollReply.id"
         class="sm:col-span-6">
         <div class="block text-sm font-medium text-gray-700">
-            <FontAwesomeIcon v-if="pollReply.is_required" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ pollReply.label }}
         </div>
         
@@ -239,8 +241,11 @@ const toggleInterest = (interestValue: string) => {
         </div>
         
         <div class="sm:col-span-6 flex flex-col">
-            <label class="capitalize block text-sm font-medium text-gray-700">{{ trans("User Interests") }}</label>
-            <div class="mt-2 gap-6 grid grid-cols-2">
+            <label class="capitalize block text-sm font-medium text-gray-700">
+                <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+                {{ trans("User Interests") }}
+            </label>
+            <div class="mt-2 gap-x-6 gap-y-4 grid grid-cols-2" :class="form.errors.interest ? 'errorShake' : ''">
                 <!-- Loop through the interests -->
                 <div
                     v-for="interest in interestsList"
@@ -262,8 +267,8 @@ const toggleInterest = (interestValue: string) => {
                         {{ interest.label }}
                     </label>
                 </div>
-                <p v-if="form.errors.interest" class="text-sm text-red-600 mt-1">{{ form.errors.interest }}</p>
             </div>
+            <p v-if="form.errors.interest" class="text-sm text-red-600 mt-1">{{ form.errors.interest }}</p>
         </div>
     </template>
 
