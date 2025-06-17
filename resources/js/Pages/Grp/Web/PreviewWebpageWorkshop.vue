@@ -162,12 +162,21 @@ provide("reloadPage", reloadPage);
 </template>
 
 <style lang="scss" scoped>
-.hover-dashed {
+:deep(.hover-dashed) {
   @apply relative;
 
   &::after {
     content: "";
     @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+  }
+}
+
+:deep(.hover-text-input) {
+  @apply relative isolate;
+
+  &::after {
+    content: "";
+    @apply -z-10 absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
   }
 }
 

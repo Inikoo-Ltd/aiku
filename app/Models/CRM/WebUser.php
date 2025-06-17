@@ -66,6 +66,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $contact_name
+ * @property string|null $google_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read Group $group

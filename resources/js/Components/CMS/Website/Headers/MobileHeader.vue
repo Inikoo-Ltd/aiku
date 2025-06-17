@@ -51,7 +51,7 @@ const props = defineProps<{
         }
     },
     menuData: Object
-    screenType: 'mobile' | 'tablet' | 'desktop'
+    screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const isLoggedIn = inject('isPreviewLoggedIn', false)

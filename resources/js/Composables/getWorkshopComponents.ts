@@ -44,6 +44,8 @@ import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Works
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
 import CTAVideo1Workshop from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
+import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
+
 
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -105,9 +107,10 @@ export const getComponent = (componentName: string) => {
         'carousel-1' : Carousel1Workshop,
         'collections-1': Collections1Workshop,
         'cta-video-1' : CTAVideo1Workshop,
-        'video-1': Video1Workshop
+        'video-1': Video1Workshop,
+        "user-subscribe": UserSubscribeWorkshop,
     }
-    
+
     return components[componentName] ?? NotFoundComponents
 }
 

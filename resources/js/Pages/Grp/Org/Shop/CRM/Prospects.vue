@@ -19,11 +19,12 @@ import UploadExcel from '@/Components/Upload/UploadExcel.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { trans } from 'laravel-vue-i18n'
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import type { Component } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFileInvoice } from "@fal"
+import { faFileInvoice, faSeedling } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faFileInvoice)
+library.add(faFileInvoice, faSeedling)
 
 const props = defineProps<{
   title: string
@@ -81,6 +82,7 @@ const component = computed(() => {
           />
       </template>
     </PageHeading>
+
     <UploadExcel
         v-model="isModalUploadOpen"
         scope="Prospect"
@@ -93,6 +95,7 @@ const component = computed(() => {
         :upload_spreadsheet="upload_spreadsheet"
         
     />
+    
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>
