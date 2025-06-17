@@ -21,6 +21,7 @@ const props = defineProps<{
     title: string
     data: {}
     formData: {}
+    website_domain : string
 }>()
 
 const isModalCreateOpen = ref(false)
@@ -38,7 +39,7 @@ const isModalCreateOpen = ref(false)
             />
         </template> -->
     </PageHeading>
-    <TableCollections :data="data" />
+    <TableCollections :data="data" :website_domain="website_domain"/>
 
     <!-- <Modal :isOpen="isModalCreateOpen" @close="isModalCreateOpen = false" width="w-full max-w-3xl">
         <ModalCreateModel
