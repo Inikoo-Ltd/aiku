@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 16-06-2025-15h-20m
@@ -10,12 +11,9 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\WorkshopProductsResource;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;

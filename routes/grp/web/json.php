@@ -14,7 +14,6 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetProducts;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetProductsInShop;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;

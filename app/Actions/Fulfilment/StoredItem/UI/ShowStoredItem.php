@@ -18,7 +18,6 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Fulfilment\ShowWarehouseFulfilmentDashboard;
 use App\Enums\UI\Fulfilment\StoredItemTabsEnum;
 use App\Http\Resources\Fulfilment\PalletsInStoredItemResource;
-use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Http\Resources\Fulfilment\StoredItemAuditDeltasResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;

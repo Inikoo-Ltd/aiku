@@ -12,6 +12,7 @@ use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPayment
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentSuccess;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
+use App\Actions\CRM\Prospect\UI\CreateProspectFromWebBlock;
 
 Route::name('webhooks.')->prefix('webhooks')->group(function () {
     Route::name('checkout_com.')->prefix('checkout-com')->group(function () {
@@ -29,4 +30,5 @@ Route::name('webhooks.')->prefix('webhooks')->group(function () {
         Route::get('mit-saved-card-failure/{mitSavedCard:ulid}', CheckoutComMitSavedCardFailure::class)->name('mit_saved_card_failure');
 
     });
+    Route::post('subscribe-newsletter', CreateProspectFromWebBlock::class)->name('subscribe_newsletter.store');
 });
