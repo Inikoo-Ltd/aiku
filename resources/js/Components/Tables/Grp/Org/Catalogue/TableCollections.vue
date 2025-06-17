@@ -25,6 +25,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 
+
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay)
 
 const props = defineProps<{
@@ -42,9 +43,13 @@ const showOfflineModal = ref(false)
 const selectedCollection = ref<any | null>(null)
 
 function openOfflineModal(event: MouseEvent, item: any) {
+    const target = event.currentTarget as HTMLElement;
+
+    isConfirmOpen.value = true
+
     confirm.require({
-        target: event.currentTarget as HTMLElement,
-        message: 'are you sure you want to invivate this collection (webpage will set offline)?',
+        target,
+        message: 'Are you sure you want to inactive this collection (webpage will set offline)?',
         icon: 'pi pi-exclamation-triangle',
         acceptLabel: 'Yes',
         rejectLabel: 'Cancel',
@@ -58,11 +63,19 @@ function openOfflineModal(event: MouseEvent, item: any) {
             severity: "danger",
         },
         accept: () => {
-            selectedCollection.value = item
-            showOfflineModal.value = true
+            selectedCollection.value = item;
+            showOfflineModal.value = true;
+            isConfirmOpen.value = false
+        },
+        reject: () => {
+            isConfirmOpen.value = false
+        },
+        onHide: () => {
+            isConfirmOpen.value = false
         }
-    })
+    });
 }
+
 // TODO: FIX TS
 function collectionRoute(collection: {}) {
     switch (route().current()) {
@@ -165,6 +178,8 @@ const SetOffline = () => {
     )
 }
 
+const isConfirmOpen = ref(false)
+
 </script>
 
 <template>
@@ -191,10 +206,9 @@ const SetOffline = () => {
         <template #cell(state_webpage)="{ item: collection }">
             <div v-if="collection?.state_webpage">
                 <Link v-if="collection.state_webpage === 'live'" as="button" :href="collection.url_webpage">
-                <div
-                    class="flex cursor-pointer w-fit items-center gap-2 bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                <div class="flex  w-fit items-center gap-2 text-xs font-medium">
                     <Icon :data="collection.state_webpage_icon" />
-                    <span class="">
+                    <span class="cursor-pointer">
                         {{ collection.url_webpage }}
                     </span>
                 </div>
@@ -222,8 +236,9 @@ const SetOffline = () => {
                 </template>
             </ConfirmPopup>
             <div v-if="item.state_webpage == 'live'">
-                <Button :icon="faPowerOff" type="tertiary" size="xs" @click="(e) => openOfflineModal(e, item)"
-                    v-tooltip="'Set collection as inactive'" />
+                <Button :icon="faPowerOff" type="tertiary" size="xs" :key="item.state_webpage"
+                    @click="(e) => openOfflineModal(e, item)"
+                    v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
             </div>
 
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
@@ -244,7 +259,7 @@ const SetOffline = () => {
             Please confirm where it should redirect to.
         </div>
 
-        <PureInput placeholder="https://example.com" v-model="reroute" class="w-full" />
+        <PureInput :prefix="{label : 'https://', icon : null}" placeholder="example" v-model="reroute" class="w-full" />
 
         <div class="flex justify-end mt-4 mb-2 gap-2">
             <Button type="secondary" label="Cancel" @click="resetModalState" />
