@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Web\Webpage;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -41,8 +42,11 @@ class FetchAuroraWebpages extends FetchAuroraAction
             }
 
             if ($webpage) {
-
                 if (!$webpage->allow_fetch) {
+                    return $webpage;
+                }
+                $shop = $webpage->shop;
+                if ($shop->type != ShopTypeEnum::B2B) {
                     return $webpage;
                 }
 
@@ -81,7 +85,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
 
 
                 if (in_array('web_blocks', $this->with)) {
-
                     FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
                     $currentPublishedAt = Arr::get($webpage->migration_data, 'webpage.last_published_at');
                     if ($currentPublishedAt) {
@@ -103,6 +106,8 @@ class FetchAuroraWebpages extends FetchAuroraAction
                 //
                 //                    return null;
                 //                }
+
+
             } else {
                 if (Arr::get($webpageData, 'is_home_logout')) {
                     return null;
@@ -119,7 +124,6 @@ class FetchAuroraWebpages extends FetchAuroraAction
                     Webpage::enableAuditing();
 
                     if (in_array('web_blocks', $this->with)) {
-
                         FetchAuroraWebBlocks::run($organisationSource, $webpage, reset: false, dbSuffix: $this->dbSuffix);
 
                         PublishWebpage::make()->action(

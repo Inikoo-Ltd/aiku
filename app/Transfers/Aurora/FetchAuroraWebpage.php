@@ -41,6 +41,7 @@ class FetchAuroraWebpage extends FetchAurora
         }
 
 
+
         if (preg_match('/\.sys$/', $this->auroraModelData->{'Webpage Code'})) {
             if (!in_array($this->auroraModelData->{'Webpage Code'}, [
                 'home.sys',
@@ -71,7 +72,7 @@ class FetchAuroraWebpage extends FetchAurora
 
         $website = $this->parseWebsite($this->organisation->id.':'.$this->auroraModelData->{'Webpage Website Key'});
 
-        if ($website->shop->type == ShopTypeEnum::FULFILMENT || $website->shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($website->shop->type == ShopTypeEnum::FULFILMENT ) {
             return;
         }
 
@@ -168,6 +169,7 @@ class FetchAuroraWebpage extends FetchAurora
             }
 
 
+
             if (!$model) {
                 return null;
             }
@@ -201,6 +203,7 @@ class FetchAuroraWebpage extends FetchAurora
         if ($title == '') {
             $title = $auroraModelData->{'Webpage Code'};
         }
+
 
 
         switch ($type) {
