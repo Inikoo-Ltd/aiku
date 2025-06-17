@@ -57,7 +57,7 @@ class WebBlockProductResource extends JsonResource
             'name'        => $product->name,
             'description' => $product->description,
             'stock'       => $product->available_quantity,
-            'contents'    => ModelHasContentsResource::collection($product->contents),
+            'contents'    => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'              => $product->id,
             'slug'            => $product->slug,
             'image_id'        => $product->image_id,
