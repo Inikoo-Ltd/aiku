@@ -441,6 +441,7 @@ test('UI edit sub department in department', function () {
 });
 
 test('UI Index catalogue collection', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.catalogue.collections.index', [$this->organisation->slug, $this->shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {

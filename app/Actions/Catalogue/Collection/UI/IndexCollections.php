@@ -155,7 +155,7 @@ class IndexCollections extends OrgAction
         $routes    = null;
         $actions   = [];
         if ($this->canEdit) {
-            $actions[]= [
+            $actions[] = [
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => __('new collection'),
@@ -167,7 +167,10 @@ class IndexCollections extends OrgAction
             ];
         }
 
-
+        $websiteDomain = null;
+        if ($this->shop->website) {
+            $websiteDomain='https://'.$this->shop->website->domain;
+        }
 
 
         return Inertia::render(
@@ -229,7 +232,7 @@ class IndexCollections extends OrgAction
                         ]
                     ]
                 ],
-                'website_domain' => 'https://'.$this->shop->website->domain,
+                'website_domain' => $websiteDomain,
             ]
         )->table($this->tableStructure($this->shop));
     }
