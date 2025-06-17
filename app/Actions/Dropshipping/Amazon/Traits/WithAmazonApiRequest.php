@@ -427,9 +427,10 @@ trait WithAmazonApiRequest
     {
         try {
             $config = $this->getAmazonConfig();
-            $endpoint = "/listings/2021-08-01/items/{$sku}";
+            $endpoint = "/listings/2021-08-01/items/{$this->id}/{$sku}";
             $queryParams = [
-                'marketplaceIds' => [$config['marketplace_id']]
+                'marketplaceIds' => [$config['marketplace_id']],
+                'includedData' => 'summaries'
             ];
 
             return $this->makeAmazonRequest('get', $endpoint, [], $queryParams);
