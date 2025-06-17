@@ -66,7 +66,7 @@ class DisableCollection extends OrgAction
     {
         $path = $this->get('path');
         if (Webpage::where('url', $path)->exists()) {
-            $validator->errors()->add('path', __('The path already exists in webpages.'));
+            $validator->errors()->add('path', __('The redirect link already exists in webpages.'));
         }
     }
     public function asController(Collection $collection, ActionRequest $request)
