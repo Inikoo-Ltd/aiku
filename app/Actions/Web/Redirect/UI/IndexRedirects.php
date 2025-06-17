@@ -42,11 +42,11 @@ class IndexRedirects extends OrgAction
         $queryBuilder = QueryBuilder::for(Redirect::class);
         if ($parent instanceof Website) {
             $queryBuilder->where('redirects.website_id', $parent->id);
-        } elseif ($parent instanceof Webpage) {
-            $queryBuilder->where('redirects.webpage_id', $parent->id);
+        } else {
+            $queryBuilder->where('redirects.to_webpage_id', $parent->id);
         }
 
-        $queryBuilder->leftjoin('webpages', 'redirects.webpage_id', '=', 'webpages.id');
+        $queryBuilder->leftjoin('webpages', 'redirects.to_webpage_id', '=', 'webpages.id');
 
         $queryBuilder
             ->defaultSort('redirects.id')

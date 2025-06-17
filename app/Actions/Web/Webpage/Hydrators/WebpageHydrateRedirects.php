@@ -41,7 +41,7 @@ class WebpageHydrateRedirects implements ShouldBeUnique
                 enum: RedirectTypeEnum::class,
                 models: Redirect::class,
                 where: function ($q) use ($webpage) {
-                    $q->where('webpage_id', $webpage->id);
+                    $q->where('to_webpage_id', $webpage->id);
                 }
             )
         );

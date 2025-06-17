@@ -17,7 +17,7 @@ class WebsiteFactory extends Factory
         return [
             'code'                     => fake()->lexify(),
             'name'                     => fake()->company(),
-            'domain'                   => 'https://'.fake()->domainName,
+            'domain'                   => fake()->domainName,
         ];
     }
 }
