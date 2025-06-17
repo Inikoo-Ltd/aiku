@@ -38,8 +38,7 @@ const onPickTemplate = (template: any) => {
 
 const autosave = () => {
   const payload = toRaw(layout.value);
-  delete payload.data?.fieldValue?.layout;
-  delete payload.data?.fieldValue?.sub_departments;
+  delete payload.data?.fieldValue?.product;
 
   router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
@@ -48,7 +47,6 @@ const autosave = () => {
       onStart: () => isLoadingSave.value = true,
       onFinish: () => {isLoadingSave.value = false,  reload?.()},
       onSuccess: () => {
-        props.data.layout = payload;
         notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
@@ -90,7 +88,7 @@ provide("currentView", currentView);
       </div>
 
       <div v-if="layout?.data?.fieldValue?.product" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getComponent(layout.code)" :modelValue="props.data.layout.data.fieldValue" />
+        <component class="w-full" :is="getComponent(layout.code)" :modelValue="props.data.layout.data.fieldValue"  :templateEdit="'template'"/>
       </div>
 
       <div v-else>

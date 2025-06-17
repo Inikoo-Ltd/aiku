@@ -29,11 +29,17 @@ import cond from '@/../art/payment_service_providers/cond.svg'
 
 library.add(faCube, faLink)
 
-const props = defineProps<{
-    modelValue: any
-    webpageData?: any
-    blockData?: Object
-}>()
+type TemplateType = 'webpage' | 'template'
+
+const props = withDefaults(defineProps<{
+  modelValue: any
+  webpageData?: any
+  blockData?: object
+  templateEdit?: TemplateType
+}>(), {
+  templateEdit: 'webpage'
+})
+
 
 const locale = useLocaleStore()
 const isFavorite = ref(false)
@@ -98,7 +104,6 @@ const selectImage = (code: string) => {
     }
 }
 
-console.log('pppp',props)
 </script>
 
 <template>
@@ -167,23 +172,24 @@ console.log('pppp',props)
                     <span>Order 4 full carton</span>
                 </div>
                 <div class="text-xs font-medium text-gray-800 py-3">
-                    <EditorV2 v-model="modelValue.product.description"
+                    <EditorV2 v-if="templateEdit == 'webpage'" v-model="modelValue.product.description"
                         @update:model-value="(e) => onDescriptionUpdate(e)" />
+                        <div v-else :v-html="modelValue.product.description"></div>
                 </div>
                 <div class="mb-4 space-y-2">
-                    <InformationSideProduct :informations="modelValue.information"/>
-                    <div class="items-center gap-3 border-t border-gray-400 font-bold text-gray-800 py-2">
+                    <InformationSideProduct v-if="modelValue?.information.length > 0"  :informations="modelValue?.information"/>
+                    <div v-if="modelValue?.paymentData.length > 0" class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
-                            <img v-for="logo in modelValue.product.service_providers" :key="logo.code"
-                                v-tooltip="logo.code" :src="selectImage(logo.code)" :alt="logo.code" class="h-4 px-1" />
+                            <img v-for="logo in modelValue?.paymentData" :key="logo.code"
+                                v-tooltip="logo.code" :src="logo.image" :alt="logo.code" class="h-4 px-1" />
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <ProductContents :product="props.modelValue.product" />
+        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product" />
     </div>
 
     <!-- Mobile Layout -->
@@ -242,7 +248,7 @@ console.log('pppp',props)
             </div>
         </div>
 
-        <ProductContents :product="props.modelValue.product" />
+        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product" />
     </div>
 
 </template>
