@@ -45,7 +45,7 @@ class StoreOrderFromAmazon extends OrgAction
         $customerClient = $amazonUser->customer?->clients()->where('email', $customerEmail)->first();
 
         $amazonProducts = $amazonUser->getOrderItems(Arr::get($modelData, 'AmazonOrderId'));
-        $amazonProducts = Arr::get($amazonProducts, 'payload.OrderItems');
+        $amazonProducts = collect(Arr::get($amazonProducts, 'payload.OrderItems'));
 
         if (!$customerClient) {
             $customerClient = StoreCustomerClient::make()->action($amazonUser->customerSalesChannel, $deliveryAttributes);
