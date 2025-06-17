@@ -34,7 +34,7 @@ class SyncronisePortfoliosToAmazon extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            RequestApiUploadProductAmazon::run($amazonUser, $portfolio);
+            RequestApiUploadProductAmazon::dispatch($amazonUser, $portfolio);
         }
     }
 

@@ -58,6 +58,6 @@ class UploadProductToAmazonProgressEvent implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'ebay-upload-progress';
+        return 'amazon-upload-progress';
     }
 }

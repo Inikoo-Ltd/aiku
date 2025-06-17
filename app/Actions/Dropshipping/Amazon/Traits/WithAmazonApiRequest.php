@@ -364,7 +364,7 @@ trait WithAmazonApiRequest
     /**
      * Get user's Amazon catalog items
      */
-    public function getProducts($limit = 50, $nextToken = null, $keywords = "")
+    public function getProducts($keywords, $limit = 50, $nextToken = null)
     {
         try {
             $queryParams = [
