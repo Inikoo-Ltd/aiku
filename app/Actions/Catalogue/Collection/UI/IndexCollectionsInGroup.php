@@ -1,4 +1,3 @@
-
 <?php
 
 /*
@@ -37,7 +36,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexCollections extends OrgAction
+class IndexCollectionsInGroup extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithCollectionSubNavigation;

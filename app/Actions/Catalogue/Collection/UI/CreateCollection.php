@@ -77,16 +77,16 @@ class CreateCollection extends OrgAction
                                 ]
                             ]
                         ],
-                    'route' => $parent instanceof Shop ? [
+                    'route' => $this->parent instanceof Shop ? [
                         'name'       => 'grp.models.org.catalogue.collections.store',
                         'parameters' => [
-                            'organisation' => $parent->organisation_id,
-                            'shop'         => $parent->id,
+                            'organisation' => $this->parent->organisation_id,
+                            'shop'         => $this->parent->id,
                         ]
                     ] : [
                         'name'       => 'grp.models.product_category.collection.store',
                         'parameters' => [
-                            'productCategory'         => $parent->id,
+                            'productCategory'         => $this->parent->id,
                         ]
                     ]
                 ],
@@ -147,9 +147,8 @@ class CreateCollection extends OrgAction
     {
         return array_merge(
             IndexCollections::make()->getBreadcrumbs(
-                parent: $this->parent,
-                routeName: preg_replace('/create$/', 'index', $routeName),
-                routeParameters: $routeParameters,
+                $this->parent,
+                $routeParameters,
             ),
             [
                 [

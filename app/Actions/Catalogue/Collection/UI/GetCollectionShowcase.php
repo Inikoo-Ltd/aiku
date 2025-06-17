@@ -31,6 +31,8 @@ class GetCollectionShowcase
             'name'                  => $collection->name,
             'id'                    => $collection->id,
             'slug'                  => $collection->slug,
+            'state'                => $collection->state,
+            'state_icon'          => $collection->state ? $collection->state->stateIcon()[$collection->state->value] : null,
             'stats'                 => [
                 [
                     'label' => __('Department'),

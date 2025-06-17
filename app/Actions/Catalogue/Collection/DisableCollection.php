@@ -13,6 +13,7 @@ namespace App\Actions\Catalogue\Collection;
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,7 +33,12 @@ class DisableCollection extends OrgAction
             'state' => CollectionStateEnum::INACTIVE->value,
         ]);
 
-        CloseWebpage::run($collection->webpage, $modelData);
+        CloseWebpage::run($collection->webpage,
+            [
+                'redirect_type'=> RedirectTypeEnum::PERMANENT,
+                'redirect_path' => $modelData['path'] ?? ''
+            ]
+        );
 
     }
 
@@ -46,10 +52,7 @@ class DisableCollection extends OrgAction
         ];
     }
 
-    public function prepareForValidation(): void
-    {
-        $this->set('path', $this->get('path', ''));
-    }
+
 
     public function afterValidator(Validator $validator): void
     {
