@@ -20,6 +20,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Http\JsonResponse;
 use App\Exceptions\GoogleCredentialVerificationException;
 
 class GoogleLoginRetina extends IrisAction
@@ -54,7 +55,7 @@ class GoogleLoginRetina extends IrisAction
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): RedirectResponse|array
+    public function asController(ActionRequest $request)
     {
         $this->initialisation($request);
         $result = $this->handle($this->shop);
@@ -65,7 +66,7 @@ class GoogleLoginRetina extends IrisAction
         return $this->postProcessRetinaLoginGoogle($request);
     }
 
-    public function postProcessRetinaLoginGoogle($request): RedirectResponse
+    public function postProcessRetinaLoginGoogle($request)
     {
         /** @var WebUser $webUser */
         $webUser = auth('retina')->user();
@@ -87,7 +88,18 @@ class GoogleLoginRetina extends IrisAction
             app()->setLocale($language->code);
         }
 
-        return redirect()->intended('/app/dashboard');
+        if ($webUser) {
+            return response()->json([
+                'is_registered' => true,
+            ]);
+        } else {
+            return response()->json([
+                'google_user' => $this->google_user,
+                'google_credential' => $request->input('google_credential'),
+                'is_registered' => false,
+            ]);
+        }
+
     }
 
 

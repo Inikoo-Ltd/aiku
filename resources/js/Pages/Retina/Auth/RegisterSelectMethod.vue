@@ -113,24 +113,6 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
 
 
-		<Modal :isOpen="isOpenModalRegistration" @close="isOpenModalRegistration = false" width="max-w-2xl w-full">
-			<div class="p-6">
-				<h2 class="text-lg mb-2">
-					Hello, <span class="font-semibold">{{ registerAccount?.name }}</span>!
-				</h2>
-
-				<div class="text-gray-600 mb-4">
-					Your email <span class="italic">{{ registerAccount?.email }}</span> is not registered yet.
-					Do you want to register this account?
-				</div>
-
-				<div class="flex gap-x-2">
-					<Button label="No, thanks" type="tertiary" />
-					<Button label="Yes, register" full />
-				</div>
-			</div>
-
-		</Modal>
     </div>
 	
 

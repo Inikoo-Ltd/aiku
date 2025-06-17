@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
@@ -13,6 +13,8 @@ import { notify } from '@kyvg/vue3-notification'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
+import Modal from '@/Components/Utils/Modal.vue'
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 
 defineOptions({ layout: RetinaShowIris })
 
@@ -64,19 +66,21 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
         google_credential: e.credential,
     })
 
+    console.log('Google login response:', data.data)
     if(data.status === 200) {
 
 
-        if ('not registered yes') {
-            //todo: here open the modal ask if want to register, if yes redirect to: /register-from-google
-            isOpenModalRegistration.value = true
-            registerAccount.value = data.response?.data
-        } else {
+        if (data.data.is_registered) {
             notify({
                 title: trans("Success"),
                 text: trans("Successfully login"),
                 type: "success"
             })
+
+            router.get(route('retina.dashboard.show'))
+        } else {
+            isOpenModalRegistration.value = true
+            registerAccount.value = data.data.google_user
         }
 
     } else {
@@ -144,11 +148,12 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                     <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :type="'tertiary'" :class="'!bg-[#C1A027] !text-white'" />
                 </div>
 
+                <div class="text-center mb-4 text-sm">
+                    {{trans('or use your Google account to login')}}
+                </div>
+
                 <!-- Google Login -->
                 <div class="mx-auto w-fit">
-                    <div class="text-center mb-4 text-sm">
-                        {{trans('or use your Google account to login')}}
-                    </div>
 
                     <GoogleLogin
                         :clientId="google?.client_id"
@@ -171,5 +176,35 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 </div>
             </form>
         </div>
+
+        
+		<Modal :isOpen="isOpenModalRegistration" @close="isOpenModalRegistration = false" width="max-w-2xl w-full">
+			<div class="p-6">
+				<h2 class="text-lg mb-2">
+					Hello, <span class="font-semibold">{{ registerAccount?.name }}</span>!
+				</h2>
+
+				<div class="text-gray-600 mb-4">
+					Your email <span class="italic">{{ registerAccount?.email }}</span> is not registered yet.
+					Do you want to register this account?
+				</div>
+
+				<div class="flex gap-x-2">
+					<Button label="No, thanks" type="tertiary" />
+                    <ButtonWithLink
+                        :routeTarget="{
+                            name: 'retina.register_from_google',
+                            parameters: {
+                                google_credential: registerAccount?.google_credential
+                            }
+                        }"
+                        label="Yes, register"
+                        full
+                        class="!bg-[#C1A027] !text-white"
+                    />
+				</div>
+			</div>
+
+		</Modal>
     </div>
 </template>
