@@ -30,6 +30,7 @@ trait WithAmazonApiRequest
             'sandbox' => config('services.amazon.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.amazon_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.amazon_refresh_token'),
+            'expires_in' => Arr::get($this->settings, 'credentials.amazon_token_expires_at'),
             'marketplace_id' => Arr::get($this->settings, 'credentials.marketplace_id'),
         ];
 
@@ -199,15 +200,15 @@ trait WithAmazonApiRequest
                 $tokenData = $response->json();
 
                 // Update stored tokens
-                // UpdateAmazonUser::run($this, [
-                //     'settings' => [
-                //         'credentials' => [
-                //             'amazon_access_token' => $tokenData['access_token'],
-                //             'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in']),
-                //             'amazon_refresh_token' => $config['refresh_token']
-                //         ]
-                //     ]
-                // ]);
+                UpdateAmazonUser::run($this, [
+                    'settings' => [
+                        'credentials' => [
+                            'amazon_access_token' => $tokenData['access_token'],
+                            'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in']),
+                            'amazon_refresh_token' => $config['refresh_token']
+                        ]
+                    ]
+                ]);
 
                 return $tokenData;
             }
@@ -330,7 +331,7 @@ trait WithAmazonApiRequest
         try {
             $url = $this->getAmazonBaseUrl() . $endpoint;
             $config = $this->getAmazonConfig();
-            $token = $config['access_token'];
+            $token = $this->getAmazonAccessToken();
 
             // Add marketplace_id to query parameters if not present
             if (!isset($queryParams['MarketplaceIds']) && !isset($queryParams['MarketplaceId'])) {
@@ -476,11 +477,8 @@ trait WithAmazonApiRequest
     public function deleteProduct($sku)
     {
         try {
-            $config = $this->getAmazonConfig();
-            $endpoint = "/listings/2021-08-01/items/{$sku}";
-            $queryParams = [
-                'marketplaceIds' => [$config['marketplace_id']]
-            ];
+            $endpoint = "/listings/2021-08-01/items/{$this->id}/{$sku}";
+            $queryParams = [];
 
             return $this->makeAmazonRequest('delete', $endpoint, [], $queryParams);
         } catch (Exception $e) {
