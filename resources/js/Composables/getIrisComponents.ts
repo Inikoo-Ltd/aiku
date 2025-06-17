@@ -43,6 +43,8 @@ import CTAVideo1Iris from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
 
+import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
+
 
 const components: Record<string, Component> = {
     //topBar
@@ -108,8 +110,9 @@ const components: Record<string, Component> = {
     'carousel-1' : Carousel1Iris,
     'collections-1': Collections1Iris,
     'cta-video-1' : CTAVideo1Iris,
-    'video-1'  : Video1Iris
- 
+    'video-1'  : Video1Iris,
+    "user-subscribe": UserSubscribeIris,
+
 }
 
 

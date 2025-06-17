@@ -26,12 +26,12 @@ import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIcons, faMoneyBill, faUpload, faThLarge } from '@fas';
 import { faLineColumns, faLowVision } from '@far';
-import { faExternalLink } from '@fal';
+import { faExternalLink, faTimes } from '@fal';
 import { faEye } from '@fad';
 import { library } from '@fortawesome/fontawesome-svg-core'
 
 
-library.add(faExternalLink, faLineColumns, faIcons, faMoneyBill, faUpload, faThLarge, faLowVision)
+library.add(faExternalLink, faTimes, faLineColumns, faIcons, faMoneyBill, faUpload, faThLarge, faLowVision)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

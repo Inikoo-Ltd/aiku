@@ -57,5 +57,5 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
             ->group(__DIR__."/customer_account/profile.php");
     });
 });
-require __DIR__."/auth.php";
+require __DIR__."/retina_auth.php";
 require __DIR__."/retina_webhooks.php";

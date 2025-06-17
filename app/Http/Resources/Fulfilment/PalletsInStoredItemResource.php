@@ -8,9 +8,6 @@
 
 namespace App\Http\Resources\Fulfilment;
 
-use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Http\Resources\Inventory\LocationResource;
-use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**

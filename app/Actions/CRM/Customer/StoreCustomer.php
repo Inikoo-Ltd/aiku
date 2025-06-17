@@ -106,12 +106,15 @@ class StoreCustomer extends OrgAction
                 StoreFulfilmentCustomerFromCustomer::run($customer, $shop, ['source_id' => $customer->source_id]);
             }
 
-            $customer = $this->addAddressToModelFromArray(
-                model: $customer,
-                addressData: $contactAddressData,
-                scope: 'billing',
-                canShip: true
-            );
+            if ($contactAddressData) {
+                $customer = $this->addAddressToModelFromArray(
+                    model: $customer,
+                    addressData: $contactAddressData,
+                    scope: 'billing',
+                    canShip: true
+                );
+            }
+
             $customer->refresh();
 
             if ($deliveryAddressData) {
@@ -226,7 +229,7 @@ class StoreCustomer extends OrgAction
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
             'contact_website'          => ['sometimes', 'nullable', 'active_url'],
-            'contact_address'          => ['required', new ValidAddress()],
+            'contact_address'          => ['sometimes','required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 
 

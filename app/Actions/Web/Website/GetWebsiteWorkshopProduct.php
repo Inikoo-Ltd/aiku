@@ -3,7 +3,6 @@
 namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
-use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Catalogue\Product;

@@ -71,7 +71,7 @@ class IndexCollections extends OrgAction
             ->select([
                 'collections.id',
                 'collections.code',
-                'collections.state as state_collection',
+                'collections.state',
                 'webpages.id as webpage_id',
                 'webpages.state as state_webpage',
                 'webpages.url as url_webpage',
@@ -192,7 +192,7 @@ class IndexCollections extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'state_webpage', label: __('Webpages'), canBeHidden: false);
+            $table->column(key: 'state_webpage', label: __('Webpage'), canBeHidden: false);
             $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
             $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
             $table->column(key: 'actions', label: __('action'), searchable: true);
