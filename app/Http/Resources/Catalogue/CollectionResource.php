@@ -48,7 +48,7 @@ class CollectionResource extends JsonResource
                     'organisation' => $collection->organisation_slug,
                     'shop'        => $collection->shop_slug,
                     'website'     => $collection->website_slug,
-                    'collection'  => $collection->id
+                    'collection'  => $collection->slug
                 ],
                 'method'     => 'get'
             ],
