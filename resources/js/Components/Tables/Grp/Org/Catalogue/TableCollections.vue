@@ -223,14 +223,22 @@ const isConfirmOpen = ref(false)
                     </span>
                     </div>
                 </Link>
+                <div v-if="collection.state_webpage == 'closed'">
+                <div class="flex w-fit items-center gap-2 text-xs font-medium">
+                    <Icon :data="collection.state_webpage_icon" />
+                    <span class="cursor-pointer">
+                        {{ collection.url_webpage }}
+                    </span>
+                    </div>
+                </div>
                 <Icon v-else :data="collection.state_webpage_icon" />
             </div>
         </template>
 
 
         <template #cell(actions)="{ item }">
-            <div v-if="!item.state_webpage || item.state_webpage != 'live'">
-                <Link v-if="item.route_delete_collection" as="button"
+            <div v-if="!item.state_webpage && item.state_webpage != 'live' && item.state_webpage != 'closed'">
+                <Link v-if="item.route_delete_collection " as="button"
                       :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                       :method="item.route_delete_collection.method" preserve-scroll
                       @start="() => isLoadingDetach.push('detach' + item.id)" @Error="(e)=>onErrorDeleteCollection(e)"
