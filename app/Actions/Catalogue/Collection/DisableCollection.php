@@ -16,10 +16,12 @@ use App\Actions\Web\Webpage\CloseWebpage;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Catalogue\Collection;
+use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Illuminate\Validation\Validator;
 
 class DisableCollection extends OrgAction
 {
@@ -48,13 +50,24 @@ class DisableCollection extends OrgAction
     public function rules()
     {
         return [
-            'path' => ['required', 'string'],
+            'path' => [
+                'required',
+                'string'
+            ],
         ];
     }
 
     public function prepareForValidation(): void
     {
         $this->set('path', $this->get('data.path', ''));
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $path = $this->get('path');
+        if (Webpage::where('url', $path)->exists()) {
+            $validator->errors()->add('path', __('The path already exists in webpages.'));
+        }
     }
     public function asController(Collection $collection, ActionRequest $request)
     {
