@@ -151,13 +151,13 @@ const SetOffline = () => {
     const routeInfo = selectedCollection.value.route_disable_webpage;
     if (!routeInfo) return;
 
-    router[routeInfo.method](
+    router.patch(
         route(routeInfo.name, routeInfo.parameters),
         {
+            path: reroute.value // ← ini dikirim sebagai data body PATCH
+        },
+        {
             preserveScroll: true,
-            data: {
-                path: reroute.value
-            },
             onSuccess: () => {
                 resetModalState();
                 notify({
@@ -178,11 +178,12 @@ const SetOffline = () => {
     );
 };
 
+
 const onErrorDeleteCollection = (error) => {
     console.log(error)
     notify({
         title: "Failed to Delete",
-        text: error ? error:"Please check your Collection.",
+        text: error.webpage ? error.webpage  :"Please check your Collection.",
         type: "error"
     });
 }
