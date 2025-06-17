@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Collection\Search\CollectionRecordSearch;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -52,6 +53,7 @@ class DeleteCollection extends OrgAction
         }
 
         CollectionRecordSearch::run($collection);
+        ShopHydrateCollections::dispatch($collection->shop);
 
         return $collection;
     }
