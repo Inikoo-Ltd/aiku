@@ -106,7 +106,7 @@ class IndexCollectionsInGroup extends OrgAction
         $title = __('Collections');
         $icon  = [
             'icon'  => ['fal', 'fa-album-collection'],
-            'title' => __('collections')
+            'title' => $title
         ];
 
 

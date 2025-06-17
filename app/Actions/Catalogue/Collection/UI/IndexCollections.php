@@ -92,7 +92,7 @@ class IndexCollections extends OrgAction
    
         AND model_has_collections.model_type = ?
     ) as parents_data',
-                ['ProductCategory', ]
+                ['ProductCategory',]
             );
 
 
@@ -146,58 +146,15 @@ class IndexCollections extends OrgAction
 
         $subNavigation = null;
 
-        $title      = __('Collections');
-        $icon       = [
-            'icon'  => ['fal', 'fa-cube'],
-            'title' => __('collections')
+        $title     = __('Collections');
+        $icon      = [
+            'icon'  => ['fal', 'fa-album-collection'],
+            'title' => $title
         ];
-        $afterTitle = null;
-        $iconRight  = null;
+        $iconRight = null;
+        $routes    = null;
+        $actions   = [];
 
-
-        $routes = null;
-
-        $actions = [];
-
-        if (!app()->isProduction()) {
-            $actions = array_values(array_filter([
-                ... (function () use ($request) {
-                    if (!$this->canEdit) {
-                        return [];
-                    }
-
-                    $routes = [
-                        'grp.org.shops.show.catalogue.collections.index'                                                  => 'grp.org.shops.show.catalogue.collections.create',
-                        'grp.org.shops.show.catalogue.departments.show.collection.index'                                  => 'grp.org.shops.show.catalogue.departments.show.collection.create',
-                        'grp.org.shops.show.catalogue.departments.show.families.show.collection.index'                    => 'grp.org.shops.show.catalogue.departments.show.families.show.collection.create',
-                        'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'             => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
-                        'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.index' => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.create',
-                        'grp.org.shops.show.catalogue.families.show.collection.index'                                     => 'grp.org.shops.show.catalogue.families.show.collection.create',
-                    ];
-
-                    $currentRoute = $request->route()->getName();
-
-                    if (!isset($routes[$currentRoute])) {
-                        return [];
-                    }
-
-                    return [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new collection'),
-                            'label'   => __('collection'),
-                            'route'   => [
-                                'name'       => $routes[$currentRoute],
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ]
-                    ];
-                })(),
-
-
-            ]));
-        }
 
         return Inertia::render(
             'Org/Catalogue/Collections',
@@ -210,7 +167,9 @@ class IndexCollections extends OrgAction
                 'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,
-                    'afterTitle'    => $afterTitle,
+                    'afterTitle'    => [
+                        'label' => '@ '.__('shop').' '.$this->shop->code,
+                    ],
                     'iconRight'     => $iconRight,
                     'container'     => $container,
                     'actions'       => $actions,
@@ -285,8 +244,9 @@ class IndexCollections extends OrgAction
                 ]
             ];
         };
+
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.collections.index' ,
+            'grp.org.shops.show.catalogue.collections.index',
             'grp.org.shops.show.catalogue.collections.create' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
