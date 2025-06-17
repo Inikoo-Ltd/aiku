@@ -45,7 +45,6 @@ const inputUsername = ref(null)
 
 onMounted(async () => {
     await nextTick()
-    // console.log('ff', inputUsername.value?._inputRef)
     inputUsername.value?._inputRef?.focus()
 })
 
@@ -146,9 +145,9 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 </div>
 
                 <!-- Google Login -->
-                <div v-if="layout?.iris?.website?.type !== 'fulfilment'" class="mx-auto w-fit">
+                <div class="mx-auto w-fit">
                     <div class="text-center mb-4 text-sm">
-                        Or
+                        {{trans('or use your Google account to login')}}
                     </div>
 
                     <GoogleLogin

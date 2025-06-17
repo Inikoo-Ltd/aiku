@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3"
-import { ref, onMounted, nextTick, computed } from "vue"
+import { ref, onMounted, nextTick } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { trans } from "laravel-vue-i18n"
 import IconField from "primevue/iconfield"

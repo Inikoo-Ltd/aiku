@@ -12,60 +12,27 @@ use App\Actions\IrisAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Http\Resources\CRM\PollsResource;
-use App\Models\CRM\Poll;
 
 class ShowRetinaRegisterChooseMethod extends IrisAction
 {
-    public function handle(ActionRequest $request): Response
+    public function handle(): Response
     {
-        $shop = $this->shop;
-
-        if ($shop->type == ShopTypeEnum::FULFILMENT) {
-            $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
-            $pollsResource = PollsResource::collection($polls)->toArray($request);
-
-            return Inertia::render(
-                'Auth/Register',
-                [
-                'countriesAddressData' => GetAddressData::run(),
-                'polls' => $pollsResource,
-                'registerRoute' => [
-                    'name' => 'retina.register.store',
-                    'parameters' => [
-                        'fulfilment' => $shop->fulfilment->id
-                    ]
+        return Inertia::render(
+            'Auth/RegisterSelectMethod',
+            [
+                'google' => [
+                    'client_id' => config('services.google.client_id')
                 ]
             ]
-            );
-        } else {
-            return Inertia::render(
-                'Auth/DropshippingRegisterSelectMethod',
-                [
-                    'countriesAddressData' => GetAddressData::run(),
-                    'registerRoute' => [
-                        'name' => 'retina.register_pre_customer.store',
-                        'parameters' => [
-                            'shop' => $shop->id
-                        ]
-                    ],
-                    'google'    => [
-                        'client_id' => config('services.google.client_id')
-                    ]
-                ]
-            );
-        }
-
-
+        );
     }
+
 
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
 
-        return $this->handle($request);
+        return $this->handle();
     }
 
 }

@@ -15,7 +15,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
@@ -28,9 +27,6 @@ class ShowStandAloneRegistration extends IrisAction
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
-        if ($shop->type == ShopTypeEnum::FULFILMENT) {
-            abort(404);
-        }
 
         $webUser = $request->user();
         return Inertia::render(
