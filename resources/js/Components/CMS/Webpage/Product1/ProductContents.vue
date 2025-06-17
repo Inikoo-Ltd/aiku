@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, inject } from 'vue'
+import { computed, ref } from 'vue'
 import { faChevronDown, faPlus, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { faTrash } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
@@ -141,12 +139,11 @@ const confirmDelete = (id: number) => {
     })
 }
 const openDisclosureId = ref<number | null>(null)
-const reloadPage = inject<() => void>('reloadPage')
+
 </script>
 
 <template>
     <div class="w-full">
-        <!-- Product Information Section -->
         <div class="mb-6">
             <div v-if="informationContents.length === 0 && !loadingAdd"
                 class="text-center text-gray-500 text-sm py-6 italic border border-dashed border-gray-300 rounded">
@@ -171,7 +168,6 @@ const reloadPage = inject<() => void>('reloadPage')
                         </div>
                     </div>
                 </template>
-
             </div>
 
             <!-- Add Information Button (independent hover) -->
@@ -217,8 +213,6 @@ const reloadPage = inject<() => void>('reloadPage')
                         </div>
                     </div>
                 </template>
-
-
                 <Skeleton v-if="loadingAdd" height="3rem" class="rounded-md mb-3" />
             </div>
 

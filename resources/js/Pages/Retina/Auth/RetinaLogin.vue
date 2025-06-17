@@ -184,7 +184,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 				</div>
 
 				<div class="flex gap-x-2">
-					<Button :label="trans('No, thanks')" type="tertiary" />
+					<Button @click="() => isOpenModalRegistration = false" :label="trans('No, thanks')" type="tertiary" />
                     <ButtonWithLink
                         :routeTarget="{
                             name: 'retina.register_from_google',

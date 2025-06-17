@@ -48,7 +48,7 @@ class CollectionHydrateProducts implements ShouldBeUnique
 
         $changed = Arr::except($collectionStats->getChanges(), ['updated_at', 'last_fetched_at']);
         if (count($changed) > 0) {
-            CollectionHydrateState::run($collectionStats);
+            CollectionHydrateState::run($collection);
         }
     }
 

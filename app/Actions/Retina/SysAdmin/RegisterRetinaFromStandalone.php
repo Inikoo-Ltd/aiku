@@ -13,6 +13,8 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\IrisAction;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 class RegisterRetinaFromStandalone extends IrisAction
 {
@@ -27,11 +29,12 @@ class RegisterRetinaFromStandalone extends IrisAction
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
         $this->handle($this->validatedData);
 
-        return redirect()->route('retina.dashboard.show');
+        // return redirect()->route('retina.dashboard.show');
+        return Inertia::location(route('retina.dashboard.show'));
     }
 }
