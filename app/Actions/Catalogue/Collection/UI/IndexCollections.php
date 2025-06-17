@@ -129,7 +129,6 @@ class IndexCollections extends OrgAction
                 $table->name($prefix)->pageName($prefix . 'Page');
             }
 
-
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
