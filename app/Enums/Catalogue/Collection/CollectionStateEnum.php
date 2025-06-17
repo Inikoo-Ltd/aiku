@@ -41,8 +41,8 @@ enum CollectionStateEnum: string
             ],
             'active' => [
                 'tooltip' => __('active'),
-                'icon'    => 'fal fa-broadcast-tower',
-                'class'   => 'text-green-700 animate-pulse'
+                'icon'    => 'fas fa-play',
+                'class'   => 'text-green-700'
             ],
             'inactive' => [
                 'tooltip' => __('inactive'),
