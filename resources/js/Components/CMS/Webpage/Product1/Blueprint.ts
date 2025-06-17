@@ -33,7 +33,7 @@ export default {
 			],
 		},
 		{
-			key: ["paymentData", "data"],
+			key: ["paymentData"],
 			name: "Payment",
 			type: "payment_templates",
 		},

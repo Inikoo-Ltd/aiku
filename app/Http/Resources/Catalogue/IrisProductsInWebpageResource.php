@@ -41,6 +41,7 @@ class IrisProductsInWebpageResource extends JsonResource
         }
 
 
+        // dd($this);
         return [
             'slug'        => $this->slug,
             'image_id'    => $this->image_id,
@@ -49,6 +50,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'stock'       => $this->available_quantity,
             'price'       => $this->price,
             'state'       => $this->state,
+            'currency_code' => $this->currency->code,
             'created_at'  => $this->created_at,
             'updated_at'  => $this->updated_at,
             'units'       => $this->units,
