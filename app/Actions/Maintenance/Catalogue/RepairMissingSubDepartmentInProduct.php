@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Maintenance;
+namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\Traits\WithActionUpdate;

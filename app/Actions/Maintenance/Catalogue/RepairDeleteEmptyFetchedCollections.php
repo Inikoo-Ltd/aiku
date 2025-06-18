@@ -6,10 +6,11 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance;
+namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\Catalogue\Collection\HydrateCollection;
+use App\Actions\Maintenance\Web\WithRepairWebpages;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Collection;
 use Illuminate\Console\Command;

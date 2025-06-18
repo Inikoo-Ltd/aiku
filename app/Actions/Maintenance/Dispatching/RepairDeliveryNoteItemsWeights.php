@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance;
+namespace App\Actions\Maintenance\Dispatching;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
 use App\Actions\Traits\WithActionUpdate;

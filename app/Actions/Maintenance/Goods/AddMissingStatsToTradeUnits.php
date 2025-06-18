@@ -10,7 +10,7 @@
 
 /** @noinspection DuplicatedCode */
 
-namespace App\Actions\Maintenance;
+namespace App\Actions\Maintenance\Goods;
 
 use App\Models\Goods\TradeUnit;
 use Illuminate\Console\Command;
