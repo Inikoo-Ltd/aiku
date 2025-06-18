@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePoll extends OrgAction
 {
-    use WithCRMEditAuthorisation;
+    // use WithCRMEditAuthorisation;
     use WithNoStrictRules;
 
     public function handle(Shop $shop, array $modelData): Poll

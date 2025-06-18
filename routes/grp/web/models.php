@@ -811,10 +811,10 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
 });
 
 
-Route::name('poll.')->prefix('poll/{poll:id}')->group(function () {
-    Route::post('poll', StorePoll::class)->name('store');
-    Route::patch('poll/{poll:id}', UpdatePoll::class)->name('update')->withoutScopedBindings();
-    Route::delete('poll/{poll:id}', DeletePoll::class)->name('delete')->withoutScopedBindings();
+Route::name('poll.')->prefix('poll')->group(function () {
+    Route::post('/store', StorePoll::class)->name('store');
+    Route::patch('{poll:id}/update', UpdatePoll::class)->name('update')->withoutScopedBindings();
+    Route::delete('{poll:id}/delete', DeletePoll::class)->name('delete')->withoutScopedBindings();
 });
 
 

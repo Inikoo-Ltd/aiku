@@ -32,9 +32,11 @@ class ShopHydratePolls implements ShouldBeUnique
         $stats         = [
             'number_polls'                   => $shop->polls->count(),
             'number_polls_in_registration' => $shop->polls->where('in_registration', true)->count(),
-            'number_polls_in_registration_required'       => $shop->polls->where('in_registration_required', true)->count(),
-            'number_polls_in_iris_required'       => $shop->polls->where('in_iris_required', true)->count(),
+            'number_polls_in_registration_type_open_question' => $shop->polls->where('in_registration', true)->where('type', PollTypeEnum::OPEN_QUESTION)->count(),
+            'number_polls_in_registration_type_option' => $shop->polls->where('in_registration', true)->where('type', PollTypeEnum::OPTION)->count(),
             'number_polls_in_iris'       => $shop->polls->where('in_iris', true)->count(),
+            'number_polls_in_iris_type_open_question' => $shop->polls->where('in_iris', true)->where('type', PollTypeEnum::OPEN_QUESTION)->count(),
+            'number_polls_in_iris_type_option' => $shop->polls->where('in_iris', true)->where('type', PollTypeEnum::OPTION)->count(),
         ];
 
         $stats = array_merge(
@@ -49,7 +51,6 @@ class ShopHydratePolls implements ShouldBeUnique
                 }
             )
         );
-
         $shop->crmStats()->update($stats);
     }
 

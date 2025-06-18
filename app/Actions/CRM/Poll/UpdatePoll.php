@@ -10,7 +10,7 @@ namespace App\Actions\CRM\Poll;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Poll;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePoll extends OrgAction
 {
-    use WithWebAuthorisation;
+    // use WithCRMAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -32,7 +32,7 @@ class UpdatePoll extends OrgAction
     public function handle(Poll $poll, array $modelData): Poll
     {
         $poll = $this->update($poll, $modelData);
-        ShopHydratePolls::dispatch($poll->shop);
+        ShopHydratePolls::run($poll->shop);
         //todo put hydrators here if in_registration|in_registration_required|in_iris|in_iris_required has changed
         return $poll;
     }
@@ -89,6 +89,7 @@ class UpdatePoll extends OrgAction
 
     public function asController(Poll $poll, ActionRequest $request): Poll
     {
+        $this->poll          = $poll;
         $this->initialisationFromShop($poll->shop, $request);
 
         return $this->handle($poll, $this->validatedData);

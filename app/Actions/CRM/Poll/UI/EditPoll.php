@@ -102,7 +102,7 @@ class EditPoll extends OrgAction
                     'args' => [
                         'updateRoute' => [
                             'name'       => 'grp.models.poll.update',
-                            'parameters' => $poll->slug
+                            'parameters' => $poll->id
                         ],
                     ]
                 ]
