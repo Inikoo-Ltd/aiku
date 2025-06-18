@@ -28,6 +28,7 @@ enum PlatformTypeEnum: string
             'tiktok'      => 'Tiktok',
             'woocommerce' => 'Woo Commerce',
             'ebay'        => 'Ebay',
+            'amazon'        => 'Amazon',
             'manual'        => __('Manual'),
             'amazon'        => __('Amazon')
         ];

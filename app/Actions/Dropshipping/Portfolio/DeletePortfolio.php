@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Portfolio;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
+use App\Actions\Dropshipping\Amazon\Product\DeleteAmazonProduct;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Shopify\Product\DeleteShopifyUserHasProduct;
 use App\Actions\OrgAction;
@@ -34,6 +35,7 @@ class DeletePortfolio extends OrgAction
     {
         match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::SHOPIFY => DeleteShopifyUserHasProduct::run($portfolio, true, $fromWebhook),
+            PlatformTypeEnum::AMAZON => DeleteAmazonProduct::run($portfolio),
             default   => null
         };
 

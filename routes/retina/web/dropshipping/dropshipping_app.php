@@ -66,8 +66,8 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');
     Route::get('ebay-user-callback', CallbackRetinaEbayUser::class)->name('ebay.callback');
 
-    //    Route::get('amazon-user/authorize', AuthorizeRetinaAmazonUser::class)->name('amazon.authorize');
-    //    Route::get('amazon-user-callback', CallbackRetinaAmazonUser::class)->name('amazon.callback');
+    Route::post('amazon-user/authorize', AuthorizeRetinaAmazonUser::class)->name('amazon.authorize');
+    Route::get('amazon-user-callback', CallbackRetinaAmazonUser::class)->name('amazon.callback');
 });
 
 Route::prefix('client')->as('client.')->group(function () {

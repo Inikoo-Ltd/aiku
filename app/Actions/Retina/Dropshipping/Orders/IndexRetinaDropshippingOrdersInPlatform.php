@@ -15,6 +15,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -109,6 +110,11 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
         } elseif ($this->customerSalesChannel->user instanceof EbayUser) {
             $catchOrdersRoute = [
                 'name'       => 'retina.models.dropshipping.ebay.orders.catch',
+                'parameters' => [$this->customerSalesChannel->user->id]
+            ];
+        } elseif ($this->customerSalesChannel->user instanceof AmazonUser) {
+            $catchOrdersRoute = [
+                'name'       => 'retina.models.dropshipping.amazon.orders.catch',
                 'parameters' => [$this->customerSalesChannel->user->id]
             ];
         }

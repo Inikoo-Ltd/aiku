@@ -57,12 +57,16 @@ const props = defineProps<{
     type_ebay: {
         connectRoute: routeType
     }
+    type_amazon: {
+        connectRoute: routeType
+    }
     total_channels: {
         manual: number
         shopify: number
         woocommerce: number
         tiktok: number
         ebay: number
+        amazon: number
     }
 }>();
 
@@ -126,6 +130,15 @@ const onSubmitEbay = async () => {
 
     window.location.href = response.data;
 };
+
+// Section: amazon
+const onSubmitAmazon = async () => {
+    const response = await axios.post(
+        route(props.type_amazon.connectRoute.name, props.type_amazon.connectRoute.parameters));
+
+    window.location.href = response.data;
+};
+
 </script>
 
 <template>
@@ -220,7 +233,7 @@ const onSubmitEbay = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://e7.pngegg.com/pngimages/325/220/png-clipart-ebay-logo-ebay-online-shopping-amazon-com-sales-ebay-logo-text-logo-thumbnail.png"
+                    <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
                          alt="" class="h-12">
 
                     <div class="flex flex-col">
@@ -236,6 +249,33 @@ const onSubmitEbay = async () => {
                         type="primary"
                         full
                         @click="onSubmitEbay"
+                    />
+
+                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+
+                </div>
+            </div>
+
+            <!-- Section: Amazon -->
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+                <div
+                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
+                         alt="" class="h-12">
+
+                    <div class="flex flex-col">
+                        <div class="font-semibold">Amazon</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.amazon }} {{ trans("Channels") }}</div>
+                    </div>
+                </div>
+
+                <div class="w-full flex justify-end">
+                    <Button
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="onSubmitAmazon"
                     />
 
                     <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
