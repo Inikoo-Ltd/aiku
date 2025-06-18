@@ -11,6 +11,10 @@ import type { Component } from 'vue'
 
 import { PageHeading as TSPageHeading } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
+import { trans } from 'laravel-vue-i18n'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -41,7 +45,28 @@ const props = defineProps<{
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <ModalConfirmationDelete
+                :routeDelete="{
+                    name: 'grp.models.poll.delete',
+                    parameters: {
+                        poll: data.id
+                    }
+                }"
+                :title="trans('Are you sure you want to this poll?')"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        @click="changeModel"
+                        icon="fal fa-trash-alt"
+                    />
+                </template>
+            </ModalConfirmationDelete>
+
+        </template>
+    </PageHeading>
     <!-- <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" /> -->
 
     <!-- <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" /> -->
