@@ -79,7 +79,7 @@ class WebBlockProductResource extends JsonResource
             'updated_at'      => $product->updated_at,
             'images'          => ImageResource::collection($product->images)->toArray($request),
             'service_providers' => OrgPaymentProvidersResource::collection($resultSp)->toArray($request),
-            'tags' => TagResource::collections($product->tradeUnitTagsViaTradeUnits())->toArray($request),
+            'tags' => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
             'return_policy' => Arr::get($product->webpage->website->settings, 'return_policy', ''),
         ];
     }
