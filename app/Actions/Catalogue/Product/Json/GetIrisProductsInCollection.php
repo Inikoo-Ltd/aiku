@@ -57,13 +57,12 @@ class GetIrisProductsInCollection extends IrisAction
         $queryBuilder->where('products.available_quantity', '>', 0);
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
-        if ($collection->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $queryBuilder->where('department_id', $collection->id);
-        } elseif ($collection->type == ProductCategoryTypeEnum::FAMILY) {
-            $queryBuilder->where('family_id', $collection->id);
-        } elseif ($collection->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $queryBuilder->where('sub_department_id', $collection->id);
-        }
+        $queryBuilder->join('model_has_collections', function ($join) use ($collection) {
+            $join->on('products.id', '=', 'model_has_collections.model_id')
+                ->where('model_has_collections.model_type', '=', 'Product')
+                ->where('model_has_collections.collection_id', '=', $collection->id);
+        });
+
 
         return $queryBuilder->defaultSort('available_quantity')
             ->select(
