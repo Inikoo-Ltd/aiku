@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
@@ -32,6 +33,7 @@ class GetWebBlockFamilies
                 ->select(['product_categories.code', 'name', 'image_id', 'url', 'title'])
                 ->where($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT ? 'product_categories.department_id' : 'product_categories.sub_department_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+                ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->get();
@@ -48,9 +50,12 @@ class GetWebBlockFamilies
                 ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'url', 'title'])
                 ->where('collection_has_models.collection_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+                ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->get();
+        }else{
+            return $webBlock;
         }
 
         $productRoute = [
