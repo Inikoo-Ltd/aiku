@@ -44,7 +44,7 @@ class IndexApiTokens extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PersonalAccessToken::class);
         $queryBuilder->where('tokenable_type', class_basename($user))
-                    ->where('tokenable_id', $user->id);
+        ->where('tokenable_id', $user->id);
 
         return $queryBuilder
             ->defaultSort('created_at')

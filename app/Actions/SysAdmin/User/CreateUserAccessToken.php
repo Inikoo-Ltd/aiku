@@ -41,10 +41,8 @@ class CreateUserAccessToken extends GrpAction
         ];
     }
 
-    public function asController(ActionRequest $request): string
+    public function asController(User $user, ActionRequest $request): string
     {
-        $user = $request->user();
-
         $this->initialisation($user->group, $request);
         return $this->handle($user);
     }
