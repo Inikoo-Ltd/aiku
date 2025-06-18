@@ -71,6 +71,20 @@ class ShowUser extends OrgAction
 
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
+        $apiRoutes = [];
+
+        if ($this->tab == UserTabsEnum::API_TOKENS->value) {
+            $apiRoutes = [
+                'createToken' => [
+                    'name'       => 'grp.models.user.access-token.create',
+                    'parameters' => ['user' => $user->id]
+                ],
+                'deleteToken' => [
+                    'name'       => 'grp.models.user.access-token.delete',
+                    'parameters' => ['user' => $user->id]
+                ]
+            ];
+        }
         return Inertia::render(
             'SysAdmin/User',
             [
@@ -108,17 +122,24 @@ class ShowUser extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => UserTabsEnum::navigation()
                 ],
-
+                'apiRoutes'  => $apiRoutes,
                 UserTabsEnum::SHOWCASE->value => $this->tab == UserTabsEnum::SHOWCASE->value ?
                     fn () => UserShowcaseResource::make($user)
                     : Inertia::lazy(fn () => UserShowcaseResource::make($user)),
+
+                UserTabsEnum::API_TOKENS->value => $this->tab == UserTabsEnum::API_TOKENS->value ?
+                    fn () => IndexApiTokens::run($user)
+                    : Inertia::lazy(fn () => IndexApiTokens::run($user)),
 
                 UserTabsEnum::HISTORY->value => $this->tab == UserTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($user))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user)))
 
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value))
+        ->table(
+            IndexApiTokens::make()->tableStructure(prefix: UserTabsEnum::API_TOKENS->value)
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
