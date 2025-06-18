@@ -12,6 +12,7 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\GrpAction;
 use App\Models\SysAdmin\User;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -33,9 +34,18 @@ class CreateUserAccessToken extends GrpAction
         return $this->handle($user);
     }
 
-    public function asController(User $user, array $data)
+    public function jsonResponse(string $token)
     {
-        $this->initialisation($user->group, $data);
-        $this->handle($user);
+        return [
+            'token' => $token
+        ];
+    }
+
+    public function asController(ActionRequest $request): string
+    {
+        $user = $request->user();
+
+        $this->initialisation($user->group, $request);
+        return $this->handle($user);
     }
 }
