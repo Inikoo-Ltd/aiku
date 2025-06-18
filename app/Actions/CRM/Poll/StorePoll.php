@@ -81,6 +81,17 @@ class StorePoll extends OrgAction
 
     public function asController(Shop $shop, ActionRequest $request): Poll
     {
+        // this because field in_iris hidden for now
+        if ($request->get('in_registration', false)) {
+            $request->merge([
+                'in_iris' => true,
+            ]);
+        } else {
+            $request->merge([
+                'in_iris' => false,
+            ]);
+        }
+
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $this->validatedData);
