@@ -260,6 +260,13 @@ const optionsJob = reactive<optionsJob>({
                 label: trans("Worker"),
                 optionsType: ['shops'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'cus-c')?.number_employees || 0,
+            },
+            {
+                slug: "cus-v",
+                grade: "clerk",
+                label: trans("Viewer"),
+                optionsType: ['shops'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'cus-v')?.number_employees || 0,
             }
         ],
         optionsClosed: props.options.shops.data?.filter(job => job.state != 'open'),
