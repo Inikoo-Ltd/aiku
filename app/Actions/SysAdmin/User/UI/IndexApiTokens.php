@@ -61,9 +61,9 @@ class IndexApiTokens extends OrgAction
         return $this->handle($user);
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure($prefix = null, array $modelOperations = []): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $modelOperations) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -71,6 +71,7 @@ class IndexApiTokens extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withModelOperations($modelOperations)
                 ->column(key: 'name', label: __('Token Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'abilities', label: __('Abilities'), canBeHidden: true)
                 ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true)
