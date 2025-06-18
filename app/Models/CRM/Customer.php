@@ -130,6 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_exclusive_products
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

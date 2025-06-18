@@ -42,7 +42,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $id
  * @property int $group_id
  * @property int|null $agent_id
- * @property string $scope_type Group|Organisation  used for indicate private org suppliers
+ * @property string $scope_type Group|Organisation used to indicate private org suppliers
  * @property int $scope_id
  * @property bool $status
  * @property string $slug
