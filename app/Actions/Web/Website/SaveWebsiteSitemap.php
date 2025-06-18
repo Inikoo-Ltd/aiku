@@ -39,11 +39,11 @@ class SaveWebsiteSitemap extends OrgAction
         $website->webpages()->where('state', WebpageStateEnum::LIVE)->chunk($chunkSize, function ($webpages) use (&$sitemap, &$count, $limit) {
             foreach ($webpages as $webpage) {
 
-                if ($webpage->published_at) {
-                    $sitemap->add(Url::create($webpage->getUrl())
-                        ->setLastModificationDate($webpage->published_at));
+                if ($webpage->live_at) {
+                    $sitemap->add(Url::create($webpage->getUrl(true))
+                        ->setLastModificationDate($webpage->live_at));
                 } else {
-                    $sitemap->add(Url::create($webpage->getUrl()));
+                    $sitemap->add(Url::create($webpage->getUrl(true)));
                 }
 
                 $count++;
