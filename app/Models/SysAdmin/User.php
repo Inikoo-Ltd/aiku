@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Collection;
+use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
@@ -127,6 +128,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use WithPushNotifications;
     use IsUserable;
     use HasImage;
+    use HasApiTokens;
 
     protected $guarded = [
     ];

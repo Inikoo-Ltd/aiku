@@ -18,6 +18,7 @@ enum UserTabsEnum: string
 
     case SHOWCASE     = 'showcase';
     case HISTORY      = 'history';
+    case API_TOKENS   = 'api_tokens';
     // case REQUEST_LOGS = 'request_logs';
 
     // case PERMISSIONS = 'permissions';
@@ -47,6 +48,11 @@ enum UserTabsEnum: string
             UserTabsEnum::SHOWCASE => [
                 'title' => __('user'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+            UserTabsEnum::API_TOKENS => [
+                'title' => __('api tokens'),
+                'icon'  => 'fal fa-key',
+                'type'  => 'icon',
             ],
             // UserTabsEnum::REQUEST_LOGS => [
             //     'title' => __('Visit logs'),

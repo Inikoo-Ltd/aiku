@@ -12,6 +12,7 @@ namespace App\Models\Helpers;
 
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Goods\TradeUnit;
+use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\Sluggable\HasSlug;
@@ -41,6 +42,7 @@ use Spatie\Sluggable\SlugOptions;
 class Tag extends Model
 {
     use HasSlug;
+    use HasImage;
     protected $guarded = [];
 
     protected $casts = [
