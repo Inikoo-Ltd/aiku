@@ -62,7 +62,7 @@ class GetIrisProductsInProductCategory extends IrisAction
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
 
-        return $queryBuilder->defaultSort('-available_quantity')
+        return $queryBuilder->defaultSort('available_quantity')
             ->select(
                 'products.*',
                 'currencies.code as currency_code',

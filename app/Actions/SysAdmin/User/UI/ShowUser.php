@@ -71,20 +71,6 @@ class ShowUser extends OrgAction
 
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
-        $apiRoutes = [];
-
-        if ($this->tab == UserTabsEnum::API_TOKENS->value) {
-            $apiRoutes = [
-                'createToken' => [
-                    'name'       => 'grp.models.user.access-token.create',
-                    'parameters' => ['user' => $user->id]
-                ],
-                'deleteToken' => [
-                    'name'       => 'grp.models.user.access-token.delete',
-                    'parameters' => ['user' => $user->id]
-                ]
-            ];
-        }
         return Inertia::render(
             'SysAdmin/User',
             [
@@ -122,7 +108,16 @@ class ShowUser extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => UserTabsEnum::navigation()
                 ],
-                'apiRoutes'  => $apiRoutes,
+                'apiRoutes'  =>  [
+                    'createToken' => [
+                        'name'       => 'grp.models.user.access-token.create',
+                        'parameters' => ['user' => $user->id]
+                    ],
+                    'deleteToken' => [
+                        'name'       => 'grp.models.user.access-token.delete',
+                        'parameters' => ['user' => $user->id]
+                    ]
+                ],
                 UserTabsEnum::SHOWCASE->value => $this->tab == UserTabsEnum::SHOWCASE->value ?
                     fn () => UserShowcaseResource::make($user)
                     : Inertia::lazy(fn () => UserShowcaseResource::make($user)),

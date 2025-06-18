@@ -27,7 +27,7 @@ const props = defineProps<{
 }>()
 
 const products = ref<any[]>([])
-const loadingInitial = ref(false)
+const loadingInitial = ref(true)
 const loadingMore = ref(false)
 const q = ref('')
 const orderBy = ref('created_at_desc')

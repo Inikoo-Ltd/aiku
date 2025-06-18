@@ -28,6 +28,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $rrp
  * @property mixed $currency_code
+ * @property mixed $id
  */
 class IrisEcomLoggedOutProductsInWebpageResource extends JsonResource
 {
