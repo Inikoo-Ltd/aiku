@@ -12,7 +12,7 @@ import { remove as loRemove } from "lodash-es";
 import { ref, watch, nextTick } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Icon from "@/Components/Icon.vue";
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree } from "@fal";
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree, faGameConsoleHandheld } from "@fal";
 import { faPlay } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Dialog from "primevue/dialog";
@@ -25,21 +25,23 @@ import { RouteParams } from "@/types/route-params";
 import { Collection } from "@/types/collection";
 import collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
 import { trans } from "laravel-vue-i18n";
+import SelectQuery from "@/Components/SelectQuery.vue";
 
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree);
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
     routes: {
+        indexWebpage : routeType
         dataList: routeType
         submitAttach: routeType
         detach: routeType
     }
     website_domain?: string
 }>();
-
+console.log('props',props)
 const confirm = useConfirm();
 const showOfflineModal = ref(false);
 const selectedCollection = ref<any | null>(null);
@@ -166,11 +168,11 @@ function departmentRoute(family: Collection) {
 }
 
 const isLoadingDetach = ref<string[]>([]);
-const reroute = ref("");
+const reroute = ref<{ url: string | null }>({ url: null });
 
 function resetModalState() {
     selectedCollection.value = null;
-    reroute.value = "";
+    reroute.value = { url: null };
     showOfflineModal.value = false;
 }
 
@@ -180,10 +182,13 @@ const SetOffline = () => {
     const routeInfo = selectedCollection.value.route_disable_webpage;
     if (!routeInfo) return;
 
+    const raw = reroute.value.url?.trim();
+    const payload = raw && raw !== "" ? raw : "/";
+
     router.patch(
         route(routeInfo.name, routeInfo.parameters),
         {
-            path: reroute.value // ← ini dikirim sebagai data body PATCH
+            path: payload
         },
         {
             preserveScroll: true,
@@ -218,15 +223,12 @@ const onErrorDeleteCollection = (error) => {
 };
 
 const isConfirmOpen = ref(false);
-const rerouteInputRef = ref<HTMLInputElement | null>(null);
-watch(showOfflineModal, (visible) => {
-    if (visible) {
-        nextTick(() => {
-            console.log(rerouteInputRef.value._inputRef);
-            rerouteInputRef.value?._inputRef?.focus();
-        });
-    }
-});
+
+function handleUrlChange(e: string | null) {
+  const raw = e?.trim() ?? "";
+  reroute.value.url = raw ? raw : "/"; // always updates url, never overwrites reroute
+}
+
 </script>
 
 <template>
@@ -327,18 +329,32 @@ watch(showOfflineModal, (visible) => {
     </Table>
 
     <Dialog v-model:visible="showOfflineModal" modal header="Setup Webpage Rerouting" :style="{ width: '500px' }"
-            @hide="resetModalState">
+            @hide="resetModalState" :contentStyle="{ overflowY: 'visible'}">
         <div class="text-gray-700 text-sm mb-4">
             You're about to reroute this webpage.<br />
             Please confirm where it should redirect to.
         </div>
 
-        <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}" v-model="reroute" class="w-full">
-        </PureInput>
+        <!-- <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}" v-model="reroute" class="w-full">
+        </PureInput> -->
+
+        <SelectQuery
+            :urlRoute="route(routes?.indexWebpage?.name, routes?.indexWebpage?.parameters)"
+            :value="reroute"
+            :placeholder="'Select url'"
+            :required="true"
+            :trackBy="'href'"
+            :label="'href'"
+            :valueProp="'url'"
+            :closeOnSelect="true"
+            :clearOnSearch="false"
+            :fieldName="'url'"
+           :onChange="handleUrlChange"
+        />
 
         <div class="flex justify-end mt-4 mb-2 gap-2">
             <Button type="secondary" label="Cancel" @click="resetModalState" />
-            <Button type="save" label="Save" @click="SetOffline" :disabled="!reroute" />
+            <Button type="save" label="Save" @click="SetOffline"  />
         </div>
     </Dialog>
 

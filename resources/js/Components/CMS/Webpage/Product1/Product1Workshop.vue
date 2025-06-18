@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink, faSeedling, faHeart } from "@fal"
 import { faBox, faPlus, faVial } from "@far"
-import { faChevronDown, faCircle, faStar } from "@fas"
+import { faCircle, faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
@@ -13,19 +13,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import ProductContents from "./ProductContents.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
-
-import btree from '@/../art/payment_service_providers/btree.svg'
-import cash from '@/../art/payment_service_providers/cash.svg'
-import checkout from '@/../art/payment_service_providers/checkout.svg'
-import hokodo from '@/../art/payment_service_providers/hokodo.svg'
-import pastpay from '@/../art/payment_service_providers/pastpay.svg'
-import paypal from '@/../art/payment_service_providers/paypal.svg'
-import sofort from '@/../art/payment_service_providers/sofort.svg'
-import worldpay from '@/../art/payment_service_providers/worldpay.svg'
-import xendit from '@/../art/payment_service_providers/xendit.svg'
-import bank from '@/../art/payment_service_providers/bank.svg'
-import accounts from '@/../art/payment_service_providers/accounts.svg'
-import cond from '@/../art/payment_service_providers/cond.svg'
+import Image from "@/Components/Image.vue"
 
 library.add(faCube, faLink)
 
@@ -85,24 +73,6 @@ const saveDescriptions = (value: string) => {
     )
 }
 
-const selectImage = (code: string) => {
-    if (!code) return null
-    switch (code) {
-        case 'btree': return btree
-        case 'cash': return cash
-        case 'checkout': return checkout
-        case 'hokodo': return hokodo
-        case 'accounts': return accounts
-        case 'cond': return cond
-        case 'bank': return bank
-        case 'pastpay': return pastpay
-        case 'paypal': return paypal
-        case 'sofort': return sofort
-        case 'worldpay': return worldpay
-        case 'xendit': return xendit
-        default: return null
-    }
-}
 
 </script>
 
@@ -137,9 +107,14 @@ const selectImage = (code: string) => {
                     <ImageProducts :images="modelValue.product.images" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
-                    <div class="flex items-center gap-1 text-xs" v-for="label in product.labels" :key="label">
-                        <FontAwesomeIcon :icon="faSeedling" class="text-sm" />
-                        <span>{{ label }}</span>
+                    <div class="flex items-center gap-1 text-xs" v-for="(tag,index) in modelValue.product.tags"
+                        :key="label">
+                        <!--   <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" /> -->
+                        <div class="aspect-square w-full h-[15px]">
+                            <Image :src="tag?.image?.source" :alt="`Thumbnail tag ${index}`"
+                                class="w-full h-full object-cover" />
+                        </div>
+                        <span>{{ tag.name }}</span>
                     </div>
                 </div>
             </div>
@@ -174,15 +149,17 @@ const selectImage = (code: string) => {
                 <div class="text-xs font-medium text-gray-800 py-3">
                     <EditorV2 v-if="templateEdit == 'webpage'" v-model="modelValue.product.description"
                         @update:model-value="(e) => onDescriptionUpdate(e)" />
-                        <div v-else :v-html="modelValue.product.description"></div>
+                    <div v-else :v-html="modelValue.product.description"></div>
                 </div>
                 <div class="mb-4 space-y-2">
-                    <InformationSideProduct v-if="modelValue?.information?.length > 0"  :informations="modelValue?.information"/>
-                    <div v-if="modelValue?.paymentData?.length > 0" class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2">
+                    <InformationSideProduct v-if="modelValue?.information?.length > 0"
+                        :informations="modelValue?.information" />
+                    <div v-if="modelValue?.paymentData?.length > 0"
+                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
-                            <img v-for="logo in modelValue?.paymentData" :key="logo.code"
-                                v-tooltip="logo.code" :src="logo.image" :alt="logo.code" class="h-4 px-1" />
+                            <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
+                                :src="logo.image" :alt="logo.code" class="h-4 px-1" />
                         </div>
                     </div>
                 </div>
@@ -243,9 +220,10 @@ const selectImage = (code: string) => {
         <div class="mt-4">
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
             <div class="flex flex-wrap gap-4">
-                <img v-for="logo in modelValue.product.service_providers" :key="logo.code" v-tooltip="logo.code"
-                    :src="selectImage(logo.code)" :alt="logo.code" class="h-4" />
+                <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
+                    :alt="logo.code" class="h-4 px-1" />
             </div>
+
         </div>
 
         <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product" />

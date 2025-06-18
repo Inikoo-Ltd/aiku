@@ -25,6 +25,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -143,7 +144,6 @@ class IndexCollections extends OrgAction
     {
         $container = null;
 
-
         $subNavigation = null;
 
         $title     = __('Collections');
@@ -152,7 +152,14 @@ class IndexCollections extends OrgAction
             'title' => $title
         ];
         $iconRight = null;
-        $routes    = null;
+        $routes    = [
+            'indexWebpage' => [
+                'name'       => 'grp.json.webpages.index',
+                'parameters' => [
+                    "shop" => Arr::get($request->route()->originalParameters(), 'shop')
+                ]
+            ],
+        ];
         $actions   = [];
         if ($this->canEdit) {
             $actions[] = [
@@ -169,7 +176,7 @@ class IndexCollections extends OrgAction
 
         $websiteDomain = null;
         if ($this->shop->website) {
-            $websiteDomain='https://'.$this->shop->website->domain;
+            $websiteDomain = 'https://'.$this->shop->website->domain;
         }
 
 

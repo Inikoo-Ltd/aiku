@@ -26,7 +26,8 @@ const props = withDefaults(defineProps<{
   can_delete: true,
   can_add: true
 });
-const modelValue = defineModel<Array<object>>({ required: true })
+
+const modelValue = defineModel<{}[]>({ required: true })
 
 if (!modelValue.value) {
   modelValue.value = []

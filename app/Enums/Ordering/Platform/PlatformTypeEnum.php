@@ -30,6 +30,7 @@ enum PlatformTypeEnum: string
             'ebay'        => 'Ebay',
             'amazon'        => 'Amazon',
             'manual'        => __('Manual'),
+            'amazon'        => __('Amazon')
         ];
     }
 }

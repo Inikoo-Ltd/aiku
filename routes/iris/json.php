@@ -8,6 +8,11 @@
 */
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
 use Illuminate\Support\Facades\Route;
 
 Route::get('product-category/{productCategory}/products', GetIrisProductsInProductCategory::class)->name('product_category.products.index');
+
+Route::middleware(["iris-auth:retina"])->group(function () {
+    Route::get('channels', IndexDropshippingCustomerSalesChannels::class)->name('channels.index');
+});

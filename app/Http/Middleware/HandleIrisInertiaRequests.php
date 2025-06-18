@@ -36,6 +36,8 @@ class HandleIrisInertiaRequests extends Middleware
             ]);
         };
 
+        
+        $websiteTheme = Arr::get($website->published_layout, 'theme');
 
         return array_merge(
             $firstLoadOnlyProps,
@@ -54,7 +56,7 @@ class HandleIrisInertiaRequests extends Middleware
                     "type" => $website->shop->type->value,
                 ],
                 "layout" =>   [
-                    'app_theme' => Arr::get($website->published_layout, 'theme'),
+                    "app_theme" => $websiteTheme['color'],
                 ],
                 'iris' => $this->getIrisData($website, $webUser)
 
