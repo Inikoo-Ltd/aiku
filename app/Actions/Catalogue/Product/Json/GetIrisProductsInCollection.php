@@ -10,7 +10,6 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\IrisDropshippingLoggedInProductsInWebpageResource;
 use App\Http\Resources\Catalogue\IrisDropshippingLoggedOutProductsInWebpageResource;
