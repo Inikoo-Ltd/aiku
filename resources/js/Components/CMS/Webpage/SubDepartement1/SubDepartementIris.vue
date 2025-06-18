@@ -95,7 +95,7 @@ const screenClass = computed(() => {
     </div>
   </div> -->
 
-    <div
+    <div v-if="fieldValue?.sub_departments?.length"
     class="mx-auto"
     :class="screenClass"
     :style="getStyles(fieldValue?.container?.properties, screenType)"
@@ -104,7 +104,7 @@ const screenClass = computed(() => {
       Browse By Sub-department:
     </h2>
 
-    <div v-if="fieldValue?.sub_departments?.length">
+    <div >
       <div class="grid gap-4" :class="gridColsClass">
         <a
           v-for="item in fieldValue.sub_departments"
@@ -132,15 +132,10 @@ const screenClass = computed(() => {
       </div>
     </div>
 
-    <div v-else class="text-center text-gray-500 py-6">
-      <EmptyState
-        :data="{
-          title: 'No Sub-departments Available',
-          description: 'Please check back later or contact support.',
-        }"
-      />
-    </div>
+    
   </div>
 
+
+<div v-else></div>
 </template>
 
