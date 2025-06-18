@@ -168,13 +168,11 @@ function departmentRoute(family: Collection) {
 }
 
 const isLoadingDetach = ref<string[]>([]);
-const reroute = ref({
-    url : null
-});
+const reroute = ref<{ url: string | null }>({ url: null });
 
 function resetModalState() {
     selectedCollection.value = null;
-    reroute.value = "";
+    reroute.value = { url: null };
     showOfflineModal.value = false;
 }
 
@@ -225,25 +223,11 @@ const onErrorDeleteCollection = (error) => {
 };
 
 const isConfirmOpen = ref(false);
-const rerouteInputRef = ref<HTMLInputElement | null>(null);
-watch(showOfflineModal, (visible) => {
-    if (visible) {
-        nextTick(() => {
-            console.log(rerouteInputRef.value._inputRef);
-            rerouteInputRef.value?._inputRef?.focus();
-        });
-    }
-});
 
 function handleUrlChange(e: string | null) {
-  const raw = e?.trim() ?? ""
-  if (!raw) {
-    reroute.value.url = "/"  // Only assign string when raw is valid (never null)
-    return
-  }
-  reroute.value.url = raw
+  const raw = e?.trim() ?? "";
+  reroute.value.url = raw ? raw : "/"; // always updates url, never overwrites reroute
 }
-
 
 </script>
 
@@ -368,9 +352,10 @@ function handleUrlChange(e: string | null) {
            :onChange="handleUrlChange"
         />
 
+        {{ reroute.url }}
         <div class="flex justify-end mt-4 mb-2 gap-2">
             <Button type="secondary" label="Cancel" @click="resetModalState" />
-            <Button type="save" label="Save" @click="SetOffline" :disabled="!reroute" />
+            <Button type="save" label="Save" @click="SetOffline"  />
         </div>
     </Dialog>
 
