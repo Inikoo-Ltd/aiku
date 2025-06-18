@@ -171,12 +171,20 @@ const openDisclosureId = ref<number | null>(null)
             </div>
 
             <!-- Add Information Button (independent hover) -->
-            <button @click="addInformation"
-                class="absolute top-0 right-0 opacity-0 hover:opacity-100 transition-opacity duration-300 text-sm flex items-center gap-2 text-indigo-600 hover:text-indigo-800 border border-indigo-600 hover:border-indigo-800 rounded px-3 py-2 z-10"
-                title="Add Information">
-                <FontAwesomeIcon :icon="faPlus" />
-                <span>Add Info</span>
-            </button>
+            <div class="relative group/information w-full" v-if="informationContents.length === 0">
+                <!-- Tombol hanya muncul saat hover parent -->
+                <button @click="addInformation"
+                   class="absolute w-full top-0 right-0 opacity-0 group-hover/information:opacity-100 transition-opacity duration-300 text-sm flex items-center justify-center gap-2 text-indigo-600 hover:text-indigo-800 border border-indigo-600 hover:border-indigo-800 rounded px-3 py-2 bg-white z-10"
+                    title="Add Information">
+                    <FontAwesomeIcon :icon="faPlus" />
+                    <span>Add Info</span>
+                </button>
+
+                <!-- Konten yang di bawah tombol -->
+                <div class="">
+                </div>
+            </div>
+
         </div>
 
         <!-- FAQ Section -->
@@ -195,7 +203,7 @@ const openDisclosureId = ref<number | null>(null)
                         <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
                             class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
                             <EditorV2 :modelValue="content.title"
-                               @update:model-value="(value) => updateLocalContent(content.id, {...content,title : value })" />
+                                @update:model-value="(value) => updateLocalContent(content.id, {...content,title : value })" />
                             <div class="flex items-center gap-4">
                                 <button @click.stop="confirmDelete(content.id)"
                                     class="text-red-500 hover:text-red-700 transition-opacity text-xs"
@@ -209,7 +217,7 @@ const openDisclosureId = ref<number | null>(null)
                         </div>
                         <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
                             <EditorV2 :modelValue="content.text"
-                             @update:model-value="(value) => updateLocalContent(content.id, {...content,text : value })" />
+                                @update:model-value="(value) => updateLocalContent(content.id, {...content,text : value })" />
                         </div>
                     </div>
                 </template>

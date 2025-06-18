@@ -23,7 +23,7 @@ const props = defineProps<{
     families: any;
   }
 }>()
-console.log(props)
+
 const reload = inject('reload') as () => void
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
@@ -39,7 +39,7 @@ const onPickTemplate = (template: any) => {
 const autosave = () => {
   const payload = toRaw(layout.value);
   delete payload.data?.fieldValue?.product;
-
+  console.log(payload)
   router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
@@ -47,6 +47,7 @@ const autosave = () => {
       onStart: () => isLoadingSave.value = true,
       onFinish: () => {isLoadingSave.value = false,  reload?.()},
       onSuccess: () => {
+        layout.value = props.data.layout
         notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
@@ -73,7 +74,7 @@ provide("currentView", currentView);
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
       <SideMenuProductWorkshop 
-        :data="props.data.layout" 
+        :data="layout" 
         :webBlockTypes="data.web_block_types" 
         @auto-save="autosave"
         @set-up-template="onPickTemplate"  
@@ -88,7 +89,7 @@ provide("currentView", currentView);
       </div>
 
       <div v-if="layout?.data?.fieldValue?.product" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getComponent(layout.code)" :modelValue="props.data.layout.data.fieldValue"  :templateEdit="'template'"/>
+        <component class="w-full" :is="getComponent(layout.code)" :modelValue="layout.data.fieldValue"  :templateEdit="'template'"/>
       </div>
 
       <div v-else>
