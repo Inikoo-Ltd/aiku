@@ -154,8 +154,6 @@ function formatNumber(value : Number) {
 
 
         <div class="flex flex-wrap gap-2 mt-4">
-
-
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in fieldValue.product.tags"
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />

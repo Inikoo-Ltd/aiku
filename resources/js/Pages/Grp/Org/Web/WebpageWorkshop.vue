@@ -27,14 +27,14 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from "primevue/useconfirm";
 import ToggleSwitch from 'primevue/toggleswitch';
-
+import { faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull } from '@fal'
 
 import { routeType } from "@/types/route"
 import { faEye } from "@fad"
 import { useLiveUsers } from "@/Stores/active-users"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars, faBars)
+library.add(faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars, faBars, faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull)
 
 const props = defineProps<{
 	title: string

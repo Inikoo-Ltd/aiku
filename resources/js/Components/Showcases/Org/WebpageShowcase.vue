@@ -9,11 +9,12 @@
 import { getIrisComponent } from '@/Composables/getIrisComponents'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faHome, faSignIn } from '@fal'
+import { faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ref } from 'vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-library.add(faHome, faSignIn)
+
+library.add(faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull)
 
 const props = defineProps<{
     data: {
