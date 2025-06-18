@@ -47,6 +47,12 @@ class WorkshopSubDepartmentsResource extends JsonResource
                 'parameters' => [
                     'subDepartment' => $this->slug
                 ]
+            ],
+            'collections_route'      => [
+                'name' => 'grp.json.product_category.collections.index',
+                'parameters' => [
+                    'productCategory'   => $this->slug
+                ]
             ]
         ];
     }

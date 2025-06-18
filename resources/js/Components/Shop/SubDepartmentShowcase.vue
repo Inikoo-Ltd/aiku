@@ -172,8 +172,8 @@ const UnassignCollection = async (id: number) => {
           <div class="flex items-center gap-4">
             <div class="w-20 h-20 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
               <Image
-                v-if="data.subDepartment.image_id"
-                :src="data.subDepartment.image_id"
+                v-if="data.subDepartment.image"
+                :src="data.subDepartment.image"
                 :alt="data.subDepartment.name"
                 class="w-full h-full object-cover"
                 imageCover
@@ -296,7 +296,7 @@ const UnassignCollection = async (id: number) => {
       </div>
 
       <!-- Right: Collection List -->
-      <CollectionList  v-if="data.has_webpage"
+     <!--  <CollectionList  v-if="data.has_webpage"
         :collections="props.data.collections.data"
         :routeFetch="props.data.routeList.collections_route"
         :canAdd="true"
@@ -304,7 +304,7 @@ const UnassignCollection = async (id: number) => {
         :isSubmitting="isLoadingSubmit"
         @assign="assignCollection"
         @unassign="UnassignCollection"
-      />
+      /> -->
     </div>
   </div>
 </template>

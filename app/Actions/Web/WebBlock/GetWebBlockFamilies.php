@@ -11,6 +11,8 @@ namespace App\Actions\Web\WebBlock;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -21,17 +23,35 @@ class GetWebBlockFamilies
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $families = DB::table('product_categories')
-            ->leftJoin('webpages', function ($join) {
-                $join->on('product_categories.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'ProductCategory');
-            })
-            ->select(['product_categories.code', 'name', 'image_id', 'url', 'title'])
-            ->where($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT ? 'product_categories.department_id' : 'product_categories.sub_department_id', $webpage->model_id)
-            ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
-            ->where('show_in_website', true)
-            ->whereNull('product_categories.deleted_at')
-            ->get();
+        if ($webpage->model instanceof ProductCategory) {
+            $families = DB::table('product_categories')
+                ->leftJoin('webpages', function ($join) {
+                    $join->on('product_categories.id', '=', 'webpages.model_id')
+                        ->where('webpages.model_type', '=', 'ProductCategory');
+                })
+                ->select(['product_categories.code', 'name', 'image_id', 'url', 'title'])
+                ->where($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT ? 'product_categories.department_id' : 'product_categories.sub_department_id', $webpage->model_id)
+                ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+                ->where('show_in_website', true)
+                ->whereNull('product_categories.deleted_at')
+                ->get();
+        } elseif ($webpage->model instanceof Collection) {
+            $families = DB::table('product_categories')
+                ->leftJoin('collection_has_models', function ($join) {
+                    $join->on('collection_has_models.model_id', '=', 'product_categories.id')
+                        ->where('collection_has_models.model_type', '=', 'ProductCategory');
+                })
+                ->leftJoin('webpages', function ($join) {
+                    $join->on('product_categories.id', '=', 'webpages.model_id')
+                        ->where('webpages.model_type', '=', 'ProductCategory');
+                })
+                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'url', 'title'])
+                ->where('collection_has_models.collection_id', $webpage->model_id)
+                ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+                ->where('show_in_website', true)
+                ->whereNull('product_categories.deleted_at')
+                ->get();
+        }
 
         $productRoute = [
             'workshop' => [

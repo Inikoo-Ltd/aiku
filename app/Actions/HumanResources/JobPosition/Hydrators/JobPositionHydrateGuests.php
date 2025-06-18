@@ -11,7 +11,6 @@ namespace App\Actions\HumanResources\JobPosition\Hydrators;
 use App\Actions\Traits\WithNormalise;
 use App\Models\HumanResources\JobPosition;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,16 +19,9 @@ class JobPositionHydrateGuests implements ShouldBeUnique
     use AsAction;
     use WithNormalise;
 
-    private JobPosition $jobPosition;
-
-    public function __construct(JobPosition $jobPosition)
+    public function getJobUniqueId(JobPosition $jobPosition): string
     {
-        $this->jobPosition = $jobPosition;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->jobPosition->id))->dontRelease()];
+        return $jobPosition->id;
     }
 
     public function handle(JobPosition $jobPosition): void

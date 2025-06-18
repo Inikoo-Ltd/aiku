@@ -19,12 +19,12 @@ use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
-use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Search\ReindexWebpageSearch;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\Search\ReindexWebsiteSearch;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
@@ -73,6 +73,9 @@ beforeEach(function () {
 });
 
 test('create b2b website', function () {
+
+
+
     $website = StoreWebsite::make()->action(
         $this->shop,
         Website::factory()->definition()
@@ -380,27 +383,24 @@ test('web hydrator', function () {
 });
 
 test('store redirect', function (Webpage $webpage) {
+
+    $homepage = $webpage->website->storefront;
+
     $redirect = StoreRedirect::make()->action($webpage, [
         'type' => RedirectTypeEnum::PERMANENT,
-        'path' => 'hello'
+        'to_webpage_id' => $homepage->id
     ]);
 
     expect($redirect)->toBeInstanceOf(Redirect::class)
         ->and($redirect->type)->toBe(RedirectTypeEnum::PERMANENT)
-        ->and($redirect->path)->toBe('hello')
-        ->and($redirect->url)->toBe($redirect->website->domain . '/' . $redirect->path);
+        ->and($redirect->from_path)->toBe($webpage->url)
+        ->and($redirect->from_url)->toBe('https://'.$redirect->website->domain . '/' . $webpage->url);
 
     return $redirect;
 })->depends('create webpage');
 
-test('update redirect', function (Redirect $redirect) {
-    $redirect = UpdateRedirect::make()->action($redirect, [
-        'path' => 'hello5'
-    ]);
 
-    expect($redirect)->toBeInstanceOf(Redirect::class)
-        ->and($redirect->path)->toBe('hello5')
-        ->and($redirect->url)->toBe($redirect->website->domain . '/' . $redirect->path);
 
-    return $redirect;
-})->depends('store redirect');
+test('web sitemap creation', function () {
+    SaveWebsitesSitemap::run();
+});

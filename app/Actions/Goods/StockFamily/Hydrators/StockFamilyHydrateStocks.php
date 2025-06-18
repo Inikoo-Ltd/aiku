@@ -14,27 +14,20 @@ use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StockFamilyHydrateStocks
+class StockFamilyHydrateStocks implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
 
-    private StockFamily $stockFamily;
-    public function __construct(StockFamily $stockFamily)
+    public function getJobUniqueId(StockFamily $stockFamily): string
     {
-        $this->stockFamily = $stockFamily;
+        return $stockFamily->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->stockFamily->id))->dontRelease()];
-    }
-
 
     public function handle(StockFamily $stockFamily): void
     {

@@ -9,7 +9,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { getStyles } from "@/Composables/styles"
 import Dialog from 'primevue/dialog';
 import { routeType } from '@/types/route'
-import FormEditSubDepertment from '../SubDepartement1/FormEditSubDepertment.vue'
+import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue";
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -72,22 +72,27 @@ function closeModal() {
 </script>
 
 <template>
-  <div v-if="props.modelValue.families && props.modelValue.families.length" class="px-4 py-10 mx-[30px]" :style="getStyles(modelValue.container?.properties, screenType)">
-    <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <div v-for="(item, index) in props.modelValue.families" :key="index"   @click="openModal(item)">
-        <Family1Render :data="item" />
-      </div>
+   <div
+  v-if="props.modelValue?.families && props.modelValue?.families?.length"
+  class="px-4 py-10 mx-[30px]"
+  :style="getStyles(modelValue.container?.properties, screenType)"
+>
+  <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+     <div v-for="(item, index) in props.modelValue.families" :key="index"   @click="openModal(item)">
+      <Family1Render :data="item" />
     </div>
   </div>
+</div>
+
 
   <EmptyState v-else :data="{ title: 'Empty Families' }" />
 
 
    <Dialog :header="`Edit ${selectedSubDepartment?.name}`" v-model:visible="showDialog" :modal="true"
       :style="{ width: '500px' }" :closable="true" @hide="closeModal">
-      <FormEditSubDepertment v-if="selectedSubDepartment" :key="selectedSubDepartment.id" :data="selectedSubDepartment"
+      <FormEditProductCategory v-if="selectedSubDepartment" :key="selectedSubDepartment.id" :data="selectedSubDepartment"
         :saveRoute="routeEditfamily" @saved="handleSaved" />
     </Dialog>
 </template>

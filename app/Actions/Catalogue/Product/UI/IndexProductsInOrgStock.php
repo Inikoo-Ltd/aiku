@@ -36,6 +36,7 @@ class IndexProductsInOrgStock extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftjoin('product_has_org_stocks', 'products.id', 'product_has_org_stocks.product_id');
         $queryBuilder->where('product_has_org_stocks.org_stock_id', $orgStock->id);
+        $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
         $queryBuilder
             ->defaultSort('products.code')

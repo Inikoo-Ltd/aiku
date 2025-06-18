@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\MarketingMailshotsResource;
 use App\Models\Catalogue\Shop;
@@ -25,7 +24,6 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexMarketingMailshots extends OrgAction
 {
     use HasUIMailshots;
-    use WithCatalogueAuthorisation;
     use WithIndexMailshots;
 
     public Group|Outbox|PostRoom|Organisation|Shop $parent;

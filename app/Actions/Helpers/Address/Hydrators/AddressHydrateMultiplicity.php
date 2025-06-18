@@ -10,7 +10,6 @@ namespace App\Actions\Helpers\Address\Hydrators;
 
 use App\Models\Helpers\Address;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -18,16 +17,9 @@ class AddressHydrateMultiplicity implements ShouldBeUnique
 {
     use AsAction;
 
-    private Address $address;
-
-    public function __construct(Address $address)
+    public function getJobUniqueId(Address $address): string
     {
-        $this->address = $address;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->address->id))->dontRelease()];
+        return $address->id;
     }
 
     public function handle(Address $address): void

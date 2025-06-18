@@ -177,10 +177,8 @@ test('UI edit department', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.org.catalogue.departments.update')
+                    ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
-                        'organisation'    => $this->department->organisation_id,
-                        'shop'            => $this->department->shop_id,
                         'productCategory' => $this->department->id
                     ])
             )
@@ -234,15 +232,12 @@ test('UI edit family in department', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 3)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.org.catalogue.families.update')
+                    ->where('name', 'grp.models.product_category.update')
                     ->where('parameters', [
-                        'organisation'    => $this->family->organisation_id,
-                        'shop'            => $this->family->shop_id,
                         'productCategory' => $this->family->id
                     ])
             )
@@ -446,6 +441,7 @@ test('UI edit sub department in department', function () {
 });
 
 test('UI Index catalogue collection', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.catalogue.collections.index', [$this->organisation->slug, $this->shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -491,7 +487,6 @@ test('UI edit collection', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);

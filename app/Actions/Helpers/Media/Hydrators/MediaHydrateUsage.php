@@ -10,7 +10,6 @@ namespace App\Actions\Helpers\Media\Hydrators;
 
 use App\Models\Helpers\Media;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -18,16 +17,9 @@ class MediaHydrateUsage implements ShouldBeUnique
 {
     use AsAction;
 
-    private Media $media;
-
-    public function __construct(Media $media)
+    public function getJobUniqueId(Media $media): string
     {
-        $this->media = $media;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->media->id))->dontRelease()];
+        return $media->id;
     }
 
     public function handle(Media $media): void

@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
@@ -19,7 +18,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 class IndexMailshots extends OrgAction
 {
     use HasUIMailshots;
-    use WithCatalogueAuthorisation;
     use WithIndexMailshots;
 
     public Outbox|PostRoom|OrgPostRoom|Organisation $parent;

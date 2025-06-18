@@ -176,7 +176,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             <!--   <Icon v-if="dept?.typeIcon" :data="dept.typeIcon" size="lg" class="text-gray-600 shrink-0" /> -->
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
-                <p class="text-xs text-gray-500 line-clamp-2">{{ dept.title || 'No title' }}</p>
+                <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No Name' }}</p>
               </div>
               <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
                 :loading="unassignLoadingIds.includes(dept.id)" @click="UnassignCollectionFormWebpage(dept.id)"

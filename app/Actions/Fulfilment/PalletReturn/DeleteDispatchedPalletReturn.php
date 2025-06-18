@@ -90,7 +90,7 @@ class DeleteDispatchedPalletReturn extends OrgAction
                 'return' => __("The return has been deleted due to: $palletReturn->delete_comment.")
             ];
 
-            Event::dispatch(AuditCustom::class, [$fulfilmentCustomer->customer]);
+            Event::dispatch(new AuditCustom($fulfilmentCustomer->customer));
 
             if ($palletReturn->fulfilmentCustomer->customer->shopifyUser !== null) {
                 CancelFulfilmentRequestToShopify::dispatch($palletReturn);

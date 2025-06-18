@@ -10,7 +10,7 @@ namespace App\Actions\Catalogue\Collection\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Http\Resources\Catalogue\CollectionResource;
+use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -64,7 +64,7 @@ class GetCollections extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $collections): AnonymousResourceCollection
     {
-        return CollectionResource::collection($collections);
+        return CollectionsResource::collection($collections);
     }
 
     public function inCollection(Shop $shop, Collection $scope, ActionRequest $request): LengthAwarePaginator

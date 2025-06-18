@@ -21,52 +21,62 @@ library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faSpinnerThird, 
 /* const props = defineProps(['form', 'fieldName', 'options']) */
 
 const props = defineProps<{
-    src_image: ImageProxy
-    options: {}
-    route_upload: routeType
-    aspectRatio: string  // 1/1
+    src_image?: ImageProxy
+    // options?: {}
+    // route_upload?: routeType
+    aspectRatio: number  // 1/1
+}>()
+
+const emits = defineEmits<{
+    (e: "cropped", value: File): void
 }>()
 
 // console.log(props)
 // const temporaryAvatar = ref(props.form[props.fieldName])
 
 const numbKey = ref(0)
-const tempImgToCrop = ref(null)
-const imgAfterCrop = ref<Blob | null | ImageProxy>(props.src_image)
+const tempImgToCrop = ref<string | null>(null)
+const imgAfterCrop = ref<Blob | null | ImageProxy>(props.src_image ?? null)
 const onPickFile = async (file: File) => {
-    _cropper.value?.reset()
-    isOpenModalCrop.value = true
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = (e) => {
-        tempImgToCrop.value = e.target?.result
-    }
+	if (!file) return
+	_cropper.value?.reset()
+	isOpenModalCrop.value = true
+	const reader = new FileReader()
+	reader.readAsDataURL(file)
+	reader.onload = (e) => {
+		tempImgToCrop.value = e.target?.result as string
+	}
 }
 
 // Helper
-// const dataURLtoBlob = (dataurl) => {
-//     const arr = dataurl.split(',');
-//     const mime = arr[0].match(/:(.*?);/)[1];
-//     const bstr = atob(arr[1]);
-//     let n = bstr.length;
-//     const u8arr = new Uint8Array(n);
+const dataURLtoBlob = (dataurl) => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
 
-//     while (n--) {
-//         u8arr[n] = bstr.charCodeAt(n);
-//     }
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
 
-//     return new Blob([u8arr], {type: mime});
-// }
+    return new Blob([u8arr], {type: mime});
+}
 
 const isOpenModalCrop = ref(false)
-const _cropper = ref(null)
+const _cropper = ref<InstanceType<typeof Cropper> | null>(null)
 const submitCrop = () => {
-    const { coordinates, canvas, } = _cropper.value?.getResult()
+    const { coordinates, canvas } = _cropper.value?.getResult()
+    if (!canvas) return
+    
     const imageDataURL = canvas.toDataURL();
     imgAfterCrop.value = {
         original: imageDataURL
     }
-    // const imageBlob = dataURLtoBlob(imageDataURL);
+    const imageBlob = dataURLtoBlob(imageDataURL)
+    const imageFile = new File([imageBlob], "img.png", { type: "image/png" })
+
+    emits('cropped', imageFile)
 
     // props.form[props.fieldName] = new File([imageBlob], "img.png", { type: "image/png" });
     isOpenModalCrop.value = false
@@ -92,7 +102,11 @@ watch(isOpenModalCrop, (value) => {
                     ref="_cropper"
                     class="w-full h-full"
                     :src="tempImgToCrop"
-                    :stencil-props="aspectRatio"
+                    :stencil-props="{
+                        aspectRatio: 1,
+                        minAspectRatio: 0.1,
+                        maxAspectRatio: 10
+                    }"
                     imageClass="w-full h-full"
                     :auto-zoom="true"
                 />

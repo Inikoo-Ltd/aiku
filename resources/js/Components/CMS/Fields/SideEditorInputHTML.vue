@@ -19,7 +19,7 @@ const model = defineModel<{ text: string | null }>()
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .editor-wrapper {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -28,5 +28,10 @@ const model = defineModel<{ text: string | null }>()
   min-height: 150px;
   font-size: 1rem;
   line-height: 1.5;
+  display: grid;
+}
+
+:deep(.editor-content .ProseMirror ) {
+  @apply h-full ;
 }
 </style>

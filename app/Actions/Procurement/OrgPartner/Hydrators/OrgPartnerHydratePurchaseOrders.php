@@ -13,25 +13,17 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrgPartnerHydratePurchaseOrders
+class OrgPartnerHydratePurchaseOrders implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private OrgPartner $orgPartner;
-
-
-    public function __construct(OrgPartner $orgPartner)
+    public function getJobUniqueId(OrgPartner $orgPartner): string
     {
-        $this->orgPartner = $orgPartner;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->orgPartner->id))->dontRelease()];
+        return $orgPartner->id;
     }
 
     public function handle(OrgPartner $orgPartner): void

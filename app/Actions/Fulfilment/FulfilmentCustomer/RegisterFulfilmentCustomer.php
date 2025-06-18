@@ -18,10 +18,7 @@ use App\Actions\OrgAction;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Rules\IUnique;
-use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rules\Password;
 
 class RegisterFulfilmentCustomer extends OrgAction
 {
@@ -73,52 +70,5 @@ class RegisterFulfilmentCustomer extends OrgAction
 
 
 
-    public function rules(): array
-    {
-        return [
-            'contact_name'       => ['required', 'string', 'max:255'],
-            'company_name'       => ['required', 'string', 'max:255'],
-            'email'              => [
-                'required',
-                'string',
-                'max:255',
-                'exclude_unless:deleted_at,null',
-                new IUnique(
-                    table: 'customers',
-                    extraConditions: [
-                        ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
-                    ]
-                ),
-            ],
-            'phone'              => ['required', 'max:255'],
-            'contact_address'    => ['required', new ValidAddress()],
-            'interest'           => ['required', 'required'],
-            'password'           =>
-                [
-                    'sometimes',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
-                ],
-            'product'            => ['required', 'string'],
-            'shipments_per_week' => ['required', 'string'],
-            'size_and_weight'    => ['required', 'string'],
-
-        ];
-    }
-
-    /**
-
-
-    /**
-     * @throws \Throwable
-     */
-    public function action(Fulfilment $fulfilment, array $modelData): FulfilmentCustomer
-    {
-        $this->asAction = true;
-        $this->initialisationFromFulfilment($fulfilment, $modelData);
-
-        return $this->handle($fulfilment, $this->validatedData);
-    }
 
 }

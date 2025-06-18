@@ -40,6 +40,7 @@ class DetectWebsiteFromDomain
             } else {
                 $domain = config('app.local.retina_b2b_domain');
             }
+            //$domain = config('app.local.retina_fulfilment_domain');
         }
 
         /** @var Website $website */

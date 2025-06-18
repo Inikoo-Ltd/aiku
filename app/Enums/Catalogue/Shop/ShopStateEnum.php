@@ -31,6 +31,52 @@ enum ShopStateEnum: string
         ];
     }
 
+    public static function stateIcon(): array
+    {
+        return [
+            'in_process'      => [
+                'tooltip' => __('In process'),
+                'icon'    => 'fal fa-seedling',
+                'class'   => 'text-lime-500',
+                'color'   => 'lime',
+                'app'     => [
+                    'name' => 'seedling',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'open'            => [
+                'tooltip' => __('Open'),
+                'icon'    => 'fal fa-check',
+                'class'   => 'text-emerald-500',
+                'color'   => 'emerald',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'closing_down'    => [
+                'tooltip' => __('Closing Down'),
+                'icon'    => 'fal fa-hourglass-half',
+                'class'   => 'text-yellow-500',
+                'color'   => 'yellow',
+                'app'     => [
+                    'name' => 'hourglass-half',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'closed'          => [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fal fa-times-circle',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+                'app'     => [
+                    'name' => 'times-circle',
+                    'type' => 'font-awesome-5'
+                ]
+            ]
+        ];
+    }
+
     public static function count(Organisation|Group $parent): array
     {
         $stats = $parent->catalogueStats;

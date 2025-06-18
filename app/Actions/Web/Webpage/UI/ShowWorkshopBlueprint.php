@@ -84,10 +84,8 @@ class ShowWorkshopBlueprint extends OrgAction
                 'families'        => $families,
                 'web_block_types' => $web_block_types,
                 'updateRoute'     => [
-                    'name'       => 'grp.models.org.catalogue.departments.update',
+                    'name'       => 'grp.models.product_category.update',
                     'parameters' => [
-                        'organisation'    => $webpage->organisation_id,
-                        'shop'            => $webpage->shop_id,
                         'productCategory' => $productCategory->id
                     ]
                 ],

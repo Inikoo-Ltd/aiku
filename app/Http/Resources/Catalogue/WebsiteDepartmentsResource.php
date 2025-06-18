@@ -69,6 +69,12 @@ class WebsiteDepartmentsResource extends JsonResource
                     'department'   => $this->slug
                 ]
             ],
+            'collections_route'      => [
+                'name' => 'grp.json.product_category.collections.index',
+                'parameters' => [
+                    'productCategory'   => $this->slug
+                ]
+            ]
         ];
     }
 }

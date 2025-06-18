@@ -41,7 +41,7 @@ trait WithDepartmentSubNavigation
             ],
             [
                 'label'    => __('Families'),
-                'number'   => $department->stats->number_current_families,
+                'number'   => $department->stats->number_families,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.families.index',
                     'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
@@ -53,7 +53,7 @@ trait WithDepartmentSubNavigation
             ],
             [
                 'label'    => __('Products'),
-                'number'   => $department->stats->number_current_products,
+                'number'   => $department->stats->number_products,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.products.index',
                     'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]

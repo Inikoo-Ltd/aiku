@@ -107,6 +107,11 @@ class EditWebpage extends OrgAction
                                     'options'       => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'    => true
                                 ],
+                                'allow_fetch'  => [
+                                    'type'          => 'toggle',
+                                    'label'         => __('Allow fetch'),
+                                    'value'         =>  $webpage->allow_fetch,
+                                ],
                                 /* 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),

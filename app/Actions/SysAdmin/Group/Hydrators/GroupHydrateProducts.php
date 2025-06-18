@@ -31,7 +31,7 @@ class GroupHydrateProducts implements ShouldBeUnique
     {
 
         $stats         = [
-            'number_products' => $group->products()->where('is_main', true)->count(),
+            'number_products' => $group->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count(),
         ];
 
         $stats = array_merge(

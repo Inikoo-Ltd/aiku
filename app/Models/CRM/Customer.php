@@ -160,6 +160,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read Collection<int, Portfolio> $portfolios
  * @property-read Collection<int, Asset> $products
+ * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
  * @property-read Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read ShopifyUser|null $shopifyUser
@@ -479,6 +480,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function mitSavedCard(): HasMany
     {
         return $this->hasMany(MitSavedCard::class);
+    }
+
+    public function prospects(): HasMany
+    {
+        return $this->hasMany(Prospect::class, 'customer_id');
     }
 
     public function exclusiveProducts(): HasMany

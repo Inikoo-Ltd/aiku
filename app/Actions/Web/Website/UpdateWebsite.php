@@ -65,6 +65,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
         }
 
+        if (Arr::has($modelData, "script_website")) {
+            data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
+        }
+
         $website = $this->update($website, $modelData, ['data', 'settings']);
         WebsiteRecordSearch::run($website);
 
@@ -129,7 +133,7 @@ class UpdateWebsite extends OrgAction
             'google_tag_id' => [
                 'sometimes',
                 'string',
-                'regex:/^(G-[A-Z0-9]{10}|UA-\d{4,10}-\d{1,4}|GTM-[A-Z0-9]{8}|AW-\d{9,11})$/'
+                'regex:/^GTM-[A-Z0-9]+$/'
             ],
             'catalogue_template' => ['sometimes', 'array'],
             'luigisbox_tracker_id' => [
@@ -154,7 +158,12 @@ class UpdateWebsite extends OrgAction
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
-            ]
+            ],
+            'script_website' => [
+                'sometimes',
+                'nullable',
+                'string',
+            ],
         ];
 
         if (!$this->strict) {

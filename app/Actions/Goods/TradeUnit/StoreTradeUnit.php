@@ -27,6 +27,7 @@ class StoreTradeUnit extends OrgAction
     {
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $group->tradeUnits()->create($modelData);
+        $tradeUnit->stats()->create();
         GroupHydrateTradeUnits::dispatch($group)->delay($this->hydratorsDelay);
 
         return $tradeUnit;

@@ -14,7 +14,9 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
@@ -368,6 +370,75 @@ test('Hydrate master_shops', function () {
     $this->artisan('hydrate:master_shops')->assertSuccessful();
 });
 
+
+test('create master sub department', function (MasterProductCategory $masterDepartment) {
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'SUB_DEPT1',
+            'name' => 'sub department 1',
+        ]
+    );
+
+    $masterSubDepartment->refresh();
+    $masterDepartment->refresh();
+
+    expect($masterSubDepartment)->toBeInstanceOf(MasterProductCategory::class)
+        ->and($masterSubDepartment)->not->toBeNull()
+        ->and($masterSubDepartment->code)->toBe('SUB_DEPT1')
+        ->and($masterSubDepartment->name)->toBe('sub department 1')
+        ->and($masterSubDepartment->type)->toBe(MasterProductCategoryTypeEnum::SUB_DEPARTMENT);
+
+    return $masterSubDepartment;
+})->depends('create master product category');
+
+test("UI Index Master SubDepartments in Department", function (MasterProductCategory $masterDepartment) {
+    $response = get(
+        route("grp.masters.departments.sub_departments.index", [$masterDepartment->slug])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Masters/MasterSubDepartments")
+            ->has("title")
+            ->has("data")
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) =>
+                    $page->has('subNavigation')->etc()
+            );
+    });
+})->depends('create master product category');
+
+test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubDepartment) {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route("grp.masters.departments.sub_departments.show", [
+            'masterDepartment' => $masterSubDepartment->parent->slug,
+            'masterSubDepartment' => $masterSubDepartment->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Masters/MasterSubDepartment")
+            ->has("title")
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) =>
+                    $page->has('subNavigation')->etc()
+            )
+            ->has("tabs");
+    });
+})->depends('create master sub department');
+
+test('Hydrate master departments', function (MasterShop $masterShop) {
+    MasterShopHydrateMasterDepartments::run($masterShop);
+
+    $masterShop->refresh();
+
+    expect($masterShop->stats->number_master_product_categories_type_department)->toBe(1)
+        ->and($masterShop->stats->number_current_master_product_categories_type_department)->toBe(0);
+})->depends('create master shop');
 
 test('master hydrator', function () {
     $this->artisan('hydrate -s masters')->assertExitCode(0);

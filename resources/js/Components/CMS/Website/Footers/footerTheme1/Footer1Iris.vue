@@ -5,18 +5,67 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShieldAlt, faPlus, faTrash, faArrowSquareLeft, faTriangle } from "@fas"
+import { faShieldAlt, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faTriangle } from "@fas"
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from '@fal'
 import Image from '@/Components/Image.vue'
+import { inject ,ref} from 'vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import axios from 'axios'
+import { trans } from 'laravel-vue-i18n'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
-library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faArrowSquareLeft, faFacebook, faWhatsapp)
+library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faFacebook, faWhatsapp)
 
 defineProps<{
     fieldValue?: FieldValue,
     modelValue: FieldValue
 }>();
 
+const layout = inject('layout', retinaLayoutStructure)
+
+const isLoadingSubmit = ref(false)
+const currentState = ref("")
+const inputEmail = ref("")
+const errorMessage = ref("")
+// const hiddenField = ref("")
+const onSubmitSubscribe = async () => {
+	isLoadingSubmit.value = true
+	errorMessage.value = ""
+	currentState.value = ""
+    // if (hiddenField.value) {  // If hidden field is filled, do not submit (it's may be a bot autofill the field)
+    //     isLoadingSubmit.value = false
+    //     return
+    // }
+
+
+	if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
+        console.log('--1')
+		setTimeout(() => {
+			inputEmail.value = ""
+			currentState.value = 'success'
+			isLoadingSubmit.value = false
+		}, 700)
+	} else {  // If in Iris or Retina
+		try {
+			await axios.post(
+				window.origin + '/app/webhooks/subscribe-newsletter',
+				{
+					email: inputEmail.value,
+				},
+			)
+			
+			inputEmail.value = ""
+			currentState.value = 'success'
+		} catch (error) {
+            console.log('www', error)
+			currentState.value = 'error'
+			errorMessage.value = error.response?.data?.message || 'An error occurred while subscribing.'
+		}
+	
+		isLoadingSubmit.value = false
+	}
+}
 </script>
 
 <template>
@@ -224,19 +273,6 @@ defineProps<{
                             </div>
                         </section>
 
-                        <!-- Subscribe column -->
-                        <!-- <div class="mt-10 xl:mt-0">
-                            <h3 class="text-sm/6 font-semibold text-white">Subscribe to our newsletter</h3>
-                            <p class="mt-2 text-sm/6 text-gray-300">The latest news, articles, and resources, sent to your inbox weekly.</p>
-                            <form class="mt-6 sm:flex sm:max-w-md">
-                                <label for="email-address" class="sr-only">Email address</label>
-                                <input type="email" name="email-address" id="email-address" autocomplete="email" required="" class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:w-28 sm:text-sm/6" placeholder="First name" />
-                                <input type="email" name="email-address" id="email-address" autocomplete="email" required="" class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:w-64 sm:text-sm/6 ml-2" placeholder="Email" />
-                            </form>
-                            <div class="mt-4 sm:mt-2 sm:shrink-0 w-full max-w-96 pr-2">
-                                <button type="submit" class="flex w-full items-center justify-center rounded-md bg-gray-200 text-gray-700 px-3 py-2 text-sm font-semibold shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">Subscribe</button>
-                            </div>
-                        </div> -->
                     </div>
                 </div>
 
@@ -268,23 +304,55 @@ defineProps<{
         </div>
 
         <!-- Subscribe down -->
-        <!-- <div class="mt-16 border-t border-white/10 pt-8 sm:mt-20 lg:mt-24 lg:flex lg:items-center lg:justify-between">
-            <div>
-                <h3 class="text-sm/6 font-semibold text-white">Subscribe to our newsletter</h3>
-                <p class="mt-2 text-sm/6 text-gray-300">The latest news, articles, and resources, sent to your inbox weekly.</p>
+        <div v-if="modelValue?.subscribe?.is_show && !layout.iris?.is_logged_in"
+            class="mt-16 border-t border-white/10 px-8 md:px-0 pt-8 md:mt-8 flex flex-col md:flex-row items-center md:justify-between">
+            <div class="w-fit text-center md:text-left ">
+                <h3 class="text-sm/6 font-semibold text-white" v-html="modelValue.subscribe?.headline ?? 'Subscribe to our newsletter'"></h3>
+                <p class="mt-2 text-sm/6 text-gray-300"  v-html="modelValue.subscribe?.description ?? 'The latest news, articles, and resources, sent to your inbox weekly.'"></p>
             </div>
-            <form class="mt-6 sm:flex sm:max-w-md lg:mt-0">
-                <label for="email-address" class="sr-only">Email address</label>
-                <input type="email" name="email-address" id="email-address" autocomplete="email" required="" class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:w-24 sm:text-sm/6" placeholder="First name" />
-                <input type="email" name="email-address" id="email-address" autocomplete="email" required="" class="ml-2 w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:w-56 sm:text-sm/6" placeholder="Email" />
-                <div class="mt-4 sm:mt-0 sm:ml-4 sm:shrink-0">
-                    <button type="submit" class="flex w-full items-center justify-center rounded-md bg-gray-200 text-gray-700 px-3 py-2 text-sm font-semibold shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">Subscribe</button>
+            
+            <Transition>
+                <div v-if="currentState != 'success'" class="flex flex-col items-start">
+                    <form @submit.prevent="() => onSubmitSubscribe()" class="w-full max-w-md md:w-fit mt-6 sm:flex sm:max-w-md lg:mt-0 ">
+                        <label for="email-address" class="sr-only">Email address</label>
+                        <!-- <input
+                            v-model="hiddenField"
+                            type="text"
+                            class="sr-only"
+                        /> -->
+                        <input
+                            v-model="inputEmail"
+                            type="email"
+                            name="email-address"
+                            id="email-address"
+                            autocomplete="email"
+                            required
+                            class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
+                            :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
+                        />
+                        <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
+                            <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+                                <LoadingIcon v-if="isLoadingSubmit" class="mr-2" />
+                                Subscribe
+                            </button>
+                        </div>
+                    </form>
+
+                    <div v-if="currentState === 'error'" class="text-red-500 mt-2 italic">
+                        *{{ errorMessage }}
+                    </div>
                 </div>
-            </form>
-        </div> -->
+
+                <div v-else class="ml-auto mt-6 text-center text-green-500 flex flex-col items-center gap-y-2">
+                    <FontAwesomeIcon icon="fas fa-check-circle" class="text-4xl" fixed-width aria-hidden="true" />
+                    {{ trans("You have successfully subscribed") }}!
+                </div>
+            </Transition>
+        </div>
+
 
         <div
-            class="mt-8 w-full border-0 border-t border-solid border-gray-700 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8">
+            class="mt-8 w-full border-0 border-t border-solid border-white/10 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8">
             <div class="grid gap-y-2 text-center md:text-left">
                 <h2 style="margin-bottom: 0; font-size: inherit; font-weight: inherit"
                     class="hidden text-center tracking-wider">

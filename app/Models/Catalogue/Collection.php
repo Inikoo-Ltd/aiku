@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -47,6 +48,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $parent_type
  * @property int|null $parent_id
  * @property int|null $website_id
+ * @property CollectionStateEnum $state
+ * @property string|null $source_id
+ * @property string|null $fetched_at
+ * @property string|null $last_fetched_at
+ * @property int|null $webpage_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -87,6 +93,7 @@ class Collection extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'  => 'array',
+        'state' => CollectionStateEnum::class,
     ];
 
     protected $attributes = [
@@ -126,8 +133,6 @@ class Collection extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(CollectionsOrderingStats::class);
     }
-
-
 
     public function shops(): MorphToMany
     {

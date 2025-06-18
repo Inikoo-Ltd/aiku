@@ -12,36 +12,39 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductCategoryHydrateFamilies
+class ProductCategoryHydrateFamilies implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private ProductCategory $productCategory;
-
-    public function __construct(ProductCategory $productCategory)
+    public function getJobUniqueId(ProductCategory $productCategory): string
     {
-        $this->productCategory = $productCategory;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->productCategory->id))->dontRelease()];
+        return $productCategory->id;
     }
 
     public function handle(ProductCategory $productCategory): void
     {
-
         if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             return;
         }
 
         $stats = [
-            'number_families' => $productCategory->getFamilies()->count(),
+            'number_families' =>  DB::table('product_categories')
+                ->where(function ($query) use ($productCategory) {
+                    if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                        $query->where('department_id', $productCategory->id);
+                    } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                        $query->where('sub_department_id', $productCategory->id);
+                    }
+                })
+                ->where('type', ProductCategoryTypeEnum::FAMILY->value)
+                ->where('deleted_at', null)
+                ->count()
         ];
 
         $stats = array_merge(
@@ -52,7 +55,13 @@ class ProductCategoryHydrateFamilies
                 enum: ProductCategoryStateEnum::class,
                 models: ProductCategory::class,
                 where: function ($q) use ($productCategory) {
-                    $q->where('parent_id', $productCategory->id)->where('type', ProductCategoryTypeEnum::FAMILY);
+                    $q->where(function ($query) use ($productCategory) {
+                        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                            $query->where('department_id', $productCategory->id);
+                        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                            $query->where('sub_department_id', $productCategory->id);
+                        }
+                    })->where('type', ProductCategoryTypeEnum::FAMILY);
                 }
             )
         );
@@ -62,6 +71,5 @@ class ProductCategoryHydrateFamilies
 
         $productCategory->stats()->update($stats);
     }
-
 
 }

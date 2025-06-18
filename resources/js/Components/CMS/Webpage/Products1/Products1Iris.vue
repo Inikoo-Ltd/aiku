@@ -11,6 +11,7 @@ import ProductRender from './ProductRender.vue'
 import FilterProducts from './FilterProduct.vue'
 import Drawer from 'primevue/drawer'
 import Skeleton from 'primevue/skeleton'
+import { debounce } from 'lodash-es'
 
 const props = defineProps<{
   fieldValue: {
@@ -87,26 +88,27 @@ const fetchProducts = async (isLoadMore = false) => {
     loadingMore.value = false
   }
 }
+const debFetchProducts = debounce(fetchProducts, 300)
 
 const handleSearch = () => {
   page.value = 1
-  fetchProducts(false)
+  debFetchProducts(false)
 }
 
 watch([q, orderBy], () => {
   page.value = 1
-  fetchProducts(false)
+  debFetchProducts(false)
 }, { deep: true })
 
 watch(filter, () => {
   page.value = 1
-  fetchProducts(false)
+  debFetchProducts(false)
 }, { deep: true })
 
 const loadMore = () => {
   if (page.value < lastPage.value && !loadingMore.value) {
     page.value += 1
-    fetchProducts(true)
+    debFetchProducts(true)
   }
 }
 
@@ -125,7 +127,7 @@ const selectOrder = (val: string) => {
 const isMobile = computed(() => props.screenType === 'mobile')
 
 onMounted(() => {
-  fetchProducts()
+  debFetchProducts()
 })
 </script>
 

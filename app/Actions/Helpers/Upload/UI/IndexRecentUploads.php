@@ -17,6 +17,8 @@ use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\Employee;
+use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -78,6 +80,14 @@ class IndexRecentUploads
     public function inPalletReturnRetina(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, ActionRequest $request): array|Collection
     {
         return $this->handle(class_basename(PalletReturnItem::class), [
+            'key'   => 'web_user_id',
+            'value' => $request->user()->id
+        ]);
+    }
+
+    public function inOrderRetina(Order $order, ActionRequest $request): array|Collection
+    {
+        return $this->handle(class_basename(Transaction::class), [
             'key'   => 'web_user_id',
             'value' => $request->user()->id
         ]);

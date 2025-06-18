@@ -37,6 +37,29 @@ class FetchAuroraCollection extends FetchAurora
             return;
         }
 
+        $subjects = DB::connection('aurora')
+            ->table('Category Bridge')
+            ->where('Category Key', $this->auroraModelData->{'Category Key'})->get();
+        $models   = [];
+        foreach ($subjects as $subject) {
+            $modelAuroraType = $subject->{'Subject'};
+            $modelAuroraId   = $subject->{'Subject Key'};
+            $model           = null;
+            if ($modelAuroraType == 'Product') {
+                $model = $this->parseProduct($shop->organisation->id.':'.$modelAuroraId);
+            } else {
+                $model = $this->parseFamily($shop->organisation->id.':'.$modelAuroraId);
+            }
+
+            if ($model) {
+                $models[] = $model;
+            }
+        }
+
+        if (count($models) == 0) {
+            return;
+        }
+
 
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Category Code'});
         $code = trim($code);
@@ -72,24 +95,7 @@ class FetchAuroraCollection extends FetchAurora
         }
 
 
-        $subjects = DB::connection('aurora')
-            ->table('Category Bridge')
-            ->where('Category Key', $this->auroraModelData->{'Category Key'})->get();
-        $models   = [];
-        foreach ($subjects as $subject) {
-            $modelAuroraType = $subject->{'Subject'};
-            $modelAuroraId   = $subject->{'Subject Key'};
-            $model           = null;
-            if ($modelAuroraType == 'Product') {
-                $model = $this->parseProduct($shop->organisation->id.':'.$modelAuroraId);
-            } else {
-                $model = $this->parseFamily($shop->organisation->id.':'.$modelAuroraId);
-            }
 
-            if ($model) {
-                $models[] = $model;
-            }
-        }
         $this->parsedData['models'] = $models;
     }
 

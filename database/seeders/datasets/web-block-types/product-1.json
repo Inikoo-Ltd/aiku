@@ -14,7 +14,8 @@
 				"product_specs" : true,
 				"customer_review" : true,
 				"payments_and_policy" : true
-			}
+			},
+			"information" : []
 		}
 	}
 }

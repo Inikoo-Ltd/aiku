@@ -5,34 +5,35 @@
   -->
 
 <script setup lang="ts">
-import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlus } from "@fas"
-import { faCheckDouble, faShare, faCross } from "@fal"
-import Modal from "@/Components/Utils/Modal.vue"
-import { ref } from 'vue'
-import { PalletDelivery } from "@/types/pallet-delivery"
-import Icon from "@/Components/Icon.vue"
-import { useFormatTime, useDaysLeftFromToday } from '@/Composables/useFormatTime'
-import { routeType } from "@/types/route"
-import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
-import { useLocaleStore } from "@/Stores/locale";
+import { inject } from "vue"
 
-library.add(faPlus, faCheckDouble, faShare, faCross)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCheck, faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from "laravel-vue-i18n"
+library.add(faCheck, faTimes)
+
 
 const props = defineProps<{
     data: {}
     tab?: string
 }>()
 
-const openModal = ref(false)
-const loading = ref(false)
-const locale = useLocaleStore();
+const locale = inject('locale', {})
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5"></Table>
+    <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(amount)="{ item }">
+            {{ locale.currencyFormat(item.currency_code, item.amount) }}
+        </template>
+
+        <template #cell(status)="{ item }">
+            <FontAwesomeIcon v-if="item.status === 'success'" v-tooltip="trans('Success')" icon="fal fa-check"
+                class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="item.status === 'fail'" v-tooltip="trans('Failed')" icon="fal fa-times"
+                class="text-red-500" fixed-width aria-hidden="true" />
+        </template>
+    </Table>
 </template>

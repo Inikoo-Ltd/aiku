@@ -81,7 +81,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $canonical_url
  * @property bool $is_use_canonical_url
  * @property array<array-key, mixed> $seo_data
- * @property bool $allow_fetch If false changes in Aurora webpages will not be fetched
+ * @property bool $allow_fetch If false changes in Aurora webpages are not fetched
  * @property bool|null $show_in_parent
  * @property int|null $seo_image_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -90,13 +90,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Collection<int, \App\Models\Web\Redirect> $incomingRedirects
  * @property-read Collection<int, Webpage> $linkedWebpages
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Model|\Eloquent|null $model
  * @property-read Collection<int, ModelHasWebBlocks> $modelHasWebBlocks
  * @property-read Organisation $organisation
  * @property-read Webpage|null $parent
- * @property-read Collection<int, \App\Models\Web\Redirect> $redirects
+ * @property-read \App\Models\Web\Redirect|null $redirectedTo
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Collection<int, Snapshot> $snapshots
@@ -282,9 +283,14 @@ class Webpage extends Model implements Auditable, HasMedia
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function redirects(): HasMany
+    public function incomingRedirects(): HasMany
     {
-        return $this->hasMany(Redirect::class);
+        return $this->hasMany(Redirect::class, 'to_webpage_id');
+    }
+
+    public function redirectedTo(): HasOne
+    {
+        return $this->hasOne(Redirect::class, 'from_webpage_id');
     }
 
 }

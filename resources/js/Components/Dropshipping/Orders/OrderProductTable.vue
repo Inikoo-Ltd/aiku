@@ -50,7 +50,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
         {
             onStart: () => isLoading.value = 'quantity' + idTransaction,
             onFinish: () => isLoading.value = false,
-            only: ['transactions', 'box_stats'],
+            only: ['transactions', 'box_stats', 'total_to_pay', 'balance'],
             preserveScroll: true,
         }
     )

@@ -14,9 +14,9 @@ trait WithWebpageActions
 {
     public function getWebpageActions(ProductCategory $productCategory): array
     {
-        if (!$productCategory->children()->exists()) {
-            return [];
-        }
+        // if (!$productCategory->children()->exists()) {
+        //     return [];
+        // }
         return $productCategory->webpage ?
             [
                 'type'  => 'button',

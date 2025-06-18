@@ -14,25 +14,18 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\Space\SpaceStateEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\Space;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class FulfilmentHydrateSpaces
+class FulfilmentHydrateSpaces implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
 
-    private Fulfilment $fulfilment;
-
-    public function __construct(Fulfilment $fulfilment)
+    public function getJobUniqueId(Fulfilment $fulfilment): string
     {
-        $this->fulfilment = $fulfilment;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->fulfilment->id))->dontRelease()];
+        return $fulfilment->id;
     }
 
 

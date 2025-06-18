@@ -22,20 +22,14 @@ class CollectionResource extends JsonResource
         return [
             'id'                => $collection->id,
             'slug'              => $collection->slug,
-            'shop'              => $collection->shop_slug,
+            'state'             =>  $collection->state,
             'code'              => $collection->code,
             'name'              => $collection->name,
             'description'       => html_entity_decode(strip_tags($collection->description)),
             'created_at'        => $collection->created_at,
             'updated_at'        => $collection->updated_at,
-            'organisation_name' => $this->organisation_name,
-            'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
-            'shop_slug'         => $this->shop_slug,
-            'number_departments' => $this->number_departments,
-            'number_families' => $this->number_families,
-            'number_products' => $this->number_products,
-            'number_collections' => $this->number_collections,
+
+
 
         ];
     }

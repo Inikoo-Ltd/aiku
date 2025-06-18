@@ -10,7 +10,11 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\Web\Webpage\Json\GetWebpagesWithCollection;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Http\Resources\Catalogue\WebsiteDepartmentsResource;
+use App\Http\Resources\Catalogue\WorkshopSubDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\WebpagesResource;
 use App\Models\Web\WebBlockType;
@@ -26,10 +30,25 @@ class GetWebsiteWorkshopCollection
     {
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::COLLECTION->value)->get();
 
+        $departments = $website->shop->productCategories()
+            ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+            ->where('state', ProductCategoryStateEnum::ACTIVE)
+            ->has('collections')
+            ->with('collections')
+            ->get();
+        $subDepartments = $website->shop->productCategories()
+            ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->where('state', ProductCategoryStateEnum::ACTIVE)
+            ->has('collections')
+            ->with('collections')
+            ->get();
+
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
+            'departments'   => WebsiteDepartmentsResource::collection($departments),
+            'subDepartments'   => WorkshopSubDepartmentsResource::collection($subDepartments),
             'layout'    => Arr::get($website->unpublishedCollectionSnapshot, 'layout.collection', []),
-            'webpages'  => WebpagesResource::collection(GetWebpagesWithCollection::run($website)),
+            /* 'webpages'  => WebpagesResource::collection(GetWebpagesWithCollection::run($website)), */
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.collection',
                 'parameters' => [

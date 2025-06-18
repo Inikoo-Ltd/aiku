@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getComponent } from "@/Composables/getWorkshopComponents"
-import { ref, onMounted, onBeforeUnmount, watch } from "vue"
+import { ref, onMounted, onBeforeUnmount, provide } from "vue"
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -76,6 +76,15 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenType)
   window.removeEventListener("message", handleMessage)
 })
+
+
+const reloadPage = () =>{ 
+ router.reload({ only: ["footer", "header", "webpage"] })
+  console.log('ionininion',props.webpage)
+};
+
+provide("reloadPage", reloadPage);
+
 </script>
 
 <template>
@@ -153,12 +162,21 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
-.hover-dashed {
+:deep(.hover-dashed) {
   @apply relative;
 
   &::after {
     content: "";
     @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+  }
+}
+
+:deep(.hover-text-input) {
+  @apply relative isolate;
+
+  &::after {
+    content: "";
+    @apply -z-10 absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
   }
 }
 

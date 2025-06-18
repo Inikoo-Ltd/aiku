@@ -11,22 +11,16 @@
 namespace App\Actions\Web\ExternalLink\Hydrators;
 
 use App\Models\Web\ExternalLink;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ExternalLinkHydrateWebpages
+class ExternalLinkHydrateWebpages implements ShouldBeUnique
 {
     use AsAction;
-    private ExternalLink $externalLink;
 
-    public function __construct(ExternalLink $externalLink)
+    public function getJobUniqueId(ExternalLink $externalLink): string
     {
-        $this->externalLink = $externalLink;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->externalLink->id))->dontRelease()];
+        return $externalLink->id;
     }
 
     public function handle(ExternalLink $externalLink): void

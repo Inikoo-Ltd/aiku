@@ -9,38 +9,51 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import SideEditorArrayEdit from "./SideEditorArrayEdit.vue";
 import draggable from "vuedraggable";
 
+// Add icons to FontAwesome library
 library.add(faPlus, faTrash);
 
-const modelValue = defineModel<Array<object>>({ required: true });
+// Define props
+const props = withDefaults(defineProps<{
+  blueprint: any;
+  uploadRoutes: routeType;
+  order_name: string;
+  can_drag: boolean;
+  can_delete: boolean;
+  can_add: boolean;
+  new_value_data: object;
+}>(), {
+  can_drag: true,
+  can_delete: true,
+  can_add: true
+});
+const modelValue = defineModel<Array<object>>({ required: true })
 
-const props = defineProps<{
-    blueprint: any
-    uploadRoutes: routeType
-    order_name: string
-    can_drag: Boolean,
-    can_delete: Boolean,
-    can_add: Boolean,
-    new_value_data: Object,
-}>();
+if (!modelValue.value) {
+  modelValue.value = []
+}
 
+// Functions
 const addValue = () => {
-    const newValue = toRaw(modelValue.value);
-    newValue.push(props.new_value_data);
-    modelValue.value = newValue;
+  const newValue = toRaw(modelValue.value);
+  newValue.push(props.new_value_data);
+  modelValue.value = newValue;
 };
 
 const removeValue = (index: number) => {
-    const newValue = toRaw(modelValue.value);
-    newValue.splice(index, 1);
-    modelValue.value = newValue;
+  const newValue = toRaw(modelValue.value);
+  newValue.splice(index, 1);
+  modelValue.value = newValue;
 };
 
 const onChangeProperty = (index: number, data: object) => {
-    const newValue = toRaw(modelValue.value);
-    newValue[index] =  data
-    modelValue.value = newValue; 
+  const newValue = toRaw(modelValue.value);
+  newValue[index] = data;
+  modelValue.value = newValue;
 };
+
+console.log('sss',modelValue.value)
 </script>
+
 
 
 <template>
@@ -69,7 +82,7 @@ const onChangeProperty = (index: number, data: object) => {
             </template>
         </draggable>
         <div v-if="can_add" class="my-2">
-            <Button type="dashed" label="Add image" :icon="faPlus" full @click="addValue"></Button>
+            <Button type="dashed" :label="`Add ${order_name}`" :icon="faPlus" full @click="addValue"></Button>
         </div>
     </div>
 </template>

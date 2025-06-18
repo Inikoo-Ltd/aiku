@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
-use App\Actions\Analytics\UserRequest\UI\ShowUserRequestLogs;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\OrgAction;
@@ -31,23 +30,22 @@ class ShowUser extends OrgAction
 {
     use WithUserSubNavigation;
 
-    /**
-     * @var \App\Models\SysAdmin\Organisation|\group|\Illuminate\Foundation\Application|mixed|object
-     */
-    private mixed $auth_scope;
+
+    private mixed $authScope;
 
     public function asController(User $user, ActionRequest $request): User
     {
-        $group            = app('group');
-        $this->auth_scope = $group;
+        $group           = app('group');
+        $this->authScope = $group;
         $this->initialisationFromGroup($group, $request)->withTab(UserTabsEnum::values());
 
         return $user;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inEmployee(Organisation $organisation, Employee $employee, User $user, ActionRequest $request): User
     {
-        $this->auth_scope = $organisation;
+        $this->authScope = $organisation;
         $this->initialisation($organisation, $request)->withTab(UserTabsEnum::values());
 
         return $user;
@@ -60,7 +58,7 @@ class ShowUser extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->auth_scope instanceof Group) {
+        if ($this->authScope instanceof Group) {
             $this->canEdit = $request->user()->authTo('sysadmin.edit');
 
             return $request->user()->authTo("sysadmin.view");
@@ -81,7 +79,7 @@ class ShowUser extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => $this->auth_scope instanceof Group
+                'navigation'  => $this->authScope instanceof Group
                     ? [
                         'previous' => $this->getPrevious($user, $request),
                         'next'     => $this->getNext($user, $request),
@@ -115,25 +113,12 @@ class ShowUser extends OrgAction
                     fn () => UserShowcaseResource::make($user)
                     : Inertia::lazy(fn () => UserShowcaseResource::make($user)),
 
-                // UserTabsEnum::REQUEST_LOGS->value => $this->tab == UserTabsEnum::REQUEST_LOGS->value ?
-                //     fn () => UserRequestLogsResource::collection(ShowUserRequestLogs::run($user->username))
-                //     : Inertia::lazy(fn () => UserRequestLogsResource::collection(ShowUserRequestLogs::run($user->username))),
-
-                // UserTabsEnum::ROLES->value => $this->tab == UserTabsEnum::ROLES->value ?
-                //     fn () => $user->roles->pluck('name')
-                //     : Inertia::lazy(fn () => $user->roles->pluck('name')),
-
-                // UserTabsEnum::PERMISSIONS->value => $this->tab == UserTabsEnum::PERMISSIONS->value ?
-                //     fn () => $user->getAllPermissions()->pluck('name')
-                //     : Inertia::lazy(fn () => $user->getAllPermissions()->pluck('name')),
-
                 UserTabsEnum::HISTORY->value => $this->tab == UserTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($user))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user)))
 
             ]
-        )->table(ShowUserRequestLogs::make()->tableStructure())
-            ->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

@@ -82,7 +82,18 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'afterTitle' => [
                         'label' => ' @'.$this->platform->name
                     ],
-
+                    'actions'   => [
+                        [
+                            'type'   => 'buttonGroup',
+                            'button' => [
+                                [
+                                    'type'    => 'button',
+                                    'key'     => 'upload-add',
+                                    'icon'      => 'fal fa-upload',
+                                ],
+                            ],
+                        ],
+                    ]
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -174,7 +185,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'is_in_basket' => OrderStateEnum::CREATING == $order->state,
                 'balance'      => $order->customer?->balance,
                 'total_to_pay' => max(0, $order->total_amount - $order->customer->balance),
-
+                'total_products'    => $order->stats->number_item_transactions,
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
                     fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
@@ -225,6 +236,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
             ),
             'customer_client'  => CustomerClientResource::make($order->customerClient)->getArray(),
             'customer_channel' => [
+                'slug'     => $customerChannel->slug,
                 'status'   => $order->customer_sales_channel_id,
                 'platform' => [
                     'name'  => $customerChannel->platform->name,
@@ -281,14 +293,6 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'price_total' => $order->total_amount
                     ],
                 ],
-                $order->state == OrderStateEnum::CREATING ? [
-                    [
-                        'label'             => __('Total to pay'),
-                        'label_class'       => 'text-indigo-500 font-bold',
-                        'price_total'       => max(0, $order->total_amount - $order->customer->balance),
-                        'price_total_class' => 'text-indigo-500 font-bold',
-                    ],
-                ] : [],
                 'currency' => CurrencyResource::make($order->currency),
             ],
         ];

@@ -10,7 +10,6 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\AbandonedCartMailshotsResource;
 use App\Http\Resources\Mail\MailshotResource;
@@ -33,7 +32,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexAbandonedCartMailshots extends OrgAction
 {
     use HasUIMailshots;
-    use WithCatalogueAuthorisation;
 
     public Group|Outbox|PostRoom|Organisation|Shop $parent;
 

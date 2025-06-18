@@ -11,9 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
-use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -35,28 +33,7 @@ class EditProduct extends OrgAction
         return $product;
     }
 
-    // public function authorize(ActionRequest $request): bool
-    // {
-    //     // dd($this->shop);
-    //     $this->canEdit   = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-    //     $this->canDelete = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-    //     return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
-    // }
-
-    // public function inOrganisation(Asset $product, ActionRequest $request): Asset
-    // {
-    //     $this->initialisation($request);
-
-    //     return $this->handle($product);
-    // }
-
-    // /** @noinspection PhpUnusedParameterInspection */
-    // public function inShop(Shop $shop, Asset $product, ActionRequest $request): Asset
-    // {
-    //     $this->initialisation($request);
-
-    //     return $this->handle($product);
-    // }
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, Product $product, ActionRequest $request): Product
     {
         $this->parent = $shop;
@@ -65,7 +42,7 @@ class EditProduct extends OrgAction
         return $this->handle($product);
     }
 
-
+    /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, Product $product, ActionRequest $request): Product
     {
         $this->parent = $department;
@@ -74,13 +51,8 @@ class EditProduct extends OrgAction
         return $this->handle($product);
     }
 
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Product $product, ActionRequest $request): Product
-    {
-        $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request);
-        return $this->handle($product);
-    }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Product $product, ActionRequest $request): Product
     {
         $this->parent = $family;
@@ -88,7 +60,6 @@ class EditProduct extends OrgAction
 
         return $this->handle($product);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Product $product, ActionRequest $request): Product
@@ -136,62 +107,7 @@ class EditProduct extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('id'),
-                            'fields' => [
-                                'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('code'),
-                                    'value'    => $product->code,
-                                    'readonly' => true
-                                ],
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('label'),
-                                    'value' => $product->name,
-                                ],
-                                'description' => [
-                                    'type'  => 'input',
-                                    'label' => __('description'),
-                                    'value' => $product->description
-                                ],
-                                'unit' => [
-                                    'type'     => 'input',
-                                    'label'    => __('unit'),
-                                    'value'    => $product->unit,
-                                ],
-                                'units' => [
-                                    'type'     => 'input',
-                                    'label'    => __('units'),
-                                    'value'    => $product->units,
-                                ],
-                                'price' => [
-                                    'type'    => 'input',
-                                    'label'   => __('price'),
-                                    'required' => true,
-                                    'value'   => $product->price
-                                ],
-                                'state' => [
-                                    'type'    => 'select',
-                                    'label'   => __('state'),
-                                    'required' => true,
-                                    'value'   => $product->state,
-                                    'options' => Options::forEnum(AssetStateEnum::class)
-                                ],
-                                // 'type' => [
-                                //     'type'          => 'select',
-                                //     'label'         => __('type'),
-                                //     'placeholder'   => 'Select a Asset Type',
-                                //     'options'       => Options::forEnum(AssetTypeEnum::class)->toArray(),
-                                //     'required'      => true,
-                                //     'mode'          => 'single',
-                                //     'value'         => $product->type
-                                // ]
-                            ]
-                        ]
-
-                    ],
+                    'blueprint' => $this->getBlueprint($product),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.product.update',
@@ -205,6 +121,60 @@ class EditProduct extends OrgAction
 
             ]
         );
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function getBlueprint(Product $product): array
+    {
+        return [
+            [
+                'title'  => __('id'),
+                'fields' => [
+                    'code' => [
+                        'type'     => 'input',
+                        'label'    => __('code'),
+                        'value'    => $product->code,
+                        'readonly' => true
+                    ],
+                    'name' => [
+                        'type'  => 'input',
+                        'label' => __('label'),
+                        'value' => $product->name,
+                    ],
+                    'description' => [
+                        'type'  => 'input',
+                        'label' => __('description'),
+                        'value' => $product->description
+                    ],
+                    'unit' => [
+                        'type'     => 'input',
+                        'label'    => __('unit'),
+                        'value'    => $product->unit,
+                    ],
+                    'units' => [
+                        'type'     => 'input',
+                        'label'    => __('units'),
+                        'value'    => $product->units,
+                    ],
+                    'price' => [
+                        'type'    => 'input',
+                        'label'   => __('price'),
+                        'required' => true,
+                        'value'   => $product->price
+                    ],
+                    'state' => [
+                        'type'    => 'select',
+                        'label'   => __('state'),
+                        'required' => true,
+                        'value'   => $product->state,
+                        'options' => Options::forEnum(AssetStateEnum::class)
+                    ],
+                ]
+            ]
+
+        ];
     }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array

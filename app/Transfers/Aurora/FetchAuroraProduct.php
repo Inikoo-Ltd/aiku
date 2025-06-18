@@ -36,17 +36,19 @@ class FetchAuroraProduct extends FetchAurora
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
 
-
-        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
-            if ($this->auroraModelData->{'Product Family Category Key'}) {
-                $family = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Product Family Category Key'});
-                if ($family) {
-                    if ($family->shop_id != $this->parsedData['shop']->id) {
-                        dd('Wrong family - shop');
-                    }
-                    $this->parsedData['parent'] = $family;
+        $family = null;
+        if ($this->auroraModelData->{'Product Family Category Key'}) {
+            $family = $this->parseFamily($this->organisation->id.':'.$this->auroraModelData->{'Product Family Category Key'});
+            if ($family) {
+                if ($family->shop_id != $this->parsedData['shop']->id) {
+                    dd('Wrong family - shop');
                 }
             }
+        }
+
+        $this->parsedData['family'] = $family;
+        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
+            $this->parsedData['parent'] = $family;
         }
 
 
@@ -55,7 +57,6 @@ class FetchAuroraProduct extends FetchAurora
         if ($this->auroraModelData->{'Product Customer Key'}) {
             $customer               = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Product Customer Key'});
             $exclusiveForCustomerID = $customer->id;
-        } else {
         }
 
 
@@ -163,7 +164,7 @@ class FetchAuroraProduct extends FetchAurora
             $this->parsedData['product']['main_product_id']    = $mainProduct->id;
         }
 
-
+        $this->parsedData['au_data'] = $this->auroraModelData;
     }
 
     private function parseImages(): array

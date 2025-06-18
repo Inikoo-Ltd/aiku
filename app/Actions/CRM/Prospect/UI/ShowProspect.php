@@ -41,7 +41,6 @@ class ShowProspect extends OrgAction
 
     public function htmlResponse(Prospect $prospect, ActionRequest $request): Response
     {
-        // dd($collection->stats);
         $subNavigation = null;
         if ($this->parent instanceof Shop) {
             $subNavigation = $this->getSubNavigation($request);

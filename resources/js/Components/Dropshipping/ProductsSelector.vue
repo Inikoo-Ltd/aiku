@@ -258,18 +258,21 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                             </li>
                         </TransitionGroup>
                     </div>
-                    <div class="mt-4">
-                        <Button
-                            @click="() => emits('submit', selectedProduct)"
-                            :disabled="selectedProduct.length < 1"
-                            v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                            :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
-                            type="primary"
-                            full
-                            icon="fas fa-plus"
-                            :loading="isLoadingSubmit"
-                        />
-                    </div>
+                    
+                    <slot name="bottom-button" :selectedProduct :isLoadingSubmit>
+                        <div class="mt-4">
+                            <Button
+                                @click="() => emits('submit', selectedProduct)"
+                                :disabled="selectedProduct.length < 1"
+                                v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                                :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
+                                type="primary"
+                                full
+                                icon="fas fa-plus"
+                                :loading="isLoadingSubmit"
+                            />
+                        </div>
+                    </slot>
                 </div>
             </div>
         </div>

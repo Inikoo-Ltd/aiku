@@ -23,8 +23,8 @@ return [
     */
 
     'ssr' => [
-        'enabled' => true,
-        'url' => 'http://127.0.0.1:'.env('VITE_INERTIA_SSR_PORT', 13714).'/render',
+        'enabled' => (bool) env('INERTIA_SSR_ENABLED', true),
+        'url' => env('INERTIA_SSR_URL', 'http://127.0.0.1:13714'),
         'bundle' => base_path('bootstrap/ssr/ssr-iris.mjs'),
     ],
 
@@ -60,6 +60,12 @@ return [
             'vue',
 
         ],
+
+    ],
+
+    'history' => [
+
+        'encrypt' => (bool) env('INERTIA_ENCRYPT_HISTORY', false),
 
     ],
 

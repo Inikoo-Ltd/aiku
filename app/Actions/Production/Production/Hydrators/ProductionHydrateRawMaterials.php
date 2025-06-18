@@ -15,26 +15,18 @@ use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductionHydrateRawMaterials
+class ProductionHydrateRawMaterials implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    private Production $production;
-
-    public function __construct(Production $production)
+    public function getJobUniqueId(Production $production): string
     {
-        $this->production = $production;
+        return $production->id;
     }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->production->id))->dontRelease()];
-    }
-
 
     public function handle(Production $production): void
     {

@@ -9,12 +9,17 @@
 namespace App\Actions\Inventory\WarehouseArea\Hydrators;
 
 use App\Models\Inventory\WarehouseArea;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WarehouseAreaHydrateLocations
+class WarehouseAreaHydrateLocations implements ShouldBeUnique
 {
     use AsAction;
 
+    public function getJobUniqueId(WarehouseArea $warehouseArea): string
+    {
+        return $warehouseArea->id;
+    }
 
     public function handle(WarehouseArea $warehouseArea): void
     {

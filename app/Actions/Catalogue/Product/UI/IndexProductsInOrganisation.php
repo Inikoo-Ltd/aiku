@@ -70,6 +70,7 @@ class IndexProductsInOrganisation extends OrgAction
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.organisation_id', $organisation->id);
+        $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
 
         foreach ($this->getElementGroups($organisation) as $key => $elementGroup) {

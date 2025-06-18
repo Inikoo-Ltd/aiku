@@ -8,29 +8,21 @@
 
 namespace App\Actions\Fulfilment\PalletStoredItem\Hydrators;
 
-use App\Actions\HydrateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaStateEnum;
 use App\Models\Fulfilment\PalletStoredItem;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 
-class PalletStoreItemHydrateAudits extends HydrateModel
+class PalletStoreItemHydrateAudits implements ShouldBeUnique
 {
     use WithActionUpdate;
     use WithEnumStats;
 
-    private PalletStoredItem $palletStoredItem;
-
-    public function __construct(PalletStoredItem $palletStoredItem)
+    public function getJobUniqueId(PalletStoredItem $palletStoredItem): string
     {
-        $this->palletStoredItem = $palletStoredItem;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->palletStoredItem->id))->dontRelease()];
+        return $palletStoredItem->id;
     }
 
     public function handle(PalletStoredItem $palletStoredItem): void

@@ -7,6 +7,7 @@
 export interface Department {
     slug:string,
     shop_slug: string,
+    organisation_slug: string,
     code: string
     name: string
     state: string

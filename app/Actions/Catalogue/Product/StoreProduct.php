@@ -133,13 +133,10 @@ class StoreProduct extends OrgAction
 
         foreach ($tradeUnits as $tradeUnitId => $tradeUnitData) {
             $tradeUnit = TradeUnit::find($tradeUnitId);
-            $product->tradeUnits()->attach(
-                $tradeUnit,
-                [
-                    'quantity' => $tradeUnitData['quantity'],
-                    'notes'    => Arr::get($tradeUnitData, 'notes'),
-                ]
-            );
+            AttachTradeUnitToProduct::run($product, $tradeUnit, [
+                'quantity' => $tradeUnitData['quantity'],
+                'notes'    => Arr::get($tradeUnitData, 'notes'),
+            ]);
         }
 
         return $product;

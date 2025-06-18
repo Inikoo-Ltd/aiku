@@ -17,15 +17,13 @@ import WebpageSideEditor from "@/Components/Workshop/WebpageSideEditor.vue"
 import { setIframeView } from "@/Composables/Workshop"
 import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import ButtonPreviewLogin from "@/Components/Workshop/Tools/ButtonPreviewLogin.vue"
 import { Root, Daum } from "@/types/webBlockTypes"
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { debounce } from 'lodash-es';
-import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faExternalLink, faBoothCurtain, faUndo, faRedo, faExpandWide, faCompressWide, } from "@fal"
+import { faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide, faStars, faTimes,faBars, faExternalLink,  faExpandWide, faCompressWide, } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-/* import {useUndoRedoLocalStorage} from "@/UndoRedoWebpageWorkshop" */
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from "primevue/useconfirm";
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -36,7 +34,7 @@ import { faEye } from "@fad"
 import { useLiveUsers } from "@/Stores/active-users"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars)
+library.add(faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars, faBars)
 
 const props = defineProps<{
 	title: string
@@ -495,7 +493,7 @@ watch(filterBlock, (newValue) => {
 const SyncAurora = () => {
 	router.patch(
 		route(props.webpage.route_webpage_edit.name,props.webpage.route_webpage_edit.parameters),
-		{ allow_fetch: props.webpage.allow_fetching },
+		{ allow_fetch: props.webpage.allow_fetch },
 		{
 			onStart: () => {
 				console.log('========== start save ')
@@ -587,7 +585,7 @@ console.log('webpage workshop props :',props)
 				<div class="flex items-center px-3">
 					<div class="flex items-center gap-2 px-3 text-sm text-gray-700">
 						<label for="sync-toggle">Sync with aurora</label>
-						<ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetching" @update:modelValue="(e)=>SyncAurora(e)" />
+						<ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch" @update:modelValue="(e)=>SyncAurora(e)" />
 					</div>
 
 				</div>

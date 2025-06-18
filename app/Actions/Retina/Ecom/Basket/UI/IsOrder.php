@@ -9,7 +9,6 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -32,8 +31,9 @@ trait IsOrder
         $customerChannel = null;
         if ($order->customer_sales_channel_id) {
             $customerChannel = [
-                'status' => $order->customer_sales_channel_id,
-                'platform' => [
+                'slug'      => $order->customerSalesChannel->slug,
+                'status'    => $order->customer_sales_channel_id,
+                'platform'  => [
                     'name' => $order->platform?->name,
                     'image' => $this->getPlatformLogo($order->customerSalesChannel)
                 ]
@@ -124,14 +124,7 @@ trait IsOrder
                         'price_total' => $order->total_amount
                     ],
                 ],
-                $order->state == OrderStateEnum::CREATING ? [
-                    [
-                        'label'             => 'Total to pay',
-                        'label_class'       => 'text-indigo-500 font-bold',
-                        'price_total'       => max(0, $order->total_amount - $order->customer->balance),
-                        'price_total_class' => 'text-indigo-500 font-bold',
-                    ],
-                ] : [],
+
                 'currency' => CurrencyResource::make($order->currency),
             ],
         ];

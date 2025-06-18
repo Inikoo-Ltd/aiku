@@ -224,7 +224,7 @@ class GetGroupNavigation
                         'icon'  => ['fal', 'fa-atom'],
                         'root'  => 'grp.goods.trade-units.',
                         'route' => [
-                            'name'       => 'grp.goods.trade-units.index',
+                            'name'       => 'grp.goods.trade-units.active',
                             'parameters' => []
 
                         ]

@@ -29,7 +29,6 @@ class PublishWebsiteMarginal extends OrgAction
     public function handle(Website $website, string $marginal, array $modelData): Website
     {
         $this->marginal =  $marginal;
-        // dd($modelData);
         $layout = Arr::get($modelData, 'layout', []);
         if ($marginal == 'header') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout;

@@ -14,29 +14,23 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebpageHydrateRedirects
+class WebpageHydrateRedirects implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    private Webpage $webpage;
 
-    public function __construct(Webpage $webpage)
+    public function getJobUniqueId(Webpage $webpage): string
     {
-        $this->webpage = $webpage;
-    }
-
-    public function getJobMiddleware(): array
-    {
-        return [(new WithoutOverlapping($this->webpage->id))->dontRelease()];
+        return $webpage->id;
     }
 
     public function handle(Webpage $webpage): void
     {
         $stats = [
-            'number_redirects' => $webpage->redirects()->count(),
+            'number_redirects' => $webpage->incomingRedirects()->count(),
         ];
 
         $stats = array_merge(
@@ -47,7 +41,7 @@ class WebpageHydrateRedirects
                 enum: RedirectTypeEnum::class,
                 models: Redirect::class,
                 where: function ($q) use ($webpage) {
-                    $q->where('webpage_id', $webpage->id);
+                    $q->where('to_webpage_id', $webpage->id);
                 }
             )
         );

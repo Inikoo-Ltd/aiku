@@ -84,7 +84,7 @@ class EditFamily extends OrgAction
         if ($family?->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $departmentIdFormData['department_id'] = [
                 'type'     => 'select',
-                'label'    => __('type'),
+                'label'    => __('Departement'),
                 'required' => true,
                 'options'  => $family->shop->productCategories()
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
@@ -148,10 +148,8 @@ class EditFamily extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.org.catalogue.families.update',
+                            'name'       => 'grp.models.product_category.update',
                             'parameters' => [
-                                'organisation'      => $family->organisation_id,
-                                'shop'              => $family->shop_id,
                                 'productCategory'   => $family->id
                             ]
                         ],
