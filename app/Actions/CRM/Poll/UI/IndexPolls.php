@@ -82,7 +82,7 @@ class IndexPolls extends OrgAction
             ->groupBy('polls.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'type', 'total_replies'])
+            ->allowedSorts(['name', 'type', 'total_replies', 'in_registration'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
