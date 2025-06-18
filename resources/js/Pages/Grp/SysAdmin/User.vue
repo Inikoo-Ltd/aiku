@@ -5,40 +5,38 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router } from "@inertiajs/vue3";
 
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { computed, defineAsyncComponent, ref } from "vue"
-import { useTabChange } from "@/Composables/tab-change"
-import ModelDetails from "@/Components/ModelDetails.vue"
-import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
-import { faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faShieldCheck, faUserTag, faKey, faSyncAlt } from '@fal'
-import { faExclamationTriangle } from '@fas'
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { capitalize } from "@/Composables/capitalize"
-import { faRoad } from "@fas"
-import SysadminUserShowcase from '@/Components/Showcases/Grp/SysadminUserShowcase.vue'
-import UserPermissions from '@/Components/Sysadmin/UserPermissions.vue'
-import UserRoles from '@/Components/Sysadmin/UserRoles.vue'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { Tabs as TSTabs } from '@/types/Tabs'
-import type { Component } from 'vue'
-import UserApiTokens from '@/Components/Sysadmin/UserApiTokens.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Modal from '@/Components/Utils/Modal.vue'
-import { routeType } from '@/types/route'
-import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
-import axios from 'axios'
-import { useCopyText } from '@/Composables/useCopyText'
-import PureInput from '@/Components/Pure/PureInput.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag, faExclamationTriangle, faKey, faSyncAlt)
+import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { computed, ref } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
+import ModelDetails from "@/Components/ModelDetails.vue";
+import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import { faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faShieldCheck, faUserTag, faKey, faSyncAlt } from "@fal";
+import { faExclamationTriangle, faRoad } from "@fas";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { capitalize } from "@/Composables/capitalize";
+import SysadminUserShowcase from "@/Components/Showcases/Grp/SysadminUserShowcase.vue";
+import UserPermissions from "@/Components/Sysadmin/UserPermissions.vue";
+import UserRoles from "@/Components/Sysadmin/UserRoles.vue";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { Tabs as TSTabs } from "@/types/Tabs";
+import type { Component } from "vue";
+import UserApiTokens from "@/Components/Sysadmin/UserApiTokens.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import Modal from "@/Components/Utils/Modal.vue";
+import { routeType } from "@/types/route";
+import { notify } from "@kyvg/vue3-notification";
+import { trans } from "laravel-vue-i18n";
+import axios from "axios";
+import PureInput from "@/Components/Pure/PureInput.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
+library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag, faExclamationTriangle, faKey, faSyncAlt);
+
 
 const props = defineProps<{
     title: string,
@@ -54,12 +52,12 @@ const props = defineProps<{
         createToken: routeType
         deleteToken: routeType
     }
-}>()
+}>();
 
-const isModalApiToken = ref(false)
+const isModalApiToken = ref(false);
 
-const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
     const components: Component = {
@@ -69,52 +67,52 @@ const component = computed(() => {
         request_logs: TableUserRequestLogs,
         history: TableHistories,
         permissions: UserPermissions,
-        roles: UserRoles,
-    }
-    return components[currentTab.value]
+        roles: UserRoles
+    };
+    return components[currentTab.value];
 
-})
+});
 
-const newToken = ref('')
-const isLoadingGenerate = ref(false)
-const isNewRegenerate = ref(false)
+const newToken = ref("");
+const isLoadingGenerate = ref(false);
+const isNewRegenerate = ref(false);
 const onGenerateApiToken = async (isRegenerate?: boolean) => {
-    isLoadingGenerate.value = true
+    isLoadingGenerate.value = true;
 
     if (isRegenerate) {
-        isNewRegenerate.value = true
+        isNewRegenerate.value = true;
     }
 
     try {
         const data = await axios.post(
             route(props.apiRoutes.createToken.name, props.apiRoutes.createToken.parameters),
             {
-                data: 'qqq'
+                data: "qqq"
             }
-        )
+        );
 
-        console.log('Generate API Token response:', data.data)
-        newToken.value = data.data.token
-        
+        console.log("Generate API Token response:", data.data);
+        newToken.value = data.data.token;
+
         router.reload(
-        {
-            only: ['api_tokens']
-        }
-    )
-        
+            {
+                only: ["api_tokens"]
+            }
+        );
+
     } catch (error) {
-        console.log('error', error)
+        console.log("error", error);
         notify({
             title: trans("Something went wrong"),
-            text: trans("Failed to set location"),
+            text: trans("Failed to create API Token"),
             type: "error"
-        })
+        });
     } finally {
-        isLoadingGenerate.value = false
-        isNewRegenerate.value = false
+        isLoadingGenerate.value = false;
+        isNewRegenerate.value = false;
     }
 
-}
+};
 </script>
 
 <template>
@@ -131,12 +129,9 @@ const onGenerateApiToken = async (isRegenerate?: boolean) => {
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
 
     <Modal :isOpen="isModalApiToken" @onClose="() => (isModalApiToken = false)" width="w-full max-w-xl"
-        height="h-[500px]">
+           height="h-[500px]">
 
         <div>
-            <!-- <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
-                xxx
-            </div> -->
             <div class="mt-3 text-center sm:mt-5">
                 <div as="h3" class="text-base font-semibold">
                     Generate API Token
@@ -165,16 +160,15 @@ const onGenerateApiToken = async (isRegenerate?: boolean) => {
                     </div>
                 </div>
 
-                <div class="text-orange-500 text-sm xflex items-center gap-x-2 text-center">
-                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="xopacity-70 text-lg" fixed-width aria-hidden="true" />
+                <div class="text-orange-500 text-sm items-center gap-x-2 text-center">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-lg" fixed-width aria-hidden="true" />
                     <span class="text-center">Put this token in a safe place, you won't be able to see it again.</span>
-                    <!-- <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70 text-lg" fixed-width aria-hidden="true" /> -->
                 </div>
             </div>
-            
+
             <Button
                 v-else
-        
+
                 @click="onGenerateApiToken"
                 label="Click to Generate"
                 type="tertiary"
