@@ -40,25 +40,27 @@ class GetWebBlockProducts
 
 
         if($webpage->model_type=='collection') {
+
+
             $productRoute = [
                 'workshop' => [
                     'name' => 'grp.json.collection.products.index',
-                    'parameters' => ['collection'=>$webpage->model->slug],
+                    'parameters' => ['collection'=>$webpage->model_id],
                 ],
                 'iris' => [
                     'name' => 'iris.json.collection.products.index',
-                    'parameters' => ['collection'=>$webpage->model->slug],
+                    'parameters' => ['collection'=>$webpage->model_id],
                 ],
             ];
         }else{
             $productRoute = [
                 'workshop' => [
                     'name' => 'grp.json.product_category.products.index',
-                    'parameters' => ['productCategory'=>$webpage->model->slug],
+                    'parameters' => ['productCategory'=>$webpage->model_id],
                 ],
                 'iris' => [
                     'name' => 'iris.json.product_category.products.index',
-                    'parameters' => ['productCategory'=>$webpage->model->slug],
+                    'parameters' => ['productCategory'=>$webpage->model_id],
                 ],
             ];
         }

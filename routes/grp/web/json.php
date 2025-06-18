@@ -114,10 +114,11 @@ Route::get('brands', GetBrands::class)->name('brands.index');
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
-Route::get('workshop/product-category/{productCategory}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
-Route::get('workshop/product-category/{productCategory}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
+Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
+
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
-Route::get('workshop/collection/{collection}/products', GetProductsInCollection::class)->name('collection.products.index');
+Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');
 Route::get('workshop/collection/{collection}/families', GetFamiliesInCollection::class)->name('collection.families.index');
 
 Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollection::class)->name('collection.parent.departments.index');
