@@ -21,6 +21,10 @@ Route::middleware(["iris-auth:retina"])->group(function () {
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
     });
+
+    Route::prefix("models")
+        ->name("models.")
+        ->group(__DIR__."/models.php");
 });
 
 Route::prefix("disclosure")

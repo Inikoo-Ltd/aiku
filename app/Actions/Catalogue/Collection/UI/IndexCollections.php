@@ -152,7 +152,12 @@ class IndexCollections extends OrgAction
             'title' => $title
         ];
         $iconRight = null;
-        $routes    = null;
+        $routes    = [
+            'indexWebpage' => [
+                'name'       => 'grp.org.shops.show.catalogue.webpages.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+        ];
         $actions   = [];
         if ($this->canEdit) {
             $actions[] = [
@@ -169,7 +174,7 @@ class IndexCollections extends OrgAction
 
         $websiteDomain = null;
         if ($this->shop->website) {
-            $websiteDomain='https://'.$this->shop->website->domain;
+            $websiteDomain = 'https://'.$this->shop->website->domain;
         }
 
 

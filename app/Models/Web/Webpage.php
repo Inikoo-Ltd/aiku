@@ -198,6 +198,11 @@ class Webpage extends Model implements Auditable, HasMedia
         return $this->morphMany(Snapshot::class, 'parent');
     }
 
+    public function liveSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_snapshot_id');
+    }
+
     public function unpublishedSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_snapshot_id');
@@ -244,14 +249,21 @@ class Webpage extends Model implements Auditable, HasMedia
     }
 
 
-    public function getUrl(): string
+    public function getUrl($withWWW = false): string
     {
+        $domain = $this->website->domain;
+
+        if ($withWWW && !str_starts_with($domain, 'www.')) {
+            $domain = 'www.' . $domain;
+        }
+
         return match (app()->environment()) {
-            'production' => 'https://'.$this->website->domain.'/'.$this->url,
-            'staging' => 'https://canary.'.$this->website->domain.'/'.$this->url,
+            'production' => 'https://' . $domain . '/' . $this->url,
+            'staging' => 'https://canary.' . $domain . '/' . $this->url,
             default => match ($this->shop->type) {
-                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/'.$this->url,
-                default => 'https://fulfilment.test/'.$this->url
+                ShopTypeEnum::DROPSHIPPING => 'https://www.ds.test/' . $this->url,
+                ShopTypeEnum::B2B, ShopTypeEnum::B2C => 'https://www.ecom.test/' . $this->url,
+                default => 'https://www.fulfilment.test/' . $this->url
             }
         };
     }
