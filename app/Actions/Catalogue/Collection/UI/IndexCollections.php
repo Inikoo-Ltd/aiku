@@ -25,6 +25,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -143,7 +144,6 @@ class IndexCollections extends OrgAction
     {
         $container = null;
 
-
         $subNavigation = null;
 
         $title     = __('Collections');
@@ -154,8 +154,10 @@ class IndexCollections extends OrgAction
         $iconRight = null;
         $routes    = [
             'indexWebpage' => [
-                'name'       => 'grp.org.shops.show.catalogue.webpages.index',
-                'parameters' => $request->route()->originalParameters()
+                'name'       => 'grp.json.webpages.index',
+                'parameters' => [
+                    "shop" => Arr::get($request->route()->originalParameters(), 'shop')
+                ]
             ],
         ];
         $actions   = [];
