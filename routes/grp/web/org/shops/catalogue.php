@@ -33,7 +33,6 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Web\Webpage\UI\IndexWebpages;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowCatalogue::class)->name('dashboard');
@@ -171,8 +170,6 @@ Route::name("families.")->prefix('families')
             });
         });
     });
-
-Route::get('/webpage', [IndexWebpages::class, 'inShop'])->name('webpages.index');
 
 Route::name("collections.")->prefix('collections')
     ->group(function () {
