@@ -24,6 +24,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
@@ -129,6 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_exclusive_products
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -429,6 +431,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function tiktokUser(): HasOne
     {
         return $this->hasOne(TiktokUser::class);
+    }
+
+    public function amazonUsers(): HasMany
+    {
+        return $this->hasMany(AmazonUser::class);
     }
 
     public function deliveryNotes(): HasMany

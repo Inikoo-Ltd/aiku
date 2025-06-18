@@ -92,6 +92,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Collection<int, \App\Models\Web\Redirect> $incomingRedirects
  * @property-read Collection<int, Webpage> $linkedWebpages
+ * @property-read Snapshot|null $liveSnapshot
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Model|\Eloquent|null $model
  * @property-read Collection<int, ModelHasWebBlocks> $modelHasWebBlocks
