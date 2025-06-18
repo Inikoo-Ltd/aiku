@@ -36,12 +36,12 @@ class SaveWebsiteSitemap extends OrgAction
         $sitemap = Sitemap::create();
         $count   = 0;
 
-        $website->webpages()->where('state', WebpageStateEnum::LIVE)->chunk($chunkSize, function ($webpages) use (&$sitemap, &$count, $limit) {
+        $website->webpages()->with('liveSnapshot')->where('state', WebpageStateEnum::LIVE)->chunk($chunkSize, function ($webpages) use (&$sitemap, &$count, $limit) {
             foreach ($webpages as $webpage) {
 
-                if ($webpage->live_at) {
+                if ($webpage?->liveSnapshot?->published_at) {
                     $sitemap->add(Url::create($webpage->getUrl(true))
-                        ->setLastModificationDate($webpage->live_at));
+                        ->setLastModificationDate($webpage->liveSnapshot->published_at));
                 } else {
                     $sitemap->add(Url::create($webpage->getUrl(true)));
                 }

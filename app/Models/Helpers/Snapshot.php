@@ -68,7 +68,8 @@ class Snapshot extends Model
         'layout'  => 'array',
         'state'   => SnapshotStateEnum::class,
         'scope'   => SnapshotScopeEnum::class,
-        'builder' => SnapshotBuilderEnum::class
+        'builder' => SnapshotBuilderEnum::class,
+        'published_at' => 'datetime',
     ];
 
     protected $attributes = [
