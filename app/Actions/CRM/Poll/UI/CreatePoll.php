@@ -14,48 +14,48 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Poll;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditPoll extends OrgAction
+class CreatePoll extends OrgAction
 {
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
-    public function handle(Poll $poll): Poll
+
+    public function handle()
     {
-        return $poll;
+        return null;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Poll $poll, ActionRequest $request): Poll
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request)
     {
-        $this->initialisationFromShop($poll->shop, $request);
-
-        return $this->handle($poll);
+        $this->initialisationFromShop($shop, $request);
+        return $this->handle();
     }
 
-    public function htmlResponse(Poll $poll, ActionRequest $request): Response
+    public function htmlResponse(ActionRequest $request): Response
     {
         return Inertia::render(
-            'EditModel',
+            'CreateModel',
             [
                 'title'       => __('poll'),
                 'pageHead'    => [
-                    'title'   => $poll->name,
+                    'title'   => __('new poll'),
                     'icon'    => [
                         'title' => __('polls'),
-                        'icon'  => 'fal fa-poll'
+                        'icon'  => 'fal fa-cube'
                     ],
                     'actions' => [
                         [
                             'type'  => 'button',
-                            'style' => 'exitEdit',
+                            'style' => 'cancel',
+                            'label' => __('cancel'),
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                            ],
                         ]
                     ]
                 ],
@@ -63,47 +63,45 @@ class EditPoll extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit poll'),
+                            'title'  => __('new poll'),
                             'fields' => [
                                 'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('name'),
-                                    'value' => $poll->name
+                                    'type'     => 'input',
+                                    'label'    => __('name'),
+                                    'required' => true
                                 ],
                                 'label' => [
-                                    'type'  => 'input',
-                                    'label' => __('label'),
-                                    'value' => $poll->label
+                                    'type'     => 'input',
+                                    'label'    => __('label'),
+                                    'required' => true
                                 ],
                                 'in_registration' => [
                                     'type'  => 'toggle',
                                     'label' => __('in registration'),
-                                    'value' => $poll->in_registration
+                                    'value' => false
                                 ],
                                 'in_registration_required' => [
                                     'type'  => 'toggle',
                                     'label' => __('registration required'),
-                                    'value' => $poll->in_registration_required
+                                    'value' => false
                                 ],
                                 'in_iris' => [
                                     'type'  => 'toggle',
                                     'label' => __('in iris'),
-                                    'value' => $poll->in_iris
+                                    'value' => false
                                 ],
                                 'in_iris_required' => [
                                     'type'  => 'toggle',
                                     'label' => __('iris required'),
-                                    'value' => $poll->in_iris_required
+                                    'value' => false
                                 ],
                             ],
                         ]
                     ],
 
-                    'args' => [
-                        'updateRoute' => [
-                            'name'       => 'grp.models.poll.update',
-                            'parameters' => $poll->slug
-                        ],
+                    'route' => [
+                        'name'       => 'grp.models.poll.store',
+                        'parameters' => array_values($request->route()->originalParameters())
                     ]
                 ]
             ]

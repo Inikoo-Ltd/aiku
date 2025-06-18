@@ -62,6 +62,9 @@ use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
+use App\Actions\CRM\Poll\DeletePoll;
+use App\Actions\CRM\Poll\StorePoll;
+use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
@@ -805,6 +808,13 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::patch('brands/{brand:id}/update', [UpdateBrand::class, 'inTradeUnit'])->name('brands.update')->withoutScopedBindings();
     Route::post('brands/attach', [AttachBrandToModel::class, 'inTradeUnit'])->name('brands.attach');
     Route::delete('brands/{brand:id}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
+});
+
+
+Route::name('poll.')->prefix('poll/{poll:id}')->group(function () {
+    Route::post('poll', StorePoll::class)->name('store');
+    Route::patch('poll/{poll:id}', UpdatePoll::class)->name('update')->withoutScopedBindings();
+    Route::delete('poll/{poll:id}', DeletePoll::class)->name('delete')->withoutScopedBindings();
 });
 
 
