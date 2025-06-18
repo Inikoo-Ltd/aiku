@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPolls extends OrgAction
 {
@@ -38,6 +39,13 @@ class IndexPolls extends OrgAction
 
     public function handle(Shop|Organisation $parent, $prefix = null): LengthAwarePaginator
     {
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
+            $query->where(function ($query) use ($value, $parent) {
+                $query->whereAnyWordStartWith('polls.name', $value)
+                    ->orWhereAnyWordStartWith('polls.label', $value);
+            });
+        });
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -75,6 +83,7 @@ class IndexPolls extends OrgAction
 
         return $queryBuilder
             ->allowedSorts(['name', 'type', 'total_replies'])
+            ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
