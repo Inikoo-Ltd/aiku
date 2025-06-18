@@ -14,7 +14,8 @@ import ModelDetails from "@/Components/ModelDetails.vue"
 import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faShieldCheck, faUserTag, faKey } from '@fal'
+import { faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faShieldCheck, faUserTag, faKey, faSyncAlt } from '@fal'
+import { faExclamationTriangle } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { capitalize } from "@/Composables/capitalize"
 import { faRoad } from "@fas"
@@ -33,7 +34,9 @@ import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
 import { useCopyText } from '@/Composables/useCopyText'
 import PureInput from '@/Components/Pure/PureInput.vue'
-library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag, faKey)
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag, faExclamationTriangle, faKey, faSyncAlt)
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -64,7 +67,6 @@ const component = computed(() => {
         api_tokens: UserApiTokens,
         details: ModelDetails,
         request_logs: TableUserRequestLogs,
-        api_tokens: TableHistories,
         history: TableHistories,
         permissions: UserPermissions,
         roles: UserRoles,
@@ -75,8 +77,14 @@ const component = computed(() => {
 
 const newToken = ref('')
 const isLoadingGenerate = ref(false)
-const onGenerateApiToken = async () => {
+const isNewRegenerate = ref(false)
+const onGenerateApiToken = async (isRegenerate?: boolean) => {
     isLoadingGenerate.value = true
+
+    if (isRegenerate) {
+        isNewRegenerate.value = true
+    }
+
     try {
         const data = await axios.post(
             route(props.apiRoutes.createToken.name, props.apiRoutes.createToken.parameters),
@@ -103,17 +111,9 @@ const onGenerateApiToken = async () => {
         })
     } finally {
         isLoadingGenerate.value = false
+        isNewRegenerate.value = false
     }
 
-}
-
-const isRecentlyCopied = ref(false)
-const onClickCopy = (textToCopy: string) => {
-    isRecentlyCopied.value = true
-    useCopyText(textToCopy)
-    setTimeout(() => {
-        isRecentlyCopied.value = false
-    }, 3000)
 }
 </script>
 
@@ -149,15 +149,32 @@ const onClickCopy = (textToCopy: string) => {
         </div>
 
         <div class="mt-4 mx-auto w-fit">
-            <PureInput
-                v-if="newToken"
-                v-model="newToken"
-                disabled
-                copyButton
-            />
+            <div v-if="newToken" class="w-full max-w-xl">
+                <div class="w-full max-w-64 mx-auto flex items-center gap-x-2">
+                    <PureInput
+                        v-model="newToken"
+                        disabled
+                        copyButton
+                        :styleInput="{
+                            paddingRight: '32px'
+                        }"
+                    />
+                    <div @click="() => onGenerateApiToken(true)" v-tooltip="trans('Regenerate API Token')" class="text-gray-400 hover:text-gray-700 cursor-pointer">
+                        <LoadingIcon v-if="isNewRegenerate" />
+                        <FontAwesomeIcon v-else icon="fal fa-sync-alt" class="" fixed-width aria-hidden="true" />
+                    </div>
+                </div>
+
+                <div class="text-orange-500 text-sm xflex items-center gap-x-2 text-center">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="xopacity-70 text-lg" fixed-width aria-hidden="true" />
+                    <span class="text-center">Put this token in a safe place, you won't be able to see it again.</span>
+                    <!-- <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70 text-lg" fixed-width aria-hidden="true" /> -->
+                </div>
+            </div>
             
             <Button
                 v-else
+        
                 @click="onGenerateApiToken"
                 label="Click to Generate"
                 type="tertiary"
