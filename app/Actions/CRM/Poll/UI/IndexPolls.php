@@ -53,11 +53,10 @@ class IndexPolls extends OrgAction
             $join->on('polls.id', '=', 'poll_replies.poll_id');
         });
 
-        // $totalCustomer = Customer::where('organisation_id', $parent->id)
-        //     ->when($parent instanceof Shop, function ($query) use ($parent) {
-        //         return $query->where('shop_id', $parent->id);
-        //     })
-        //     ->count();
+        $totalCustomer = Customer::when($parent instanceof Shop, function ($query) use ($parent) {
+            return $query->where('shop_id', $parent->id);
+        })
+        ->count();
 
         $queryBuilder
             ->defaultSort('polls.id')
@@ -69,13 +68,13 @@ class IndexPolls extends OrgAction
                 'polls.position',
                 'polls.type',
                 'polls.in_registration',
-                DB::raw('COUNT(DISTINCT poll_replies.customer_id) as customers'),
-                // DB::raw("'{$totalCustomer}' AS 'total_customers'"),
+                DB::raw('COUNT(DISTINCT poll_replies.customer_id) as total_replies'),
+                DB::raw("'{$totalCustomer}' AS total_customers"),
             ])
             ->groupBy('polls.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'type', 'customers'])
+            ->allowedSorts(['name', 'type', 'total_replies'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -108,7 +107,7 @@ class IndexPolls extends OrgAction
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'in_registration', label: __('In registration'), canBeHidden: false, sortable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'total_replies', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'percentage', label: __('Response %'), canBeHidden: false);
         };
     }
