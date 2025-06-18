@@ -7,6 +7,7 @@ import { getStyles } from "@/Composables/styles";
 import { routeType } from "@/types/route";
 import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue";
 import Dialog from "primevue/dialog";
+import { trans } from "laravel-vue-i18n";
 
 const props = defineProps<{
   modelValue: Record<string, any>;
@@ -92,7 +93,7 @@ const screenClass = computed(() => {
     :class="screenClass"
     :style="getStyles(modelValue?.container?.properties, screenType)"
   >
-    <h2 class="text-2xl font-bold mb-6">Browse By Sub-department:</h2>
+    <h2 class="text-2xl font-bold mb-6">Browse by sub-department:</h2>
     <div v-if="modelValue?.sub_departments?.length">
       <div class="grid gap-4" :class="gridColsClass">
         <button
@@ -119,12 +120,10 @@ const screenClass = computed(() => {
     </div>
 
     <div v-else class="text-center text-gray-500 py-6">
-      <EmptyState
-        :data="{
-          title: 'No Sub-departments Available',
-          description: 'Please check back later or contact support.',
-        }"
-      />
+      <EmptyState :data="{
+        title: trans('There is no published sub-department webpages'),
+        description: 'Please make sure the sub-departments, have published webpage.',
+      }" />
     </div>
 
     <!-- Dialog Tetap -->

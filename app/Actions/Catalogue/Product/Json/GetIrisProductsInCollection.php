@@ -10,12 +10,12 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\IrisDropshippingLoggedInProductsInWebpageResource;
 use App\Http\Resources\Catalogue\IrisDropshippingLoggedOutProductsInWebpageResource;
 use App\Http\Resources\Catalogue\IrisEcomLoggedInProductsInWebpageResource;
 use App\Http\Resources\Catalogue\IrisEcomLoggedOutProductsInWebpageResource;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
@@ -26,9 +26,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 // **************************************
 // Important: This code should be only called in products-1 webBlock
-class GetIrisProductsInProductCategory extends IrisAction
+class GetIrisProductsInCollection extends IrisAction
 {
-    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
+    public function handle(Collection $collection, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -56,13 +56,12 @@ class GetIrisProductsInProductCategory extends IrisAction
         $queryBuilder->where('products.available_quantity', '>', 0);
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
-        if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $queryBuilder->where('department_id', $productCategory->id);
-        } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $queryBuilder->where('family_id', $productCategory->id);
-        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $queryBuilder->where('sub_department_id', $productCategory->id);
-        }
+        $queryBuilder->join('model_has_collections', function ($join) use ($collection) {
+            $join->on('products.id', '=', 'model_has_collections.model_id')
+                ->where('model_has_collections.model_type', '=', 'Product')
+                ->where('model_has_collections.collection_id', '=', $collection->id);
+        });
+
 
         return $queryBuilder->defaultSort('available_quantity')
             ->select(
@@ -90,11 +89,11 @@ class GetIrisProductsInProductCategory extends IrisAction
         return $resourceClass::collection($products);
     }
 
-    public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
+    public function asController(Collection $collection, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
 
-        return $this->handle(productCategory: $productCategory);
+        return $this->handle(collection: $collection);
     }
 
 }

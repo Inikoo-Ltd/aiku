@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 04-06-2025-16h-03m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 18 Jun 2025 16:06:43 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Catalogue\Product\Json;
 
@@ -20,7 +19,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetProductsInProductCategory extends OrgAction
+class GetOutOfStockProductsInProductCategory extends OrgAction
 {
     public function handle(ProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
@@ -32,9 +31,9 @@ class GetProductsInProductCategory extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
-
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->where('products.available_quantity', '>', 0);
+        $queryBuilder->where('products.available_quantity', '<=', 0);
+
 
         if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $parent->id);

@@ -8,15 +8,12 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Http\Resources\Accounting\OrgPaymentProvidersResource;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Accounting\PaymentServiceProvider;
 use Illuminate\Support\Arr;
-use Spatie\QueryBuilder\QueryBuilder;
 
 class WebBlockProductResource extends JsonResource
 {

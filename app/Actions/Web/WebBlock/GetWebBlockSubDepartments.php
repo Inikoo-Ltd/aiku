@@ -9,6 +9,7 @@
 namespace App\Actions\Web\WebBlock;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockSubDepartmentsResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,8 @@ class GetWebBlockSubDepartments
             ->select(['product_categories.slug', 'product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.image_id', 'webpages.url as url'])
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('product_categories.show_in_website', true)
+            ->whereNotNull('webpages.id')
+            ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->get();
 

@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance;
+namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -14,7 +14,6 @@ use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -108,6 +107,11 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
+
+
+        $this->setFamilyWebBlockOnTop($webpage);
+        $webpage->refresh();
+
         foreach ($webpage->webBlocks as $webBlock) {
             print $webBlock->webBlockType->code."\n";
         }
@@ -127,6 +131,37 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 );
             }
         }
+
+    }
+
+
+    public function setFamilyWebBlockOnTop(Webpage $webpage): void
+    {
+
+        $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first()->model_has_web_blocks_id;
+
+        $webBlocks=$webpage->webBlocks()->pluck('position','model_has_web_blocks.id',)->toArray();
+        //print_r($webBlocks);
+        $runningPosition = 2;
+        foreach ($webBlocks as $key=>$position) {
+            if ($key == $familyWebBlock) {
+                $webBlocks[$key] = 1;
+            } else {
+                $webBlocks[$key] = $runningPosition;
+                $runningPosition ++;
+            }
+
+
+        }
+
+
+        foreach ($webBlocks as $key=>$position) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $key)
+                ->update(['position' => $position]);
+        }
+        UpdateWebpageContent::run($webpage);
+
 
     }
 

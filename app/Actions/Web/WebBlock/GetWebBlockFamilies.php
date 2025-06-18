@@ -54,7 +54,7 @@ class GetWebBlockFamilies
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->get();
-        }else{
+        } else {
             return $webBlock;
         }
 

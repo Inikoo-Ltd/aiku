@@ -6,57 +6,55 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance;
+namespace App\Actions\Maintenance\Dropshipping;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateCustomerClients;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
-class RepairCustomerClientsNullCustomerSalesChannels
+class RepairPortfoliosNullCustomerSalesChannels
 {
     use WithActionUpdate;
 
 
-    public function handle(CustomerClient $customerClient): void
+    public function handle(Portfolio $portfolio): void
     {
-        $customerSalesChannel = CustomerSalesChannel::where('platform_id', $customerClient->platform_id)
-            ->where('customer_id', $customerClient->customer_id)
+        $customerSalesChannel = CustomerSalesChannel::where('platform_id', $portfolio->platform_id)
+            ->where('customer_id', $portfolio->customer_id)
             ->first();
 
         if (!$customerSalesChannel) {
             $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
-                customer: $customerClient->customer,
-                platform: $customerClient->platform,
+                customer: $portfolio->customer,
+                platform: $portfolio->platform,
                 modelData: [
-                    'reference' => (string)$customerClient->customer->id,
+                    'reference' => (string)$portfolio->customer->id,
                 ]
             );
         }
-
-
-        $customerClient->update([
+        $portfolio->update([
             'customer_sales_channel_id' => $customerSalesChannel->id,
         ]);
 
-        CustomerSalesChannelsHydrateCustomerClients::run($customerSalesChannel);
+        CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
     }
 
 
-    public string $commandSignature = 'repair:customer_clients_null_customer_sales_channels';
+    public string $commandSignature = 'repair:portfolios_null_customer_sales_channels';
 
     public function asCommand(Command $command): void
     {
-        $count = CustomerClient::whereNull('customer_sales_channel_id')->count();
+        $count = Portfolio::whereNull('customer_sales_channel_id')->whereNotNull('platform_id')->count();
 
         $bar = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
 
-        CustomerClient::orderBy('id')->whereNull('customer_sales_channel_id')
+        Portfolio::orderBy('id')->whereNull('customer_sales_channel_id')->whereNotNull('platform_id')
             ->chunk(100, function (Collection $models) use ($bar) {
                 foreach ($models as $model) {
                     $this->handle($model);

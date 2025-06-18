@@ -2,13 +2,9 @@
 import { faCube, faInfoCircle, faLink } from "@fal"
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, watch, computed, provide, inject, toRaw } from "vue"
-import Modal from '@/Components/Utils/Modal.vue'
-import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
+import { ref, watch, provide, inject, toRaw } from "vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
-import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"
@@ -16,6 +12,7 @@ import SideMenuSubDepartementWorkshop from "./SideMenuFamiliesBlockWorkshop.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Drawer from 'primevue/drawer';
 import SubDepartementListTree from "./SubDepartementListTree.vue"
+import ScreenView from "@/Components/ScreenView.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -74,11 +71,11 @@ const autosave = () => {
       },
       onSuccess: () => {
         props.data.layout = payload;
-        notify({
+       /*  notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
           type: 'success',
-        });
+        }); */
       },
       onError: (errors) => {
         notify({
@@ -91,11 +88,27 @@ const autosave = () => {
   );
 };
 
+const setIframeView = (view: string) => {
+  switch (view) {
+    case "mobile":
+      return "w-[375px] h-[667px] mx-auto";
+    case "tablet":
+      return "w-[768px] h-[1024px] mx-auto";
+    default:
+      return "w-full h-full";
+  }
+};
 
 
-
+const iframeClass = ref("w-full h-full")
 const currentView = ref("desktop");
 provide("currentView", currentView);
+
+watch(currentView, (newValue) => {
+  iframeClass.value = setIframeView(newValue)
+})
+
+
 </script>
 
 <template>
@@ -108,8 +121,8 @@ provide("currentView", currentView);
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
         <!-- Left: Desktop View Icon -->
-        <div class="py-1 px-2 cursor-pointer lg:block hidden selected-bg" v-tooltip="'Desktop view'">
-          <FontAwesomeIcon icon="fas fa-desktop" fixed-width aria-hidden="true" />
+        <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
+         <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
         </div>
 
         <!-- Right: Preview Label -->
@@ -120,10 +133,11 @@ provide("currentView", currentView);
           <span v-else>Pick The sub-departement</span>
         </div>
       </div>
-      <div v-if="layout?.code" class="relative flex-1 overflow-auto">
+      <div v-if="layout?.code"  :class="['border-2 border-t-0 overflow-auto', iframeClass]">
         <component
-          class="w-full relative flex-1 overflow-auto border-4 border-[#4F46E5] active-block"
+          class="flex-1  active-block"
           :is="getComponent(layout.code)"
+          :screenType="currentView"
           :modelValue="{
             ...layout.data.fieldValue,
             sub_departement: layout.data.fieldValue?.departement || null,
@@ -132,6 +146,7 @@ provide("currentView", currentView);
           :routeEditfamily="data.update_family_route"
         />
       </div>
+
       <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]" style="height: 100%;">
         <div class="flex flex-col items-center gap-2">
           <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />

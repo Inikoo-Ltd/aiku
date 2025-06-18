@@ -20,6 +20,7 @@
             <directory>app/Transfers</directory>
             <directory>app/Actions/Transfers</directory>
             <directory>app/Stubs</directory>
+            <directory>app/Actions/Maintenance</directory>
         </exclude>
     </source>
     <php>

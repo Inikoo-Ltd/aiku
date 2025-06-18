@@ -27,9 +27,9 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="mx-auto px-4 py-12" :style="getStyles(fieldValue.container?.properties, screenType)">
-    <h2 class="text-2xl font-bold mb-6">Browse By Collections :</h2>
-    <div v-if="fieldValue?.collections?.length > 0">
+  <div v-if="fieldValue?.collections?.length > 0" class="mx-auto px-4 py-12" :style="getStyles(fieldValue.container?.properties, screenType)">
+    <h2  class="text-2xl font-bold mb-6">Browse By Collections :</h2>
+    <div>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <a v-for="item in fieldValue.collections" :key="item.code"  :href="`/${item.url}`"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full">
@@ -41,14 +41,5 @@ const props = defineProps<{
         </a>
       </div>
     </div>
-
-
-    <div v-else class="text-center text-gray-500 py-6">
-      <EmptyState :data="{
-        title: 'No Collection Available',
-        description: 'Please check back later or contact support.',
-      }" />
-    </div>
-
   </div>
 </template>

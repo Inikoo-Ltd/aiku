@@ -165,25 +165,22 @@ const locale = inject("locale", aikuLocaleStructure);
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
                 {{ refund["organisation_code"] }}
             </Link>
         </template>
-
         <template #cell(state)="{ item: product }">
             <Icon :data="product.state"></Icon>
         </template>
-
         <template #cell(price)="{ item: product }">
             {{ locale.currencyFormat(product.currency_code, product.price) }}
         </template>
 
         <template #cell(code)="{ item: product }">
-            <Link :href="productRoute(product) as string" class="primaryLink">
+            <!-- <Link :href="productRoute(product)" class="primaryLink" method="get">
                 {{ product["code"] }}
-            </Link>
+            </Link> -->
         </template>
 
         <template #cell(shop_code)="{ item: product }">
@@ -202,7 +199,7 @@ const locale = inject("locale", aikuLocaleStructure);
                 v-if="routes?.detach?.name"
                 as="button"
                 :href="route(routes.detach.name, routes.detach.parameters)"
-                :method="routes.detach.method"
+                :method="routes?.detach?.method"
                 :data="{
                     product: item.id
                 }"
@@ -221,7 +218,7 @@ const locale = inject("locale", aikuLocaleStructure);
                 v-else="item?.delete_product?.name"
                 as="button"
                 :href="route(item.delete_product.name, item.delete_product.parameters)"
-                :method="item.delete_product.method"
+                :method="item?.delete_product?.method"
                 :data="{
                     product: item.id
                 }"
