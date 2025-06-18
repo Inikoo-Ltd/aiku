@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink, faSeedling, faHeart } from "@fal"
 import { faBox, faPlus, faVial } from "@far"
-import { faCircle, faStar } from "@fas"
+import { faCircle, faStar, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref } from "vue"
@@ -14,6 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import ProductContents from "./ProductContents.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
+import { PropertyDescriptorParsingType } from "html2canvas/dist/types/css/IPropertyDescriptor"
 
 library.add(faCube, faLink)
 
@@ -28,18 +29,13 @@ const props = withDefaults(defineProps<{
   templateEdit: 'webpage'
 })
 
-
 const locale = useLocaleStore()
 const isFavorite = ref(false)
 const cancelToken = ref<Function | null>(null)
-const product = ref({
-    labels: ['Vegan', 'Handmade', 'Cruelty Free', 'Plastic Free'],
-})
 
 const toggleFavorite = () => {
     isFavorite.value = !isFavorite.value
 }
-
 const debounceTimer = ref(null)
 const onDescriptionUpdate = (val) => {
     clearTimeout(debounceTimer.value)
@@ -73,11 +69,14 @@ const saveDescriptions = (value: string) => {
     )
 }
 
+function formatNumber(value : Number) {
+  return Number.parseFloat(value).toString();
+}
+console.log(props.modelValue)
 
 </script>
 
 <template>
-    <!-- Desktop Layout -->
     <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
@@ -94,7 +93,7 @@ const saveDescriptions = (value: string) => {
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="modelValue.product.stock === 'active' ? 'text-green-600' : 'text-red-600'" />
+                                :class="modelValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>{{ modelValue.product.stock > 0 ? `In Stock (${modelValue.product.stock})` : 'Out Of Stock' }}</span>
                         </div>
                     </div>
@@ -108,10 +107,10 @@ const saveDescriptions = (value: string) => {
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag,index) in modelValue.product.tags"
-                        :key="label">
-                        <!--   <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" /> -->
-                        <div class="aspect-square w-full h-[15px]">
-                            <Image :src="tag?.image?.source" :alt="`Thumbnail tag ${index}`"
+                        :key="index">
+                        <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
+                        <div v-else class="aspect-square w-full h-[15px]">
+                            <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
                                 class="w-full h-full object-cover" />
                         </div>
                         <span>{{ tag.name }}</span>
@@ -122,7 +121,7 @@ const saveDescriptions = (value: string) => {
                 <div class="flex items-end border-b pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-5xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
-                        <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">({{ modelValue.product.units }}/{{
+                        <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">({{ formatNumber(modelValue.product.units) }}/{{
                             modelValue.product.unit }})</span>
                     </div>
                     <div class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
@@ -144,14 +143,14 @@ const saveDescriptions = (value: string) => {
                 </div>
                 <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
-                    <span>Order 4 full carton</span>
+                    <span>{{`order ${formatNumber(modelValue?.product?.units)} for full pack`}}</span>
                 </div>
                 <div class="text-xs font-medium text-gray-800 py-3">
                     <EditorV2 v-if="templateEdit == 'webpage'" v-model="modelValue.product.description"
                         @update:model-value="(e) => onDescriptionUpdate(e)" />
                     <div v-else :v-html="modelValue.product.description"></div>
                 </div>
-                <div class="mb-4 space-y-2">
+                <div v-if="modelValue.setting?.payments_and_policy" class="mb-4 space-y-2">
                     <InformationSideProduct v-if="modelValue?.information?.length > 0"
                         :informations="modelValue?.information" />
                     <div v-if="modelValue?.paymentData?.length > 0"
@@ -166,7 +165,7 @@ const saveDescriptions = (value: string) => {
             </div>
         </div>
 
-        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product" />
+        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product" :setting="modelValue.setting" />
     </div>
 
     <!-- Mobile Layout -->
@@ -179,7 +178,7 @@ const saveDescriptions = (value: string) => {
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
                     <span class="text-xs text-gray-500 ml-1">
-                        ({{ modelValue.product.units }}/{{ modelValue.product.unit }})
+                        ({{ formatNumber(modelValue.product.units) }}/{{ modelValue.product.unit }})
                     </span>
                 </div>
                 <div class="text-xs text-gray-400 font-semibold mt-1">
@@ -197,10 +196,16 @@ const saveDescriptions = (value: string) => {
 
 
         <div class="flex flex-wrap gap-2 mt-4">
-            <div v-for="label in product.labels" :key="label" class="text-xs flex items-center gap-1 text-gray-500">
-                <FontAwesomeIcon :icon="faSeedling" class="text-sm" />
-                <span>{{ label }}</span>
+            <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in modelValue.product.tags"
+                :key="index">
+                <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
+                <div v-else class="aspect-square w-full h-[15px]">
+                    <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
+                        class="w-full h-full object-cover" />
+                </div>
+                <span>{{ tag.name }}</span>
             </div>
+
         </div>
         <div class="mt-6 flex flex-col gap-2">
             <button
@@ -226,7 +231,7 @@ const saveDescriptions = (value: string) => {
 
         </div>
 
-        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product" />
+        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product" :setting="modelValue.setting"/>
     </div>
 
 </template>

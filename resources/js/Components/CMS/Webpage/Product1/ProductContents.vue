@@ -22,6 +22,10 @@ const props = defineProps<{
             data: Array<{ id: number; title: string; text: string; type: 'information' | 'faq' }>
         }
     }
+    setting : {
+        product_specs : boolean,
+        faqs : boolean
+    }
 }>()
 
 const confirm = useConfirm()
@@ -144,7 +148,7 @@ const openDisclosureId = ref<number | null>(null)
 
 <template>
     <div class="w-full">
-        <div class="mb-6">
+        <div v-if="setting.product_specs" class="mb-6">
             <div v-if="informationContents.length === 0 && !loadingAdd"
                 class="text-center text-gray-500 text-sm py-6 italic border border-dashed border-gray-300 rounded">
                 <div class="py-2">No product information yet. Click the add button to insert new content.</div>
@@ -184,11 +188,10 @@ const openDisclosureId = ref<number | null>(null)
                 <div class="">
                 </div>
             </div>
-
         </div>
 
         <!-- FAQ Section -->
-        <div class="mb-6 relative">
+        <div v-if="setting.faqs" class="mb-6 relative">
             <div class="text-sm text-gray-500 mb-1 font-semibold">Frequently Asked Questions (FAQs)</div>
 
             <div v-if="faqContents.length === 0 && !loadingAdd"

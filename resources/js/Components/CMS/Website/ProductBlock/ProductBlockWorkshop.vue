@@ -24,6 +24,8 @@ const props = defineProps<{
   }
 }>()
 
+console.log(props)
+
 const reload = inject('reload') as () => void
 const isModalOpen = ref(false);
 const isLoadingSave = ref(false);
