@@ -811,8 +811,9 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
 });
 
 
+Route::post('shops/{shop}/poll/store', StorePoll::class)->name('poll.store');
+
 Route::name('poll.')->prefix('poll')->group(function () {
-    Route::post('/store', StorePoll::class)->name('store');
     Route::patch('{poll:id}/update', UpdatePoll::class)->name('update')->withoutScopedBindings();
     Route::delete('{poll:id}/delete', DeletePoll::class)->name('delete')->withoutScopedBindings();
 });

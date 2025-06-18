@@ -128,6 +128,22 @@ class IndexPolls extends OrgAction
             ];
         }
 
+        $action = [];
+        if ($this->canEdit) {
+            $action = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('New Poll'),
+                    'label'   => __('New Poll'),
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.crm.polls.create',
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ],
+            ];
+        }
+
         return Inertia::render(
             'Org/Shop/CRM/Polls',
             [
@@ -143,6 +159,7 @@ class IndexPolls extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => $action,
                 ],
                 'data'          => PollsResource::collection($polls),
             ]

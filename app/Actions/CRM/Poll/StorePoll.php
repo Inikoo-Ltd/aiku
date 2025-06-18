@@ -15,6 +15,8 @@ use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Rules\IUnique;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -82,6 +84,13 @@ class StorePoll extends OrgAction
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $this->validatedData);
+    }
+    public function htmlResponse(Poll $poll): RedirectResponse
+    {
+        return Redirect::route('grp.org.shops.show.crm.polls.index', [
+            'organisation' => $poll->organisation->slug,
+            'shop'         => $poll->shop->slug
+        ]);
     }
 
     public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Poll
