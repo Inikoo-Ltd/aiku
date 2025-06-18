@@ -7,7 +7,9 @@
  * copyright 2025
 */
 
-use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
+use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
 use Illuminate\Support\Facades\Route;
 
-Route::get('product-category/{productCategory}/products', GetIrisProductsInProductCategory::class)->name('product_category.products.index');
+Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
+Route::post('portfolio-multi-channels', StoreIrisPortfolioToMultiChannels::class)->name('multi_channels.portfolio.store');
