@@ -236,7 +236,12 @@ watch(showOfflineModal, (visible) => {
 });
 
 function handleUrlChange(e: string | null) {
-  reroute.value.url = e
+  const raw = e?.trim() ?? ""
+  if (!raw) {
+    reroute.value.url = "/"  // Only assign string when raw is valid (never null)
+    return
+  }
+  reroute.value.url = raw
 }
 
 
