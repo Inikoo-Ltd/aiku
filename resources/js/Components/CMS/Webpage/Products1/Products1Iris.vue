@@ -64,7 +64,6 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
-    console.log('Fetching products with filters:', filters)
 
     try {
         const response = await axios.get(route(props.fieldValue.products_route.iris.name, {

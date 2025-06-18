@@ -19,22 +19,25 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const locale = useLocaleStore()
 
-defineProps<{
-    product: {
-        id: number
-        name: string
-        code: string
-        image?: { source: string }
-        currency_code: string
-        rpp?: number
-        price: number
-        units: number
-        unit: string
-        stock: number
-        rating: number
-        bestseller: boolean
-        is_favourite: boolean
-    }
+interface ProductResource {
+    id: number
+    name: string
+    code: string
+    image?: { source: string }
+    currency_code: string
+    rpp?: number
+    unit: string
+    stock: number
+    rating: number
+    price: number
+    units: number
+    bestseller?: boolean
+    is_favourite?: boolean
+    exist_in_portfolios_channel: number[]
+}
+
+const props = defineProps<{
+    product: ProductResource
     channels: {
         isLoading: boolean
         list: {}[]
@@ -47,15 +50,15 @@ const emits = defineEmits<{
 
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
-const onAddToAllPortfolios = (productId: number) => {
+const onAddToAllPortfolios = (product: ProductResource) => {
     // Emit an event or call a method to handle adding the product to the portfolio
-    console.log(`Adding product with ID ${productId} to portfolio`)
+    console.log(`Adding product with ID ${product.name} to portfolio`)
     
     // Section: Submit
     router.post(
         route('iris.models.all_channels.portfolio.store'),
         {
-            item_id: [productId]
+            item_id: [product.id]
         },
         {
             preserveScroll: true,
@@ -64,6 +67,7 @@ const onAddToAllPortfolios = (productId: number) => {
                 isLoadingAllPortfolios.value = true
             },
             onSuccess: () => {
+                product.exist_in_portfolios_channel = props.channels.list.map(channel => channel.id)
                 notify({
                     title: trans("Success"),
                     text: trans("Added to portfolio"),
@@ -86,11 +90,11 @@ const onAddToAllPortfolios = (productId: number) => {
 
 // Section: Add to specific Portfolios channel
 const isLoadingSpecificChannel = ref([])
-const onAddPortfoliosSpecificChannel = (product: {}, channel: {}) => {
+const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) => {
     console.log(`Adding product with ID ${product.id} to portfolio`)
     
     router.post(
-        route('iris.models.all_channels.portfolio.store'),
+        route('iris.models.multi_channels.portfolio.store'),
         {
             customer_sales_channel_ids: [channel.id],
             item_id: [product.id]
@@ -102,9 +106,10 @@ const onAddPortfoliosSpecificChannel = (product: {}, channel: {}) => {
                 isLoadingSpecificChannel.value.push(channel.id)
             },
             onSuccess: () => {
+                product.exist_in_portfolios_channel.push(channel.id)
                 notify({
                     title: trans("Success"),
-                    text: `Added ${product.name} to ${channel.name ?? channel.reference}`,
+                    text: `Added product ${product.name} to channel ${channel.name ?? channel.reference}`,
                     type: "success"
                 })
             },
@@ -246,21 +251,23 @@ const onAddFavourite = (product: {}) => {
                         Add to Portfolio
                     </button> -->
 
-                    <div class="flex flex-nowrap relative">
+                    <div class="w-full flex flex-nowrap relative">
                         <Button
                             v-if="product.is_exist_on_all_portfolios"
                             label="Exist on all Portfolios"
                             type="tertiary"
                             disabled
                             class="border-none border-transparent rounded-r-none"
+                            full
                         />
                         <Button
                             v-else
-                            @click="() => onAddToAllPortfolios(product.id)"
+                            @click="() => onAddToAllPortfolios(product)"
                             label="Add to all Portfolios"
                             :loading="isLoadingAllPortfolios"
                             :icon="faPlus"
                             class="border-none border-transparent rounded-r-none"
+                            full
                             style="border: 0px"
                         />
                         <Popover position="bottom-full left-full -translate-y-2 -translate-x-3" >
@@ -288,8 +295,8 @@ const onAddFavourite = (product: {}) => {
                                             full
                                             :loading="isLoadingSpecificChannel.includes(channel.id)"
                                         >
-                                            <template #iconRight>
-                                                <FontAwesomeIcon :icon="faCheck" class="text-green-500" fixed-width aria-hidden="true" />
+                                            <template #icon>
+                                                <FontAwesomeIcon v-if="product.exist_in_portfolios_channel.includes(channel.id)" :icon="faCheck" class="text-green-500" fixed-width aria-hidden="true" />
                                             </template>
                                         </Button>
                                     </div>
@@ -307,10 +314,10 @@ const onAddFavourite = (product: {}) => {
                     </div>
 
                     <!-- Buy a Sample (10%) -->
-                    <button v-tooltip="'Buy  sample'"
+                    <!-- <button v-tooltip="'Buy  sample'"
                         class="flex items-center justify-center border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded p-2 text-sm font-semibold w-[10%] transition">
                         <FontAwesomeIcon :icon="faVial" class="text-sm" />
-                    </button>
+                    </button> -->
                 </div>
             </div>
             <div v-else class="mt-2">
