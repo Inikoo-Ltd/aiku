@@ -57,10 +57,10 @@ class SeedJobPositions extends Seeder
             UpdateJobPosition::make()->action(
                 $jobPosition,
                 [
-                    'name'       => $jobPositionData['name'],
+                    'name' => $jobPositionData['name'],
                     'department' => Arr::get($jobPositionData, 'department'),
-                    'team'       => Arr::get($jobPositionData, 'team'),
-                    'scope'      => Arr::get($jobPositionData, 'scope')
+                    'team' => Arr::get($jobPositionData, 'team'),
+                    'scope' => Arr::get($jobPositionData, 'scope')
                 ]
             );
         } else {
@@ -69,11 +69,11 @@ class SeedJobPositions extends Seeder
                 $organisation,
                 [
                     'group_job_position_id' => $jobPositionCategory->id,
-                    'code'                 => $jobPositionData['code'],
-                    'name'                 => $jobPositionData['name'],
-                    'department'           => Arr::get($jobPositionData, 'department'),
-                    'team'                 => Arr::get($jobPositionData, 'team'),
-                    'scope'                => Arr::get($jobPositionData, 'scope')
+                    'code'                  => $jobPositionData['code'],
+                    'name'                  => $jobPositionData['name'],
+                    'department'            => Arr::get($jobPositionData, 'department'),
+                    'team'                  => Arr::get($jobPositionData, 'team'),
+                    'scope'                 => Arr::get($jobPositionData, 'scope')
                 ],
             );
         }
