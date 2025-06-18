@@ -114,7 +114,7 @@ test('create shop', function () {
         ->and($organisation->catalogueStats->number_shops_type_b2b)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_in_process)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_open)->toBe(0)
-        ->and($shopRoles->count())->toBe(11)
+        ->and($shopRoles->count())->toBe(12)
         ->and($shopPermissions->count())->toBe(28);
 
 
