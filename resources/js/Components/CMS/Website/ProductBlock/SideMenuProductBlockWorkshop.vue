@@ -71,6 +71,10 @@ const computedTabs = computed(() => {
 		: [tabs[0]]
 })
 
+const onPickBlock = (value: object) => {
+	emits('setUpTemplate', value)
+}
+
 
 </script>
 
