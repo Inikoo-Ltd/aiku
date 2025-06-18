@@ -77,7 +77,7 @@ class ShowPoll extends OrgAction
                         ],
                     'actions' => $actions,
                 ],
-                'data'        => PollResource::make($poll)
+                'data'        => PollResource::make($poll)->toarray($request),
             ]
         );
     }
