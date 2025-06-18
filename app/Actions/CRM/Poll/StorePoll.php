@@ -20,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePoll extends OrgAction
 {
+    // TODO: raul fix the permissions
     // use WithCRMEditAuthorisation;
     use WithNoStrictRules;
 

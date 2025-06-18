@@ -19,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePoll extends OrgAction
 {
+    // TODO: raul fix the permissions
     // use WithCRMAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;

@@ -16,6 +16,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeletePoll extends OrgAction
 {
+    // TODO: raul fix the permissions
+    // use WithCRMEditAuthorisation;
+
     public function handle(Poll $poll, bool $forceDelete): Poll
     {
 
