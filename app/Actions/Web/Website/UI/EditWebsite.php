@@ -110,11 +110,12 @@ class EditWebsite extends OrgAction
                     'required'  => true,
                 ],
                 'google_tag_id' => [
-                    'type'     => 'input',
-                    'label'    => __('google tag id'),
-                    'value'    => Arr::get($website->settings, "google_tag_id"),
-                    'placeholder' => 'GTM-ABC456GH',
-                    'required' => false,
+                    'type'          => 'input',
+                    'information'   => __('This only available for Google Tag Manager Container ID'),
+                    'label'         => __('GTM container ID'),
+                    'value'         => Arr::get($website->settings, "google_tag_id"),
+                    'placeholder'   => 'GTM-ABC456GH',
+                    'required'      => false,
                 ],
                 'luigisbox_private_key' => [
                     'information' => __('Private key for API Luigi search'),

@@ -35,9 +35,8 @@ class StoreTag extends OrgAction
 
         data_set($modelData, 'group_id', $group->id);
 
-        $tag = Tag::create($modelData);
-
         $image = Arr::pull($modelData, 'image', null);
+        $tag = Tag::create($modelData);
         if ($image) {
             $imageData = [
                 'path'         => $image->getPathName(),
