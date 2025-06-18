@@ -32,7 +32,7 @@ class SeedShopPermissions
 
         $currentPermissions = Permission::where('scope_type', 'Shop')->where('scope_id', $shop->id)->pluck('name');
         $currentPermissions->diff($shopPermissions)
-            ->each(function ($permissionName) use ($shop) {
+            ->each(function ($permissionName) {
                 Permission::where('name', $permissionName)->first()->delete();
             });
 
@@ -46,6 +46,7 @@ class SeedShopPermissions
                     ]
                 );
             } catch (Exception) {
+                //
             }
         });
 
@@ -54,7 +55,7 @@ class SeedShopPermissions
 
         $currentRoles = Role::where('scope_type', 'Shop')->where('scope_id', $shop->id)->pluck('name');
         $currentRoles->diff($shopRoles)
-            ->each(function ($roleName) use ($shop) {
+            ->each(function ($roleName) {
                 Role::where(
                     'name',
                     $roleName
@@ -64,7 +65,6 @@ class SeedShopPermissions
 
         foreach (RolesEnum::cases() as $case) {
             if ($case->scope() === 'Shop') {
-
                 if (!$role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $shop))->first()) {
                     $role = Role::create(
                         [

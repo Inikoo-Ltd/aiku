@@ -235,6 +235,19 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
+        'cus-v'    => [
+            'code'               => 'cus-v',
+            'name'               => 'Customer service viewer',
+            'department'         => 'customer-services',
+            'scope'              => JobPositionScopeEnum::SHOPS,
+            'roles'              => [
+                RolesEnum::CUSTOMER_SERVICE_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+            ]
+        ],
 
 
         'buy'      => [

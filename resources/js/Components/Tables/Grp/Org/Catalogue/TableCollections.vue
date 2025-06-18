@@ -352,7 +352,6 @@ function handleUrlChange(e: string | null) {
            :onChange="handleUrlChange"
         />
 
-        {{ reroute.url }}
         <div class="flex justify-end mt-4 mb-2 gap-2">
             <Button type="secondary" label="Cancel" @click="resetModalState" />
             <Button type="save" label="Save" @click="SetOffline"  />
