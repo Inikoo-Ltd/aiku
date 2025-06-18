@@ -67,7 +67,7 @@ const fetchProducts = async (isLoadMore = false) => {
 
     try {
         const response = await axios.get(route(props.fieldValue.products_route.iris.name, {
-            productCategory: props.fieldValue.products_route.iris.parameters[0],
+            ...props.fieldValue.products_route.iris.parameters,
             ...filters,
             'filter[global]': q.value,
             index_sort: orderBy.value,

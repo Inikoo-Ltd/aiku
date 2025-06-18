@@ -19,6 +19,8 @@ class GetWebBlockProducts
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+
+
         if ($webpage->sub_type == 'department') {
             $field = 'department_id';
         } elseif ($webpage->sub_type == 'sub_department') {
@@ -36,16 +38,32 @@ class GetWebBlockProducts
             ->where($field, $webpage->model_id)
             ->get();
 
-        $productRoute = [
-            'workshop' => [
-                'name' => 'grp.json.product_category.products.index',
-                'parameters' => [$webpage->model->slug],
-            ],
-            'iris' => [
-                'name' => 'iris.json.product_category.products.index',
-                'parameters' => [$webpage->model->slug],
-            ],
-        ];
+
+        if($webpage->model_type=='collection') {
+            $productRoute = [
+                'workshop' => [
+                    'name' => 'grp.json.collection.products.index',
+                    'parameters' => ['collection'=>$webpage->model->slug],
+                ],
+                'iris' => [
+                    'name' => 'iris.json.collection.products.index',
+                    'parameters' => ['collection'=>$webpage->model->slug],
+                ],
+            ];
+        }else{
+            $productRoute = [
+                'workshop' => [
+                    'name' => 'grp.json.product_category.products.index',
+                    'parameters' => ['productCategory'=>$webpage->model->slug],
+                ],
+                'iris' => [
+                    'name' => 'iris.json.product_category.products.index',
+                    'parameters' => ['productCategory'=>$webpage->model->slug],
+                ],
+            ];
+        }
+
+
 
         $permissions =  [];
 

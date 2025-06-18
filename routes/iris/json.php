@@ -16,5 +16,9 @@ Route::middleware(["iris-auth:retina"])->group(function () {
     Route::get('product-category/{productCategory}/products', GetIrisProductsInProductCategory::class)->name('product_category.products.index');
     Route::get('product-category/{productCategory}/out-of-stock-products', GetIrisOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
 
+    Route::get('collection/{collection}/products', GetIrisProductsInProductCategory::class)->name('product_category.products.index');
+    Route::get('collection/{collection}/out-of-stock-products', GetIrisOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
+
+
     Route::get('channels', IndexDropshippingCustomerSalesChannels::class)->name('channels.index');
 });
