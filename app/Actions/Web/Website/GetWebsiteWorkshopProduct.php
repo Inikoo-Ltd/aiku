@@ -24,7 +24,7 @@ class GetWebsiteWorkshopProduct
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
 
-            $fieldValue['product'] = WebBlockProductResource::make($product)->toArray(request());
+            $fieldValue['product'] = WebBlockProductResource::make($product);
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });
