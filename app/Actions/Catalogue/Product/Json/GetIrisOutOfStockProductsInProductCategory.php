@@ -1,11 +1,9 @@
 <?php
-
 /*
- * author Arya Permana - Kirin
- * created on 04-06-2025-16h-03m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 18 Jun 2025 16:13:46 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Catalogue\Product\Json;
 
@@ -26,7 +24,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 // **************************************
 // Important: This code should be only called in products-1 webBlock
-class GetIrisProductsInProductCategory extends IrisAction
+class GetIrisOutOfStockProductsInProductCategory extends IrisAction
 {
     public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
     {
@@ -53,7 +51,7 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->where('products.available_quantity', '>',0);
+        $queryBuilder->where('products.available_quantity', '<=',0);
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
