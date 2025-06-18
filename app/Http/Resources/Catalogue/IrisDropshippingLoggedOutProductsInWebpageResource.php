@@ -29,10 +29,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $rrp
  * @property mixed $id
  * @property mixed $currency
+ * @property mixed $currency_code
  */
 class IrisDropshippingLoggedOutProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
+
 
     public function toArray($request): array
     {
