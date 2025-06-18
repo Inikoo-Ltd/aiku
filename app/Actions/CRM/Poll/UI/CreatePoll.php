@@ -81,16 +81,16 @@ class CreatePoll extends OrgAction
                                    'label' => __('registration required'),
                                    'value' => false
                                ],
-                               'in_iris' => [
-                                   'type'  => 'toggle',
-                                   'label' => __('in iris'),
-                                   'value' => false
-                               ],
-                               'in_iris_required' => [
-                                   'type'  => 'toggle',
-                                   'label' => __('iris required'),
-                                   'value' => false
-                               ],
+                            //    'in_iris' => [
+                            //        'type'  => 'toggle',
+                            //        'label' => __('in iris'),
+                            //        'value' => false
+                            //    ],
+                            //    'in_iris_required' => [
+                            //        'type'  => 'toggle',
+                            //        'label' => __('iris required'),
+                            //        'value' => false
+                            //    ],
                            ],
                        ]
                    ],

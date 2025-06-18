@@ -85,16 +85,16 @@ class EditPoll extends OrgAction
                                     'label' => __('registration required'),
                                     'value' => $poll->in_registration_required
                                 ],
-                                'in_iris' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('in iris'),
-                                    'value' => $poll->in_iris
-                                ],
-                                'in_iris_required' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('iris required'),
-                                    'value' => $poll->in_iris_required
-                                ],
+                                // 'in_iris' => [
+                                //     'type'  => 'toggle',
+                                //     'label' => __('in iris'),
+                                //     'value' => $poll->in_iris
+                                // ],
+                                // 'in_iris_required' => [
+                                //     'type'  => 'toggle',
+                                //     'label' => __('iris required'),
+                                //     'value' => $poll->in_iris_required
+                                // ],
                             ],
                         ]
                     ],

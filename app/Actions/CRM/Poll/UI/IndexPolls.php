@@ -16,12 +16,14 @@ use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\PollsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,6 +48,17 @@ class IndexPolls extends OrgAction
         } else {
             $queryBuilder->where('polls.organisation_id', $parent->id);
         }
+
+        $queryBuilder->leftJoin('poll_replies', function ($join) {
+            $join->on('polls.id', '=', 'poll_replies.poll_id');
+        });
+
+        // $totalCustomer = Customer::where('organisation_id', $parent->id)
+        //     ->when($parent instanceof Shop, function ($query) use ($parent) {
+        //         return $query->where('shop_id', $parent->id);
+        //     })
+        //     ->count();
+
         $queryBuilder
             ->defaultSort('polls.id')
             ->select([
@@ -55,10 +68,14 @@ class IndexPolls extends OrgAction
                 'polls.label',
                 'polls.position',
                 'polls.type',
-            ]);
+                'polls.in_registration',
+                DB::raw('COUNT(DISTINCT poll_replies.customer_id) as customers'),
+                // DB::raw("'{$totalCustomer}' AS 'total_customers'"),
+            ])
+            ->groupBy('polls.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'type'])
+            ->allowedSorts(['name', 'type', 'customers'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -89,7 +106,10 @@ class IndexPolls extends OrgAction
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'in_registration', label: __('In registration'), canBeHidden: false, sortable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'percentage', label: __('Response %'), canBeHidden: false);
         };
     }
 

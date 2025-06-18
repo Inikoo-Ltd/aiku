@@ -18,14 +18,17 @@ class PollsResource extends JsonResource
     {
         /** @var Poll $poll */
         $poll = $this;
-        
+        // dd($poll->customers > 0 ? round(($poll->pollOptions->sum('votes') / $poll->customers) * 100, 2) : 0);
+
         return [
             'id'                        => $poll->id,
             'slug'                      => $poll->slug,
             'name'                      => $poll->name,
             'label'                     => $poll->label,
             'position'                  => $poll->position,
-            'type'                      => $poll->type,
+            'customers'                => $poll->customers,
+            'type'                      => $poll->type->label(),
+            'percentage'             => $poll->customers > 0 ? round(($poll->pollOptions->sum('votes') / $poll->customers) * 100, 2) : 0,
             'in_registration'           => $poll->in_registration,
             'in_registration_required'  => $poll->in_registration_required,
             'in_iris'                   => $poll->in_iris,
