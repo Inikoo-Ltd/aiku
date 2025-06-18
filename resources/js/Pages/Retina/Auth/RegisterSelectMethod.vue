@@ -19,6 +19,8 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Register from "@/Pages/Retina/Auth/Register.vue";
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faEnvelope, faUser, faPhone, faBuilding, faGlobe)
 
@@ -49,22 +51,35 @@ interface RegisterAccount {
 
 const isLoading = ref(false)
 
-const registerAccount = ref<RegisterAccount | null>(null)
-const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
 const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
-    router.get(route('retina.register_from_google'), {
-		google_credential: e.credential
-	}, {
-        onStart: () => {
-            isLoadingGoogle.value = true
-        },
-        onSuccess: (page) => {
-            isLoadingGoogle.value = false
-        }
+    // Section: Submit
+    isLoadingGoogle.value = true
+    const data = await axios.post(route('retina.login_google', {}), {
+        google_credential: e.credential,
     })
 
+    console.log('Google login response:', data.data)
+    if(data.status === 200) {
+        if (data.data.logged_in) {
+            router.get(route('retina.dashboard.show'))
+        } else {
+            router.get(route('retina.register_from_google'), {
+                google_credential: e.credential
+            }, {
+                onStart: () => {
+                    isLoadingGoogle.value = true
+                }
+            })
+        }
+    } else {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to login with Google. Please contact administrator."),
+            type: "error"
+        })
+    }
 }
 </script>
 
