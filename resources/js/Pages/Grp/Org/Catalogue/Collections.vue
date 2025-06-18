@@ -10,6 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableCollections from "@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { routeType } from '@/types/route'
 
 
 defineProps<{
@@ -18,6 +19,7 @@ defineProps<{
     data: {}
     formData: {}
     website_domain : string
+    routes : Array<routeType>
 }>()
 
 </script>
@@ -26,6 +28,6 @@ defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
     </PageHeading>
-    <TableCollections :data="data" :website_domain="website_domain"/>
+    <TableCollections :data="data" :website_domain="website_domain" :routes="routes"/>
 
 </template>

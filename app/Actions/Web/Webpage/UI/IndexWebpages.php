@@ -65,7 +65,7 @@ class IndexWebpages extends OrgAction
 
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
         $this->scope  = $shop;

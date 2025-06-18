@@ -25,21 +25,23 @@ import { RouteParams } from "@/types/route-params";
 import { Collection } from "@/types/collection";
 import collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
 import { trans } from "laravel-vue-i18n";
+import SelectQuery from "@/Components/SelectQuery.vue";
 
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree);
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
     routes: {
+        indexWebpage : routeType
         dataList: routeType
         submitAttach: routeType
         detach: routeType
     }
     website_domain?: string
 }>();
-
+console.log('props',props)
 const confirm = useConfirm();
 const showOfflineModal = ref(false);
 const selectedCollection = ref<any | null>(null);
@@ -166,7 +168,9 @@ function departmentRoute(family: Collection) {
 }
 
 const isLoadingDetach = ref<string[]>([]);
-const reroute = ref("");
+const reroute = ref({
+    url : null
+});
 
 function resetModalState() {
     selectedCollection.value = null;
@@ -333,8 +337,22 @@ watch(showOfflineModal, (visible) => {
             Please confirm where it should redirect to.
         </div>
 
-        <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}" v-model="reroute" class="w-full">
-        </PureInput>
+        <!-- <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}" v-model="reroute" class="w-full">
+        </PureInput> -->
+
+        <SelectQuery
+            :urlRoute="route(routes?.indexWebpage?.name, routes?.indexWebpage?.parameters)"
+            :value="reroute"
+            :placeholder="'Select url'"
+            :required="true"
+            :trackBy="'code'"
+            :label="'code'"
+            :valueProp="'id'"
+            :closeOnSelect="true"
+            :clearOnSearch="false"
+            :fieldName="'url'"
+            @updateVModel="(e) => console.log(e)"
+        />
 
         <div class="flex justify-end mt-4 mb-2 gap-2">
             <Button type="secondary" label="Cancel" @click="resetModalState" />
