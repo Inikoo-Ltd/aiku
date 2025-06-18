@@ -22,7 +22,6 @@ class DeleteIrisPortfolioFromAllChannels extends RetinaAction
     use WithActionUpdate;
 
 
-    private Portfolio $portfolio;
 
     public function handle(Customer $customer, array $modelData): void
     {
