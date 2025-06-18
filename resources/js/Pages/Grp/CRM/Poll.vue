@@ -15,6 +15,9 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faTrashAlt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTrashAlt)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -61,6 +64,7 @@ const props = defineProps<{
                     <Button
                         @click="changeModel"
                         icon="fal fa-trash-alt"
+                        type="negative"
                     />
                 </template>
             </ModalConfirmationDelete>
