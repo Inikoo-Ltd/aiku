@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 18 Jun 2025 16:06:43 Malaysia Time, Kuala Lumpur, Malaysia
@@ -31,7 +32,7 @@ class GetOutOfStockProductsInProductCategory extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->where('products.available_quantity', '<=',0);
+        $queryBuilder->where('products.available_quantity', '<=', 0);
 
 
         if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {

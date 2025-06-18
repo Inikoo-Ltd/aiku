@@ -53,7 +53,7 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->where('products.available_quantity', '>',0);
+        $queryBuilder->where('products.available_quantity', '>', 0);
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 18 Jun 2025 16:13:46 Malaysia Time, Kuala Lumpur, Malaysia
@@ -51,7 +52,7 @@ class GetIrisOutOfStockProductsInProductCategory extends IrisAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->where('products.available_quantity', '<=',0);
+        $queryBuilder->where('products.available_quantity', '<=', 0);
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
