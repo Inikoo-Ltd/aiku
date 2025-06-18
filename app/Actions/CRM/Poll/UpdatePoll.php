@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Poll;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -31,6 +32,7 @@ class UpdatePoll extends OrgAction
     public function handle(Poll $poll, array $modelData): Poll
     {
         $poll = $this->update($poll, $modelData);
+        ShopHydratePolls::dispatch($poll->shop);
         //todo put hydrators here if in_registration|in_registration_required|in_iris|in_iris_required has changed
         return $poll;
     }
