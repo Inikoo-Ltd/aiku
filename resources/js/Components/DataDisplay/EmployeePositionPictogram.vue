@@ -263,7 +263,7 @@ const optionsJob = reactive<optionsJob>({
             },
             {
                 slug: "cus-v",
-                grade: "clerk",
+                grade: "staff",
                 label: trans("Viewer"),
                 optionsType: ['shops'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'cus-v')?.number_employees || 0,
