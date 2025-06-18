@@ -37,7 +37,9 @@ const props = defineProps<{
     history?: {}
     permissions?: {}
     roles?: {}
+    api_tokens?: {}
 }>()
+
 
 
 const currentTab = ref(props.tabs.current)
