@@ -46,8 +46,7 @@ const onChangeDepartment = (value: any) => {
 const autosave = () => {
   // Deep clone to safely modify payload without touching reactive data
   const payload = JSON.parse(JSON.stringify(toRaw(layout.value)));
-  console.log('autosave payload', layout.value);
-  // Remove departement & sub_departments before sending to backend
+
   if (payload.data?.fieldValue) {
     delete payload.data.fieldValue.departement;
     delete payload.data.fieldValue.sub_departments;
@@ -64,13 +63,12 @@ const autosave = () => {
         isLoadingSave.value = false;
       },
       onSuccess: () => {
-        // Update only backend saved layout data — keep UI-only fields in local layout.value
         props.data.layout = payload;
-        notify({
+      /*   notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
           type: 'success',
-        });
+        }); */
       },
       onError: (errors) => {
         notify({
@@ -110,7 +108,7 @@ watch(currentView, (newValue) => {
   iframeClass.value = setIframeView(newValue)
 })
 
-console.log('departement-props', props.data);
+
 </script>
 
 <template>

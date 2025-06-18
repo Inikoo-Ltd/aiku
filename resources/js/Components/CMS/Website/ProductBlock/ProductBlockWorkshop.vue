@@ -50,11 +50,11 @@ const autosave = () => {
       onFinish: () => {isLoadingSave.value = false,  reload?.()},
       onSuccess: () => {
         layout.value = props.data.layout
-        notify({
+      /*   notify({
           title: 'Autosave Successful',
           text: 'Your changes have been saved.',
           type: 'success',
-        })
+        }) */
       },
       onError: (errors) => {
         notify({
