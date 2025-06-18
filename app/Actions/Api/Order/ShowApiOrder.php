@@ -9,29 +9,30 @@
 
 namespace App\Actions\Api\Order;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Http\Resources\Api\OrderResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetOrder
+class ShowApiOrder extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithOrderingAuthorisation;
 
     public function handle(Order $order): Order
     {
         return $order;
     }
 
-    public function jsonResponse(Order $order)
+    public function jsonResponse(Order $order): \Illuminate\Http\Resources\Json\JsonResource|OrderResource
     {
         return OrderResource::make($order);
     }
 
     public function asController(Order $order, ActionRequest $request): Order
     {
+        $this->initialisationFromShop($order->shop, $request);
+
         return $this->handle($order);
     }
 }

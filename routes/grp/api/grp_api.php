@@ -7,42 +7,20 @@
  */
 
 use App\Actions\Api\GetProfile;
-use App\Actions\Api\Order\GetOrder;
-use App\Actions\Api\Order\GetOrders;
-use App\Actions\Api\Order\StoreApiOrder;
-use App\Actions\Api\Order\SubmitApiOrder;
-use App\Actions\Api\Order\UpdateApiOrder;
-use App\Actions\Api\Portfolio\GetPortfolios;
-use App\Actions\Api\Transaction\DeleteApiOrderTransaction;
-use App\Actions\Api\Transaction\GetTransactions;
-use App\Actions\Api\Transaction\StoreApiOrderTransaction;
-use App\Actions\Api\Transaction\UpdateApiOrderTransaction;
+use App\Actions\Api\Order\ShowApiOrder;
+use App\Actions\Api\Order\IndexApiOrders;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
-Route::middleware(['auth:sanctum', 'ability:grp', 'set.treblle.authorize', 'treblle'])->group(function () {
+Route::middleware(['auth:sanctum', 'set.treblle.authorize', 'treblle'])->group(function () {
     Route::get('/profile', GetProfile::class)->name('profile');
 
 
     Route::prefix('order')->as('order.')->group(function () {
-        Route::get('', GetOrders::class)->name('index');
-        Route::get('{order:id}', GetOrder::class)->name('show');
-        Route::post('/store', StoreApiOrder::class)->name('store');
-        Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
-        Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
-        Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index');
-        Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
-    });
-
-    Route::prefix('transaction')->as('transaction.')->group(function () {
-        Route::patch('{transaction:id}/update', UpdateApiOrderTransaction::class)->name('update');
-        Route::delete('{transaction:id}/delete', DeleteApiOrderTransaction::class)->name('delete');
-    });
-
-    Route::prefix('portfolios')->as('portfolios.')->group(function () {
-        Route::get('', GetPortfolios::class)->name('index');
+        Route::get('', IndexApiOrders::class)->name('index');
+        Route::get('{order:id}', ShowApiOrder::class)->name('show');
     });
 });

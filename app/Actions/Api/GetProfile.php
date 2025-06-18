@@ -21,9 +21,7 @@ class GetProfile
 
     public function asController(ActionRequest $request): Customer
     {
-        $customer = $request->user();
-
-        return $customer;
+        return $request->user();
     }
 
     public function jsonResponse(Customer $customer): CustomersResource

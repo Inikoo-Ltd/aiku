@@ -10,6 +10,8 @@
 
 namespace App\Actions\Api\Order;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\OrdersResource;
 use App\Models\CRM\Customer;
@@ -22,10 +24,10 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetOrders
+class IndexApiOrders extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithOrderingAuthorisation;
+
 
     public function handle(Customer $customer, array $modelData): LengthAwarePaginator
     {
@@ -86,12 +88,10 @@ class GetOrders
             ->withQueryString();
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(Order $order, ActionRequest $request)
     {
-
-        $customer = $request->user();
-        $this->fillFromRequest($request);
-        return $this->handle($customer, $this->validateAttributes());
+        $this->initialisationFromShop($order->shop, $request);
+        return $this->handle($order);
     }
 
 
