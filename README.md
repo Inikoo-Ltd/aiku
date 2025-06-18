@@ -22,9 +22,9 @@
 #### Technology Stack
 
 - Backend: PHP/Laravel 12
-- Frontend: Vue.js (inertia.js)
+- Frontend: Vue 3 (inertia.js)
 - Mobile: React Native
--m Search: ElasticSearch
+- Search: ElasticSearch
 
 #### Contributing
 
