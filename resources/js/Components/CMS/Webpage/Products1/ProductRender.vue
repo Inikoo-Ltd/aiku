@@ -34,6 +34,7 @@ interface ProductResource {
     bestseller?: boolean
     is_favourite?: boolean
     exist_in_portfolios_channel: number[]
+    is_exist_in_all_channel: boolean
 }
 
 const props = defineProps<{
@@ -67,7 +68,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
                 isLoadingAllPortfolios.value = true
             },
             onSuccess: () => {
-                product.exist_in_portfolios_channel = props.channels.list.map(channel => channel.id)
+                product.is_exist_in_all_channel = true
                 notify({
                     title: trans("Success"),
                     text: trans("Added to portfolio"),
@@ -296,7 +297,7 @@ const onAddFavourite = (product: {}) => {
                                             :loading="isLoadingSpecificChannel.includes(channel.id)"
                                         >
                                             <template #icon>
-                                                <FontAwesomeIcon v-if="product.exist_in_portfolios_channel.includes(channel.id)" :icon="faCheck" class="text-green-500" fixed-width aria-hidden="true" />
+                                                <FontAwesomeIcon v-if="product.is_exist_in_all_channel || product.exist_in_portfolios_channel.includes(channel.id)" :icon="faCheck" class="text-green-500" fixed-width aria-hidden="true" />
                                             </template>
                                         </Button>
                                     </div>
