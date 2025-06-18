@@ -21,6 +21,18 @@ const locale = useLocaleStore()
 
 defineProps<{
     product: {
+        id: number
+        name: string
+        code: string
+        image?: { source: string }
+        currency_code: string
+        rpp?: number
+        price: number
+        units: number
+        unit: string
+        stock: number
+        rating: number
+        bestseller: boolean
         is_favourite: boolean
     }
     channels: {
@@ -33,6 +45,7 @@ const emits = defineEmits<{
     (e: "refreshChannels"): void
 }>()
 
+// Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (productId: number) => {
     // Emit an event or call a method to handle adding the product to the portfolio
@@ -71,6 +84,7 @@ const onAddToAllPortfolios = (productId: number) => {
     )
 }
 
+// Section: Add to specific Portfolios channel
 const isLoadingSpecificChannel = ref([])
 const onAddPortfoliosSpecificChannel = (product: {}, channel: {}) => {
     console.log(`Adding product with ID ${product.id} to portfolio`)
@@ -112,6 +126,52 @@ const onAddPortfoliosSpecificChannel = (product: {}, channel: {}) => {
     )
 }
 
+
+// Section: Add to all Portfolios
+const isLoadingFavourite = ref(false)
+const onAddFavourite = (product: {}) => {
+    // Emit an event or call a method to handle adding the product to the portfolio
+    console.log(`Adding product with ID ${product.name} to portfolio`)
+    
+
+    product.is_favourite = !product.is_favourite
+    isLoadingFavourite.value = true
+    setTimeout(() => {
+        isLoadingFavourite.value = false
+    }, 200)
+
+    // Section: Submit
+    // router.post(
+    //     route('iris.models.all_channels.portfolio.store'),
+    //     {
+    //         item_id: [productId]
+    //     },
+    //     {
+    //         preserveScroll: true,
+    //         preserveState: true,
+    //         onStart: () => { 
+    //             isLoadingFavourite.value = true
+    //         },
+    //         onSuccess: () => {
+    //             notify({
+    //                 title: trans("Success"),
+    //                 text: trans("Added to portfolio"),
+    //                 type: "success"
+    //             })
+    //         },
+    //         onError: errors => {
+    //             notify({
+    //                 title: trans("Something went wrong"),
+    //                 text: trans("Failed to add to portfolio"),
+    //                 type: "error"
+    //             })
+    //         },
+    //         onFinish: () => {
+    //             isLoadingFavourite.value = false
+    //         },
+    //     }
+    // )
+}
 </script>
 
 <template>
@@ -127,9 +187,12 @@ const onAddPortfoliosSpecificChannel = (product: {}, channel: {}) => {
             </div>
 
             <!-- Favorite Icon -->
-            <div @click="() => product.is_favourite = !product.is_favourite" class="cursor-pointer absolute top-2 right-2 group ">
-                <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" class="text-pink-500 text-xl" />
-                <FontAwesomeIcon v-else :icon="faHeart" class="text-gray-400 group-hover:text-pink-400 text-xl" />
+            <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
+                <LoadingIcon />
+            </div>
+            <div v-else @click="() => onAddFavourite(product)" class="cursor-pointer absolute top-2 right-2 group text-xl ">
+                <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
+                <FontAwesomeIcon v-else :icon="faHeart" fixed-width class="text-gray-400 group-hover:text-pink-400" />
             </div>
 
             <!-- Product Image -->
@@ -166,7 +229,7 @@ const onAddPortfoliosSpecificChannel = (product: {}, channel: {}) => {
             <div class="mb-3">
                 <div class="flex justify-between text-sm font-semibold">
                     <span>{{ locale.currencyFormat(product?.currency_code, product.price) }}</span>
-                    <span class="text-xs">({{ parseInt(product.units, 10) }}/{{ product.unit }})</span>
+                    <span class="text-xs">({{ locale.number(product.units) }}/{{ product.unit }})</span>
                 </div>
             </div>
         </div>
@@ -185,6 +248,14 @@ const onAddPortfoliosSpecificChannel = (product: {}, channel: {}) => {
 
                     <div class="flex flex-nowrap relative">
                         <Button
+                            v-if="product.is_exist_on_all_portfolios"
+                            label="Exist on all Portfolios"
+                            type="tertiary"
+                            disabled
+                            class="border-none border-transparent rounded-r-none"
+                        />
+                        <Button
+                            v-else
                             @click="() => onAddToAllPortfolios(product.id)"
                             label="Add to all Portfolios"
                             :loading="isLoadingAllPortfolios"
