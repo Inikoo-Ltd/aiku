@@ -20,11 +20,11 @@ class GetWebsiteWorkshopProduct
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
 
-        $webBlockTypes->each(function ($blockType) use ($product) {
+        $webBlockTypes->each(function (&$blockType) use ($product) {
             $data = $blockType->data ?? [];
             $fieldValue = $data['fieldValue'] ?? [];
 
-            $fieldValue['product'] = WebBlockProductResource::make($product);
+            $fieldValue['product'] = WebBlockProductResource::make($product)->toArray(request());
             $data['fieldValue'] = $fieldValue;
             $blockType->data = $data;
         });
