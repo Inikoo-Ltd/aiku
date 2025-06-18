@@ -10,6 +10,8 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -40,8 +42,14 @@ class IrisProductsInWebpageResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
+        $customer = $request->user()->customer;
 
-        // dd($this);
+        $portfolioChannelIds = $customer->portfolios()->where('item_id', $this->id)
+            ->where('item_type', class_basename(Product::class))
+            ->distinct()
+            ->pluck('customer_sales_channel_id')
+            ->toArray();
+
         return [
             'id'          => $this->id,
             'slug'        => $this->slug,
@@ -59,6 +67,22 @@ class IrisProductsInWebpageResource extends JsonResource
             'status'      => $this->status,
             'rrp'         => $this->rrp,
             'image' => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'exist_in_portfolios_channel' => $portfolioChannelIds,
+            'is_exist_in_all_channel' => $this->checkExistInAllChannels($customer)
         ];
+    }
+
+    public function checkExistInAllChannels(Customer $customer): bool
+    {
+        // Get all available channels
+        $totalChannels = $customer->customerSalesChannels->count();
+
+        // Count how many portfolios this product has across all channels
+        $portfolioChannels = $customer->portfolios()->where('item_id', $this->id)
+            ->where('item_type', class_basename(Product::class))
+            ->distinct('customer_sales_channel_id')
+            ->count();
+
+        return $portfolioChannels === $totalChannels;
     }
 }

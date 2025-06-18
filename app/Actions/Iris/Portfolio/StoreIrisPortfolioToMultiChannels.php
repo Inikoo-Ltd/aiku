@@ -33,6 +33,13 @@ class StoreIrisPortfolioToMultiChannels extends RetinaAction
             $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))->get();
 
             foreach ($items as $item) {
+                if ($salesChannel->portfolios()
+                    ->where('item_id', $item->id)
+                    ->where('item_type', $item->getMorphClass())
+                    ->exists()) {
+                    continue;
+                }
+
                 StorePortfolio::make()->action($salesChannel, $item, []);
             }
         }
