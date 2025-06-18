@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Http\Resources\Accounting\OrgPaymentProvidersResource;
+use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -78,7 +79,7 @@ class WebBlockProductResource extends JsonResource
             'updated_at'      => $product->updated_at,
             'images'          => ImageResource::collection($product->images)->toArray($request),
             'service_providers' => OrgPaymentProvidersResource::collection($resultSp)->toArray($request),
-            'tags' => $product->tradeUnitTagsViaTradeUnits(),
+            'tags' => TagResource::collections($product->tradeUnitTagsViaTradeUnits())->toArray($request),
             'return_policy' => Arr::get($product->webpage->website->settings, 'return_policy', ''),
         ];
     }
