@@ -36,7 +36,7 @@ class HandleIrisInertiaRequests extends Middleware
             ]);
         };
 
-        
+
         $websiteTheme = Arr::get($website->published_layout, 'theme');
 
         return array_merge(

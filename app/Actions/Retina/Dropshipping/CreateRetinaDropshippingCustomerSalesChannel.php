@@ -122,6 +122,16 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         'method' => 'post'
                     ],
                 ],
+                'type_amazon' => [
+                    'connectRoute' => [
+                        'name' => match ($customer->is_fulfilment) {
+                            true   => 'retina.fulfilment.dropshipping.customer_sales_channels.amazon.authorize',
+                            default => 'retina.dropshipping.platform.amazon.authorize',
+                        },
+                        'parameters' => [],
+                        'method' => 'post'
+                    ],
+                ],
             ]
         );
     }

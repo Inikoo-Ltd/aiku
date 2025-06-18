@@ -126,6 +126,7 @@ class SyncRolesFromJobPositions
         $roles = [];
         $jobPosition->refresh();
         foreach ($jobPosition->roles as $role) {
+            /** @noinspection PhpUndefinedFieldInspection */
             if (in_array($role->scope_id, $jobPosition->pivot->scopes[$role->scope_type])) {
                 $roles[] = $role->id;
             }

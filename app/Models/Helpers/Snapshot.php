@@ -33,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int|null $customer_id
  * @property SnapshotBuilderEnum $builder
  * @property SnapshotStateEnum $state
- * @property string|null $published_at
+ * @property \Illuminate\Support\Carbon|null $published_at
  * @property string|null $published_until
  * @property string $checksum
  * @property array<array-key, mixed> $layout

@@ -260,6 +260,13 @@ const optionsJob = reactive<optionsJob>({
                 label: trans("Worker"),
                 optionsType: ['shops'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'cus-c')?.number_employees || 0,
+            },
+            {
+                slug: "cus-v",
+                grade: "staff",
+                label: trans("Viewer"),
+                optionsType: ['shops'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'cus-v')?.number_employees || 0,
             }
         ],
         optionsClosed: props.options.shops.data?.filter(job => job.state != 'open'),
@@ -449,7 +456,7 @@ watch(() => newForm, () => {
                                         <div class="pl-2 flex items-center gap-x-4">
                                             <template v-for="subDepartment, idxSubDepartment in jobGroup.subDepartment">
                                                 <!-- If subDepartment is have atleast 1 Fulfilment, or have atleast 1 Shop, or have atleast 1 Warehouse, or have atleast 1 Production, or is a simple sub department (i.e buyer, administrator, etc) -->
-                                                <button
+                                                <div
                                                     v-if="!subDepartment.isHide"
                                                     @click.prevent="'handleClickSubDepartment(departmentName, subDepartment.slug, subDepartment.optionsType)'"
                                                     class="group h-full  flex items-center justify-start rounded-md py-3 px-3 font-medium capitalize disabled:text-gray-400 disabled:xxcursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
@@ -475,17 +482,17 @@ watch(() => newForm, () => {
                                                                 <FontAwesomeIcon v-else-if="subDepartment.optionsType?.some((optionType: string) => get(newForm[orgSlug], [subDepartment.slug, optionType], []).some((optionValue: string) => optionsList[optionType].map((list: TypeShop | TypeFulfilment | TypeWarehouse) => list.slug).includes(optionValue)))" icon='fal fa-check-circle' class="text-green-600" fixed-width aria-hidden='true' />
                                                                 <FontAwesomeIcon v-else icon='fas fa-check-circle' class="text-green-500" fixed-width aria-hidden='true' />
                                                             </template>
-                                                            <FontAwesomeIcon v-else icon='fal fa-circle' fixed-width aria-hidden='true' class="text-gray-400 hover:text-gray-700" />
+                                                            <FontAwesomeIcon v-else v-tooltip="trans('Have no permissions')" icon='fal fa-ban' fixed-width aria-hidden='true' class="text-red-500" />
                                                         </div>
             
                                                         <span v-tooltip="subDepartment.number_employees + ' employees on this position'" :class="[
-                                                            (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level)) || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin') ? 'text-gray-400' : 'text-gray-600 group-hover:text-gray-700'
+                                                            (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level)) || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin') ? 'text-gray-400' : ''
                                                         ]">
                                                             {{ subDepartment.label }}
                                                             <!-- {{ subDepartment.optionsType?.every((optionType: string) => optionsList[optionType].map((list: TypeShop | TypeFulfilment | TypeWarehouse) => list.slug).every(optionSlug => get(newForm[orgSlug], [subDepartment.slug, optionType], []).includes(optionSlug))) }} -->
                                                         </span>
                                                     </div>
-                                                </button>
+                                                </div>
                                             </template>
                                         </div>
                                         <!-- Button: Advanced selection -->
@@ -497,6 +504,7 @@ watch(() => newForm, () => {
                                             </button>
                                         </div>
                                     </div>
+                                    
                                     <!-- Section: Advanced selection -->
                                     <Transition mode="in-out">
                                         <div v-if="openFinetune === jobGroup.key" class="relative bg-slate-400/10 border border-gray-300 rounded-md py-2 px-2 mb-3">
@@ -523,7 +531,7 @@ watch(() => newForm, () => {
                                                                     >
                                                                         <!-- Section: Sub Department on same Grade -->
                                                                         <template v-for="subDep in jobGroup.subDepartment.filter(sub => sub.grade == gradeName)">
-                                                                            <button
+                                                                            <div
                                                                                 v-if="subDep.optionsType?.includes(optionKey)"
                                                                                 @click.prevent="'onClickJobFinetune(departmentName, shop.slug, subDep.slug, optionKey)'"
                                                                                 class="group h-full  flex items-center justify-center rounded-md px-3 font-medium capitalize disabled:text-gray-400 disabled:xxcursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
@@ -541,9 +549,10 @@ watch(() => newForm, () => {
                                                                                         <FontAwesomeIcon v-else icon='fas fa-check-circle' class="text-green-500" fixed-width aria-hidden='true' />
                                                                                     </template>
             
-                                                                                    <FontAwesomeIcon v-else icon='fal fa-circle' fixed-width aria-hidden='true' />
+                                                                                    <FontAwesomeIcon v-else v-tooltip="trans('Have no permissions')" icon='fal fa-ban' class="text-red-500" fixed-width aria-hidden='true' />
+                                                                                    
                                                                                 </div>
-                                                                            </button>
+                                                                            </div>
                                                                             <div v-else>
                                                                                 <!-- Empty -->
                                                                             </div>

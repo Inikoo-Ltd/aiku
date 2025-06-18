@@ -62,6 +62,8 @@ class DropshippingPortfolioResource extends JsonResource
         $shopifyUploadRoute = [];
         $wooUploadRoute = [];
         $ebayUploadRoute = [];
+        $amazonUploadRoute = [];
+
         if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
             $shopifyUploadRoute = [
                 'platform_upload_portfolio' => [
@@ -95,6 +97,19 @@ class DropshippingPortfolioResource extends JsonResource
                     'name'       => 'retina.models.dropshipping.ebay.single_upload',
                     'parameters' => [
                         'ebayUser' => $this->customerSalesChannel->user->id,
+                        'portfolio' => $this->id
+                    ]
+                ],
+            ];
+        }
+
+        if ($this->platform->type == PlatformTypeEnum::AMAZON) {
+            $amazonUploadRoute = [
+                'platform_upload_portfolio' => [
+                    'method' => 'post',
+                    'name'       => 'retina.models.dropshipping.amazon.single_upload',
+                    'parameters' => [
+                        'amazonUser' => $this->customerSalesChannel->user->id,
                         'portfolio' => $this->id
                     ]
                 ],
@@ -136,6 +151,7 @@ class DropshippingPortfolioResource extends JsonResource
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
             ...$ebayUploadRoute,
+            ...$amazonUploadRoute
         ];
     }
 }
