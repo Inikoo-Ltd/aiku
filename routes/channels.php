@@ -27,6 +27,10 @@ Broadcast::channel('ebay.{ebayUserId}.upload-product.{portfolioId}', function (i
     return true;
 });
 
+Broadcast::channel('amazon.{amazonUserId}.upload-product.{portfolioId}', function (int|string $amazonUser, int|string $portfolioId) {
+    return true;
+});
+
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });

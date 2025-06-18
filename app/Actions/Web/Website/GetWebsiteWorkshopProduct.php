@@ -20,17 +20,14 @@ class GetWebsiteWorkshopProduct
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
 
-        $webBlockTypes->each(function ($blockType) use ($product) {
-            $data = $blockType->data ?? [];
-            $fieldValue = $data['fieldValue'] ?? [];
+        $layout = Arr::get($website->unpublishedProductSnapshot, 'layout.product', []);
 
-            $fieldValue['product'] = WebBlockProductResource::make($product);
-            $data['fieldValue'] = $fieldValue;
-            $blockType->data = $data;
-        });
+        if ($layout) {
+            data_set($layout, 'data.fieldValue.product', WebBlockProductResource::make($product)->toArray(request()));
+        }
 
         $propsValue = [
-            'layout' => Arr::get($website->unpublishedProductSnapshot, 'layout.product', []),
+            'layout' => $layout,
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'autosaveRoute' => [
                 'name' => 'grp.models.website.autosave.product',

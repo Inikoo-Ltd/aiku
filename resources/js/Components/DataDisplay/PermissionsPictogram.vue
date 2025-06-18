@@ -8,11 +8,11 @@ import { router } from '@inertiajs/vue3'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHelmetBattle, faStar, faCheckCircle, faComputerClassic } from '@fas'
-import { faCircle } from '@fal'
+import { faCircle, faBan } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { routeType } from '@/types/route'
 import EmployeePositionPictogram from './EmployeePositionPictogram.vue'
-library.add(faHelmetBattle, faStar, faCheckCircle, faComputerClassic, faCircle)
+library.add(faHelmetBattle, faStar, faCheckCircle, faComputerClassic, faCircle, faBan)
 
 interface Organisation {
     slug: string
@@ -150,14 +150,16 @@ const organisationPositionCounts = ref<{
                                                         <template v-if="(isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin')">
                                                             <FontAwesomeIcon v-if="idxSubDepartment === 0" icon='fas fa-check-circle' class="" fixed-width aria-hidden='true' />
                                                             <FontAwesomeIcon v-else icon='fal fa-circle' class="" fixed-width aria-hidden='true' />
+                                                            
                                                         </template>
                                                         <template v-else-if="data_pictogram?.group?.includes(subDepartment.slug)">
                                                             <FontAwesomeIcon icon='fas fa-check-circle' class="text-green-500" fixed-width aria-hidden='true' />
+                                                            
                                                         </template>
-                                                        <FontAwesomeIcon v-else icon='fal fa-circle' fixed-width aria-hidden='true' class="text-gray-400 hover:text-gray-700" />
+                                                        <FontAwesomeIcon v-else v-tooltip="trans('Have no permissions')" icon='fal fa-ban' fixed-width aria-hidden='true' class="text-red-500 " />
                                                     </div>
                                                     <span :class="[
-                                                        (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin') ? 'text-gray-400' : 'text-gray-600 group-hover:text-gray-700'
+                                                        (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin') ? 'text-gray-400' : 'text-gray-600 xgroup-hover:text-gray-700'
                                                     ]">
                                                         {{ subDepartment.label }}
                                                     </span>

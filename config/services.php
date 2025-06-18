@@ -46,6 +46,13 @@ return [
         'sandbox' => env('EBAY_SANDBOX', true),
         'redirect_uri' => env('EBAY_REDIRECT_URI')
     ],
+    'amazon' => [
+        'client_id' => env('AMAZON_CLIENT_ID'),
+        'app_id' => env('AMAZON_APP_ID'),
+        'client_secret' => env('AMAZON_CLIENT_SECRET'),
+        'region' => env('AMAZON_REGION', 'eu'),
+        'sandbox' => env('AMAZON_SANDBOX', true)
+    ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),
     ],

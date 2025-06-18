@@ -64,11 +64,13 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
+    console.log('Fetching products with filters:', filters)
 
     try {
         const response = await axios.get(route(props.fieldValue.products_route.iris.name, {
             productCategory: props.fieldValue.products_route.iris.parameters[0],
             ...filters,
+            'filter[global]': q.value,
             index_sort: orderBy.value,
             index_perPage: 25,
             page: page.value,
