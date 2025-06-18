@@ -129,6 +129,28 @@ const isMobile = computed(() => props.screenType === 'mobile')
 onMounted(() => {
     debFetchProducts()
 })
+
+
+const channels = ref({
+    isLoading: false,
+    list: []
+})
+const fetchChannels = async () => {
+    channels.value.isLoading = true
+    try {
+        const response = await axios.get(route('iris.json.channels.index'))
+        console.log('Channels response:', response.data.data)
+        
+        channels.value.list = response.data.data || []
+
+        
+    } catch (error) {
+        console.log(error)
+        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
+    } finally {
+        channels.value.isLoading = false
+    }
+}
 </script>
 
 <template>
@@ -189,7 +211,11 @@ onMounted(() => {
                 <template v-else-if="products.length">
                     <div v-for="(product, index) in products" :key="index"
                         class="border p-3 relative rounded shadow-sm bg-white">
-                        <ProductRender :product="product" />
+                        <ProductRender
+                            :channels="channels"
+                            :product="product"
+                            @refreshChannels="() => fetchChannels()"
+                        />
                     </div>
                 </template>
 
