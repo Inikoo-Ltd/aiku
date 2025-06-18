@@ -12,7 +12,6 @@ namespace App\Actions\Dropshipping\Amazon;
 
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\AmazonUser;
-use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,7 +20,6 @@ class DeleteAmazonUser extends OrgAction
 {
     use AsAction;
 
-    public $commandSignature = 'retina:ds:delete-amazon-user {amazonUser}';
 
     public function handle(AmazonUser $amazonUser): void
     {
@@ -44,19 +42,5 @@ class DeleteAmazonUser extends OrgAction
         return back();
     }
 
-    // public function asCommand(Command $command): int
-    // {
-    //     $this->setCommand($command);
-    //     $amazonUser = AmazonUser::find($command->argument('amazonUser'));
 
-    //     if (!$amazonUser) {
-    //         $this->error('Amazon user not found');
-    //         return 1;
-    //     }
-
-    //     $this->handle($amazonUser);
-    //     $this->info('Amazon user deleted successfully 🎉');
-
-    //     return 0;
-    // }
 }
