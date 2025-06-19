@@ -11,17 +11,23 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateApiTokens;
 use App\Actions\SysAdmin\User\Hydrators\UserHydrateApiTokens;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
 class StoreUserAccessToken extends OrgAction
 {
+    /**
+     * @var \App\Models\SysAdmin\User
+     */
+    private User $user;
+
     public function handle(User $user): string
     {
         $plainTextToken = $user->createToken(Str::random(6), [])->plainTextToken;
@@ -35,8 +41,8 @@ class StoreUserAccessToken extends OrgAction
 
         if (!empty($tokenPrefix)) {
             DB::table('personal_access_tokens')->where('id', $tokenParts[0])->update([
-                 'name' => $tokenName
-             ]);
+                'name' => $tokenName
+            ]);
         }
 
         $user->auditEvent     = 'create';
@@ -48,27 +54,26 @@ class StoreUserAccessToken extends OrgAction
             'api_token' => __('Api token created').' ('.$tokenName.')'
         ];
 
-        UserHydrateApiTokens::dispatch($user);
+
         Event::dispatch(new AuditCustom($user));
+        UserHydrateApiTokens::dispatch($user);
+        GroupHydrateApiTokens::dispatch($user->group);
 
 
         return $plainTextToken;
     }
 
-    public function afterValidator()
+    public function afterValidator(Validator $validator): void
     {
-        if (!$this->asAction) {
-            if ($this->user && !$this->user?->status) {
-                throw ValidationException::withMessages([
-                    'messages' => __('User is not active, cannot create access token.')
-                ]);
-            }
+        if (!$this->user->status) {
+            $validator->errors()->add('user', __('User is not active'));
         }
     }
 
 
     public function action(User $user, array $data): string
     {
+        $this->user = $user;
         $this->initialisationFromGroup($user->group, $data);
 
         return $this->handle($user);

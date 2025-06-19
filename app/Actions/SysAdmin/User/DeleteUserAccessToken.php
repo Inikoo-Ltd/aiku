@@ -11,6 +11,7 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateApiTokens;
 use App\Actions\SysAdmin\User\Hydrators\UserHydrateApiTokens;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Event;
@@ -40,14 +41,16 @@ class DeleteUserAccessToken extends OrgAction
             $user->auditCustomNew = [
                 'api_token' => __('Api token deleted')
             ];
-            UserHydrateApiTokens::dispatch($user);
+
             Event::dispatch(new AuditCustom($user));
+            UserHydrateApiTokens::dispatch($user);
+            GroupHydrateApiTokens::dispatch($user->group);
         }
     }
 
-    public function action(PersonalAccessToken $token, array $modelData): void
+    public function action(PersonalAccessToken $token): void
     {
-        $this->initialisationFromGroup($token->tokenable->group, $modelData);
+        $this->initialisationFromGroup($token->tokenable->group, []);
 
         $this->handle($token);
     }

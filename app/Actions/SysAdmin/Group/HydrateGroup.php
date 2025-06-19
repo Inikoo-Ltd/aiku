@@ -201,7 +201,7 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateOrderInBasketAtCustomerUpdateIntervals::run($group);
         GroupHydrateOrderInBasketAtCreatedIntervals::run($group);
-        GroupHydrateApiTokens::dispatch($group);
+        GroupHydrateApiTokens::run($group);
 
         GroupHydrateFamiliesWithNoDepartment::run($group);
         GroupHydrateProductsWithNoFamily::run($group);

@@ -74,7 +74,7 @@ class IndexApiTokens extends OrgAction
                 ->column(key: 'name', label: __('Token ID'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true, type: 'date_hms')
                 ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true, type: 'date_hms')
-                ->column(key: 'expires_at', label: __('Expires At'), canBeHidden: true, sortable: true, type: 'date_hms')
+                ->column(key: 'expires_at', label: __('Expires At'), sortable: true, type: 'date_hms')
                 ->column(key: 'actions', label: __('Actions'))
                 ->defaultSort('created_at');
         };

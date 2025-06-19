@@ -18,19 +18,17 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 
 library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey)
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>()
 
 
 function userRoute(user: User) {
-    switch (route().current()) {
-        case "grp.sysadmin.users.index":
-            return route( "grp.sysadmin.users.show", [user.username])
-        default:
-            return null
+    if (route().current() === "grp.sysadmin.users.index") {
+        return route("grp.sysadmin.users.show", [user.username])
     }
+    return null
 }
 
 
@@ -46,7 +44,7 @@ function userRoute(user: User) {
 
         <!-- Column: Username -->
         <template #cell(username)="{ item: user }">
-            <Link v-if="userRoute(user)" :href="userRoute(user)" class="primaryLink">
+            <Link v-if="userRoute(user)" :href="userRoute(user) as string" class="primaryLink">
                 <template v-if="user['username']">{{ user["username"] }}</template>
                 <span v-else class="italic">{{ trans("Not set") }}</span>
             </Link>
@@ -70,11 +68,6 @@ function userRoute(user: User) {
             </div>
         </template>
 
-        <!-- <template #cell(name)="{ item: user }">
-            <div class="asdzxc">
-                {{ user["parent"]["name"] }}
-            </div>
-        </template> -->
 
         <template #cell(parent_type)="{ item: user }">
             <Link v-if="user['parent_type'] === 'Employee'" :href="route(
