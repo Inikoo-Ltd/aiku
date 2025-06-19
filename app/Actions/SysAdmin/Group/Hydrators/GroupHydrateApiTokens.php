@@ -30,6 +30,6 @@ class GroupHydrateApiTokens implements ShouldBeUnique
             'number_expired_api_tokens' => $group->tokens()->where('expires_at', '<=', now())->count(),
         ];
 
-        $group->stats->update($stats);
+        $group->sysadminStats->update($stats);
     }
 }
