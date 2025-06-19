@@ -4,12 +4,13 @@ import { faBox, faPlus, faVial } from "@far"
 import { faCircle, faStar, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref } from "vue"
+import { ref, inject } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 library.add(faCube, faLink)
 
@@ -21,8 +22,8 @@ const props = withDefaults(defineProps<{
     blockData?: object
 }>(), {
 })
-
-
+const layout = inject('layout', retinaLayoutStructure)
+const currency = layout?.iris?.currency
 const locale = useLocaleStore()
 const isFavorite = ref(false)
 const toggleFavorite = () => {
@@ -46,9 +47,9 @@ function formatNumber(value : Number) {
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
-                                <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
+                              <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
                                     :key="n" />
-                                <span class="ml-1 text-xs text-gray-500">41</span>
+                                <span class="ml-1 text-xs text-gray-500">41</span> -->
                             </div>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -80,13 +81,12 @@ function formatNumber(value : Number) {
             <div class="col-span-5 self-start">
                 <div class="flex items-end border-b pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-5xl capitalize leading-none flex-grow min-w-0">
-                        {{ locale.currencyFormat(fieldValue.product.currency_code, fieldValue.product.price || 0) }}
+                        {{ locale.currencyFormat(currency.code, fieldValue.product.price || 0) }}
                         <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">({{ formatNumber(fieldValue.product.units) }}/{{
                             fieldValue.product.unit }})</span>
                     </div>
-                    <div class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
-                        <span>RRP: {{ locale.currencyFormat(fieldValue.product.currency_code, fieldValue.product.rrp ||
-                            0) }}</span>
+                    <div v-if="fieldValue.product.rrp" class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
+                        <span>RRP: {{ locale.currencyFormat(currency.code, fieldValue.product.rrp || 0) }}</span>
                         <span>/{{ fieldValue.product.unit }}</span>
                     </div>
                 </div>
@@ -134,13 +134,13 @@ function formatNumber(value : Number) {
             <!-- Price + Unit Info -->
             <div>
                 <div class="text-lg font-semibold">
-                    {{ locale.currencyFormat(fieldValue.product.currency_code, fieldValue.product.price || 0) }}
+                    {{ locale.currencyFormat(currency.code, fieldValue.product.price || 0) }}
                     <span class="text-xs text-gray-500 ml-1">
                         ({{ formatNumber(fieldValue.product.units) }}/{{ fieldValue.product.unit }})
                     </span>
                 </div>
-                <div class="text-xs text-gray-400 font-semibold mt-1">
-                    RRP: {{ locale.currencyFormat(fieldValue.product.currency_code, fieldValue.product.rrp || 0) }}
+                <div v-if="fieldValue.product.rrp" class="text-xs text-gray-400 font-semibold mt-1">
+                    RRP: {{ locale.currencyFormat(currency.code, fieldValue.product.rrp || 0) }}
                 </div>
             </div>
 

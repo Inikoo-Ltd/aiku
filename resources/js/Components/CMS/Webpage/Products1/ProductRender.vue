@@ -16,6 +16,7 @@ import { faPlus, faVial } from '@fal'
 import { faCircle, faStar, faHeart as fasHeart, faEllipsisV } from '@fas'
 import { Image as ImageTS } from '@/types/Image'
 
+
 const layout = inject('layout', retinaLayoutStructure)
 
 const locale = useLocaleStore()
@@ -52,6 +53,8 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: "refreshChannels"): void
 }>()
+
+const currency = layout?.iris?.currency
 
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
@@ -237,18 +240,18 @@ const onUnselectFavourite = (product: ProductResource) => {
             </component>
 
             <!-- Title -->
-            <Link v-if="product.url" :href="product.url" class="text-gray-600 hover:text-gray-800 font-medium text-sm mb-1">
+            <Link v-if="product.url" :href="product.url" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
             </Link>
-            <div v-else class="font-medium text-sm mb-1">
+            <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
             </div>
 
             <!-- SKU and RRP -->
             <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
                 <span>{{ product?.code }}</span>
-                <span>
-                    RRP: {{ locale.currencyFormat(product?.currency_code, (product.rpp || 0)) }}/ {{ product.unit }}
+                <span v-if="currency.code,product.rpp">
+                    RRP: {{ locale.currencyFormat((currency.code,product.rpp || 0)) }}/ {{ product.unit }}
                 </span>
             </div>
 
@@ -259,16 +262,16 @@ const onUnselectFavourite = (product: ProductResource) => {
                     <span>({{ product.stock > 0 ? product.stock : 0 }})</span>
                 </div>
                 <div class="flex items-center space-x-[1px] text-gray-500">
-                    <FontAwesomeIcon v-for="i in 5" :key="i" :class="i <= product.rating ? 'fas' : 'far'" :icon="faStar"
+                    <!-- <FontAwesomeIcon v-for="i in 5" :key="i" :class="i <= product.rating ? 'fas' : 'far'" :icon="faStar"
                         class="text-xs" />
-                    <span class="ml-1">5</span>
+                    <span class="ml-1">5</span> -->
                 </div>
             </div>
 
             <!-- Prices -->
             <div class="mb-3">
                 <div class="flex justify-between text-sm font-semibold">
-                    <span>{{ locale.currencyFormat(product?.currency_code, product.price) }}</span>
+                    <span>{{ locale.currencyFormat(currency.code,product.price) }}</span>
                     <span class="text-xs">({{ locale.number(product.units) }}/{{ product.unit }})</span>
                 </div>
             </div>
