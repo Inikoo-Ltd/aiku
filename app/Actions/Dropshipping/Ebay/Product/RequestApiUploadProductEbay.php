@@ -16,6 +16,7 @@ use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -64,10 +65,24 @@ class RequestApiUploadProductEbay extends RetinaAction
             ];
 
             $ebayUser->storeProduct($inventoryItem);
-            // $ebayUser->storeOffer($ebayProduct);
+
+            $categories = $ebayUser->getCategorySuggestions(Arr::get($inventoryItem, 'product.title'));
+
+            $offer = $ebayUser->storeOffer([
+                'sku' => Arr::get($inventoryItem, 'sku'),
+                'description' => Arr::get($inventoryItem, 'product.description'),
+                'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                'price' => $portfolio->customer_price,
+                'currency' => $portfolio->shop->currency->code,
+                'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+            ]);
+
+            $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
+
+
 
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => $inventoryItem['sku'],
+                'platform_product_id' => Arr::get($publishedOffer, 'listingId'),
             ]);
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);

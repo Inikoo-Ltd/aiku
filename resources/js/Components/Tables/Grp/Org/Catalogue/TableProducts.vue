@@ -45,6 +45,14 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).shop,
                     product.slug
                 ]);
+        case "grp.org.shops.show.catalogue.products.orphan_products.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.orphan_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]);
         case "grp.org.shops.show.catalogue.products.in_process_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.in_process_products.show",
@@ -178,9 +186,9 @@ const locale = inject("locale", aikuLocaleStructure);
         </template>
 
         <template #cell(code)="{ item: product }">
-            <!-- <Link :href="productRoute(product)" class="primaryLink" method="get">
+            <Link :href="productRoute(product)" class="primaryLink" method="get">
                 {{ product["code"] }}
-            </Link> -->
+            </Link>
         </template>
 
         <template #cell(shop_code)="{ item: product }">

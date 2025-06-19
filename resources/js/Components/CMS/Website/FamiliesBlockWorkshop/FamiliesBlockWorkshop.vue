@@ -5,12 +5,12 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, watch, provide, inject, toRaw } from "vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { layoutStructure } from '@/Composables/useLayoutStructure';
-import { router } from "@inertiajs/vue3";
+import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { router } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
 import SideMenuSubDepartementWorkshop from "./SideMenuFamiliesBlockWorkshop.vue"
 import { notify } from "@kyvg/vue3-notification"
-import Drawer from 'primevue/drawer';
+import Drawer from 'primevue/drawer'
 import SubDepartementListTree from "./SubDepartementListTree.vue"
 import ScreenView from "@/Components/ScreenView.vue"
 
@@ -22,126 +22,136 @@ const props = defineProps<{
     autosaveRoute: routeType;
     layout: any;
     sub_departements: any[];
-    update_family_route : routeType;
+    update_family_route: routeType;
   }
 }>()
 
 const layoutTheme = inject('layout', layoutStructure)
-const isModalOpen = ref(false);
-const isLoadingSave = ref(false);
-const visibleDrawer = ref(false);
-// Make layout editable
-const layout = ref(props.data.layout);
+const isModalOpen = ref(false)
+const isLoadingSave = ref(false)
+const visibleDrawer = ref(false)
 
-const onPickTemplate = (template: any) => {
-  isModalOpen.value = false;
-  layout.value = template;
-  layout.value.data.fieldValue = {}
-  autosave()
-};
+const currentView = ref("desktop")
+provide("currentView", currentView)
 
-const onChangeDepartment = (value: any) => {
-  if (layout.value?.data?.fieldValue) {
-    layout.value.data.fieldValue.sub_departement = value.sub_departement;
-    layout.value.data.fieldValue.families = value.families || [];
+const iframeClass = ref("w-full h-full")
+
+watch(currentView, (newVal) => {
+  iframeClass.value = setIframeView(newVal)
+})
+
+const setIframeView = (view: string) => {
+  switch (view) {
+    case "mobile":
+      return "w-[375px] h-[667px] mx-auto"
+    case "tablet":
+      return "w-[768px] h-[1024px] mx-auto"
+    default:
+      return "w-full h-full"
   }
-};
+}
 
+// === Handle pick template ===
+const onPickTemplate = (template: any) => {
+  isModalOpen.value = false
+  props.data.layout = {
+    ...template,
+    data: {
+      ...template.data,
+      fieldValue: {
+        container : {
+          properties : null
+        }
+      }
+    }
+  }
+  autosave()
+}
 
+const dataPicked = ref({
+  sub_departement : null,
+  families : []
+})
+// === Handle change sub-departement ===
+const onChangeDepartment = (value: any) => {
+    dataPicked.value.sub_departement = value.sub_departement
+    dataPicked.value.families = value.families || []
+}
 
+// === Autosave logic ===
 const autosave = () => {
-  // Deep clone to safely modify payload without touching reactive data
-  const payload = JSON.parse(JSON.stringify(toRaw(layout.value)));
+  const payload = JSON.parse(JSON.stringify(toRaw(props.data.layout)))
 
-  // Remove departement & sub_departments before sending to backend
   if (payload.data?.fieldValue) {
-    delete payload.data.fieldValue.families;
-    delete payload.data.fieldValue.sub_departement;
+    delete payload.data.fieldValue.families
+    delete payload.data.fieldValue.sub_departement
   }
 
   router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
     {
-      onStart: () => {
-        isLoadingSave.value = true;
-      },
-      onFinish: () => {
-        isLoadingSave.value = false;
-      },
-      onSuccess: () => {
-        props.data.layout = payload;
-       /*  notify({
-          title: 'Autosave Successful',
-          text: 'Your changes have been saved.',
-          type: 'success',
-        }); */
-      },
+      onStart: () => { isLoadingSave.value = true },
+      onFinish: () => { isLoadingSave.value = false },
+      onSuccess: () => {},
       onError: (errors) => {
         notify({
           title: 'Autosave Failed',
           text: errors?.message || 'Unknown error occurred.',
           type: 'error',
-        });
-      },
+        })
+      }
     }
-  );
-};
+  )
+}
 
-const setIframeView = (view: string) => {
-  switch (view) {
-    case "mobile":
-      return "w-[375px] h-[667px] mx-auto";
-    case "tablet":
-      return "w-[768px] h-[1024px] mx-auto";
-    default:
-      return "w-full h-full";
+// === Debounce helper ===
+function debounce(fn: Function, delay = 800) {
+  let timer: any
+  return (...args: any[]) => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
   }
-};
-
-
-const iframeClass = ref("w-full h-full")
-const currentView = ref("desktop");
-provide("currentView", currentView);
-
-watch(currentView, (newValue) => {
-  iframeClass.value = setIframeView(newValue)
-})
-
-
+}
+const debouncedAutosave = debounce(autosave)
 </script>
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-auto border">
-      <SideMenuSubDepartementWorkshop :data="layout" :webBlockTypes="data.web_block_types" @auto-save="autosave"
-        @set-up-template="onPickTemplate" :dataList="data.sub_departements" @onChangeDepartment="onChangeDepartment"/>
+      <SideMenuSubDepartementWorkshop
+        :data="data.layout"
+        :webBlockTypes="data.web_block_types"
+        @auto-save="debouncedAutosave"
+        @set-up-template="onPickTemplate"
+        :dataList="data.sub_departements"
+        @onChangeDepartment="onChangeDepartment"
+      />
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-     <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-        <!-- Left: Desktop View Icon -->
+      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
         <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
-         <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
+          <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
         </div>
 
-        <!-- Right: Preview Label -->
         <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
-          <span v-if="layout?.data?.fieldValue?.sub_departement?.name">
-            Preview: <strong>{{ layout.data.fieldValue.sub_departement?.name }}</strong>
+          <span v-if="data.layout?.data?.fieldValue?.sub_departement?.name">
+            Preview: <strong>{{ data.layout.data.fieldValue.sub_departement?.name }}</strong>
           </span>
-          <span v-else>Pick The sub-departement</span>
+          <span v-else>Pick the sub-departement</span>
         </div>
       </div>
-      <div v-if="layout?.code"  :class="['border-2 border-t-0 overflow-auto', iframeClass]">
+
+      <div v-if="data.layout?.code" :class="['border-2 border-t-0 overflow-auto', iframeClass]">
         <component
-          class="flex-1  active-block"
-          :is="getComponent(layout.code)"
+          class="flex-1 active-block"
+          :is="getComponent(data.layout.code)"
           :screenType="currentView"
           :modelValue="{
-            ...layout.data.fieldValue,
-            sub_departement: layout.data.fieldValue?.departement || null,
-            families: layout.data.fieldValue?.families || []
+            ...data.layout.data.fieldValue,
+            sub_departement: dataPicked.sub_departement,
+            families: dataPicked.families
           }"
           :routeEditfamily="data.update_family_route"
         />
@@ -169,14 +179,13 @@ watch(currentView, (newValue) => {
       </div>
     </template>
 
-    <SubDepartementListTree 
+    <SubDepartementListTree
       :dataList="data.sub_departements"
       @changeDepartment="onChangeDepartment"
-      :active="layout?.data?.fieldValue?.sub_departement?.slug"
-     />
+      :active="data.layout?.data?.fieldValue?.sub_departement?.slug"
+    />
   </Drawer>
 </template>
-
 
 <style scoped>
 .selected-bg {

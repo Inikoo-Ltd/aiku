@@ -132,6 +132,7 @@ class UpdateWebsite extends OrgAction
             'status'        => ['sometimes', 'boolean'],
             'google_tag_id' => [
                 'sometimes',
+                'nullable',
                 'string',
                 'regex:/^GTM-[A-Z0-9]+$/'
             ],
@@ -139,13 +140,15 @@ class UpdateWebsite extends OrgAction
             'luigisbox_tracker_id' => [
                 'sometimes',
                 'string',
+                'nullable',
                 'regex:/^\d{6}-\d{6}$/'
             ],
             'luigisbox_script_lbx' => [
                 'sometimes',
+                'nullable',
                 'string',
             ],
-            'luigisbox_private_key' => ['sometimes', 'string'],
+            'luigisbox_private_key' => ['sometimes', 'nullable', 'string'],
             'return_policy' => ['sometimes', 'string'],
             'image'       => [
                 'sometimes',

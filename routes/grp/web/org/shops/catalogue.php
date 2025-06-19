@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Product\UI\EditProduct;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
 use App\Actions\Catalogue\ProductCategory\UI\CreateDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\CreateFamily;
@@ -40,6 +41,16 @@ Route::get('', ShowCatalogue::class)->name('dashboard');
 Route::prefix('products')->as('products.')->group(function () {
     Route::prefix('all')->as('all_products.')->group(function () {
         Route::get('', IndexProductsInCatalogue::class)->name('index');
+        Route::get('create', CreateProduct::class)->name('create');
+        Route::prefix('{product}')->group(function () {
+            Route::get('', ShowProduct::class)->name('show');
+            Route::get('images', GetProductUploadedImages::class)->name('images');
+            Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+        });
+    });
+    
+    Route::prefix('orphan')->as('orphan_products.')->group(function () {
+        Route::get('', IndexProductsWithNoFamily::class)->name('index');
         Route::get('create', CreateProduct::class)->name('create');
         Route::prefix('{product}')->group(function () {
             Route::get('', ShowProduct::class)->name('show');
