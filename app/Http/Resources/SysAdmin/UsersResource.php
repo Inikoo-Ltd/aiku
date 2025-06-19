@@ -57,6 +57,7 @@ class UsersResource extends JsonResource
                     'class'   => 'text-red-500'
                 ]
             },
+            'total_api_tokens' => $user->number_current_api_tokens,
             'parent_type'   => $user->parent_type,
             'contact_name'  => $user->contact_name,
             'parent'        => $this->when($this->relationLoaded('parent'), function () {
