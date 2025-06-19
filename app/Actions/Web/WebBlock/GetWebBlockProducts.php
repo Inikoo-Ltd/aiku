@@ -54,7 +54,9 @@ class GetWebBlockProducts
                         'parameters' => ['productCategory' => $webpage->model_id],
                     ],
                     'route_out_of_stock_products' => [
-                        'name' => 'iris.product_category.out_of_stock_products.index',
+                          //todo
+                       /*  ''name' => 'iris.product_category.out_of_stock_products.index',*/
+                        'name' => 'iris.json.product_category.products.index',
                         'parameters' => ['productCategory' => $webpage->model_id],
                     ]
                 ],
