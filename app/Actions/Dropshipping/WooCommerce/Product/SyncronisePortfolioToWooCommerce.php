@@ -25,7 +25,7 @@ class SyncronisePortfolioToWooCommerce extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
-        RequestApiUploadProductWooCommerce::run($wooCommerceUser, $portfolio);
+        RequestApiUploadProductWooCommerce::dispatch($wooCommerceUser, $portfolio);
     }
 
     public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request)

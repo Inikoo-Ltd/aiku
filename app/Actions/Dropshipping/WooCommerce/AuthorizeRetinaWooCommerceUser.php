@@ -34,7 +34,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
 
         $endpoint = '/wc-auth/v1/authorize';
         $params = [
-            'app_name' => config('app.name'),
+            'app_name' => 'AW Connect',
             'scope' => 'read_write',
             'user_id' => $wooCommerceUser->id,
             'return_url' => route('retina.dropshipping.customer_sales_channels.index'),
