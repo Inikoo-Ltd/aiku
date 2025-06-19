@@ -28,10 +28,11 @@ class UpdateFamilyDepartment extends OrgAction
     public function handle(ProductCategory $family, array $modelData): ProductCategory
     {
 
-        $oldDepartment = $family->department;
-        $oldSubDepartment = $family->subDepartment;
+        $oldDepartment = $family->department ?? null;
+        $oldSubDepartment = $family->subDepartment ?? null;
 
         data_set($modelData, 'parent_id', Arr::get($modelData, 'department_id'));
+        data_set($modelData, 'department_id', Arr::get($modelData, 'department_id'));
         data_set($modelData, 'sub_department_id', null);
 
         $family = $this->update($family, $modelData);
@@ -41,17 +42,16 @@ class UpdateFamilyDepartment extends OrgAction
 
 
         if (Arr::has($changes, 'department_id')) {
-            ProductCategoryHydrateFamilies::dispatch($family->parent);
-            ProductCategoryHydrateFamilies::dispatch($oldDepartment);
+            ProductCategoryHydrateFamilies::dispatch($family->department);
+            if($oldDepartment) {
+                ProductCategoryHydrateFamilies::dispatch($oldDepartment);
+            }
 
         }
 
-        if (Arr::has($changes, 'sub_department_id')) {
+        if (Arr::has($changes, 'sub_department_id') && $oldSubDepartment) {
             ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
         }
-
-
-
 
         return $family;
     }
