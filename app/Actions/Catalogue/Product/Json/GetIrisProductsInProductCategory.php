@@ -52,9 +52,14 @@ class GetIrisProductsInProductCategory extends IrisAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
+        $queryBuilder->leftJoin('webpages', function ($join) {
+            $join->on('webpages.model_id', '=', 'products.id');
+        })
+            ->where('webpages.model_type', 'Product');
+
+
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->where('products.available_quantity', '>', 0);
-        $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);
@@ -64,12 +69,12 @@ class GetIrisProductsInProductCategory extends IrisAction
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
 
-        return $queryBuilder->defaultSort('available_quantity')
+        return $queryBuilder->defaultSort('name')
             ->select(
                 'products.*',
-                'currencies.code as currency_code',
+                'webpages.url'
             )
-            ->allowedSorts(['price', 'created_at','available_quantity','code','name'])
+            ->allowedSorts(['price', 'created_at', 'available_quantity', 'code', 'name'])
             ->allowedFilters([$globalSearch, $priceRangeFilter, $familyCodeFilter])
             ->withPaginator($prefix)
             ->withQueryString();

@@ -37,8 +37,6 @@ function userRoute(user: User) {
 </script>
 
 <template>
-    <!-- <pre>{{ data }}</pre>
-    {{ tab }} -->
 
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Status -->

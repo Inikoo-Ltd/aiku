@@ -8,6 +8,7 @@
 import { Head, Link } from '@inertiajs/vue3'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCubes, faSeedling } from "@fal"
+import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -26,7 +27,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { routeType } from '@/types/route'
 import { Image as ImageProxy } from "@/types/Image"
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling)
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt)
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -43,6 +44,8 @@ const props = defineProps<{
         changeType: string
         icon: string
         color: string
+        backgroundColor?: string
+        is_negative?: boolean
         route: {
             name: string
             parameters: {}
@@ -131,14 +134,19 @@ console.log('props', props)
                 v-for="(stat, idxStat) in stats"
                 :key="'stat' + idxStat"
                 :href="route(stat.route.name, stat.route.parameters)"
-                :style="{color: stat.color}"
-                class="isolate relative overflow-hidden rounded-lg bg-white hover:bg-gray-50 cursor-pointer border border-gray-200 px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
+                :style="{
+                    color: stat.color,
+                    xbackgroundColor: stat.backgroundColor
+                }"
+                class="isolate relative overflow-hidden rounded-lg cursor-pointer border px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
+                :class="stat.is_negative ? 'bg-red-100 hover:bg-red-200 border-red-200 hover:border-red-300 text-red-500' : 'bg-white hover:bg-gray-50 border-gray-200'"
                 @start="() => boxLoaded[idxStat] = true"
                 @finish="() => boxLoaded[idxStat] = false"
             >
-                <BackgroundBox class="-z-10 opacity-80 absolute top-0 right-0" />
+                <BackgroundBox v-if="!stat.is_negative" class="-z-10 opacity-80 absolute top-0 right-0" />
+                <FontAwesomeIcon v-else icon="fad fa-fire-alt" class="text-red-500 -z-10 opacity-40 absolute -bottom-2 -right-5 text-7xl" fixed-width aria-hidden="true" />
 
-                <dt class="truncate text-sm font-medium text-gray-400">
+                <dt class="truncate text-sm font-medium" :class="stat.is_negative ? 'text-red-500' : 'text-gray-400'" xstyle="{ color: stat.is_negative ? stat.color : null }">
                     {{ stat.label }}
                 </dt>
 

@@ -59,6 +59,7 @@ class IrisDropshippingLoggedOutProductsInWebpageResource extends JsonResource
             'unit'          => $this->unit,
             'status'        => $this->status,
             'rrp'           => $this->rrp,
+            'url'                         => $this->url,
             'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
         ];
     }

@@ -11,7 +11,11 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -24,14 +28,16 @@ use Illuminate\Validation\Rule;
 class UpdateFamilyDepartment extends OrgAction
 {
     use WithActionUpdate;
+    use WithCatalogueEditAuthorisation;
 
     public function handle(ProductCategory $family, array $modelData): ProductCategory
     {
 
-        $oldDepartment = $family->department;
-        $oldSubDepartment = $family->subDepartment;
+        $oldDepartment = $family->department ?? null;
+        $oldSubDepartment = $family->subDepartment ?? null;
 
         data_set($modelData, 'parent_id', Arr::get($modelData, 'department_id'));
+        data_set($modelData, 'department_id', Arr::get($modelData, 'department_id'));
         data_set($modelData, 'sub_department_id', null);
 
         $family = $this->update($family, $modelData);
@@ -41,29 +47,25 @@ class UpdateFamilyDepartment extends OrgAction
 
 
         if (Arr::has($changes, 'department_id')) {
-            ProductCategoryHydrateFamilies::dispatch($family->parent);
-            ProductCategoryHydrateFamilies::dispatch($oldDepartment);
+            ProductCategoryHydrateFamilies::dispatch($family->department);
+            if ($oldDepartment) {
+                ProductCategoryHydrateFamilies::dispatch($oldDepartment);
+            } else {
+                ShopHydrateFamiliesWithNoDepartment::dispatch($family->shop);
+                OrganisationHydrateFamiliesWithNoDepartment::dispatch($family->organisation);
+                GroupHydrateFamiliesWithNoDepartment::dispatch($family->group);
+            }
 
         }
 
-        if (Arr::has($changes, 'sub_department_id')) {
+        if (Arr::has($changes, 'sub_department_id') && $oldSubDepartment) {
             ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
         }
-
-
-
 
         return $family;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
 
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
-    }
 
     public function rules(): array
     {

@@ -42,23 +42,28 @@ class HandleIrisInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'auth'   => [
+                'auth'     => [
                     'user'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
                     'webUser_count' => $webUser?->customer?->webUsers?->count() ?? 1,
                 ],
-                'flash' => [
+                'currency' => [
+                    'code'   => $website->shop->currency->code,
+                    'symbol' => $website->shop->currency->symbol,
+                    'name'   => $website->shop->currency->name,
+                ],
+                'flash'    => [
                     'notification' => fn () => $request->session()->get('notification')
                 ],
-                'ziggy' => [
+                'ziggy'    => [
                     'location' => $request->url(),
                 ],
-                "retina" => [
+                "retina"   => [
                     "type" => $website->shop->type->value,
                 ],
-                "layout" =>   [
+                "layout"   => [
                     "app_theme" => Arr::get($websiteTheme, 'color'),
                 ],
-                'iris' => $this->getIrisData($website, $webUser)
+                'iris'     => $this->getIrisData($website, $webUser)
 
             ],
             parent::share($request),

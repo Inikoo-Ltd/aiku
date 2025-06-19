@@ -28,7 +28,7 @@ const props = defineProps<{
     blockData?: Object
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
-
+console.log(props)
 const products = ref<any[]>([])
 const loadingInitial = ref(true)
 const loadingMore = ref(false)
@@ -38,7 +38,10 @@ const page = ref(1)
 const lastPage = ref(1)
 const filter = ref({ data: {} })
 const showFilters = ref(false)
-const showAside = ref(true) // Sidebar visibility (for desktop)
+const showAside = ref(true)
+
+const loadingOutOfStock = ref(false)
+const isFetchingOutOfStock = ref(false)
 
 function buildFilters(): Record<string, any> {
     const filters: Record<string, any> = {}
@@ -67,16 +70,22 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
-  console.log(props.fieldValue.products_route.iris.route_products.parameters)
+
+    const useOutOfStock = isFetchingOutOfStock.value
+    const currentRoute = useOutOfStock
+        ? props.fieldValue.products_route.iris.route_out_of_stock_products
+        : props.fieldValue.products_route.iris.route_products
+
     try {
-        const response = await axios.get(route(props.fieldValue.products_route.iris.route_products.name, {
-            ...props.fieldValue.products_route.iris.route_products.parameters,
+        const response = await axios.get(route(currentRoute.name, {
+            ...currentRoute.parameters,
             ...filters,
             'filter[global]': q.value,
             index_sort: orderBy.value,
             index_perPage: 25,
             page: page.value,
         }))
+
         const data = response.data
         lastPage.value = data?.meta.last_page ?? 1
 
@@ -85,14 +94,24 @@ const fetchProducts = async (isLoadMore = false) => {
         } else {
             products.value = data?.data ?? []
         }
+
+        // If we've reached the end of in-stock products and haven't fetched out-of-stock yet
+        if (!useOutOfStock && page.value >= lastPage.value) {
+            isFetchingOutOfStock.value = true
+            page.value = 1 // reset page for out-of-stock
+            await fetchProducts(true)
+        }
+
     } catch (error) {
-        console.log(error)
+        console.error(error)
         notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
     } finally {
         loadingInitial.value = false
         loadingMore.value = false
     }
 }
+
+
 const debFetchProducts = debounce(fetchProducts, 300)
 
 const handleSearch = () => {
@@ -117,23 +136,52 @@ const loadMore = () => {
     }
 }
 
-const orderOptions = [
-    { label: 'Newest', value: 'created_at' },
-    { label: 'Oldest', value: '-created_at' },
-    { label: 'Price ↑', value: '-price' },
-    { label: 'Price ↓', value: 'price' },
-]
+const sortKey = ref<'price' | 'name' | 'code' | 'created_at'>('created_at')
+const isAscending = ref(true)
 
-const selectOrder = (val: string) => {
-    orderBy.value = val
-    handleSearch()
+
+const getArrow = (key: typeof sortKey.value) => {
+  if (sortKey.value !== key) return ''
+  return isAscending.value ? '↑' : '↓'
 }
+
 
 const isMobile = computed(() => props.screenType === 'mobile')
 
 onMounted(() => {
+    // Ambil dari URL atau props
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortParam = urlParams.get('order_by')
+
+    if (sortParam) {
+        orderBy.value = sortParam
+        // Set sortKey dan isAscending agar sinkron
+        const key = sortParam.replace('-', '')
+        sortKey.value = key as typeof sortKey.value
+        isAscending.value = !sortParam.startsWith('-')
+    }
+
     debFetchProducts()
 })
+
+const updateQueryParams = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('order_by', orderBy.value)
+    window.history.replaceState({}, '', url.toString())
+}
+
+const toggleSort = (key: typeof sortKey.value) => {
+    if (sortKey.value === key) {
+        isAscending.value = !isAscending.value
+    } else {
+        sortKey.value = key
+        isAscending.value = true
+    }
+
+    orderBy.value = isAscending.value ? key : `-${key}`
+    updateQueryParams()
+    handleSearch()
+}
 
 
 const channels = ref({
@@ -204,13 +252,19 @@ const responsiveGridClass = computed(() => {
                 </div>
 
                 <!-- Sort Tabs -->
-                <div class="flex space-x-6 border-b border-gray-300 overflow-x-auto mt-2 md:mt-0">
-                    <button v-for="option in orderOptions" :key="option.value" @click="selectOrder(option.value)"
-                        class="pb-2 text-sm font-medium whitespace-nowrap" :class="{
-                            'border-b-2 text-[#1F2937] border-[#1F2937]': orderBy === option.value,
-                            'text-gray-600 hover:text-[#1F2937]': orderBy !== option.value
-                        }">
-                        {{ option.label }}
+                <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                    <button
+                        v-for="key in ['created_at', 'price', 'code', 'name']"
+                        :key="key"
+                        @click="toggleSort(key)"
+                        class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1"
+                        :class="{
+                        'border-b-2 text-[#1F2937] border-[#1F2937]': sortKey === key,
+                        'text-gray-600 hover:text-[#1F2937]': sortKey !== key
+                        }"
+                        :disabled="loadingInitial || loadingMore"
+                    >
+                        {{ key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) }} {{ getArrow(key) }}
                     </button>
                 </div>
             </div>
@@ -246,12 +300,12 @@ const responsiveGridClass = computed(() => {
             </div>
 
             <!-- Load More -->
-            <div v-if="page < lastPage && !loadingInitial" class="flex justify-center mt-4">
-                <button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
+            <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
+                <Button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
                     :disabled="loadingMore" style="background-color: #1F2937;">
                     <template v-if="loadingMore">Loading...</template>
                     <template v-else>Load More</template>
-                </button>
+                </Button>
             </div>
         </main>
 

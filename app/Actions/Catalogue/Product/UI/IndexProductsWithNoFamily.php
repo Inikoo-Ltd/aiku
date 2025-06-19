@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-06-2025-08h-08m
@@ -9,9 +10,6 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
@@ -98,15 +96,15 @@ class IndexProductsWithNoFamily extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-    
+
             foreach (IndexProductsInCatalogue::make()->getElementGroups($shop) as $key => $elementGroup) {
-                    $table->elementGroup(
-                        key: $key,
-                        label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
-                    );
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
             }
-            
+
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
@@ -122,9 +120,8 @@ class IndexProductsWithNoFamily extends OrgAction
 
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -134,6 +131,8 @@ class IndexProductsWithNoFamily extends OrgAction
         $shop = $request->route('shop');
 
         $navigation    = ProductsTabsEnum::navigation();
+
+        unset($navigation[ProductsTabsEnum::SALES->value]);
 
         $title = __('Orphan Products');
 
@@ -166,6 +165,21 @@ class IndexProductsWithNoFamily extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
+
+                'routes' => [
+                    'families_route' => [
+                        'name' => 'grp.json.shop.families',
+                        'parameters' => [
+                            'shop' => $this->shop->slug
+                        ]
+                    ],
+                    'submit_route' => [
+                        'name' => 'grp.models.family.move_products',
+                        'parameters' => []
+                    ]
+                ],
+
+                'is_orphan_products' => true,
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),

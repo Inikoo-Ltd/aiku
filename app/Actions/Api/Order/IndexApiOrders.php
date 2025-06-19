@@ -17,12 +17,10 @@ use App\Http\Resources\Api\OrdersResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class IndexApiOrders extends OrgAction
 {

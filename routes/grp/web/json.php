@@ -19,8 +19,10 @@ use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
@@ -83,6 +85,8 @@ Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name(
 Route::get('shop/{shop}/products', GetProductsInWorkshop::class)->name('shop.products');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
+Route::get('shop/{shop}/families', GetFamiliesInShop::class)->name('shop.families');
+Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.departments');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
 Route::get('shop/{shop}/catalogue/collection/{scope}/products', GetProducts::class)->name('shop.catalogue.collection.products');
