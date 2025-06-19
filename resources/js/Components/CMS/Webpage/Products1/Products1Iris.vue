@@ -67,7 +67,7 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
-
+  console.log(props.fieldValue.products_route.iris.route_products.parameters)
     try {
         const response = await axios.get(route(props.fieldValue.products_route.iris.route_products.name, {
             ...props.fieldValue.products_route.iris.route_products.parameters,
@@ -86,6 +86,7 @@ const fetchProducts = async (isLoadMore = false) => {
             products.value = data?.data ?? []
         }
     } catch (error) {
+        console.log(error)
         notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
     } finally {
         loadingInitial.value = false

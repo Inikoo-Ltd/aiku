@@ -12,6 +12,7 @@ use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Favourite;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -51,7 +52,8 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             ->pluck('customer_sales_channel_id')
             ->toArray();
 
-        $isFavourite = $customer->favourites()->where('product_id', $this->id)->exists();
+        /** @var Favourite $favourite */
+        $favourite = $customer->favourites()->where('product_id', $this->id)->first();
 
         return [
             'id'                          => $this->id,
@@ -72,7 +74,7 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             'image'                       => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'exist_in_portfolios_channel' => $portfolioChannelIds,
             'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer),
-            'is_favourite'                => $isFavourite,
+            'is_favourite'                => $favourite && !$favourite->unfavourited_at,
         ];
     }
 

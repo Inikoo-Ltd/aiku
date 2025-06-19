@@ -50,11 +50,11 @@ class GetWebBlockProducts
                 'iris' => [
                     'route_products' => [
                         'name' => 'iris.json.product_category.products.index',
-                        'parameters' => ['collection' => $webpage->model_id],
+                        'parameters' => ['productCategory' => $webpage->model_id],
                     ],
                     'route_out_of_stock_products' => [
                         'name' => 'collection.out_of_stock_products.index',
-                        'parameters' => ['collection' => $webpage->model_id],
+                        'parameters' => ['productCategory' => $webpage->model_id],
                     ]
                 ],
             ];
