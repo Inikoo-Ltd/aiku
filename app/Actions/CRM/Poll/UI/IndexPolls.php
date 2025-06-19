@@ -229,6 +229,7 @@ class IndexPolls extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.crm.polls.show',
             'grp.org.shops.show.crm.polls.index' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs(
