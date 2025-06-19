@@ -37,6 +37,7 @@ const props = withDefaults(defineProps<{
         label?: string
         icon?: string
     }
+    styleInput?: {}
 }>(), {
     caret: true,
     type: 'text'
@@ -149,6 +150,7 @@ const checkNumber = (event: KeyboardEvent) => {
                     clear && modelValue.length ? 'pl-3 pr-7' : 'px-3',
                     align == 'right' ? 'text-right' : ''
                 ]"
+                :style="styleInput"
             />
             <slot v-if="copyButton" name="copyButton">
                 <div class="group flex justify-center items-center absolute inset-y-0 gap-x-1"
