@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\Poll;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
+use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -32,9 +33,14 @@ class StorePoll extends OrgAction
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
 
+
         $poll = $shop->polls()->create($modelData);
+        $poll->stats()->create([
+            'poll_id' => $poll->id,
+        ]);
 
         ShopHydratePolls::dispatch($shop);
+        PollHydrateCustomers::dispatch($poll);
 
         //todo add Store,Org,Group hydrators here
 

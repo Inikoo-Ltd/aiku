@@ -11,6 +11,7 @@
 namespace App\Actions\CRM\Poll;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
+use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
@@ -33,6 +34,7 @@ class DeletePoll extends OrgAction
             $poll->delete();
         }
         ShopHydratePolls::dispatch($poll->shop);
+        PollHydrateCustomers::dispatch($poll);
 
         return $poll;
     }

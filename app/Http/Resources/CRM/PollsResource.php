@@ -17,9 +17,9 @@ class PollsResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Poll $poll */
-        $poll = $this;
+        $poll = $this->resource;
 
-        $percentage = ($poll->total_replies / ($poll->total_customers > 0 ? $poll->total_customers : 1)) * 100;
+        $percentage = $poll->number_customers ? ($poll->number_customers / ($poll->total_customers > 0 ? $poll->total_customers : 1)) * 100 : 0;
 
         return [
             'id'                        => $poll->id,
@@ -27,7 +27,7 @@ class PollsResource extends JsonResource
             'name'                      => $poll->name,
             'label'                     => $poll->label,
             'position'                  => $poll->position,
-            'total_replies'             => $poll->total_replies,
+            'number_customers'             => $poll->number_customers ?? 0,
             'type'                      => $poll->type->label(),
             'percentage'             => round($percentage, 2) . '%',
             'in_registration'           => $poll->in_registration,

@@ -16,7 +16,6 @@ use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\PollsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -57,14 +56,20 @@ class IndexPolls extends OrgAction
             $queryBuilder->where('polls.organisation_id', $parent->id);
         }
 
-        $queryBuilder->leftJoin('poll_replies', function ($join) {
-            $join->on('polls.id', '=', 'poll_replies.poll_id');
+        $queryBuilder->leftJoin('poll_stats', function ($join) {
+            $join->on('polls.id', '=', 'poll_stats.poll_id');
         });
 
-        $totalCustomer = Customer::when($parent instanceof Shop, function ($query) use ($parent) {
-            return $query->where('shop_id', $parent->id);
-        })
-        ->count();
+        $totalCustomer = 0;
+        if ($parent instanceof Shop) {
+            $totalCustomer = DB::table('shop_crm_stats')
+            ->where('shop_id', $parent->id)
+            ->value('number_customers') ?? 0;
+        } else {
+            $totalCustomer = DB::table('organisation_crm_stats')
+            ->where('organisation_id', $parent->id)
+            ->value('number_customers') ?? 0;
+        }
 
         $queryBuilder
             ->defaultSort('polls.id')
@@ -76,13 +81,13 @@ class IndexPolls extends OrgAction
                 'polls.position',
                 'polls.type',
                 'polls.in_registration',
-                DB::raw('COUNT(DISTINCT poll_replies.customer_id) as total_replies'),
+                'poll_stats.*',
                 DB::raw("'{$totalCustomer}' AS total_customers"),
             ])
-            ->groupBy('polls.id');
+            ->groupBy('polls.id', 'poll_stats.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'type', 'total_replies', 'in_registration'])
+            ->allowedSorts(['name', 'type', 'number_customers', 'in_registration'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -116,7 +121,7 @@ class IndexPolls extends OrgAction
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'in_registration', label: __('In registration'), canBeHidden: false, sortable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'total_replies', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'percentage', label: __('Response %'), canBeHidden: false);
         };
     }
