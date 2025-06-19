@@ -668,8 +668,10 @@ trait WithEbayApiRequest
     public function getPaymentPolicies()
     {
         try {
-            $endpoint = "/sell/account/v1/payment_policy?marketplace_id=EBAY_GB";
-            return $this->makeEbayRequest('get', $endpoint);
+            $endpoint = "/sell/account/v1/payment_policy";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'marketplace_id' => 'EBAY_GB'
+            ]);
         } catch (Exception $e) {
             Log::error('Get Payment Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -708,8 +710,10 @@ trait WithEbayApiRequest
     public function getReturnPolicies()
     {
         try {
-            $endpoint = "sell/account/v1/return_policy?marketplace_id=EBAY_GB";
-            return $this->makeEbayRequest('get', $endpoint);
+            $endpoint = "/sell/account/v1/return_policy";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'marketplace_id' => 'EBAY_GB'
+            ]);
         } catch (Exception $e) {
             Log::error('Get Return Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
