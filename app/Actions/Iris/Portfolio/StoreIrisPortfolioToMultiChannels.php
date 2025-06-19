@@ -57,8 +57,9 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
 
     public function asController(ActionRequest $request): void
     {
+        $customer = $request->user()->customer;
         $this->initialisation($request);
 
-        $this->handle($this->customer, $this->validatedData);
+        $this->handle($customer, $this->validatedData);
     }
 }

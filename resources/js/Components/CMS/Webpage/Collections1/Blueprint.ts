@@ -1,7 +1,17 @@
-import { trans } from "laravel-vue-i18n"
-
 export default {
     blueprint: [
+        {
+            name: "Settings",
+            key: ["settings"],
+            replaceForm: [
+                {
+                    key: ["per_row"],
+                    label: "Show Each Row",
+                    type: "number",
+                    useIn : ["desktop", "tablet", "mobile"],
+                },
+            ],
+        },
         {
             name: "Layout",
             key: ["container", "properties"],
@@ -10,12 +20,17 @@ export default {
                     key: ["background"],
                     label :"Background",
                     type: "background",
-                     
                 },
                 {
                     key: ["margin"],
                     label : "Margin",
                     type: "margin",
+                    useIn : ["desktop", "tablet", "mobile"],
+                },
+                {
+                    key: ["padding"],
+                    label : "Padding",
+                    type: "padding",
                     useIn : ["desktop", "tablet", "mobile"],
                 },
                 {

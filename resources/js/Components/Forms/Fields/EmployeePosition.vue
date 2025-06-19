@@ -790,12 +790,14 @@ watch(() => newForm, () => {
             </div>
 
             <div v-if="saveButton" class="mt-2 mr-2">
-                <div @click="() => onSubmitNewForm()" class="h-9 align-bottom text-center cursor-pointer" :disabled="newForm.processing || !newForm.isDirty">
-                    <template v-if="newForm.isDirty">
-                        <FontAwesomeIcon v-if="newForm.processing" icon="fad fa-spinner-third" class="text-2xl animate-spin" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
-                    </template>
-                    <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                <div v-if="newForm.processing" class="h-9 align-bottom text-center">
+                    <FontAwesomeIcon icon="fad fa-spinner-third" class="text-2xl animate-spin" fixed-width aria-hidden="true" />
+                </div>
+                <div v-else-if="newForm.isDirty" @click="() => onSubmitNewForm()" class="h-9 align-bottom text-center cursor-pointer">
+                    <FontAwesomeIcon icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                </div>
+                <div v-else class="h-9 align-bottom text-center">
+                    <FontAwesomeIcon icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                 </div>
             </div>
 

@@ -51,6 +51,8 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             ->pluck('customer_sales_channel_id')
             ->toArray();
 
+        $isFavourite = $customer->favourites()->where('product_id', $this->id)->exists();
+
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
@@ -69,7 +71,8 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             'rrp'                         => $this->rrp,
             'image'                       => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'exist_in_portfolios_channel' => $portfolioChannelIds,
-            'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer)
+            'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer),
+            'is_favourite'                => $isFavourite,
         ];
     }
 

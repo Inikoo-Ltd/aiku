@@ -71,7 +71,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
                 product.is_exist_in_all_channel = true
                 notify({
                     title: trans("Success"),
-                    text: trans("Added to portfolio"),
+                    text: trans("Added to all portfolios"),
                     type: "success"
                 })
             },
@@ -133,50 +133,73 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) =
 }
 
 
-// Section: Add to all Portfolios
+// Section: Add to Favourites
 const isLoadingFavourite = ref(false)
-const onAddFavourite = (product: {}) => {
-    // Emit an event or call a method to handle adding the product to the portfolio
-    console.log(`Adding product with ID ${product.name} to portfolio`)
-    
-
-    product.is_favourite = !product.is_favourite
-    isLoadingFavourite.value = true
-    setTimeout(() => {
-        isLoadingFavourite.value = false
-    }, 200)
+const onAddFavourite = (product: ProductResource) => {
 
     // Section: Submit
-    // router.post(
-    //     route('iris.models.all_channels.portfolio.store'),
-    //     {
-    //         item_id: [productId]
-    //     },
-    //     {
-    //         preserveScroll: true,
-    //         preserveState: true,
-    //         onStart: () => { 
-    //             isLoadingFavourite.value = true
-    //         },
-    //         onSuccess: () => {
-    //             notify({
-    //                 title: trans("Success"),
-    //                 text: trans("Added to portfolio"),
-    //                 type: "success"
-    //             })
-    //         },
-    //         onError: errors => {
-    //             notify({
-    //                 title: trans("Something went wrong"),
-    //                 text: trans("Failed to add to portfolio"),
-    //                 type: "error"
-    //             })
-    //         },
-    //         onFinish: () => {
-    //             isLoadingFavourite.value = false
-    //         },
-    //     }
-    // )
+    router.post(
+        route('iris.models.favourites.store', {
+            product: product.id
+        }),
+        {
+            // item_id: [product.id]
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingFavourite.value = true
+            },
+            onSuccess: () => {
+                product.is_favourite = true
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to favourites"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+            },
+        }
+    )
+}
+const onUnselectFavourite = (product: ProductResource) => {
+
+    // Section: Submit
+    router.delete(
+        route('iris.models.favourites.delete', {
+            product: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingFavourite.value = true
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Added to portfolio"),
+                //     type: "success"
+                // })
+                product.is_favourite = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from favourites"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+            },
+        }
+    )
 }
 </script>
 
@@ -188,18 +211,20 @@ const onAddFavourite = (product: {}) => {
             <!-- {{ product.currency_code }} -->
             <!-- Bestseller Badge -->
             <div v-if="product.bestseller"
-                class="absolute top-2 left-2 bg-white border border-black text-black text-xs font-bold px-2 py-0.5 rounded">
+                class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
                 BESTSELLER
             </div>
 
             <!-- Favorite Icon -->
-            <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
-                <LoadingIcon />
-            </div>
-            <div v-else @click="() => onAddFavourite(product)" class="cursor-pointer absolute top-2 right-2 group text-xl ">
-                <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
-                <FontAwesomeIcon v-else :icon="faHeart" fixed-width class="text-gray-400 group-hover:text-pink-400" />
-            </div>
+            <template v-if="layout.iris.is_logged_in">
+                <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
+                    <LoadingIcon />
+                </div>
+                <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)" class="cursor-pointer absolute top-2 right-2 group text-xl ">
+                    <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
+                    <FontAwesomeIcon v-else :icon="faHeart" fixed-width class="text-gray-400 group-hover:text-pink-400" />
+                </div>
+            </template>
 
             <!-- Product Image -->
             <div class="w-full h-64 mb-3 rounded">
@@ -254,7 +279,7 @@ const onAddFavourite = (product: {}) => {
 
                     <div class="w-full flex flex-nowrap relative">
                         <Button
-                            v-if="product.is_exist_on_all_portfolios"
+                            v-if="product.is_exist_in_all_channel"
                             label="Exist on all Portfolios"
                             type="tertiary"
                             disabled

@@ -152,6 +152,19 @@ const fetchChannels = async () => {
         channels.value.isLoading = false
     }
 }
+
+const responsiveGridClass = computed(() => {
+  const perRow = props.fieldValue?.settings?.per_row ?? {}
+
+  const columnCount = {
+    desktop: perRow.desktop ?? 4,
+    tablet: perRow.tablet ?? 4,
+    mobile: perRow.mobile ?? 2,
+  }
+
+  const count = columnCount[props.screenType] ?? 1
+  return `grid-cols-${count}`
+})
 </script>
 
 <template>
@@ -199,7 +212,7 @@ const fetchChannels = async () => {
             </div>
 
             <!-- Product Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4"
+            <div :class="responsiveGridClass"  class="grid gap-6 p-4"
                 :style="getStyles(fieldValue?.container?.properties, screenType)">
                 <template v-if="loadingInitial">
                     <div v-for="n in 8" :key="n" class="border p-3 rounded shadow-sm bg-white">
