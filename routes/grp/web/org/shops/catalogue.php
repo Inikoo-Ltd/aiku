@@ -29,6 +29,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexBlueprintDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesWithNoDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
@@ -167,6 +168,7 @@ Route::name("departments.")->prefix('departments')
 Route::name("families.")->prefix('families')
     ->group(function () {
         Route::get('', IndexFamilies::class)->name('index');
+        Route::get('no-department', IndexFamiliesWithNoDepartment::class)->name('no_department.index');
         Route::get('create', CreateFamily::class)->name('create');
 
         Route::get('{family}/edit', [EditFamily::class, 'inShop'])->name('edit');
