@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\Group;
 use App\Actions\HydrateModel;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAdjustments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateApiTokens;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAudits;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateBanners;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCharges;
@@ -198,6 +199,7 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateOrderInBasketAtCustomerUpdateIntervals::run($group);
         GroupHydrateOrderInBasketAtCreatedIntervals::run($group);
+        GroupHydrateApiTokens::dispatch($group);
 
 
     }

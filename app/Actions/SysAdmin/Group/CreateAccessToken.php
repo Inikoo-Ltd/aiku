@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Group;
 
 use App\Actions\GrpAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateApiTokens;
 use App\Models\SysAdmin\Group;
 use Exception;
 use Illuminate\Console\Command;
@@ -23,7 +24,10 @@ class CreateAccessToken extends GrpAction
 
     public function handle(Group $group, $data): string
     {
-        return $group->createToken($data['name'], $data['abilities'])->plainTextToken;
+        $plainAccessToken = $group->createToken($data['name'], $data['abilities'])->plainTextToken;
+
+        GroupHydrateApiTokens::dispatch($group);
+        return $plainAccessToken;
     }
 
     public string $commandSignature = 'group:access-token {group : group slug} {name} {abilities*}';

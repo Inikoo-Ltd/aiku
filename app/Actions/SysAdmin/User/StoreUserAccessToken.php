@@ -11,6 +11,7 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\Hydrators\UserHydrateApiTokens;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -46,6 +47,7 @@ class StoreUserAccessToken extends OrgAction
             'api_token' => __('Api token created').' ('.$tokenName.')'
         ];
 
+        UserHydrateApiTokens::dispatch($user);
         Event::dispatch(new AuditCustom($user));
 
 

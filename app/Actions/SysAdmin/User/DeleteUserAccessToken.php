@@ -11,6 +11,7 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\Hydrators\UserHydrateApiTokens;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -39,6 +40,7 @@ class DeleteUserAccessToken extends OrgAction
             $user->auditCustomNew = [
                 'api_token' => __('Api token deleted')
             ];
+            UserHydrateApiTokens::dispatch($user);
             Event::dispatch(new AuditCustom($user));
         }
     }
