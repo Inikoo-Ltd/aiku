@@ -52,6 +52,12 @@ class GetIrisProductsInProductCategory extends IrisAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
+        $queryBuilder->leftJoin('webpages', function ($join) {
+            $join->on('webpages.model_id', '=', 'products.id');
+        })
+            ->where('webpages.model_type', 'Product');
+
+
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->where('products.available_quantity', '>', 0);
 
@@ -65,9 +71,9 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         return $queryBuilder->defaultSort('name')
             ->select(
-                'products.*'
+                'products.*','webpages.url'
             )
-            ->allowedSorts(['price', 'created_at','available_quantity','code','name'])
+            ->allowedSorts(['price', 'created_at', 'available_quantity', 'code', 'name'])
             ->allowedFilters([$globalSearch, $priceRangeFilter, $familyCodeFilter])
             ->withPaginator($prefix)
             ->withQueryString();
