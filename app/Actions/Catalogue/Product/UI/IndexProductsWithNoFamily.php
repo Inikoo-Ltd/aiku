@@ -166,6 +166,15 @@ class IndexProductsWithNoFamily extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
+
+                'routes' => [
+                    'families_route' => [
+                        'name' => 'grp.json.shop.families',
+                        'parameters' => [
+                            'shop' => $this->shop
+                        ]
+                    ]
+                ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),

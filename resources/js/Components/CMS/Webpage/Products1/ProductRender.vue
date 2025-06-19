@@ -14,6 +14,7 @@ import Popover from '@/Components/Popover.vue'
 import { faCheck } from '@far'
 import { faPlus, faVial } from '@fal'
 import { faCircle, faStar, faHeart as fasHeart, faEllipsisV } from '@fas'
+import { Image as ImageTS } from '@/types/Image'
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -23,13 +24,16 @@ interface ProductResource {
     id: number
     name: string
     code: string
-    image?: { source: string }
+    image?: {
+        source: ImageTS
+    }
     currency_code: string
     rpp?: number
     unit: string
     stock: number
     rating: number
     price: number
+    url: string | null
     units: number
     bestseller?: boolean
     is_favourite?: boolean
@@ -227,13 +231,18 @@ const onUnselectFavourite = (product: ProductResource) => {
             </template>
 
             <!-- Product Image -->
-            <div class="w-full h-64 mb-3 rounded">
+            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-64 mb-3 rounded">
                 <Image :src="product.image?.source" alt="product image" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
-            </div>
+            </component>
 
             <!-- Title -->
-            <div class="font-medium text-sm mb-1">{{ product.name }}</div>
+            <Link v-if="product.url" :href="product.url" class="text-gray-600 hover:text-gray-800 font-medium text-sm mb-1">
+                {{ product.name }}
+            </Link>
+            <div v-else class="font-medium text-sm mb-1">
+                {{ product.name }}
+            </div>
 
             <!-- SKU and RRP -->
             <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
