@@ -107,7 +107,8 @@ const onUploadToShopify = () => {
 
 
 const downloadUrl = (type: string) => {
-    return route(props.download_route[type].name, props.download_route[type].parameters);
+    return '';
+    // return route(props.download_route[type].name, props.download_route[type].parameters);
 };
 
 

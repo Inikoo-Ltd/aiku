@@ -57,7 +57,10 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'customer_price', $priceIncVat);
         data_set($modelData, 'selling_price', $priceIncVat);
         data_set($modelData, 'price_inc_vat', $priceIncVat);
-        data_set($modelData, 'margin', CalculationsProfitMargin::run($priceIncVat, $item->price, $vatRate));
+
+        if ($item instanceof Product) {
+            data_set($modelData, 'margin', CalculationsProfitMargin::run($priceIncVat, $item->price, $vatRate));
+        }
 
         $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
             /** @var Portfolio $portfolio */
