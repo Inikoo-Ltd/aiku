@@ -1,5 +1,4 @@
 <?php
-
 /*
  * author Arya Permana - Kirin
  * created on 19-06-2025-14h-06m
@@ -13,6 +12,7 @@ use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -24,6 +24,7 @@ use Illuminate\Validation\Rule;
 class UpdateProductFamily extends OrgAction
 {
     use WithActionUpdate;
+    use WithCatalogueEditAuthorisation;
 
     public function handle(Product $product, array $modelData): Product
     {
@@ -70,15 +71,6 @@ class UpdateProductFamily extends OrgAction
         }
 
         return $product;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function rules(): array

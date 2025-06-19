@@ -1,5 +1,4 @@
 <?php
-
 /*
  * author Arya Permana - Kirin
  * created on 19-06-2025-15h-02m
@@ -10,14 +9,17 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Product;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateProductsFamily extends OrgAction
+class UpdateMultipleProductsFamily extends OrgAction
 {
     use WithActionUpdate;
+    use WithCatalogueEditAuthorisation;
 
     public function handle(ProductCategory $family, array $modelData): void
     {
@@ -26,21 +28,9 @@ class UpdateProductsFamily extends OrgAction
             UpdateProductFamily::make()->action($product, [
                 'family_id' => $family->id
             ]);
-
-            if (!$product) {
-                continue;
-            }
         }
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
-    }
 
     public function rules(): array
     {
