@@ -31,7 +31,6 @@ class ShopHydrateProducts implements ShouldBeUnique
 
         $stats = [
             'number_products' => $shop->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count(),
-            'number_products_no_family' => $shop->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->whereNull('family_id')->count()
         ];
 
         $stats = array_merge(
