@@ -155,6 +155,7 @@ class ShowFamily extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => FamilyTabsEnum::navigation()
                 ],
+                'is_orphan' => false,  // TODO: to show in orphan Family
 
                 FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($family)
