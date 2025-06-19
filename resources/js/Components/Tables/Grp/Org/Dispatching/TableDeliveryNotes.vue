@@ -79,6 +79,11 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 }
 
 function customerRoute(deliveryNote: DeliveryNote) {
+    // console.log('deliveryNote', deliveryNote)
+    if (!deliveryNote.customer_slug) {
+        return '#'
+    }
+
     switch (route().current()) {
          case "grp.overview.ordering.delivery_notes.index":
             return route(
