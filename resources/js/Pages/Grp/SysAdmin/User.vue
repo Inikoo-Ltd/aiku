@@ -14,7 +14,7 @@ import ModelDetails from "@/Components/ModelDetails.vue";
 import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import { faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faShieldCheck, faUserTag, faKey, faSyncAlt } from "@fal";
+import { faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faShieldCheck, faUserTag, faKey, faCopy } from "@fal";
 import { faExclamationTriangle, faRoad } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { capitalize } from "@/Composables/capitalize";
@@ -34,8 +34,9 @@ import axios from "axios";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import { useCopyText } from "@/Composables/useCopyText"
 
-library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag, faExclamationTriangle, faKey, faSyncAlt);
+library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag, faExclamationTriangle, faKey, faCopy);
 
 
 const props = defineProps<{
@@ -75,13 +76,13 @@ const component = computed(() => {
 
 const newToken = ref("");
 const isLoadingGenerate = ref(false);
-const isNewRegenerate = ref(false);
-const onGenerateApiToken = async (isRegenerate?: boolean) => {
+// const isNewRegenerate = ref(false);
+const onGenerateApiToken = async () => {
     isLoadingGenerate.value = true;
 
-    if (isRegenerate) {
-        isNewRegenerate.value = true;
-    }
+    // if (isRegenerate) {
+    //     isNewRegenerate.value = true;
+    // }
 
     try {
         const data = await axios.post(
@@ -109,10 +110,20 @@ const onGenerateApiToken = async (isRegenerate?: boolean) => {
         });
     } finally {
         isLoadingGenerate.value = false;
-        isNewRegenerate.value = false;
+        // isNewRegenerate.value = false;
     }
+}
 
-};
+
+// Method: On recently copied
+const isRecentlyCopied = ref(false)
+const onClickCopyButton = async (text: string) => {
+    useCopyText(text)
+    isRecentlyCopied.value = true
+    setTimeout(() => {
+        isRecentlyCopied.value = false
+    }, 3000)
+}
 </script>
 
 <template>
@@ -128,41 +139,52 @@ const onGenerateApiToken = async (isRegenerate?: boolean) => {
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
 
-    <Modal :isOpen="isModalApiToken" @onClose="() => (isModalApiToken = false)" width="w-full max-w-xl"
+    <Modal :isOpen="isModalApiToken" @onClose="() => (isModalApiToken = false)" width="w-fit max-w-xl"
            height="h-[500px]">
 
-        <div>
-            <div class="mt-3 text-center sm:mt-5">
+        <div class="mt-3">
+            <div class="text-center sm:mt-5">
                 <div as="h3" class="text-base font-semibold">
-                    Generate API Token
+                    {{ trans("Generate API Token") }}
                 </div>
 
                 <div class="text-sm text-gray-500">
-                    You can Generate a new API Token for this user. This token can be used to authenticate API requests.
+                    {{ trans("You can Generate a new API Token for this user. This token can be used to authenticate API requests.") }}
                 </div>
             </div>
         </div>
 
         <div class="mt-4 mx-auto w-fit">
             <div v-if="newToken" class="w-full max-w-xl">
-                <div class="w-full max-w-64 mx-auto flex items-center gap-x-2">
-                    <PureInput
-                        v-model="newToken"
-                        disabled
-                        copyButton
-                        :styleInput="{
-                            paddingRight: '32px'
-                        }"
-                    />
-                    <div @click="() => onGenerateApiToken(true)" v-tooltip="trans('Regenerate API Token')" class="text-gray-400 hover:text-gray-700 cursor-pointer">
+                <div class="grid w-full max-w- mx-auto xflex items-center gap-x-2">
+                    <div class="text-gray-500 text-sm text-center">
+                        {{ trans("Here is your new API Token") }}:
+                    </div>
+
+                    <div class="w-full max-w-full relative pr-10 overflow-hidden bg-gray-50 border border-gray-200 rounded-md px-3 py-3 text-gray-500 text-sm inline-flex items-center gap-x-2">
+                        <FontAwesomeIcon icon="fal fa-key" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <span class="truncate">{{ newToken }}</span>
+
+                        <div class="text-gray-700 group flex justify-center items-center absolute right-2 inset-y-0 gap-x-1"
+                            xclass="align === 'right' ? 'left-0' : 'right-0'"
+                        >
+                            <Transition name="spin-to-down">
+                                <FontAwesomeIcon v-if="isRecentlyCopied" icon='fal fa-check' class='text-green-500 px-3 h-full text-xxs leading-none ' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon v-else @click="() => onClickCopyButton(newToken)" icon="fal fa-copy" class="px-3 h-full text-xxs leading-none opacity-50 group-hover:opacity-100 group-active:opacity-100 cursor-pointer" fixed-width aria-hidden="true" />
+                            </Transition>
+                        </div>
+                    </div>
+
+
+                    <!-- <div @click="() => onGenerateApiToken(true)" v-tooltip="trans('Regenerate API Token')" class="text-gray-400 hover:text-gray-700 cursor-pointer">
                         <LoadingIcon v-if="isNewRegenerate" />
                         <FontAwesomeIcon v-else icon="fal fa-sync-alt" class="" fixed-width aria-hidden="true" />
-                    </div>
+                    </div> -->
                 </div>
 
-                <div class="text-orange-500 text-sm items-center gap-x-2 text-center">
+                <div class="mt-2 text-amber-500 text-sm items-center gap-x-2 text-center">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-lg" fixed-width aria-hidden="true" />
-                    <span class="text-center">Put this token in a safe place, you won't be able to see it again.</span>
+                    <span class="text-center">{{ trans("Put this token in a safe place, you won't be able to see it again.") }}</span>
                 </div>
             </div>
 
