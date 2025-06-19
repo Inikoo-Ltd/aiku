@@ -52,11 +52,12 @@ function userRoute(user: User) {
                 <template v-if="user['username']">{{ user["username"] }}</template>
                 <span v-else class="italic">{{ trans("Not set") }}</span>
             </div>
-
-            <div v-if="user.total_api_tokens > 0" v-tooltip="user.total_expired_api_tokens + ' ' + trans('keys was expired')" class="inline w-fit">
-                <FontAwesomeIcon icon="fal fa-key" class="text-gray-400" fixed-width aria-hidden="true" />
-                <span class="text-orange-500">{{ user.total_api_tokens}}</span>
+            <div v-if="user.number_current_api_tokens > 0 || user.number_expired_api_tokens>0 " v-tooltip="trans('Api keys')" class="ml-3 inline w-fit">
+                <FontAwesomeIcon icon="fal fa-key" class="text-gray-400 mr-1" fixed-width aria-hidden="true" />
+                <span  v-if="user.number_current_api_tokens > 0"  v-tooltip="trans('active')">{{ user.number_current_api_tokens}}</span>   <span   v-tooltip="trans('expired')" class="text-red-700 ml-2"  v-if="user.number_expired_api_tokens > 0" >{{ user.number_expired_api_tokens}}</span>
             </div>
+
+
         </template>
 
         <!-- Column: Image -->

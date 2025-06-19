@@ -56,7 +56,7 @@ class StoreUserAccessToken extends OrgAction
 
 
         Event::dispatch(new AuditCustom($user));
-        UserHydrateApiTokens::dispatch($user);
+        UserHydrateApiTokens::run($user); // Use run() instead of dispatch() to ensure immediate execution
         GroupHydrateApiTokens::dispatch($user->group);
 
 
