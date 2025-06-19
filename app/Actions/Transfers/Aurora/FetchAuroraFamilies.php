@@ -10,6 +10,8 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Helpers\Media\SaveModelImages;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -29,13 +31,40 @@ class FetchAuroraFamilies extends FetchAuroraAction
             if ($family = ProductCategory::where('source_family_id', $familyData['family']['source_family_id'])
                 ->first()) {
                 try {
+                    $shop      = $family->shop;
+                    $modelData = [];
+                    if ($shop->type == ShopTypeEnum::B2B) {
+                        $modelData = $familyData['family'];
+                    } elseif ($shop->type == ShopTypeEnum::DROPSHIPPING && !$family->image_id) {
+                        $modelData = Arr::only($modelData, ['image', 'fetched_at', 'last_fetched_at']);
+                    }
+
+                    $imageData = Arr::pull($modelData, 'image');
+
+
                     $family = UpdateProductCategory::make()->action(
                         productCategory: $family,
-                        modelData: $familyData['family'],
+                        modelData: $modelData,
                         hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
+
+
+                    if (isset($imageData['image_path']) and isset($imageData['filename'])) {
+                        SaveModelImages::run(
+                            $family,
+                            [
+                                'path'         => $imageData['image_path'],
+                                'originalName' => $imageData['filename'],
+
+                            ],
+                            'photo',
+                            'product_images'
+                        );
+                    }
+
+
                     $this->recordChange($organisationSource, $family->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $familyData['family'], 'Family', 'update');
@@ -44,6 +73,20 @@ class FetchAuroraFamilies extends FetchAuroraAction
                 }
             } else {
                 try {
+                    $imageData = Arr::pull($familyData['family'], 'image');
+                    if (isset($imageData['image_path']) and isset($imageData['filename'])) {
+                        SaveModelImages::run(
+                            $family,
+                            [
+                                'path'         => $imageData['image_path'],
+                                'originalName' => $imageData['filename'],
+
+                            ],
+                            'photo',
+                            'product_images'
+                        );
+                    }
+
                     $family = StoreProductCategory::make()->action(
                         parent: $familyData['parent'],
                         modelData: $familyData['family'],
@@ -51,6 +94,8 @@ class FetchAuroraFamilies extends FetchAuroraAction
                         strict: false,
                         audit: false
                     );
+
+
                     ProductCategory::enableAuditing();
                     $this->saveMigrationHistory(
                         $family,
