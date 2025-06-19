@@ -107,7 +107,7 @@ class ShowUser extends OrgAction
                 ],
                 'tabs'                        => [
                     'current'    => $this->tab,
-                    'navigation' => UserTabsEnum::navigation()
+                    'navigation' => UserTabsEnum::navigation($user)
                 ],
                 'apiRoutes'                   => [
                     'createToken' => [

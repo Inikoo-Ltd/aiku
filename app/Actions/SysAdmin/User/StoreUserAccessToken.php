@@ -16,6 +16,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -54,6 +55,17 @@ class StoreUserAccessToken extends OrgAction
         return $plainTextToken;
     }
 
+    public function afterValidator()
+    {
+        if (!$this->asAction) {
+            if ($this->user && !$this->user?->status) {
+                throw ValidationException::withMessages([
+                    'messages' => __('User is not active, cannot create access token.')
+                ]);
+            }
+        }
+    }
+
 
     public function action(User $user, array $data): string
     {
@@ -71,6 +83,7 @@ class StoreUserAccessToken extends OrgAction
 
     public function asController(User $user, ActionRequest $request): string
     {
+        $this->user = $user;
         $this->initialisationFromGroup($user->group, $request);
 
         return $this->handle($user);
