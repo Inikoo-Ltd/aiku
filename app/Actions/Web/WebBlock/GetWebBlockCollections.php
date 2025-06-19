@@ -34,6 +34,7 @@ class GetWebBlockCollections
             ->get();
 
         $permissions = ['hidden'];
+        
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['collection']['data']['fieldValue'] ?? []);

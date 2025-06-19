@@ -104,8 +104,6 @@ const onPickBlock = (value: object) => {
           <FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
         </Tab>
       </TabList>
-
-      <!-- Scrollable Panels -->
       <TabPanels class="overflow-auto flex-grow bg-gray-50">
         <TabPanel class="p-4">
           <WebBlockListDnd
@@ -114,14 +112,11 @@ const onPickBlock = (value: object) => {
             :selectedWeblock="data?.code"
           />
         </TabPanel>
-       <!--  <TabPanel v-if="data" class="p-4">
-          <DepartementListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
-        </TabPanel> -->
         <TabPanel v-if="data?.data?.fieldValue" class="p-4">
           <SideEditor 
             v-model="data.data.fieldValue" 
             :blueprint="getBlueprint(data.code)"
-            @update:modelValue="(e) => { data.data.fieldValue = e, emits('autoSave') }"
+            @update:modelValue="(e) => { data.data.fieldValue = e, emits('autoSave')}"
             :uploadImageRoute="null" 
           />
         </TabPanel>
