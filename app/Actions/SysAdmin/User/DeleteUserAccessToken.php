@@ -12,6 +12,8 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\GrpAction;
 use App\Models\SysAdmin\User;
+use Laravel\Sanctum\PersonalAccessToken;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -20,22 +22,21 @@ class DeleteUserAccessToken extends GrpAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(User $user): bool
+    public function handle(PersonalAccessToken $token): bool
     {
-        return $user->tokens()->delete();
+        $token->delete();
+        return true;
     }
 
-    public string $commandSignature = 'user:delete-access-token {user : user ID}';
-
-    public function action(User $user, array $data): bool
+    public function action(User $user, PersonalAccessToken $token, array $modelData): bool
     {
-        $this->initialisation($user->group, $data);
-        return $this->handle($user);
+        $this->initialisation($user->group, $modelData);
+        return $this->handle($token);
     }
 
-    public function asController(User $user, array $data)
+    public function asController(User $user, PersonalAccessToken $token, ActionRequest $request)
     {
-        $this->initialisation($user->group, $data);
-        return $this->handle($user);
+        $this->initialisation($user->group, $request);
+        $this->handle($token);
     }
 }
