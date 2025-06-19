@@ -10,11 +10,13 @@ import Table from "@/Components/Table/Table.vue"
 import { User } from "@/types/user"
 import { trans } from "laravel-vue-i18n"
 import Image from "@/Components/Image.vue"
-import { faCheck, faTimes, faUserCircle, faYinYang } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
 import Icon from '@/Components/Icon.vue'
 
-library.add(faUserCircle, faTimes, faCheck, faYinYang)
+import { faCheck, faTimes, faUserCircle, faYinYang, faKey } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey)
 
 const props = defineProps<{
     data: {}
@@ -53,6 +55,11 @@ function userRoute(user: User) {
             <div v-else>
                 <template v-if="user['username']">{{ user["username"] }}</template>
                 <span v-else class="italic">{{ trans("Not set") }}</span>
+            </div>
+
+            <div v-if="user.total_api_tokens > 0" v-tooltip="user.total_expired_api_tokens + ' ' + trans('keys was expired')" class="inline w-fit">
+                <FontAwesomeIcon icon="fal fa-key" class="text-gray-400" fixed-width aria-hidden="true" />
+                <span class="text-orange-500">{{ user.total_api_tokens}}</span>
             </div>
         </template>
 
