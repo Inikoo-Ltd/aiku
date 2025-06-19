@@ -207,7 +207,7 @@ const onSubmitAmazon = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png"
+                    <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
                          alt="" class="h-12">
 
                     <div class="flex flex-col">
