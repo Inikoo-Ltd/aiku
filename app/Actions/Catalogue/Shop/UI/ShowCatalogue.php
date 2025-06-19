@@ -409,6 +409,7 @@ class ShowCatalogue extends OrgAction
                     ],
                     [
                         'label' => __('Stray Families'),
+                        'is_negative' => true,
                         'route' => [
                             'name'       => 'grp.org.shops.show.catalogue.families.no_department.index',
                             'parameters' => [
@@ -417,11 +418,13 @@ class ShowCatalogue extends OrgAction
                             ]
                         ],
                         'icon'  => 'fal fa-folder',
-                        "color" => "#ff0000",
+                        "xcolor" => "#ff0000",
+                        "backgroundColor" => "#ff000011",
                         'value' => $shop->stats->number_families_no_department,
                     ],
                     [
                         'label' => __('Orphan Products'),
+                        'is_negative' => true,
                         'route' => [
                             'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
                             'parameters' => [
@@ -430,7 +433,8 @@ class ShowCatalogue extends OrgAction
                             ]
                         ],
                         'icon'  => 'fal fa-cube',
-                        "color" => "#ff0000",
+                        "xcolor" => "#ff0000",
+                        "backgroundColor" => "#ff000011",
                         'value' => $shop->stats->number_products_no_family,
                     ],
                 ]
