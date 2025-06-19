@@ -275,6 +275,7 @@ return [
         'shipper_apc_token' => env('APC_TOKEN'),
         'shipper_dpd_gb_token' => env('DPD_GB_TOKEN'),
         'shipper_gls_sk_token' => env('GLS_SK_TOKEN'),
+        'shipper_packeta_access_token' => env('PACKETA_ACCESS_TOKEN'),
 
 
         'local_share_url' => env('SANDBOX_SHARE_URL'),
