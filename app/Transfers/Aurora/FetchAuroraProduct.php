@@ -126,8 +126,8 @@ class FetchAuroraProduct extends FetchAurora
 
         $grossWeight = $this->auroraModelData->{'Product Package Weight'};
 
-        $rrp= $this->auroraModelData->{'Product RRP'};
-        if($rrp<=0){
+        $rrp = $this->auroraModelData->{'Product RRP'};
+        if ($rrp <= 0) {
             $rrp = null;
         }
 

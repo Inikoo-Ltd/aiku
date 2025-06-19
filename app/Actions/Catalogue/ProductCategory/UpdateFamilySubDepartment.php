@@ -1,12 +1,10 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 12-06-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 19 Jun 2025 21:43:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Catalogue\ProductCategory;
 
@@ -20,27 +18,27 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithN
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateFamilyDepartment extends OrgAction
+class UpdateFamilySubDepartment extends OrgAction
 {
     use WithActionUpdate;
     use WithCatalogueEditAuthorisation;
 
     public function handle(ProductCategory $family, array $modelData): ProductCategory
     {
+
+        $newSubDepartmentId = ProductCategory::find(Arr::get($modelData, 'sub_department_id'));
+
         $oldDepartment    = $family->department ?? null;
         $oldSubDepartment = $family->subDepartment ?? null;
 
-        data_set($modelData, 'parent_id', Arr::get($modelData, 'department_id'));
-        data_set($modelData, 'department_id', Arr::get($modelData, 'department_id'));
-        data_set($modelData, 'sub_department_id', null);
+        data_set($modelData, 'parent_id', $newSubDepartmentId->id);
+        data_set($modelData, 'sub_department_id', $newSubDepartmentId->id);
+        data_set($modelData, 'department_id', $newSubDepartmentId->department_id);
 
         $family  = $this->update($family, $modelData);
         $changes = $family->getChanges();
@@ -49,7 +47,7 @@ class UpdateFamilyDepartment extends OrgAction
             ->where('family_id', $family->id)
             ->update([
                 'department_id'     => $family->department_id,
-                'sub_department_id' => null
+                'sub_department_id' => $family->sub_department_id,
             ]);
 
 
@@ -66,9 +64,13 @@ class UpdateFamilyDepartment extends OrgAction
             }
         }
 
-        if (Arr::has($changes, 'sub_department_id') && $oldSubDepartment) {
-            ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
-            SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+        if (Arr::has($changes, 'sub_department_id')) {
+            ProductCategoryHydrateFamilies::dispatch($newSubDepartmentId);
+            SubDepartmentHydrateProducts::dispatch($newSubDepartmentId);
+            if ($oldSubDepartment) {
+                ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
+                SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+            }
         }
 
         return $family;
@@ -78,10 +80,10 @@ class UpdateFamilyDepartment extends OrgAction
     public function rules(): array
     {
         return [
-            'department_id' => [
+            'sub_department_id' => [
                 'required',
                 Rule::exists('product_categories', 'id')
-                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                    ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ]
         ];
@@ -95,9 +97,5 @@ class UpdateFamilyDepartment extends OrgAction
         return $this->handle($family, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): void
-    {
-        $this->initialisationFromShop($shop, $request);
-        $this->handle($family, $this->validatedData);
-    }
+
 }
