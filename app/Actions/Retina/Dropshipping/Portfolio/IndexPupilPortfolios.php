@@ -58,20 +58,19 @@ class IndexPupilPortfolios extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $customerSalesChannel = $request->route('customerSalesChannel');
-        if ($customerSalesChannel->customer_id == $this->customer->id) {
+        $pupilUser = $request->user();
+        if ($pupilUser->customer_id == $this->customer->id) {
             return true;
         }
         return false;
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisationFromPupil($request);
+        $this->customerSalesChannel = $this->shopifyUser->customerSalesChannel;
 
-        $this->initialisation($request);
-
-        return $this->handle($customerSalesChannel, 'products');
+        return $this->handle($this->customerSalesChannel, 'products');
     }
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource

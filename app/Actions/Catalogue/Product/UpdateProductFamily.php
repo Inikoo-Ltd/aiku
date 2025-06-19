@@ -6,7 +6,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Catalogue\ProductCategory;
+namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;

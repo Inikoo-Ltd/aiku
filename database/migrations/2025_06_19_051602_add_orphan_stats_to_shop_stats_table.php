@@ -17,6 +17,14 @@ return new class extends Migration
             $table->unsignedInteger('number_families_no_department')->default(0);
             $table->unsignedInteger('number_products_no_family')->default(0);
         });
+        Schema::table('organisation_catalogue_stats', function (Blueprint $table) {
+            $table->unsignedInteger('number_families_no_department')->default(0);
+            $table->unsignedInteger('number_products_no_family')->default(0);
+        });
+        Schema::table('group_catalogue_stats', function (Blueprint $table) {
+            $table->unsignedInteger('number_families_no_department')->default(0);
+            $table->unsignedInteger('number_products_no_family')->default(0);
+        });
     }
 
     /**
@@ -27,6 +35,14 @@ return new class extends Migration
     public function down()
     {
         Schema::table('shop_stats', function (Blueprint $table) {
+            $table->dropColumn('number_families_no_department');
+            $table->dropColumn('number_products_no_family');
+        });
+        Schema::table('organisation_catalogue_stats', function (Blueprint $table) {
+            $table->dropColumn('number_families_no_department');
+            $table->dropColumn('number_products_no_family');
+        });
+        Schema::table('group_catalogue_stats', function (Blueprint $table) {
             $table->dropColumn('number_families_no_department');
             $table->dropColumn('number_products_no_family');
         });
