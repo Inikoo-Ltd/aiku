@@ -10,36 +10,49 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\PersonalAccessToken;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use OwenIt\Auditing\Events\AuditCustom;
 
-class DeleteUserAccessToken extends GrpAction
+class DeleteUserAccessToken extends OrgAction
 {
     use AsAction;
     use WithAttributes;
 
-    public function handle(User $user, PersonalAccessToken $token): bool
+    public function handle(PersonalAccessToken $token): void
     {
-        if ($token->tokenable_id == $user->id && $token->tokenable_type == class_basename($user)) {
-            $token->delete();
-            return true;
+        $tokenable = $token->tokenable;
+        $token->delete();
+
+        if ($tokenable instanceof User) {
+            $user                 = $tokenable;
+            $user->auditEvent     = 'delete';
+            $user->isCustomEvent  = true;
+            $user->auditCustomOld = [
+                'api_token' => $token->name
+            ];
+            $user->auditCustomNew = [
+                'api_token' => __('Api token deleted')
+            ];
+            Event::dispatch(new AuditCustom($user));
         }
-        return false;
     }
 
-    public function action(User $user, PersonalAccessToken $token, array $modelData): bool
+    public function action(PersonalAccessToken $token, array $modelData): void
     {
-        $this->initialisation($user->group, $modelData);
-        return $this->handle($user, $token);
+        $this->initialisationFromGroup($token->tokenable->group, $modelData);
+
+        $this->handle($token);
     }
 
-    public function asController(User $user, PersonalAccessToken $token, ActionRequest $request)
+    public function asController(PersonalAccessToken $token, ActionRequest $request)
     {
-        $this->initialisation($user->group, $request);
-        $this->handle($user, $token);
+        $this->initialisationFromGroup($token->tokenable->group, $request);
+        $this->handle($token);
     }
 }

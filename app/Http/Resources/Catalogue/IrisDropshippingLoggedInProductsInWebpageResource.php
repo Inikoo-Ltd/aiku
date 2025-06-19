@@ -74,7 +74,7 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             'image'                       => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'exist_in_portfolios_channel' => $portfolioChannelIds,
             'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer),
-            'is_favourite'                => (bool) $favourite?->unfavourited_at,
+            'is_favourite'                => $favourite && !$favourite->unfavourited_at,
         ];
     }
 

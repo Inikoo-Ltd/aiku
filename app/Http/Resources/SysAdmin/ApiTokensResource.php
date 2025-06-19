@@ -27,16 +27,15 @@ class ApiTokensResource extends JsonResource
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'last_used_at' => $this->last_used_at,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'expires_at' => $this->expires_at,
+            'id'                 => $this->id,
+            'name'               => $this->name,
+            'last_used_at'       => $this->last_used_at,
+            'created_at'         => $this->created_at,
+            'updated_at'         => $this->updated_at,
+            'expires_at'         => $this->expires_at,
             'route_delete_token' => [
-                'name'       => 'grp.models.user.access_token.delete',
+                'name'       => 'grp.models.access_token.delete',
                 'parameters' => [
-                    'user' => $this->user_id,
                     'token' => $this->id
                 ]
             ]
