@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -24,6 +25,7 @@ use Illuminate\Validation\Rule;
 class UpdateFamilyDepartment extends OrgAction
 {
     use WithActionUpdate;
+    use WithCatalogueEditAuthorisation;
 
     public function handle(ProductCategory $family, array $modelData): ProductCategory
     {
@@ -43,7 +45,7 @@ class UpdateFamilyDepartment extends OrgAction
 
         if (Arr::has($changes, 'department_id')) {
             ProductCategoryHydrateFamilies::dispatch($family->department);
-            if ($oldDepartment) {
+            if($oldDepartment) {
                 ProductCategoryHydrateFamilies::dispatch($oldDepartment);
             }
 
@@ -56,14 +58,7 @@ class UpdateFamilyDepartment extends OrgAction
         return $family;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
 
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
-    }
 
     public function rules(): array
     {

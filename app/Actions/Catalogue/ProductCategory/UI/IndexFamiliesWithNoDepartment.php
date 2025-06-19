@@ -33,7 +33,6 @@ class IndexFamiliesWithNoDepartment extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    private bool $sales = true;
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
@@ -103,9 +102,9 @@ class IndexFamiliesWithNoDepartment extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Shop $shop, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($shop, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($shop, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -129,13 +128,11 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     ]
                 )
                 ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->withModelOperations($modelOperations);
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-
         };
     }
 
@@ -159,24 +156,23 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         ];
         $afterTitle = null;
         $iconRight  = null;
-        $routes = null;
+        $routes     = null;
 
 
         return Inertia::render(
             'Org/Catalogue/Families',
             [
                 'breadcrumbs'                         => $this->getBreadcrumbs(
-                    $this->shop,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'title'                               => __('families'),
                 'pageHead'                            => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                    'title'      => $title,
+                    'icon'       => $icon,
+                    'model'      => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight'  => $iconRight,
                 ],
                 'routes'                              => $routes,
                 'data'                                => FamiliesResource::collection($families),
@@ -185,13 +181,13 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn() => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
             ]
-        )->table($this->tableStructure(shop: $this->shop, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value));
+        )->table($this->tableStructure(shop: $this->shop, prefix: ProductCategoryTabsEnum::INDEX->value));
     }
 
-    public function getBreadcrumbs(Shop $shop, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
