@@ -32,7 +32,7 @@ trait WithAuroraImages
             ->leftJoin('Image Dimension', 'Image Subject Image Key', '=', 'Image Key')
             ->where('Image Subject Object', $model)
             ->where('Image Subject Object Key', $id)
-            ->where('Image Subject Is Principal', 'Yes')
+            ->orderByRaw("FIELD(`Image Subject Is Principal`, 'Yes','No')")
             ->first();
     }
 
