@@ -147,6 +147,7 @@ class EditWebpage extends OrgAction
                                         ],
                                         'meta_title'       => Arr::get($webpage->seo_data, 'meta_title')       ?? '',
                                         'meta_description' => Arr::get($webpage->seo_data, 'meta_description') ?? '',
+                                        'llms_text'        => Arr::get($webpage->seo_data, 'llms_text') ?? '',
                                         'url'             =>  $webpage->url,
                                         'is_use_canonical_url' => $webpage->is_use_canonical_url,
                                         'canonical_url'     => $webpage->canonical_url,
