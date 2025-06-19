@@ -226,7 +226,7 @@ trait WithEbayApiRequest
     /**
      * Make authenticated request to eBay API
      */
-    protected function makeEbayRequest($method, $endpoint, $data = [])
+    protected function makeEbayRequest($method, $endpoint, $data = [], $queryParams = [])
     {
         try {
             $token = $this->getEbayAccessToken();
@@ -237,7 +237,8 @@ trait WithEbayApiRequest
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'Content-Language' => 'en-GB'
-            ])->$method($url, $data);
+            ])->withQueryParameters($queryParams)
+                ->$method($url, $data);
 
             if ($response->successful()) {
                 return $response->json();
@@ -627,8 +628,10 @@ trait WithEbayApiRequest
     public function getFulfilmentPolicies()
     {
         try {
-            $endpoint = "/sell/account/v1/fulfillment_policy?marketplace_id=EBAY_GB";
-            return $this->makeEbayRequest('get', $endpoint);
+            $endpoint = "/sell/account/v1/fulfillment_policy";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'marketplace_id' => 'EBAY_GB'
+            ]);
         } catch (Exception $e) {
             Log::error('Get Fulfilment Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -757,7 +760,7 @@ trait WithEbayApiRequest
         }
     }
 
-        /**
+    /**
      * Get user's eBay category suggestions
      */
     public function getCategorySuggestions($keyword)
