@@ -11,5 +11,5 @@ use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use Illuminate\Support\Facades\Route;
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
-    Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
+    Route::post('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
 });

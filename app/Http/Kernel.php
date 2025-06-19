@@ -16,6 +16,7 @@ use App\Http\Middleware\HandleInertiaCrossToIris;
 use App\Http\Middleware\HandleInertiaCrossToRetina;
 use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RetinaPreparingAccount;
+use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
@@ -194,7 +195,7 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandlePupilInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //            SameSiteSession::class,
+            SameSiteSession::class,
         ],
 
         'cornea'  => [

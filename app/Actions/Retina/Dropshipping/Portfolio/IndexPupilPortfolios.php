@@ -103,7 +103,22 @@ class IndexPupilPortfolios extends RetinaAction
                 'pageHead'    => [
                     'title'   => $title,
                     'model'   =>  $platformName,
-                    'icon'    => 'fal fa-cube'
+                    'icon'    => 'fal fa-cube',
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'icon'  => 'fas fa-sync-alt',
+                            'label' => 'Sync All Items',
+                            'route' => [
+                                'name'       => 'pupil.models.dropshipping.shopify_user.product.sync',
+                                'parameters' => [
+                                    'shopifyUser' => $this->customerSalesChannel->user->id
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ]
+                    ]
                 ],
                 'routes'    => [
                     'bulk_upload'  => match ($this->customerSalesChannel->platform->type) {

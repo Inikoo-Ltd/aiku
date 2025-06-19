@@ -130,6 +130,7 @@ class EditProduct extends OrgAction
     {
         return [
             [
+                'label'  => __('Information'),
                 'title'  => __('id'),
                 'fields' => [
                     'code' => [
@@ -172,7 +173,34 @@ class EditProduct extends OrgAction
                         'options' => Options::forEnum(AssetStateEnum::class)
                     ],
                 ]
-            ]
+            ],
+            [
+                'label'  => __('Family'),
+                'icon'   => 'fa-light fa-box',
+                'fields' => [
+                    'family_id'  =>  [
+                        'type'    => 'select_infinite',
+                        'label'   => __('Family'),
+                        'options'   => [
+                            [
+                                'id' => $product->family?->id,
+                                'code' => $product->family?->code
+                            ]
+                        ],
+                        'fetchRoute'    => [
+                            'name'       => 'grp.org.shops.show.catalogue.families.index',
+                            'parameters' => [
+                                'organisation' => $this->organisation->slug,
+                                'shop' => $this->shop->slug
+                            ]
+                        ],
+                        'valueProp' => 'id',
+                        'labelProp' => 'code',
+                        'required' => false,
+                        'value'   => $product->family->id ?? null,
+                    ]
+                ],
+            ],
 
         ];
     }
