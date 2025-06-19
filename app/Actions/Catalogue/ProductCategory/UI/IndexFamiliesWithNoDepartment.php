@@ -127,12 +127,10 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                         'count' => $shop->stats->number_families,
                     ]
                 )
-                ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-
-
+                ->withGlobalSearch();
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -148,13 +146,12 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         unset($navigation[ProductCategoryTabsEnum::SALES->value]);
 
 
-        $title      = __('families');
+        $title      = __('Stray families');
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder'],
             'title' => __('family')
         ];
-        $afterTitle = null;
         $iconRight  = null;
         $routes     = null;
 
@@ -166,12 +163,11 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                               => __('families'),
+                'title'                               => $title,
                 'pageHead'                            => [
                     'title'      => $title,
                     'icon'       => $icon,
                     'model'      => $model,
-                    'afterTitle' => $afterTitle,
                     'iconRight'  => $iconRight,
                 ],
                 'routes'                              => $routes,
@@ -181,8 +177,8 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn() => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(shop: $this->shop, prefix: ProductCategoryTabsEnum::INDEX->value));
     }

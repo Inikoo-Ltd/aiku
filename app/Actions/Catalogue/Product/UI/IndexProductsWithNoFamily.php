@@ -120,9 +120,8 @@ class IndexProductsWithNoFamily extends OrgAction
 
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
