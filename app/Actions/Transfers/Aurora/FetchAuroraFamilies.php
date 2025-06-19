@@ -33,14 +33,14 @@ class FetchAuroraFamilies extends FetchAuroraAction
                 try {
                     $shop      = $family->shop;
                     $modelData = [];
+
                     if ($shop->type == ShopTypeEnum::B2B) {
                         $modelData = $familyData['family'];
                     } elseif ($shop->type == ShopTypeEnum::DROPSHIPPING && !$family->image_id) {
-                        $modelData = Arr::only($modelData, ['image', 'fetched_at', 'last_fetched_at']);
+                        $modelData = Arr::only($familyData['family'], ['image', 'fetched_at', 'last_fetched_at']);
                     }
 
                     $imageData = Arr::pull($modelData, 'image');
-
 
                     $family = UpdateProductCategory::make()->action(
                         productCategory: $family,
