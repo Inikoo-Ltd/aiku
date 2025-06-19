@@ -11,7 +11,7 @@
 use App\Actions\Pupil\IndexPupilPlatformCustomerClients;
 use App\Actions\Pupil\IndexPupilProducts;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
-use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
+use App\Actions\Retina\Dropshipping\Orders\IndexPupilFulfilmentDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexPupilPortfolios;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +27,6 @@ Route::prefix('platforms/{platform}')->as('platforms.')->group(function () {
     });
 
     Route::prefix('orders')->as('orders.')->group(function () {
-        Route::get('/', [IndexRetinaDropshippingOrdersInPlatform::class, 'inPupil'])->name('index');
+        Route::get('/', IndexPupilFulfilmentDropshippingOrdersInPlatform::class)->name('index');
     });
 });

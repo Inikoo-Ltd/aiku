@@ -91,7 +91,6 @@ class SubmitOrder extends OrgAction
     public function action(Order $order): Order
     {
         $this->asAction = true;
-        $this->scope    = $order->shop;
         $this->order    = $order;
         $this->initialisationFromShop($order->shop, []);
 
@@ -101,7 +100,6 @@ class SubmitOrder extends OrgAction
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->order = $order;
-        $this->scope = $order->shop;
         $this->initialisationFromShop($order->shop, $request);
 
         return $this->handle($order);
