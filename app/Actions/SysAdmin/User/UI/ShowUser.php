@@ -118,10 +118,6 @@ class ShowUser extends OrgAction
                         'name'       => 'grp.models.user.current_access_token.delete',
                         'parameters' => ['user' => $user->id]
                     ],
-                    'deleteAccessToken' => [
-                        'name'       => 'grp.models.user.access_token.delete',
-                        'parameters' => ['user' => $user->id]
-                    ]
                 ],
                 UserTabsEnum::SHOWCASE->value => $this->tab == UserTabsEnum::SHOWCASE->value ?
                     fn () => UserShowcaseResource::make($user)

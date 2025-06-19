@@ -33,6 +33,13 @@ class ApiTokensResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'expires_at' => $this->expires_at,
+            'route_delete_token' => [
+                'name'       => 'grp.models.user.access_token.delete',
+                'parameters' => [
+                    'user' => '$user->id', // TODO 
+                    'accessToken' => $this->id
+                ]
+            ]
         ];
     }
 }

@@ -72,8 +72,8 @@ class IndexApiTokens extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'name', label: __('Token ID'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true)
-                ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true)
+                ->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true, type: 'date_hms')
+                ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true, type: 'date_hms')
                 ->column(key: 'actions', label: __('Actions'))
                 ->defaultSort('created_at');
         };
