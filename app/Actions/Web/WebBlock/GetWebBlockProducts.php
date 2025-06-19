@@ -17,46 +17,36 @@ class GetWebBlockProducts
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-
-
-
-
         if ($webpage->model_type == 'Collection') {
-
-
             $productRoute = [
                 'workshop' => [
-                    'name' => 'grp.json.collection.products.index',
+                    'name'       => 'grp.json.collection.products.index',
                     'parameters' => ['collection' => $webpage->model_id],
                 ],
-                'iris' => [
-                    'route_products' => [
-                        'name' => 'iris.json.product_category.products.index',
-                        'parameters' => ['productCategory' => $webpage->model_id],
+                'iris'     => [
+                    'route_products'              => [
+                        'name'       => 'iris.json.collection.products.index',
+                        'parameters' => ['collection' => $webpage->model_id],
                     ],
                     'route_out_of_stock_products' => [
-                        //todo
-                       /*  'name' => 'iris.collection.out_of_stock_products.index', */
-                        'name' => 'iris.json.product_category.products.index',
-                        'parameters' => ['productCategory' => $webpage->model_id],
+                        'name'       => 'iris.json.collection.out_of_stock_products.index',
+                        'parameters' => ['collection' => $webpage->model_id],
                     ]
                 ],
             ];
         } else {
             $productRoute = [
                 'workshop' => [
-                    'name' => 'grp.json.product_category.products.index',
+                    'name'       => 'grp.json.product_category.products.index',
                     'parameters' => ['productCategory' => $webpage->model_id],
                 ],
-                'iris' => [
-                    'route_products' => [
-                        'name' => 'iris.json.product_category.products.index',
+                'iris'     => [
+                    'route_products'              => [
+                        'name'       => 'iris.json.product_category.products.index',
                         'parameters' => ['productCategory' => $webpage->model_id],
                     ],
                     'route_out_of_stock_products' => [
-                          //todo
-                       /*  ''name' => 'iris.product_category.out_of_stock_products.index',*/
-                        'name' => 'iris.json.product_category.products.index',
+                        'name'       => 'iris.json.product_category.out_of_stock_products.index',
                         'parameters' => ['productCategory' => $webpage->model_id],
                     ]
                 ],
@@ -64,7 +54,7 @@ class GetWebBlockProducts
         }
 
 
-        $permissions =  [];
+        $permissions = [];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['products']['data']['fieldValue'] ?? []);

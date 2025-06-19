@@ -36,7 +36,7 @@ const props = defineProps<{
     index?: {}
     sales?: {}
     routes: {
-        families_route: routeType
+        departments_route: routeType
         submit_route: routeType
     }
     is_orphan_families?: boolean
@@ -70,10 +70,10 @@ const onSubmitToDepartment = () => {
     router.post(
         route(props.routes.submit_route?.name, {
             ...props.routes.submit_route?.parameters,
-            family: selectedDepartmentId.value,
+            department: selectedDepartmentId.value,
         }),
         {
-            products: selectedFamiliesIdToSubmit,
+            families: selectedFamiliesIdToSubmit,
         },
         {
             preserveScroll: true,
@@ -83,7 +83,7 @@ const onSubmitToDepartment = () => {
                 selectedFamiliesId.value = {}
                 notify({
                     title: trans("Success"),
-                    text: selectedFamiliesIdToSubmit.length + ' ' + trans("Products added to Family successfully."),
+                    text: selectedFamiliesIdToSubmit.length + ' ' + trans("Families added to Department successfully."),
                     type: "success",
                 })
             },
@@ -139,8 +139,8 @@ const onSubmitToDepartment = () => {
         <div class="mb-4">
             <PureMultiselectInfiniteScroll
                 v-model="selectedDepartmentId"
-                :fetchRoute="props.routes.families_route"
-                :placeholder="trans('Select Family')"
+                :fetchRoute="props.routes.departments_route"
+                :placeholder="trans('Select Department')"
                 valueProp="id"
                 xoptionsList="(options) => dataFamilyList = options"
             >
@@ -157,6 +157,7 @@ const onSubmitToDepartment = () => {
         <Button
             @click="() => onSubmitToDepartment()"
             label="Submit"
+            :loading="isLoadingButton"
             full
         />
     </Modal>

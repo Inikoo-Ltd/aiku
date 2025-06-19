@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 04-06-2025-16h-03m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 19 Jun 2025 16:42:09 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Catalogue\Product\Json;
 
@@ -52,9 +51,12 @@ class GetIrisProductsInCollection extends IrisAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
+        $queryBuilder->leftJoin('webpages', function ($join) {
+            $join->on('webpages.model_id', '=', 'products.id');
+        })
+            ->where('webpages.model_type', 'Product');
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->where('products.available_quantity', '>', 0);
-        $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
         $queryBuilder->join('model_has_collections', function ($join) use ($collection) {
             $join->on('products.id', '=', 'model_has_collections.model_id')
@@ -65,8 +67,7 @@ class GetIrisProductsInCollection extends IrisAction
 
         return $queryBuilder->defaultSort('available_quantity')
             ->select(
-                'products.*',
-                'currencies.code as currency_code',
+                'products.*','webpages.url'
             )
             ->allowedSorts(['price', 'created_at','available_quantity','code','name'])
             ->allowedFilters([$globalSearch, $priceRangeFilter, $familyCodeFilter])
