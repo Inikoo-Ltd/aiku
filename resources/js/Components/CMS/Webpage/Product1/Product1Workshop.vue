@@ -149,7 +149,7 @@ console.log(props.modelValue)
                         @update:model-value="(e) => onDescriptionUpdate(e)" />
                     <div v-else :v-html="modelValue.product.description"></div>
                 </div>
-                <div v-if="modelValue.setting?.payments_and_policy" class="mb-4 space-y-2">
+                <div v-if="modelValue.setting?.information" class="mb-4 space-y-2">
                     <InformationSideProduct v-if="modelValue?.information?.length > 0"
                         :informations="modelValue?.information" />
                     <div v-if="modelValue?.paymentData?.length > 0"
