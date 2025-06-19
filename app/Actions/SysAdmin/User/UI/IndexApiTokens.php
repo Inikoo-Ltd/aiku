@@ -18,6 +18,7 @@ use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -47,7 +48,7 @@ class IndexApiTokens extends OrgAction
 
         return $queryBuilder
             ->defaultSort('-created_at')
-            ->select(['id', 'name',  'last_used_at', 'created_at'])
+            ->select(['id', 'name',  'last_used_at', 'created_at', DB::raw("'{$user->id}' as user_id")])
             ->allowedSorts(['name', 'created_at', 'last_used_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

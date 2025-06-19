@@ -36,8 +36,8 @@ class ApiTokensResource extends JsonResource
             'route_delete_token' => [
                 'name'       => 'grp.models.user.access_token.delete',
                 'parameters' => [
-                    'user' => '$user->id', // TODO 
-                    'accessToken' => $this->id
+                    'user' => $this->user_id,
+                    'token' => $this->id
                 ]
             ]
         ];
