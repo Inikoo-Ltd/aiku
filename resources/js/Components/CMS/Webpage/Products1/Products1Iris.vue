@@ -28,7 +28,7 @@ const props = defineProps<{
     blockData?: Object
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
-
+console.log(props)
 const products = ref<any[]>([])
 const loadingInitial = ref(true)
 const loadingMore = ref(false)
@@ -136,23 +136,52 @@ const loadMore = () => {
     }
 }
 
-const orderOptions = [
-    { label: 'Newest', value: 'created_at' },
-    { label: 'Oldest', value: '-created_at' },
-    { label: 'Price ↑', value: '-price' },
-    { label: 'Price ↓', value: 'price' },
-]
+const sortKey = ref<'price' | 'name' | 'code' | 'created_at'>('created_at')
+const isAscending = ref(true)
 
-const selectOrder = (val: string) => {
-    orderBy.value = val
-    handleSearch()
+
+const getArrow = (key: typeof sortKey.value) => {
+  if (sortKey.value !== key) return ''
+  return isAscending.value ? '↑' : '↓'
 }
+
 
 const isMobile = computed(() => props.screenType === 'mobile')
 
 onMounted(() => {
+    // Ambil dari URL atau props
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortParam = urlParams.get('order_by')
+
+    if (sortParam) {
+        orderBy.value = sortParam
+        // Set sortKey dan isAscending agar sinkron
+        const key = sortParam.replace('-', '')
+        sortKey.value = key as typeof sortKey.value
+        isAscending.value = !sortParam.startsWith('-')
+    }
+
     debFetchProducts()
 })
+
+const updateQueryParams = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('order_by', orderBy.value)
+    window.history.replaceState({}, '', url.toString())
+}
+
+const toggleSort = (key: typeof sortKey.value) => {
+    if (sortKey.value === key) {
+        isAscending.value = !isAscending.value
+    } else {
+        sortKey.value = key
+        isAscending.value = true
+    }
+
+    orderBy.value = isAscending.value ? key : `-${key}`
+    updateQueryParams()
+    handleSearch()
+}
 
 
 const channels = ref({
@@ -223,13 +252,19 @@ const responsiveGridClass = computed(() => {
                 </div>
 
                 <!-- Sort Tabs -->
-                <div class="flex space-x-6 border-b border-gray-300 overflow-x-auto mt-2 md:mt-0">
-                    <button v-for="option in orderOptions" :key="option.value" @click="selectOrder(option.value)"
-                        class="pb-2 text-sm font-medium whitespace-nowrap" :class="{
-                            'border-b-2 text-[#1F2937] border-[#1F2937]': orderBy === option.value,
-                            'text-gray-600 hover:text-[#1F2937]': orderBy !== option.value
-                        }">
-                        {{ option.label }}
+                <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                    <button
+                        v-for="key in ['created_at', 'price', 'code', 'name']"
+                        :key="key"
+                        @click="toggleSort(key)"
+                        class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1"
+                        :class="{
+                        'border-b-2 text-[#1F2937] border-[#1F2937]': sortKey === key,
+                        'text-gray-600 hover:text-[#1F2937]': sortKey !== key
+                        }"
+                        :disabled="loadingInitial || loadingMore"
+                    >
+                        {{ key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) }} {{ getArrow(key) }}
                     </button>
                 </div>
             </div>
