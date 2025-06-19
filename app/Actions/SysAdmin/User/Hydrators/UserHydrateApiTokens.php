@@ -29,14 +29,14 @@ class UserHydrateApiTokens implements ShouldBeUnique
     {
         $stats = [
             'number_current_api_tokens' => $user->tokens()
-        ->where(function ($query) {
-            $query->where('expires_at', '>', now())
-                  ->orWhereNull('expires_at');
-        })
-        ->count(),
-        'number_expired_api_tokens' => $user->tokens()
-            ->where('expires_at', '<=', now())
-            ->count(),
+                ->where(function ($query) {
+                    $query->where('expires_at', '>', now())
+                        ->orWhereNull('expires_at');
+                })->count(),
+
+            'number_expired_api_tokens' => $user->tokens()
+                ->where('expires_at', '<=', now())
+                ->count(),
         ];
 
         $user->stats()->update($stats);
