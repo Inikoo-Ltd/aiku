@@ -15,7 +15,7 @@ use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetProfile
+class GetRetinasApiProfile
 {
     use AsAction;
 
