@@ -13,6 +13,7 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -38,6 +39,12 @@ class CustomerSalesChannelsResource extends JsonResource
         if ($customerSalesChannels->user instanceof ShopifyUser) {
             $settings = $customerSalesChannels->user->settings ?? [];
             if (empty($settings) && empty($settings['webhook'])) {
+                $status = 'not-connected';
+            }
+        } elseif ($customerSalesChannels->user instanceof WooCommerceUser) {
+            $settings = $customerSalesChannels->user->settings['credentials'] ?? [];
+
+            if (empty($settings) or empty($settings['webhooks'])) {
                 $status = 'not-connected';
             }
         }
