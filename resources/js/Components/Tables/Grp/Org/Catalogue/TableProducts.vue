@@ -33,11 +33,10 @@ const props = defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
-}>();
-console.log(props)
+}>()
 
 const emits = defineEmits<{
-    (e: "selectedRow", value: {}[]): void
+    (e: "selectedRow", value: {}): void
 }>()
 
 function productRoute(product: Product) {

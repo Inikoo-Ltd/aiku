@@ -189,6 +189,19 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
+
+                // 'routes' => [   // TODO: Kirin
+                //     'families_route' => [
+                //         'name' => 'grp.json.shop.families',
+                //         'parameters' => [
+                //             'shop' => $this->shop->slug
+                //         ]
+                //     ],
+                //     'submit_route' => [
+                //         'name' => 'grp.models.family.move_products',
+                //         'parameters' => []
+                //     ]
+                // ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
                     : Inertia::lazy(fn () => FamiliesResource::collection($families)),
