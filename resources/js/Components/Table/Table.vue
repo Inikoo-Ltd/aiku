@@ -668,6 +668,7 @@ if (props.isCheckBox) {
 const onClickSelectAll = (state: boolean) => {
     for(const row in props.resource.data){
         selectRow[props.resource.data[row][props.checkboxKey]] = !state
+        setLodash(props.resource.data, [row, 'is_checked'], false)
     }
 }
 

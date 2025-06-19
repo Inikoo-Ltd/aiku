@@ -178,6 +178,8 @@ class IndexProductsWithNoFamily extends OrgAction
                         'parameters' => []
                     ]
                 ],
+                
+                'is_orphan_products' => true,
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),

@@ -26,8 +26,12 @@ const props = defineProps<{
         submitAttach: routeType
         detach: routeType
     }
+    isCheckBox?: boolean
 }>()
 
+const emits = defineEmits<{
+    (e: "selectedRow", value: {}): void
+}>()
 
 function familyRoute(family: Family) {
     switch (route().current()) {
@@ -119,7 +123,13 @@ const isLoadingDetach = ref<string[]>([])
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table
+        :resource="data"
+        :name="tab"
+        class="mt-5"
+        :isCheckBox="isCheckBox"
+        @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))"
+    >
         <template #cell(state)="{ item: family }">
             <Icon :data="family.state" />
         </template>
