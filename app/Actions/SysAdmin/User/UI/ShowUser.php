@@ -15,6 +15,7 @@ use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\User\WithUserSubNavigation;
 use App\Enums\UI\SysAdmin\UserTabsEnum;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\SysAdmin\ApiTokensResource;
 use App\Http\Resources\SysAdmin\UserResource;
 use App\Http\Resources\SysAdmin\UserShowcaseResource;
 use App\Models\HumanResources\Employee;
@@ -74,17 +75,17 @@ class ShowUser extends OrgAction
         return Inertia::render(
             'SysAdmin/User',
             [
-                'title'       => __('user'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'                       => __('user'),
+                'breadcrumbs'                 => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => $this->authScope instanceof Group
+                'navigation'                  => $this->authScope instanceof Group
                     ? [
                         'previous' => $this->getPrevious($user, $request),
                         'next'     => $this->getNext($user, $request),
                     ] : null,
-                'pageHead'    => [
+                'pageHead'                    => [
                     'model'         => __('user'),
                     'icon'          =>
                         [
@@ -104,27 +105,23 @@ class ShowUser extends OrgAction
                         ] : false,
                     ]
                 ],
-                'tabs'        => [
+                'tabs'                        => [
                     'current'    => $this->tab,
                     'navigation' => UserTabsEnum::navigation()
                 ],
-                'apiRoutes'  =>  [
+                'apiRoutes'                   => [
                     'createToken' => [
                         'name'       => 'grp.models.user.access-token.create',
                         'parameters' => ['user' => $user->id]
                     ],
-                    'deleteToken' => [
-                        'name'       => 'grp.models.user.access-token.delete',
-                        'parameters' => ['user' => $user->id]
-                    ]
                 ],
                 UserTabsEnum::SHOWCASE->value => $this->tab == UserTabsEnum::SHOWCASE->value ?
                     fn () => UserShowcaseResource::make($user)
                     : Inertia::lazy(fn () => UserShowcaseResource::make($user)),
 
                 UserTabsEnum::API_TOKENS->value => $this->tab == UserTabsEnum::API_TOKENS->value ?
-                    fn () => IndexApiTokens::run($user)
-                    : Inertia::lazy(fn () => IndexApiTokens::run($user)),
+                    fn () => ApiTokensResource::collection(IndexApiTokens::run($user))
+                    : Inertia::lazy(fn () => ApiTokensResource::collection(IndexApiTokens::run($user))),
 
                 UserTabsEnum::HISTORY->value => $this->tab == UserTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($user))
@@ -132,9 +129,9 @@ class ShowUser extends OrgAction
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: UserTabsEnum::HISTORY->value))
-        ->table(
-            IndexApiTokens::make()->tableStructure(prefix: UserTabsEnum::API_TOKENS->value)
-        );
+            ->table(
+                IndexApiTokens::make()->tableStructure(prefix: UserTabsEnum::API_TOKENS->value)
+            );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

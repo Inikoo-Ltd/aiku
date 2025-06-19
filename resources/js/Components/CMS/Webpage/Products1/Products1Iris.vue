@@ -16,7 +16,10 @@ import { debounce } from 'lodash-es'
 const props = defineProps<{
     fieldValue: {
         products_route: {
-            iris: routeType
+            iris: {
+                route_products : routeType,
+                route_out_of_stock_products : routeType
+            }
             workshop: routeType
         }
         container?: any
@@ -64,10 +67,10 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
-
+  console.log(props.fieldValue.products_route.iris.route_products.parameters)
     try {
-        const response = await axios.get(route(props.fieldValue.products_route.iris.name, {
-            ...props.fieldValue.products_route.iris.parameters,
+        const response = await axios.get(route(props.fieldValue.products_route.iris.route_products.name, {
+            ...props.fieldValue.products_route.iris.route_products.parameters,
             ...filters,
             'filter[global]': q.value,
             index_sort: orderBy.value,
@@ -83,6 +86,7 @@ const fetchProducts = async (isLoadMore = false) => {
             products.value = data?.data ?? []
         }
     } catch (error) {
+        console.log(error)
         notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
     } finally {
         loadingInitial.value = false

@@ -98,6 +98,12 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
         ],
 
+        'grp-api' => [
+            ForceJsonResponse::class,
+            EnsureFrontendRequestsAreStateful::class,
+            SubstituteBindings::class,
+        ],
+
         'han' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
