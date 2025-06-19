@@ -32,8 +32,12 @@ const props = defineProps<{
         submitAttach: routeType
         detach: routeType
     },
-}>();
-console.log(props)
+    isCheckboxProducts?: boolean
+}>()
+
+const emits = defineEmits<{
+    (e: "selectedRow", value: {}): void
+}>()
 
 function productRoute(product: Product) {
     switch (route().current()) {
@@ -172,7 +176,13 @@ const locale = inject("locale", aikuLocaleStructure);
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table
+        :resource="data"
+        :name="tab"
+        class="mt-5"
+        :isCheckBox="isCheckboxProducts"
+        @onSelectRow="(item) => emits('selectedRow', item)"
+    >
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
                 {{ refund["organisation_code"] }}

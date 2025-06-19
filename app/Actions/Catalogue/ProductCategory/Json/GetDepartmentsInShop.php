@@ -2,7 +2,7 @@
 
 /*
  * author Arya Permana - Kirin
- * created on 19-06-2025-14h-54m
+ * created on 19-06-2025-16h-13m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
@@ -12,7 +12,7 @@ namespace App\Actions\Catalogue\ProductCategory\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\FamiliesResource;
+use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
@@ -21,7 +21,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetFamiliesInShop extends OrgAction
+class GetDepartmentsInShop extends OrgAction
 {
     use WithCatalogueAuthorisation;
     private Shop $parent;
@@ -57,19 +57,19 @@ class GetFamiliesInShop extends OrgAction
                 'product_categories.description',
                 'product_categories.created_at',
                 'product_categories.updated_at',
-                'product_category_stats.number_current_products'
+                'product_category_stats.number_current_families'
 
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
-            ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+            ->where('product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
             ->allowedSorts(['code', 'name', 'shop_code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
             ->withQueryString();
     }
 
-    public function jsonResponse(LengthAwarePaginator $families): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $departments): AnonymousResourceCollection
     {
-        return FamiliesResource::collection($families);
+        return DepartmentsResource::collection($departments);
     }
 }

@@ -34,7 +34,6 @@ class ShopHydrateFamilies implements ShouldBeUnique
                 ProductCategoryStateEnum::ACTIVE,
                 ProductCategoryStateEnum::DISCONTINUING,
             ])->count(),
-            'number_families_no_department' => $shop->getFamilies()->whereNull('department_id')->count(),
         ];
 
         $stats = array_merge(
