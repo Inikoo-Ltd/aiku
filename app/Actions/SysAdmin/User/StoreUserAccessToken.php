@@ -46,7 +46,7 @@ class StoreUserAccessToken extends OrgAction
             'api_token' => __('Api token created').' ('.$tokenName.')'
         ];
 
-        Event::dispatch(AuditCustom::class, [$user]);
+        Event::dispatch(new AuditCustom($user));
 
 
         return $plainTextToken;

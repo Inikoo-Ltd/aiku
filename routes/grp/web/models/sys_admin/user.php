@@ -17,6 +17,5 @@ Route::name('user.')->prefix('user/{user:id}')->group(function () {
     Route::patch('', UpdateUser::class)->name('update');
     Route::post('access-token', StoreUserAccessToken::class)->name('access-token.create');
     Route::patch('group-permissions', UpdateUserGroupPseudoJobPositions::class)->name('group_permissions.update');
-    Route::delete('access-token/{token:id}/delete', DeleteUserAccessToken::class)->name('access_token.delete');
     Route::patch('organisation-pseudo-job-positions/{organisation:id}', UpdateUserOrganisationPseudoJobPositions::class)->name('organisation_pseudo_job_positions.update')->withoutScopedBindings();
 });

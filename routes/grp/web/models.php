@@ -212,6 +212,7 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use App\Actions\SysAdmin\User\DeleteUserAccessToken;
 use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
@@ -806,6 +807,9 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::post('brands/attach', [AttachBrandToModel::class, 'inTradeUnit'])->name('brands.attach');
     Route::delete('brands/{brand:id}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
 });
+
+
+Route::delete('access-token/{token:id}', DeleteUserAccessToken::class)->name('access_token.delete');
 
 
 require __DIR__."/models/inventory/warehouse.php";
