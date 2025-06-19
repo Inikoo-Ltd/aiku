@@ -27,7 +27,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/organisations/{organisation:id}', ShowApiOrganisation::class)->name('organisations.show');
     Route::get('/organisations/{organisation:id}/shops', [IndexApiShops::class, 'inOrganisation'])->name('organisations.show.shops.index');
 
-    Route::get('/shops', IndexApiShops::class)->name('organisations.show.shops.index');
+    Route::get('/shops', IndexApiShops::class)->name('shops.index');
 
 
     Route::prefix('order')->as('order.')->group(function () {
