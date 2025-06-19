@@ -84,18 +84,18 @@ class EditProduct extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($product, $request),
                     'next'     => $this->getNext($product, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $product->code,
-                    'icon'     =>
+                    'title'   => $product->code,
+                    'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
                             'title' => __('goods')
                         ],
-                    'actions'  => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -112,7 +112,7 @@ class EditProduct extends OrgAction
                         'updateRoute' => [
                             'name'       => 'grp.models.product.update',
                             'parameters' => [
-                                'product'      => $product->id
+                                'product' => $product->id
                             ]
 
                         ],
@@ -133,13 +133,13 @@ class EditProduct extends OrgAction
                 'label'  => __('Information'),
                 'title'  => __('id'),
                 'fields' => [
-                    'code' => [
+                    'code'        => [
                         'type'     => 'input',
                         'label'    => __('code'),
                         'value'    => $product->code,
                         'readonly' => true
                     ],
-                    'name' => [
+                    'name'        => [
                         'type'  => 'input',
                         'label' => __('label'),
                         'value' => $product->name,
@@ -149,28 +149,28 @@ class EditProduct extends OrgAction
                         'label' => __('description'),
                         'value' => $product->description
                     ],
-                    'unit' => [
+                    'unit'        => [
+                        'type'  => 'input',
+                        'label' => __('unit'),
+                        'value' => $product->unit,
+                    ],
+                    'units'       => [
+                        'type'  => 'input',
+                        'label' => __('units'),
+                        'value' => $product->units,
+                    ],
+                    'price'       => [
                         'type'     => 'input',
-                        'label'    => __('unit'),
-                        'value'    => $product->unit,
-                    ],
-                    'units' => [
-                        'type'     => 'input',
-                        'label'    => __('units'),
-                        'value'    => $product->units,
-                    ],
-                    'price' => [
-                        'type'    => 'input',
-                        'label'   => __('price'),
+                        'label'    => __('price'),
                         'required' => true,
-                        'value'   => $product->price
+                        'value'    => $product->price
                     ],
-                    'state' => [
-                        'type'    => 'select',
-                        'label'   => __('state'),
+                    'state'       => [
+                        'type'     => 'select',
+                        'label'    => __('state'),
                         'required' => true,
-                        'value'   => $product->state,
-                        'options' => Options::forEnum(AssetStateEnum::class)
+                        'value'    => $product->state,
+                        'options'  => Options::forEnum(AssetStateEnum::class)
                     ],
                 ]
             ],
@@ -178,26 +178,26 @@ class EditProduct extends OrgAction
                 'label'  => __('Family'),
                 'icon'   => 'fa-light fa-box',
                 'fields' => [
-                    'family_id'  =>  [
-                        'type'    => 'select_infinite',
-                        'label'   => __('Family'),
-                        'options'   => [
+                    'family_id' => [
+                        'type'       => 'select_infinite',
+                        'label'      => __('Family'),
+                        'options'    => [
                             [
-                                'id' => $product->family?->id,
+                                'id'   => $product->family?->id,
                                 'code' => $product->family?->code
                             ]
                         ],
-                        'fetchRoute'    => [
+                        'fetchRoute' => [
                             'name'       => 'grp.org.shops.show.catalogue.families.index',
                             'parameters' => [
-                                'organisation' => $this->organisation->slug,
-                                'shop' => $this->shop->slug
+                                'organisation' => $product->organisation->slug,
+                                'shop'         => $product->shop->slug
                             ]
                         ],
-                        'valueProp' => 'id',
-                        'labelProp' => 'code',
-                        'required' => false,
-                        'value'   => $product->family->id ?? null,
+                        'valueProp'  => 'id',
+                        'labelProp'  => 'code',
+                        'required'   => false,
+                        'value'      => $product->family->id ?? null,
                     ]
                 ],
             ],
@@ -219,13 +219,14 @@ class EditProduct extends OrgAction
     public function getPrevious(Product $product, ActionRequest $request): ?array
     {
         $previous = Product::where('slug', '<', $product->slug)->orderBy('slug', 'desc')->first();
-        return $this->getNavigation($previous, $request->route()->getName());
 
+        return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(Product $product, ActionRequest $request): ?array
     {
         $next = Product::where('slug', '>', $product->slug)->orderBy('slug')->first();
+
         return $this->getNavigation($next, $request->route()->getName());
     }
 
@@ -234,11 +235,12 @@ class EditProduct extends OrgAction
         if (!$product) {
             return null;
         }
+
         return match ($routeName) {
             'shops.products.edit' => [
                 'label' => $product->name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
                         'product' => $product->slug
                     ]
@@ -248,9 +250,9 @@ class EditProduct extends OrgAction
             'shops.show.products.edit' => [
                 'label' => $product->name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
-                        'shop'   => $product->shop->slug,
+                        'shop'    => $product->shop->slug,
                         'product' => $product->slug
                     ]
 
