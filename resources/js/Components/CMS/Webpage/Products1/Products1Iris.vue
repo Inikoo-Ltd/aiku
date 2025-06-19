@@ -38,7 +38,10 @@ const page = ref(1)
 const lastPage = ref(1)
 const filter = ref({ data: {} })
 const showFilters = ref(false)
-const showAside = ref(true) // Sidebar visibility (for desktop)
+const showAside = ref(true)
+
+const loadingOutOfStock = ref(false)
+const isFetchingOutOfStock = ref(false)
 
 function buildFilters(): Record<string, any> {
     const filters: Record<string, any> = {}
@@ -67,16 +70,22 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
-  console.log(props.fieldValue.products_route.iris.route_products.parameters)
+
+    const useOutOfStock = isFetchingOutOfStock.value
+    const currentRoute = useOutOfStock
+        ? props.fieldValue.products_route.iris.route_out_of_stock_products
+        : props.fieldValue.products_route.iris.route_products
+
     try {
-        const response = await axios.get(route(props.fieldValue.products_route.iris.route_products.name, {
-            ...props.fieldValue.products_route.iris.route_products.parameters,
+        const response = await axios.get(route(currentRoute.name, {
+            ...currentRoute.parameters,
             ...filters,
             'filter[global]': q.value,
             index_sort: orderBy.value,
             index_perPage: 25,
             page: page.value,
         }))
+
         const data = response.data
         lastPage.value = data?.meta.last_page ?? 1
 
@@ -85,14 +94,24 @@ const fetchProducts = async (isLoadMore = false) => {
         } else {
             products.value = data?.data ?? []
         }
+
+        // If we've reached the end of in-stock products and haven't fetched out-of-stock yet
+        if (!useOutOfStock && page.value >= lastPage.value) {
+            isFetchingOutOfStock.value = true
+            page.value = 1 // reset page for out-of-stock
+            await fetchProducts(true)
+        }
+
     } catch (error) {
-        console.log(error)
+        console.error(error)
         notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
     } finally {
         loadingInitial.value = false
         loadingMore.value = false
     }
 }
+
+
 const debFetchProducts = debounce(fetchProducts, 300)
 
 const handleSearch = () => {
@@ -246,12 +265,12 @@ const responsiveGridClass = computed(() => {
             </div>
 
             <!-- Load More -->
-            <div v-if="page < lastPage && !loadingInitial" class="flex justify-center mt-4">
-                <button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
+            <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
+                <Button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
                     :disabled="loadingMore" style="background-color: #1F2937;">
                     <template v-if="loadingMore">Loading...</template>
                     <template v-else>Load More</template>
-                </button>
+                </Button>
             </div>
         </main>
 
