@@ -49,7 +49,7 @@ Route::prefix('products')->as('products.')->group(function () {
             Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
         });
     });
-    
+
     Route::prefix('orphan')->as('orphan_products.')->group(function () {
         Route::get('', IndexProductsWithNoFamily::class)->name('index');
         Route::get('create', CreateProduct::class)->name('create');

@@ -13,7 +13,6 @@ use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
-use Illuminate\Support\Arr;
 
 class WebBlockProductResource extends JsonResource
 {

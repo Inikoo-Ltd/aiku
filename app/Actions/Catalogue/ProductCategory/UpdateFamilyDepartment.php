@@ -43,7 +43,7 @@ class UpdateFamilyDepartment extends OrgAction
 
         if (Arr::has($changes, 'department_id')) {
             ProductCategoryHydrateFamilies::dispatch($family->department);
-            if($oldDepartment) {
+            if ($oldDepartment) {
                 ProductCategoryHydrateFamilies::dispatch($oldDepartment);
             }
 
