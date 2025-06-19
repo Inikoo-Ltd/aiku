@@ -114,8 +114,12 @@ class ShowUser extends OrgAction
                         'name'       => 'grp.models.user.access-token.create',
                         'parameters' => ['user' => $user->id]
                     ],
-                    'deleteToken' => [
-                        'name'       => 'grp.models.user.access-token.delete',
+                    'deleteCurrentToken' => [
+                        'name'       => 'grp.models.user.current_access_token.delete',
+                        'parameters' => ['user' => $user->id]
+                    ],
+                    'deleteAccessToken' => [
+                        'name'       => 'grp.models.user.access_token.delete',
                         'parameters' => ['user' => $user->id]
                     ]
                 ],
