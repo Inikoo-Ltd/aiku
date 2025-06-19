@@ -407,6 +407,32 @@ class ShowCatalogue extends OrgAction
                         "color" => "#4f46e5",
                         'value' => $shop->stats->number_collections,
                     ],
+                    [
+                        'label' => __('Stray Families'),
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.catalogue.families.no_department.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug
+                            ]
+                        ],
+                        'icon'  => 'fal fa-folder',
+                        "color" => "#ff0000",
+                        'value' => $shop->stats->number_families_no_department,
+                    ],
+                    [
+                        'label' => __('Orphan Products'),
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug
+                            ]
+                        ],
+                        'icon'  => 'fal fa-cube',
+                        "color" => "#ff0000",
+                        'value' => $shop->stats->number_products_no_family,
+                    ],
                 ]
 
             ]
