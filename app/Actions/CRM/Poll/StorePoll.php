@@ -10,8 +10,8 @@ namespace App\Actions\CRM\Poll;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
+use App\Actions\CRM\PollOption\StorePollOption;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -20,6 +20,7 @@ use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePoll extends OrgAction
@@ -33,11 +34,22 @@ class StorePoll extends OrgAction
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
 
-
         $poll = $shop->polls()->create($modelData);
         $poll->stats()->create([
             'poll_id' => $poll->id,
         ]);
+
+        if ($poll->type == PollTypeEnum::OPTION) {
+            foreach ($modelData['options'] ?? [] as $option) {
+                StorePollOption::make()->action(
+                    $poll,
+                    [
+                        'value' => $option['value'],
+                        'label' => $option['label'],
+                    ]
+                );
+            }
+        }
 
         ShopHydratePolls::dispatch($shop);
         PollHydrateCustomers::dispatch($poll);
@@ -79,6 +91,20 @@ class StorePoll extends OrgAction
             'in_iris'                  => ['required', 'boolean'],
             'in_iris_required'         => ['sometimes', 'required', 'boolean'],
             'type'                     => ['required', Rule::enum(PollTypeEnum::class)],
+            'options'                => [
+                new RequiredIf($this->get('type') === PollTypeEnum::OPTION->value),
+                'array',
+            ],
+            'options.*.label'        => [
+                'required_with:options',
+                'string',
+                'max:255',
+            ],
+            'options.*.value'        => [
+                'required_with:options',
+                'string',
+                'max:255',
+            ],
         ];
 
         if (!$this->strict) {

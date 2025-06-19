@@ -13,11 +13,13 @@ namespace App\Actions\CRM\Poll\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
+use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\LaravelOptions\Options;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditPoll extends OrgAction
@@ -74,6 +76,11 @@ class EditPoll extends OrgAction
                                     'type'  => 'input',
                                     'label' => __('label'),
                                     'value' => $poll->label
+                                ],
+                                'type' => [
+                                    'type'    => 'select',
+                                    'label'   => __('type'),
+                                    'options' => Options::forEnum(PollTypeEnum::class)
                                 ],
                                 'in_registration' => [
                                     'type'  => 'toggle',

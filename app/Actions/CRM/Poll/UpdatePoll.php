@@ -10,12 +10,16 @@ namespace App\Actions\CRM\Poll;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
+use App\Actions\CRM\PollOption\DeletePollOptions;
+use App\Actions\CRM\PollOption\StorePollOption;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePoll extends OrgAction
@@ -34,6 +38,19 @@ class UpdatePoll extends OrgAction
     public function handle(Poll $poll, array $modelData): Poll
     {
         $poll = $this->update($poll, $modelData);
+        if ($poll->type == PollTypeEnum::OPTION && !isset($modelData['options'])) {
+            foreach ($modelData['options'] ?? [] as $option) {
+                StorePollOption::make()->action(
+                    $poll,
+                    [
+                        'value' => $option['value'],
+                        'label' => $option['label'],
+                    ]
+                );
+            }
+        } else {
+            DeletePollOptions::run($poll, true);
+        }
         ShopHydratePolls::dispatch($poll->shop);
         PollHydrateCustomers::dispatch($poll);
         //todo put hydrators here if in_registration|in_registration_required|in_iris|in_iris_required has changed
@@ -77,6 +94,21 @@ class UpdatePoll extends OrgAction
                     ]
                 ),
             ],
+            'type'                     => ['sometimes', Rule::enum(PollTypeEnum::class)],
+            'options'                => [
+                new RequiredIf($this->get('type') === PollTypeEnum::OPTION->value),
+                'array',
+            ],
+            'options.*.label'        => [
+                'required_with:options',
+                'string',
+                'max:255',
+            ],
+            'options.*.value'        => [
+                'required_with:options',
+                'string',
+                'max:255',
+            ],
             'in_registration'          => ['sometimes', 'boolean'],
             'in_registration_required' => ['sometimes', 'boolean'],
             'in_iris'                  => ['sometimes', 'boolean'],
@@ -89,7 +121,6 @@ class UpdatePoll extends OrgAction
 
         return $rules;
     }
-
     public function asController(Poll $poll, ActionRequest $request): Poll
     {
         $this->poll          = $poll;
