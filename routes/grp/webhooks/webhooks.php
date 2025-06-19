@@ -39,12 +39,10 @@ Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
 
     Route::prefix('{wooCommerceUser:id}')->group(function () {
         Route::prefix('products')->as('products.')->group(function () {
-            // TODO
             Route::post('delete', DeleteProductWebhooksWooCommerce::class)->name('delete');
         });
 
         Route::prefix('orders')->as('orders.')->group(function () {
-            // TODO
             Route::post('catch', CatchRetinaOrdersFromWooCommerce::class)->name('catch');
         });
     });

@@ -29,8 +29,25 @@
         @routes('retina')
         {{Vite::useHotFile('retina.hot')->useBuildDirectory('retina')->withEntryPoints(['resources/js/app-retina.js'])}}
         @inertiaHead
+
+        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+            <!-- Google Tag Manager -->
+            <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','{{ Arr::get(request()->get("website")->settings, "google_tag_id", "") }}');</script>
+            <!-- End Google Tag Manager -->
+        @endif
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
+        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+            <!-- Google Tag Manager (noscript) -->
+            <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ Arr::get(request()->get('website')->settings, 'google_tag_id', '') }}"
+            height="0" width="0" style="display:none;visibility:hidden" title="google_tag"></iframe></noscript>
+            <!-- End Google Tag Manager (noscript) -->
+        @endif
+        
         @inertia
     </body>
 </html>

@@ -372,6 +372,25 @@ class ShowProduct extends OrgAction
                     ' ('.__('In process').')'
                 )
             ),
+            'grp.org.shops.show.catalogue.products.orphan_products.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Orphan').')'
+                )
+            ),
             'grp.org.shops.show.catalogue.products.discontinued_products.show' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),

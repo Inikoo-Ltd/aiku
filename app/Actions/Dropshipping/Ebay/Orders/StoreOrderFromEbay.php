@@ -67,7 +67,7 @@ class StoreOrderFromEbay extends OrgAction
             foreach ($ebayProducts as $ebayProduct) {
                 /** @var Portfolio $ebayUserHasProduct */
                 $ebayUserHasProduct = $ebayUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $ebayProduct['legacyItemId'])->first();
+                    ->where('platform_product_id', $ebayProduct['legacyItemId'])->first(); //legacyItemId is listing id which we can get from publishing offer
 
                 if ($ebayUserHasProduct) {
                     /** @var \App\Models\Catalogue\Product $product */
