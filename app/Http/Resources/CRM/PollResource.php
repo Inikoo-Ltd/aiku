@@ -20,6 +20,7 @@ class PollResource extends JsonResource
         /** @var Poll $poll */
         $poll = $this;
         return [
+            'created_at'               => $poll->created_at,
             'id'                       => $poll->id,
             'slug'                     => $poll->slug,
             'name'                     => $poll->name,
