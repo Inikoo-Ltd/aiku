@@ -10,7 +10,7 @@
 namespace App\Actions\Iris\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
-use App\Actions\RetinaAction;
+use App\Actions\IrisAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -18,7 +18,7 @@ use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreIrisPortfolioToMultiChannels extends RetinaAction
+class StoreIrisPortfolioToMultiChannels extends IrisAction
 {
     use WithActionUpdate;
 
