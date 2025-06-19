@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\SysAdmin\User\Hydrators\UserHydrateApiTokens;
 use App\Actions\SysAdmin\User\Hydrators\UserHydrateAudits;
 use App\Actions\SysAdmin\User\Hydrators\UserHydrateModels;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
@@ -29,6 +30,7 @@ class HydrateUser
         UserHydrateAudits::run($user);
         SetUserAuthorisedModels::run($user);
         UserHydrateModels::run($user);
+        UserHydrateApiTokens::run($user);
     }
 
 }
