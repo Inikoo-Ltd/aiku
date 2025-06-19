@@ -267,7 +267,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         
         <!-- Bottom Section (fixed position in layout) -->
         <div v-if="layout.iris.is_logged_in">
-            <div v-if="product.stock > 1" class="flex items-center gap-2 mt-2">
+            <div v-if="product.stock > 0" class="flex items-center gap-2 mt-2">
                 <div class="flex gap-2  w-full">
                     <!-- Add to Portfolio (90%) -->
                     <!-- <button 
