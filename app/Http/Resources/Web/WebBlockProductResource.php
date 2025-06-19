@@ -52,7 +52,6 @@ class WebBlockProductResource extends JsonResource
             'updated_at'      => $product->updated_at,
             'images'          => ImageResource::collection($product->images)->toArray($request),
             'tags' => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
-            'return_policy' => Arr::get($product->webpage->website->settings, 'return_policy', ''),
         ];
     }
 }
