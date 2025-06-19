@@ -118,16 +118,6 @@ class IndexPupilFulfilmentDropshippingOrdersInPlatform extends RetinaAction
             ];
         }
 
-        if ($this->customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL) {
-            $actions =   [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('catch'),
-                            'route' => $catchOrdersRoute,
-                        ]
-                        ];
-        }
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
@@ -136,8 +126,7 @@ class IndexPupilFulfilmentDropshippingOrdersInPlatform extends RetinaAction
                 'pageHead'    => [
                     'icon'       => 'fal fa-shopping-cart',
                     'title'   => __('Orders'),
-                    'model'   =>  $platformName,
-                    'actions' => $actions
+                    'model'   =>  $platformName
                 ],
 
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),

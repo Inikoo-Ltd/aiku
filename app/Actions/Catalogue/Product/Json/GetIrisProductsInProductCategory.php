@@ -54,7 +54,6 @@ class GetIrisProductsInProductCategory extends IrisAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->where('products.available_quantity', '>', 0);
-        $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);
@@ -66,8 +65,7 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         return $queryBuilder->defaultSort('name')
             ->select(
-                'products.*',
-                'currencies.code as currency_code',
+                'products.*'
             )
             ->allowedSorts(['price', 'created_at','available_quantity','code','name'])
             ->allowedFilters([$globalSearch, $priceRangeFilter, $familyCodeFilter])
