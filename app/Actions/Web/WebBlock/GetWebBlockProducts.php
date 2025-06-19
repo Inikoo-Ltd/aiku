@@ -39,7 +39,7 @@ class GetWebBlockProducts
             ->get();
 
 
-        if ($webpage->model_type == 'collection') {
+        if ($webpage->model_type == 'Collection') {
 
 
             $productRoute = [
@@ -48,8 +48,14 @@ class GetWebBlockProducts
                     'parameters' => ['collection' => $webpage->model_id],
                 ],
                 'iris' => [
-                    'name' => 'iris.json.collection.products.index',
-                    'parameters' => ['collection' => $webpage->model_id],
+                    'route_products' => [
+                        'name' => 'iris.json.product_category.products.index',
+                        'parameters' => ['collection' => $webpage->model_id],
+                    ],
+                    'route_out_of_stock_products' => [
+                        'name' => 'collection.out_of_stock_products.index',
+                        'parameters' => ['collection' => $webpage->model_id],
+                    ]
                 ],
             ];
         } else {
@@ -59,8 +65,14 @@ class GetWebBlockProducts
                     'parameters' => ['productCategory' => $webpage->model_id],
                 ],
                 'iris' => [
-                    'name' => 'iris.json.product_category.products.index',
-                    'parameters' => ['productCategory' => $webpage->model_id],
+                    'route_products' => [
+                        'name' => 'iris.json.product_category.products.index',
+                        'parameters' => ['productCategory' => $webpage->model_id],
+                    ],
+                    'route_out_of_stock_products' => [
+                        'name' => 'product_category.out_of_stock_products.index',
+                        'parameters' => ['productCategory' => $webpage->model_id],
+                    ]
                 ],
             ];
         }
