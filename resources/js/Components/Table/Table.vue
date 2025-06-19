@@ -981,11 +981,11 @@ const isLoading = ref<string | boolean>(false)
 
                                                 <template v-else>
                                                     <FontAwesomeIcon v-show="props.isChecked(item) || item.is_checked || selectRow[item[checkboxKey]]"
-                                                        @click="async () => (setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
+                                                        @click="async () => (setLodash(selectRow, [item.id], false), setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
                                                         icon='fas fa-check-square' class='text-green-500 p-2 cursor-pointer text-lg mx-auto block' fixed-width
                                                         aria-hidden='true' />
                                                     <FontAwesomeIcon v-show="!props.isChecked(item) && !item.is_checked && !selectRow[item[checkboxKey]]"
-                                                        @click="async () => (setLodash(item, ['is_checked'], true), emits('onChecked', item))"
+                                                        @click="async () => (setLodash(selectRow, [item.id], true), setLodash(item, ['is_checked'], true), emits('onChecked', item))"
                                                         icon='fal fa-square' class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block' fixed-width
                                                         aria-hidden='true' />
                                                 </template>
