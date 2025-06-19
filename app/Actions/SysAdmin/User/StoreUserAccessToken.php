@@ -47,7 +47,7 @@ class StoreUserAccessToken extends OrgAction
             'api_token' => __('Api token created').' ('.$tokenName.')'
         ];
 
-        UserHydrateApiTokens::dispatch($user);
+        UserHydrateApiTokens::run($user);
         Event::dispatch(new AuditCustom($user));
 
 
