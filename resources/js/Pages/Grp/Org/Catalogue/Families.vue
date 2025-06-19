@@ -39,6 +39,7 @@ const props = defineProps<{
         families_route: routeType
         submit_route: routeType
     }
+    is_orphan_families?: boolean
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
@@ -108,6 +109,7 @@ const onSubmitToDepartment = () => {
     <PageHeading :data="pageHead">
         <template #other>
             <Button
+                v-if="is_orphan_families"
                 @click="() => isOpenModalAddToDepartment = true"
                 type="tertiary"
                 icon="fas fa-plus"
@@ -125,11 +127,11 @@ const onSubmitToDepartment = () => {
         :key="currentTab"
         :tab="currentTab"
         :data="props[currentTab]"
-        :isCheckBox="true"
+        :isCheckBox="is_orphan_families"
         @selectedRow="(productsId: {}) => (selectedFamiliesId = productsId)"
     />
     
-    <Modal :isOpen="isOpenModalAddToDepartment" @onClose="isOpenModalAddToDepartment = false" width="w-full max-w-[500px]">
+    <Modal v-if="is_orphan_families" :isOpen="isOpenModalAddToDepartment" @onClose="isOpenModalAddToDepartment = false" width="w-full max-w-[500px]">
         <div class="text-center font-semibold text-lg mb-4">
             {{ trans("Select Family to add the products to:") }}
         </div>

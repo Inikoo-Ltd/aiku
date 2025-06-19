@@ -37,6 +37,7 @@ const props = defineProps<{
         families_route: routeType
         submit_route: routeType
     }
+    is_orphan_products?: boolean
 }>()
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -104,6 +105,7 @@ const onSubmitToFamily = () => {
     <PageHeading :data="pageHead">
         <template #other>
             <Button
+                v-if="is_orphan_products"
                 @click="() => isOpenModalAddToFamily = true"
                 type="tertiary"
                 icon="fas fa-plus"
@@ -121,13 +123,17 @@ const onSubmitToFamily = () => {
         :key="currentTab"
         :tab="currentTab"
         :data="props[currentTab]"
-        :isCheckboxProducts="true"
+        :isCheckboxProducts="is_orphan_products"
         @selectedRow="(productsId: {}) => (console.log('qqqqqq', productsId), selectedProductsId = productsId)"
     />
     
-    <!-- <pre>{{ Object.keys(selectedProductsId).filter(key => selectedProductsId[key]) }}</pre> -->
 
-    <Modal :isOpen="isOpenModalAddToFamily" @onClose="isOpenModalAddToFamily = false" width="w-full max-w-[500px]">
+    <Modal
+        v-if="is_orphan_products"
+        :isOpen="isOpenModalAddToFamily"
+        @onClose="isOpenModalAddToFamily = false"
+        width="w-full max-w-[500px]"
+    >
         <div class="text-center font-semibold text-lg mb-4">
             {{ trans("Select Family to add the products to:") }}
         </div>
