@@ -21,7 +21,21 @@ class GetWebBlockCollections
     public function handle(Webpage $webpage, array $webBlock): array
     {
 
-        $collections = DB::table('collections')
+
+
+        $permissions = ['hidden'];
+
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['collection']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection($this->getCollections($webpage))->toArray(request()));
+
+        return $webBlock;
+    }
+
+
+    public function getCollections(Webpage $webpage): \Illuminate\Support\Collection
+    {
+        return DB::table('collections')
             ->leftjoin('model_has_collections', 'model_has_collections.collection_id', '=', 'collections.id')
             ->leftJoin('webpages', function ($join) {
                 $join->on('webpages.model_id', '=', 'collections.id');
@@ -32,14 +46,6 @@ class GetWebBlockCollections
             ->select(['collections.slug', 'collections.code', 'collections.name', 'collections.image_id', 'webpages.url as url'])
             ->whereNull('collections.deleted_at')
             ->get();
-
-        $permissions = ['hidden'];
-
-        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['collection']['data']['fieldValue'] ?? []);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection($collections)->toArray(request()));
-
-        return $webBlock;
     }
 
 }
