@@ -18,7 +18,6 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
-
 class StoreUserAccessToken extends OrgAction
 {
     public function handle(User $user): string
@@ -30,12 +29,12 @@ class StoreUserAccessToken extends OrgAction
 
         $tokenPrefix = substr($tokenValue, 0, 3);
 
-        $tokenName=$tokenParts[0].'|'.$tokenPrefix.'...-'.$user->slug;
+        $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$user->slug;
 
         if (!empty($tokenPrefix)) {
-           DB::table('personal_access_tokens')->where('id',$tokenParts[0])->update([
-                'name' => $tokenName
-            ]);
+            DB::table('personal_access_tokens')->where('id', $tokenParts[0])->update([
+                 'name' => $tokenName
+             ]);
         }
 
         $user->auditEvent     = 'create';
@@ -44,10 +43,10 @@ class StoreUserAccessToken extends OrgAction
             'api_token' => ''
         ];
         $user->auditCustomNew = [
-            'api_token' =>__('Api token created').' ('.$tokenName.')'
+            'api_token' => __('Api token created').' ('.$tokenName.')'
         ];
 
-        Event::dispatch(new AuditCustom($user));
+        Event::dispatch(AuditCustom::class, [$user]);
 
 
         return $plainTextToken;
