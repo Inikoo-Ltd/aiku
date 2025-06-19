@@ -86,9 +86,9 @@ console.log(props.modelValue)
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ modelValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
-                                <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
+                               <!--  <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
                                     :key="n" />
-                                <span class="ml-1 text-xs text-gray-500">41</span>
+                                <span class="ml-1 text-xs text-gray-500">41</span> -->
                             </div>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -125,8 +125,7 @@ console.log(props.modelValue)
                             modelValue.product.unit }})</span>
                     </div>
                     <div class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
-                        <span>RRP: {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp ||
-                            0) }}</span>
+                        <span>RRP: {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp ||0) }}</span>
                         <span>/{{ modelValue.product.unit }}</span>
                     </div>
                 </div>
