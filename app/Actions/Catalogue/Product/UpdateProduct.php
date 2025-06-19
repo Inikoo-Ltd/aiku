@@ -113,7 +113,7 @@ class UpdateProduct extends OrgAction
             'name'          => ['sometimes', 'required', 'max:250', 'string'],
             'price'         => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'   => ['sometimes', 'required', 'max:1500'],
-            'rrp'           => ['sometimes', 'required', 'numeric'],
+            'rrp'           => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'data'          => ['sometimes', 'array'],
             'settings'      => ['sometimes', 'array'],
             'status'        => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
