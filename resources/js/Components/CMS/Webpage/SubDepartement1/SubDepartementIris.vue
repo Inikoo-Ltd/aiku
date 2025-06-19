@@ -30,7 +30,13 @@ library.add(
 );
 
 const props = defineProps<{
-  fieldValue: Record<string, any>
+  fieldValue: {
+    collections : Array<Object>
+    sub_departments :Array<Object>
+      container : {
+        properties : object
+      }
+  }
   webpageData?: any
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
@@ -63,6 +69,14 @@ const screenClass = computed(() => {
       return "px-12 py-12 text-base";
   }
 });
+
+const mergedItems = computed(() => {
+  const subs = props.modelValue?.sub_departments ?? []
+  const collections = props.modelValue?.collections ?? []
+
+  return [...subs, ...collections]
+})
+
 </script>
 
 <template>
@@ -78,7 +92,7 @@ const screenClass = computed(() => {
     <div >
       <div class="grid gap-4" :class="gridColsClass">
         <a
-          v-for="item in fieldValue.sub_departments"
+          v-for="item in mergedItems"
           :key="item.code"
           :href="`${item.url}`"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"

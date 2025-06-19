@@ -10,7 +10,13 @@ import Dialog from "primevue/dialog";
 import { trans } from "laravel-vue-i18n";
 
 const props = defineProps<{
-  modelValue: Record<string, any>;
+  modelValue: {
+    collections : Array<Object>
+    sub_departments :Array<Object>
+      container : {
+        properties : object
+      }
+  }
   webpageData?: any;
   blockData?: object;
   screenType: "mobile" | "tablet" | "desktop";
@@ -85,6 +91,16 @@ const screenClass = computed(() => {
       return "px-12 py-12 text-base";
   }
 });
+
+
+const mergedItems = computed(() => {
+  const subs = props.modelValue?.sub_departments ?? []
+  const collections = props.modelValue?.collections ?? []
+
+  return [...subs, ...collections]
+})
+
+console.log(props)
 </script>
 
 <template>
@@ -97,7 +113,7 @@ const screenClass = computed(() => {
     <div v-if="modelValue?.sub_departments?.length">
       <div class="grid gap-4" :class="gridColsClass">
         <button
-          v-for="item in modelValue.sub_departments"
+          v-for="item in mergedItems"
           :key="item.code"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
           @click="openModal(item)"
