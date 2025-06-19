@@ -14,7 +14,6 @@ use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
-use App\Actions\Catalogue\ProductCategory\UpdateProductFamily;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;

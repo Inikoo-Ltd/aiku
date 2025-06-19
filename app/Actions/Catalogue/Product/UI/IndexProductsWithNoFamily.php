@@ -173,6 +173,10 @@ class IndexProductsWithNoFamily extends OrgAction
                         'parameters' => [
                             'shop' => $this->shop
                         ]
+                    ],
+                    'update_route' => [
+                        'name' => 'grp.models.family.move_products',
+                        'parameters' => []
                     ]
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
