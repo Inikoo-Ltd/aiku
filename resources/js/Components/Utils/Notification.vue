@@ -42,7 +42,7 @@ const props = defineProps<{
             <FontAwesomeIcon v-if="props.notification.item.type == 'info'" icon='fal fa-info-circle' class='h-7'
                 aria-hidden='true' />
         </div>
-        <div class="flex flex-col justify-center">
+        <div class="grid flex-col justify-center">
             <p v-if="props.notification.item.title" class="font-bold">
                 {{ props.notification.item.title }}
             </p>

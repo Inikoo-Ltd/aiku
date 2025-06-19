@@ -69,6 +69,7 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             'updated_at'                  => $this->updated_at,
             'units'                       => $this->units,
             'unit'                        => $this->unit,
+            'url'                         => $this->webpage->url,
             'status'                      => $this->status,
             'rrp'                         => $this->rrp,
             'image'                       => $this->image_id ? ImageResource::make($media)->getArray() : null,
