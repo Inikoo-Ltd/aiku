@@ -8,25 +8,18 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
-use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
-use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
-use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
-use Google\Service\Keep\Family;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Validation\Rule;
 
-class UpdateProductsFamily extends OrgAction
+class UpdateMultipleProductsFamily extends OrgAction
 {
     use WithActionUpdate;
+    use WithCatalogueEditAuthorisation;
 
     public function handle(ProductCategory $family, array $modelData): void
     {
@@ -35,21 +28,9 @@ class UpdateProductsFamily extends OrgAction
             UpdateProductFamily::make()->action($product, [
                 'family_id' => $family->id
             ]);
-
-            if (!$product) {
-                continue;
-            }
         }
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
-    }
 
     public function rules(): array
     {

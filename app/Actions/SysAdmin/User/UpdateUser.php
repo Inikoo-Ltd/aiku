@@ -40,12 +40,12 @@ class UpdateUser extends GrpAction
 
         if ($user->wasChanged('status')) {
             GroupHydrateUsers::dispatch($user->group)->delay($this->hydratorsDelay);
-            if(!$user->status) {
+            if (!$user->status) {
                 //todo
                 // for each all api tokens ans calla ction : ExpireUserAccessToken
-               // $user->tokens()->each(function ($token) {
-               //     DeleteUserAccessToken::dispatch($token, $this->validatedData)->delay($this->hydratorsDelay);
-               // });
+                // $user->tokens()->each(function ($token) {
+                //     DeleteUserAccessToken::dispatch($token, $this->validatedData)->delay($this->hydratorsDelay);
+                // });
             }
 
         }

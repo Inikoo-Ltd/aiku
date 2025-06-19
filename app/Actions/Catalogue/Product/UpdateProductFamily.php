@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-06-2025-14h-06m
@@ -10,13 +11,14 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
-use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductsWithNoFamily;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Support\Arr;
@@ -26,6 +28,7 @@ use Illuminate\Validation\Rule;
 class UpdateProductFamily extends OrgAction
 {
     use WithActionUpdate;
+    use WithCatalogueEditAuthorisation;
 
     public function handle(Product $product, array $modelData): Product
     {
@@ -50,11 +53,15 @@ class UpdateProductFamily extends OrgAction
             FamilyHydrateProducts::dispatch($product->family);
             if ($oldFamily) {
                 FamilyHydrateProducts::dispatch($oldFamily);
+            } else {
+                ShopHydrateProductsWithNoFamily::dispatch($product->shop);
+                OrganisationHydrateProductsWithNoFamily::dispatch($product->organisation);
+                GroupHydrateProductsWithNoFamily::dispatch($product->group);
             }
         }
 
         if (Arr::has($changes, 'department_id')) {
-            if ($product->department) {
+            if ($product->department_id) {
                 DepartmentHydrateProducts::dispatch($product->department);
             }
             if ($oldDepartment) {
@@ -63,8 +70,8 @@ class UpdateProductFamily extends OrgAction
         }
 
         if (Arr::has($changes, 'sub_department_id')) {
-            if ($product->department) {
-                SubDepartmentHydrateProducts::dispatch($product->oldSubDepartment);
+            if ($product->sub_department_id) {
+                SubDepartmentHydrateProducts::dispatch($product->subDepartment);
             }
             if ($oldSubDepartment) {
                 SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
@@ -72,15 +79,6 @@ class UpdateProductFamily extends OrgAction
         }
 
         return $product;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function rules(): array

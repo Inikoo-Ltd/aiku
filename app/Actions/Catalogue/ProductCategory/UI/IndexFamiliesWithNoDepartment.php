@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-06-2025-09h-08m
@@ -9,21 +10,15 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -38,7 +33,6 @@ class IndexFamiliesWithNoDepartment extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    private bool $sales = true;
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
@@ -108,9 +102,9 @@ class IndexFamiliesWithNoDepartment extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Shop $shop, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($shop, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($shop, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -133,14 +127,10 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                         'count' => $shop->stats->number_families,
                     ]
                 )
-                ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->withModelOperations($modelOperations);
-
-
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            
+                ->withGlobalSearch();
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -156,32 +146,29 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         unset($navigation[ProductCategoryTabsEnum::SALES->value]);
 
 
-        $title      = __('families');
+        $title      = __('Stray families');
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder'],
             'title' => __('family')
         ];
-        $afterTitle = null;
         $iconRight  = null;
-        $routes = null;
+        $routes     = null;
 
 
         return Inertia::render(
             'Org/Catalogue/Families',
             [
                 'breadcrumbs'                         => $this->getBreadcrumbs(
-                    $this->shop,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                               => __('families'),
+                'title'                               => $title,
                 'pageHead'                            => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                    'title'      => $title,
+                    'icon'       => $icon,
+                    'model'      => $model,
+                    'iconRight'  => $iconRight,
                 ],
                 'routes'                              => $routes,
                 'data'                                => FamiliesResource::collection($families),
@@ -206,10 +193,10 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     fn () => FamiliesResource::collection($families)
                     : Inertia::lazy(fn () => FamiliesResource::collection($families)),
             ]
-        )->table($this->tableStructure(shop: $this->shop, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value));
+        )->table($this->tableStructure(shop: $this->shop, prefix: ProductCategoryTabsEnum::INDEX->value));
     }
 
-    public function getBreadcrumbs(Shop $shop, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

@@ -71,8 +71,8 @@ const screenClass = computed(() => {
 });
 
 const mergedItems = computed(() => {
-  const subs = props.modelValue?.sub_departments ?? []
-  const collections = props.modelValue?.collections ?? []
+  const subs = props.fieldValue?.sub_departments ?? []
+  const collections = props.fieldValue?.collections ?? []
 
   return [...subs, ...collections]
 })
@@ -80,6 +80,7 @@ const mergedItems = computed(() => {
 </script>
 
 <template>
+
     <div v-if="mergedItems.length"
     class="mx-auto"
     :class="screenClass"

@@ -56,7 +56,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     'name'   => $website->shop->currency->name,
                 ],
                 'flash'    => [
-                    'notification' => fn() => $request->session()->get('notification')
+                    'notification' => fn () => $request->session()->get('notification')
                 ],
                 'ziggy'    => [
                     'location' => $request->url(),

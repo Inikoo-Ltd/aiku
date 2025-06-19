@@ -11,7 +11,11 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -24,6 +28,7 @@ use Illuminate\Validation\Rule;
 class UpdateFamilyDepartment extends OrgAction
 {
     use WithActionUpdate;
+    use WithCatalogueEditAuthorisation;
 
     public function handle(ProductCategory $family, array $modelData): ProductCategory
     {
@@ -43,8 +48,12 @@ class UpdateFamilyDepartment extends OrgAction
 
         if (Arr::has($changes, 'department_id')) {
             ProductCategoryHydrateFamilies::dispatch($family->department);
-            if($oldDepartment) {
+            if ($oldDepartment) {
                 ProductCategoryHydrateFamilies::dispatch($oldDepartment);
+            } else {
+                ShopHydrateFamiliesWithNoDepartment::dispatch($family->shop);
+                OrganisationHydrateFamiliesWithNoDepartment::dispatch($family->organisation);
+                GroupHydrateFamiliesWithNoDepartment::dispatch($family->group);
             }
 
         }
@@ -56,14 +65,7 @@ class UpdateFamilyDepartment extends OrgAction
         return $family;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
 
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
-    }
 
     public function rules(): array
     {

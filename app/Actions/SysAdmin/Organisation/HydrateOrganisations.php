@@ -19,6 +19,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
@@ -34,6 +35,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletDeliver
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletReturns;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePallets;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProducts;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductsWithNoFamily;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePaymentAccounts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePayments;
@@ -155,6 +157,9 @@ class HydrateOrganisations extends HydrateModel
 
             OrganisationHydrateOrderInBasketAtCreatedIntervals::run($organisation);
             OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::run($organisation);
+
+            OrganisationHydrateFamiliesWithNoDepartment::run($organisation);
+            OrganisationHydrateProductsWithNoFamily::run($organisation);
 
 
             foreach (ShopTypeEnum::cases() as $type) {
