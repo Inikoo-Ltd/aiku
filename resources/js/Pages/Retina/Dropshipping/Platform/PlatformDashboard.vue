@@ -20,6 +20,7 @@ const props = defineProps<{
             label: string
         }
     }
+    platform_logo: string,
     platform: {
         name: string
         code: string
@@ -42,12 +43,6 @@ const props = defineProps<{
 
 const locale = inject('locale', aikuLocaleStructure)
 
-const platformImage = {
-    manual: 'https://aw.aurora.systems/art/aurora_log_v2_orange.png',
-    tiktok: 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png',
-    shopify: 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png',
-    woocommerce: 'https://e7.pngegg.com/pngimages/490/140/png-clipart-computer-icons-e-commerce-woocommerce-wordpress-social-media-icon-bar-link-purple-violet-thumbnail.png',
-}
 </script>
 
 <template>
@@ -110,7 +105,7 @@ const platformImage = {
                             />
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
         </div>
@@ -120,7 +115,7 @@ const platformImage = {
                 <h3 class="text-2xl font-semibold">{{ platform.name }} <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span></h3>
                 <img
                     v-tooltip="platform.name"
-                    :src="platformImage[platform.code]"
+                    :src="platform_logo"
                     class="h-8 w-8 mt-2"
                     :alt="platform.name"
                 />

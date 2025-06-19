@@ -80,13 +80,13 @@ const mergedItems = computed(() => {
 </script>
 
 <template>
-    <div v-if="fieldValue?.sub_departments?.length"
+    <div v-if="mergedItems.length"
     class="mx-auto"
     :class="screenClass"
     :style="getStyles(fieldValue?.container?.properties, screenType)"
   >
     <h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">
-      Browse By Sub-department:
+      Browse By Sub-department
     </h2>
 
     <div >
