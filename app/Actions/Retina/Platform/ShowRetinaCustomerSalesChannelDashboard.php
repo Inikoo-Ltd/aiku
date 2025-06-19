@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Platform;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
@@ -20,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
+    use GetPlatformLogo;
+
     public function authorize(ActionRequest $request): bool
     {
         $customerSalesChannel = $request->route('customerSalesChannel');
@@ -120,6 +123,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             ] : null,
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
+            'platform_logo'          => $this->getPlatformLogo($customerSalesChannel),
             'platformData'           => $this->getPlatformData($customerSalesChannel),
             'step'  => [
                 'label'         => $stepLabel,
