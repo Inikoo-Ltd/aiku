@@ -157,6 +157,7 @@ const onSubmitToDepartment = () => {
         <Button
             @click="() => onSubmitToDepartment()"
             label="Submit"
+            :loading="isLoadingButton"
             full
         />
     </Modal>

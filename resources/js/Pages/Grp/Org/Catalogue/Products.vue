@@ -159,6 +159,7 @@ const onSubmitToFamily = () => {
         <Button
             @click="() => onSubmitToFamily()"
             label="Submit"
+            :loading="isLoadingButton"
             full
         />
     </Modal>
