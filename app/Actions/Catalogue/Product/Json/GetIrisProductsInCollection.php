@@ -67,7 +67,8 @@ class GetIrisProductsInCollection extends IrisAction
 
         return $queryBuilder->defaultSort('available_quantity')
             ->select(
-                'products.*','webpages.url'
+                'products.*',
+                'webpages.url'
             )
             ->allowedSorts(['price', 'created_at','available_quantity','code','name'])
             ->allowedFilters([$globalSearch, $priceRangeFilter, $familyCodeFilter])
