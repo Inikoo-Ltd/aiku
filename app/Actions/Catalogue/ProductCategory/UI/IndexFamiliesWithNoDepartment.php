@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-06-2025-09h-08m
@@ -9,21 +10,15 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -138,9 +133,9 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+
         };
     }
 

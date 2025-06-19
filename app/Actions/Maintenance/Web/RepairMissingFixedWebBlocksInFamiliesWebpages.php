@@ -140,22 +140,22 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first()->model_has_web_blocks_id;
 
-        $webBlocks=$webpage->webBlocks()->pluck('position','model_has_web_blocks.id',)->toArray();
+        $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id', )->toArray();
         //print_r($webBlocks);
         $runningPosition = 2;
-        foreach ($webBlocks as $key=>$position) {
+        foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
             } else {
                 $webBlocks[$key] = $runningPosition;
-                $runningPosition ++;
+                $runningPosition++;
             }
 
 
         }
 
 
-        foreach ($webBlocks as $key=>$position) {
+        foreach ($webBlocks as $key => $position) {
             DB::table('model_has_web_blocks')
                 ->where('id', $key)
                 ->update(['position' => $position]);
