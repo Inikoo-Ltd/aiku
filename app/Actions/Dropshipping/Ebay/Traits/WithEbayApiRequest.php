@@ -623,6 +623,20 @@ trait WithEbayApiRequest
     }
 
     /**
+     * Get user's eBay Fulfilmennt Policies
+     */
+    public function getFulfilmentPolicies()
+    {
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy?marketplace_id=EBAY_GB";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Fulfilment Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Create user's eBay payment policy
      */
     public function createPaymentPolicy()
@@ -642,6 +656,20 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Create Payment Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay Payment Policies
+     */
+    public function getPaymentPolicies()
+    {
+        try {
+            $endpoint = "/sell/account/v1/payment_policy?marketplace_id=EBAY_GB";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Payment Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -668,6 +696,20 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Create Return Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay Return Policies
+     */
+    public function getReturnPolicies()
+    {
+        try {
+            $endpoint = "sell/account/v1/return_policy?marketplace_id=EBAY_GB";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Return Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }

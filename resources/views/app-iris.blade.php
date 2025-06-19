@@ -50,7 +50,7 @@
     <body class="font-sans antialiased h-full">
         @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
             <!-- Google Tag Manager (noscript) -->
-            <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W7RHCWJ8"
+            <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ Arr::get(request()->get('website')->settings, 'google_tag_id', '') }}"
             height="0" width="0" style="display:none;visibility:hidden" title="google_tag"></iframe></noscript>
             <!-- End Google Tag Manager (noscript) -->
         @endif
