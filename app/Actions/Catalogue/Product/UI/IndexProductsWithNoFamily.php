@@ -132,6 +132,8 @@ class IndexProductsWithNoFamily extends OrgAction
 
         $navigation    = ProductsTabsEnum::navigation();
 
+        unset($navigation[ProductsTabsEnum::SALES->value]);
+
         $title = __('Orphan Products');
 
         $icon       = [

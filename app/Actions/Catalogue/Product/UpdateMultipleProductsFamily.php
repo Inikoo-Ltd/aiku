@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 19-06-2025-15h-02m
@@ -9,11 +10,11 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Product;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMultipleProductsFamily extends OrgAction
@@ -36,6 +37,12 @@ class UpdateMultipleProductsFamily extends OrgAction
     {
         return [
             'products' => ['required', 'array'],
+            'products.*' => [
+                'required',
+                Rule::exists('products', 'id')->where(function ($query) {
+                    $query->where('shop_id', $this->shop->id);
+                }),
+            ],
         ];
     }
 
