@@ -124,6 +124,7 @@ class EditFamily extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
+                            'label'  => __('Information'),
                             'title'  => __('id'),
                             'fields' => [
                                 'code' => [
@@ -143,7 +144,35 @@ class EditFamily extends OrgAction
                                 ],
                                 ...$departmentIdFormData
                             ]
-                        ]
+                        ],
+                        [
+                            'label'  => __('Department'),
+                            'icon'   => 'fa-light fa-box',
+                            'fields' => [
+                                'department_id'  =>  [
+                                    'type'    => 'select_infinite',
+                                    'label'   => __('Department'),
+                                    'options'   => [
+                                        [
+                                            'id' => $family->department?->id,
+                                            'code' => $family->department?->code
+                                        ]
+                                    ],
+                                    'fetchRoute'    => [
+                                        'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                        'parameters' => [
+                                            'organisation' => $this->organisation->slug,
+                                            'shop' => $this->shop->slug
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required' => false,
+                                    'value'   => $family->department->id ?? null,
+                                ]
+                            ],
+
+                        ],
 
                     ],
                     'args'      => [
