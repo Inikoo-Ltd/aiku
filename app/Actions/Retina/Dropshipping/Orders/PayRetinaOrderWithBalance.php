@@ -34,12 +34,19 @@ class PayRetinaOrderWithBalance extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithBasketStateWarning;
 
     /**
      * @throws \Throwable
      */
     public function handle(Order $order): array
     {
+        $warning = $this->getWarnings($order);
+
+        if ($warning) {
+            return $warning;
+        }
+        
         if ($order->customer->balance < $order->total_amount) {
             return [
                 'success' => false,
