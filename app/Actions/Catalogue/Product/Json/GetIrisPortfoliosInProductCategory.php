@@ -18,9 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisPortfoliosInProductCategory extends IrisAction
 {
-    use WithIrisProductsInWebpage;
-
-    public function handle(Customer $customer, ProductCategory $productCategory): \Illuminate\Support\Collection
+    public function handle(Customer $customer, ProductCategory $productCategory): array
     {
         $query = DB::table('portfolios');
         $query->where('customer_id', $customer->id);
@@ -36,17 +34,28 @@ class GetIrisPortfoliosInProductCategory extends IrisAction
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $query->where('products.sub_department_id', $productCategory->id);
         }
+        $query->selectRaw('products.id,array_agg(customer_sales_channel_id) as customer_channels')->groupBy('products.id');
 
+        $portfoliosData = [];
+        foreach ($query->get() as $data) {
+            $portfoliosData[$data->id] = $data->customer_channels;
+        }
 
-        return $query->get();
+        return $portfoliosData;
     }
 
 
-    public function asController(ProductCategory $productCategory, ActionRequest $request)
+    public function asController(ProductCategory $productCategory, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
 
         return $this->handle(customer: $request->user()->customer, productCategory: $productCategory);
     }
+
+    public function jsonResponse($portfolios): array
+    {
+        return $portfolios;
+    }
+
 
 }
