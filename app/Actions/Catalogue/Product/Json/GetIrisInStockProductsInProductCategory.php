@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 18 Jun 2025 16:13:46 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Fri, 20 Jun 2025 14:43:39 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -13,7 +13,7 @@ use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetIrisOutOfStockProductsInProductCategory extends IrisAction
+class GetIrisInStockProductsInProductCategory extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
@@ -21,7 +21,7 @@ class GetIrisOutOfStockProductsInProductCategory extends IrisAction
     {
         $this->initialisation($request);
 
-        return GetIrisProductsInProductCategory::run(productCategory: $productCategory, stockMode: 'out_of_stock');
+        return GetIrisProductsInProductCategory::run(productCategory: $productCategory, stockMode: 'in_stock');
     }
 
 }

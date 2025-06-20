@@ -137,6 +137,47 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this;
     }
 
+    public function withIrisPaginator(int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+
+        $prefix = '';
+
+
+        $argumentName = ($prefix ? $prefix.'_' : '').$queryName;
+        if ($numberOfRecords === null && request()->has($argumentName)) {
+            $numberOfRecords = (int)request()->input($argumentName);
+        }
+
+        $userId      = auth()->user()->id ?? null;
+        $keyRppCache = $tableName ? "ui_state-user:$userId;rrp-table:".$prefix."$tableName" : null;
+
+        if ($numberOfRecords) {
+            $perPage = $numberOfRecords;
+        } elseif ($tableName) {
+            $perPage = Cache::get($keyRppCache) ?? config('ui.table.records_per_page');
+        } else {
+            $perPage = config('ui.table.records_per_page');
+        }
+
+
+        if ($perPage > config('ui.table.max_records_per_page')) {
+            $perPage = config('ui.table.max_records_per_page');
+        }
+
+        if ($perPage < config('ui.table.min_records_per_page')) {
+            $perPage = config('ui.table.min_records_per_page');
+        }
+
+
+        if ($tableName && $userId) {
+            Cache::put($keyRppCache, $perPage, 60 * 60 * 24 * 180); // 6 months in seconds
+        }
+
+        return $this->paginate(
+            perPage: $perPage,
+            pageName: $prefix ? $prefix.'Page' : 'page'
+        );
+    }
 
     public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
