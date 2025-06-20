@@ -24,7 +24,7 @@ class GetWebBlockProducts
 
             $products=IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model));
 
-            $productRoute = [
+            /* $productRoute = [
                 'workshop' => [
                     'name'       => 'grp.json.collection.products.index',
                     'parameters' => ['collection' => $webpage->model_id],
@@ -39,11 +39,11 @@ class GetWebBlockProducts
                         'parameters' => ['collection' => $webpage->model_id],
                     ]
                 ],
-            ];
+            ]; */
         } else {
             $products=IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, inStock: true));
 
-            $productRoute = [
+           /*  $productRoute = [
                 'workshop' => [
                     'name'       => 'grp.json.product_category.products.index',
                     'parameters' => ['productCategory' => $webpage->model_id],
@@ -58,7 +58,7 @@ class GetWebBlockProducts
                         'parameters' => ['productCategory' => $webpage->model_id],
                     ]
                 ],
-            ];
+            ]; */
         }
 
 
@@ -66,7 +66,7 @@ class GetWebBlockProducts
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['products']['data']['fieldValue'] ?? []);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+       /*  data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute); */
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);

@@ -13,6 +13,7 @@ import Drawer from 'primevue/drawer'
 import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
+import ModelChangelog from '@/Components/ModelChangelog.vue'
 
 const props = defineProps<{
     fieldValue: {
@@ -32,6 +33,8 @@ const props = defineProps<{
             }
         }
         container?: any
+        model_type : string
+        model_id: Number
     }
     webpageData?: any
     blockData?: Object
@@ -54,6 +57,37 @@ const showAside = ref(false)
 const loadingOutOfStock = ref(false)
 const isFetchingOutOfStock = ref(false)
 
+const getRoutes = () => {
+    if (props.fieldValue.model_type === 'ProductCategory') {
+        return {
+            iris: {
+                route_products: {
+                    name: 'iris.json.product_category.products.index',
+                    parameters: { productCategory: props.fieldValue.model_id },
+                },
+                route_out_of_stock_products: {
+                    name: 'iris.json.product_category.out_of_stock_products.index',
+                    parameters: { productCategory: props.fieldValue.model_id },
+                },
+            }
+        }
+    } else if (props.fieldValue.model_type === 'Collection') {
+        return {
+            iris: {
+                route_products: {
+                    name: 'iris.json.collection.products.index',
+                    parameters: { collection: props.fieldValue.model_id },
+                },
+                route_out_of_stock_products: {
+                    name: 'iris.json.collection.out_of_stock_products.index',
+                    parameters: { collection: props.fieldValue.model_id },
+                },
+            }
+        }
+    }
+
+    return { iris: { route_products: null, route_out_of_stock_products: null } }
+}
 function buildFilters(): Record<string, any> {
     const filters: Record<string, any> = {}
     const raw = filter.value.data || {}
@@ -81,11 +115,12 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
-
+    const routes = getRoutes()
     const useOutOfStock = isFetchingOutOfStock.value
+
     const currentRoute = useOutOfStock
-        ? props.fieldValue.products_route.iris.route_out_of_stock_products
-        : props.fieldValue.products_route.iris.route_products
+        ? routes.iris.route_out_of_stock_products
+        : routes.iris.route_products
 
     try {
         const response = await axios.get(route(currentRoute.name, {
@@ -98,12 +133,8 @@ const fetchProducts = async (isLoadMore = false) => {
         }))
 
         const data = response.data
-        if(data.meta) {
-            lastPage.value = data?.meta.last_page
-        }
-        else if (!data.meta){
-            lastPage.value = data?.last_page
-        } 
+
+        lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])]
@@ -111,16 +142,14 @@ const fetchProducts = async (isLoadMore = false) => {
             products.value = data?.data ?? []
         }
 
-        // If we've reached the end of in-stock products and haven't fetched out-of-stock yet
         if (!useOutOfStock && page.value >= lastPage.value) {
-            console.log('sdsd')
             isFetchingOutOfStock.value = true
-            page.value = 1 
+            page.value = 1
             await fetchProducts(true)
         }
 
     } catch (error) {
-        console.error(error)
+        console.log(error)
         notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
     } finally {
         loadingInitial.value = false
@@ -321,7 +350,7 @@ console.log(props)
             </div>
 
             <!-- Load More -->
-             {{ page   }}{{ lastPage }}
+            <!--  {{ page   }}{{ lastPage }} -->
             <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
                 <Button @click="loadMore" type="tertiary"
                     :disabled="loadingMore">
