@@ -20,7 +20,7 @@ use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
 {
-    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock)
+    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn)
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
@@ -33,7 +33,7 @@ trait WithFillIrisWebBlocks
         } elseif (in_array($webBlockType, ['families-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['products-1'])) {
-            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
         } elseif (in_array($webBlockType, ['family-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['product-1'])) {

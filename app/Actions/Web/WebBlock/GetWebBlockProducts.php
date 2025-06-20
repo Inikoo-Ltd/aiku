@@ -18,15 +18,14 @@ class GetWebBlockProducts
 {
     use AsObject;
 
-    public function handle(Webpage $webpage, array $webBlock): array
+    public function handle(Webpage $webpage, array $webBlock, bool $isLoggedIn): array
     {
+        $stockMode = $isLoggedIn ? 'in_stock' : 'all';
+
         if ($webpage->model_type == 'Collection') {
-
-            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model));
-
+            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: $stockMode));
         } else {
-            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'in_stock'));
-
+            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: $stockMode));
         }
 
 

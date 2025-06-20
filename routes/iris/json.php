@@ -11,17 +11,16 @@ use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
 use Illuminate\Support\Facades\Route;
 
-
 Route::middleware(["retina-auth:retina"])->group(function () {
-
     Route::get('product-category/{productCategory:id}/portfolio-data', GetIrisPortfoliosInProductCategory::class)->name('product_category.portfolio_data');
-
+    Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
 });
 
 
