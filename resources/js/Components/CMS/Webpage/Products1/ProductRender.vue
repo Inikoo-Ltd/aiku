@@ -43,6 +43,7 @@ interface ProductResource {
 
 const props = defineProps<{
     product: ProductResource
+    productHasProtofolio : boolean
     channels: {
         isLoading: boolean
         list: {}[]
@@ -196,6 +197,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         <ButtonAddPortfolio
             :product="product"
             :channels="props.channels"
+            :productHasProtofolio="productHasProtofolio"
             @refreshChannels="emits('refreshChannels')"
         />
     </div>
