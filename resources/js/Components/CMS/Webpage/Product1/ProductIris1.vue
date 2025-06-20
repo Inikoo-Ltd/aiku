@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
 import { faBox, faPlus, faVial } from "@far"
-import { faCircle, faStar, faDotCircle } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject } from "vue"
@@ -15,10 +15,34 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
+import { trans } from "laravel-vue-i18n"
+import { router } from "@inertiajs/vue3"
+import { Image as ImageTS } from '@/types/Image'
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { set } from "lodash-es"
 
 library.add(faCube, faLink)
 
-type TemplateType = 'webpage' | 'template'
+interface ProductResource {
+    id: number
+    name: string
+    code: string
+    image?: {
+        source: ImageTS
+    }
+    currency_code: string
+    rpp?: number
+    unit: string
+    stock: number
+    rating: number
+    price: number
+    url: string | null
+    units: number
+    bestseller?: boolean
+    is_favourite?: boolean
+    exist_in_portfolios_channel: number[]
+    is_exist_in_all_channel: boolean
+}
 
 const props = withDefaults(defineProps<{
     fieldValue: any
@@ -59,6 +83,67 @@ const fetchChannels = async () => {
         channels.value.isLoading = false
     }
 }
+
+
+// Section: Add to Favourites
+const isLoadingFavourite = ref(false)
+const onAddFavourite = (product: ProductResource) => {
+    router.post(
+        route('iris.models.favourites.store', {
+            product: product.id
+        }),
+        {
+            // item_id: [product.id]
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingFavourite.value = true
+            },
+            onSuccess: () => {
+                set(props.fieldValue.product, 'is_favourite', true)
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to favourites"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+            },
+        }
+    )
+}
+const onUnselectFavourite = (product: ProductResource) => {
+    router.delete(
+        route('iris.models.favourites.delete', {
+            product: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingFavourite.value = true
+            },
+            onSuccess: () => {
+                set(props.fieldValue.product, 'is_favourite', false)
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from favourites"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -89,8 +174,16 @@ const fetchChannels = async () => {
                         </div>
                     </div>
                     <div class="h-full flex items-start">
-                        <FontAwesomeIcon :icon="faHeart" class="text-2xl cursor-pointer"
-                            :class="{ 'text-red-500': isFavorite }" @click="toggleFavorite" />
+                        <!-- Favorite Icon -->
+                        <template v-if="layout.iris?.is_logged_in">
+                            <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
+                                <LoadingIcon />
+                            </div>
+                            <div v-else @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" class="cursor-pointer xabsolute top-2 right-2 group text-2xl ">
+                                <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
+                                <FontAwesomeIcon v-else :icon="faHeart" fixed-width class="text-gray-400 group-hover:text-pink-400" />
+                            </div>
+                        </template>
                     </div>
                 </div>
                 <div class="py-1 w-full">

@@ -167,6 +167,7 @@ const _popover = ref()
                         :icon="faPlus"
                         class="border-none border-transparent rounded-r-none"
                         full
+                        size="l"
                         style="border: 0px"
                     />
 
