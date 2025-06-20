@@ -102,25 +102,30 @@ class PayRetinaOrderWithBalance extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function asController(Order $order, ActionRequest $request): RedirectResponse
+    public function asController(Order $order, ActionRequest $request): array
     {
         $this->initialisation($request);
 
-        $result = $this->handle($order);
+        return $this->handle($order);
 
-        if ($result['success']) {
+        
+    }
+
+    public function htmlResponse(array $arr): RedirectResponse
+    {
+        if ($arr['success']) {
             $notification = [
                 'status'  => 'success',
                 'title'   => __('Success!'),
-                'message' => __('Your order bas been submitted.'),
+                'description' => __('Your order bas been submitted.'),
             ];
 
-            if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($arr['order']->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 return Redirect::route(
                     'retina.dropshipping.customer_sales_channels.orders.show',
                     [
-                        'customerSalesChannel' => $order->customer_sales_channel_id,
-                        'order'                => $order->id
+                        'customerSalesChannel' => $arr['order']->customer_sales_channel_id,
+                        'order'                => $arr['order']->id
                     ]
                 )
                     ->with('notification', $notification);
@@ -128,21 +133,21 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 return Redirect::route(
                     'retina.ecom.orders.show',
                     [
-                        'order' => $order->id
+                        'order' => $arr['order']->id
                     ]
                 )->with('notification', $notification);
             }
-        } elseif ($result['reason'] == 'Insufficient balance') {
+        } elseif ($arr['reason'] == 'Insufficient balance') {
             return Redirect::back()->with('notification', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
-                'message' => __('You do not have enough balance to pay for this order.'),
+                'description' => __('You do not have enough balance to pay for this order.'),
             ]);
         } else {
             return Redirect::back()->with('notification', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
-                'message' => __('An error occurred while processing your order: ').$result['reason'],
+                'description' => __('An error occurred while processing your order: ').$arr['reason'],
             ]);
         }
     }
