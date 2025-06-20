@@ -335,7 +335,7 @@ const responsiveGridClass = computed(() => {
                 <!-- Sort Tabs -->
                 <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
                     <button
-                        v-for="key in ['created_at', 'price', 'code', 'name']"
+                        v-for="key in layout.iris.is_logged_in ? ['created_at', 'price', 'code', 'name'] : ['created_at','code', 'name']"
                         :key="key"
                         @click="toggleSort(key)"
                         class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1"
