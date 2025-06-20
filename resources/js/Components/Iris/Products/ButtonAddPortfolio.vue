@@ -147,7 +147,7 @@ const _popover = ref()
                 </button> -->
  
                 
-                {{ Object.keys(channelList).length }} {{ Object.keys(productHasProtofolio).length }}
+             
                 <div class="w-full flex flex-nowrap relative">
                     <Button v-if="Object.keys(channelList).length == Object.keys(productHasProtofolio).length"
                         label="Exist on all Portfolios" type="tertiary" disabled
@@ -174,10 +174,7 @@ const _popover = ref()
                                     :label="channel.platform_name" full
                                     :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
                                     <template #icon>
-                    
-                                        {{ Object.prototype.hasOwnProperty.call(productHasProtofolio, key) }}
-                                        {{ key in productHasProtofolio }}
-                                        <FontAwesomeIcon v-if="Object.prototype.hasOwnProperty.call(productHasProtofolio, key)" :icon="faCheck"
+                                        <FontAwesomeIcon v-if="productHasProtofolio.includes(Number(key))" :icon="faCheck"
                                             class="text-green-500" fixed-width aria-hidden="true" />
                                     </template>
                                 </Button>
