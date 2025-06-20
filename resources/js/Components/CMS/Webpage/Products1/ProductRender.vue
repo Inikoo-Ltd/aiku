@@ -28,7 +28,6 @@ interface ProductResource {
     image?: {
         source: ImageTS
     }
-    currency_code: string
     rpp?: number
     unit: string
     stock: number

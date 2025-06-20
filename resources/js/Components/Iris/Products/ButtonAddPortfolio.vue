@@ -22,7 +22,6 @@ interface ProductResource {
     image?: {
         source: ImageTS
     }
-    currency_code: string
     rpp?: number
     unit: string
     stock: number
@@ -49,7 +48,6 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-const currency = layout?.iris?.currency
 
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
