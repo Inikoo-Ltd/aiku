@@ -62,6 +62,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_audits_user_type_other_event_other
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_current_api_tokens
+ * @property int $number_expired_api_tokens
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats newQuery()

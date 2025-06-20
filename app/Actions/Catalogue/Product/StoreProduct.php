@@ -233,7 +233,7 @@ class StoreProduct extends OrgAction
             'image_id'                  => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'price'                     => ['required', 'numeric', 'min:0'],
             'unit'                      => ['sometimes', 'required', 'string'],
-            'rrp'                       => ['sometimes', 'required', 'numeric', 'min:0'],
+            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'data'                      => ['sometimes', 'array'],
             'settings'                  => ['sometimes', 'array'],

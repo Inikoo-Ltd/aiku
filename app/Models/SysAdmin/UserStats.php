@@ -34,6 +34,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_audits_event_other
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_current_api_tokens
+ * @property int $number_expired_api_tokens
  * @property-read \App\Models\SysAdmin\User $user
  * @method static Builder<static>|UserStats newModelQuery()
  * @method static Builder<static>|UserStats newQuery()

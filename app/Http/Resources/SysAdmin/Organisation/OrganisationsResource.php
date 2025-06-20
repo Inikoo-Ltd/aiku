@@ -16,6 +16,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_employees_state_working
  * @property int $number_shops_state_open
  * @property mixed $number_customers
+ * @property mixed $id
+ * @property mixed $slug
+ * @property mixed $name
+ * @property mixed $type
+ * @property mixed $code
  */
 class OrganisationsResource extends JsonResource
 {
@@ -26,11 +31,11 @@ class OrganisationsResource extends JsonResource
         /** @var Organisation $organisation */
         $organisation = $this;
         return [
-            'id'                                => $organisation->id,
-            'slug'                              => $organisation->slug,
-            'name'                              => $organisation->name,
-            'type'                              => $organisation->type,
-            'code'                              => $organisation->code,
+            'id'                                => $this->id,
+            'slug'                              => $this->slug,
+            'name'                              => $this->name,
+            'type'                              => $this->type,
+            'code'                              => $this->code,
             'type_label'                        => $organisation->type->labels()[$organisation->type->value],
             'type_icon'                         => $organisation->type->typeIcon()[$organisation->type->value],
             'number_employees_state_working'    => $this->number_employees_state_working,

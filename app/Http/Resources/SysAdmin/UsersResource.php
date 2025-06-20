@@ -31,6 +31,8 @@ use JsonSerializable;
  * @property \Illuminate\Support\Carbon $updated_at
  * @property \Spatie\Permission\Contracts\Role[] $roles
  * @property \Spatie\Permission\Contracts\Permission[] $permissions
+ * @property mixed $number_current_api_tokens
+ * @property mixed $number_expired_api_tokens
  */
 class UsersResource extends JsonResource
 {
@@ -40,12 +42,12 @@ class UsersResource extends JsonResource
         $user = $this;
 
         return [
-            'id'            => $user->id,
-            'username'      => $user->username,
-            'image'         => $user->imageSources(48, 48),
-            'email'         => $user->email,
-            'about'         => $user->about,
-            'status'        => match ($user->status) {
+            'id'                        => $this->id,
+            'username'                  => $this->username,
+            'image'                     => $user->imageSources(48, 48),
+            'email'                     => $this->email,
+            'about'                     => $user->about,
+            'status'                    => match ($this->status) {
                 true => [
                     'tooltip' => __('active'),
                     'icon'    => 'fal fa-check',
@@ -57,21 +59,23 @@ class UsersResource extends JsonResource
                     'class'   => 'text-red-500'
                 ]
             },
-            'parent_type'   => $user->parent_type,
-            'contact_name'  => $user->contact_name,
-            'parent'        => $this->when($this->relationLoaded('parent'), function () {
+            'number_current_api_tokens' => $this->number_current_api_tokens,
+            'number_expired_api_tokens' => $this->number_expired_api_tokens,
+            'parent_type'               => $this->parent_type,
+            'contact_name'              => $this->contact_name,
+            'parent'                    => $this->when($this->relationLoaded('parent'), function () {
                 return match (class_basename($this->resource->parent)) {
                     'Employee' => new EmployeeResource($this->resource->parent),
-                    'Guest'    => new GuestResource($this->resource->parent),
-                    default    => [],
+                    'Guest' => new GuestResource($this->resource->parent),
+                    default => [],
                 };
             }),
-            'group'         => GroupResource::make($user->group),
-            'organisations' => UserOrganisationResource::collectionForUser($user->authorisedOrganisations, $this->resource),
-            'created_at'    => $user->created_at,
-            'updated_at'    => $user->updated_at,
-            'roles'         => $user->getRoleNames()->toArray(),
-            'permissions'   => $user->getAllPermissions()->pluck('name')->toArray()
+            'group'                     => GroupResource::make($this->group),
+            'organisations'             => UserOrganisationResource::collectionForUser($user->authorisedOrganisations, $this->resource),
+            'created_at'                => $user->created_at,
+            'updated_at'                => $user->updated_at,
+            'roles'                     => $user->getRoleNames()->toArray(),
+            'permissions'               => $user->getAllPermissions()->pluck('name')->toArray()
         ];
     }
 }

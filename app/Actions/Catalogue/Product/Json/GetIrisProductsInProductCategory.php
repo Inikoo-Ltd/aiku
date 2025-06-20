@@ -71,7 +71,8 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         return $queryBuilder->defaultSort('name')
             ->select(
-                'products.*','webpages.url'
+                'products.*',
+                'webpages.url'
             )
             ->allowedSorts(['price', 'created_at', 'available_quantity', 'code', 'name'])
             ->allowedFilters([$globalSearch, $priceRangeFilter, $familyCodeFilter])

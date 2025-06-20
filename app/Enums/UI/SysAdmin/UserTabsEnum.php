@@ -9,20 +9,23 @@
 namespace App\Enums\UI\SysAdmin;
 
 use App\Enums\EnumHelperTrait;
-use App\Enums\HasTabs;
+use App\Enums\HasTabsWithQuantity;
+use App\Models\SysAdmin\User;
 
 enum UserTabsEnum: string
 {
     use EnumHelperTrait;
-    use HasTabs;
+    use HasTabsWithQuantity;
 
     case SHOWCASE     = 'showcase';
     case HISTORY      = 'history';
     case API_TOKENS   = 'api_tokens';
 
 
-    public function blueprint(): array
+    public function blueprint(User $parent): array
     {
+        $stats = $parent->stats;
+        $totalApitokens = $stats->number_current_api_tokens + $stats->number_expired_api_tokens;
         return match ($this) {
 
             UserTabsEnum::HISTORY => [
@@ -36,7 +39,7 @@ enum UserTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt',
             ],
             UserTabsEnum::API_TOKENS => [
-                'title' => __('api tokens'),
+                'title' => __('api tokens') . ' (' . ($totalApitokens > 0 ? $totalApitokens : 0) . ')',
                 'icon'  => 'fal fa-key',
                 'type'  => 'icon',
             ],

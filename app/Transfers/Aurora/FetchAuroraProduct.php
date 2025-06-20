@@ -126,6 +126,11 @@ class FetchAuroraProduct extends FetchAurora
 
         $grossWeight = $this->auroraModelData->{'Product Package Weight'};
 
+        $rrp = $this->auroraModelData->{'Product RRP'};
+        if ($rrp <= 0) {
+            $rrp = null;
+        }
+
         $this->parsedData['product'] = [
             'exclusive_for_customer_id' => $exclusiveForCustomerID,
             'is_main'                   => true,
@@ -146,6 +151,7 @@ class FetchAuroraProduct extends FetchAurora
             'images'                    => $this->parseImages(),
             'fetched_at'                => now(),
             'last_fetched_at'           => now(),
+            'rrp'                       => $rrp
         ];
 
 

@@ -9,7 +9,6 @@
 namespace App\Transfers\Aurora;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraFamily extends FetchAurora
@@ -20,9 +19,6 @@ class FetchAuroraFamily extends FetchAurora
     {
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
 
-        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            return;
-        }
 
         $familiesRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
             ->select('Category Key', 'Category Code', 'Category Subject')
@@ -61,7 +57,7 @@ class FetchAuroraFamily extends FetchAurora
             'code'             => $code,
             'name'             => $this->auroraModelData->{'Category Label'},
             'source_family_id' => $this->organisation->id.':'.$this->auroraModelData->{'Category Key'},
-            'images'           => $this->parseImages(),
+            'image'            => $this->parseImage(),
             'fetched_at'       => now(),
             'last_fetched_at'  => now(),
         ];
@@ -72,17 +68,22 @@ class FetchAuroraFamily extends FetchAurora
         }
     }
 
-    private function parseImages(): array
+    private function parseImage(): array
     {
-        $images = $this->getModelImagesCollection(
+        $image = $this->getModelMainImage(
             'Category',
             $this->auroraModelData->{'Category Key'}
-        )->map(function ($auroraImage) {
-            return $this->fetchImage($auroraImage);
-        });
+        );
 
-        return $images->toArray();
+        if ($image) {
+            return $this->fetchImage($image);
+        } else {
+            return [];
+        }
+
+
     }
+
 
     protected function fetchData($id): object|null
     {

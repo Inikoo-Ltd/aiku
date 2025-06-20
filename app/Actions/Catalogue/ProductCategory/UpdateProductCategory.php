@@ -37,13 +37,24 @@ class UpdateProductCategory extends OrgAction
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
-
-        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY && Arr::has($modelData, 'department_id')) {
-            $productCategory = UpdateFamilyDepartment::make()->action($productCategory, [
-                'department_id' => Arr::pull($modelData, 'department_id'),
-            ]);
-
+        if (Arr::has($modelData, 'department_id')) {
+            $departmentId = Arr::pull($modelData, 'department_id');
+            if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+                $productCategory = UpdateFamilyDepartment::make()->action($productCategory, [
+                    'department_id' => $departmentId,
+                ]);
+            }
         }
+
+        if (Arr::has($modelData, 'sub_department_id')) {
+            $subDepartmentId = Arr::pull($modelData, 'sub_department_id');
+            if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+                $productCategory = UpdateFamilySubDepartment::make()->action($productCategory, [
+                    'sub_department_id' => $subDepartmentId,
+                ]);
+            }
+        }
+
 
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         if ($imageData['image']) {
@@ -53,8 +64,6 @@ class UpdateProductCategory extends OrgAction
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
-
-
 
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
@@ -120,7 +129,7 @@ class UpdateProductCategory extends OrgAction
             'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
             'description'       => ['sometimes', 'required', 'max:65500'],
-            'department_id' => [
+            'department_id'     => [
                 'sometimes',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
@@ -133,8 +142,8 @@ class UpdateProductCategory extends OrgAction
                     ->where('shop_id', $this->shop->id)
             ],
 
-            'follow_master'     => ['sometimes', 'boolean'],
-            'image'             => [
+            'follow_master' => ['sometimes', 'boolean'],
+            'image'         => [
                 'sometimes',
                 'nullable',
                 File::image()
@@ -169,13 +178,12 @@ class UpdateProductCategory extends OrgAction
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): ProductCategory
     {
-
         $this->productCategory = $productCategory;
 
         $this->initialisationFromShop($productCategory->shop, $request);
+
         return $this->handle($productCategory, $this->validatedData);
     }
-
 
 
     public function jsonResponse(ProductCategory $productCategory): DepartmentsResource|SubDepartmentResource|FamilyResource

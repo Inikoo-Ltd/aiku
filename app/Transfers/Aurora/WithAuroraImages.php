@@ -25,6 +25,18 @@ trait WithAuroraImages
             ->get();
     }
 
+    public function getModelMainImage($model, $id)
+    {
+        return DB::connection('aurora')
+            ->table('Image Subject Bridge')
+            ->leftJoin('Image Dimension', 'Image Subject Image Key', '=', 'Image Key')
+            ->where('Image Subject Object', $model)
+            ->where('Image Subject Object Key', $id)
+            ->orderByRaw("FIELD(`Image Subject Is Principal`, 'Yes','No')")
+            ->first();
+    }
+
+
     public function fetchImage($auroraImageData): array
     {
         $image_path = sprintf(
