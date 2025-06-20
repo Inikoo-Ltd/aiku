@@ -11,6 +11,10 @@ import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 
 library.add(faCube, faLink)
 
@@ -31,10 +35,30 @@ const toggleFavorite = () => {
 }
 
 
-function formatNumber(value : Number) {
-  return Number.parseFloat(value).toString();
+function formatNumber(value: Number) {
+    return Number.parseFloat(value).toString()
 }
 
+const channels = ref({
+    isLoading: false,
+    list: []
+})
+const fetchChannels = async () => {
+    channels.value.isLoading = true
+    try {
+        const response = await axios.get(route('iris.json.channels.index'))
+        console.log('Channels response:', response.data.data)
+        
+        channels.value.list = response.data.data || []
+
+        
+    } catch (error) {
+        console.log(error)
+        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
+    } finally {
+        channels.value.isLoading = false
+    }
+}
 </script>
 
 <template>
@@ -47,15 +71,21 @@ function formatNumber(value : Number) {
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
-                              <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
+                                <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
                                     :key="n" />
                                 <span class="ml-1 text-xs text-gray-500">41</span> -->
                             </div>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="fieldValue.product.stock > 0  ? 'text-green-600' : 'text-red-600'" />
-                            <span>{{ fieldValue.product.stock > 0 ? `In Stock (${fieldValue.product.stock})` : 'Out Of Stock' }}</span>
+                                :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                            <span>
+                                {{
+                                    fieldValue.product.stock > 0
+                                    ? `In Stock (${fieldValue.product.stock})`
+                                    : 'Out Of Stock'
+                                }}
+                            </span>
                         </div>
                     </div>
                     <div class="h-full flex items-start">
@@ -82,28 +112,28 @@ function formatNumber(value : Number) {
                 <div class="flex items-end border-b pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-5xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                        <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">({{ formatNumber(fieldValue.product.units) }}/{{
-                            fieldValue.product.unit }})</span>
+                        <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">({{
+                            formatNumber(fieldValue.product.units) }}/{{
+                                fieldValue.product.unit }})</span>
                     </div>
-                    <div v-if="fieldValue.product.rrp" class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
+                    <div v-if="fieldValue.product.rrp"
+                        class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
                         <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
                         <span>/{{ fieldValue.product.unit }}</span>
                     </div>
                 </div>
                 <div class="flex gap-2 mb-6">
-                    <button
-                        class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white rounded px-4 py-2 text-sm font-semibold w-[90%] transition">
-                        <FontAwesomeIcon :icon="faPlus" class="text-base" />
-                        Add to Portfolio
-                    </button>
-                    <button v-tooltip="'Buy sample'"
-                        class="flex items-center justify-center border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded p-2 text-sm font-semibold w-[10%] transition">
-                        <FontAwesomeIcon :icon="faVial" class="text-sm" />
-                    </button>
+                    <!-- <pre>{{ fieldValue.product }}</pre> -->
+                    
+                    <ButtonAddPortfolio
+                        :product="fieldValue.product"
+                        :channels="channels"
+                        @refreshChannels="fetchChannels"
+                    />
                 </div>
                 <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
-                    <span>{{`Order ${formatNumber(fieldValue.product.units)} full carton`}}</span>
+                    <span>{{ `Order ${formatNumber(fieldValue.product.units)} full carton` }}</span>
                 </div>
                 <div class="text-xs font-medium text-gray-800 py-3">
                     <div v-html="fieldValue.product.description"></div>
@@ -158,8 +188,7 @@ function formatNumber(value : Number) {
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                 <div v-else class="aspect-square w-full h-[15px]">
-                    <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
-                        class="w-full h-full object-cover" />
+                    <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`" class="w-full h-full object-cover" />
                 </div>
                 <span>{{ tag.name }}</span>
             </div>
@@ -188,7 +217,7 @@ function formatNumber(value : Number) {
 
         </div>
 
-         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />
+        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />
     </div>
 
 </template>
