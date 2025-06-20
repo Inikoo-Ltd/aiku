@@ -314,7 +314,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                                     @click="() => channels.list?.length ? null : emits('refreshChannels')"
                                     :icon="faEllipsisV"
                                     :loading="!!isLoadingSpecificChannel.length"
-                                    class="!px-1 border-none border-transparent rounded-l-none"
+                                    class="!px-1 border-none border-transparent rounded-l-none h-full"
                                 />
                             </template>
 
@@ -372,3 +372,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         </Link>
     </div>
 </template>
+
+
+<style scoped>
+</style>
