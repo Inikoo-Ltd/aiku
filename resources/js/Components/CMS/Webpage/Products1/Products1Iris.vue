@@ -116,16 +116,19 @@ const debFetchProducts = debounce(fetchProducts, 300)
 
 const handleSearch = () => {
     page.value = 1
+    isFetchingOutOfStock.value = false
     debFetchProducts(false)
 }
 
 watch([q, orderBy], () => {
     page.value = 1
+    isFetchingOutOfStock.value = false
     debFetchProducts(false)
 }, { deep: true })
 
 watch(filter, () => {
     page.value = 1
+    isFetchingOutOfStock.value = false
     debFetchProducts(false)
 }, { deep: true })
 
@@ -273,7 +276,7 @@ const responsiveGridClass = computed(() => {
             <div :class="responsiveGridClass"  class="grid gap-6 p-4"
                 :style="getStyles(fieldValue?.container?.properties, screenType)">
                 <template v-if="loadingInitial">
-                    <div v-for="n in 8" :key="n" class="border p-3 rounded shadow-sm bg-white">
+                    <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                         <Skeleton height="200px" class="mb-3" />
                         <Skeleton width="80%" class="mb-2" />
                         <Skeleton width="60%" />
