@@ -32,7 +32,7 @@ console.log('sdsd',props)
         <div class="relative">
           <button
             @click="toggleDisclosure(index)"
-            class="w-full border-b mb-1 border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer focus:outline-none"
+            class="w-full border-b mb-1 border-gray-400 font-bold text-[#1F2937] py-1 flex justify-between items-center cursor-pointer focus:outline-none"
             :aria-expanded="openDisclosureId === index"
             :aria-controls="'disclosure-' + content.id"
           >
