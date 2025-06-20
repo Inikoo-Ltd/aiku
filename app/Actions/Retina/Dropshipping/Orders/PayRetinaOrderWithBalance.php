@@ -140,7 +140,7 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 return Redirect::route(
                     'retina.ecom.orders.show',
                     [
-                        'order' => $arr['order']->id
+                        'order' => $arr['order']->slug
                     ]
                 )->with('notification', $notification);
             }
