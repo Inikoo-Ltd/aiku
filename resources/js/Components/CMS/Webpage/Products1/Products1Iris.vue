@@ -2,7 +2,7 @@
 import { faFilter, faTimes, faBoxOpen } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from '@/Composables/styles'
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, toRaw } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
@@ -23,6 +23,14 @@ const props = defineProps<{
             }
             workshop: routeType
         }
+        products : {
+            data : object,
+            links : object,
+            meta : {
+                current_page : Number,
+                last_page : number
+            }
+        }
         container?: any
     }
     webpageData?: any
@@ -30,13 +38,13 @@ const props = defineProps<{
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const products = ref<any[]>([])
+const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
 const loadingInitial = ref(false)
 const loadingMore = ref(false)
 const q = ref('')
 const orderBy = ref('')
-const page = ref(1)
-const lastPage = ref(1)
+const page = ref(toRaw(props.fieldValue.products.meta.current_page))
+const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
 const showFilters = ref(false)
 const showAside = ref(false)
@@ -89,7 +97,14 @@ const fetchProducts = async (isLoadMore = false) => {
 
         const data = response.data
         console.log(data)
-        lastPage.value = data?.last_page ?? 1
+        if(data.meta) {
+            console.log('1',data?.last_page)
+            lastPage.value = data?.last_page
+        }
+        else if (!data.meta){
+              console.log('2',data?.last_page)
+            lastPage.value = data?.meta.last_page
+        } 
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])]
@@ -99,8 +114,9 @@ const fetchProducts = async (isLoadMore = false) => {
 
         // If we've reached the end of in-stock products and haven't fetched out-of-stock yet
         if (!useOutOfStock && page.value >= lastPage.value) {
+            console.log('sdsd')
             isFetchingOutOfStock.value = true
-            page.value = 1 // reset page for out-of-stock
+            page.value = 1 
             await fetchProducts(true)
         }
 
@@ -222,6 +238,7 @@ const responsiveGridClass = computed(() => {
   const count = columnCount[props.screenType] ?? 1
   return `grid-cols-${count}`
 })
+console.log(props)
 </script>
 
 <template>
@@ -298,13 +315,14 @@ const responsiveGridClass = computed(() => {
 
                 <template v-else>
                     <div class="col-span-full text-center py-10 text-gray-500">
-                        <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
-                        <p>No products found.</p>
+                       <!--  <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
+                        <p>No products found.</p> -->
                     </div>
                 </template>
             </div>
 
             <!-- Load More -->
+             {{ page   }}{{ lastPage }}
             <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
                 <Button @click="loadMore" type="tertiary"
                     :disabled="loadingMore">
