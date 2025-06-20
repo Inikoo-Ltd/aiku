@@ -38,8 +38,11 @@ class GetIrisPortfoliosInProductCategory extends IrisAction
 
         $portfoliosData = [];
         foreach ($query->get() as $data) {
-            $portfoliosData[$data->id] = $data->customer_channels;
+            // Convert PostgreSQL array string to PHP array
+            $channels = json_decode(str_replace(['{', '}'], ['[', ']'], $data->customer_channels), true);
+            $portfoliosData[$data->id] = $channels;
         }
+        
 
         return $portfoliosData;
     }

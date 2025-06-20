@@ -43,16 +43,9 @@ interface ProductResource {
 
 const props = defineProps<{
     product: ProductResource
-    productHasProtofolio : boolean
-    channels: {
-        isLoading: boolean
-        list: {}[]
-    }
+    productHasProtofolio : Array<Number>
 }>()
 
-const emits = defineEmits<{
-    (e: "refreshChannels"): void
-}>()
 
 const currency = layout?.iris?.currency
 
@@ -196,9 +189,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         <!-- Button: add to portfolios -->
         <ButtonAddPortfolio
             :product="product"
-            :channels="props.channels"
             :productHasProtofolio="productHasProtofolio"
-            @refreshChannels="emits('refreshChannels')"
         />
     </div>
 </template>

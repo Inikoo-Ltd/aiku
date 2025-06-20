@@ -2,7 +2,7 @@
 import { faFilter, faTimes, faBoxOpen } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from '@/Composables/styles'
-import { ref, onMounted, watch, computed, toRaw } from 'vue'
+import { ref, onMounted, watch, computed, toRaw, inject } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
@@ -13,7 +13,7 @@ import Drawer from 'primevue/drawer'
 import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
-import ModelChangelog from '@/Components/ModelChangelog.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 const props = defineProps<{
     fieldValue: {
@@ -42,7 +42,7 @@ const props = defineProps<{
 }>()
 
 console.log(props)
-
+const layout = inject('layout', retinaLayoutStructure)
 const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
 const loadingInitial = ref(false)
 const loadingMore = ref(false)
@@ -210,7 +210,10 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith('-')
     }
 
-    fetchProductHasProtofolio()
+    if(layout.iris.is_logged_in)
+        fetchProductHasProtofolio()
+    
+    
     /* debFetchProducts() */
 })
 
@@ -234,19 +237,19 @@ const toggleSort = (key: typeof sortKey.value) => {
 }
 
 
-const channels = ref({
+/* const channels = ref({
     isLoading: false,
     list: []
-})
+}) */
 
-const fetchChannels = async () => {
+/* const fetchChannels = async () => {
     channels.value.isLoading = true
     try {
         const response = await axios.get(route('iris.json.channels.index'))
-        console.log('Channels response:', response.data.data)
+        console.log('Channels response:', response)
         
         channels.value.list = response.data.data || []
-
+ 
         
     } catch (error) {
         console.log(error)
@@ -254,7 +257,7 @@ const fetchChannels = async () => {
     } finally {
         channels.value.isLoading = false
     }
-}
+} */
 
 const productHasProtofolio = ref({
     isLoading: false,
@@ -265,10 +268,8 @@ const fetchProductHasProtofolio = async () => {
     productHasProtofolio.value.isLoading = true
     try {
         const response = await axios.get(route('iris.json.product_category.portfolio_data',{ productCategory :props.fieldValue.model_id  }))
-        console.log('Channels response:', response.data.data)
         
-        productHasProtofolio.value.list = response.data.data || []
-
+        productHasProtofolio.value.list = response.data || []
         
     } catch (error) {
         console.log(error)
@@ -292,7 +293,7 @@ const responsiveGridClass = computed(() => {
   return `grid-cols-${count}`
 })
 
-console.log(props)
+
 </script>
 
 <template>
@@ -360,12 +361,9 @@ console.log(props)
                 <template v-else-if="products.length">
                     <div v-for="(product, index) in products" :key="index"
                         class="border p-3 relative rounded shadow-sm bg-white">
-                        <!-- {{ product.id }} -->
                         <ProductRender
-                            :channels="channels"
                             :product="product"
-                            :productHasProtofolio="productHasProtofolio.list.includes(product.id)"
-                            @refreshChannels="() => fetchChannels()"
+                            :productHasProtofolio="productHasProtofolio.list[product.id]"
                         />
                     </div>
                 </template>

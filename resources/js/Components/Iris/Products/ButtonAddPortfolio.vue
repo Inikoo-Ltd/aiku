@@ -31,25 +31,21 @@ interface ProductResource {
     units: number
     bestseller?: boolean
     is_favourite?: boolean
-    exist_in_portfolios_channel: number[]
-    is_exist_in_all_channel: boolean
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     product: ProductResource
-    productHasProtofolio : boolean
-    channels: {
-        isLoading: boolean
-        list: {}[]
-    }
-}>()
+    productHasProtofolio?: Array<number>
+}>(), {
+    productHasProtofolio: () => []
+})
 
 const emits = defineEmits<{
     (e: "refreshChannels"): void
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-
+const channelList = layout.user.customerSalesChannels
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (product: ProductResource) => {
@@ -134,6 +130,7 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) =
 }
 
 const _popover = ref()
+
 </script>
 
 <template>
@@ -148,63 +145,46 @@ const _popover = ref()
                     <FontAwesomeIcon v-else :icon="faPlus" class="text-base" />
                     Add to Portfolio
                 </button> -->
-
+ 
+                
+                {{ Object.keys(channelList).length }} {{ Object.keys(productHasProtofolio).length }}
                 <div class="w-full flex flex-nowrap relative">
-                    <Button
-                        v-if="product.is_exist_in_all_channel"
-                        label="Exist on all Portfolios"
-                        type="tertiary"
-                        disabled
-                        class="border-none border-transparent rounded-r-none"
-                        full
-                    />
-                    <Button
-                        v-else
-                        @click="() => onAddToAllPortfolios(product)"
-                        label="Add to all Portfolios"
-                        :loading="isLoadingAllPortfolios"
-                        :icon="faPlus"
-                        class="border-none border-transparent rounded-r-none"
-                        full
-                        size="l"
-                        style="border: 0px"
-                    />
+                    <Button v-if="Object.keys(channelList).length == Object.keys(productHasProtofolio).length"
+                        label="Exist on all Portfolios" type="tertiary" disabled
+                        class="border-none border-transparent rounded-r-none" full />
+                    <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
+                        :loading="isLoadingAllPortfolios" :icon="faPlus"
+                        class="border-none border-transparent rounded-r-none" full size="l" style="border: 0px" />
 
                     <Button
-                        @click="(e) => (_popover?.toggle(e), channels.list?.length ? null : emits('refreshChannels'))"
-                        :icon="faEllipsisV"
-                        :loading="!!isLoadingSpecificChannel.length"
-                        class="!px-1 border-none border-transparent rounded-l-none h-full"
-                    />
-                    
+                        @click="(e) => (_popover?.toggle(e), Object.keys(channelList).length ? null : emits('refreshChannels'))"
+                        :icon="faEllipsisV" :loading="!!isLoadingSpecificChannel.length"
+                        class="!px-1 border-none border-transparent rounded-l-none h-full" />
+
                     <Popover ref="_popover">
                         <div class="w-64 relative">
                             <div class="text-sm mb-2">
                                 {{ trans("Add product to a specific channel") }}:
                             </div>
-                            
+
                             <div class="space-y-2">
-                                <Button
-                                    v-for="channel in channels.list"
-                                    @click="() => onAddPortfoliosSpecificChannel(product, channel)"
-                                    type="tertiary"
-                                    :label="channel.name ?? channel.reference"
-                                    full
-                                    :loading="isLoadingSpecificChannel.includes(channel.id)"
-                                >
+                                <Button v-for="[key, channel] in Object.entries(channelList)"
+                                    :key="channel.customer_sales_channel_id"
+                                    @click="() => onAddPortfoliosSpecificChannel(product, channel)" type="tertiary"
+                                    :label="channel.platform_name" full
+                                    :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
                                     <template #icon>
-                                        <FontAwesomeIcon v-if="product.is_exist_in_all_channel || product.exist_in_portfolios_channel?.includes(channel.id)" :icon="faCheck" class="text-green-500" fixed-width aria-hidden="true" />
+                                        {{ key }}
+                                        {{ productHasProtofolio }}
+                                        <FontAwesomeIcon v-if="productHasProtofolio.includes(key)" :icon="faCheck"
+                                            class="text-green-500" fixed-width aria-hidden="true" />
                                     </template>
                                 </Button>
                             </div>
 
-                            <div @click="() => emits('refreshChannels')" class="w-fit mx-auto mt-2 text-center text-xs hover:underline cursor-pointer text-gray-500 hover:text-gray-600">
+                            <!-- <div @click="() => emits('refreshChannels')" class="w-fit mx-auto mt-2 text-center text-xs hover:underline cursor-pointer text-gray-500 hover:text-gray-600">
                                 {{ trans("Refresh list channels") }}
-                            </div>
-
-                            <div v-if="channels.isLoading" class="absolute inset-0 bg-black/20 text-4xl flex items-center justify-center">
-                                <LoadingIcon class="text-white" />
-                            </div>
+                            </div> -->
                         </div>
                     </Popover>
 
@@ -218,16 +198,11 @@ const _popover = ref()
             </div>
         </div>
         <div v-else>
-            <Button
-                label="Out of stock"
-                type="tertiary"
-                disabled
-                full
-            />
+            <Button label="Out of stock" type="tertiary" disabled full />
         </div>
     </div>
 
     <Link v-else href="app/login" class="text-center border border-gray-200 text-sm py-2 rounded text-gray-600">
-        {{ trans("Login to add to your portfolio") }}
+    {{ trans("Login to add to your portfolio") }}
     </Link>
 </template>
