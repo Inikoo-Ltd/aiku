@@ -46,7 +46,15 @@ class PayRetinaOrderWithBalance extends RetinaAction
         if ($warning) {
             return $warning;
         }
-        
+
+        if ($order->payment_amount == $order->total_amount) {
+            return [
+                'success' => false,
+                'reason'  => 'Order has been paid',
+                'order'   => $order,
+            ];
+        }
+
         if ($order->customer->balance < $order->total_amount) {
             return [
                 'success' => false,
