@@ -75,7 +75,9 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                         StorePortfolio::make()->action(
                             $shopifyUser->customerSalesChannel,
                             $storedItem,
-                            []
+                            [
+                                'platform_product_id' => Arr::get($product, 'variants.0.product_id'),
+                            ]
                         );
                     }
 
