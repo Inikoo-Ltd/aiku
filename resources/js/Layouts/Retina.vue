@@ -9,9 +9,9 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExclamationCircle } from '@fal'
+import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle } from '@fal'
 import { faSearch, faBell } from '@far'
-import { faCheckCircle } from '@fas'
+import { faCheckCircle, faExclamationCircle, faInfo } from '@fas'
 import { provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
@@ -29,7 +29,7 @@ import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle } 
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfoCircle)
+library.add(faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfo, faInfoCircle)
 
 
 provide('layout', useLayoutStore())
@@ -131,8 +131,8 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
                     <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
                         <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fal fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fal fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
                     
                     <div class="mt-3 text-center sm:mt-5">

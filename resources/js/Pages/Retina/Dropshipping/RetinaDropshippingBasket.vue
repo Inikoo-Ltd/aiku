@@ -199,7 +199,7 @@ const onAddProducts = async (product: {}) => {
         routePost.route_post,
         routePost.body,
         {
-            only: ['transactions', 'box_stats', 'total_products'],
+            only: ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'],
             onBefore: () => 'isLoadingSubmit.value = true',
             onError: (error) => {
                 notify({
