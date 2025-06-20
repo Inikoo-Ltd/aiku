@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Models\Catalogue\Product;
+use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -33,8 +35,77 @@ trait WithIrisProductsInWebpage
         });
     }
 
+    public function getBaseQuery(bool $inStock): QueryBuilder
+    {
+        $queryBuilder = QueryBuilder::for(Product::class);
+        $queryBuilder->leftJoin('webpages', function ($join) {
+            $join->on('webpages.model_id', '=', 'products.id');
+        })->where('webpages.model_type', 'Product');
+
+
+        $queryBuilder->where('products.is_for_sale', true);
+        if ($inStock) {
+            $queryBuilder->where('products.available_quantity', '>', 0);
+        } else {
+            $queryBuilder->where('products.available_quantity', '<=', 0);
+        }
+
+        return $queryBuilder;
+    }
+
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
         return IrisProductsInWebpageResource::collection($products);
     }
+
+    public function getAllowedFilters(): array
+    {
+        $globalSearch     = $this->getGlobalSearch();
+        $priceRangeFilter = $this->getPriceRangeFilter();
+
+        return [$globalSearch, $priceRangeFilter];
+    }
+
+    public function getSelect(): array
+    {
+        return [
+            'products.id',
+            'products.image_id',
+            'products.code',
+            'products.name',
+            'products.available_quantity',
+            'products.price',
+            'products.rrp',
+            'products.state',
+            'products.status',
+            'products.created_at',
+            'products.updated_at',
+            'products.units',
+            'products.unit',
+            'webpages.url'
+        ];
+    }
+
+    public function getAllowedSorts(): array
+    {
+        return [
+            'price',
+            'created_at',
+            'available_quantity',
+            'code',
+            'name'
+        ];
+    }
+
+
+    public function getData($queryBuilder)
+    {
+        return $queryBuilder->defaultSort('name')
+            ->select($this->getSelect())
+            ->allowedSorts($this->getAllowedSorts())
+            ->allowedFilters($this->getAllowedFilters())
+            ->withIrisPaginator()
+            ->withQueryString();
+    }
+
 }
