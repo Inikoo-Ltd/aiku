@@ -29,20 +29,22 @@ class WebBlockProductResource extends JsonResource
         if (auth()->check()) {
             $customer = $request->user()->customer;
 
-            $portfolioChannelIds = $customer->portfolios()->where('item_id', $product->id)
-                ->where('item_type', class_basename(Product::class))
-                ->distinct()
-                ->pluck('customer_sales_channel_id')
-                ->toArray();
+            if ($customer) {
+                $portfolioChannelIds = $customer->portfolios()->where('item_id', $product->id)
+                    ->where('item_type', class_basename(Product::class))
+                    ->distinct()
+                    ->pluck('customer_sales_channel_id')
+                    ->toArray();
 
-            /** @var Favourite $favourite */
-            $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+                /** @var Favourite $favourite */
+                $favourite = $customer->favourites()->where('product_id', $product->id)->first();
 
-            $favourites = [
-                'exist_in_portfolios_channel' => $portfolioChannelIds,
-                'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer),
-                'is_favourite'                => $favourite && !$favourite->unfavourited_at,
-            ];
+                $favourites = [
+                    'exist_in_portfolios_channel' => $portfolioChannelIds,
+                    'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer),
+                    'is_favourite'                => $favourite && !$favourite->unfavourited_at,
+                ];
+            }
         }
 
         return [
