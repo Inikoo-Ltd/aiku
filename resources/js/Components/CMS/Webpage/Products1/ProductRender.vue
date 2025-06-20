@@ -43,7 +43,7 @@ interface ProductResource {
 
 const props = defineProps<{
     product: ProductResource
-    productHasProtofolio : Array<Number>
+    productHasPortfolio : Array<Number>
 }>()
 
 
@@ -189,7 +189,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         <!-- Button: add to portfolios -->
         <ButtonAddPortfolio
             :product="product"
-            :productHasProtofolio="productHasProtofolio"
+            :productHasPortfolio="productHasPortfolio"
         />
     </div>
 </template>

@@ -237,7 +237,7 @@ const toggleSort = (key: typeof sortKey.value) => {
 }
 
 
-const productHasProtofolio = ref({
+const productHasPortfolio = ref({
     isLoading: false,
     list: []
 })
@@ -259,7 +259,7 @@ const getRouteForProductPortfolio = () => {
 }
 
 const fetchProductHasPortfolio = async () => {
-    productHasProtofolio.value.isLoading = true
+    productHasPortfolio.value.isLoading = true
    console.log('dsfsdf',props.fieldValue.model_type)
     try {
         const apiUrl = getRouteForProductPortfolio()
@@ -269,7 +269,7 @@ const fetchProductHasPortfolio = async () => {
         }
 
         const response = await axios.get(apiUrl)
-        productHasProtofolio.value.list = response.data || []
+        productHasPortfolio.value.list = response.data || []
     } catch (error) {
         console.error(error)
         notify({
@@ -278,7 +278,7 @@ const fetchProductHasPortfolio = async () => {
             type: 'error',
         })
     } finally {
-        productHasProtofolio.value.isLoading = false
+        productHasPortfolio.value.isLoading = false
     }
 }
 
@@ -367,7 +367,7 @@ const responsiveGridClass = computed(() => {
                         class="border p-3 relative rounded shadow-sm bg-white">
                         <ProductRender
                             :product="product"
-                            :productHasProtofolio="productHasProtofolio.list[product.id]"
+                            :productHasPortfolio="productHasPortfolio.list[product.id]"
                         />
                     </div>
                 </template>

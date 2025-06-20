@@ -8,11 +8,10 @@ import { Image as ImageTS } from '@/types/Image'
 import { Popover } from 'primevue'
 
 import { faCheck } from '@far'
-import { faPlus, faVial } from '@fal'
-import { faCircle, faStar, faHeart as fasHeart, faEllipsisV } from '@fas'
+import { faPlus } from '@fal'
+import { faEllipsisV } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 
 interface ProductResource {
@@ -35,16 +34,16 @@ interface ProductResource {
 
 const props = withDefaults(defineProps<{
     product: ProductResource
-    productHasProtofolio?: Array<number>
+    productHasPortfolio?: Array<number>
 }>(), {
-    productHasProtofolio: () => []
+    productHasPortfolio: () => []
 })
 
 const emits = defineEmits<{
     (e: "refreshChannels"): void
 }>()
 
-const productHasProtofolioList = ref(toRaw(props.productHasProtofolio))
+const productHasPortfolioList = ref(toRaw(props.productHasPortfolio))
 const layout = inject('layout', retinaLayoutStructure)
 const channelList = layout?.user?.customerSalesChannels || []
 // Section: Add to all Portfolios
@@ -67,7 +66,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
             },
             onSuccess: () => {
                 const keys = Object.keys(channelList).map(key => Number(key))
-                productHasProtofolioList.value = keys
+                productHasPortfolioList.value = keys
 
                 notify({
                     title: trans("Success"),
@@ -89,7 +88,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
     )
 }
 
-// Section: Add to specific Portfolios channel
+// Section: Add to a specific Portfolios channel
 const isLoadingSpecificChannel = ref([])
 const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) => {
     console.log(`Adding product with ID ${product.id} to portfolio`)
@@ -108,7 +107,7 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) =
             },
             onSuccess: () => {
                 const channelId = Number(channel.id)
-                productHasProtofolioList.value = [...props.productHasProtofolio, channelId]
+                productHasPortfolioList.value = [...props.productHasPortfolio, channelId]
                 notify({
                     title: trans("Success"),
                     text: `Added product ${product.name} to channel ${channel.name}`,
@@ -143,18 +142,9 @@ const _popover = ref()
     <div v-if="layout.iris.is_logged_in" class="w-full">
         <div v-if="product.stock > 0" class="flex items-center gap-2 mt-2">
             <div class="flex gap-2  w-full">
-                <!-- Add to Portfolio (90%) -->
-                <!-- <button 
-                    class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white rounded px-4 py-2 text-sm font-semibold w-[90%] transition">
-                    <LoadingIcon v-if="isLoading" class="text-white" />
-                    <FontAwesomeIcon v-else :icon="faPlus" class="text-base" />
-                    Add to Portfolio
-                </button> -->
- 
-                
-             
+
                 <div class="w-full flex flex-nowrap relative">
-                    <Button v-if="Object.keys(channelList).every(key => productHasProtofolioList.includes(Number(key)))"
+                    <Button v-if="Object.keys(channelList).every(key => productHasPortfolioList.includes(Number(key)))"
                         label="Exist on all Portfolios" type="tertiary" disabled
                         class="border-none border-transparent rounded-r-none" full />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
@@ -179,25 +169,18 @@ const _popover = ref()
                                     :label="channel.platform_name" full
                                     :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
                                     <template #icon>
-                                        <FontAwesomeIcon v-if="productHasProtofolioList.includes(Number(key))" :icon="faCheck"
+                                        <FontAwesomeIcon v-if="productHasPortfolioList.includes(Number(key))" :icon="faCheck"
                                             class="text-green-500" fixed-width aria-hidden="true" />
                                     </template>
                                 </Button>
                             </div>
 
-                            <!-- <div @click="() => emits('refreshChannels')" class="w-fit mx-auto mt-2 text-center text-xs hover:underline cursor-pointer text-gray-500 hover:text-gray-600">
-                                {{ trans("Refresh list channels") }}
-                            </div> -->
                         </div>
                     </Popover>
 
                 </div>
 
-                <!-- Buy a Sample (10%) -->
-                <!-- <button v-tooltip="'Buy  sample'"
-                    class="flex items-center justify-center border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded p-2 text-sm font-semibold w-[10%] transition">
-                    <FontAwesomeIcon :icon="faVial" class="text-sm" />
-                </button> -->
+
             </div>
         </div>
         <div v-else>
