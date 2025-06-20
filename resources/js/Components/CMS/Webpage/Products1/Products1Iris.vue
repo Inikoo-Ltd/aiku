@@ -28,7 +28,7 @@ const props = defineProps<{
     blockData?: Object
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
-console.log(props)
+
 const products = ref<any[]>([])
 const loadingInitial = ref(true)
 const loadingMore = ref(false)

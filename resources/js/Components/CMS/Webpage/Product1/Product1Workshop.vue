@@ -153,7 +153,7 @@ console.log(props.modelValue)
                     <InformationSideProduct v-if="modelValue?.information?.length > 0"
                         :informations="modelValue?.information" />
                     <div v-if="modelValue?.paymentData?.length > 0"
-                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2">
+                        class="items-center gap-3 border-gray-400 font-bold text-gray-800 py-2">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
