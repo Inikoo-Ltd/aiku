@@ -66,7 +66,9 @@ const onAddToAllPortfolios = (product: ProductResource) => {
                 isLoadingAllPortfolios.value = true
             },
             onSuccess: () => {
-                product.is_exist_in_all_channel = true
+                const keys = Object.keys(channelList).map(key => Number(key))
+                productHasProtofolioList.value = keys
+
                 notify({
                     title: trans("Success"),
                     text: trans("Added to all portfolios"),
@@ -152,7 +154,7 @@ const _popover = ref()
                 
              
                 <div class="w-full flex flex-nowrap relative">
-                    <Button v-if="Object.keys(channelList).length == Object.keys(productHasProtofolioList).length"
+                    <Button v-if="Object.keys(channelList).every(key => productHasProtofolioList.includes(Number(key)))"
                         label="Exist on all Portfolios" type="tertiary" disabled
                         class="border-none border-transparent rounded-r-none" full />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
