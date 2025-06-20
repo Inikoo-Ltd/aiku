@@ -45,7 +45,7 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-const channelList = layout.user.customerSalesChannels
+const channelList = layout?.user?.customerSalesChannels || []
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (product: ProductResource) => {
@@ -174,9 +174,10 @@ const _popover = ref()
                                     :label="channel.platform_name" full
                                     :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
                                     <template #icon>
-                                        {{ key }}
-                                        {{ productHasProtofolio }}
-                                        <FontAwesomeIcon v-if="productHasProtofolio.includes(key)" :icon="faCheck"
+                    
+                                        {{ Object.prototype.hasOwnProperty.call(productHasProtofolio, key) }}
+                                        {{ key in productHasProtofolio }}
+                                        <FontAwesomeIcon v-if="Object.prototype.hasOwnProperty.call(productHasProtofolio, key)" :icon="faCheck"
                                             class="text-green-500" fixed-width aria-hidden="true" />
                                     </template>
                                 </Button>
