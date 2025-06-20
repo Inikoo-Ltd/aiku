@@ -38,6 +38,8 @@ const props = defineProps<{
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+console.log(props)
+
 const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
 const loadingInitial = ref(false)
 const loadingMore = ref(false)
@@ -96,14 +98,11 @@ const fetchProducts = async (isLoadMore = false) => {
         }))
 
         const data = response.data
-        console.log(data)
         if(data.meta) {
-            console.log('1',data?.last_page)
-            lastPage.value = data?.last_page
+            lastPage.value = data?.meta.last_page
         }
         else if (!data.meta){
-              console.log('2',data?.last_page)
-            lastPage.value = data?.meta.last_page
+            lastPage.value = data?.last_page
         } 
 
         if (isLoadMore) {
