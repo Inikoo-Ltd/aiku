@@ -12,6 +12,7 @@ import FilterProducts from './FilterProduct.vue'
 import Drawer from 'primevue/drawer'
 import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
+import LoadingText from '@/Components/Utils/LoadingText.vue'
 
 const props = defineProps<{
     fieldValue: {
@@ -303,9 +304,11 @@ const responsiveGridClass = computed(() => {
 
             <!-- Load More -->
             <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
-                <Button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
-                    :disabled="loadingMore" style="background-color: #1F2937;">
-                    <template v-if="loadingMore">Loading...</template>
+                <Button @click="loadMore" type="tertiary"
+                    :disabled="loadingMore">
+                    <template v-if="loadingMore">
+                        <LoadingText />
+                    </template>
                     <template v-else>Load More</template>
                 </Button>
             </div>
