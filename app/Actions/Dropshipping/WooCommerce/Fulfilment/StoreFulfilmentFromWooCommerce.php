@@ -57,6 +57,7 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
                     'wooCommerce_fulfilment_id' => Arr::get($modelData, 'id'),
                     'destination' => $deliveryAddress->toArray(),
                     'wooCommerce_user_id' => $wooCommerceUser->id,
+                    'order_key' => Arr::get($modelData, 'order_key'),
                 ],
                 'is_collection' => false,
                 'customer_sales_channel_id' => $wooCommerceUser->customerSalesChannel->id
