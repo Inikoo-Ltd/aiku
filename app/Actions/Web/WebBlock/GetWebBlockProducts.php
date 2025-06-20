@@ -24,41 +24,9 @@ class GetWebBlockProducts
 
             $products=IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model));
 
-            /* $productRoute = [
-                'workshop' => [
-                    'name'       => 'grp.json.collection.products.index',
-                    'parameters' => ['collection' => $webpage->model_id],
-                ],
-                'iris'     => [
-                    'route_products'              => [
-                        'name'       => 'iris.json.collection.products.index',
-                        'parameters' => ['collection' => $webpage->model_id],
-                    ],
-                    'route_out_of_stock_products' => [
-                        'name'       => 'iris.json.collection.out_of_stock_products.index',
-                        'parameters' => ['collection' => $webpage->model_id],
-                    ]
-                ],
-            ]; */
         } else {
             $products=IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, inStock: true));
 
-           /*  $productRoute = [
-                'workshop' => [
-                    'name'       => 'grp.json.product_category.products.index',
-                    'parameters' => ['productCategory' => $webpage->model_id],
-                ],
-                'iris'     => [
-                    'route_products'              => [
-                        'name'       => 'iris.json.product_category.products.index',
-                        'parameters' => ['productCategory' => $webpage->model_id],
-                    ],
-                    'route_out_of_stock_products' => [
-                        'name'       => 'iris.json.product_category.out_of_stock_products.index',
-                        'parameters' => ['productCategory' => $webpage->model_id],
-                    ]
-                ],
-            ]; */
         }
 
 
@@ -66,7 +34,6 @@ class GetWebBlockProducts
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['products']['data']['fieldValue'] ?? []);
-       /*  data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute); */
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);
