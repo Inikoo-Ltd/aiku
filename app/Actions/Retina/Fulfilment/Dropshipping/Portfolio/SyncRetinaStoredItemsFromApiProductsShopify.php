@@ -18,6 +18,7 @@ use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,7 +35,7 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser): void
     {
-        $client = $shopifyUser->api()->getRestClient();
+        $client = $shopifyUser->getShopifyClient();
         $shopType = $shopifyUser->customer->shop->type;
         $products = [];
         $nextPage = null;
@@ -55,44 +56,35 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
         } while ($nextPage);
 
         foreach ($products as $product) {
-            foreach ($product['variants'] as $variant) {
-                DB::transaction(function () use ($variant, $product, $shopifyUser, $shopType) {
-                    $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
-                        ->where('reference', $product['handle'])->first();
-                    $storedItemShopify = $shopifyUser->products()->where('shopify_product_id', $variant['product_id'])->first();
+            DB::transaction(function () use ($product, $shopifyUser, $shopType) {
+                $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
+                    ->where('reference', $product['handle'])->first();
+                $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'variants.0.product_id'))->first();
 
-                    if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
-                        if (!$storedItem) {
-                            $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
-                                'reference' => $product['handle'],
-                                'total_quantity' => $variant['inventory_quantity']
-                            ]);
-                        }
-
-                        $portfolio = $storedItem->portfolio;
-                        if (!$portfolio) {
-
-                            $portfolio = StorePortfolio::make()->action(
-                                $shopifyUser->customerSalesChannel,
-                                $storedItem,
-                                []
-                            );
-                        }
-
-                        $shopifyUser->products()->sync([$storedItem->id => [
-                            'shopify_user_id' => $shopifyUser->id,
-                            'product_type' => class_basename($storedItem),
-                            'product_id' => $storedItem->id,
-                            'shopify_product_id' => $variant['product_id'],
-                            'portfolio_id' => $portfolio->id
-                        ]]);
-
-                        UpdateStoredItem::run($storedItem, [
-                            'state' => StoredItemStateEnum::ACTIVE
+                if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
+                    if (!$storedItem) {
+                        $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
+                            'reference' => $product['handle'],
+                            'total_quantity' => Arr::get($product, 'variants.0.inventory_quantity')
                         ]);
                     }
-                });
-            }
+
+                    $portfolio = $storedItem->portfolio;
+                    if (!$portfolio) {
+
+                        StorePortfolio::make()->action(
+                            $shopifyUser->customerSalesChannel,
+                            $storedItem,
+                            []
+                        );
+                    }
+
+                    UpdateStoredItem::run($storedItem, [
+                        'state' => StoredItemStateEnum::ACTIVE
+                    ]);
+                }
+            });
+
         }
     }
 
