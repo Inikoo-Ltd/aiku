@@ -36,17 +36,7 @@ class StoreWebpageSnapshot extends OrgAction
             SnapshotScopeEnum::WEBPAGE
         );
 
-        data_set(
-            $modelData,
-            'checksum',
-            md5(
-                json_encode(
-                    Arr::get($modelData, 'layout')
-                )
-            )
-        );
         data_set($modelData, 'group_id', $webpage->group_id);
-
 
         $snapshot = DB::transaction(function () use ($webpage, $modelData) {
 
