@@ -11,9 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,23 +21,7 @@ class GetIrisProductsInProductCategory extends IrisAction
 
     public function handle(ProductCategory $productCategory, $inStock = true): LengthAwarePaginator
     {
-        $globalSearch = $this->getGlobalSearch();
-
-        $priceRangeFilter = $this->getPriceRangeFilter();
-
-
-        $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->leftJoin('webpages', function ($join) {
-            $join->on('webpages.model_id', '=', 'products.id');
-        })->where('webpages.model_type', 'Product');
-
-
-        $queryBuilder->where('products.is_for_sale', true);
-        if ($inStock) {
-            $queryBuilder->where('products.available_quantity', '>', 0);
-        } else {
-            $queryBuilder->where('products.available_quantity', '<=', 0);
-        }
+        $queryBuilder = $this->getBaseQuery($inStock);
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);
@@ -50,29 +32,7 @@ class GetIrisProductsInProductCategory extends IrisAction
         }
 
 
-        return $queryBuilder->defaultSort('name')
-            ->select(
-                [
-                    'products.id',
-                    'products.image_id',
-                    'products.code',
-                    'products.name',
-                    'products.available_quantity',
-                    'products.price',
-                    'products.rrp',
-                    'products.state',
-                    'products.status',
-                    'products.created_at',
-                    'products.updated_at',
-                    'products.units',
-                    'products.unit',
-                    'webpages.url'
-                ]
-            )
-            ->allowedSorts(['price', 'created_at', 'available_quantity', 'code', 'name'])
-            ->allowedFilters([$globalSearch, $priceRangeFilter])
-            ->withIrisPaginator()
-            ->withQueryString();
+        return $this->getData($queryBuilder);
     }
 
 
