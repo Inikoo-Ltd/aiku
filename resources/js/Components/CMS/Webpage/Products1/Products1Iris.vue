@@ -38,7 +38,7 @@ const page = ref(1)
 const lastPage = ref(1)
 const filter = ref({ data: {} })
 const showFilters = ref(false)
-const showAside = ref(true)
+const showAside = ref(false)
 
 const loadingOutOfStock = ref(false)
 const isFetchingOutOfStock = ref(false)
