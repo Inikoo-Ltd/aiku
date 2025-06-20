@@ -58,7 +58,11 @@ class StoreFulfilmentFromShopify extends OrgAction
                 'country_id'          => $country?->id
             ];
 
-            $deliveryAddress = new Address($deliveryAddressData);
+            if ($deliveryAddress) {
+                $deliveryAddress = new Address($deliveryAddressData);
+            } else {
+                $deliveryAddress = new Address($shopifyUser->customer?->deliveryAddress?->toArray());
+            }
 
             $palletReturn = StorePalletReturn::make()->actionWithDropshipping($shopifyUser->customer->fulfilmentCustomer, [
                 'type' => PalletReturnTypeEnum::DROPSHIPPING,
@@ -80,19 +84,29 @@ class StoreFulfilmentFromShopify extends OrgAction
             $someComplete = false;
 
             foreach ($shopifyProducts as $shopifyProduct) {
+                $shopifyPortfolio = $shopifyUser->customerSalesChannel->portfolios()
+                    ->where('platform_product_id', $shopifyProduct['product_id'])
+                    ->first();
+
                 $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
                     ->where('shopify_product_id', $shopifyProduct['product_id'])
                     ->first();
 
-                if (!$shopifyUserHasProduct) {
+                if (!$shopifyUserHasProduct && !$shopifyPortfolio) {
                     continue;
                 }
 
-                $storedItems[$shopifyUserHasProduct->portfolio->item_id] = [
+                if ($shopifyPortfolio) {
+                    $portfolio = $shopifyPortfolio;
+                } else {
+                    $portfolio = $shopifyUserHasProduct->portfolio;
+                }
+
+                $storedItems[$portfolio->item_id] = [
                     'quantity' => $shopifyProduct['quantity']
                 ];
 
-                $itemQuantity = (int) $shopifyUserHasProduct->portfolio->item->total_quantity;
+                $itemQuantity = (int) $portfolio->item->total_quantity;
                 $requiredQuantity = $shopifyProduct['quantity'];
 
                 if ($itemQuantity >= $requiredQuantity) {
@@ -101,7 +115,7 @@ class StoreFulfilmentFromShopify extends OrgAction
                     $allComplete = false;
                 }
 
-                $this->update($shopifyUserHasProduct->portfolio->item, [
+                $this->update($portfolio->item, [
                     'total_quantity' => $itemQuantity - $requiredQuantity
                 ]);
             }
