@@ -12,9 +12,9 @@ namespace App\Http\Middleware;
 
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
 
-class IrisAuthenticate extends Middleware
+class IrisRelaxAuthenticate extends Middleware
 {
-    protected function unauthenticated($request, array $guards)
+    protected function unauthenticated($request, array $guards): null
     {
         return null;
     }

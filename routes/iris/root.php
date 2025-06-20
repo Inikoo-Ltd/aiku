@@ -15,7 +15,7 @@ Route::get(".well-known/apple-developer-merchantid-domain-association", function
 })->name("apple-pay-verification");
 
 
-Route::middleware(["iris-auth:retina"])->group(function () {
+Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::prefix("")->group(function () {
         Route::group([], __DIR__ . '/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
