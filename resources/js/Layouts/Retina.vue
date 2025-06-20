@@ -9,10 +9,10 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes } from '@fal'
+import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExclamationCircle } from '@fal'
 import { faSearch, faBell } from '@far'
 import { faCheckCircle } from '@fas'
-import { provide, watch } from 'vue'
+import { provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
@@ -22,7 +22,14 @@ import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import { isArray } from "lodash"
-library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell )
+library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell)
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle } from "@fal"
+import Modal from "@/Components/Utils/Modal.vue"
+import { trans } from "laravel-vue-i18n"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+library.add(faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfoCircle)
 
 
 provide('layout', useLayoutStore())
@@ -41,6 +48,23 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         type: notif.status,
     })
 })
+
+// Section: Modal
+interface Modal {
+    title: string
+    description: string
+    type: 'success' | 'error' | 'info' | 'warning'
+}
+const selectedModal = ref<Modal | null>(null)
+const isModalOpen = ref(false)
+watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
+    console.log('modal ret', modal)
+    if (!modal) return
+
+    selectedModal.value = modal
+    isModalOpen.value = true
+})
+
 </script>
 
 <template>
@@ -61,7 +85,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
             <slot />
         </template>
     </RetinaLayoutEcom>
-    
+
     <!-- Retina: Fulfilment -->
     <template v-else-if="layout.retina?.type === 'fulfilment'">
         <RetinaLayoutFulfilment v-if="layout.user">
@@ -100,6 +124,37 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         <slot />
     </div>
 
+    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fal fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fal fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
+                    </div>
+                    
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            {{ selectedModal?.title }}
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">
+                            {{ selectedModal?.description }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-6">
+                    <Button
+                        @click="() => isModalOpen = false"
+                        :label="trans('Ok, Get it')"
+                        full
+                    />
+                </div>
+            </div>
+        </div>
+    </Modal>
+
     <!-- Global declaration: Notification -->
     <notifications
         dangerously-set-inner-html
@@ -109,7 +164,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         :pauseOnHover="true"    
     >
         <template #body="props">
-            <Notification :notification="props" />  
+            <Notification :notification="props" />
         </template>
     </notifications>
 </template>
@@ -123,6 +178,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 .navigationActive {
     @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
 }
+
 .navigation {
     @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
 }
@@ -130,6 +186,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 .subNavActive {
     @apply bg-indigo-200/20 sm:border-l-4 sm:border-indigo-100 text-white font-semibold transition-all duration-0 ease-in-out;
 }
+
 .subNav {
     @apply hover:bg-white/80 text-gray-100 hover:text-indigo-500 font-semibold transition-all duration-0 ease-in-out
 }
@@ -137,36 +194,31 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 .navigationSecondActive {
     @apply transition-all duration-100 ease-in-out;
 }
+
 .navigationSecond {
     @apply hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out
 }
 
 .primaryLink {
     background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
         color: #374151;
     }
 
-    @apply focus:ring-0 focus:outline-none focus:border-none
-    bg-no-repeat [background-position:0%_100%]
-    [background-size:100%_0.2em]
-    motion-safe:transition-all motion-safe:duration-200
-    hover:[background-size:100%_100%]
-    focus:[background-size:100%_100%] px-1 py-0.5
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
 }
 
 .secondaryLink {
     background: v-bind('`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "AA"})`');
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
         color: v-bind('`${layout.app.theme[7]}`');
     }
 
-    @apply focus:ring-0 focus:outline-none focus:border-none
-    bg-no-repeat [background-position:0%_100%]
-    [background-size:100%_0.2em]
-    motion-safe:transition-all motion-safe:duration-200
-    hover:[background-size:100%_100%]
-    focus:[background-size:100%_100%] px-1 py-0.5
+    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
 }
 
 // For icon box in FlatTreemap
@@ -175,17 +227,11 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
     color: v-bind('`${layout.app.theme[0]}`');
     border: v-bind('`4px solid ${layout.app.theme[0]}`');
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
         color: v-bind('`${layout.app.theme[1]}`');
     }
 
-    @apply border-indigo-300 border-2 rounded-md
-    cursor-pointer
-    focus:ring-0 focus:outline-none focus:border-none
-    bg-no-repeat [background-position:0%_100%]
-    [background-size:100%_0em]
-    motion-safe:transition-all motion-safe:duration-100
-    hover:[background-size:100%_100%]
-    focus:[background-size:100%_100%] px-1;
+    @apply border-indigo-300 border-2 rounded-md cursor-pointer focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0em] motion-safe:transition-all motion-safe:duration-100 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;
 }
 </style>

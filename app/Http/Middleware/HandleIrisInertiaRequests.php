@@ -53,6 +53,7 @@ class HandleIrisInertiaRequests extends Middleware
                 ],
                 'flash'    => [
                     'notification' => fn () => $request->session()->get('notification')
+                    'modal' => fn () => $request->session()->get('modal')
                 ],
                 'ziggy'    => [
                     'location' => $request->url(),
