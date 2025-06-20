@@ -201,3 +201,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         />
     </div>
 </template>
+
+
+<style scoped>
+</style>
