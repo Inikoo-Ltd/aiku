@@ -124,8 +124,8 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 return Redirect::route(
                     'retina.dropshipping.customer_sales_channels.orders.show',
                     [
-                        'customerSalesChannel' => $arr['order']->customer_sales_channel_id,
-                        'order'                => $arr['order']->id
+                        'customerSalesChannel' => $arr['order']->customerSalesChannel->slug,
+                        'order'                => $arr['order']->slug
                     ]
                 )
                     ->with('notification', $notification);
