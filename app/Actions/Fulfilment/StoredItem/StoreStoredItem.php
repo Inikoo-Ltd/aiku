@@ -91,6 +91,7 @@ class StoreStoredItem extends OrgAction
                 )
             ],
             'name'                     => ['sometimes', 'max:250', 'string'],
+            'total_quantity'                     => ['sometimes', 'numeric', 'min:1'],
         ];
     }
 
