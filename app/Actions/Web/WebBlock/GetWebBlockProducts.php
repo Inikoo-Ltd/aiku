@@ -22,10 +22,10 @@ class GetWebBlockProducts
     {
         if ($webpage->model_type == 'Collection') {
 
-            $products=IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model));
+            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model));
 
         } else {
-            $products=IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, inStock: true));
+            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'in_stock'));
 
         }
 

@@ -35,7 +35,7 @@ trait WithIrisProductsInWebpage
         });
     }
 
-    public function getBaseQuery(bool $inStock): QueryBuilder
+    public function getBaseQuery(string $stockMode): QueryBuilder
     {
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', function ($join) {
@@ -44,9 +44,9 @@ trait WithIrisProductsInWebpage
 
 
         $queryBuilder->where('products.is_for_sale', true);
-        if ($inStock) {
+        if ($stockMode == 'in_stock') {
             $queryBuilder->where('products.available_quantity', '>', 0);
-        } else {
+        } elseif ($stockMode == 'out_of_stock') {
             $queryBuilder->where('products.available_quantity', '<=', 0);
         }
 

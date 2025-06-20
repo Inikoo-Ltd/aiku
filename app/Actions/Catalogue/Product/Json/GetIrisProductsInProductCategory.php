@@ -19,9 +19,9 @@ class GetIrisProductsInProductCategory extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
-    public function handle(ProductCategory $productCategory, $inStock = true): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $stockMode = 'all'): LengthAwarePaginator
     {
-        $queryBuilder = $this->getBaseQuery($inStock);
+        $queryBuilder = $this->getBaseQuery($stockMode);
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);

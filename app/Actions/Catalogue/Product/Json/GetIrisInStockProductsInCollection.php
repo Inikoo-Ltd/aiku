@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 04-06-2025-16h-03m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 20 Jun 2025 14:43:39 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Catalogue\Product\Json;
 
@@ -14,7 +13,7 @@ use App\Models\Catalogue\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetIrisOutOfStockProductsInCollection extends IrisAction
+class GetIrisInStockProductsInCollection extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
@@ -22,7 +21,7 @@ class GetIrisOutOfStockProductsInCollection extends IrisAction
     {
         $this->initialisation($request);
 
-        return GetIrisProductsInCollection::run(collection: $collection, stockMode: 'out_of_stock');
+        return GetIrisProductsInCollection::run(collection: $collection, stockMode: 'in_stock');
     }
 
 }
