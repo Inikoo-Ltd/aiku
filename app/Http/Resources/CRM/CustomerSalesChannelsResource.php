@@ -42,9 +42,9 @@ class CustomerSalesChannelsResource extends JsonResource
                 $status = 'not-connected';
             }
         } elseif ($customerSalesChannels->user instanceof WooCommerceUser) {
-            $settings = $customerSalesChannels->user->settings['credentials'] ?? [];
+            $settings = $customerSalesChannels->user->settings ?? [];
 
-            if (empty($settings) or empty($settings['webhooks'])) {
+            if (empty($settings['credentials']) or empty($settings['webhooks'])) {
                 $status = 'not-connected';
             }
         }

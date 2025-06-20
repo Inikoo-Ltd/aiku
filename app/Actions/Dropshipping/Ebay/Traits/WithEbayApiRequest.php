@@ -770,8 +770,11 @@ trait WithEbayApiRequest
     public function getCategorySuggestions($keyword)
     {
         try {
-            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_category_suggestions?q={$keyword}";
-            return $this->makeEbayRequest('get', $endpoint);
+            $encodedKeyword = urlencode($keyword);
+            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_category_suggestions";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                    'q' => $encodedKeyword
+                ]);
         } catch (Exception $e) {
             Log::error('Get Category Suggestions Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];

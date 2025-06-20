@@ -74,6 +74,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
         $routeName = match ($this->customerSalesChannel->platform->type) {
             PlatformTypeEnum::SHOPIFY => 'retina.models.customer_sales_channel.shopify_sync_all_stored_items',
+            PlatformTypeEnum::WOOCOMMERCE => 'retina.models.customer_sales_channel.woo_sync_all_stored_items',
             default => 'retina.models.customer_sales_channel.sync_all_stored_items'
         };
 
