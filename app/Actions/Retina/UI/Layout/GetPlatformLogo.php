@@ -14,17 +14,14 @@ trait GetPlatformLogo
 {
     public function getPlatformLogo(CustomerSalesChannel $customerSalesChannels): ?string
     {
-        $logo_img = null;
-        if ($customerSalesChannels->platform->code === 'shopify') {
-            $logo_img = 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png';
-        } elseif ($customerSalesChannels->platform->code === 'tiktok') {
-            $logo_img = 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png';
-        } elseif ($customerSalesChannels->platform->code === 'woocommerce') {
-            $logo_img = 'https://cdn-icons-png.flaticon.com/64/825/825519.png';
-        } elseif ($customerSalesChannels->platform->code === 'manual') {
-            $logo_img = 'https://aw.aurora.systems/art/aurora_log_v2_orange.png';
-        }
-
-        return $logo_img;
+        return match ($customerSalesChannels->platform->code) {
+            'shopify' => 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png',
+            'tiktok' => 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png',
+            'woocommerce' => 'https://cdn-icons-png.flaticon.com/512/15466/15466279.png',
+            'manual' => 'https://aw.aurora.systems/art/aurora_log_v2_orange.png',
+            'ebay' => 'https://cdn-icons-png.flaticon.com/512/888/888848.png',
+            'amazon' => 'https://cdn-icons-png.flaticon.com/512/14079/14079391.png',
+            default => null,
+        };
     }
 }

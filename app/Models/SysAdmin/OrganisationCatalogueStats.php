@@ -156,6 +156,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_shops_type_b2c
  * @property int $number_current_shops_type_fulfilment
  * @property int $number_current_shops_type_dropshipping
+ * @property int $number_families_no_department
+ * @property int $number_products_no_family
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCatalogueStats newModelQuery()
  * @method static Builder<static>|OrganisationCatalogueStats newQuery()

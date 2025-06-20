@@ -32,7 +32,6 @@ class SelectProductsForBasketResource extends JsonResource
             'name'               => $this->name,
             'image'              => null,  // TODO
             'price'              => $this->price,
-            'currency_code'      => null,  // TODO
             'available_quantity' => $this->available_quantity,
             'transaction_id'     => $this->transaction_id,
             'historic_asset_id'  => $this->historic_asset_id,

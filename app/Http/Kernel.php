@@ -16,6 +16,7 @@ use App\Http\Middleware\HandleInertiaCrossToIris;
 use App\Http\Middleware\HandleInertiaCrossToRetina;
 use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RetinaPreparingAccount;
+use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
@@ -32,7 +33,7 @@ use App\Http\Middleware\ResetWebUserPasswordMiddleware;
 use App\Http\Middleware\RetinaAuthenticate;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\HandleInertiaGrpRequests;
-use App\Http\Middleware\IrisAuthenticate;
+use App\Http\Middleware\IrisRelaxAuthenticate;
 use App\Http\Middleware\LogWebUserRequestMiddleware;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
@@ -93,6 +94,12 @@ class Kernel extends HttpKernel
         ],
 
         'retina-api' => [
+            ForceJsonResponse::class,
+            EnsureFrontendRequestsAreStateful::class,
+            SubstituteBindings::class,
+        ],
+
+        'grp-api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -188,7 +195,7 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandlePupilInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //            SameSiteSession::class,
+            SameSiteSession::class,
         ],
 
         'cornea'  => [
@@ -231,7 +238,7 @@ class Kernel extends HttpKernel
         'auth'                   => Authenticate::class,
         'retina-auth'            => RetinaAuthenticate::class,
         'cornea-auth'            => CorneaAuthenticate::class,
-        'iris-auth'              => IrisAuthenticate::class,
+        'iris-relax-auth'              => IrisRelaxAuthenticate::class, // Everybody can access, but we have user data if logged in
         'auth.basic'             => AuthenticateWithBasicAuth::class,
         'auth.session'           => AuthenticateSession::class,
         'cache.headers'          => SetCacheHeaders::class,

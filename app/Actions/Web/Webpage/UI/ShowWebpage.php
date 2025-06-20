@@ -339,6 +339,7 @@ class ShowWebpage extends OrgAction
                         'title' => __('webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
+                     'iconRight'          => $webpage->state->stateIcon()[$webpage->state->value],
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],

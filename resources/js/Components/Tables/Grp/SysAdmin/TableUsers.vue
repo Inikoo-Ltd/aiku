@@ -10,33 +10,31 @@ import Table from "@/Components/Table/Table.vue"
 import { User } from "@/types/user"
 import { trans } from "laravel-vue-i18n"
 import Image from "@/Components/Image.vue"
-import { faCheck, faTimes, faUserCircle, faYinYang } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
 import Icon from '@/Components/Icon.vue'
 
-library.add(faUserCircle, faTimes, faCheck, faYinYang)
+import { faCheck, faTimes, faUserCircle, faYinYang, faKey } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
 
-const props = defineProps<{
+library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey)
+
+defineProps<{
     data: {}
     tab?: string
 }>()
 
 
 function userRoute(user: User) {
-    switch (route().current()) {
-        case "grp.sysadmin.users.index":
-            return route( "grp.sysadmin.users.show", [user.username])
-        default:
-            return null
+    if (route().current() === "grp.sysadmin.users.index") {
+        return route("grp.sysadmin.users.show", [user.username])
     }
+    return null
 }
 
 
 </script>
 
 <template>
-    <!-- <pre>{{ data }}</pre>
-    {{ tab }} -->
 
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Status -->
@@ -46,7 +44,7 @@ function userRoute(user: User) {
 
         <!-- Column: Username -->
         <template #cell(username)="{ item: user }">
-            <Link v-if="userRoute(user)" :href="userRoute(user)" class="primaryLink">
+            <Link v-if="userRoute(user)" :href="userRoute(user) as string" class="primaryLink">
                 <template v-if="user['username']">{{ user["username"] }}</template>
                 <span v-else class="italic">{{ trans("Not set") }}</span>
             </Link>
@@ -54,6 +52,12 @@ function userRoute(user: User) {
                 <template v-if="user['username']">{{ user["username"] }}</template>
                 <span v-else class="italic">{{ trans("Not set") }}</span>
             </div>
+            <div v-if="user.number_current_api_tokens > 0 || user.number_expired_api_tokens>0 " v-tooltip="trans('Api keys')" class="ml-3 inline w-fit">
+                <FontAwesomeIcon icon="fal fa-key" class="text-gray-400 mr-1" fixed-width aria-hidden="true" />
+                <span  v-if="user.number_current_api_tokens > 0"  v-tooltip="trans('active')">{{ user.number_current_api_tokens}}</span>   <span   v-tooltip="trans('expired')" class="text-red-700 ml-2"  v-if="user.number_expired_api_tokens > 0" >{{ user.number_expired_api_tokens}}</span>
+            </div>
+
+
         </template>
 
         <!-- Column: Image -->
@@ -65,11 +69,6 @@ function userRoute(user: User) {
             </div>
         </template>
 
-        <!-- <template #cell(name)="{ item: user }">
-            <div class="asdzxc">
-                {{ user["parent"]["name"] }}
-            </div>
-        </template> -->
 
         <template #cell(parent_type)="{ item: user }">
             <Link v-if="user['parent_type'] === 'Employee'" :href="route(

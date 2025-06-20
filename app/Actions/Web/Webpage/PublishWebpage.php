@@ -61,12 +61,14 @@ class PublishWebpage extends OrgAction
                 'state'          => SnapshotStateEnum::LIVE,
                 'published_at'   => now(),
                 'layout'         => $currentUnpublishedLayout,
+                'checksum'       => $webpage->unpublishedSnapshot->checksum,
                 'first_commit'   => $firstCommit,
                 'comment'        => Arr::get($modelData, 'comment'),
                 'publisher_id'   => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
+
 
         $deployment = StoreDeployment::run(
             $webpage,
@@ -84,7 +86,7 @@ class PublishWebpage extends OrgAction
         $updateData = [
             'live_snapshot_id'   => $snapshot->id,
             'published_layout'   => $snapshot->layout,
-            'published_checksum' => md5(json_encode($snapshot->layout)),
+            'published_checksum' => $snapshot->checksum,
             'state'              => WebpageStateEnum::LIVE,
             'is_dirty'           => false,
         ];

@@ -29,10 +29,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $rrp
  * @property mixed $id
  * @property mixed $currency
+ * @property mixed $currency_code
  */
 class IrisDropshippingLoggedOutProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
+
 
     public function toArray($request): array
     {
@@ -57,6 +59,7 @@ class IrisDropshippingLoggedOutProductsInWebpageResource extends JsonResource
             'unit'          => $this->unit,
             'status'        => $this->status,
             'rrp'           => $this->rrp,
+            'url'                         => $this->url,
             'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
         ];
     }

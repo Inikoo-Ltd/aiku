@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
@@ -20,10 +20,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 
-class UpdateUser extends GrpAction
+class UpdateUser extends OrgAction
 {
     use WithActionUpdate;
 
@@ -40,6 +38,12 @@ class UpdateUser extends GrpAction
 
         if ($user->wasChanged('status')) {
             GroupHydrateUsers::dispatch($user->group)->delay($this->hydratorsDelay);
+            if (!$user->status) {
+                $user->tokens()->each(function ($token) {
+                    DeleteUserAccessToken::run($token);
+                });
+            }
+
         }
 
         return $user;
@@ -114,7 +118,7 @@ class UpdateUser extends GrpAction
     public function asController(User $user, ActionRequest $request): User
     {
         $this->user = $user;
-        $this->initialisation($user->group, $request);
+        $this->initialisationFromGroup($user->group, $request);
 
         return $this->handle($user, $this->validatedData);
     }
@@ -129,7 +133,7 @@ class UpdateUser extends GrpAction
         $this->user           = $user;
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($user->group, $modelData);
+        $this->initialisationFromGroup($user->group, $modelData);
 
         return $this->handle($user, $this->validatedData);
     }
@@ -139,8 +143,5 @@ class UpdateUser extends GrpAction
         return new UsersResource($user);
     }
 
-    // public function htmlResponse(User $user): RedirectResponse
-    // {
-    //     return Redirect::route('grp.sysadmin.users.edit', $user->slug);
-    // }
+
 }

@@ -42,6 +42,7 @@ import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1
 import CTAVideo1Iris from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
+import Cta4 from '@/Components/CMS/Webpage/CTAImageLeft/CTA4Iris.vue'
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 
@@ -112,6 +113,7 @@ const components: Record<string, Component> = {
     'cta-video-1' : CTAVideo1Iris,
     'video-1'  : Video1Iris,
     "user-subscribe": UserSubscribeIris,
+    "cta4" : Cta4
 
 }
 

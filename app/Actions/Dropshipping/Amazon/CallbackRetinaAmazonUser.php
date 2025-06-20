@@ -33,7 +33,7 @@ class CallbackRetinaAmazonUser extends OrgAction
     {
 
 
-        dd($customer,$modelData);
+        dd($customer, $modelData);
 
 
 

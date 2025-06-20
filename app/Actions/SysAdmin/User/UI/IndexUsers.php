@@ -124,6 +124,8 @@ class IndexUsers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(User::class);
 
+        $queryBuilder->leftJoin('user_stats', 'user_stats.user_id', '=', 'users.id');
+
         if ($parent instanceof Employee) {
             $queryBuilder->leftjoin('user_has_models', 'user_has_models.user_id', '=', 'users.id');
             $queryBuilder->where('user_has_models.model_id', $parent->id)
@@ -147,7 +149,7 @@ class IndexUsers extends OrgAction
 
         return $queryBuilder
             ->defaultSort('username')
-            ->select(['users.username', 'users.email', 'users.contact_name', 'users.image_id', 'users.status'])
+            ->select(['users.username', 'users.email', 'users.contact_name', 'users.image_id', 'users.status', 'user_stats.*'])
             ->allowedSorts(['username', 'email', 'contact_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

@@ -2,7 +2,7 @@
 import { faFilter, faTimes, faBoxOpen } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from '@/Composables/styles'
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, toRaw, inject } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
@@ -12,31 +12,82 @@ import FilterProducts from './FilterProduct.vue'
 import Drawer from 'primevue/drawer'
 import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
+import LoadingText from '@/Components/Utils/LoadingText.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 const props = defineProps<{
     fieldValue: {
         products_route: {
-            iris: routeType
+            iris: {
+                route_products : routeType,
+                route_out_of_stock_products : routeType
+            }
             workshop: routeType
         }
+        products : {
+            data : object,
+            links : object,
+            meta : {
+                current_page : Number,
+                last_page : number
+            }
+        }
         container?: any
+        model_type : string
+        model_id: Number
     }
     webpageData?: any
     blockData?: Object
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const products = ref<any[]>([])
+console.log(props)
+const layout = inject('layout', retinaLayoutStructure)
+const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
 const loadingInitial = ref(false)
 const loadingMore = ref(false)
 const q = ref('')
-const orderBy = ref('created_at_desc')
-const page = ref(1)
-const lastPage = ref(1)
+const orderBy = ref('')
+const page = ref(toRaw(props.fieldValue.products.meta.current_page))
+const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
 const showFilters = ref(false)
-const showAside = ref(true) // Sidebar visibility (for desktop)
+const showAside = ref(false)
 
+const loadingOutOfStock = ref(false)
+const isFetchingOutOfStock = ref(false)
+
+const getRoutes = () => {
+    if (props.fieldValue.model_type === 'ProductCategory') {
+        return {
+            iris: {
+                route_products: {
+                    name: 'iris.json.product_category.products.index',
+                    parameters: { productCategory: props.fieldValue.model_id },
+                },
+                route_out_of_stock_products: {
+                    name: 'iris.json.product_category.out_of_stock_products.index',
+                    parameters: { productCategory: props.fieldValue.model_id },
+                },
+            }
+        }
+    } else if (props.fieldValue.model_type === 'Collection') {
+        return {
+            iris: {
+                route_products: {
+                    name: 'iris.json.collection.products.index',
+                    parameters: { collection: props.fieldValue.model_id },
+                },
+                route_out_of_stock_products: {
+                    name: 'iris.json.collection.out_of_stock_products.index',
+                    parameters: { collection: props.fieldValue.model_id },
+                },
+            }
+        }
+    }
+
+    return { iris: { route_products: null, route_out_of_stock_products: null } }
+}
 function buildFilters(): Record<string, any> {
     const filters: Record<string, any> = {}
     const raw = filter.value.data || {}
@@ -64,45 +115,66 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
+    const routes = getRoutes()
+    const useOutOfStock = isFetchingOutOfStock.value
+
+    const currentRoute = useOutOfStock
+        ? routes.iris.route_out_of_stock_products
+        : routes.iris.route_products
 
     try {
-        const response = await axios.get(route(props.fieldValue.products_route.iris.name, {
-            productCategory: props.fieldValue.products_route.iris.parameters[0],
+        const response = await axios.get(route(currentRoute.name, {
+            ...currentRoute.parameters,
             ...filters,
             'filter[global]': q.value,
-            index_sort: orderBy.value,
+            sort: orderBy.value,
             index_perPage: 25,
             page: page.value,
         }))
+
         const data = response.data
-        lastPage.value = data?.meta.last_page ?? 1
+
+        lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])]
         } else {
             products.value = data?.data ?? []
         }
+
+        if (!useOutOfStock && page.value >= lastPage.value) {
+            isFetchingOutOfStock.value = true
+            page.value = 1
+            await fetchProducts(true)
+        }
+
     } catch (error) {
+        console.log(error)
         notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
     } finally {
         loadingInitial.value = false
         loadingMore.value = false
     }
 }
+
+
 const debFetchProducts = debounce(fetchProducts, 300)
 
 const handleSearch = () => {
     page.value = 1
+    isFetchingOutOfStock.value = false
     debFetchProducts(false)
 }
 
 watch([q, orderBy], () => {
     page.value = 1
+    isFetchingOutOfStock.value = false
     debFetchProducts(false)
 }, { deep: true })
 
 watch(filter, () => {
     page.value = 1
+    isFetchingOutOfStock.value = false
     debFetchProducts(false)
 }, { deep: true })
 
@@ -113,45 +185,119 @@ const loadMore = () => {
     }
 }
 
-const orderOptions = [
-    { label: 'Newest', value: 'created_at' },
-    { label: 'Oldest', value: '-created_at' },
-    { label: 'Price ↑', value: '-price' },
-    { label: 'Price ↓', value: 'price' },
-]
+const sortKey = ref<'price' | 'name' | 'code' | 'created_at'>('created_at')
+const isAscending = ref(true)
 
-const selectOrder = (val: string) => {
-    orderBy.value = val
-    handleSearch()
+
+const getArrow = (key: typeof sortKey.value) => {
+  if (sortKey.value !== key) return ''
+  return isAscending.value ? '↑' : '↓'
 }
+
 
 const isMobile = computed(() => props.screenType === 'mobile')
 
 onMounted(() => {
-    debFetchProducts()
+    // Ambil dari URL atau props
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortParam = urlParams.get('order_by')
+
+    if (sortParam) {
+        orderBy.value = sortParam
+        // Set sortKey dan isAscending agar sinkron
+        const key = sortParam.replace('-', '')
+        sortKey.value = key as typeof sortKey.value
+        isAscending.value = !sortParam.startsWith('-')
+    }
+
+    if(layout.iris.is_logged_in)
+        fetchProductHasPortfolio()
+    
+    
+    /* debFetchProducts() */
 })
 
+const updateQueryParams = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('order_by', orderBy.value)
+    window.history.replaceState({}, '', url.toString())
+}
 
-const channels = ref({
+const toggleSort = (key: typeof sortKey.value) => {
+    if (sortKey.value === key) {
+        isAscending.value = !isAscending.value
+    } else {
+        sortKey.value = key
+        isAscending.value = true
+    }
+
+    orderBy.value = isAscending.value ? key : `-${key}`
+    updateQueryParams()
+    handleSearch()
+}
+
+
+const productHasPortfolio = ref({
     isLoading: false,
     list: []
 })
-const fetchChannels = async () => {
-    channels.value.isLoading = true
-    try {
-        const response = await axios.get(route('iris.json.channels.index'))
-        console.log('Channels response:', response.data.data)
-        
-        channels.value.list = response.data.data || []
 
-        
-    } catch (error) {
-        console.log(error)
-        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
-    } finally {
-        channels.value.isLoading = false
+
+const getRouteForProductPortfolio = () => {
+    const { model_type, model_id } = props.fieldValue
+    if (model_type == 'ProductCategory') {
+        return route('iris.json.product_category.portfolio_data', {
+            productCategory: model_id,
+        })
+    }
+
+    else if (model_type == 'Collection') {
+        return route('iris.json.collection.portfolio_data', {
+            collection: model_id,
+        })
     }
 }
+
+const fetchProductHasPortfolio = async () => {
+    productHasPortfolio.value.isLoading = true
+   console.log('dsfsdf',props.fieldValue.model_type)
+    try {
+        const apiUrl = getRouteForProductPortfolio()
+        console.log('sss',apiUrl)
+        if (!apiUrl) {
+            throw new Error('Invalid model_type or missing route configuration')
+        }
+
+        const response = await axios.get(apiUrl)
+        productHasPortfolio.value.list = response.data || []
+    } catch (error) {
+        console.error(error)
+        notify({
+            title: 'Error',
+            text: 'Failed to load product portfolio.',
+            type: 'error',
+        })
+    } finally {
+        productHasPortfolio.value.isLoading = false
+    }
+}
+
+
+
+const responsiveGridClass = computed(() => {
+  const perRow = props.fieldValue?.settings?.per_row ?? {}
+
+  const columnCount = {
+    desktop: perRow.desktop ?? 4,
+    tablet: perRow.tablet ?? 4,
+    mobile: perRow.mobile ?? 2,
+  }
+
+  const count = columnCount[props.screenType] ?? 1
+  return `grid-cols-${count}`
+})
+
+
 </script>
 
 <template>
@@ -187,25 +333,32 @@ const fetchChannels = async () => {
                 </div>
 
                 <!-- Sort Tabs -->
-                <div class="flex space-x-6 border-b border-gray-300 overflow-x-auto mt-2 md:mt-0">
-                    <button v-for="option in orderOptions" :key="option.value" @click="selectOrder(option.value)"
-                        class="pb-2 text-sm font-medium whitespace-nowrap" :class="{
-                            'border-b-2 text-[#1F2937] border-[#1F2937]': orderBy === option.value,
-                            'text-gray-600 hover:text-[#1F2937]': orderBy !== option.value
-                        }">
-                        {{ option.label }}
+                <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                    <button
+                        v-for="key in layout.iris.is_logged_in ? ['created_at', 'price', 'code', 'name'] : ['created_at','code', 'name']"
+                        :key="key"
+                        @click="toggleSort(key)"
+                        class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1"
+                        :class="{
+                        'border-b-2 text-[#1F2937] border-[#1F2937]': sortKey === key,
+                        'text-gray-600 hover:text-[#1F2937]': sortKey !== key
+                        }"
+                        :disabled="loadingInitial || loadingMore"
+                    >
+                        {{ key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) }} {{ getArrow(key) }}
                     </button>
                 </div>
             </div>
 
             <!-- Product Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4"
+            <div :class="responsiveGridClass"  class="grid gap-6 p-4"
                 :style="getStyles(fieldValue?.container?.properties, screenType)">
                 <template v-if="loadingInitial">
-                    <div v-for="n in 8" :key="n" class="border p-3 rounded shadow-sm bg-white">
+                    <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                         <Skeleton height="200px" class="mb-3" />
                         <Skeleton width="80%" class="mb-2" />
                         <Skeleton width="60%" />
+                        <Skeleton width="100%" />
                     </div>
                 </template>
 
@@ -213,28 +366,30 @@ const fetchChannels = async () => {
                     <div v-for="(product, index) in products" :key="index"
                         class="border p-3 relative rounded shadow-sm bg-white">
                         <ProductRender
-                            :channels="channels"
                             :product="product"
-                            @refreshChannels="() => fetchChannels()"
+                            :productHasPortfolio="productHasPortfolio.list[product.id]"
                         />
                     </div>
                 </template>
 
                 <template v-else>
                     <div class="col-span-full text-center py-10 text-gray-500">
-                        <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
-                        <p>No products found.</p>
+                       <!--  <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
+                        <p>No products found.</p> -->
                     </div>
                 </template>
             </div>
 
             <!-- Load More -->
-            <div v-if="page < lastPage && !loadingInitial" class="flex justify-center mt-4">
-                <button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
-                    :disabled="loadingMore" style="background-color: #1F2937;">
-                    <template v-if="loadingMore">Loading...</template>
+            <!--  {{ page   }}{{ lastPage }} -->
+            <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
+                <Button @click="loadMore" type="tertiary"
+                    :disabled="loadingMore">
+                    <template v-if="loadingMore">
+                        <LoadingText />
+                    </template>
                     <template v-else>Load More</template>
-                </button>
+                </Button>
             </div>
         </main>
 

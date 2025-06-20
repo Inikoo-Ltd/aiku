@@ -8,15 +8,13 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Http\Resources\Accounting\OrgPaymentProvidersResource;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use App\Models\CRM\Favourite;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Accounting\PaymentServiceProvider;
-use Illuminate\Support\Arr;
-use Spatie\QueryBuilder\QueryBuilder;
 
 class WebBlockProductResource extends JsonResource
 {
@@ -27,6 +25,27 @@ class WebBlockProductResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
 
+        $favourites = [];
+        if (auth()->check()) {
+            $customer = $request->user()->customer;
+
+            if ($customer) {
+                $portfolioChannelIds = $customer->portfolios()->where('item_id', $product->id)
+                    ->where('item_type', class_basename(Product::class))
+                    ->distinct()
+                    ->pluck('customer_sales_channel_id')
+                    ->toArray();
+
+                /** @var Favourite $favourite */
+                $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+
+                $favourites = [
+                    'exist_in_portfolios_channel' => $portfolioChannelIds,
+                    'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer),
+                    'is_favourite'                => $favourite && !$favourite->unfavourited_at,
+                ];
+            }
+        }
 
         return [
             'slug'        => $product->slug,
@@ -55,7 +74,21 @@ class WebBlockProductResource extends JsonResource
             'updated_at'      => $product->updated_at,
             'images'          => ImageResource::collection($product->images)->toArray($request),
             'tags' => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
-            'return_policy' => Arr::get($product->webpage->website->settings, 'return_policy', ''),
+            ...$favourites
         ];
+    }
+
+    public function checkExistInAllChannels(Customer $customer): bool
+    {
+        // Get all available channels
+        $totalChannels = $customer->customerSalesChannels->count();
+
+        // Count how many portfolios this product has across all channels
+        $portfolioChannels = $customer->portfolios()->where('item_id', $this->id)
+            ->where('item_type', class_basename(Product::class))
+            ->distinct('customer_sales_channel_id')
+            ->count();
+
+        return $portfolioChannels === $totalChannels;
     }
 }

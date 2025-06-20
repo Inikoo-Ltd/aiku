@@ -1,6 +1,18 @@
 export default {
     blueprint: [
         {
+            name: "Settings",
+            key: ["settings"],
+            replaceForm: [
+                {
+                    key: ["per_row"],
+                    label: "Show Each Row",
+                    type: "number",
+                    useIn : ["desktop", "tablet", "mobile"],
+                },
+            ],
+        },
+        {
             name: "Layout",
             key: ["container", "properties"],
             replaceForm: [

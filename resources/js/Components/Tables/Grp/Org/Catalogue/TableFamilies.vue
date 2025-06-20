@@ -26,13 +26,18 @@ const props = defineProps<{
         submitAttach: routeType
         detach: routeType
     }
+    isCheckBox?: boolean
 }>()
 
+const emits = defineEmits<{
+    (e: "selectedRow", value: {}): void
+}>()
 
 function familyRoute(family: Family) {
     switch (route().current()) {
         case "grp.shops.show":
         case "grp.org.shops.show.catalogue.families.index":
+        case "grp.org.shops.show.catalogue.families.no_department.index":
         case "grp.org.shops.show.catalogue.collections.show":
             return route(
                 "grp.org.shops.show.catalogue.families.show",
@@ -118,7 +123,13 @@ const isLoadingDetach = ref<string[]>([])
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table
+        :resource="data"
+        :name="tab"
+        class="mt-5"
+        :isCheckBox="isCheckBox"
+        @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))"
+    >
         <template #cell(state)="{ item: family }">
             <Icon :data="family.state" />
         </template>

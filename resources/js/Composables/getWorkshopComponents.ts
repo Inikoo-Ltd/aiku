@@ -45,6 +45,7 @@ import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collecti
 import CTAVideo1Workshop from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
 import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
+import Cta4 from '@/Components/CMS/Webpage/CTAImageLeft/CTA4Workshop.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -109,6 +110,7 @@ export const getComponent = (componentName: string) => {
         'cta-video-1' : CTAVideo1Workshop,
         'video-1': Video1Workshop,
         "user-subscribe": UserSubscribeWorkshop,
+        'cta4' :Cta4
     }
 
     return components[componentName] ?? NotFoundComponents

@@ -12,14 +12,17 @@ use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
 use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
+use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProducts;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
@@ -82,6 +85,8 @@ Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name(
 Route::get('shop/{shop}/products', GetProductsInWorkshop::class)->name('shop.products');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
+Route::get('shop/{shop}/families', GetFamiliesInShop::class)->name('shop.families');
+Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.departments');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
 Route::get('shop/{shop}/catalogue/collection/{scope}/products', GetProducts::class)->name('shop.catalogue.collection.products');
@@ -113,9 +118,11 @@ Route::get('brands', GetBrands::class)->name('brands.index');
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
-Route::get('workshop/product-category/{productCategory}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
+
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
-Route::get('workshop/collection/{collection}/products', GetProductsInCollection::class)->name('collection.products.index');
+Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');
 Route::get('workshop/collection/{collection}/families', GetFamiliesInCollection::class)->name('collection.families.index');
 
 Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollection::class)->name('collection.parent.departments.index');

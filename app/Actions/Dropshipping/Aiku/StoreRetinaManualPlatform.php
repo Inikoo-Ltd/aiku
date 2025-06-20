@@ -34,7 +34,7 @@ class StoreRetinaManualPlatform extends RetinaAction
 
 
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
-            $this->customer,
+            $customer,
             $platform,
             [
                 'reference' => (string)$customer->id,

@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\ShopifyUserHasProduct;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -21,9 +21,19 @@ class DeleteProductFromWooCommerce extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(WooCommerceUser $wooCommerceUser, ShopifyUserHasProduct $product): void
+    public function handle(?Portfolio $portfolio, bool $forceDelete = false, bool $fromWebhook = false): null|int|WooCommerceUser
     {
-        $client   = $wooCommerceUser->api()->getRestClient();
-        // $response =  $client->request('DELETE', '/admin/api/2024-04/products/'.$product->shopify_product_id.'.json');
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = $portfolio->customerSalesChannel->user;
+
+        if (!$portfolio) {
+            return null;
+        }
+
+        if (!$fromWebhook && $portfolio->platform_product_id) {
+            $wooCommerceUser->deleteWooCommerceProduct($portfolio->platform_product_id, $forceDelete);
+        }
+
+        return null;
     }
 }

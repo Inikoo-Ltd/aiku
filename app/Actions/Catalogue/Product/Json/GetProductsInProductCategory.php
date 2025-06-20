@@ -32,6 +32,10 @@ class GetProductsInProductCategory extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
+
+        $queryBuilder->where('products.is_for_sale', true);
+        $queryBuilder->where('products.available_quantity', '>', 0);
+
         if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $parent->id);
         } elseif ($parent->type == ProductCategoryTypeEnum::FAMILY) {

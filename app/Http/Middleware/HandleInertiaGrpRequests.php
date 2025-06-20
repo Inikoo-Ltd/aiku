@@ -52,7 +52,8 @@ class HandleInertiaGrpRequests extends Middleware
                     'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
                 ],
                 'flash' => [
-                    'notification' => fn () => $request->session()->get('notification')
+                    'notification' => fn () => $request->session()->get('notification'),
+                    'modal'        => fn () => $request->session()->get('modal')
                 ],
                 'ziggy' => [
                     'location' => $request->url(),

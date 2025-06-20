@@ -58,20 +58,19 @@ class IndexPupilPortfolios extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $customerSalesChannel = $request->route('customerSalesChannel');
-        if ($customerSalesChannel->customer_id == $this->customer->id) {
+        $pupilUser = $request->user();
+        if ($pupilUser->customer_id == $this->customer->id) {
             return true;
         }
         return false;
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisationFromPupil($request);
+        $this->customerSalesChannel = $this->shopifyUser->customerSalesChannel;
 
-        $this->initialisation($request);
-
-        return $this->handle($customerSalesChannel, 'products');
+        return $this->handle($this->customerSalesChannel, 'products');
     }
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
@@ -104,7 +103,22 @@ class IndexPupilPortfolios extends RetinaAction
                 'pageHead'    => [
                     'title'   => $title,
                     'model'   =>  $platformName,
-                    'icon'    => 'fal fa-cube'
+                    'icon'    => 'fal fa-cube',
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'icon'  => 'fas fa-sync-alt',
+                            'label' => 'Sync All Items',
+                            'route' => [
+                                'name'       => 'pupil.models.dropshipping.shopify_user.product.sync',
+                                'parameters' => [
+                                    'shopifyUser' => $this->customerSalesChannel->user->id
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ]
+                    ]
                 ],
                 'routes'    => [
                     'bulk_upload'  => match ($this->customerSalesChannel->platform->type) {

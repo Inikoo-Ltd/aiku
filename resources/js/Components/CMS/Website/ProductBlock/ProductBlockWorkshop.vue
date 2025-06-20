@@ -11,6 +11,7 @@ import { routeType } from "@/types/route"
 import SideMenuProductWorkshop from "./SideMenuProductBlockWorkshop.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { notify } from "@kyvg/vue3-notification"
+import debounce from "lodash/debounce"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -25,34 +26,24 @@ const props = defineProps<{
 }>()
 
 const reload = inject('reload') as () => void
-const isModalOpen = ref(false);
-const isLoadingSave = ref(false);
-const layout = ref(props.data.layout);
-
-const onPickTemplate = (template: any) => {
-  isModalOpen.value = false;
-  layout.value = template;
-  autosave()
-};
-
+const isModalOpen = ref(false)
+const isLoadingSave = ref(false)
 
 const autosave = () => {
-  const payload = toRaw(layout.value);
-  delete payload.data?.fieldValue?.product;
-  console.log(payload)
+  const payload = toRaw(props.data.layout)
+  delete payload.data?.fieldValue?.product
+
   router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
     {
       onStart: () => isLoadingSave.value = true,
-      onFinish: () => {isLoadingSave.value = false,  reload?.()},
+      onFinish: () => {
+        isLoadingSave.value = false
+        reload?.()
+      },
       onSuccess: () => {
-        layout.value = props.data.layout
-        notify({
-          title: 'Autosave Successful',
-          text: 'Your changes have been saved.',
-          type: 'success',
-        })
+        // notify success here if needed
       },
       onError: (errors) => {
         notify({
@@ -63,19 +54,28 @@ const autosave = () => {
       }
     }
   )
-};
+}
 
-const currentView = ref("desktop");
-provide("currentView", currentView);
+// Debounced autosave (500ms)
+const debouncedAutosave = debounce(autosave, 500)
 
+const onPickTemplate = (template: any) => {
+  isModalOpen.value = false
+  props.data.layout = template
+  debouncedAutosave()
+}
+
+const currentView = ref("desktop")
+provide("currentView", currentView)
 </script>
+
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
       <SideMenuProductWorkshop 
-        :data="layout" 
-        :webBlockTypes="data.web_block_types" 
+        :data="props.data.layout" 
+        :webBlockTypes="props.data.web_block_types" 
         @auto-save="autosave"
         @set-up-template="onPickTemplate"  
       />
@@ -88,8 +88,13 @@ provide("currentView", currentView);
         </div>
       </div>
 
-      <div v-if="layout?.data?.fieldValue?.product" class="relative flex-1 overflow-auto">
-        <component class="w-full" :is="getComponent(layout.code)" :modelValue="layout.data.fieldValue"  :templateEdit="'template'"/>
+      <div v-if="props.data.layout?.data?.fieldValue?.product" class="relative flex-1 overflow-auto">
+        <component 
+          class="w-full" 
+          :is="getComponent(props.data.layout.code)" 
+          :modelValue="props.data.layout.data.fieldValue"  
+          :templateEdit="'template'"
+        />
       </div>
 
       <div v-else>

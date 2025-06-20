@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Product\UI\EditProduct;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
 use App\Actions\Catalogue\ProductCategory\UI\CreateDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\CreateFamily;
@@ -28,6 +29,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexBlueprintDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesWithNoDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
@@ -40,6 +42,16 @@ Route::get('', ShowCatalogue::class)->name('dashboard');
 Route::prefix('products')->as('products.')->group(function () {
     Route::prefix('all')->as('all_products.')->group(function () {
         Route::get('', IndexProductsInCatalogue::class)->name('index');
+        Route::get('create', CreateProduct::class)->name('create');
+        Route::prefix('{product}')->group(function () {
+            Route::get('', ShowProduct::class)->name('show');
+            Route::get('images', GetProductUploadedImages::class)->name('images');
+            Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+        });
+    });
+
+    Route::prefix('orphan')->as('orphan_products.')->group(function () {
+        Route::get('', IndexProductsWithNoFamily::class)->name('index');
         Route::get('create', CreateProduct::class)->name('create');
         Route::prefix('{product}')->group(function () {
             Route::get('', ShowProduct::class)->name('show');
@@ -156,6 +168,7 @@ Route::name("departments.")->prefix('departments')
 Route::name("families.")->prefix('families')
     ->group(function () {
         Route::get('', IndexFamilies::class)->name('index');
+        Route::get('no-department', IndexFamiliesWithNoDepartment::class)->name('no_department.index');
         Route::get('create', CreateFamily::class)->name('create');
 
         Route::get('{family}/edit', [EditFamily::class, 'inShop'])->name('edit');

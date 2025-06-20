@@ -28,6 +28,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $rrp
  * @property mixed $currency_code
+ * @property mixed $id
  */
 class IrisEcomLoggedOutProductsInWebpageResource extends JsonResource
 {
@@ -35,32 +36,31 @@ class IrisEcomLoggedOutProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-
         $media = null;
         if ($this->image_id) {
             $media = Media::find($this->image_id);
         }
 
 
-
         return [
-            'id'          => $this->id,
-            'slug'        => $this->slug,
-            'image_id'    => $this->image_id,
-            'code'        => $this->code,
-            'name'        => $this->name,
-            'stock'       => $this->available_quantity,
-            'price'       => $this->price,
-            'state'       => $this->state,
+            'id'            => $this->id,
+            'slug'          => $this->slug,
+            'image_id'      => $this->image_id,
+            'code'          => $this->code,
+            'name'          => $this->name,
+            'stock'         => $this->available_quantity,
+            'price'         => $this->price,
+            'state'         => $this->state,
             'currency_code' => $this->currency_code,
-            'created_at'  => $this->created_at,
-            'updated_at'  => $this->updated_at,
-            'units'       => $this->units,
-            'unit'        => $this->unit,
-            'status'      => $this->status,
-            'rrp'         => $this->rrp,
-            'image' => $this->image_id ? ImageResource::make($media)->getArray() : null,
-             ];
+            'created_at'    => $this->created_at,
+            'updated_at'    => $this->updated_at,
+            'units'         => $this->units,
+            'unit'          => $this->unit,
+            'status'        => $this->status,
+            'rrp'           => $this->rrp,
+            'url'           => $this->url,
+            'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
+        ];
     }
 
 

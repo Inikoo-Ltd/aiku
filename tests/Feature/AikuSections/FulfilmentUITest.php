@@ -1936,6 +1936,7 @@ test('UI show physical goods', function () {
 });
 
 test('UI edit physical goods', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.fulfilments.show.catalogue.physical_goods.edit', [$this->organisation->slug, $this->fulfilment->slug, $this->product->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -2318,11 +2319,11 @@ test('UI create refund', function () {
     $this->withoutExceptionHandling();
     $response = $this->post(route('grp.models.refund.create', [$this->invoice->id]), [
         'referral_route' => [
-            'name' => 'grp.org.fulfilments.show.operations.invoices.show',
+            'name'       => 'grp.org.fulfilments.show.operations.invoices.show',
             'parameters' => [
                 'organisation' => $this->organisation->slug,
                 'fulfilment'   => $this->fulfilment->slug,
-                'invoice' => $this->invoice->slug
+                'invoice'      => $this->invoice->slug
             ]
         ]
     ]);

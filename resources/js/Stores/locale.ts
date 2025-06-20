@@ -23,9 +23,12 @@ export const useLocaleStore = defineStore("locale", () => {
 	}
 
 	const currencyFormat = (currencyCode: string, amount: number):string => {
+		if (!currencyCode) {
+			return new Intl.NumberFormat(language.value.code).format(amount || 0)
+		}
 		return new Intl.NumberFormat(language.value.code, {
 			style: "currency",
-			currency: currencyCode || "usd",
+			currency: currencyCode,
 		}).format(amount || 0)
 	}
 

@@ -11,9 +11,6 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
-use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
-use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
-use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -24,7 +21,6 @@ use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -42,9 +38,9 @@ class UpdateProduct extends OrgAction
     public function handle(Product $product, array $modelData): Product
     {
         if (Arr::has($modelData, 'family_id')) {
-            $family = ProductCategory::find($modelData['family_id']);
-            data_set($modelData, 'department_id', $family->department_id);
-            data_set($modelData, 'sub_department_id', $family->sub_department_id);
+            UpdateProductFamily::make()->action($product, [
+                'family_id' => Arr::pull($modelData, 'family_id'),
+            ]);
         }
 
         if (Arr::has($modelData, 'org_stocks')) {
@@ -68,10 +64,6 @@ class UpdateProduct extends OrgAction
                 ]
             );
         }
-
-        $oldFamily = $product->family;
-        $oldDepartment = $product->department;
-        $oldSubDepartment = $product->subDepartment;
 
         UpdateAsset::run($product->asset, $assetData, $this->hydratorsDelay);
 
@@ -97,32 +89,6 @@ class UpdateProduct extends OrgAction
             ProductRecordSearch::dispatch($product);
         }
 
-        if (Arr::has($changed, 'family_id')) {
-            FamilyHydrateProducts::dispatch($product->family);
-            if ($oldFamily) {
-                FamilyHydrateProducts::dispatch($oldFamily);
-            }
-        }
-
-        if (Arr::has($changed, 'department_id')) {
-            if ($product->department) {
-                DepartmentHydrateProducts::dispatch($product->department);
-            }
-            if ($oldDepartment) {
-                DepartmentHydrateProducts::dispatch($oldDepartment);
-            }
-        }
-
-        if (Arr::has($changed, 'sub_department_id')) {
-            if ($product->department) {
-                SubDepartmentHydrateProducts::dispatch($product->oldSubDepartment);
-            }
-            if ($oldSubDepartment) {
-                SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
-            }
-        }
-
-
         return $product;
     }
 
@@ -147,7 +113,7 @@ class UpdateProduct extends OrgAction
             'name'          => ['sometimes', 'required', 'max:250', 'string'],
             'price'         => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'   => ['sometimes', 'required', 'max:1500'],
-            'rrp'           => ['sometimes', 'required', 'numeric'],
+            'rrp'           => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'data'          => ['sometimes', 'array'],
             'settings'      => ['sometimes', 'array'],
             'status'        => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],

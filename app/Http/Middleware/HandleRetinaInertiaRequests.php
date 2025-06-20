@@ -46,22 +46,28 @@ class HandleRetinaInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'auth'   => [
+                'auth'     => [
                     'user'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
                     'webUser_count' => $webUser?->customer?->webUsers?->count() ?? 1,
                 ],
-                'flash'  => [
-                    'notification' => fn () => $request->session()->get('notification')
+                'currency' => [
+                    'code'   => $website->shop->currency->code,
+                    'symbol' => $website->shop->currency->symbol,
+                    'name'   => $website->shop->currency->name,
                 ],
-                'ziggy'  => [
+                'flash'    => [
+                    'notification'  => fn () => $request->session()->get('notification'),
+                    'modal'         => fn () => $request->session()->get('modal')
+                ],
+                'ziggy'    => [
                     'location' => $request->url(),
                 ],
-                "retina" => [
-                    "type"      => $website->shop->type->value,
-                    "currency"  => CurrencyResource::make($website->shop->currency)->toArray(request()),
-                    "balance"   => $webUser?->customer?->balance,
+                "retina"   => [
+                    "type"     => $website->shop->type->value,
+                    "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
+                    "balance"  => $webUser?->customer?->balance,
                 ],
-                'iris'   => $this->getIrisData($website, $webUser)
+                'iris'     => $this->getIrisData($website, $webUser)
             ],
             parent::share($request),
         );

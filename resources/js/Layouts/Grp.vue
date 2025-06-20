@@ -8,7 +8,7 @@
 
 
 <script setup lang="ts">
-import { ref, provide, defineAsyncComponent } from 'vue'
+import { ref, provide, defineAsyncComponent, watch } from 'vue'
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
@@ -25,11 +25,16 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faPoll, faAsterisk } from '@fal'
+import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faTimes, faAsterisk } from '@fal'
 import { faSearch, faBell } from '@far'
-import { faAsterisk as fasAsterisk } from '@fas'
+import { faAsterisk as fasAsterisk, faExclamation, faInfo } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(fasAsterisk, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faPoll, faAsterisk)
+import { notify } from '@kyvg/vue3-notification'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { trans } from 'laravel-vue-i18n'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+library.add(fasAsterisk, faExclamation, faInfo, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
@@ -43,6 +48,33 @@ const StackedComponents = defineAsyncComponent(() => import('@/Layouts/Grp/Stack
 const layout = useLayoutStore()
 const sidebarOpen = ref(false)
 
+// Section: Notification
+watch(() => usePage().props?.flash?.notification, (notif) => {
+    console.log('notif ret', notif)
+    if (!notif) return
+
+    notify({
+        title: notif.title,
+        text: notif.description,
+        type: notif.status,
+    })
+})
+
+// Section: Modal
+interface Modal {
+    title: string
+    description: string
+    type: 'success' | 'error' | 'info' | 'warning'
+}
+const selectedModal = ref<Modal | null>(null)
+const isModalOpen = ref(false)
+watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
+    console.log('modal ret', modal)
+    if (!modal) return
+
+    selectedModal.value = modal
+    isModalOpen.value = true
+})
 </script>
 
 <template>
@@ -96,6 +128,37 @@ const sidebarOpen = ref(false)
 
 
     <Footer />
+
+    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
+                    </div>
+
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            {{ selectedModal?.title }}
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">
+                            {{ selectedModal?.description }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-6">
+                    <Button
+                        @click="() => isModalOpen = false"
+                        :label="trans('Ok, Get it')"
+                        full
+                    />
+                </div>
+            </div>
+        </div>
+    </Modal>
 
     <!-- Global declaration: Notification -->
     <notifications

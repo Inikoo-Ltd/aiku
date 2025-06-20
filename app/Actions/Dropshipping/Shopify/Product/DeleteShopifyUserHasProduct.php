@@ -34,6 +34,12 @@ class DeleteShopifyUserHasProduct extends OrgAction
             $shopifyUser->getShopifyClient()->request('DELETE', '/admin/api/2025-04/products/'.$portfolio->platform_product_id.'.json');
         }
 
+        if ($portfolio->shopifyPortfolio) {
+            $portfolio->shopifyPortfolio->delete();
+
+            $portfolio->refresh();
+        }
+
         return null;
     }
 }

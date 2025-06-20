@@ -27,6 +27,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $unit
  * @property mixed $status
  * @property mixed $rrp
+ * @property mixed $currency_code
+ * @property mixed $id
  */
 class IrisEcomLoggedInProductsInWebpageResource extends JsonResource
 {
@@ -56,6 +58,7 @@ class IrisEcomLoggedInProductsInWebpageResource extends JsonResource
             'unit'          => $this->unit,
             'status'        => $this->status,
             'rrp'           => $this->rrp,
+            'url'                         => $this->url,
             'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
 
         ];

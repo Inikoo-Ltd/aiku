@@ -30,12 +30,14 @@ use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\MoveFamilyProductToOtherFamily;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
+use App\Actions\Catalogue\ProductCategory\UpdateMultipleFamiliesDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -215,6 +217,7 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use App\Actions\SysAdmin\User\DeleteUserAccessToken;
 use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
@@ -790,6 +793,9 @@ Route::name('product_category.')->group(function () {
     Route::post('{collection:id}/attach-parents', AttachMultipleParentsToACollection::class)->name('collection.attach_parents');
 });
 
+Route::post('family/{family:id}/move-products', UpdateMultipleProductsFamily::class)->name('family.move_products');
+Route::post('department/{department:id}/move-families', UpdateMultipleFamiliesDepartment::class)->name('department.move_families');
+
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');
     Route::delete('delete', DeleteModelHasContent::class)->name('delete');
@@ -809,6 +815,9 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::post('brands/attach', [AttachBrandToModel::class, 'inTradeUnit'])->name('brands.attach');
     Route::delete('brands/{brand:id}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
 });
+
+
+Route::delete('access-token/{token:id}', DeleteUserAccessToken::class)->name('access_token.delete');
 
 
 Route::post('shops/{shop}/poll/store', StorePoll::class)->name('poll.store');

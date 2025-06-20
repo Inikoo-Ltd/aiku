@@ -11,48 +11,17 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Http\Resources\Catalogue\IrisDropshippingLoggedInProductsInWebpageResource;
-use App\Http\Resources\Catalogue\IrisDropshippingLoggedOutProductsInWebpageResource;
-use App\Http\Resources\Catalogue\IrisEcomLoggedInProductsInWebpageResource;
-use App\Http\Resources\Catalogue\IrisEcomLoggedOutProductsInWebpageResource;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
-// **************************************
-// Important: This code should be only called in products-1 webBlock
 class GetIrisProductsInProductCategory extends IrisAction
 {
-    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
+    use WithIrisProductsInWebpage;
+
+    public function handle(ProductCategory $productCategory, $stockMode = 'all'): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
-            });
-        });
-
-        $priceRangeFilter = AllowedFilter::callback('price_range', function ($query, $value) {
-            [$min, $max] = explode(',', $value);
-            $query->whereBetween('price', [(float)$min, (float)$max]);
-        });
-
-        $familyCodeFilter = AllowedFilter::callback('family', function ($query, $value) {
-            $family = ProductCategory::where('code', $value)->first();
-            if ($family) {
-                $query->where('family_id', $family->id);
-            } else {
-                $query->whereRaw('0 = 1');
-            }
-        });
-
-        $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'products.currency_id');
+        $queryBuilder = $this->getBaseQuery($stockMode);
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);
@@ -62,31 +31,10 @@ class GetIrisProductsInProductCategory extends IrisAction
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
 
-        return $queryBuilder->defaultSort('available_quantity')
-            ->select(
-                'products.*',
-                'currencies.code as currency_code',
-            )
-            ->allowedSorts(['price', 'created_at','available_quantity','code','name'])
-            ->allowedFilters([$globalSearch, $priceRangeFilter, $familyCodeFilter])
-            ->withPaginator($prefix)
-            ->withQueryString();
+
+        return $this->getData($queryBuilder);
     }
 
-    public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
-    {
-        $isDropshipping = $this->shop->type == ShopTypeEnum::DROPSHIPPING;
-        $isLoggedIn     = auth()->check();
-
-        $resourceClass = match (true) {
-            $isDropshipping && $isLoggedIn => IrisDropshippingLoggedInProductsInWebpageResource::class,
-            $isDropshipping && !$isLoggedIn => IrisDropshippingLoggedOutProductsInWebpageResource::class,
-            !$isDropshipping && $isLoggedIn => IrisEcomLoggedInProductsInWebpageResource::class,
-            !$isDropshipping && !$isLoggedIn => IrisEcomLoggedOutProductsInWebpageResource::class,
-        };
-
-        return $resourceClass::collection($products);
-    }
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {

@@ -226,7 +226,7 @@ trait WithEbayApiRequest
     /**
      * Make authenticated request to eBay API
      */
-    protected function makeEbayRequest($method, $endpoint, $data = [])
+    protected function makeEbayRequest($method, $endpoint, $data = [], $queryParams = [])
     {
         try {
             $token = $this->getEbayAccessToken();
@@ -237,7 +237,8 @@ trait WithEbayApiRequest
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'Content-Language' => 'en-GB'
-            ])->$method($url, $data);
+            ])->withQueryParameters($queryParams)
+                ->$method($url, $data);
 
             if ($response->successful()) {
                 return $response->json();
@@ -351,11 +352,10 @@ trait WithEbayApiRequest
     {
         $data = [
                 "sku" => Arr::get($offerData, 'sku'),
-                "marketplaceId" => "EBAY_US",
+                "marketplaceId" => "EBAY_GB",
                 "format" => "FIXED_PRICE",
                 "listingDescription" => Arr::get($offerData, 'description'),
                 "availableQuantity" => Arr::get($offerData, 'quantity', 1),
-                "quantityLimitPerBuyer" => 10,
                 "pricingSummary" => [
                     "price" => [
                         "value" => Arr::get($offerData, 'price', 0),
@@ -363,12 +363,12 @@ trait WithEbayApiRequest
                     ]
                 ],
                 "listingPolicies" => [
-                    "fulfillmentPolicyId" => Arr::get($offerData, 'fulfillment_policy_id'),
-                    "paymentPolicyId" => Arr::get($offerData, 'payment_policy_id'),
-                    "returnPolicyId" => Arr::get($offerData, 'return_policy_id')
+                    "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
+                    "paymentPolicyId" => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
+                    "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
                 ],
                 "categoryId" => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => Arr::get($offerData, 'location_key'),
+                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
                 // "tax" => [
                 //     "vatPercentage" => 10.2,
                 //     "applyTax" => true,
@@ -623,6 +623,22 @@ trait WithEbayApiRequest
     }
 
     /**
+     * Get user's eBay Fulfilmennt Policies
+     */
+    public function getFulfilmentPolicies()
+    {
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'marketplace_id' => 'EBAY_GB'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Fulfilment Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Create user's eBay payment policy
      */
     public function createPaymentPolicy()
@@ -642,6 +658,22 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Create Payment Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay Payment Policies
+     */
+    public function getPaymentPolicies()
+    {
+        try {
+            $endpoint = "/sell/account/v1/payment_policy";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'marketplace_id' => 'EBAY_GB'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Payment Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -668,6 +700,22 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Create Return Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay Return Policies
+     */
+    public function getReturnPolicies()
+    {
+        try {
+            $endpoint = "/sell/account/v1/return_policy";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'marketplace_id' => 'EBAY_GB'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Return Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -712,6 +760,23 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Create Inventory Location Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay category suggestions
+     */
+    public function getCategorySuggestions($keyword)
+    {
+        try {
+            $encodedKeyword = urlencode($keyword);
+            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_category_suggestions";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                    'q' => $encodedKeyword
+                ]);
+        } catch (Exception $e) {
+            Log::error('Get Category Suggestions Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }

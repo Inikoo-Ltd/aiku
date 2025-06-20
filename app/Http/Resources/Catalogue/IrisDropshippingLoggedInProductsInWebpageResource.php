@@ -12,6 +12,7 @@ use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Favourite;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,6 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $rrp
  * @property mixed $currency_code
  * @property mixed $id
+ * @property mixed $url
  */
 class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
 {
@@ -51,6 +53,9 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             ->pluck('customer_sales_channel_id')
             ->toArray();
 
+        /** @var Favourite $favourite */
+        $favourite = $customer->favourites()->where('product_id', $this->id)->first();
+
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
@@ -60,16 +65,17 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
             'stock'                       => $this->available_quantity,
             'price'                       => $this->price,
             'state'                       => $this->state,
-            'currency_code'               => $this->currency_code,
             'created_at'                  => $this->created_at,
             'updated_at'                  => $this->updated_at,
             'units'                       => $this->units,
             'unit'                        => $this->unit,
+            'url'                         => $this->url,
             'status'                      => $this->status,
             'rrp'                         => $this->rrp,
             'image'                       => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'exist_in_portfolios_channel' => $portfolioChannelIds,
-            'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer)
+            'is_exist_in_all_channel'     => $this->checkExistInAllChannels($customer),
+            'is_favourite'                => $favourite && !$favourite->unfavourited_at,
         ];
     }
 
