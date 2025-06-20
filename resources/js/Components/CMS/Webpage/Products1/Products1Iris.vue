@@ -88,7 +88,8 @@ const fetchProducts = async (isLoadMore = false) => {
         }))
 
         const data = response.data
-        lastPage.value = data?.meta.last_page ?? 1
+        console.log(data)
+        lastPage.value = data?.last_page ?? 1
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])]
