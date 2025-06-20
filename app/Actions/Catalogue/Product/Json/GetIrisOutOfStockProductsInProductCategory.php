@@ -15,6 +15,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisOutOfStockProductsInProductCategory extends IrisAction
 {
+    use WithIrisProductsInWebpage;
+
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
