@@ -3,7 +3,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import { inject, ref } from 'vue'
+import { inject, ref,toRaw } from 'vue'
 import { Image as ImageTS } from '@/types/Image'
 import { Popover } from 'primevue'
 
@@ -44,6 +44,7 @@ const emits = defineEmits<{
     (e: "refreshChannels"): void
 }>()
 
+const productHasProtofolioList = ref(toRaw(props.productHasProtofolio))
 const layout = inject('layout', retinaLayoutStructure)
 const channelList = layout?.user?.customerSalesChannels || []
 // Section: Add to all Portfolios
@@ -104,14 +105,16 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) =
                 isLoadingSpecificChannel.value.push(channel.id)
             },
             onSuccess: () => {
-                product.exist_in_portfolios_channel?.push(channel.id)
+                const channelId = Number(channel.id)
+                productHasProtofolioList.value = [...props.productHasProtofolio, channelId]
                 notify({
                     title: trans("Success"),
-                    text: `Added product ${product.name} to channel ${channel.name ?? channel.reference}`,
+                    text: `Added product ${product.name} to channel ${channel.name}`,
                     type: "success"
                 })
             },
             onError: errors => {
+                console.log(errors)
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to add to portfolio"),
@@ -149,7 +152,7 @@ const _popover = ref()
                 
              
                 <div class="w-full flex flex-nowrap relative">
-                    <Button v-if="Object.keys(channelList).length == Object.keys(productHasProtofolio).length"
+                    <Button v-if="Object.keys(channelList).length == Object.keys(productHasProtofolioList).length"
                         label="Exist on all Portfolios" type="tertiary" disabled
                         class="border-none border-transparent rounded-r-none" full />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
@@ -170,11 +173,11 @@ const _popover = ref()
                             <div class="space-y-2">
                                 <Button v-for="[key, channel] in Object.entries(channelList)"
                                     :key="channel.customer_sales_channel_id"
-                                    @click="() => onAddPortfoliosSpecificChannel(product, channel)" type="tertiary"
+                                    @click="() => onAddPortfoliosSpecificChannel(product, {...channel, id : key})" type="tertiary"
                                     :label="channel.platform_name" full
                                     :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
                                     <template #icon>
-                                        <FontAwesomeIcon v-if="productHasProtofolio.includes(Number(key))" :icon="faCheck"
+                                        <FontAwesomeIcon v-if="productHasProtofolioList.includes(Number(key))" :icon="faCheck"
                                             class="text-green-500" fixed-width aria-hidden="true" />
                                     </template>
                                 </Button>

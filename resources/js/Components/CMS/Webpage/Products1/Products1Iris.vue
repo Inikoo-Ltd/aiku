@@ -211,7 +211,7 @@ onMounted(() => {
     }
 
     if(layout.iris.is_logged_in)
-        fetchProductHasProtofolio()
+        fetchProductHasPortfolio()
     
     
     /* debFetchProducts() */
@@ -237,47 +237,51 @@ const toggleSort = (key: typeof sortKey.value) => {
 }
 
 
-/* const channels = ref({
-    isLoading: false,
-    list: []
-}) */
-
-/* const fetchChannels = async () => {
-    channels.value.isLoading = true
-    try {
-        const response = await axios.get(route('iris.json.channels.index'))
-        console.log('Channels response:', response)
-        
-        channels.value.list = response.data.data || []
- 
-        
-    } catch (error) {
-        console.log(error)
-        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
-    } finally {
-        channels.value.isLoading = false
-    }
-} */
-
 const productHasProtofolio = ref({
     isLoading: false,
     list: []
 })
 
-const fetchProductHasProtofolio = async () => {
+
+const getRouteForProductPortfolio = () => {
+    const { model_type, model_id } = props.fieldValue
+    if (model_type == 'ProductCategory') {
+        return route('iris.json.product_category.portfolio_data', {
+            productCategory: model_id,
+        })
+    }
+
+    else if (model_type == 'Collection') {
+        return route('iris.json.collection.portfolio_data', {
+            collection: model_id,
+        })
+    }
+}
+
+const fetchProductHasPortfolio = async () => {
     productHasProtofolio.value.isLoading = true
+   console.log('dsfsdf',props.fieldValue.model_type)
     try {
-        const response = await axios.get(route('iris.json.product_category.portfolio_data',{ productCategory :props.fieldValue.model_id  }))
-        
+        const apiUrl = getRouteForProductPortfolio()
+        console.log('sss',apiUrl)
+        if (!apiUrl) {
+            throw new Error('Invalid model_type or missing route configuration')
+        }
+
+        const response = await axios.get(apiUrl)
         productHasProtofolio.value.list = response.data || []
-        
     } catch (error) {
-        console.log(error)
-        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
+        console.error(error)
+        notify({
+            title: 'Error',
+            text: 'Failed to load product portfolio.',
+            type: 'error',
+        })
     } finally {
         productHasProtofolio.value.isLoading = false
     }
 }
+
 
 
 const responsiveGridClass = computed(() => {
