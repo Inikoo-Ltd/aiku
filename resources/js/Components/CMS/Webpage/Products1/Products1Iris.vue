@@ -12,6 +12,7 @@ import FilterProducts from './FilterProduct.vue'
 import Drawer from 'primevue/drawer'
 import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
+import LoadingText from '@/Components/Utils/LoadingText.vue'
 
 const props = defineProps<{
     fieldValue: {
@@ -33,7 +34,7 @@ const products = ref<any[]>([])
 const loadingInitial = ref(true)
 const loadingMore = ref(false)
 const q = ref('')
-const orderBy = ref('created_at_desc')
+const orderBy = ref('')
 const page = ref(1)
 const lastPage = ref(1)
 const filter = ref({ data: {} })
@@ -81,7 +82,7 @@ const fetchProducts = async (isLoadMore = false) => {
             ...currentRoute.parameters,
             ...filters,
             'filter[global]': q.value,
-            index_sort: orderBy.value,
+            sort: orderBy.value,
             index_perPage: 25,
             page: page.value,
         }))
@@ -304,9 +305,11 @@ const responsiveGridClass = computed(() => {
 
             <!-- Load More -->
             <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
-                <Button @click="loadMore" class="px-4 py-2 text-white rounded shadow disabled:opacity-50"
-                    :disabled="loadingMore" style="background-color: #1F2937;">
-                    <template v-if="loadingMore">Loading...</template>
+                <Button @click="loadMore" type="tertiary"
+                    :disabled="loadingMore">
+                    <template v-if="loadingMore">
+                        <LoadingText />
+                    </template>
                     <template v-else>Load More</template>
                 </Button>
             </div>
