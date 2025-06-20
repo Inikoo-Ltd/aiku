@@ -33,7 +33,7 @@ const products = ref<any[]>([])
 const loadingInitial = ref(true)
 const loadingMore = ref(false)
 const q = ref('')
-const orderBy = ref('created_at_desc')
+const orderBy = ref('')
 const page = ref(1)
 const lastPage = ref(1)
 const filter = ref({ data: {} })
@@ -81,7 +81,7 @@ const fetchProducts = async (isLoadMore = false) => {
             ...currentRoute.parameters,
             ...filters,
             'filter[global]': q.value,
-            index_sort: orderBy.value,
+            sort: orderBy.value,
             index_perPage: 25,
             page: page.value,
         }))
