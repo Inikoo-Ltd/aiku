@@ -37,6 +37,7 @@ interface ProductResource {
 
 const props = defineProps<{
     product: ProductResource
+    productHasProtofolio : boolean
     channels: {
         isLoading: boolean
         list: {}[]

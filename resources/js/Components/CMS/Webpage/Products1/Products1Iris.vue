@@ -210,6 +210,7 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith('-')
     }
 
+    fetchProductHasProtofolio()
     /* debFetchProducts() */
 })
 
@@ -237,6 +238,7 @@ const channels = ref({
     isLoading: false,
     list: []
 })
+
 const fetchChannels = async () => {
     channels.value.isLoading = true
     try {
@@ -254,6 +256,29 @@ const fetchChannels = async () => {
     }
 }
 
+const productHasProtofolio = ref({
+    isLoading: false,
+    list: []
+})
+
+const fetchProductHasProtofolio = async () => {
+    productHasProtofolio.value.isLoading = true
+    try {
+        const response = await axios.get(route('iris.json.product_category.portfolio_data',{ productCategory :props.fieldValue.model_id  }))
+        console.log('Channels response:', response.data.data)
+        
+        productHasProtofolio.value.list = response.data.data || []
+
+        
+    } catch (error) {
+        console.log(error)
+        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
+    } finally {
+        productHasProtofolio.value.isLoading = false
+    }
+}
+
+
 const responsiveGridClass = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
 
@@ -266,6 +291,7 @@ const responsiveGridClass = computed(() => {
   const count = columnCount[props.screenType] ?? 1
   return `grid-cols-${count}`
 })
+
 console.log(props)
 </script>
 
@@ -327,15 +353,18 @@ console.log(props)
                         <Skeleton height="200px" class="mb-3" />
                         <Skeleton width="80%" class="mb-2" />
                         <Skeleton width="60%" />
+                        <Skeleton width="100%" />
                     </div>
                 </template>
 
                 <template v-else-if="products.length">
                     <div v-for="(product, index) in products" :key="index"
                         class="border p-3 relative rounded shadow-sm bg-white">
+                        <!-- {{ product.id }} -->
                         <ProductRender
                             :channels="channels"
                             :product="product"
+                            :productHasProtofolio="productHasProtofolio.list.includes(product.id)"
                             @refreshChannels="() => fetchChannels()"
                         />
                     </div>
