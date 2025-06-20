@@ -108,8 +108,10 @@ onMounted(async () => {
         <Swiper :initial-slide="selectedIndex" :slides-per-view="1" :loop="true" :navigation="navigation"
           :modules="[Navigation]" class="w-full">
           <SwiperSlide v-for="(image, index) in props.images" :key="index" class="flex items-center justify-center">
-            <Image :src="image.source" :alt="`Zoomed Image ${index + 1}`"
-              class="w-full max-h-[80vh] object-contain rounded-lg shadow-lg" />
+           <div
+            class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer h-[80vh]">
+            <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
+          </div>
           </SwiperSlide>
         </Swiper>
       </div>

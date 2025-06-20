@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Organisation\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
@@ -18,26 +18,25 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexOrganisations extends GrpAction
+class IndexOrganisations extends OrgAction
 {
     protected function getElementGroups(): array
     {
-        return   [
-                'status' => [
-                    'label'    => __('Type'),
-                    'elements' => ['active' => __('Active'), 'suspended' => __('Suspended')],
-                    'engine'   => function ($query, $elements) {
-                        $query->where('users.status', array_pop($elements) === 'active');
-                    }
+        return [
+            'status' => [
+                'label'    => __('Type'),
+                'elements' => ['active' => __('Active'), 'suspended' => __('Suspended')],
+                'engine'   => function ($query, $elements) {
+                    $query->where('users.status', array_pop($elements) === 'active');
+                }
 
-                ]
-            ];
+            ]
+        ];
     }
 
 
@@ -71,8 +70,8 @@ class IndexOrganisations extends GrpAction
 
         return $queryBuilder
             ->defaultSort('code')
-            ->select(['name', 'slug', 'type','code','number_employees_state_working','number_shops_state_open'])
-            ->allowedSorts([ 'name','type','code','number_employees_state_working','number_shops_state_open'])
+            ->select(['name', 'slug', 'type', 'code', 'number_employees_state_working', 'number_shops_state_open'])
+            ->allowedSorts(['name', 'type', 'code', 'number_employees_state_working', 'number_shops_state_open'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -118,13 +117,8 @@ class IndexOrganisations extends GrpAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('sysadmin.edit');
-        return  $request->user()->authTo('sysadmin.view');
-    }
 
-
-    public function jsonResponse(LengthAwarePaginator $organisations): AnonymousResourceCollection
-    {
-        return OrganisationsResource::collection($organisations);
+        return $request->user()->authTo('sysadmin.view');
     }
 
 
@@ -136,7 +130,7 @@ class IndexOrganisations extends GrpAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('organisations'),
                 'pageHead'    => [
-                    'icon'      => [
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-building'],
                         'title' => __('organisations')
                     ],
@@ -161,7 +155,7 @@ class IndexOrganisations extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group);
     }
@@ -178,7 +172,7 @@ class IndexOrganisations extends GrpAction
                             'route' => [
                                 'name' => 'grp.organisations.index'
                             ],
-                            'label'  => __('Organisations'),
+                            'label' => __('Organisations'),
                         ]
                     ]
                 ]

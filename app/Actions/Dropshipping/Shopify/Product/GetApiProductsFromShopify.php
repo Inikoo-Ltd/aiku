@@ -18,8 +18,8 @@ use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -58,37 +58,36 @@ class GetApiProductsFromShopify extends OrgAction
         } while ($nextPage);
 
         foreach ($products as $product) {
-            Log::info($product['title']);
-            foreach ($product['variants'] as $variant) {
-                DB::transaction(function () use ($variant, $product, $shopifyUser, $shopType) {
-                    $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
-                        ->where('reference', $product['handle'])->first();
-                    $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', $variant['product_id'])->first();
+            DB::transaction(function () use ($product, $shopifyUser, $shopType) {
+                $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
+                    ->where('reference', $product['handle'])->first();
+                $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'variants.0.product_id'))->first();
 
-                    if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
-                        if (!$storedItem) {
-                            $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
-                                'reference' => $product['handle'],
-                                'total_quantity' => $variant['inventory_quantity']
-                            ]);
-                        }
-
-                        $portfolio = $storedItem->portfolio;
-                        if (!$portfolio) {
-
-                            StorePortfolio::make()->action(
-                                $shopifyUser->customerSalesChannel,
-                                $storedItem,
-                                []
-                            );
-                        }
-
-                        UpdateStoredItem::run($storedItem, [
-                            'state' => StoredItemStateEnum::ACTIVE
+                if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
+                    if (!$storedItem) {
+                        $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
+                            'reference' => $product['handle'],
+                            'total_quantity' => Arr::get($product, 'variants.0.inventory_quantity')
                         ]);
                     }
-                });
-            }
+
+                    $portfolio = $storedItem->portfolio;
+                    if (!$portfolio) {
+
+                        StorePortfolio::make()->action(
+                            $shopifyUser->customerSalesChannel,
+                            $storedItem,
+                            [
+                                'platform_product_id' => Arr::get($product, 'variants.0.product_id'),
+                            ]
+                        );
+                    }
+
+                    UpdateStoredItem::run($storedItem, [
+                        'state' => StoredItemStateEnum::ACTIVE
+                    ]);
+                }
+            });
         }
     }
 
