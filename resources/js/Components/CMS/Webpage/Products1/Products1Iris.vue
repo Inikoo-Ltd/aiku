@@ -31,7 +31,7 @@ const props = defineProps<{
 }>()
 
 const products = ref<any[]>([])
-const loadingInitial = ref(true)
+const loadingInitial = ref(false)
 const loadingMore = ref(false)
 const q = ref('')
 const orderBy = ref('')
@@ -166,7 +166,7 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith('-')
     }
 
-    debFetchProducts()
+    /* debFetchProducts() */
 })
 
 const updateQueryParams = () => {
