@@ -139,7 +139,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
                         <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
-                    
+
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
                             {{ selectedModal?.title }}

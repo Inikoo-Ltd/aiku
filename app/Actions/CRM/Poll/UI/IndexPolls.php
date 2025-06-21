@@ -22,9 +22,11 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPolls extends OrgAction
 {
@@ -36,6 +38,13 @@ class IndexPolls extends OrgAction
 
     public function handle(Shop|Organisation $parent, $prefix = null): LengthAwarePaginator
     {
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
+            $query->where(function ($query) use ($value, $parent) {
+                $query->whereAnyWordStartWith('polls.name', $value)
+                    ->orWhereAnyWordStartWith('polls.label', $value);
+            });
+        });
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -46,6 +55,22 @@ class IndexPolls extends OrgAction
         } else {
             $queryBuilder->where('polls.organisation_id', $parent->id);
         }
+
+        $queryBuilder->leftJoin('poll_stats', function ($join) {
+            $join->on('polls.id', '=', 'poll_stats.poll_id');
+        });
+
+        $totalCustomer = 0;
+        if ($parent instanceof Shop) {
+            $totalCustomer = DB::table('shop_crm_stats')
+            ->where('shop_id', $parent->id)
+            ->value('number_customers') ?? 0;
+        } else {
+            $totalCustomer = DB::table('organisation_crm_stats')
+            ->where('organisation_id', $parent->id)
+            ->value('number_customers') ?? 0;
+        }
+
         $queryBuilder
             ->defaultSort('polls.id')
             ->select([
@@ -55,10 +80,15 @@ class IndexPolls extends OrgAction
                 'polls.label',
                 'polls.position',
                 'polls.type',
-            ]);
+                'polls.in_registration',
+                'poll_stats.*',
+                DB::raw("'{$totalCustomer}' AS total_customers"),
+            ])
+            ->groupBy('polls.id', 'poll_stats.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'type'])
+            ->allowedSorts(['name', 'type', 'number_customers', 'in_registration'])
+            ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -89,7 +119,10 @@ class IndexPolls extends OrgAction
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'in_registration', label: __('In registration'), canBeHidden: false, sortable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'percentage', label: __('Response %'), canBeHidden: false);
         };
     }
 
@@ -128,6 +161,22 @@ class IndexPolls extends OrgAction
             ];
         }
 
+        $action = [];
+        if ($this->canEdit) {
+            $action = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('New Poll'),
+                    'label'   => __('New Poll'),
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.crm.polls.create',
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ],
+            ];
+        }
+
         return Inertia::render(
             'Org/Shop/CRM/Polls',
             [
@@ -143,6 +192,7 @@ class IndexPolls extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => $action,
                 ],
                 'data'          => PollsResource::collection($polls),
             ]
@@ -179,6 +229,7 @@ class IndexPolls extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.crm.polls.show',
             'grp.org.shops.show.crm.polls.index' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs(
