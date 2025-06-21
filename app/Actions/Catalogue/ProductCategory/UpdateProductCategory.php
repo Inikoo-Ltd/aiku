@@ -149,6 +149,9 @@ class UpdateProductCategory extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
+            'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                    => ['sometimes', 'array'],
 
         ];
 

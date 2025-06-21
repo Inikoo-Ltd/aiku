@@ -49,12 +49,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property int|null $webpage_id
+ * @property string|null $url
+ * @property \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
@@ -88,12 +89,14 @@ class Collection extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'data'  => 'array',
-        'state' => CollectionStateEnum::class,
+        'data'   => 'array',
+        'images' => 'array',
+        'state'  => CollectionStateEnum::class,
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'   => '{}',
+        'images' => '{}',
     ];
 
     public function getRouteKeyName(): string
@@ -138,15 +141,15 @@ class Collection extends Model implements Auditable, HasMedia
     public function departments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'department')
-                    ->withTimestamps();
+            ->wherePivot('type', 'department')
+            ->withTimestamps();
     }
 
     public function subDepartments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'sub_department')
-                    ->withTimestamps();
+            ->wherePivot('type', 'sub_department')
+            ->withTimestamps();
     }
 
     public function products(): MorphToMany
@@ -166,8 +169,6 @@ class Collection extends Model implements Auditable, HasMedia
     {
         return $this->morphOne(Webpage::class, 'model');
     }
-
-
 
 
 }
