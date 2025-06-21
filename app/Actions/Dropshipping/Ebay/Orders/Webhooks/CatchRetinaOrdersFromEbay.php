@@ -42,7 +42,7 @@ class CatchRetinaOrdersFromEbay extends OrgAction
                 if (in_array(Arr::get($order, 'orderId'), $existingOrderKeys, true)) {
                     continue;
                 }
-                
+
                 if (!empty(array_filter(Arr::get($order, 'buyer'))) && !empty(array_filter(Arr::get($order, 'buyer.buyerRegistrationAddress')))) {
                     StoreOrderFromEbay::run($ebayUser, $order);
                 } else {
