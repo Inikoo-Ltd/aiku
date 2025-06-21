@@ -8,6 +8,8 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Actions\Catalogue\Collection\UpdateCollectionImages;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -36,7 +38,7 @@ class SaveModelImage
         User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand $model,
         array $imageData,
         string $scope = 'image',
-        string $foreignkeyMedia = 'image_id'
+        string $foreignKeyMedia = 'image_id'
     ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand {
         $oldImage = $model->image;
 
@@ -64,7 +66,8 @@ class SaveModelImage
 
 
         if ($media) {
-            $model->updateQuietly([$foreignkeyMedia => $media->id]);
+            $model->updateQuietly([$foreignKeyMedia => $media->id]);
+
 
             $model->images()->sync(
                 [
@@ -76,6 +79,14 @@ class SaveModelImage
                     ]
                 ]
             );
+            $model->refresh();
+            if ($model instanceof ProductCategory) {
+                UpdateProductCategoryImages::run($model);
+            } elseif ($model instanceof Collection) {
+                UpdateCollectionImages::run($model);
+            }
+
+
             if ($oldImage) {
                 $oldImage->delete();
             }

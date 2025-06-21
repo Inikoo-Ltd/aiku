@@ -24,7 +24,7 @@ class RedoProductImages
 
     public function handle(Product $product): void
     {
-        UpdateProductImagesJson::run($product);
+        UpdateProductImages::run($product);
 
     }
 

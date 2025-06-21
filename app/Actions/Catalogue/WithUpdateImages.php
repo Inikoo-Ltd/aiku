@@ -2,42 +2,40 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 21 Jun 2025 22:08:41 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sun, 22 Jun 2025 00:00:41 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Product;
+namespace App\Actions\Catalogue;
 
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Media;
-use Lorisleiva\Actions\Concerns\AsObject;
 
-class UpdateProductImagesJson
+trait WithUpdateImages
 {
-    use AsObject;
-
-    public function handle(Product $product): Product
+    public function updateImages(Product|ProductCategory|Collection $model): Product|ProductCategory|Collection
     {
         $imagesData = [
-            'main' => $this->getMainImageData($product)
+            'main' => $this->getMainImageData($model)
         ];
 
-        $product->update(
+        $model->update(
             [
                 'images' => $imagesData
             ]
         );
-        $product->refresh();
-
-        return $product;
+        $model->refresh();
+        return $model;
     }
 
-    public function getMainImageData(Product $product): array
+    public function getMainImageData(Product|ProductCategory|Collection $model): array
     {
         $media = null;
-        if ($product->image_id) {
-            $media = Media::find($product->image_id);
+        if ($model->image_id) {
+            $media = Media::find($model->image_id);
         }
 
         if (!$media) {
@@ -54,6 +52,4 @@ class UpdateProductImagesJson
             'thumbnail' => GetPictureSources::run($imageThumbnail),
         ];
     }
-
-
 }
