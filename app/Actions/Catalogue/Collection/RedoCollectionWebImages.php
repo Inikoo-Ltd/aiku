@@ -11,11 +11,11 @@ namespace App\Actions\Catalogue\Collection;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\Collection;
 
-class RedoCollectionImages
+class RedoCollectionWebImages
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'collections:redo_images {organisations?*} {--S|shop= shop slug} {--s|slug=} ';
+    public string $commandSignature = 'collections:redo_web_images {organisations?*} {--S|shop= shop slug} {--s|slug=} ';
 
     public function __construct()
     {
@@ -24,7 +24,7 @@ class RedoCollectionImages
 
     public function handle(Collection $collection): void
     {
-        UpdateCollectionImages::run($collection);
+        UpdateCollectionWebImages::run($collection);
 
     }
 

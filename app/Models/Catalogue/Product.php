@@ -90,7 +90,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $exclusive_for_customer_id
  * @property int|null $webpage_id
  * @property string|null $url
- * @property \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property array<array-key, mixed> $web_images
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
@@ -105,6 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read LaravelCollection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Product|null $mainProduct
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read LaravelCollection<int, OrgStock> $orgStocks
@@ -146,7 +147,7 @@ class Product extends Model implements Auditable, HasMedia
         'rrp'                    => 'decimal:2',
         'data'                   => 'array',
         'settings'               => 'array',
-        'images'                 => 'array',
+        'web_images'             => 'array',
         'variant_is_visible'     => 'boolean',
         'state'                  => ProductStateEnum::class,
         'status'                 => ProductStatusEnum::class,
@@ -157,9 +158,9 @@ class Product extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'images'   => '{}',
+        'data'       => '{}',
+        'settings'   => '{}',
+        'web_images' => '{}',
     ];
 
     public function generateTags(): array

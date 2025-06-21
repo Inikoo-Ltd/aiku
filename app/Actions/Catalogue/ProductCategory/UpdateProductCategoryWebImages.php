@@ -6,21 +6,20 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Collection;
+namespace App\Actions\Catalogue\ProductCategory;
 
-use App\Actions\Catalogue\WithUpdateImages;
-use App\Models\Catalogue\Collection;
+use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class UpdateCollectionImages
+class UpdateProductCategoryWebImages
 {
     use AsObject;
-    use WithUpdateImages;
+    use WithUpdateWebImages;
 
-    public function handle(Collection $collection): ProductCategory
+    public function handle(ProductCategory $productCategory): ProductCategory
     {
-        return $this->updateImages($collection);
+        return $this->updateWebImages($productCategory);
     }
 
 

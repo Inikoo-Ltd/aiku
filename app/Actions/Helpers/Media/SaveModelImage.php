@@ -8,8 +8,8 @@
 
 namespace App\Actions\Helpers\Media;
 
-use App\Actions\Catalogue\Collection\UpdateCollectionImages;
-use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
+use App\Actions\Catalogue\Collection\UpdateCollectionWebImages;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryWebImages;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -81,9 +81,9 @@ class SaveModelImage
             );
             $model->refresh();
             if ($model instanceof ProductCategory) {
-                UpdateProductCategoryImages::run($model);
+                UpdateProductCategoryWebImages::run($model);
             } elseif ($model instanceof Collection) {
-                UpdateCollectionImages::run($model);
+                UpdateCollectionWebImages::run($model);
             }
 
 

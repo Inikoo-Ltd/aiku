@@ -50,12 +50,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $last_fetched_at
  * @property int|null $webpage_id
  * @property string|null $url
- * @property \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property array<array-key, mixed> $web_images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
@@ -89,14 +90,14 @@ class Collection extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'data'   => 'array',
-        'images' => 'array',
-        'state'  => CollectionStateEnum::class,
+        'data'       => 'array',
+        'web_images' => 'array',
+        'state'      => CollectionStateEnum::class,
     ];
 
     protected $attributes = [
-        'data'   => '{}',
-        'images' => '{}',
+        'data'       => '{}',
+        'web_images' => '{}',
     ];
 
     public function getRouteKeyName(): string

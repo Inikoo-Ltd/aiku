@@ -28,8 +28,8 @@ return new class () extends Migration {
                 if (!Schema::hasColumn($tableName, 'url')) {
                     $table->string('url')->nullable()->index();
                 }
-                if (!Schema::hasColumn($tableName, 'images')) {
-                    $table->jsonb('images')->default('{}');
+                if (!Schema::hasColumn($tableName, 'web_images')) {
+                    $table->jsonb('web_images')->default('{}');
                 }
             });
         }
@@ -46,8 +46,8 @@ return new class () extends Migration {
                 if (Schema::hasColumn($tableName, 'url')) {
                     $table->dropColumn('url');
                 }
-                if (Schema::hasColumn($tableName, 'images')) {
-                    $table->dropColumn('images');
+                if (Schema::hasColumn($tableName, 'web_images')) {
+                    $table->dropColumn('web_images');
                 }
             });
         }

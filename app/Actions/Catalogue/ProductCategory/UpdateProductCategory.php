@@ -78,7 +78,7 @@ class UpdateProductCategory extends OrgAction
         }
 
         if (Arr::has($changes, 'image_id')) {
-            UpdateProductCategoryImages::run($productCategory);
+            UpdateProductCategoryWebImages::run($productCategory);
         }
 
         if (Arr::hasAny($changes, ['type', 'state', 'master_product_category_id'])) {

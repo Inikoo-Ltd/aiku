@@ -11,11 +11,11 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
 
-class RedoProductCategoryImages
+class RedoProductCategoryWebImages
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'product_categories:redo_images {organisations?*} {--S|shop= shop slug} {--s|slug=} ';
+    public string $commandSignature = 'product_categories:redo_web_images {organisations?*} {--S|shop= shop slug} {--s|slug=} ';
 
     public function __construct()
     {
@@ -24,7 +24,7 @@ class RedoProductCategoryImages
 
     public function handle(ProductCategory $productCategory): void
     {
-        UpdateProductCategoryImages::run($productCategory);
+        UpdateProductCategoryWebImages::run($productCategory);
 
     }
 

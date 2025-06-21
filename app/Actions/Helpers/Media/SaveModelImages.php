@@ -8,8 +8,8 @@
 
 namespace App\Actions\Helpers\Media;
 
-use App\Actions\Catalogue\Product\UpdateProductImages;
-use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
+use App\Actions\Catalogue\Product\UpdateProductWebImages;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryWebImages;
 use App\Actions\Helpers\Media\Hydrators\MediaHydrateMultiplicity;
 use App\Actions\Helpers\Media\Hydrators\MediaHydrateUsage;
 use App\Models\Catalogue\Product;
@@ -57,9 +57,9 @@ class SaveModelImages
                 $model->updateQuietly(['image_id' => $media->id]);
                 $model->refresh();
                 if ($model instanceof Product) {
-                    UpdateProductImages::run($model);
+                    UpdateProductWebImages::run($model);
                 } elseif ($model instanceof ProductCategory) {
-                    UpdateProductCategoryImages::run($model);
+                    UpdateProductCategoryWebImages::run($model);
                 }
             }
 

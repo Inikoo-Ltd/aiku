@@ -14,24 +14,24 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Media;
 
-trait WithUpdateImages
+trait WithUpdateWebImages
 {
-    public function updateImages(Product|ProductCategory|Collection $model): Product|ProductCategory|Collection
+    public function updateWebImages(Product|ProductCategory|Collection $model): Product|ProductCategory|Collection
     {
-        $imagesData = [
-            'main' => $this->getMainImageData($model)
+        $webImagesData = [
+            'main' => $this->getMainWebImageData($model)
         ];
 
         $model->update(
             [
-                'images' => $imagesData
+                'web_images' => $webImagesData
             ]
         );
         $model->refresh();
         return $model;
     }
 
-    public function getMainImageData(Product|ProductCategory|Collection $model): array
+    public function getMainWebImageData(Product|ProductCategory|Collection $model): array
     {
         $media = null;
         if ($model->image_id) {

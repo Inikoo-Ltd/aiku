@@ -8,18 +8,18 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\WithUpdateImages;
+use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Models\Catalogue\Product;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class UpdateProductImages
+class UpdateProductWebImages
 {
     use AsObject;
-    use WithUpdateImages;
+    use WithUpdateWebImages;
 
     public function handle(Product $product): Product
     {
-        return $this->updateImages($product);
+        return $this->updateWebImages($product);
     }
 
 

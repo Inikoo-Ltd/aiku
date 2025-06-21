@@ -48,7 +48,7 @@ class StoreFulfilmentFromEbay extends OrgAction
         $ebayProducts = collect($modelData['line_items']);
 
         if (!$customerClient) {
-           StoreCustomerClient::make()->action($ebayUser->customerSalesChannel, $deliveryAttributes);
+            StoreCustomerClient::make()->action($ebayUser->customerSalesChannel, $deliveryAttributes);
         }
 
         $ebayUserHasProductExists = $ebayUser->customerSalesChannel->portfolios()

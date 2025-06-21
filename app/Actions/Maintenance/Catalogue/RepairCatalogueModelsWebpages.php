@@ -13,7 +13,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Models\Catalogue\Collection as MyCollection;
-
 use Illuminate\Database\Eloquent\Collection;
 
 class RepairCatalogueModelsWebpages

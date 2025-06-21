@@ -71,7 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $show_in_website
  * @property int|null $webpage_id
  * @property string|null $url
- * @property \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property array<array-key, mixed> $web_images
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -79,6 +79,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read ProductCategory|null $department
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read MasterProductCategory|null $masterProductCategory
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Catalogue\ProductCategoryOrderingIntervals|null $orderingIntervals
@@ -116,7 +117,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'             => 'array',
-        'images'           => 'array',
+        'web_images'       => 'array',
         'state'            => ProductCategoryStateEnum::class,
         'type'             => ProductCategoryTypeEnum::class,
         'activated_at'     => 'datetime',
@@ -127,8 +128,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'   => '{}',
-        'images' => '{}',
+        'data'       => '{}',
+        'web_images' => '{}',
     ];
 
     public function generateTags(): array
