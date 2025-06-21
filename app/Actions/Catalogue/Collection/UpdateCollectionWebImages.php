@@ -18,7 +18,7 @@ class UpdateCollectionWebImages
     use AsObject;
     use WithUpdateWebImages;
 
-    public function handle(Collection $collection): ProductCategory
+    public function handle(Collection $collection): Collection
     {
         return $this->updateWebImages($collection);
     }
