@@ -24,41 +24,53 @@ class ShowIrisWebpage
     use WithIrisGetWebpageWebBlocks;
 
 
-    public function handle(Webpage $webpage): array
+    public function getWebpageData($webpageID): array
     {
-        $webPageLayout               = $webpage->published_layout;
+
+
+        $webpage = Webpage::find($webpageID);
+        $webPageLayout = $webpage->published_layout;
 
 
         $webBlocks = $this->getIrisWebBlocks(
             webpage: $webpage,
-            webBlocks:Arr::get($webPageLayout, 'web_blocks', []),
+            webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
             isLoggedIn: auth()->check()
         );
 
 
         return [
-            'meta'   => $webpage->seo_data,
-            'script_website' => Arr::get($webpage->website->settings, 'script_website.header', null),
-            'web_blocks' => $webBlocks,
+            'meta'           => $webpage->seo_data,
+            'script_website' => Arr::get($webpage->website->settings, 'script_website.header'),
+            'web_blocks'     => $webBlocks,
         ];
     }
 
 
     public function asController(ActionRequest $request, string $path = null): array
     {
-        /** @var Website $website */
-        $website = $request->get('website');
-        $webpageID = $this->getWebpageID($website, $path);
+
+        $ttl=10;
+
+        $key = 'iris-webpage-path-'.$request->get('website')->id.'-'.$path;
+
+        $webpageID= cache()->remember($key, $ttl, function () use ($request, $path) {
+            return $this->getWebpageID($request->get('website'), $path);
+        });
 
         if ($webpageID === null) {
-            abort(404);
+            abort(404, 'Not found');
         }
 
-        $webpage   = Webpage::find($webpageID);
+        $key = 'iris-webpage-'.$request->get('website')->id.'-'.auth()->check()?'in':'out'.'-'.$webpageID;
+
+
+        return cache()->remember($key, $ttl, function () use ($webpageID) {
+            return $this->getWebpageData($webpageID);
+        });
 
 
 
-        return $this->handle($webpage);
     }
 
     public function htmlResponse($webpageData): Response

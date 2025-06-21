@@ -23,14 +23,14 @@ class GetImgProxyUrl
 
     private Image $image;
 
-    private ?int $signature_size = null;
+    private ?int $signatureSize = null;
 
     public function __construct()
     {
         if (config('img-proxy.signature_size')) {
             $signature_size = config('img-proxy.signature_size');
             if (is_numeric($signature_size)) {
-                $this->signature_size = (int)$signature_size;
+                $this->signatureSize = (int)$signature_size;
             }
         }
     }
@@ -98,8 +98,8 @@ class GetImgProxyUrl
             true
         );
 
-        if ($this->signature_size) {
-            $signature = pack('A'.$this->signature_size, $signature);
+        if ($this->signatureSize) {
+            $signature = pack('A'.$this->signatureSize, $signature);
         }
 
         return rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
@@ -115,15 +115,10 @@ class GetImgProxyUrl
 
         $processingOptions = '';
 
-        switch ($img->getSizeProcessOption()) {
-            case 'resize':
-                $resize = $img->getResize();
-                $processingOptions .= 'rs:'.join(':', $resize);
-
-                break;
+        if ($img->getSizeProcessOption() === 'resize') {
+            $resize = $img->getResize();
+            $processingOptions .= 'rs:'.join(':', $resize);
         }
-
-
 
         return $processingOptions;
     }

@@ -39,29 +39,29 @@ class IrisProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-
         $image = null;
         if ($this->image_id) {
             $media = Media::find($this->image_id);
             $image = ImageResource::make($media)->getArray();
         }
 
+
         return [
-            'id'            => $this->id,
-            'image_id'      => $this->image_id,
-            'code'          => $this->code,
-            'name'          => $this->name,
-            'stock'         => $this->available_quantity,
-            'price'         => $this->price,
-            'rrp'           => $this->rrp,
-            'state'         => $this->state,
-            'status'        => $this->status,
-            'created_at'    => $this->created_at,
-            'updated_at'    => $this->updated_at,
-            'units'         => $this->units,
-            'unit'          => $this->unit,
-            'url'           => $this->url,
-            'image'         => $image
+            'id'         => $this->id,
+            'image_id'   => $this->image_id,
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'stock'      => $this->available_quantity,
+            'price'      => $this->price,
+            'rrp'        => $this->rrp,
+            'state'      => $this->state,
+            'status'     => $this->status,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'units'      => $this->units,
+            'unit'       => $this->unit,
+            'url'        => $this->url,
+            'image'      => $image
         ];
     }
 
