@@ -82,7 +82,7 @@ trait WithMasterCatalogueSubNavigation
                 'label'    => __('Subs'),
                 'tooltip'  => __('Sub Departments'),
                 'route'    => [
-                    'name'       => 'grp.masters.master_shops.show.sub-departments.index',
+                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]

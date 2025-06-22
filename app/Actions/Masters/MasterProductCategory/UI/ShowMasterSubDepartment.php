@@ -201,7 +201,7 @@ class ShowMasterSubDepartment extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.sub-departments.show' => [
+            'grp.masters.master_shops.show.master_sub_departments.show' => [
                 'label' => $masterSubDepartment->name,
                 'route' => [
                     'name'       => $routeName,

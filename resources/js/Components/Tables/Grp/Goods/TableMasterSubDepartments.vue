@@ -25,7 +25,7 @@ function masterSubDepartmentRoute(subDepartment: {}) {
                 ]);
         default:
             return route(
-                'grp.masters.master_shops.show.sub-departments.show',
+                'grp.masters.master_shops.show.master_sub_departments.show',
                 [
                     (route().params as RouteParams).masterShop,
                     (route().params as RouteParams).masterDepartment,

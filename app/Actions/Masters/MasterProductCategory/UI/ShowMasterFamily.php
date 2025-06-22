@@ -15,10 +15,12 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
+use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,7 +30,7 @@ class ShowMasterFamily extends GrpAction
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
 
-    private MasterShop $parent;
+    private MasterShop|Group $parent;
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
@@ -47,6 +49,14 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    public function inGroup(MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $group;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {

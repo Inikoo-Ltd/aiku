@@ -240,7 +240,7 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
 
 test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
     $response = get(
-        route("grp.masters.master_shops.show.sub-departments.index", [$masterShop->slug])
+        route("grp.masters.master_shops.show.master_sub_departments.index", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
