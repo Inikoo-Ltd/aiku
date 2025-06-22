@@ -8,6 +8,8 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Actions\Catalogue\Product\UpdateProductWebImages;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryWebImages;
 use App\Actions\Helpers\Media\Hydrators\MediaHydrateMultiplicity;
 use App\Actions\Helpers\Media\Hydrators\MediaHydrateUsage;
 use App\Models\Catalogue\Product;
@@ -53,6 +55,12 @@ class SaveModelImages
             );
             if (!$model instanceof WebBlock && $model->images()->count() == 1) {
                 $model->updateQuietly(['image_id' => $media->id]);
+                $model->refresh();
+                if ($model instanceof Product) {
+                    UpdateProductWebImages::run($model);
+                } elseif ($model instanceof ProductCategory) {
+                    UpdateProductCategoryWebImages::run($model);
+                }
             }
 
             MediaHydrateUsage::dispatch($media);

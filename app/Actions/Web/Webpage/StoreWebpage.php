@@ -8,6 +8,9 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Catalogue\Collection\UpdateCollection;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
@@ -107,9 +110,26 @@ class StoreWebpage extends OrgAction
                 ]
             );
 
+            $model = $webpage->model;
+            if ($model instanceof Product) {
+                UpdateProduct::make()->action($model, [
+                    'webpage_id' => $webpage->id,
+                    'url'        => $webpage->url,
+                ]);
+            } elseif ($model instanceof ProductCategory) {
+                UpdateProductCategory::make()->action($model, [
+                    'webpage_id' => $webpage->id,
+                    'url'        => $webpage->url,
+                ]);
+            } elseif ($model instanceof Collection) {
+                UpdateCollection::make()->action($model, [
+                    'webpage_id' => $webpage->id,
+                    'url'        => $webpage->url,
+                ]);
+            }
+
 
             if ($this->strict) {
-                $model = $webpage->model;
                 if ($model instanceof Product) {
                     $this->createWebBlock($webpage, 'product-1', $model);
                 } elseif ($model instanceof Collection) {
