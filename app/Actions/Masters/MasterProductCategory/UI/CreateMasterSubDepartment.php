@@ -22,38 +22,10 @@ use Spatie\LaravelOptions\Options;
 
 class CreateMasterSubDepartment extends OrgAction
 {
-    // public function authorize(ActionRequest $request): bool
-    // {
-    //     if ($this->parent instanceof Organisation) {
-    //         $this->canEdit = $request->user()->authTo(
-    //             [
-    //                 'org-supervisor.'.$this->organisation->id,
-    //             ]
-    //         );
 
-    //         return $request->user()->authTo(
-    //             [
-    //                 'org-supervisor.'.$this->organisation->id,
-    //                 'shops-view'.$this->organisation->id,
-    //             ]
-    //         );
-    //     } else {
-    //         $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-    //         return $request->user()->authTo("products.{$this->shop->id}.view");
-    //     }
-    // }
-
-
-    // public function inOrganisation(Organisation $organisation, ActionRequest $request): ActionRequest
-    // {
-    //     $this->initialisation($organisation, $request);
-
-    //     return $request;
-    // }
 
     public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
-        // $this = group();
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterDepartment, $request);
@@ -77,7 +49,7 @@ class CreateMasterSubDepartment extends OrgAction
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => 'grp.masters.departments.sub_departments.index',
+                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]

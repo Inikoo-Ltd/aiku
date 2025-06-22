@@ -60,15 +60,15 @@ class ShowMasterDepartment extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
-        $subNavigation = false;
+        $tittle = __('Master department');
 
-        if ($this->parent instanceof Group) {
-            $subNavigation = $this->getMasterDepartmentSubNavigation($masterDepartment);
-        }
+
+        $subNavigation = $this->getMasterDepartmentSubNavigation($masterDepartment);
+
         return Inertia::render(
             'Org/Catalogue/Department',
             [
-                'title'       => __('department'),
+                'title'       => $tittle,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,
                     $masterDepartment,
@@ -80,12 +80,12 @@ class ShowMasterDepartment extends GrpAction
                     'next'     => $this->getNext($masterDepartment, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $masterDepartment->name,
-                    'icon'    => [
+                    'title'         => $masterDepartment->name,
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('department')
+                        'title' => $tittle
                     ],
-                    'actions' => [
+                    'actions'       => [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -112,13 +112,13 @@ class ShowMasterDepartment extends GrpAction
                 ],
 
                 MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
+                    fn() => GetMasterProductCategoryShowcase::run($masterDepartment)
+                    : Inertia::lazy(fn() => GetMasterProductCategoryShowcase::run($masterDepartment)),
 
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
+                    fn() => HistoryResource::collection(IndexHistory::run($masterDepartment))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($masterDepartment))),
 
 
             ]
@@ -127,17 +127,9 @@ class ShowMasterDepartment extends GrpAction
     }
 
 
-    public function jsonResponse(MasterProductCategory $masterDepartment): DepartmentsResource
-    {
-        return new DepartmentsResource($masterDepartment);
-    }
-
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, MasterProductCategory $department, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (MasterProductCategory $department, array $routeParameters, ?string $suffix) {
-
-
-
             return [
 
 
@@ -162,18 +154,18 @@ class ShowMasterDepartment extends GrpAction
 
 
         return match ($routeName) {
-            'grp.masters.departments.show' =>
+            'grp.masters.master_departments.show' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     $department,
                     [
                         'index' => [
-                            'name'       => 'grp.masters.departments.index',
+                            'name'       => 'grp.masters.master_departments.index',
                             'parameters' => []
                         ],
                         'model' => [
-                            'name'       => 'grp.masters.departments.show',
+                            'name'       => 'grp.masters.master_departments.show',
                             'parameters' => $routeParameters
 
 
@@ -182,18 +174,18 @@ class ShowMasterDepartment extends GrpAction
                     $suffix
                 )
             ),
-            'grp.masters.shops.show.departments.show' =>
+            'grp.masters.master_shops.show.master_departments.show' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     $department,
                     [
                         'index' => [
-                            'name'       => 'grp.masters.shops.show.departments.index',
+                            'name'       => 'grp.masters.master_shops.show.master_departments.index',
                             'parameters' => Arr::only($routeParameters, ['masterShop']),
                         ],
                         'model' => [
-                            'name'       => 'grp.masters.shops.show.departments.show',
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show',
                             'parameters' => $routeParameters
 
 
@@ -227,7 +219,7 @@ class ShowMasterDepartment extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.masters.departments.show' => [
+            'grp.masters.master_departments.show' => [
                 'label' => $masterDepartment->name,
                 'route' => [
                     'name'       => $routeName,
@@ -236,7 +228,7 @@ class ShowMasterDepartment extends GrpAction
                     ]
                 ]
             ],
-            'grp.masters.shops.show.departments.show' => [
+            'grp.masters.master_shops.show.master_departments.show' => [
                 'label' => $masterDepartment->name,
                 'route' => [
                     'name'       => $routeName,

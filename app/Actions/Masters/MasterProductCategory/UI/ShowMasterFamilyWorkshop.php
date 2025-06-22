@@ -153,7 +153,7 @@ class ShowMasterFamilyWorkshop extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.masters.families.show' => [
+            'grp.masters.master_families.show' => [
                 'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,
@@ -162,7 +162,7 @@ class ShowMasterFamilyWorkshop extends GrpAction
                     ]
                 ]
             ],
-            'grp.masters.shops.show.families.show' => [
+            'grp.masters.master_shops.show.master_families.show' => [
                 'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,
