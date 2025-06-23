@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\UI\Dashboard;
 
 use App\Http\Resources\CRM\CustomerResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -22,7 +23,7 @@ class GetRetinaDropshippingHomeData
     {
         return [
             'customer' => CustomerResource::make($customer)->getArray(),
-
+            'channels' => CustomerSalesChannelsResource::collection($customer->customerSalesChannels)
         ];
     }
 }
