@@ -86,7 +86,7 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-
+            $table->withLabelRecord([__('client'), __('clients')]);
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()

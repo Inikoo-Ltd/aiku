@@ -110,6 +110,7 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
+            $table->withLabelRecord([__('channel'), __('channels')]);
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
