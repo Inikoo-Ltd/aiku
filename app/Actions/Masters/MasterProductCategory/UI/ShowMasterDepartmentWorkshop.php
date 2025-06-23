@@ -144,7 +144,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.masters.department.blueprint' => [
+            'grp.masters.master_departments.show.blueprint' => [
                 'label' => $masterDepartment->name,
                 'route' => [
                     'name'       => $routeName,
@@ -153,7 +153,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     ]
                 ]
             ],
-            'grp.masters.shops.show.department.blueprint' => [
+            'grp.masters.master_shops.show.department.blueprint' => [
                 'label' => $masterDepartment->name,
                 'route' => [
                     'name'       => $routeName,

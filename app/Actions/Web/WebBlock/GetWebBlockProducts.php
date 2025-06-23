@@ -8,6 +8,9 @@
 
 namespace App\Actions\Web\WebBlock;
 
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -15,42 +18,14 @@ class GetWebBlockProducts
 {
     use AsObject;
 
-    public function handle(Webpage $webpage, array $webBlock): array
+    public function handle(Webpage $webpage, array $webBlock, bool $isLoggedIn): array
     {
+        $stockMode = $isLoggedIn ? 'in_stock' : 'all';
+
         if ($webpage->model_type == 'Collection') {
-            $productRoute = [
-                'workshop' => [
-                    'name'       => 'grp.json.collection.products.index',
-                    'parameters' => ['collection' => $webpage->model_id],
-                ],
-                'iris'     => [
-                    'route_products'              => [
-                        'name'       => 'iris.json.collection.products.index',
-                        'parameters' => ['collection' => $webpage->model_id],
-                    ],
-                    'route_out_of_stock_products' => [
-                        'name'       => 'iris.json.collection.out_of_stock_products.index',
-                        'parameters' => ['collection' => $webpage->model_id],
-                    ]
-                ],
-            ];
+            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: $stockMode));
         } else {
-            $productRoute = [
-                'workshop' => [
-                    'name'       => 'grp.json.product_category.products.index',
-                    'parameters' => ['productCategory' => $webpage->model_id],
-                ],
-                'iris'     => [
-                    'route_products'              => [
-                        'name'       => 'iris.json.product_category.products.index',
-                        'parameters' => ['productCategory' => $webpage->model_id],
-                    ],
-                    'route_out_of_stock_products' => [
-                        'name'       => 'iris.json.product_category.out_of_stock_products.index',
-                        'parameters' => ['productCategory' => $webpage->model_id],
-                    ]
-                ],
-            ];
+            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: $stockMode));
         }
 
 
@@ -58,7 +33,9 @@ class GetWebBlockProducts
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['products']['data']['fieldValue'] ?? []);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);
 
 
         return $webBlock;

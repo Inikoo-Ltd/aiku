@@ -15,7 +15,6 @@ use App\Enums\Helpers\Snapshot\SnapshotBuilderEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class StoreWebpageSnapshot extends OrgAction
@@ -36,17 +35,7 @@ class StoreWebpageSnapshot extends OrgAction
             SnapshotScopeEnum::WEBPAGE
         );
 
-        data_set(
-            $modelData,
-            'checksum',
-            md5(
-                json_encode(
-                    Arr::get($modelData, 'layout')
-                )
-            )
-        );
         data_set($modelData, 'group_id', $webpage->group_id);
-
 
         $snapshot = DB::transaction(function () use ($webpage, $modelData) {
 

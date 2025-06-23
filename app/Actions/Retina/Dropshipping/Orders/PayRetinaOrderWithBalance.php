@@ -123,7 +123,7 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
         return $this->handle($order);
 
-        
+
     }
 
     public function htmlResponse(array $arr): RedirectResponse

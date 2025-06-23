@@ -230,7 +230,6 @@ class StoreProduct extends OrgAction
                     ->where('shop_id', $this->shop->id)
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
-            'image_id'                  => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'price'                     => ['required', 'numeric', 'min:0'],
             'unit'                      => ['sometimes', 'required', 'string'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],

@@ -17,31 +17,31 @@ defineProps<{
 }>();
 
 function masterFamilyRoute(masterProduct: MasterProduct) {
-  if (route().current() == "grp.masters.products.index") {
+  if (route().current() == "grp.masters.master_products.index") {
     return route(
-      "grp.masters.families.show",
+      "grp.masters.master_families.show",
       { masterFamily: masterProduct.master_family_slug });
   } else {
     return route(
-      "grp.masters.shops.show.families.show",
+      "grp.masters.master_shops.show.master_families.show",
       { masterShop: (route().params as RouteParams).masterShop, masterFamily: masterProduct.master_family_slug });
   }
 }
 
 function masterDepartmentRoute(masterProduct: MasterProduct) {
-  if (route().current() == "grp.masters.products.index") {
+  if (route().current() == "grp.masters.master_products.index") {
     return route(
-      "grp.masters.departments.show",
+      "grp.masters.master_departments.show",
       { masterDepartment: masterProduct.master_department_slug });
   } else {
     return route(
-      "grp.masters.shops.show.departments.show",
+      "grp.masters.master_shops.show.master_departments.show",
       { masterShop: (route().params as RouteParams).masterShop, masterDepartment: masterProduct.master_department_slug });
   }
 }
 
 function masterShopRoute(masterProduct: MasterProduct) {
-  return route("grp.masters.shops.show",
+  return route("grp.masters.master_shops.show",
     {
       masterShop: masterProduct.master_shop_slug
     }

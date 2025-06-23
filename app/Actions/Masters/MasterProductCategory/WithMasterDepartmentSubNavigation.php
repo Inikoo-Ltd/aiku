@@ -16,13 +16,12 @@ trait WithMasterDepartmentSubNavigation
 {
     protected function getMasterDepartmentSubNavigation(MasterProductCategory $masterDepartment): array
     {
-        // dd($masterDepartment);
         return [
             [
                 'isAnchor'   => true,
                 'label'    => __('Department'),
                 'route'     => [
-                    'name'       => 'grp.masters.departments.show',
+                    'name'       => 'grp.masters.master_departments.show',
                     'parameters' => [$masterDepartment->slug]
                 ],
                 'leftIcon' => [
@@ -30,18 +29,30 @@ trait WithMasterDepartmentSubNavigation
                     'tooltip' => __('Department')
                 ]
             ],
-            // [
-            //     'label'    => __('Families'),
-            //     'number'   => $masterDepartment->stats->number_current_families,
-            //     'route'     => [
-            //         'name'       => 'grp.org.shops.show.catalogue.departments.show.families.index',
-            //         'parameters' => [$this->organisation->slug, $masterDepartment->shop->slug, $masterDepartment->slug]
-            //     ],
-            //     'leftIcon' => [
-            //         'icon'    => ['fal', 'fa-folder'],
-            //         'tooltip' => __('families')
-            //     ]
-            // ],
+            [
+                'label'    => __('Sub-departments'),
+                'number'   => $masterDepartment->stats->number_sub_departments,
+                'route'     => [
+                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
+                    'parameters' => [$masterDepartment->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-dot-circle'],
+                    'tooltip' => __('sub-departments')
+                ]
+            ],
+             [
+                 'label'    => __('Families'),
+                 'number'   => $masterDepartment->stats->number_current_families,
+                 'route'     => [
+                     'name'       => 'grp.masters.master_departments.show.master_families.index',
+                     'parameters' => [$masterDepartment->slug]
+                 ],
+                 'leftIcon' => [
+                     'icon'    => ['fal', 'fa-folder'],
+                     'tooltip' => __('families')
+                 ]
+             ],
             // [
             //     'label'    => __('Collections'),
             //     'number'   => 0,
@@ -66,18 +77,7 @@ trait WithMasterDepartmentSubNavigation
             //         'tooltip' => __('products')
             //     ]
             // ],
-            [
-                'label'    => __('Sub-departments'),
-                'number'   => $masterDepartment->stats->number_sub_departments,
-                'route'     => [
-                    'name'       => 'grp.masters.departments.sub_departments.index',
-                    'parameters' => [$masterDepartment->slug]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-dot-circle'],
-                    'tooltip' => __('sub-departments')
-                ]
-            ],
+
         ];
     }
 

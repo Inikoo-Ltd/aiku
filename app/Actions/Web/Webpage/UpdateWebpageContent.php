@@ -20,31 +20,53 @@ class UpdateWebpageContent extends OrgAction
     use WithWebEditAuthorisation;
     use WebpageContentManagement;
 
+
     public function handle(Webpage $webpage): Webpage
     {
         $snapshot = $webpage->unpublishedSnapshot;
 
         $layout = [];
+
+        $fingerprintData = '';
         foreach ($webpage->webBlocks as $webBlock) {
-            $layout['web_blocks'][] =
-                [
-                    'id'         => $webBlock->pivot->id,
-                    'name'       => $webBlock->webBlockType->name,
-                    'type'       => $webBlock->webBlockType->code,
-                    'web_block'  => WebBlockResource::make($webBlock)->getArray(),
-                    'visibility' => ['in' => $webBlock->pivot->show_logged_in, 'out' => $webBlock->pivot->show_logged_out],
-                    'show'       => $webBlock->pivot->show,
-                ];
+            $fingerprintData .= hash(
+                'sha256',
+                serialize(
+                    [
+                        'show'   => $webBlock->pivot->show,
+                        'in'     => $webBlock->pivot->show_logged_in,
+                        'out'    => $webBlock->pivot->show_logged_out,
+                        'layout' => $webBlock->layout,
+                        'data'   => $webBlock->data,
+                    ]
+                )
+            );
+
+
+            $layout['web_blocks'][] = [
+                'id'         => $webBlock->pivot->id,
+                'name'       => $webBlock->webBlockType->name,
+                'show'       => $webBlock->pivot->show,
+                'type'       => $webBlock->webBlockType->code,
+                'visibility' => ['in' => $webBlock->pivot->show_logged_in, 'out' => $webBlock->pivot->show_logged_out],
+                'web_block'  => WebBlockResource::make($webBlock)->getArray(),
+
+            ];
         }
+        $fingerprintData = hash('sha256', $fingerprintData);
+
 
         $snapshot->update(
             [
-                'layout' => $layout
+                'layout'   => $layout,
+                'checksum' => $fingerprintData,
             ]
         );
 
+
         $isDirty = true;
-        if ($webpage->published_checksum == md5(json_encode($snapshot->layout))) {
+
+        if ($webpage->published_checksum == $fingerprintData) {
             $isDirty = false;
         }
 
