@@ -44,8 +44,8 @@ Route::middleware(['auth:sanctum', 'set.treblle.authorize'])->group(function () 
                 Route::get('', IndexApiCustomers::class)->name('index');
                 Route::get('{customer:id}', ShowApiCustomer::class)->name('show');
 
-                Route::get('invoices', [IndexApiInvoices::class, 'inCustomer'])->name('invoices');
-                Route::get('orders', [IndexApiOrders::class, 'inCustomer'])->name('orders');
+                Route::get('{customer:id}/invoices', [IndexApiInvoices::class, 'inCustomer'])->name('invoices');
+                Route::get('{customer:id}/orders', [IndexApiOrders::class, 'inCustomer'])->name('orders');
             });
             Route::prefix('invoices')->as('invoices.')->group(function () {
                 Route::get('', IndexApiInvoices::class)->name('index');
