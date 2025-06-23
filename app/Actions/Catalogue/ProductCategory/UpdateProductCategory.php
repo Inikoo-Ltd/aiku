@@ -77,6 +77,10 @@ class UpdateProductCategory extends OrgAction
             $this->productCategoryHydrators($productCategory);
         }
 
+        if (Arr::has($changes, 'image_id')) {
+            UpdateProductCategoryWebImages::run($productCategory);
+        }
+
         if (Arr::hasAny($changes, ['type', 'state', 'master_product_category_id'])) {
             $this->masterProductCategoryUsageHydrators($productCategory, $productCategory->masterProductCategory);
             if ($originalMasterProductCategory != null && $originalMasterProductCategory->id != $productCategory->master_product_category_id) {
@@ -149,6 +153,9 @@ class UpdateProductCategory extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
+            'webpage_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'           => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'        => ['sometimes', 'array'],
 
         ];
 

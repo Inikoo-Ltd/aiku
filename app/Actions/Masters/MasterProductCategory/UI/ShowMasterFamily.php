@@ -19,6 +19,7 @@ use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
+use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,7 +29,7 @@ class ShowMasterFamily extends GrpAction
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
 
-    private MasterShop $parent;
+    private MasterShop|Group $parent;
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
@@ -47,6 +48,14 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    public function inGroup(MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $group;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
@@ -231,7 +240,7 @@ class ShowMasterFamily extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.masters.families.show' => [
+            'grp.masters.master_families.show' => [
                 'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,
@@ -240,7 +249,7 @@ class ShowMasterFamily extends GrpAction
                     ]
                 ]
             ],
-            'grp.masters.shops.show.families.show' => [
+            'grp.masters.master_shops.show.master_families.show' => [
                 'label' => $masterFamily->name,
                 'route' => [
                     'name'       => $routeName,

@@ -20,6 +20,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductVariant extends OrgAction
 {
+    /**
+     * @throws \Throwable
+     */
     public function handle(Product $product, array $modelData): Product
     {
 

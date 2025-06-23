@@ -67,7 +67,7 @@ class ShowMasterShop extends GrpAction
                             'style' => 'edit',
                             'label' => 'blueprint',
                             'route' => [
-                                'name'       => "grp.masters.shops.blueprint",
+                                'name'       => "grp.masters.master_shops.blueprint",
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
@@ -102,7 +102,7 @@ class ShowMasterShop extends GrpAction
                         'modelWithIndex' => [
                             'index' => [
                                 'route' => [
-                                    'name'       => 'grp.masters.shops.index',
+                                    'name'       => 'grp.masters.master_shops.index',
                                     'parameters' => []
                                 ],
                                 'label' => __('Master shops'),
@@ -110,7 +110,7 @@ class ShowMasterShop extends GrpAction
                             ],
                             'model' => [
                                 'route' => [
-                                    'name'       => 'grp.masters.shops.show',
+                                    'name'       => 'grp.masters.master_shops.show',
                                     'parameters' => [
                                         $masterShop->slug
                                     ]
@@ -148,10 +148,10 @@ class ShowMasterShop extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.masters.shops.show' => [
+            'grp.masters.master_shops.show' => [
                 'label' => $masterShop->name,
                 'route' => [
-                    'name'       => 'grp.masters.shops.show',
+                    'name'       => 'grp.masters.master_shops.show',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]

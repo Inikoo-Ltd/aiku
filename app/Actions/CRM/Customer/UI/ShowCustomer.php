@@ -131,7 +131,6 @@ class ShowCustomer extends OrgAction
                             'type'    => 'button',
                             'style'   => 'edit',
                             'tooltip' => __('Edit Customer'),
-                            // 'label'   => __('Edit Customer'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.crm.customers.edit',
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -170,15 +169,7 @@ class ShowCustomer extends OrgAction
                     : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
 
 
-                /*
-                $tabs::PRODUCTS->value => $this->tab == $tabs::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexDropshippingRetinaProducts::run($customer))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexDropshippingRetinaProducts::run($customer))),
-                */
 
-                // $tabs::DISPATCHED_EMAILS->value => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
-                //     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
-                //     : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
                 $tabs::CREDIT_TRANSACTIONS->value  => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
                     : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
@@ -198,7 +189,6 @@ class ShowCustomer extends OrgAction
 
             ]
         )->table(IndexOrders::make()->tableStructure($customer))
-            //    ->table(IndexDropshippingRetinaProducts::make()->tableStructure($customer))
             ->table(IndexCustomerFavourites::make()->tableStructure(parent:$customer, prefix:$tabs::FAVOURITES->value))
             ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
             ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))

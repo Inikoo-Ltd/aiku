@@ -122,6 +122,10 @@ class UpdateProduct extends OrgAction
             'follow_master' => ['sometimes', 'boolean'],
             'family_id'     => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
 
+            'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                    => ['sometimes', 'array'],
+
             'exclusive_for_customer_id' => [
                 'sometimes',
                 'nullable',
