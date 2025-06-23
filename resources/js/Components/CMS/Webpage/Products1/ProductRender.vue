@@ -39,6 +39,11 @@ interface ProductResource {
     is_favourite?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
+    web_images : {
+        main : {
+            original: ImageTS
+        }    
+    }
 }
 
 const props = defineProps<{
@@ -144,7 +149,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-64 mb-3 rounded">
-                <Image :src="product.image?.source" alt="product image" :imageCover="true"
+                <Image :src="product.web_images?.main?.original" alt="product image" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
             </component>
 
