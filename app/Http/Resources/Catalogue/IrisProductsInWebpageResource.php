@@ -39,12 +39,12 @@ class IrisProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-
         $image = null;
         if ($this->image_id) {
             $media = Media::find($this->image_id);
             $image = ImageResource::make($media)->getArray();
         }
+
 
         return [
             'id'            => $this->id,

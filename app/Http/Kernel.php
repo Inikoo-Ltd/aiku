@@ -11,6 +11,7 @@ namespace App\Http;
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
+use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\HandleCorneaInertiaRequests;
 use App\Http\Middleware\HandleInertiaCrossToIris;
 use App\Http\Middleware\HandleInertiaCrossToRetina;
@@ -156,7 +157,7 @@ class Kernel extends HttpKernel
             AddLinkHeadersForPreloadedAssets::class,
         ],
         'iris'        => [
-            DetectWebsite::class,
+            DetectIrisWebsite::class,
             CheckWebsiteState::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,

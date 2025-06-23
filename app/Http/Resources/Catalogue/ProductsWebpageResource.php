@@ -28,6 +28,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $rrp
  * @property mixed $description
+ * @property mixed $web_images
  */
 class ProductsWebpageResource extends JsonResource
 {
@@ -56,6 +57,7 @@ class ProductsWebpageResource extends JsonResource
             'status'      => $this->status,
             'rrp'         => $this->rrp,
             'image'       => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'web_images'  => $this->web_images
         ];
     }
 }
