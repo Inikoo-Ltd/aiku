@@ -102,12 +102,12 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     'button' => array_values(
                         array_filter(
                             [
-                                !app()->environment('production') ? [
+                                [
                                     'type'  => 'button',
                                     'style' => 'secondary',
                                     'icon'  => ['fal', 'fa-upload'],
                                     'label' => 'upload',
-                                ] : null,
+                                ],
                                 [
                                     'type'  => 'button',
                                     'style' => 'secondary',
