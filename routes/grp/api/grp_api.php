@@ -13,6 +13,7 @@ use App\Actions\Api\Invoice\IndexApiInvoices;
 use App\Actions\Api\Order\IndexApiOrders;
 use App\Actions\Api\Order\ShowApiOrder;
 use App\Actions\Catalogue\Shop\Api\IndexApiShops;
+use App\Actions\Catalogue\Shop\Api\ShowApiShop;
 use App\Actions\SysAdmin\Group\Api\ShowApiGroup;
 use App\Actions\SysAdmin\Organisation\Api\IndexApiOrganisations;
 use App\Actions\SysAdmin\Organisation\Api\ShowApiOrganisation;
@@ -30,12 +31,14 @@ Route::middleware(['auth:sanctum', 'set.treblle.authorize'])->group(function () 
     Route::get('/organisations/{organisation:id}', ShowApiOrganisation::class)->name('organisations.show');
     Route::get('/organisations/{organisation:id}/shops', [IndexApiShops::class, 'inOrganisation'])->name('organisations.show.shops.index');
 
-    Route::get('/shops', IndexApiShops::class)->name('shops.index');
 
 
 
-    Route::prefix('shop')->as('shop.')->group(function () {
+
+    Route::prefix('shops')->as('shops.')->group(function () {
+        Route::get('', IndexApiShops::class)->name('index');
         Route::prefix('{shop:id}')->as('show.')->group(function () {
+            Route::get('', ShowApiShop::class);
             Route::prefix('orders')->as('orders.')->group(function () {
                 Route::get('', IndexApiOrders::class)->name('index');
                 Route::get('{order:id}', ShowApiOrder::class)->name('show');

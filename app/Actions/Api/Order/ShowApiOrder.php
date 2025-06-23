@@ -18,8 +18,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowApiOrder extends OrgAction
 {
-    use WithOrderingAuthorisation;
-
     public function handle(Order $order): Order
     {
         return $order;
