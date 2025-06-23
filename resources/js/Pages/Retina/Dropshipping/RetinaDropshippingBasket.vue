@@ -236,23 +236,26 @@ console.log('basket ds', props)
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-group-upload-add>
-            <Button
-                @click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-                :label="trans('Upload products')"
-                icon="upload"
-                type="tertiary"
-            />
-        </template>
+        <template #button-group-upload-add="{ action }">
+            <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
+				<Button
+					v-if="upload_spreadsheet"
+					@click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
+					:label="trans('Upload products')"
+                    icon="upload"
+                    type="tertiary"
+					class="rounded-none border-0"
+				/>
+                <Button
+                    v-if="is_in_basket"
+                    @click="() => isModalProductListOpen = true"
+                    :label="trans('Add products')"
+                    type="tertiary"
+					icon="fas fa-plus"
+					class="rounded-none border-none"
+                />
+			</div>
 
-        <template #other>
-            <Button
-                v-if="is_in_basket"
-                @click="() => isModalProductListOpen = true"
-                :label="trans('Add products')"
-                icon="plus"
-                type="secondary"
-            />
         </template>
     </PageHeading>
 
