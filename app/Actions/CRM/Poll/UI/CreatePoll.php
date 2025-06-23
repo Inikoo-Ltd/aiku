@@ -61,13 +61,13 @@ class CreatePoll extends OrgAction
                                    'required' => true
                                ],
                                'type' => [
-                                   'type'    => 'select',
+                                   'type'    => 'poll_type_select',
                                    'label'   => __('type'),
                                    'required' => true,
                                    'options' => Options::forEnum(PollTypeEnum::class),
                                    'value' => [
-                                        'type' => PollTypeEnum::value(),
-                                        'poll_options' => $optionsPool
+                                        'type' => PollTypeEnum::OPTION->value,
+                                        'poll_options' => []
                                     ]
                                ],
                                'label' => [
