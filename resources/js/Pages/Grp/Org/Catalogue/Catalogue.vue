@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCubes, faSeedling } from "@fal"
 import { faFireAlt } from "@fad"
@@ -17,15 +17,12 @@ import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import CountUp from 'vue-countup-v3'
-import BackgroundBox from '@/Components/BackgroundBox.vue'
-import Icon from '@/Components/Icon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Image from '@/Components/Image.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { routeType } from '@/types/route'
 import { Image as ImageProxy } from "@/types/Image"
+import StatsBox from '@/Components/Stats/StatsBox.vue'
 
 library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt)
 
@@ -118,7 +115,7 @@ const layout = inject('layout', layoutStructure)
 
 const boxLoaded = ref<{[key: string]: boolean}>({})
 const isLoadingMeta = ref<string | null>(null)
-console.log('props', props)
+console.log('proqqqqqqqqqqqqqqps', props)
 </script>
 
 
@@ -130,78 +127,11 @@ console.log('props', props)
     <!-- Stats: box -->
     <div class="p-6">
         <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <Link
+            <StatsBox
                 v-for="(stat, idxStat) in stats"
-                :key="'stat' + idxStat"
-                :href="route(stat.route.name, stat.route.parameters)"
-                :style="{
-                    color: stat.color,
-                    xbackgroundColor: stat.backgroundColor
-                }"
-                class="isolate relative overflow-hidden rounded-lg cursor-pointer border px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
-                :class="stat.is_negative ? 'bg-red-100 hover:bg-red-200 border-red-200 hover:border-red-300 text-red-500' : 'bg-white hover:bg-gray-50 border-gray-200'"
-                @start="() => boxLoaded[idxStat] = true"
-                @finish="() => boxLoaded[idxStat] = false"
+                :stat="stat"
             >
-                <BackgroundBox v-if="!stat.is_negative" class="-z-10 opacity-80 absolute top-0 right-0" />
-                <FontAwesomeIcon v-else icon="fad fa-fire-alt" class="text-red-500 -z-10 opacity-40 absolute -bottom-2 -right-5 text-7xl" fixed-width aria-hidden="true" />
-
-                <dt class="truncate text-sm font-medium" :class="stat.is_negative ? 'text-red-500' : 'text-gray-400'" xstyle="{ color: stat.is_negative ? stat.color : null }">
-                    {{ stat.label }}
-                </dt>
-
-                <dd class="mt-1 text-3xl font-semibold tracking-tight flex gap-x-2 items-center tabular-nums">
-                    <LoadingIcon v-if="boxLoaded[idxStat]" class='text-xl' />
-                    <FontAwesomeIcon v-else :icon='stat.icon' class='text-xl' fixed-width aria-hidden='true' />
-                    <CountUp
-                        :endVal='stat?.value'
-                        :duration='1.5'
-                        :scrollSpyOnce='true'
-                        :options='{
-                            formattingFn: (value: number) => locale.number(value)
-                        }'
-                    />
-                </dd>
-
-                <!-- Meta right -->
-                <component
-                    v-if="stat.metaRight"
-                    :is="stat.metaRight?.route?.name ? Link : 'div'"
-                    :href="stat.metaRight?.route?.name ? route(stat.metaRight?.route.name, stat.metaRight?.route.parameters) : ''"
-                    class="text-base rounded group/mr absolute top-6 right-5 px-2 flex gap-x-0.5 items-center font-normal"
-                    :style="{
-                        background: `color-mix(in srgb, white 90%, ${stat.color})`,
-                        border: `1px solid ${stat.color}`,
-                        color: `color-mix(in srgb, black 20%, ${stat.color})`
-                    }"
-                    v-tooltip="capitalize(stat.metaRight?.tooltip) || capitalize(stat.metaRight?.icon?.tooltip)"
-                >
-                    <Icon :data="stat.metaRight?.icon" class="opacity-100"/>
-                    <div class="group-hover/sub:text-gray-700">
-                        {{ locale.number(stat.metaRight?.count) }}
-                    </div>
-                </component>
-
-                <!-- Meta -->
-                <div v-if="stat.metas?.length" class="-ml-2 py-2 text-sm text-gray-500 flex gap-x-3 gap-y-0.5 items-center flex-wrap">
-                    <component
-                        v-for="(meta, idxMeta) in stat.metas"
-                        :is="meta.route?.name ? Link : 'div'"
-                        :href="meta.route?.name ? route(meta.route.name, meta.route.parameters) : ''"
-                        @start="() => isLoadingMeta = idxMeta + '-' + idxStat"
-                        @finish="() => isLoadingMeta = null"
-                        class="group/sub px-2 flex gap-x-0.5 items-center font-normal"
-                        :class="meta.route?.name ? 'hover:underline' : ''"
-                        v-tooltip="capitalize(meta.tooltip) || capitalize(meta.icon?.tooltip)"
-                    >
-                        <LoadingIcon v-if="isLoadingMeta == idxMeta + '-' + idxStat" class="md:opacity-50 group-hover/sub:opacity-100" />
-                        <Icon v-else :data="meta.icon" class="" :class="meta.route?.name ? 'md:opacity-50 group-hover/sub:opacity-100' : 'md:opacity-50'" />
-                        <div class="group-hover/sub:text-gray-700">
-                            {{ locale.number(meta.count) }}
-                        </div>
-                    </component>
-                </div>
-            </Link>
+            </StatsBox>
         </dl>
     </div>
     

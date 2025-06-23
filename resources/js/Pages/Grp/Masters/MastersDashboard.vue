@@ -4,23 +4,45 @@
   - Copyright (c) 2025, Raul A Perusquia Flores
   -->
 
-<script setup>
-import {Head} from '@inertiajs/vue3';
-import PageHeading from '@/Components/Headings/PageHeading.vue';
-import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue';
+<script setup lang="ts">
+import { Head } from '@inertiajs/vue3'
+import PageHeading from '@/Components/Headings/PageHeading.vue'
+import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue'
 import { capitalize } from "@/Composables/capitalize"
-import {library} from '@fortawesome/fontawesome-svg-core';
-import {faBooks} from '@fal';
-library.add(faBooks);
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faBooks } from '@fal'
+import StatsBox from '@/Components/Stats/StatsBox.vue'
+library.add(faBooks)
 
-defineProps(['title', 'pageHead', 'flatTreeMaps']);
+const props = defineProps<{
+    title: string
+    pageHead: {
+        title: string
+        description?: string
+        icon?: string
+    }
+    flatTreeMaps: Array<any>
+    stats: {
 
+    }
+}>()
 
 </script>
 
 <template>
-    <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead"></PageHeading>
-    <FlatTreeMap class="mx-4" v-for="(treeMap,idx) in flatTreeMaps" :key="idx" :nodes="treeMap"/>
-</template>
 
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead"></PageHeading>
+    <!-- <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" /> -->
+
+    <!-- Stats: box -->
+    <div class="p-6">
+        <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsBox
+                v-for="(stat, idxStat) in stats"
+                :stat="stat"
+            >
+            </StatsBox>
+        </dl>
+    </div>
+</template>
