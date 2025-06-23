@@ -311,7 +311,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        "label"   => __("Master Collections"),
+                        "label"   => __("Collections"),
                         "tooltip" => __("Master Collections"),
                         "icon"    => ["fal", "fa-album-collection"],
                         'root'    => 'grp.masters.master_collections.',
