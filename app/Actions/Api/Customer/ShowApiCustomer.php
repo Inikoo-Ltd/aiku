@@ -10,7 +10,7 @@
 namespace App\Actions\Api\Customer;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\CRM\CustomerResource;
+use App\Http\Resources\Api\CustomerApiResource;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,9 +21,9 @@ class ShowApiCustomer extends OrgAction
         return $customer;
     }
 
-    public function jsonResponse(Customer $customer): \Illuminate\Http\Resources\Json\JsonResource|CustomerResource
+    public function jsonResponse(Customer $customer): \Illuminate\Http\Resources\Json\JsonResource|CustomerApiResource
     {
-        return CustomerResource::make($customer);
+        return CustomerApiResource::make($customer);
     }
 
     public function asController(Customer $customer, ActionRequest $request): Customer
