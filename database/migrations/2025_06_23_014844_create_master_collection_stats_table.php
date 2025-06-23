@@ -16,6 +16,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::create('master_collection_stats', function (Blueprint $table) {
+            $table->smallIncrements('id');
             $table->unsignedSmallInteger('master_collection_id')->index();
             $table->foreign('master_collection_id')->references('id')->on('master_collections');
 
