@@ -42,10 +42,6 @@ class UpdateStateToDispatchedOrder extends OrgAction
             $this->update($order, $data);
             $this->orderHydrators($order);
 
-            if ($order->shopifyOrder) {
-                FulfillOrderToShopify::run($order);
-            }
-
             match ($order->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                 //                PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
