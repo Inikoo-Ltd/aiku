@@ -57,7 +57,7 @@ class ShowMastersDashboard extends OrgAction
                         ],
                         'icon'  => 'fal fa-store',
                         "color" => "#facc15",
-                        'value' => $group->stats->number_current_master_shops,
+                        'value' => $group->goodsStats->number_current_master_shops,
                     ],
                     [
                         'label' => __('Master Departments'),
@@ -67,7 +67,7 @@ class ShowMastersDashboard extends OrgAction
                         ],
                         'icon'  => 'fal fa-folder-tree',
                         "color" => "#a3e635",
-                        'value' => $group->stats->number_current_master_product_categories_type_department,
+                        'value' => $group->goodsStats->number_current_master_product_categories_type_department,
 
                         'metaRight'  => [
                             'tooltip' => __('Master Sub Departments'),
@@ -75,7 +75,7 @@ class ShowMastersDashboard extends OrgAction
                                 'icon'  => 'fal fa-folder-tree',
                                 'class' => ''
                             ],
-                            'count'   => $group->stats->number_master_product_categories_type_department_sub_departments,
+                            'count'   => $group->goodsStats->number_master_product_categories_type_department_sub_departments,
                         ],
                     ],
                     [
@@ -86,7 +86,7 @@ class ShowMastersDashboard extends OrgAction
                         ],
                         'icon'  => 'fal fa-folder',
                         "color" => "#e879f9",
-                        'value' => $group->stats->number_current_master_product_categories_type_family,
+                        'value' => $group->goodsStats->number_current_master_product_categories_type_family,
                     ],
                     [
                         'label' => __('Master Products'),
@@ -96,7 +96,7 @@ class ShowMastersDashboard extends OrgAction
                         ],
                         'icon'  => 'fal fa-cube',
                         "color" => "#38bdf8",
-                        'value' => $group->stats->number_current_master_assets_type_product,
+                        'value' => $group->goodsStats->number_current_master_assets_type_product,
                     ],
                     [
                         'label' => __('Master Collections'),
@@ -109,7 +109,7 @@ class ShowMastersDashboard extends OrgAction
                         // ],
                         'icon'  => 'fal fa-album-collection',
                         "color" => "#4f46e5",
-                        'value' => $group->stats->number_current_master_collections,
+                        'value' => $group->goodsStats->number_current_master_collections,
                     ],
                 ]
 
