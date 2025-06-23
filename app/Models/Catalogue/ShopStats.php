@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_departments_state_inactive
  * @property int $number_departments_state_discontinuing
  * @property int $number_departments_state_discontinued
- * @property int $number_collection_categories
  * @property int $number_collections
  * @property int $number_sub_departments
  * @property int $number_current_sub_departments state: active+discontinuing
@@ -149,6 +148,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_products_with_variants_trade_config_force_for_sale
  * @property int $number_families_no_department
  * @property int $number_products_no_family
+ * @property int $number_current_collections state=active+discontinuing
+ * @property int $number_collection_state_in_process
+ * @property int $number_collection_state_active
+ * @property int $number_collection_state_inactive
+ * @property int $number_collection_state_discontinuing
+ * @property int $number_collection_state_discontinued
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily
