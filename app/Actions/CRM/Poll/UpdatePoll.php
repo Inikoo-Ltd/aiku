@@ -38,7 +38,8 @@ class UpdatePoll extends OrgAction
     public function handle(Poll $poll, array $modelData): Poll
     {
         $poll = $this->update($poll, $modelData);
-        if ($poll->type == PollTypeEnum::OPTION && !isset($modelData['options'])) {
+        if ($poll->type == PollTypeEnum::OPTION && isset($modelData['options'])) {
+            $poll->pollOptions()->delete();
             foreach ($modelData['options'] ?? [] as $option) {
                 StorePollOption::make()->action(
                     $poll,
