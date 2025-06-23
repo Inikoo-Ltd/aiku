@@ -17,7 +17,7 @@ import { ref } from "vue"
 import { router } from '@inertiajs/vue3'
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
+// import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
 library.add(faChevronLeft)
 
 const layout = useLayoutStore()
@@ -54,7 +54,7 @@ const onLogoutAuth = () => {
 <template>
     <div class="md:inset-y-0 h-full pb-20 px-2 fixed md:flex md:flex-col  transition-all"
         :class="[
-            layout.leftSidebar.show ? 'w-8/12 md:w-64' : 'w-8/12 md:w-16',
+            layout.leftSidebar.show ? 'w-8/12 md:w-64' : 'w-8/12 md:w-[72px]',
             isStaging ? 'mt-9 lg:mt-12 pt-7' : 'mt-9 lg:mt-10 pt-3'
         ]"
         :style="{
@@ -89,9 +89,21 @@ const onLogoutAuth = () => {
             <!-- Section: LogoutRetina -->
             <div class="absolute left-0 bottom-[88px] w-full mx-auto">
                 <Popover class="relative w-10/12 mx-auto" v-slot="{ open }">
-                    <PopoverButton class="flex w-full focus:outline-none focus:ring-0 focus:border-none">
-                        <div class="w-full rounded-md" :class="[open ? 'bg-white/25' : '']">
-                            <NavigationSimple :nav="logoutData" />
+                    <PopoverButton class="w-fit flex xw-full focus:outline-none focus:ring-0 focus:border-none">
+                        <div class="xw-full rounded-md flex justify-center "
+                            :class="[
+                                open ? 'bg-white/25' : '',
+                                layout.leftSidebar.show ? '' : 'mx-1.5',
+                            ]">
+
+                            <Button
+                                :label="layout.leftSidebar.show ? 'Logout' : ''"
+                                icon="fal fa-sign-out-alt"
+                                type="negative"
+                                key="1"
+                                class="!px-3"
+                                xclass="border-none text-white"
+                            />
                         </div>
                     </PopoverButton>
 

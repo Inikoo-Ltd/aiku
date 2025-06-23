@@ -58,7 +58,7 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
         } : {} ]"
         @start="() => isLoading = true"
         @finish="() => isLoading = false"
-        :aria-current="navKey === layout.currentModule ? 'page' : undefined"
+        xaria-current="navKey === layout.currentModule ? 'page' : undefined"
         v-tooltip="layout.leftSidebar.show ? false : capitalize(nav.label)"
     >
         <LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />

@@ -95,8 +95,8 @@ const isLoadingVisitActiveHorizontal = ref(false)
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
         <template v-if="nav.field_name" #legend>
             <div class="ml-2 px-2 rounded mb-0.5 text-sm" :style="{ 'background-color': `${layout.app.theme[0]}` }">
-                {{ nav.field_name }}
-                <FontAwesomeIcon :icon="nav.field_icon" class="opacity-70" fixed-width aria-hidden="true" />
+                <Transition name="slide-to-left"><span v-if="layout.leftSidebar.show">{{ nav.field_name }}</span></Transition>
+                <FontAwesomeIcon v-if="nav.field_icon" :icon="nav.field_icon" class="opacity-70" fixed-width aria-hidden="true" />
             </div>
         </template>
 
@@ -128,7 +128,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
                 </Transition>
 
                 <Transition v-if="currentActiveHorizontal?.img" name="spin-to-down">
-                    <div :key="currentActiveHorizontal?.img" class="h-4 w-[11.5px] min-w-[11.5px] flex items-center justify-center">
+                    <div :key="currentActiveHorizontal?.img" class="pl-0.5 h-4 w-[11.5px] min-w-[11.5px] flex items-center justify-center">
                         <LoadingIcon v-if="isLoadingVisitActiveHorizontal" class=""/>
                         <img v-else :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-4 w-auto max-w-[16px]" />
                     </div>
