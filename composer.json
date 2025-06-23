@@ -80,6 +80,7 @@
     "spatie/laravel-query-builder": "^6.0",
     "spatie/laravel-sitemap": "^7.3",
     "spatie/laravel-sluggable": "^3.4",
+    "spatie/laravel-translatable": "^6.11",
     "spatie/temporary-directory": "^2.2",
     "spiral/roadrunner-cli": "^2.6.0",
     "spiral/roadrunner-http": "^3.3.0",
