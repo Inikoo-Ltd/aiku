@@ -27,6 +27,9 @@ return new class () extends Migration {
                 $table->unsignedSmallInteger('number_master_shops_type_'.$shopType->snake())->default(0);
             }
 
+            $table->unsignedSmallInteger('number_master_collections')->default(0);
+            $table->unsignedSmallInteger('number_current_master_collections')->default(0)->comment('status=true');
+
             $table = $this->masterProductCategoriesStatsFields($table);
             $table = $this->masterAssetsStatsFields($table);
         });
@@ -40,6 +43,11 @@ return new class () extends Migration {
     public function down()
     {
         Schema::table('group_stats', function (Blueprint $table) {
+
+            $table->dropColumn([
+                'number_master_collections',
+                'number_current_master_collections'
+            ]);
 
             $table->dropColumn([
                 'number_master_shops',
