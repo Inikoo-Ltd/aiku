@@ -100,13 +100,10 @@ class ShowMastersDashboard extends OrgAction
                     ],
                     [
                         'label' => __('Master Collections'),
-                        // 'route' => [
-                        //     'name'       => 'grp.org.shops.show.catalogue.collections.index',        // TODO
-                        //     'parameters' => [
-                        //         'organisation' => $shop->organisation->slug,
-                        //         'shop'         => $shop->slug
-                        //     ]
-                        // ],
+                        'route' => [
+                            'name'       => 'grp.masters.master_collections.index',
+                            'parameters' => []
+                        ],
                         'icon'  => 'fal fa-album-collection',
                         "color" => "#4f46e5",
                         'value' => $group->goodsStats->number_current_master_collections,
