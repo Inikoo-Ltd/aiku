@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\CRM\Poll\PollTypeEnum;
+use App\Http\Resources\CRM\PollOptionsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Models\SysAdmin\Organisation;
@@ -40,6 +41,11 @@ class EditPoll extends OrgAction
 
     public function htmlResponse(Poll $poll, ActionRequest $request): Response
     {
+        $optionsPool = [];
+        if ($poll->type === PollTypeEnum::OPTION) {
+            $optionsPool = PollOptionsResource::collection($poll->pollOptions)->toArray($request);
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -72,6 +78,7 @@ class EditPoll extends OrgAction
                                     'label' => __('name'),
                                     'value' => $poll->name
                                 ],
+                                'options' => $optionsPool,
                                 'label' => [
                                     'type'  => 'input',
                                     'label' => __('label'),
