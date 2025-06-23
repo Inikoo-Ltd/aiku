@@ -54,7 +54,7 @@ const props = defineProps<{
   webpage: RootWebpage,
   webBlockTypes: Root
 }>();
-console.log('ss',props.webpage)
+console.log('ss', props.webpage)
 provide('isInWorkshop', true);
 const layout = inject('layout', layoutStructure);
 const confirm = useConfirm();
@@ -127,10 +127,10 @@ const addNewBlock = async ({ block, type }) => {
 
 const duplicateBlock = async (modelHasWebBlock = Number) => {
   router.post(
-    route('grp.models.webpage.web_block.duplicate',{
-		webpage : data.value.id,
-		modelHasWebBlock : modelHasWebBlock
-	}),
+    route('grp.models.webpage.web_block.duplicate', {
+      webpage: data.value.id,
+      modelHasWebBlock: modelHasWebBlock
+    }),
     {},
     {
       onStart: () => isAddBlockLoading.value = "addBlock" + modelHasWebBlock,
@@ -214,6 +214,10 @@ const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
 
 const onSaveWorkshop = block => {
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
+  sendToIframe({
+    key: 'setWebpage',
+    value: JSON.parse(JSON.stringify(data.value))
+  });
   debounceSaveWorkshop(block);
 };
 
@@ -223,7 +227,11 @@ const onSaveWorkshopFromId = (blockId, from) => {
   if (cancelTokens.value[blockId]) cancelTokens.value[blockId]();
 
   const block = data.value.layout.web_blocks.find(block => block.id === blockId);
-  if (block) debounceSaveWorkshop(block);
+  sendToIframe({
+    key: 'setWebpage',
+    value: JSON.parse(JSON.stringify(data.value))
+  });
+    if (block) debounceSaveWorkshop(block);
 };
 
 provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
@@ -415,15 +423,12 @@ const compUsersEditThisPage = computed(() => {
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
-      <Publish
-        :isLoading="isLoadingPublish"
-        :is_dirty="data.is_dirty"
-        v-model="comment"
-        @onPublish="(popover) => beforePublish(action.route, popover)"
-      />
+      <Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
+        @onPublish="(popover) => beforePublish(action.route, popover)" />
     </template>
 
     <template #afterTitle v-if="isSavingBlock">
@@ -440,23 +445,11 @@ const compUsersEditThisPage = computed(() => {
   <ConfirmDialog group="alert-publish" />
 
   <div class="flex">
-    <div
-      v-if="!fullScreeen"
-      class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1"
-    >
-      <WebpageSideEditor
-        ref="_WebpageSideEditor"
-        v-model="isModalBlockList"
-        :webpage="data"
-        :webBlockTypes="webBlockTypes"
-        @update="onSaveWorkshop"
-        @delete="sendDeleteBlock"
-        @add="addNewBlock"
-        @order="sendOrderBlock"
-        @setVisible="setHideBlock"
-        @onSaveSiteSettings="onSaveSiteSettings"
-		    @onDuplicateBlock="duplicateBlock"
-      />
+    <div v-if="!fullScreeen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
+      <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
+        :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock" @add="addNewBlock"
+        @order="sendOrderBlock" @setVisible="setHideBlock" @onSaveSiteSettings="onSaveSiteSettings"
+        @onDuplicateBlock="duplicateBlock" />
     </div>
 
     <!-- Preview Section -->
@@ -464,7 +457,8 @@ const compUsersEditThisPage = computed(() => {
       <div class="flex justify-between items-center px-2 py-1">
         <div class="flex items-center gap-2 text-gray-500">
           <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
-          <div v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview" class="cursor-pointer hover:text-amber-600">
+          <div v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview"
+            class="cursor-pointer hover:text-amber-600">
             <FontAwesomeIcon :icon="faEye" fixed-width />
           </div>
           <div v-tooltip="'Full screen'" @click="fullScreeen = !fullScreeen" class="cursor-pointer">
@@ -472,7 +466,8 @@ const compUsersEditThisPage = computed(() => {
           </div>
         </div>
 
-        <div v-if="compUsersEditThisPage?.length > 1" class="flex items-center gap-2 px-2 bg-yellow-300 text-yellow-700 rounded">
+        <div v-if="compUsersEditThisPage?.length > 1"
+          class="flex items-center gap-2 px-2 bg-yellow-300 text-yellow-700 rounded">
           <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
           <span>
             {{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
@@ -482,11 +477,8 @@ const compUsersEditThisPage = computed(() => {
 
         <div class="flex items-center gap-2 text-sm text-gray-700">
           <label for="sync-toggle">Sync with aurora</label>
-          <ToggleSwitch
-            id="sync-toggle"
-            v-model="props.webpage.allow_fetch"
-            @update:modelValue="(e) => SyncAurora(e)"
-          />
+          <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
+            @update:modelValue="(e) => SyncAurora(e)" />
         </div>
       </div>
 
@@ -494,14 +486,8 @@ const compUsersEditThisPage = computed(() => {
         <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
           <LoadingIcon class="w-24 h-24 text-6xl" />
         </div>
-        <iframe
-          ref="_iframe"
-          :src="iframeSrc"
-          :title="props.title"
-          :class="[iframeClass, isIframeLoading ? 'hidden' : '']"
-          @load="isIframeLoading = false"
-          allowfullscreen
-        />
+        <iframe ref="_iframe" :src="iframeSrc" :title="props.title"
+          :class="[iframeClass, isIframeLoading ? 'hidden' : '']" @load="isIframeLoading = false" allowfullscreen />
       </div>
     </div>
   </div>
@@ -510,43 +496,43 @@ const compUsersEditThisPage = computed(() => {
 
 <style lang="scss" scoped>
 :deep(.component-iseditable) {
-	@apply border border-transparent border-dashed cursor-pointer;
+  @apply border border-transparent border-dashed cursor-pointer;
 }
 
 iframe {
-	height: 100%;
-	transition: width 0.3s ease;
+  height: 100%;
+  transition: width 0.3s ease;
 }
 
 :deep(.loading-overlay) {
-	position: block;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: rgba(255, 255, 255, 0.8);
-	z-index: 1000;
+  position: block;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 1000;
 }
 
 :deep(.spinner) {
-	border: 4px solid rgba(255, 255, 255, 0.3);
-	border-radius: 50%;
-	border-top: 4px solid #3498db;
-	width: 40px;
-	height: 40px;
-	animation: spin 1s linear infinite;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
+  0% {
+    transform: rotate(0deg);
+  }
 
-	100% {
-		transform: rotate(360deg);
-	}
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -63,14 +63,16 @@ const handleMessage = (event: MessageEvent) => {
   if (key === "reload") reloadPage()
 
   // ✅ Accept new webpage from iframe message
-  if (key === "setWebpage") data.value = value
+  if (key === "setWebpage") {
+    data.value = value
+  }
 }
 
 const reloadPage = () => {
   router.reload({ only: ["webpage"] })
-  console.log('dsdd',props.webpage)
-  data.value = {...props.webpage}
 }
+
+provide("reloadPage", reloadPage)
 provide("reloadPage", reloadPage)
 
 onMounted(() => {
@@ -83,12 +85,15 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenType)
   window.removeEventListener("message", handleMessage)
 })
+
+watch(() => props.webpage, (val) => {
+  data.value = val ? { ...val } : undefined
+})
 </script>
 
 <template>
-  <pre>{{ data?.layout?.web_blocks }}</pre>
   <div class="editor-class" :style="getStyles(layout.container?.properties, screenType)">
-    <div class="shadow-xl px-1">
+    <div class="shadow-xl px-1 py-1">
       <div>
         <div v-if="data?.layout?.web_blocks?.length">
           <TransitionGroup tag="div" name="list" class="relative">
