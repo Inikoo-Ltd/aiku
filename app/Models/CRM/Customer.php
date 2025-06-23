@@ -205,6 +205,7 @@ class Customer extends Model implements HasMedia, Auditable
 
     protected $casts = [
         'data'                        => 'array',
+        'contact_name_components'     => 'array',
         'settings'                    => 'array',
         'location'                    => 'array',
         'migration_data'              => 'array',
@@ -226,7 +227,8 @@ class Customer extends Model implements HasMedia, Auditable
         'data'           => '{}',
         'settings'       => '{}',
         'location'       => '{}',
-        'migration_data' => '{}'
+        'migration_data' => '{}',
+        'contact_name_components' => '{}'
     ];
 
     protected $guarded = [];

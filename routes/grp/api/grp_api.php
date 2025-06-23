@@ -6,6 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Api\Customer\IndexApiCustomers;
+use App\Actions\Api\Customer\ShowApiCustomer;
 use App\Actions\Api\GetApiProfile;
 use App\Actions\Api\Order\IndexApiOrders;
 use App\Actions\Api\Order\ShowApiOrder;
@@ -33,5 +35,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('order')->as('order.')->group(function () {
         Route::get('', IndexApiOrders::class)->name('index');
         Route::get('{order:id}', ShowApiOrder::class)->name('show');
+    });
+    Route::prefix('customer')->as('customer.')->group(function () {
+        Route::get('{shop:id}', IndexApiCustomers::class)->name('index');
+        Route::get('{customer:id}', ShowApiCustomer::class)->name('show');
     });
 });

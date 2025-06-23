@@ -16,7 +16,8 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue";
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
-import { faBracketsCurly, faFileCsv, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox } from "@fal";
+import { faBracketsCurly, faFileCsv, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
+import { Popover } from "primevue"
 
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -107,10 +108,11 @@ const onUploadToShopify = () => {
 
 
 const downloadUrl = (type: string) => {
-    return '';
-    // return route(props.download_route[type].name, props.download_route[type].parameters);
+    // return '';
+    return route(props.download_route[type].name, props.download_route[type].parameters);
 };
 
+const _popover = ref()
 
 </script>
 
@@ -131,33 +133,60 @@ const downloadUrl = (type: string) => {
         </template>
 
         <template v-if="props.products?.data?.length" #other>
+            <div class="rounded-md ">
+                <a :href="downloadUrl('csv')" target="_blank" rel="noopener">
+                    <Button
+                        :icon="faDownload"
+                        label="CSV"
+                        type="tertiary"
+                        class="rounded-r-none"
+                    />
+                </a>
 
+                <!-- Section: Download button -->
+                <Button
+                    @click="(e) => _popover?.toggle(e)"
+                    v-tooltip="trans('Open another options')"
+                    :icon="faEllipsisV"
+                    xloading="!!isLoadingSpecificChannel.length"
+                    class="!px-2 border-l-0 rounded-l-none h-full"
+                    type="tertiary"
+                    key=""
+                />
 
-            <a :href="downloadUrl('csv')" rel="noopener">
-                <Button
-                    :icon="faFileCsv"
-                    label="CSV"
-                    :style="'tertiary'" />
-            </a>
-            <a :href="downloadUrl('xlsx')" rel="noopener">
-                <Button
-                    :icon="faFileExcel"
-                    label="Excel"
-                    :style="'tertiary'" />
-            </a>
-            <a :href="downloadUrl('json')" rel="noopener">
-                <Button
-                    :icon="faBracketsCurly"
-                    label="JSON"
-                    :style="'tertiary'" />
-            </a>
-            <a :href="downloadUrl('images')" rel="noopener">
-                <Button
-                    :icon="faImage"
-                    :label="trans('Images')"
-                    :style="'tertiary'" />
-            </a>
+                <Popover ref="_popover">
+                    <div class="w-64 relative">
+                        <div class="text-sm mb-2">
+                            {{ trans("Select another download file type:") }}:
+                        </div>
 
+                        <div class="flex flex-col gap-y-2">
+                           <a :href="downloadUrl('xlsx')" target="_blank" rel="noopener">
+                                <Button
+                                    :icon="faFileExcel"
+                                    label="Excel"
+                                    full
+                                    :style="'tertiary'" />
+                            </a>
+                            <a :href="downloadUrl('json')" target="_blank" rel="noopener">
+                                <Button
+                                    :icon="faBracketsCurly"
+                                    label="JSON"
+                                    full
+                                    :style="'tertiary'" />
+                            </a>
+                            <a :href="downloadUrl('images')" target="_blank" rel="noopener">
+                                <Button
+                                    :icon="faImage"
+                                    :label="trans('Images')"
+                                    full
+                                    :style="'tertiary'" />
+                            </a>
+                        </div>
+
+                    </div>
+                </Popover>
+            </div>
 
             <Button
                 @click="() => (isOpenModalPortfolios = true)"

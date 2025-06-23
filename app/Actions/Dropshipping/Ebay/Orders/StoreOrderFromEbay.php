@@ -89,6 +89,7 @@ class StoreOrderFromEbay extends OrgAction
                         historicAsset: $historicAsset,
                         modelData: [
                             'quantity_ordered' => $ebayProduct['quantity'],
+                            'data' => $ebayProduct
                         ]
                     );
                 }
