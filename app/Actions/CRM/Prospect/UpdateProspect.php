@@ -14,6 +14,7 @@ use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProspects;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithProspectPrepareForValidation;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
@@ -28,11 +29,13 @@ use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use TheIconic\NameParser\Parser;
 
 class UpdateProspect extends OrgAction
 {
     use WithActionUpdate;
     use WithProspectPrepareForValidation;
+    use WithProcessContactNameComponents;
 
     private Prospect $prospect;
 
@@ -54,8 +57,11 @@ class UpdateProspect extends OrgAction
             data_set($modelData, 'location', $prospect->address->getLocation());
         }
 
+        if (Arr::has($modelData, 'contact_name')) {
+            data_set($modelData, 'contact_name_components', $this->processComponents(Arr::get($modelData, 'contact_name')));
+        }
 
-        $prospect = $this->update($prospect, $modelData, ['data']);
+        $prospect = $this->update($prospect, $modelData, ['data', 'contact_name_components']);
         $changes  = Arr::except($prospect->getChanges(), ['updated_at', 'last_fetched_at']);
 
 

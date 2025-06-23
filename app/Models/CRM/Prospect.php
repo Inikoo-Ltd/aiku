@@ -116,6 +116,7 @@ class Prospect extends Model implements Auditable
     protected $casts = [
         'data'                 => 'array',
         'location'             => 'array',
+        'contact_name_components'     => 'array',
         'state'                => ProspectStateEnum::class,
         'contacted_state'      => ProspectContactedStateEnum::class,
         'fail_status'          => ProspectFailStatusEnum::class,
@@ -135,6 +136,7 @@ class Prospect extends Model implements Auditable
     ];
 
     protected $attributes = [
+        'contact_name_components' => '{}',
         'data'     => '{}',
         'location' => '{}',
     ];
