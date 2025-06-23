@@ -63,7 +63,7 @@ class ShowRetinaCustomerClient extends RetinaAction
                         'title' => __('customer client')
                     ],
                     'actions'    => [
-                        $this->getEditActionIcon($request, 'Profile'),
+                        $this->getEditActionIcon($request, null),
                         [
                             'type'  => 'button',
                             'style' => 'create',
