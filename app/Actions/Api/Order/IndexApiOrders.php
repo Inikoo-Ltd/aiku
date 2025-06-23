@@ -11,7 +11,6 @@
 namespace App\Actions\Api\Order;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\OrdersResource;
 use App\Models\Catalogue\Shop;
@@ -52,7 +51,7 @@ class IndexApiOrders extends OrgAction
 
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
-                $query->where('orders.reference', '=' , $modelData['search']);
+                $query->where('orders.reference', '=', $modelData['search']);
             });
         }
 

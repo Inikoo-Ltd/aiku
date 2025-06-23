@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 23-06-2025-14h-57m
@@ -9,12 +10,9 @@
 namespace App\Actions\Catalogue\Shop\Api;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Api\Dropshipping\ShopResource;
-use App\Http\Resources\Api\OrderResource;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowApiShop extends OrgAction

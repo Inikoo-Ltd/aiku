@@ -10,7 +10,6 @@
 namespace App\Actions\Api\Order;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Http\Resources\Api\OrderResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;

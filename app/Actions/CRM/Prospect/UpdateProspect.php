@@ -57,7 +57,7 @@ class UpdateProspect extends OrgAction
         }
 
         if (Arr::has($modelData, 'contact_name')) {
-            data_set($modelData, 'contact_name_components', $this->processComponents(Arr::get($modelData, 'contact_name')));
+            data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
         }
 
         $prospect = $this->update($prospect, $modelData, ['data', 'contact_name_components']);
