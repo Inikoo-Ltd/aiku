@@ -36,23 +36,6 @@ class ShowMastersDashboard extends OrgAction
 
     public function htmlResponse(Group $group): Response
     {
-        // $timesUpdate = ['1d', '1w', '1m', '1y', 'all'];
-
-        // $topFamily     = [];
-        // $topDepartment = [];
-        // $topProduct    = [];
-
-        // foreach ($timesUpdate as $timeUpdate) {
-        //     $family = $group->stats->{'top'.$timeUpdate.'Family'};
-
-        //     $topFamily[$timeUpdate] = $family ? FamilyResource::make($family) : null;
-
-        //     $department                 = $group->stats->{'top'.$timeUpdate.'Department'};
-        //     $topDepartment[$timeUpdate] = $department ? DepartmentResource::make($department) : null;
-
-        //     $product                 = $group->stats->{'top'.$timeUpdate.'Product'};
-        //     $topProduct[$timeUpdate] = $product ? ProductResource::make($product) : null;
-        // }
         return Inertia::render(
             'Masters/MastersDashboard',
             [
@@ -65,21 +48,6 @@ class ShowMastersDashboard extends OrgAction
                     ],
                     'title' => __('master catalogue'),
                 ],
-                // 'flatTreeMaps' => [
-                //     [
-                //         [
-                //             'name'  => 'Master Shops',
-                //             'icon'  => ['fal', 'fa-books'],
-                //             'route' => [
-                //                 'name'       => 'grp.masters.master_shops.index',
-                //                 'parameters' => []
-                //             ],
-                //             'index' => [
-                //                 'number' => $this->group->goodsStats->number_master_shops
-                //             ]
-                //         ]
-                //     ]
-                // ],
                 'stats' => [
                     [
                         'label' => __('Master Shops'),
@@ -87,9 +55,9 @@ class ShowMastersDashboard extends OrgAction
                         //     'name'       => 'grp.masters.master_shops.index',
                         //     'parameters' => []
                         // ],
-                        // 'icon'  => 'fal fa-store',
-                        "color" => "#a3e635",
-                        'value' => $group->stats->number_master_shops,
+                        'icon'  => 'fal fa-store',
+                        "color" => "#facc15",
+                        'value' => $group->stats->number_current_master_shops,
                     ],
                     [
                         'label' => __('Master Departments'),
@@ -97,35 +65,18 @@ class ShowMastersDashboard extends OrgAction
                         //     'name'       => 'grp.masters.departments.index',
                         //     'parameters' => []
                         // ],
-                        // 'icon'  => 'fal fa-folder-tree',
+                        'icon'  => 'fal fa-folder-tree',
                         "color" => "#a3e635",
-                        'value' => $group->stats->number_master_product_categories_type_department,
+                        'value' => $group->stats->number_current_master_product_categories_type_department,
 
                         'metaRight'  => [
-                            'tooltip' => __('Sub Departments'),
+                            'tooltip' => __('Master Sub Departments'),
                             'icon'    => [
                                 'icon'  => 'fal fa-folder-tree',
                                 'class' => ''
                             ],
                             'count'   => $group->stats->number_master_product_categories_type_department_sub_departments,
                         ],
-                        'metas' => [
-                            [
-                                'tooltip' => __('Active departments'),
-                                "icon"    => [
-                                    "tooltip" => "active",
-                                    "icon"    => "fas fa-check-circle",
-                                    "class"   => "text-green-500"
-                                ],
-                                'count'   => $group->stats->number_current_master_product_categories_type_department,
-                                // 'route' => [
-                                //     'name'       => 'grp.masters.departments.index',
-                                //     'parameters' => [
-                                //         'index_elements[state]' => 'active'
-                                //     ]
-                                // ],
-                            ],
-                        ]
                     ],
                     [
                         'label' => __('Master Families'),
@@ -133,26 +84,9 @@ class ShowMastersDashboard extends OrgAction
                         //     'name'       => 'grp.masters.families.index',
                         //     'parameters' => []
                         // ],
-                        // 'icon'  => 'fal fa-folder',
+                        'icon'  => 'fal fa-folder',
                         "color" => "#e879f9",
-                        'value' => 0,//$group->productCategories->where('type', 'family')->count(),
-                        'metas' => [
-                            [
-                                'tooltip' => __('Active families'),
-                                "icon"    => [
-                                    "tooltip" => "active",
-                                    "icon"    => "fas fa-check-circle",
-                                    "class"   => "text-green-500"
-                                ],
-                                'count'   => $group->stats->number_current_master_product_categories_type_family,
-                                // 'route' => [
-                                //     'name'       => 'grp.masters.families.index',
-                                //     'parameters' => [
-                                //         'index_elements[state]' => 'active'
-                                //     ]
-                                // ],
-                            ],
-                        ]
+                        'value' => $group->stats->number_current_master_product_categories_type_family,
                     ],
                     [
                         'label' => __('Master Products'),
@@ -160,26 +94,22 @@ class ShowMastersDashboard extends OrgAction
                         //     'name'       => 'grp.masters.products.index',
                         //     'parameters' => []
                         // ],
-                        // 'icon'  => 'fal fa-cube',
+                        'icon'  => 'fal fa-cube',
                         "color" => "#38bdf8",
-                        'value' => 0,//$group->masterAssets->count(),
-                        'metas' => [
-                            [
-                                "icon"    => [
-                                    "tooltip" => "active",
-                                    "icon"    => "fas fa-check-circle",
-                                    "class"   => "text-green-500"
-                                ],
-                                "count"   => $group->stats->number_current_master_assets_type_product,
-                                "tooltip" => "Active",
-                                // 'route' => [
-                                //     'name'       => 'grp.masters.products.index',
-                                //     'parameters' => [
-                                //         'index_elements[state]' => 'active'
-                                //     ]
-                                // ],
-                            ],
-                        ]
+                        'value' => $group->stats->number_current_master_assets_type_product,
+                    ],
+                    [
+                        'label' => __('Master Collections'),
+                        // 'route' => [
+                        //     'name'       => 'grp.org.shops.show.catalogue.collections.index',        // TODO
+                        //     'parameters' => [
+                        //         'organisation' => $shop->organisation->slug,
+                        //         'shop'         => $shop->slug
+                        //     ]
+                        // ],
+                        'icon'  => 'fal fa-album-collection',
+                        "color" => "#4f46e5",
+                        'value' => $group->stats->number_current_master_collections,
                     ],
                 ]
 
