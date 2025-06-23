@@ -34,7 +34,6 @@ use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use TheIconic\NameParser\Parser;
 
 class StoreProspect extends OrgAction
 {

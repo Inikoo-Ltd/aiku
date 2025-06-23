@@ -29,7 +29,6 @@ use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use TheIconic\NameParser\Parser;
 
 class UpdateProspect extends OrgAction
 {

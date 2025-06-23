@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 23-06-2025-11h-58m
@@ -9,11 +10,8 @@
 namespace App\Actions\Api\Customer;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
-use App\Http\Resources\Api\OrderResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowApiCustomer extends OrgAction

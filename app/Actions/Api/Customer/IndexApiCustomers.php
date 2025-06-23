@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 23-06-2025-11h-47m
@@ -9,13 +10,9 @@
 namespace App\Actions\Api\Customer;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\CustomersResource;
-use App\Http\Resources\Api\OrdersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

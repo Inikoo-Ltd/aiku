@@ -46,7 +46,6 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
-use TheIconic\NameParser\Parser;
 
 class StoreCustomer extends OrgAction
 {
