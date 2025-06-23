@@ -258,6 +258,15 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        "tooltip" => __("Master Catalogue"),
+                        "icon"    => ["fal", "fa-books"],
+                        'root'    => 'grp.masters.dashboard',
+                        "route"   => [
+                            "name"       => 'grp.masters.dashboard',
+                            "parameters" => [],
+                        ],
+                    ],
+                    [
                         'label' => __('Shops'),
                         'tooltip' => __('Master shops'),
                         'icon'  => ['fal', 'fa-store-alt'],
@@ -300,6 +309,16 @@ class GetGroupNavigation
                             'parameters' => []
 
                         ]
+                    ],
+                    [
+                        "label"   => __("Master Collections"),
+                        "tooltip" => __("Master Collections"),
+                        "icon"    => ["fal", "fa-album-collection"],
+                        'root'    => 'grp.masters.master_collections.',
+                        "route"   => [
+                            "name"       => "grp.masters.master_collections.index",
+                            "parameters" => [],
+                        ],
                     ],
 
 

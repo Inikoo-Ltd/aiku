@@ -51,20 +51,20 @@ class ShowMastersDashboard extends OrgAction
                 'stats' => [
                     [
                         'label' => __('Master Shops'),
-                        // 'route' => [
-                        //     'name'       => 'grp.masters.master_shops.index',
-                        //     'parameters' => []
-                        // ],
+                        'route' => [
+                            'name'       => 'grp.masters.master_shops.index',
+                            'parameters' => []
+                        ],
                         'icon'  => 'fal fa-store',
                         "color" => "#facc15",
                         'value' => $group->stats->number_current_master_shops,
                     ],
                     [
                         'label' => __('Master Departments'),
-                        // 'route' => [
-                        //     'name'       => 'grp.masters.departments.index',
-                        //     'parameters' => []
-                        // ],
+                        'route' => [
+                            'name'       => 'grp.masters.master_departments.index',
+                            'parameters' => []
+                        ],
                         'icon'  => 'fal fa-folder-tree',
                         "color" => "#a3e635",
                         'value' => $group->stats->number_current_master_product_categories_type_department,
@@ -80,20 +80,20 @@ class ShowMastersDashboard extends OrgAction
                     ],
                     [
                         'label' => __('Master Families'),
-                        // 'route' => [
-                        //     'name'       => 'grp.masters.families.index',
-                        //     'parameters' => []
-                        // ],
+                        'route' => [
+                            'name'       => 'grp.masters.master_families.index',
+                            'parameters' => []
+                        ],
                         'icon'  => 'fal fa-folder',
                         "color" => "#e879f9",
                         'value' => $group->stats->number_current_master_product_categories_type_family,
                     ],
                     [
                         'label' => __('Master Products'),
-                        // 'route' => [
-                        //     'name'       => 'grp.masters.products.index',
-                        //     'parameters' => []
-                        // ],
+                        'route' => [
+                            'name'       => 'grp.masters.master_products.index',
+                            'parameters' => []
+                        ],
                         'icon'  => 'fal fa-cube',
                         "color" => "#38bdf8",
                         'value' => $group->stats->number_current_master_assets_type_product,
