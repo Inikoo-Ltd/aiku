@@ -223,21 +223,23 @@ onUnmounted(() => {
                       <div class="flex items-center gap-1">
                         <button v-if="getHiddenPermissions(element.web_block.layout.data)"
                           @click.stop.prevent="setShowBlock($event, element)"
-                          class="p-1 text-theme hover:text-opacity-80 text-xs">
+                          class="px-1 text-theme hover:text-opacity-80 text-xs">
                           <FontAwesomeIcon :icon="element.show ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width />
                         </button>
 
                         <button v-if="getDeletePermissions(element.web_block.layout.data)"
                           @click="e => isLoadingDeleteBlock !== element.id && confirmDelete(e, element)"
-                          class="p-1 text-theme hover:text-opacity-80 text-xs">
+                          class="px-1 text-theme hover:text-opacity-80 text-xs">
                           <LoadingIcon v-if="isLoadingDeleteBlock === element.id" />
                           <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-500" fixed-width />
                         </button>
                       </div>
                     </div>
 
-                    <Collapse v-if="element?.web_block?.layout && getBluprintPermissions(element.type)"
-                      :when="openedBlockSideEditor === index">
+                    <Collapse 
+                      v-if="element?.web_block?.layout && getBluprintPermissions(element.type)"
+                      :when="openedBlockSideEditor === index"
+                    >
                       <div class="p-2 space-y-2">
                         <VisibleCheckmark v-model="element.visibility" @update:modelValue="sendBlockUpdate(element)" />
                         <SideEditor v-model="element.web_block.layout.data.fieldValue"

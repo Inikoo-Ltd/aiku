@@ -440,7 +440,6 @@ const compUsersEditThisPage = computed(() => {
   <ConfirmDialog group="alert-publish" />
 
   <div class="flex">
-    <!-- Side Editor -->
     <div
       v-if="!fullScreeen"
       class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1"
@@ -456,13 +455,12 @@ const compUsersEditThisPage = computed(() => {
         @order="sendOrderBlock"
         @setVisible="setHideBlock"
         @onSaveSiteSettings="onSaveSiteSettings"
-		@onDuplicateBlock="duplicateBlock"
+		    @onDuplicateBlock="duplicateBlock"
       />
     </div>
 
     <!-- Preview Section -->
     <div class="h-[calc(100vh-16vh)] w-full flex flex-col bg-gray-200 overflow-x-auto">
-      <!-- Toolbar -->
       <div class="flex justify-between items-center px-2 py-1">
         <div class="flex items-center gap-2 text-gray-500">
           <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
@@ -492,7 +490,6 @@ const compUsersEditThisPage = computed(() => {
         </div>
       </div>
 
-      <!-- Iframe Preview -->
       <div class="relative border-2 h-full w-full bg-white overflow-auto">
         <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
           <LoadingIcon class="w-24 h-24 text-6xl" />
