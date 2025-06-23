@@ -171,11 +171,10 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
 const isLoadingSubmit = ref(false)
 
 
-
-const onAddProducts = async (product: {}) => {
-    console.log('products zzzz', product.transaction_id)
-    // return 
-
+const listLoadingProducts = ref({
+    
+})
+const onAddProducts = async (product: {historic_asset_id: number}) => {
 
     const routePost = product?.transaction_id ? 
         {
@@ -200,6 +199,9 @@ const onAddProducts = async (product: {}) => {
         routePost.body,
         {
             only: ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'],
+            onStart: () => {
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'loading'
+            },
             onBefore: () => 'isLoadingSubmit.value = true',
             onError: (error) => {
                 notify({
@@ -207,6 +209,7 @@ const onAddProducts = async (product: {}) => {
                     text: error.products || undefined,
                     type: "error"
                 })
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
                 notify({
@@ -214,8 +217,14 @@ const onAddProducts = async (product: {}) => {
                     text: trans("Successfully added portfolios"),
                     type: "success"
                 })
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
             },
-            onFinish: () => isLoadingSubmit.value = false
+            onFinish: () => {
+                isLoadingSubmit.value = false
+                setTimeout(() => {
+                    listLoadingProducts.value[`id-${product.historic_asset_id}`] = null
+                }, 3000)
+            }
         })
 }
 
@@ -343,6 +352,7 @@ console.log('basket ds', props)
             :routeFetch="props.routes.select_products"
             :isLoadingSubmit
             @submit="(products: {}) => onAddProducts(products)"
+            :listLoadingProducts
             withQuantity
         >
         </ProductsSelectorAutoSelect>
