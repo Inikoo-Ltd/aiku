@@ -19,7 +19,7 @@ class PollResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Poll $poll */
-        $poll = $this->resource;
+        $poll = $this;
         return [
             'created_at'               => $poll->created_at,
             'id'                       => $poll->id,
