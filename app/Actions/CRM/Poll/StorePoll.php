@@ -44,8 +44,8 @@ class StorePoll extends OrgAction
                 StorePollOption::make()->action(
                     $poll,
                     [
-                        'value' => $option['value'],
-                        'label' => $option['label'],
+                        'value' => $option . '-' . $poll->id . $poll->shop->id,
+                        'label' => $option,
                     ]
                 );
             }
@@ -94,16 +94,6 @@ class StorePoll extends OrgAction
             'options'                => [
                 new RequiredIf($this->get('type') === PollTypeEnum::OPTION->value),
                 'array',
-            ],
-            'options.*.label'        => [
-                'required_with:options',
-                'string',
-                'max:255',
-            ],
-            'options.*.value'        => [
-                'required_with:options',
-                'string',
-                'max:255',
             ],
         ];
 

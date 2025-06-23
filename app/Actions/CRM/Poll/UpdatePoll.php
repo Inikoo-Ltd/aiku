@@ -19,7 +19,6 @@ use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePoll extends OrgAction
@@ -44,8 +43,8 @@ class UpdatePoll extends OrgAction
                 StorePollOption::make()->action(
                     $poll,
                     [
-                        'value' => $option['value'],
-                        'label' => $option['label'],
+                        'value' => $option . '-' . $poll->id . $poll->shop->id,
+                        'label' => $option,
                     ]
                 );
             }
@@ -97,18 +96,8 @@ class UpdatePoll extends OrgAction
             ],
             'type'                     => ['sometimes', Rule::enum(PollTypeEnum::class)],
             'options'                => [
-                new RequiredIf($this->get('type') === PollTypeEnum::OPTION->value),
                 'array',
-            ],
-            'options.*.label'        => [
-                'required_with:options',
-                'string',
-                'max:255',
-            ],
-            'options.*.value'        => [
-                'required_with:options',
-                'string',
-                'max:255',
+                'sometimes',
             ],
             'in_registration'          => ['sometimes', 'boolean'],
             'in_registration_required' => ['sometimes', 'boolean'],
