@@ -30,7 +30,9 @@ class IndexApiCustomers extends OrgAction
 
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
-                $query->where('customers.contact_name', 'like', '%' . $modelData['search'] . '%');
+                $query->whereAnyWordStartWith('customers.contact_name', $modelData['search'])
+                    ->orWhereStartWith('customers.email', $modelData['search'])
+                    ->orWhere('customers.reference', $modelData['search']);
             });
         }
 

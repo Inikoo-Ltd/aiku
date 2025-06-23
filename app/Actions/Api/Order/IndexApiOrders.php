@@ -25,9 +25,6 @@ use Illuminate\Support\Arr;
 
 class IndexApiOrders extends OrgAction
 {
-    use WithOrderingAuthorisation;
-
-
     public function handle(Shop|Customer $parent, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Order::class);
@@ -55,7 +52,7 @@ class IndexApiOrders extends OrgAction
 
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
-                $query->where('orders.reference', 'like', '%' . $modelData['search'] . '%');
+                $query->where('orders.reference', '=' , $modelData['search']);
             });
         }
 
