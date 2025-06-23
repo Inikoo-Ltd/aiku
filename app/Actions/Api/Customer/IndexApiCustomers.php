@@ -10,7 +10,7 @@
 namespace App\Actions\Api\Customer;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Api\CustomersResource;
+use App\Http\Resources\Api\CustomersApiResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,7 +34,7 @@ class IndexApiCustomers extends OrgAction
             });
         }
 
-        return $query->defaultSort('orders.id')
+        return $query->defaultSort('customers.id')
         ->select([
                 'customers.location',
                 'customers.reference',
@@ -63,7 +63,7 @@ class IndexApiCustomers extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $customers): AnonymousResourceCollection
     {
-        return CustomersResource::collection($customers);
+        return CustomersApiResource::collection($customers);
     }
 
     public function rules(): array
