@@ -38,6 +38,7 @@ const props = defineProps<{
     body?: object
     fullLoading?: boolean
     isWithError?: boolean
+    buttonClass?: string
 }>()
 
 const emits = defineEmits<{
@@ -88,6 +89,7 @@ const setError = (e: {}) => {
                 :type="props.type"
                 :disabled="props.disabled"
                 :noHover="props.noHover"
+                :class="props.buttonClass"
             >
                 <template #loading>
                     <slot name="loading" />

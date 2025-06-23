@@ -54,7 +54,6 @@ const filter = ref({ data: {} })
 const showFilters = ref(false)
 const showAside = ref(false)
 
-const loadingOutOfStock = ref(false)
 const isFetchingOutOfStock = ref(false)
 
 const getRoutes = () => {
@@ -367,6 +366,7 @@ const responsiveGridClass = computed(() => {
                         class="border p-3 relative rounded shadow-sm bg-white">
                         <ProductRender
                             :product="product"
+                            :key="index"
                             :productHasPortfolio="productHasPortfolio.list[product.id]"
                         />
                     </div>

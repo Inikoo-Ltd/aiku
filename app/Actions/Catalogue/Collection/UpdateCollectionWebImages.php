@@ -10,7 +10,6 @@ namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class UpdateCollectionWebImages

@@ -20,7 +20,7 @@ trait WithMasterCatalogueSubNavigation
                 'label'    => __($masterShop->name),
 
                 'route'    => [
-                    'name'       => 'grp.masters.shops.show',
+                    'name'       => 'grp.masters.master_shops.show',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -36,7 +36,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_department,
                 'label'    => __('Departments'),
                 'route'    => [
-                    'name'       => 'grp.masters.shops.show.departments.index',
+                    'name'       => 'grp.masters.master_shops.show.master_departments.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -51,7 +51,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_family,
                 'label'    => __('Families'),
                 'route'    => [
-                    'name'       => 'grp.masters.shops.show.families.index',
+                    'name'       => 'grp.masters.master_shops.show.master_families.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -66,7 +66,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $masterShop->stats->number_current_master_assets_type_product,
                 'label'    => __('Products'),
                 'route'    => [
-                    'name'       => 'grp.masters.shops.show.products.index',
+                    'name'       => 'grp.masters.master_shops.show.products.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -82,7 +82,7 @@ trait WithMasterCatalogueSubNavigation
                 'label'    => __('Subs'),
                 'tooltip'  => __('Sub Departments'),
                 'route'    => [
-                    'name'       => 'grp.masters.shops.show.sub-departments.index',
+                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]

@@ -232,7 +232,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-
+            $table->withLabelRecord([__('portfolio'), __('portfolios')]);
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
