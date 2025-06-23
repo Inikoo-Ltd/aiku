@@ -24,6 +24,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -45,19 +46,22 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
+use TheIconic\NameParser\Parser;
 
 class StoreCustomer extends OrgAction
 {
     use AsCommand;
     use WithModelAddressActions;
     use WithNoStrictRules;
-
+    use WithProcessContactNameComponents;
 
     /**
      * @throws \Throwable
      */
     public function handle(Shop $shop, array $modelData): Customer
     {
+        data_set($modelData, 'contact_name_components', $this->processComponents(Arr::get($modelData, 'contact_name')));
+
         $contactAddressData = Arr::get($modelData, 'contact_address', []);
         Arr::forget($modelData, 'contact_address');
         $deliveryAddressData = Arr::get($modelData, 'delivery_address', []);
@@ -209,8 +213,6 @@ class StoreCustomer extends OrgAction
             'state'                    => ['sometimes', Rule::enum(CustomerStateEnum::class)],
             'status'                   => ['sometimes', Rule::enum(CustomerStatusEnum::class)],
             'contact_name'             => ['nullable', 'string', 'max:255'],
-            'first_name'               => ['nullable', 'string', 'max:255'],
-            'last_name'                => ['nullable', 'string', 'max:255'],
             'company_name'             => ['nullable', 'string', 'max:255'],
             'email'                    => [
                 'nullable',

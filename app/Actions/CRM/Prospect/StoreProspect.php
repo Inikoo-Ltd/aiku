@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProspects;
 use App\Actions\Traits\WithCheckCanContactByEmail;
 use App\Actions\Traits\WithCheckCanContactByPhone;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithProspectPrepareForValidation;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
@@ -33,6 +34,7 @@ use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use TheIconic\NameParser\Parser;
 
 class StoreProspect extends OrgAction
 {
@@ -41,6 +43,7 @@ class StoreProspect extends OrgAction
     use WithCheckCanContactByEmail;
     use WithCheckCanContactByPhone;
     use WithModelAddressActions;
+    use WithProcessContactNameComponents;
 
 
     /**
@@ -48,6 +51,8 @@ class StoreProspect extends OrgAction
      */
     public function handle(Shop $shop, array $modelData): Prospect
     {
+        data_set($modelData, 'contact_name_components', $this->processComponents(Arr::get($modelData, 'contact_name')));
+
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
 
@@ -141,8 +146,6 @@ class StoreProspect extends OrgAction
             'last_contacted_at' => 'sometimes|nullable|date',
             'address'           => ['sometimes', 'nullable', new ValidAddress()],
             'contact_name'      => ['nullable', 'string', 'max:255'],
-            'first_name'        => ['nullable', 'string', 'max:255'],
-            'last_name'         => ['nullable', 'string', 'max:255'],
             'company_name'      => ['nullable', 'string', 'max:255'],
             'is_opt_in'         => ['sometimes', 'boolean'],
             'email'             => [
