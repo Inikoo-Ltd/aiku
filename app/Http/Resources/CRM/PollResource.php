@@ -32,7 +32,7 @@ class PollResource extends JsonResource
             'in_registration_required' => $poll->in_registration_required,
             'in_iris'                  => $poll->in_iris,
             'in_iris_required'         => $poll->in_iris_required,
-            'options'                  => $poll->type == PollTypeEnum::OPTION ? PollOptionsResource::collection($poll->pollOptions) : [],
+            'options'                  => $poll->type == PollTypeEnum::OPTION ? PollOptionsResource::collection($poll->pollOptions)->toArray(request()) : [],
             // 'stats'                    => PollStatResource($poll->stats),
         ];
     }
