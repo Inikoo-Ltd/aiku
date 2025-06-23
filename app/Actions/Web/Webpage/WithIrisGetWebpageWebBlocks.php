@@ -11,12 +11,30 @@ namespace App\Actions\Web\Webpage;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 
 trait WithIrisGetWebpageWebBlocks
 {
     use WithFillIrisWebBlocks;
 
     public function getIrisWebBlocks(Webpage $webpage, array $webBlocks, bool $isLoggedIn): array
+    {
+        if ($isLoggedIn) {
+            return $this->getParsedWebBlocks($webpage, $webBlocks, isLoggedIn: true);
+        }
+
+        $ttlSeconds = 60;
+
+        $key = 'iris-web-blocks-website-'.$webpage->website_id.'-webpage-'.$webpage->id;
+
+
+        return Cache::remember($key, $ttlSeconds, function () use ($webpage, $webBlocks) {
+            return $this->getParsedWebBlocks($webpage, $webBlocks, isLoggedIn: false);
+        });
+    }
+
+
+    public function getParsedWebBlocks(Webpage $webpage, array $webBlocks, bool $isLoggedIn)
     {
         $parsedWebBlocks = [];
 
@@ -34,11 +52,10 @@ trait WithIrisGetWebpageWebBlocks
                 continue;
             }
 
-            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock);
-
-
+            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, $isLoggedIn);
         }
 
         return $parsedWebBlocks;
     }
+
 }

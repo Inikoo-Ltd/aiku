@@ -12,68 +12,69 @@ import { MasterFamily } from "@/types/master-family";
 import { trans } from "laravel-vue-i18n";
 
 defineProps<{
-  data: object,
-  tab?: string
+    data: object,
+    tab?: string
 }>();
 
 
 function familyRoute(masterFamily: MasterFamily) {
-  if (route().current() == "grp.masters.families.index") {
-    return route(
-      "grp.masters.families.show",
-      { masterFamily: masterFamily.slug });
-  } else {
-    return route(
-      "grp.masters.shops.show.families.show",
-      { masterShop: (route().params as RouteParams).masterShop, masterFamily: masterFamily.slug });
-  }
+    console.log(route().current());
+    if (route().current() == "grp.masters.master_departments.show.master_families.index") {
+        return route(
+            "grp.masters.master_departments.show.master_families.show",
+            { masterDepartment: (route().params as RouteParams).masterDepartment, masterFamily: masterFamily.slug });
+    } else {
+        return route(
+            "grp.masters.master_families.show",
+            { masterFamily: masterFamily.slug });
+    }
 }
 
 function masterDepartmentRoute(masterFamily: MasterFamily) {
-  if (route().current() == "grp.masters.families.index") {
-    return route(
-      "grp.masters.departments.show",
-      { masterDepartment: masterFamily.master_department_slug });
-  } else {
-    return route(
-      "grp.masters.shops.show.departments.show",
-      { masterShop: (route().params as RouteParams).masterShop, masterDepartment: masterFamily.master_department_slug });
-  }
+    if (route().current() == "grp.masters.master_families.index") {
+        return route(
+            "grp.masters.master_departments.show",
+            { masterDepartment: masterFamily.master_department_slug });
+    } else {
+        return route(
+            "grp.masters.master_shops.show.master_departments.show",
+            { masterShop: (route().params as RouteParams).masterShop, masterDepartment: masterFamily.master_department_slug });
+    }
 }
 
 function masterShopRoute(masterFamily: MasterFamily) {
-  return route("grp.masters.shops.show",
-    {
-      masterShop: masterFamily.master_shop_slug
-    }
-  );
+    return route("grp.masters.master_shops.show",
+        {
+            masterShop: masterFamily.master_shop_slug
+        }
+    );
 }
 
 </script>
 
 <template>
-  <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5">
 
-    <template #cell(master_shop_code)="{ item: department }">
-      <Link v-tooltip="department.master_shop_name" :href="masterShopRoute(department) as string" class="secondaryLink">
-        {{ department["master_shop_code"] }}
-      </Link>
-    </template>
+        <template #cell(master_shop_code)="{ item: department }">
+            <Link v-tooltip="department.master_shop_name" :href="masterShopRoute(department) as string" class="secondaryLink">
+                {{ department["master_shop_code"] }}
+            </Link>
+        </template>
 
-    <template #cell(master_department_code)="{ item: department }">
-      <Link v-if="department.master_department_slug" v-tooltip="department.master_department_name" :href="masterDepartmentRoute(department) as string" class="secondaryLink">
-        {{ department["master_department_code"] }}
-      </Link>
-      <span v-else class="opacity-70  text-red-500">
+        <template #cell(master_department_code)="{ item: department }">
+            <Link v-if="department.master_department_slug" v-tooltip="department.master_department_name" :href="masterDepartmentRoute(department) as string" class="secondaryLink">
+                {{ department["master_department_code"] }}
+            </Link>
+            <span v-else class="opacity-70  text-red-500">
         {{ trans("No department") }}
       </span>
-    </template>
+        </template>
 
-    <template #cell(code)="{ item: family }">
-      <Link :href="familyRoute(family)" class="primaryLink">
-        {{ family["code"] }}
-      </Link>
-    </template>
+        <template #cell(code)="{ item: family }">
+            <Link :href="familyRoute(family)" class="primaryLink">
+                {{ family["code"] }}
+            </Link>
+        </template>
 
-  </Table>
+    </Table>
 </template>

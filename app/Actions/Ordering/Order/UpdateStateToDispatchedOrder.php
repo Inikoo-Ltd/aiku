@@ -9,9 +9,11 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
+use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +45,14 @@ class UpdateStateToDispatchedOrder extends OrgAction
             if ($order->shopifyOrder) {
                 FulfillOrderToShopify::run($order);
             }
+
+            match ($order->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
+                //                PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
+                //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
+                PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
+                default => null,
+            };
         });
 
         return $order;

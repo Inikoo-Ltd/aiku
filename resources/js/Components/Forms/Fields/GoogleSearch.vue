@@ -110,18 +110,21 @@ const selectedPreview = ref('facebook')
         </div>
       </div> -->
 
+      <!-- Section: Title -->
       <div>
         <label class="text-gray-600 font-semibold cursor-pointer">Title</label>
         <PureInput v-model="form[fieldName].meta_title" inputName="meta_title" :maxLength="70" placeholder="Wall paint - Bright, Shine, Protection" />
         <div class="mt-1 text-gray-500 italic tabular-nums">{{ form[fieldName].meta_title?.length || 0 }} of 70 characters used</div>
       </div>
 
+      <!-- Section: SEO Description -->
       <div>
         <label class="text-gray-600 font-semibold cursor-pointer">SEO Description</label>
         <PureTextarea v-model="form[fieldName].meta_description" inputName="meta_description" :rows="6" maxLength="320" placeholder="Your SEO description goes here..." />
         <div class="mt-1 text-gray-500 italic tabular-nums">{{ form[fieldName].meta_description?.length || 0 }} of 320 characters used</div>
       </div>
 
+      <!-- Section: Url -->
       <div class="mt-4">
         <label class="text-gray-600 font-semibold cursor-pointer">URL</label>
         <PureInput v-model="form[fieldName].url" inputName="seoUrl" placeholder="profile">
@@ -148,6 +151,16 @@ const selectedPreview = ref('facebook')
           </PureInput>
         </div>
       </div>
+      
+      <!-- Section: Llms Text -->
+      <!-- <div>
+        <label class="text-gray-600 font-semibold">
+          LLMS Text
+          <FontAwesomeIcon v-tooltip="trans('For a Large Language Model System (LLMS), such as ChatGPT, Bard, or Claude.')" icon="fal fa-info-circle" class="cursor-pointer text-gray-400 hover:text-gray-700" fixed-width aria-hidden="true" />
+        </label>
+        <PureInput v-model="form[fieldName].llms_text" inputName="llms_text" :maxLength="70" placeholder="Brightening your walls, lasting shine, and reliable protection" />
+        <div class="mt-1 text-gray-500 italic tabular-nums">{{ form[fieldName].llms_text?.length || 0 }} of 70 characters used</div>
+      </div> -->
     </div>
   </div>
 </template>

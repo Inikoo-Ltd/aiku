@@ -33,14 +33,13 @@ class HydrateProducts
     public function handle(Product $product): void
     {
         ProductHydrateAvailableQuantity::run($product);
-
-        //        ProductHydrateForSale::run($product);
-        //        ProductHydrateProductVariants::run($product);
-        //        ProductHydrateCustomersWhoFavourited::run($product);
-        //        ProductHydrateCustomersWhoFavouritedInCategories::run($product);
-        //        ProductHydrateCustomersWhoReminded::run($product);
-        //        ProductHydrateCustomersWhoRemindedInCategories::run($product);
-        //        ProductHydrateGrossWeightFromTradeUnits::run($product);
+        ProductHydrateForSale::run($product);
+        ProductHydrateProductVariants::run($product);
+        ProductHydrateCustomersWhoFavourited::run($product);
+        ProductHydrateCustomersWhoFavouritedInCategories::run($product);
+        ProductHydrateCustomersWhoReminded::run($product);
+        ProductHydrateCustomersWhoRemindedInCategories::run($product);
+        ProductHydrateGrossWeightFromTradeUnits::run($product);
     }
 
 }

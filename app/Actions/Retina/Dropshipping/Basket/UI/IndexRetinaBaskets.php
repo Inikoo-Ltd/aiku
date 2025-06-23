@@ -118,7 +118,7 @@ class IndexRetinaBaskets extends RetinaAction
                 'title' => __("You dont have any baskets open"),
                 'count' => 0
             ];
-
+            $table->withLabelRecord([__('basket'), __('baskets')]);
             $table->withGlobalSearch()
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);

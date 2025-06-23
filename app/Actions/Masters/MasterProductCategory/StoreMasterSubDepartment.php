@@ -68,7 +68,7 @@ class StoreMasterSubDepartment extends OrgAction
 
     public function htmlResponse(MasterProductCategory $masterSubDepartment, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.masters.departments.sub_departments.show', [
+        return Redirect::route('grp.masters.master_departments.show.master_sub_departments.show', [
             'masterDepartment' => $masterSubDepartment->parent->slug,
             'masterSubDepartment' => $masterSubDepartment->slug,
         ]);

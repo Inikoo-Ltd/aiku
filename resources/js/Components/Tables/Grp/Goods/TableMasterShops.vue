@@ -16,25 +16,25 @@ defineProps<{
 
 function masterShopRoute(masterShop: MasterShop) {
   return route(
-    "grp.masters.shops.show",
+    "grp.masters.master_shops.show",
     [masterShop.slug]);
 }
 
 function masterDepartmentsRoute(masterShop: MasterShop) {
   return route(
-    "grp.masters.shops.show.departments.index",
+    "grp.masters.master_shops.show.master_departments.index",
     [masterShop.slug]);
 }
 
 function masterFamiliesRoute(masterShop: MasterShop) {
   return route(
-    "grp.masters.shops.show.families.index",
+    "grp.masters.master_shops.show.master_families.index",
     [masterShop.slug]);
 }
 
 function masterProductsRoute(masterShop: MasterShop) {
   return route(
-    "grp.masters.shops.show.products.index",
+    "grp.masters.master_shops.show.products.index",
     [masterShop.slug]);
 }
 

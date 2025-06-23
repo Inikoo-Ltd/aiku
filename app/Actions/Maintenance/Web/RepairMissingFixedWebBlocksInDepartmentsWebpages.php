@@ -56,6 +56,19 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             };
         }
 
+        $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
+        if (count($collectionsWebBlock) > 0) {
+            foreach ($collectionsWebBlock as $webBlockData) {
+                DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
+                DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
+                DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
+            };
+        }
+
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-departments-1');
 
@@ -66,9 +79,8 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
 
         if (count($countFamilyWebBlock) > 0) {
-
             foreach ($countFamilyWebBlock as $webBlockData) {
-                $layout       = json_decode($webBlockData->layout, true);
+                $layout = json_decode($webBlockData->layout, true);
                 $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
 
                 $description = '';
@@ -97,8 +109,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         }
 
 
-
-
         $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
 
         if (count($productsWebBlock) == 0) {
@@ -116,15 +126,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             $this->createWebBlock($webpage, 'families-1', $department);
         } elseif (count($productsWebBlock) > 1) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 Families Web Block found');
-        }
-
-        $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
-
-        if (count($collectionsWebBlock) == 0) {
-            $command->error('Webpage '.$webpage->code.' Collection Web Block not found');
-            $this->createWebBlock($webpage, 'collections-1', $department);
-        } elseif (count($collectionsWebBlock) > 1) {
-            $command->error('Webpage '.$webpage->code.' MORE than 1 Collection Web Block found');
         }
 
 
@@ -150,7 +151,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 );
             }
         }
-
     }
 
 
@@ -166,7 +166,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             if ($webpage) {
                 $this->handle($webpage, $command);
             }
-
         }
     }
 

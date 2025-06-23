@@ -64,15 +64,10 @@ class CreateCustomer extends OrgAction
                                         'type'  => 'input',
                                         'label' => __('company')
                                     ],
-                                    'first_name' => [
+                                    'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('first name'),
+                                        'label' => __('contact name'),
                                         'required' => true
-                                    ],
-                                    'last_name' => [
-                                        'type'  => 'input',
-                                        'label' => __('last name'),
-                                        'required' => false
                                     ],
                                     'contact_address'      => [
                                         'type'    => 'address',

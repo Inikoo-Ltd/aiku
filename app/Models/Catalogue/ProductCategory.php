@@ -69,6 +69,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_family_id
  * @property bool $follow_master
  * @property bool $show_in_website
+ * @property int|null $webpage_id
+ * @property string|null $url
+ * @property array<array-key, mixed> $web_images
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -114,6 +117,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'             => 'array',
+        'web_images'       => 'array',
         'state'            => ProductCategoryStateEnum::class,
         'type'             => ProductCategoryTypeEnum::class,
         'activated_at'     => 'datetime',
@@ -124,7 +128,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'       => '{}',
+        'web_images' => '{}',
     ];
 
     public function generateTags(): array

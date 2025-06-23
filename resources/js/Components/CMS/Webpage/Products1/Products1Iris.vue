@@ -2,7 +2,7 @@
 import { faFilter, faTimes, faBoxOpen } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { getStyles } from '@/Composables/styles'
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, toRaw, inject } from 'vue'
 import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
@@ -13,6 +13,7 @@ import Drawer from 'primevue/drawer'
 import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 const props = defineProps<{
     fieldValue: {
@@ -23,26 +24,69 @@ const props = defineProps<{
             }
             workshop: routeType
         }
+        products : {
+            data : object,
+            links : object,
+            meta : {
+                current_page : Number,
+                last_page : number
+            }
+        }
         container?: any
+        model_type : string
+        model_id: Number
     }
     webpageData?: any
     blockData?: Object
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const products = ref<any[]>([])
-const loadingInitial = ref(true)
+console.log(props)
+const layout = inject('layout', retinaLayoutStructure)
+const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
+const loadingInitial = ref(false)
 const loadingMore = ref(false)
 const q = ref('')
 const orderBy = ref('')
-const page = ref(1)
-const lastPage = ref(1)
+const page = ref(toRaw(props.fieldValue.products.meta.current_page))
+const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
 const showFilters = ref(false)
 const showAside = ref(false)
 
 const isFetchingOutOfStock = ref(false)
 
+const getRoutes = () => {
+    if (props.fieldValue.model_type === 'ProductCategory') {
+        return {
+            iris: {
+                route_products: {
+                    name: 'iris.json.product_category.products.index',
+                    parameters: { productCategory: props.fieldValue.model_id },
+                },
+                route_out_of_stock_products: {
+                    name: 'iris.json.product_category.out_of_stock_products.index',
+                    parameters: { productCategory: props.fieldValue.model_id },
+                },
+            }
+        }
+    } else if (props.fieldValue.model_type === 'Collection') {
+        return {
+            iris: {
+                route_products: {
+                    name: 'iris.json.collection.products.index',
+                    parameters: { collection: props.fieldValue.model_id },
+                },
+                route_out_of_stock_products: {
+                    name: 'iris.json.collection.out_of_stock_products.index',
+                    parameters: { collection: props.fieldValue.model_id },
+                },
+            }
+        }
+    }
+
+    return { iris: { route_products: null, route_out_of_stock_products: null } }
+}
 function buildFilters(): Record<string, any> {
     const filters: Record<string, any> = {}
     const raw = filter.value.data || {}
@@ -70,11 +114,12 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const filters = buildFilters()
-
+    const routes = getRoutes()
     const useOutOfStock = isFetchingOutOfStock.value
+
     const currentRoute = useOutOfStock
-        ? props.fieldValue.products_route.iris.route_out_of_stock_products
-        : props.fieldValue.products_route.iris.route_products
+        ? routes.iris.route_out_of_stock_products
+        : routes.iris.route_products
 
     try {
         const response = await axios.get(route(currentRoute.name, {
@@ -87,7 +132,8 @@ const fetchProducts = async (isLoadMore = false) => {
         }))
 
         const data = response.data
-        lastPage.value = data?.meta.last_page ?? 1
+
+        lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])]
@@ -95,15 +141,14 @@ const fetchProducts = async (isLoadMore = false) => {
             products.value = data?.data ?? []
         }
 
-        // If we've reached the end of in-stock products and haven't fetched out-of-stock yet
         if (!useOutOfStock && page.value >= lastPage.value) {
             isFetchingOutOfStock.value = true
-            page.value = 1 // reset page for out-of-stock
+            page.value = 1
             await fetchProducts(true)
         }
 
     } catch (error) {
-        console.error(error)
+        console.log(error)
         notify({ title: 'Error', text: 'Failed to load products.', type: 'error' })
     } finally {
         loadingInitial.value = false
@@ -164,7 +209,11 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith('-')
     }
 
-    debFetchProducts()
+    if(layout.iris.is_logged_in)
+        fetchProductHasPortfolio()
+    
+    
+    /* debFetchProducts() */
 })
 
 const updateQueryParams = () => {
@@ -187,26 +236,52 @@ const toggleSort = (key: typeof sortKey.value) => {
 }
 
 
-const channels = ref({
+const productHasPortfolio = ref({
     isLoading: false,
     list: []
 })
-const fetchChannels = async () => {
-    channels.value.isLoading = true
-    try {
-        const response = await axios.get(route('iris.json.channels.index'))
-        console.log('Channels response:', response.data.data)
-        
-        channels.value.list = response.data.data || []
 
-        
-    } catch (error) {
-        console.log(error)
-        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
-    } finally {
-        channels.value.isLoading = false
+
+const getRouteForProductPortfolio = () => {
+    const { model_type, model_id } = props.fieldValue
+    if (model_type == 'ProductCategory') {
+        return route('iris.json.product_category.portfolio_data', {
+            productCategory: model_id,
+        })
+    }
+
+    else if (model_type == 'Collection') {
+        return route('iris.json.collection.portfolio_data', {
+            collection: model_id,
+        })
     }
 }
+
+const fetchProductHasPortfolio = async () => {
+    productHasPortfolio.value.isLoading = true
+   console.log('dsfsdf',props.fieldValue.model_type)
+    try {
+        const apiUrl = getRouteForProductPortfolio()
+        console.log('sss',apiUrl)
+        if (!apiUrl) {
+            throw new Error('Invalid model_type or missing route configuration')
+        }
+
+        const response = await axios.get(apiUrl)
+        productHasPortfolio.value.list = response.data || []
+    } catch (error) {
+        console.error(error)
+        notify({
+            title: 'Error',
+            text: 'Failed to load product portfolio.',
+            type: 'error',
+        })
+    } finally {
+        productHasPortfolio.value.isLoading = false
+    }
+}
+
+
 
 const responsiveGridClass = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -220,6 +295,8 @@ const responsiveGridClass = computed(() => {
   const count = columnCount[props.screenType] ?? 1
   return `grid-cols-${count}`
 })
+
+
 </script>
 
 <template>
@@ -257,7 +334,7 @@ const responsiveGridClass = computed(() => {
                 <!-- Sort Tabs -->
                 <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
                     <button
-                        v-for="key in ['created_at', 'price', 'code', 'name']"
+                        v-for="key in layout.iris.is_logged_in ? ['created_at', 'price', 'code', 'name'] : ['created_at','code', 'name']"
                         :key="key"
                         @click="toggleSort(key)"
                         class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1"
@@ -280,6 +357,7 @@ const responsiveGridClass = computed(() => {
                         <Skeleton height="200px" class="mb-3" />
                         <Skeleton width="80%" class="mb-2" />
                         <Skeleton width="60%" />
+                        <Skeleton width="100%" />
                     </div>
                 </template>
 
@@ -287,22 +365,22 @@ const responsiveGridClass = computed(() => {
                     <div v-for="(product, index) in products" :key="index"
                         class="border p-3 relative rounded shadow-sm bg-white">
                         <ProductRender
-                            :channels="channels"
                             :product="product"
-                            @refreshChannels="() => fetchChannels()"
+                            :productHasPortfolio="productHasPortfolio.list[product.id]"
                         />
                     </div>
                 </template>
 
                 <template v-else>
                     <div class="col-span-full text-center py-10 text-gray-500">
-                        <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
-                        <p>No products found.</p>
+                       <!--  <FontAwesomeIcon :icon="faBoxOpen" class="text-4xl mb-4 text-gray-400" />
+                        <p>No products found.</p> -->
                     </div>
                 </template>
             </div>
 
             <!-- Load More -->
+            <!--  {{ page   }}{{ lastPage }} -->
             <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
                 <Button @click="loadMore" type="tertiary"
                     :disabled="loadingMore">

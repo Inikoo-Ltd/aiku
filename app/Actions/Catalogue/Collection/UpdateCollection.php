@@ -21,6 +21,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateCollection extends OrgAction
@@ -72,6 +73,9 @@ class UpdateCollection extends OrgAction
             'name'        => ['sometimes', 'max:250', 'string'],
             'image'       => ['sometimes'],
             'description' => ['sometimes', 'required', 'max:1500'],
+            'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                    => ['sometimes', 'array'],
         ];
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
