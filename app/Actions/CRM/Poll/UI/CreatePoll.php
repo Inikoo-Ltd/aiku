@@ -31,6 +31,10 @@ class CreatePoll extends OrgAction
             'CreateModel',
             [
                'title'       => __('poll'),
+               'breadcrumbs' => $this->getBreadcrumbs(
+                   $request->route()->getName(),
+                   $request->route()->originalParameters()
+               ),
                'pageHead'    => [
                    'title'   => __('new poll'),
                    'icon'    => [
@@ -114,5 +118,23 @@ class CreatePoll extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
         return $this->handle($request);
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        return array_merge(
+            IndexPolls::make()->getBreadcrumbs(
+                routeName: preg_replace('/create$/', 'index', $routeName),
+                routeParameters: $routeParameters,
+            ),
+            [
+                [
+                    'type'          => 'creatingModel',
+                    'creatingModel' => [
+                        'label' => __('Creating poll'),
+                    ]
+                ]
+            ]
+        );
     }
 }

@@ -51,6 +51,10 @@ class EditPoll extends OrgAction
             'EditModel',
             [
                 'title'       => __('poll'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
                     'title'   => $poll->name,
                     'icon'    => [
@@ -126,6 +130,15 @@ class EditPoll extends OrgAction
                     ]
                 ]
             ]
+        );
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        return ShowPoll::make()->getBreadcrumbs(
+            routeName: preg_replace('/edit$/', 'show', $routeName),
+            routeParameters: $routeParameters,
+            suffix: '('.__('Editing').')'
         );
     }
 }
