@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Enums\CRM\Poll\PollTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\CRM\Poll;
 
@@ -18,7 +19,7 @@ class PollResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Poll $poll */
-        $poll = $this;
+        $poll = $this->resource;
         return [
             'created_at'               => $poll->created_at,
             'id'                       => $poll->id,
@@ -31,7 +32,7 @@ class PollResource extends JsonResource
             'in_registration_required' => $poll->in_registration_required,
             'in_iris'                  => $poll->in_iris,
             'in_iris_required'         => $poll->in_iris_required,
-            'options'                  => PollOptionsResource::collection($poll->pollOptions),
+            'options'                  => $poll->type == PollTypeEnum::OPTION ? PollOptionsResource::collection($poll->pollOptions) : [],
             // 'stats'                    => PollStatResource($poll->stats),
         ];
     }
