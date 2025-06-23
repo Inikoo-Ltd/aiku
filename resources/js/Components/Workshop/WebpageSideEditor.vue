@@ -236,10 +236,8 @@ onUnmounted(() => {
                       </div>
                     </div>
 
-                    <Collapse 
-                      v-if="element?.web_block?.layout && getBluprintPermissions(element.type)"
-                      :when="openedBlockSideEditor === index"
-                    >
+                    <Collapse v-if="element?.web_block?.layout && getBluprintPermissions(element.type)"
+                      :when="openedBlockSideEditor === index">
                       <div class="p-2 space-y-2">
                         <VisibleCheckmark v-model="element.visibility" @update:modelValue="sendBlockUpdate(element)" />
                         <SideEditor v-model="element.web_block.layout.data.fieldValue"
@@ -279,16 +277,33 @@ onUnmounted(() => {
     class="fixed z-50 bg-white border border-gray-200 shadow-md rounded text-sm min-w-[140px] overflow-hidden">
     <ul>
       <template v-if="contextMenu.block">
-        <li @click="e => setShowBlock(e, contextMenu.block!)"
-          class="flex items-center gap-2 px-3 py-1 hover:bg-gray-100 cursor-pointer">
+        <!-- Toggle Visibility -->
+        <li
+          @click="getHiddenPermissions(contextMenu.block.web_block.layout.data) && setShowBlock($event, contextMenu.block!)"
+          :class="[
+            'flex items-center gap-2 px-3 py-1 cursor-pointer',
+            getHiddenPermissions(contextMenu.block.web_block.layout.data)
+              ? 'hover:bg-gray-100 text-gray-800'
+              : 'text-gray-400 cursor-not-allowed pointer-events-none'
+          ]">
           <font-awesome-icon :icon="contextMenu.block?.show ? faEyeSlash : faEye" />
           {{ contextMenu.block?.show ? 'Hide' : 'Unhide' }}
         </li>
-        <li @click="e => confirmDelete(e, contextMenu.block!)"
-          class="flex items-center gap-2 px-3 py-1 hover:bg-gray-100 text-red-600 cursor-pointer">
+
+        <!-- Delete -->
+        <li
+          @click="getDeletePermissions(contextMenu.block.web_block.layout.data) && confirmDelete($event, contextMenu.block!)"
+          :class="[
+            'flex items-center gap-2 px-3 py-1',
+            getDeletePermissions(contextMenu.block.web_block.layout.data)
+              ? 'hover:bg-gray-100 text-red-600 cursor-pointer'
+              : 'text-gray-400 cursor-not-allowed pointer-events-none'
+          ]">
           <font-awesome-icon :icon="faTrashAlt" />
           Delete
         </li>
+
+        <!-- Copy (Always enabled) -->
         <li @click="copyBlock" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer">
           <font-awesome-icon :icon="faCopy" />
           Copy

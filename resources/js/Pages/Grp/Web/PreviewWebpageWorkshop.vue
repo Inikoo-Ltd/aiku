@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, provide } from "vue"
+import { ref, onMounted, onBeforeUnmount, provide, shallowRef, watch, toRaw } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSendBackward, faBringForward, faTrashAlt } from "@fas"
@@ -23,6 +23,9 @@ const props = defineProps<{
 }>()
 
 const layout = useLayoutStore()
+
+const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
+
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
@@ -49,6 +52,7 @@ const updateData = (val: any) => {
 
 const handleMessage = (event: MessageEvent) => {
   const { key, value } = event.data
+
   if (key === "isPreviewLoggedIn") filterBlock.value = value
   if (key === "isPreviewMode") isPreviewMode.value = value
   if (key === "activeBlock") {
@@ -57,10 +61,15 @@ const handleMessage = (event: MessageEvent) => {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
   }
   if (key === "reload") reloadPage()
+
+  // ✅ Accept new webpage from iframe message
+  if (key === "setWebpage") data.value = value
 }
 
 const reloadPage = () => {
   router.reload({ only: ["webpage"] })
+  console.log('dsdd',props.webpage)
+  data.value = {...props.webpage}
 }
 provide("reloadPage", reloadPage)
 
@@ -77,71 +86,53 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <pre>{{ data?.layout?.web_blocks }}</pre>
   <div class="editor-class" :style="getStyles(layout.container?.properties, screenType)">
     <div class="shadow-xl px-1">
       <div>
-        <div v-if="webpage?.layout?.web_blocks?.length">
+        <div v-if="data?.layout?.web_blocks?.length">
           <TransitionGroup tag="div" name="list" class="relative">
-            <template v-for="(block, idx) in webpage.layout.web_blocks" :key="block.id">
-              <section
-                v-show="showWebpage(block)"
-                :data-block-id="idx"
-                class="w-full min-h-[50px] relative"
+            <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
+              <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[50px] relative"
                 :class="{ 'border-4 active-block': activeBlock === idx }"
                 :style="activeBlock === idx ? { borderColor: layout?.app?.theme[0] } : {}"
-                @click="() => sendMessageToParent('activeBlock', idx)"
-              >
+                @click="() => sendMessageToParent('activeBlock', idx)">
                 <!-- Toolbar Controls -->
                 <div v-if="activeBlock === idx" class="trapezoid-button" @click.stop>
                   <div class="flex">
-                    <div
-                      v-tooltip="trans('Add Block Before')"
+                    <div v-tooltip="trans('Add Block Before')"
                       class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition"
-                      @click="() => sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })"
-                    >
+                      @click="() => sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })">
                       <FontAwesomeIcon :icon="faSendBackward" fixed-width />
                     </div>
 
-                    <div
-                      v-tooltip="trans('Add Block After')"
+                    <div v-tooltip="trans('Add Block After')"
                       class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition md:block hidden"
-                      @click="() => sendMessageToParent('addBlock', { type: 'after', parentIndex: idx })"
-                    >
+                      @click="() => sendMessageToParent('addBlock', { type: 'after', parentIndex: idx })">
                       <FontAwesomeIcon :icon="faBringForward" fixed-width />
                     </div>
 
-                    <div
-                      v-tooltip="trans('Delete')"
+                    <div v-tooltip="trans('Delete')"
                       class="py-1 px-2 cursor-pointer hover:bg-red-100 hover:text-red-600 transition"
-                      @click="() => sendMessageToParent('deleteBlock', block)"
-                    >
+                      @click="() => sendMessageToParent('deleteBlock', block)">
                       <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                     </div>
                   </div>
                 </div>
 
                 <!-- Dynamic Block -->
-                <component
-                  :is="getComponent(block.type)"
-                  class="w-full"
-                  :webpageData="webpage"
-                  :blockData="block"
-                  v-model="block.web_block.layout.data.fieldValue"
-                  :screenType="screenType"
-                  @autoSave="() => updateData(block)"
-                />
+                <component :is="getComponent(block.type)" class="w-full" :webpageData="data" :blockData="block"
+                  v-model="block.web_block.layout.data.fieldValue" :screenType="screenType"
+                  @autoSave="() => updateData(block)" />
               </section>
             </template>
           </TransitionGroup>
         </div>
 
-        <EmptyState
-          v-else
-          :data="{
+        <EmptyState v-else :data="{
             title: trans('Pick First Block For Your Website'),
             description: trans('Pick block from list'),
-          }"
-        />
+          }" />
       </div>
     </div>
   </div>
