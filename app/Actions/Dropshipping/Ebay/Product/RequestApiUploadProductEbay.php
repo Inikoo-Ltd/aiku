@@ -44,7 +44,7 @@ class RequestApiUploadProductEbay extends RetinaAction
                     ];
                 }
             }
-            
+
             $imageUrls = [
                 'imageUrls' => $images
             ];

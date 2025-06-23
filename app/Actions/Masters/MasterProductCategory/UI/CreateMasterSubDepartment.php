@@ -12,9 +12,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,8 +20,6 @@ use Spatie\LaravelOptions\Options;
 
 class CreateMasterSubDepartment extends OrgAction
 {
-
-
     public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
