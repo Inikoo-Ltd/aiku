@@ -58,12 +58,12 @@ class IndexMasterCollections extends OrgAction
         );
 
         if ($parent instanceof MasterShop) {
-            $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
+            $queryBuilder->where('master_collections.master_shop_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $queryBuilder->where('master_collections.group_id', $parent->id);
         }
 
-        $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_product_categories.master_shop_id');
+        $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_collections.master_shop_id');
         $queryBuilder->addSelect([
                 'master_shops.slug as master_shop_slug',
                 'master_shops.code as master_shop_code',
