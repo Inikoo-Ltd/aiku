@@ -146,7 +146,7 @@ const component = computed(() => {
             </div>
 
             <div class="mt-5 border border-gray-300">
-                <div v-if="props.paymentMethods?.length" class="max-w-lg">
+                <div v-if="props.paymentMethods?.length > 1" class="max-w-lg">
                     <div class="grid grid-cols-1 sm:hidden">
                         <!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
                         <select aria-label="Select a tab" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
