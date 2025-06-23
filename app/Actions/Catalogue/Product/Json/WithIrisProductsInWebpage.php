@@ -82,6 +82,7 @@ trait WithIrisProductsInWebpage
             'products.updated_at',
             'products.units',
             'products.unit',
+            'products.web_images',
             'webpages.url'
         ];
     }
