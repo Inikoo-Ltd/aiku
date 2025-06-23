@@ -12,6 +12,7 @@ namespace App\Actions\Api\Order;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Http\Resources\Api\OrderResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -29,7 +30,7 @@ class ShowApiOrder extends OrgAction
         return OrderResource::make($order);
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(Shop $shop, Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromShop($order->shop, $request);
 

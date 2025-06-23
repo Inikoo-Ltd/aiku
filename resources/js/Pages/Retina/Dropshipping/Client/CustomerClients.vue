@@ -12,6 +12,7 @@ import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { ref } from "vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 const props = defineProps<{
 	data: {}
@@ -26,12 +27,25 @@ const isModalUploadOpen = ref(false)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template v-if="upload_spreadsheet" #other>
-			<Button
-				@click="() => (isModalUploadOpen = true)"
-				:label="'Upload File'"
-				:style="'upload'"
-			/>
+		<template #button-create-customer-client="{ action }">
+			<div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
+				<Button
+					v-if="upload_spreadsheet"
+					@click="() => (isModalUploadOpen = true)"
+					:label="'Upload File'"
+					xstyle="'upload'"
+					type="tertiary"
+					icon="fas fa-upload"
+					class="rounded-none border-0"
+				/>
+				<ButtonWithLink
+					:routeTarget="action.route"
+					:label="action.label"
+					type="tertiary"
+					icon="fas fa-plus"
+					buttonClass="rounded-none border-none"
+				/>
+			</div>
 		</template>
 	</PageHeading>
 	<TableCustomerClients :data="data" />

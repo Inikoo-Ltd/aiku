@@ -190,14 +190,14 @@ class IndexMasterFamilies extends OrgAction
             $iconRight  = [
                 'icon' => 'fal fa-city',
             ];
-        }elseif ($this->parent instanceof ProductCategory) {
-           if($this->parent->type==ProductCategoryTypeEnum::DEPARTMENT){
-             $icon=[
-                 'icon'  => ['fal', 'fa-folder-tree'],
-                 'title' => __('Master department')
-             ];
-             $subNavigation = $this->getMasterShopNavigation($this->parent);
-           }
+        } elseif ($this->parent instanceof ProductCategory) {
+            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $icon = [
+                    'icon'  => ['fal', 'fa-folder-tree'],
+                    'title' => __('Master department')
+                ];
+                $subNavigation = $this->getMasterShopNavigation($this->parent);
+            }
         }
 
 

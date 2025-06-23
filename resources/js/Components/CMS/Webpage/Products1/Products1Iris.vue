@@ -54,7 +54,6 @@ const filter = ref({ data: {} })
 const showFilters = ref(false)
 const showAside = ref(false)
 
-const loadingOutOfStock = ref(false)
 const isFetchingOutOfStock = ref(false)
 
 const getRoutes = () => {

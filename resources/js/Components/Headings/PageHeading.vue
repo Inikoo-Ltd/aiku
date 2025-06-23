@@ -44,6 +44,7 @@ if (props.dataToSubmit && props.data.actionActualMethod) {
 const originUrl = location.origin
 const layout = inject('layout', layoutStructure)
 
+const isShowDummySlotName = false
 </script>
 
 
@@ -172,7 +173,7 @@ const layout = inject('layout', layoutStructure)
                         <slot v-if="action.type == 'button'"
                             :name="`button-${kebabCase(action.key ? action.key : action.label)}`" :action="action">
                             <slot :name="`button-index-${actIndex}`" :action="action">
-                                <!-- {{ `button-${kebabCase(action.key ? action.key : action.label)}` }} -->
+                                <span v-if="isShowDummySlotName">{{ `button-${kebabCase(action.key ? action.key : action.label)}` }}</span>
                                 <Action v-if="action" :action="action" :dataToSubmit="dataToSubmit" />
                             </slot>
                         </slot>
@@ -180,7 +181,7 @@ const layout = inject('layout', layoutStructure)
                         <!-- ButtonGroup -->
                         <slot v-else-if="action.type == 'buttonGroup'"
                             :name="`button-group-${action.key}`" :action="action">
-                            <!-- {{ `button-group-${action.key}` }} -->
+                            <span v-if="isShowDummySlotName">{{ `button-group-${action.key}` }}</span>
                             <div v-if="action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
                                 (action.button?.length || 0) > 1 ? '' : '',
                             ]"
@@ -191,7 +192,7 @@ const layout = inject('layout', layoutStructure)
                                 <slot v-for="(button, index) in action.button"
                                     :name="`button-group-${kebabCase(button.key ? button.key : button.label)}`"
                                     :action="button">
-                                    <!-- {{ `button-group-${kebabCase(button.key ? button.key : button.label)}` }} -->
+                                    <span v-if="isShowDummySlotName">{{ `button-group-${kebabCase(button.key ? button.key : button.label)}` }}</span>
                                     <component :key="'buttonPH' + index + button.label"
                                         :is="button.route?.name ? Link : 'div'"
                                         :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"

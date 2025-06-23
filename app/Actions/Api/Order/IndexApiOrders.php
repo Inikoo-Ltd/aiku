@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\OrdersResource;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,11 +28,14 @@ class IndexApiOrders extends OrgAction
     use WithOrderingAuthorisation;
 
 
-    public function handle(Customer $customer, array $modelData): LengthAwarePaginator
+    public function handle(Shop|Customer $parent, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Order::class);
-
-        $query->where('orders.customer_id', $customer->id);
+        if ($parent instanceof Shop) {
+            $query->where('orders.shop_id', $parent->id);
+        } elseif ($parent instanceof Customer) {
+            $query->where('orders.customer_id', $parent->id);
+        }
 
         $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
@@ -86,10 +90,16 @@ class IndexApiOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function asController(Order $order, ActionRequest $request)
+    public function asController(Shop $shop, ActionRequest $request)
     {
-        $this->initialisationFromShop($order->shop, $request);
-        return $this->handle($order);
+        $this->initialisationFromShop($shop, $request);
+        return $this->handle($shop, $this->validatedData);
+    }
+
+    public function inCustomer(Shop $shop, Customer $customer, ActionRequest $request)
+    {
+        $this->initialisationFromShop($shop, $request);
+        return $this->handle($customer, $this->validatedData);
     }
 
 
