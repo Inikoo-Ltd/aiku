@@ -50,7 +50,7 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
             isNavigationActive(layout.currentRoute, props.nav.root)
                 ? 'navigationActive'
                 : 'navigation',
-            layout.leftSidebar.show ? '' : '',
+            layout.leftSidebar.show ? '' : 'pl-3',
         ]"
         :style="[isNavigationActive(layout.currentRoute, props.nav.root) ? {
             'background-color': layout.app?.theme[1],
@@ -63,7 +63,11 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
     >
         <LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />
         <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" :rotation="nav.icon_rotation" class="flex-shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
-        <div class="flex items-center justify-between w-full leading-none">
+        <div class=" items-center justify-between w-full leading-none"
+            :class="[
+                layout.leftSidebar.show ? 'flex' : 'block md:hidden'
+            ]"
+        >
             <Transition name="slide-to-left">
                 <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block"
                     :class="[layout.leftSidebar.show ? '' : 'block md:hidden']">
@@ -74,17 +78,19 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
                 </span>
             </Transition>
 
-            <div v-if="nav.right_label" class="h-4 w-4 rounded-full flex justify-center items-center text-xs tabular-nums pr-2"
-                :class="[
-                    isNavigationActive(layout.currentRoute, props.nav.root) ? activeClass : inactiveClass,
-                ]"
-                v-tooltip="nav.right_label.tooltip"
-            >
-                <span v-if="nav.right_label.label">{{ nav.right_label.label }}</span>
-                <span v-if="nav.right_label.number">{{ locale.number(nav.right_label.number) }}</span>
-                <FontAwesomeIcon v-if="nav.right_label.is_important" icon="fas fa-asterisk" class="text-red-500 text-[5px]" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="nav.right_label.icon" :icon="nav.right_label.icon" fixed-width aria-hidden="true" />
-            </div>
+            <Transition name="spin-to-right">
+                <div v-if="layout.leftSidebar.show && nav.right_label" class="h-4 w-4 rounded-full flex justify-center items-center text-xs tabular-nums pr-2"
+                    :class="[
+                        isNavigationActive(layout.currentRoute, props.nav.root) ? activeClass : inactiveClass,
+                    ]"
+                    v-tooltip="nav.right_label.tooltip"
+                >
+                    <span v-if="nav.right_label.label">{{ nav.right_label.label }}</span>
+                    <span v-if="nav.right_label.number">{{ locale.number(nav.right_label.number) }}</span>
+                    <FontAwesomeIcon v-if="nav.right_label.is_important" icon="fas fa-asterisk" class="text-red-500 text-[5px]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="nav.right_label.icon" :icon="nav.right_label.icon" fixed-width aria-hidden="true" />
+                </div>
+            </Transition>
         </div>
     </Link>
 

@@ -107,7 +107,8 @@ const isLoadingVisitActiveHorizontal = ref(false)
             </template>
         </div>
 
-        <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-center pt-2 pl-2 pr-0.5 pb-2"
+        <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-center pt-2 pb-2 transition-all"
+            :class="layout.leftSidebar.show ? 'pl-2 lg:pl-3 pr-0.5 ' : 'pl-0 lg:pl-1'"
             :style="{ color: layout.app.theme[1] + '99' }">
 
             <!-- Section: Horizontal label -->
@@ -117,16 +118,19 @@ const isLoadingVisitActiveHorizontal = ref(false)
                 @start="() => isLoadingVisitActiveHorizontal = true"
                 @finish="() => isLoadingVisitActiveHorizontal = false"
                 class="relative flex gap-x-1.5 items-center pt-1 select-none"
-                :class="currentActiveHorizontal.route.name ? 'cursor-pointer hover:text-gray-200' : 'cursor-default'"
+                :class="[
+                    currentActiveHorizontal.route.name ? 'cursor-pointer hover:text-gray-200' : 'cursor-default',
+                    !layout.leftSidebar.show ? 'pl-3 pr-2.5' : 'px-0',
+                ]"
             >
                 <Transition name="spin-to-right">
                     <FontAwesomeIcon v-if="currentActiveHorizontal?.icon" :key="currentActiveHorizontal?.icon" :icon="currentActiveHorizontal?.icon" class='text-xs' fixed-width aria-hidden='true' v-tooltip="currentActiveHorizontal?.label" />
                 </Transition>
 
                 <Transition v-if="currentActiveHorizontal?.img" name="spin-to-down">
-                    <div :key="currentActiveHorizontal?.img" class="h-4 w-[18.5px] flex items-center justify-center">
+                    <div :key="currentActiveHorizontal?.img" class="h-4 w-[11.5px] min-w-[11.5px] flex items-center justify-center">
                         <LoadingIcon v-if="isLoadingVisitActiveHorizontal" class=""/>
-                        <img v-else :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-4 w-[17.5px]" />
+                        <img v-else :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-4 w-auto max-w-[16px]" />
                     </div>
                 </Transition>
 
