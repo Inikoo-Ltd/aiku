@@ -108,6 +108,14 @@ const component = computed(() => {
     <PageHeading :data="pageHead"> </PageHeading>
 
     <!-- <pre>{{ to_pay_data }}</pre> -->
+    <div class="xflex xjustify-end gap-x-4 mt-4 px-4">
+        <ButtonWithLink
+            :icon="faArrowLeft"
+            type="tertiary"
+            :label="trans('Back to basket')"
+            :routeTarget="routes.back_to_basket"
+        />
+    </div>
 
     <div v-if="!box_stats" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
@@ -210,7 +218,7 @@ const component = computed(() => {
             <ButtonWithLink
                 :icon="faArrowLeft"
                 type="tertiary"
-                label="Back to basket"
+                :label="trans('Back to basket')"
                 :routeTarget="routes.back_to_basket"
             />
         </div>
