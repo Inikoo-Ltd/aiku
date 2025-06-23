@@ -120,7 +120,7 @@ class IndexMasterCollections extends OrgAction
         if ($this->parent instanceof Group) {
             $model         = '';
             $icon          = [
-                'icon'  => ['fal', 'fa-layer-group'],
+                'icon'  => ['fal', 'fa-album-collection'],
                 'title' => $title
             ];
             $afterTitle    = [
@@ -163,7 +163,7 @@ class IndexMasterCollections extends OrgAction
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Master collections'),
-                        'icon'  => 'fal fa-layer-group'
+                        'icon'  => 'fal fa-album-collection'
                     ],
                     'suffix' => $suffix
                 ],
