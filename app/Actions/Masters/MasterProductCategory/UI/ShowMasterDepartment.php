@@ -17,7 +17,6 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
-use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
