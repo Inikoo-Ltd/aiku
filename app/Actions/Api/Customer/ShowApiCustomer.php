@@ -11,6 +11,7 @@ namespace App\Actions\Api\Customer;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Api\CustomerApiResource;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,9 +27,9 @@ class ShowApiCustomer extends OrgAction
         return CustomerApiResource::make($customer);
     }
 
-    public function asController(Customer $customer, ActionRequest $request): Customer
+    public function asController(Shop $shop, Customer $customer, ActionRequest $request): Customer
     {
-        $this->initialisationFromShop($customer->shop, $request);
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);
     }
