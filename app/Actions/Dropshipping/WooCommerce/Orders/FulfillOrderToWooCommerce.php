@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -29,8 +30,11 @@ class FulfillOrderToWooCommerce extends OrgAction
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $order->customerSalesChannel->user;
 
+        /** @var DeliveryNote $deliveryNote */
+        $deliveryNote = $order->deliveryNotes->first();
+
         $shipments = [];
-        foreach ($order->shipments ?? [] as $shipment) {
+        foreach ($deliveryNote->shipments as $shipment) {
             $shipments[] = [
                 'tracking_provider'    => 'Other',
                 'tracking_number'      => $shipment->tracking,
