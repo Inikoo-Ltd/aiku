@@ -74,7 +74,7 @@ class RequestApiUploadProductEbay extends RetinaAction
                 'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
                 'price' => $portfolio->customer_price,
                 'currency' => $portfolio->shop->currency->code,
-                'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+                'category_id' => Arr::get($categories, 'categorySuggestions.1.category.categoryId')
             ]);
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));

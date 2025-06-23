@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -49,6 +50,14 @@ class IndexMasterFamilies extends OrgAction
         $group        = $this->parent;
         $this->initialisationFromGroup($group, $request);
 
+        return $this->handle(parent: $group);
+    }
+
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterDepartment;
+        $group        = $this->parent;
+        $this->initialisationFromGroup($masterDepartment->group, $request);
         return $this->handle(parent: $group);
     }
 
@@ -181,6 +190,14 @@ class IndexMasterFamilies extends OrgAction
             $iconRight  = [
                 'icon' => 'fal fa-city',
             ];
+        }elseif ($this->parent instanceof ProductCategory) {
+           if($this->parent->type==ProductCategoryTypeEnum::DEPARTMENT){
+             $icon=[
+                 'icon'  => ['fal', 'fa-folder-tree'],
+                 'title' => __('Master department')
+             ];
+             $subNavigation = $this->getMasterShopNavigation($this->parent);
+           }
         }
 
 
@@ -223,7 +240,7 @@ class IndexMasterFamilies extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.families.index' =>
+            'grp.masters.master_families.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
@@ -234,7 +251,7 @@ class IndexMasterFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.masters.shops.show.families.index' =>
+            'grp.masters.master_shops.show.master_families.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(

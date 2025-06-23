@@ -16,13 +16,12 @@ trait WithMasterSubDepartmentSubNavigation
 {
     protected function getMasterSubDepartmentSubNavigation(MasterProductCategory $masterSubDepartment): array
     {
-        // dd($masterSubDepartment->parent);
         return [
             [
                 'isAnchor'   => true,
                 'label'    => __('Sub-department'),
                 'route'     => [
-                    'name'       => 'grp.masters.departments.sub_departments.show',
+                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.show',
                     'parameters' => [$masterSubDepartment->parent->slug,$masterSubDepartment->slug]
                 ],
                 'leftIcon' => [

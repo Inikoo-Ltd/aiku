@@ -25,7 +25,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use UnexpectedValueException;
 
 class IndexRetinaFulfilmentOrders extends RetinaAction
 {
@@ -55,9 +54,8 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'pallet_returns.id')
                         ->where('shopify_user_has_fulfilments.model_type', '=', 'PalletReturn');
             });
-        } else {
-            throw new UnexpectedValueException('To be implemented');
         }
+
         $query->leftJoin('currencies', 'pallet_returns.currency_id', '=', 'currencies.id');
         $query->leftJoin('pallet_return_stats', 'pallet_returns.id', '=', 'pallet_return_stats.pallet_return_id');
 
@@ -101,7 +99,6 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $palletReturns): Response
     {
-
         $title = __('Orders');
 
         return Inertia::render(

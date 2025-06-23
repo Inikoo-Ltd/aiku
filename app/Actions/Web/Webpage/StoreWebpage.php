@@ -8,6 +8,9 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Catalogue\Collection\UpdateCollection;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
@@ -94,9 +97,10 @@ class StoreWebpage extends OrgAction
             $snapshot = StoreWebpageSnapshot::run(
                 $webpage,
                 [
-                    'layout' => [
+                    'layout'   => [
                         'web_blocks' => []
-                    ]
+                    ],
+                    'checksum' => hash('sha256', '')
                 ],
             );
 
@@ -106,9 +110,26 @@ class StoreWebpage extends OrgAction
                 ]
             );
 
+            $model = $webpage->model;
+            if ($model instanceof Product) {
+                UpdateProduct::make()->action($model, [
+                    'webpage_id' => $webpage->id,
+                    'url'        => $webpage->url,
+                ]);
+            } elseif ($model instanceof ProductCategory) {
+                UpdateProductCategory::make()->action($model, [
+                    'webpage_id' => $webpage->id,
+                    'url'        => $webpage->url,
+                ]);
+            } elseif ($model instanceof Collection) {
+                UpdateCollection::make()->action($model, [
+                    'webpage_id' => $webpage->id,
+                    'url'        => $webpage->url,
+                ]);
+            }
+
 
             if ($this->strict) {
-                $model = $webpage->model;
                 if ($model instanceof Product) {
                     $this->createWebBlock($webpage, 'product-1', $model);
                 } elseif ($model instanceof Collection) {
@@ -146,16 +167,16 @@ class StoreWebpage extends OrgAction
 
     public function htmlResponse(Webpage $webpage): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
     {
-        return match($webpage->website->type) {
+        return match ($webpage->website->type) {
             WebsiteTypeEnum::FULFILMENT => Inertia::location(route('grp.org.fulfilments.show.web.webpages.show', [
-            'organisation' => $this->fulfilment->organisation->slug,
-            'fulfilment'   => $this->fulfilment->slug,
-            'website'      => $webpage->website->slug,
-            'webpage'      => $webpage->slug
+                'organisation' => $this->fulfilment->organisation->slug,
+                'fulfilment'   => $this->fulfilment->slug,
+                'website'      => $webpage->website->slug,
+                'webpage'      => $webpage->slug
             ])),
             default => Inertia::location(route('grp.org.shops.show.web.webpages.show', [
                 'organisation' => $this->shop->organisation->slug,
-                'shop'   => $this->shop->slug,
+                'shop'         => $this->shop->slug,
                 'website'      => $webpage->website->slug,
                 'webpage'      => $webpage->slug
             ]))
@@ -263,7 +284,7 @@ class StoreWebpage extends OrgAction
 
     /**
      * @throws \Throwable
-    */
+     */
     public function inShop(Shop $shop, Website $website, ActionRequest $request): Webpage
     {
         $this->parent  = $website;

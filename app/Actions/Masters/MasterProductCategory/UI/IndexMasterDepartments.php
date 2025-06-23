@@ -211,7 +211,7 @@ class IndexMasterDepartments extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.departments.index' =>
+            'grp.masters.master_departments.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
@@ -222,7 +222,7 @@ class IndexMasterDepartments extends OrgAction
                     $suffix
                 )
             ),
-            'grp.masters.shops.show.departments.index' =>
+            'grp.masters.master_shops.show.master_departments.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(

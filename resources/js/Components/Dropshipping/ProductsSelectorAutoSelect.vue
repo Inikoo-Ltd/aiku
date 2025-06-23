@@ -163,7 +163,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                                 </div>
 
                                                 <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="mb-2 w-fit text-xs text-gray-x500">
-                                                    {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
+                                                    {{ locale?.currencyFormat(layout?.iris?.currency?.code, item.price || 0) }}
                                                 </div>
 
                                                 <NumberWithButtonSave

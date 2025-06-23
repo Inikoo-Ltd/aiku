@@ -38,16 +38,16 @@ class CatchRetinaOrdersFromEbay extends OrgAction
 
             $response = $ebayUser->getOrders();
 
-            foreach ($response as $order) {
+            foreach ($response['orders'] as $order) {
                 if (in_array(Arr::get($order, 'orderId'), $existingOrderKeys, true)) {
                     continue;
                 }
 
-                /*if (!empty(array_filter(Arr::get($order, 'buyer'))) && !empty(array_filter(Arr::get($order, 'buyer.buyerRegistrationAddress')))) {
+                if (!empty(array_filter(Arr::get($order, 'buyer'))) && !empty(array_filter(Arr::get($order, 'buyer.buyerRegistrationAddress')))) {
                     StoreOrderFromEbay::run($ebayUser, $order);
                 } else {
                     \Sentry::captureMessage('The order doesnt have shipping, order: id ' . Arr::get($order, 'orderId'));
-                }*/
+                }
             }
         });
     }

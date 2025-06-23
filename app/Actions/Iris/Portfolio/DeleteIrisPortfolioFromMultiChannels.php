@@ -12,12 +12,12 @@ namespace App\Actions\Iris\Portfolio;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteIrisPortfolioFromAllChannels extends RetinaAction
+class DeleteIrisPortfolioFromMultiChannels extends RetinaAction
 {
     use WithActionUpdate;
 
@@ -25,12 +25,13 @@ class DeleteIrisPortfolioFromAllChannels extends RetinaAction
 
     public function handle(Customer $customer, array $modelData): void
     {
-        foreach ($customer->customerSalesChannels as $salesChannel) {
-            $items = Portfolio::find(Arr::get($modelData, 'id'));
+        $channels = $customer->customerSalesChannels()->whereIn('id', Arr::get($modelData, 'customer_sales_channel_ids'))->get();
 
+        foreach ($channels as $salesChannel) {
+            $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))->get();
 
             foreach ($items as $item) {
-                if ($salesChannel->portfolios()
+                if (!$salesChannel->portfolios()
                     ->where('item_id', $item->id)
                     ->where('item_type', $item->getMorphClass())
                     ->exists()) {
@@ -45,8 +46,10 @@ class DeleteIrisPortfolioFromAllChannels extends RetinaAction
     public function rules(): array
     {
         return [
-            'portfolio_id' => 'required|array|min:1',
-            'portfolio_id.*' => 'required|integer|exists:portfolios,id'
+            'customer_sales_channel_ids' => 'required|array|min:1',
+            'customer_sales_channel_ids.*' => 'required|integer|exists:customer_sales_channels,id',
+            'item_id' => 'required|array|min:1',
+            'item_id.*' => 'required|integer|exists:products,id'
         ];
     }
 

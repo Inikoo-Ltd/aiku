@@ -39,6 +39,9 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
     protected function processFamilyWebpages(Webpage $webpage, Command $command): void
     {
+
+
+
         /** @var ProductCategory $family */
         $family = $webpage->model;
 
@@ -60,6 +63,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
             };
         }
+
+
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
 
@@ -95,6 +100,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
 
 
+
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
         if (count($countFamilyWebBlock) == 0) {
             $this->createWebBlock($webpage, 'family-1', $family);
@@ -105,7 +111,9 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'products-1', $family);
         }
 
+
         $webpage->refresh();
+
         UpdateWebpageContent::run($webpage);
 
 
@@ -142,6 +150,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id', )->toArray();
         //print_r($webBlocks);
+
+
         $runningPosition = 2;
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
@@ -153,6 +163,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
 
         }
+
 
 
         foreach ($webBlocks as $key => $position) {
@@ -171,11 +182,10 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
     public function asCommand(Command $command): void
     {
         $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'family')->get();
-
-
         foreach ($webpagesID as $webpageID) {
             $webpage = Webpage::find($webpageID->id);
             if ($webpage) {
+
                 $this->handle($webpage, $command);
             }
 
