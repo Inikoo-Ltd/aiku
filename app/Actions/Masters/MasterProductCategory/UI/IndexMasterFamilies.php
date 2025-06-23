@@ -264,6 +264,17 @@ class IndexMasterFamilies extends OrgAction
                     $suffix
                 )
             ),
+            'grp.masters.master_departments.show.master_families.index' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
