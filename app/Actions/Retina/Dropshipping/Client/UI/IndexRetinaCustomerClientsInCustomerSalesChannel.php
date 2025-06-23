@@ -152,8 +152,8 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $actions[] = [
                 'type'  => 'button',
-                'style' => 'create',
                 'label' => __('Create Customer Client'),
+                'key'   => 'create-customer-client',
                 'route' => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.client.create',
                     'parameters' => [
