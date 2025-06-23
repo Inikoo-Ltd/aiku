@@ -46,6 +46,7 @@ class EditPoll extends OrgAction
             $optionsPool = PollOptionsResource::collection($poll->pollOptions)->toArray($request);
         }
 
+        // dd($poll->type->value);
         return Inertia::render(
             'EditModel',
             [
@@ -78,16 +79,20 @@ class EditPoll extends OrgAction
                                     'label' => __('name'),
                                     'value' => $poll->name
                                 ],
-                                'options' => $optionsPool,
                                 'label' => [
                                     'type'  => 'input',
                                     'label' => __('label'),
                                     'value' => $poll->label
                                 ],
                                 'type' => [
-                                    'type'    => 'select',
+                                    'type'    => 'poll_type_select',
+                                    'type_options' => $optionsPool,
                                     'label'   => __('type'),
-                                    'options' => Options::forEnum(PollTypeEnum::class)
+                                    'options' => Options::forEnum(PollTypeEnum::class),
+                                    'value' => [
+                                        'type' => $poll->type->value,
+                                        'poll_options' => $optionsPool
+                                    ]
                                 ],
                                 'in_registration' => [
                                     'type'  => 'toggle',
