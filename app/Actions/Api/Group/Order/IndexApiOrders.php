@@ -24,6 +24,16 @@ use Illuminate\Support\Arr;
 
 class IndexApiOrders extends OrgAction
 {
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(
+            [
+                "crm.{$this->shop->id}.view",
+                "accounting.{$this->shop->organisation_id}.view"
+            ]
+        );
+    }
+
     public function handle(Shop|Customer $parent, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Order::class);

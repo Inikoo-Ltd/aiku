@@ -18,10 +18,20 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexApiCustomers extends OrgAction
 {
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(
+            [
+                "crm.{$this->shop->id}.view",
+                "accounting.{$this->shop->organisation_id}.view"
+            ]
+        );
+    }
+
     public function handle(Shop $shop, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Customer::class);
@@ -89,7 +99,7 @@ class IndexApiCustomers extends OrgAction
             });
     }
 
-    public function asController(Shop $shop, ActionRequest $request)
+    public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
@@ -118,7 +128,7 @@ class IndexApiCustomers extends OrgAction
     {
         $request->merge(
             [
-                'global' => $request->query('global', null),
+                'global' => $request->query('global'),
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),

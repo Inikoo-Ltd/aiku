@@ -17,6 +17,17 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowApiCustomer extends OrgAction
 {
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(
+            [
+                "crm.{$this->shop->id}.view",
+                "accounting.{$this->shop->organisation_id}.view"
+            ]
+        );
+    }
+
     public function handle(Customer $customer): Customer
     {
         return $customer;
