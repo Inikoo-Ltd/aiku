@@ -106,7 +106,6 @@ const addNewBlock = async ({ block, type }) => {
     position =  addBlockParentIndex.value + 1;
   }
 
-  console.log('sss',position,type,addBlockParentIndex.value)
 
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),

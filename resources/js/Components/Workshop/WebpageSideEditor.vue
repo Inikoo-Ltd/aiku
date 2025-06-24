@@ -311,7 +311,14 @@ defineExpose({
         </li>
 
         <!-- Copy (Always enabled) -->
-        <li @click="copyBlock" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer">
+        <li
+          @click="getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()"
+          :class="[
+            'flex items-center gap-2 px-3 py-2',
+            getEditPermissions(contextMenu.block.web_block.layout.data)
+              ? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
+              : 'text-gray-400 cursor-not-allowed pointer-events-none'
+          ]">
           <font-awesome-icon :icon="faCopy" />
           Copy
         </li>
