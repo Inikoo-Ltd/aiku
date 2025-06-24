@@ -109,7 +109,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     //     ],
                     // ],
 
-                    ApiTokenRetinaTabsEnum::SHOWCASE->value => $this->tab == ApiTokenRetinaTabsEnum::SHOWCASE->value ?
+                    ApiTokenRetinaTabsEnum::API_TOKENS->value => $this->tab == ApiTokenRetinaTabsEnum::API_TOKENS->value ?
                         fn () => ApiTokensRetinaResource::collection($apiTokens)
                         : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
                     ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
@@ -119,7 +119,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
-        ->table($this->tableStructure(ApiTokenRetinaTabsEnum::SHOWCASE->value));
+        ->table($this->tableStructure(ApiTokenRetinaTabsEnum::API_TOKENS->value));
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
