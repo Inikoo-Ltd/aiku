@@ -14,6 +14,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { notify } from '@kyvg/vue3-notification'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faFacebook, faWhatsapp)
 
@@ -58,9 +59,14 @@ const onSubmitSubscribe = async () => {
 			inputEmail.value = ""
 			currentState.value = 'success'
 		} catch (error) {
-            console.log('www', error)
+            // console.log('www', error)
 			currentState.value = 'error'
-			errorMessage.value = error.response?.data?.message || 'An error occurred while subscribing.'
+			errorMessage.value = error.response?.data?.message || trans('An error occurred while subscribing.')
+            notify({
+                title: trans("Something went wrong"),
+                text: error.response?.data?.message || trans('An error occurred while subscribing.'),
+                type: "error",
+            })
 		}
 	
 		isLoadingSubmit.value = false
@@ -312,7 +318,7 @@ const onSubmitSubscribe = async () => {
             </div>
             
             <Transition>
-                <div v-if="currentState != 'success'" class="flex flex-col items-start">
+                <div v-if="currentState != 'success'" class="relative flex flex-col items-start">
                     <form @submit.prevent="() => onSubmitSubscribe()" class="w-full max-w-md md:w-fit mt-6 sm:flex sm:max-w-md lg:mt-0 ">
                         <label for="email-address" class="sr-only">Email address</label>
                         <!-- <input
@@ -322,6 +328,7 @@ const onSubmitSubscribe = async () => {
                         /> -->
                         <input
                             v-model="inputEmail"
+                            @input="currentState = ''"
                             type="email"
                             name="email-address"
                             id="email-address"
@@ -329,6 +336,9 @@ const onSubmitSubscribe = async () => {
                             required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
                             :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
+                            :class="[
+                                currentState === 'error' ? 'errorShake' : '',
+                            ]"
                         />
                         <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
                             <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
@@ -338,7 +348,7 @@ const onSubmitSubscribe = async () => {
                         </div>
                     </form>
 
-                    <div v-if="currentState === 'error'" class="text-red-500 mt-2 italic">
+                    <div v-if="currentState === 'error'" class="absolute -bottom-7 text-red-300 mt-2 italic">
                         *{{ errorMessage }}
                     </div>
                 </div>
