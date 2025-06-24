@@ -18,16 +18,17 @@ import { routeType } from "@/types/route"
 import { Table as TSTable } from '@/types/Table'
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 library.add()
 
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	data: {
-        api_tokens: TSTable
-    }
+	api_tokens: TSTable
+	history: TSTable
     tabs:{
         current: string
+		navigation: {}
     }
 	// dataTable: {
 
@@ -91,6 +92,14 @@ const onClickCopyButton = async (text: string) => {
         isRecentlyCopied.value = false
     }, 3000)
 }
+
+const getComponent = (componentName: string) => {
+    const components: any = {
+        'api_tokens': RetinaTableApiKey,
+		'history': TableHistories
+    };
+    return components[componentName]
+};
 </script>
 
 <template>
@@ -116,10 +125,17 @@ const onClickCopyButton = async (text: string) => {
 	</div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-	<RetinaTableApiKey
+	<component 
+		:is="getComponent(tabs.current)" 
+		:data="props[currentTab as keyof typeof props]"
+		:tab="currentTab"
+	>
+	</component>
+
+	<!-- <RetinaTableApiKey
 		:data="data.api_tokens"
 		:tab="tabs.current"
-	/>
+	/> -->
 
 	<Modal :isOpen="isModalApiToken" @onClose="() => (isModalApiToken = false)" width="w-fit max-w-xl"
 		height="h-[500px]">
