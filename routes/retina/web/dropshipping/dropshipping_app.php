@@ -123,11 +123,11 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
         Route::get('/{order}', ShowRetinaDropshippingOrderInCustomerSalesChannel::class)->name('show');
     });
 
+    Route::prefix('api')->as('api.')->group(function () {
+        Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
+    });
 });
 
-Route::prefix('api')->as('api.')->group(function () {
-    Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-});
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
