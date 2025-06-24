@@ -159,7 +159,7 @@ watch(() => props.productHasPortfolio, (newVal) => {
 
 <template>
     <!-- Bottom Section (fixed position in layout) -->
-    <div v-if="layout.iris.is_logged_in" class="w-full">
+    <div v-if="layout?.iris?.is_logged_in" class="w-full">
         <div v-if="product.stock > 0" class="flex items-center gap-2 mt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">

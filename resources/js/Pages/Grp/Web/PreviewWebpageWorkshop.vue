@@ -1,59 +1,58 @@
 <script setup lang="ts">
-import { getComponent } from "@/Composables/getWorkshopComponents"
-import { ref, onMounted, onBeforeUnmount, provide } from "vue"
-import WebPreview from "@/Layouts/WebPreview.vue"
-import EmptyState from "@/Components/Utils/EmptyState.vue"
-import { sendMessageToParent } from "@/Composables/Workshop"
-import { router, Head } from "@inertiajs/vue3"
+import { ref, onMounted, onBeforeUnmount, provide, shallowRef, watch, toRaw } from "vue"
+import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSendBackward, faBringForward, faTrashAlt } from "@fas"
-import { useConfirm } from "primevue/useconfirm"
-import "@/../css/Iris/editor.css"
-import { Root as RootWebpage } from "@/types/webpageTypes"
 import { trans } from "laravel-vue-i18n"
+import { useLayoutStore } from "@/Stores/layout"
+
+import WebPreview from "@/Layouts/WebPreview.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
+import { getComponent } from "@/Composables/getWorkshopComponents"
+import { sendMessageToParent } from "@/Composables/Workshop"
 import { getStyles } from "@/Composables/styles"
+
+import { Root as RootWebpage } from "@/types/webpageTypes"
+import "@/../css/Iris/editor.css"
 
 defineOptions({ layout: WebPreview })
 
 const props = defineProps<{
   webpage?: RootWebpage
-  header: { data: {} }
-  footer: { footer: {} }
-  navigation: { menu: {} }
   layout: {}
 }>()
 
-const confirm = useConfirm()
+const layout = useLayoutStore()
 
-console.log(props)
+const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
 
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 
-
-const showWebpage = (activityItem) => {
-	if (activityItem?.web_block?.layout && activityItem.show) {
-		if (filterBlock.value == 'all' ) return true 
-		else if (filterBlock.value == 'logged-out' && activityItem.visibility.out) return true
-		else if (filterBlock.value  == 'logged-in' && activityItem.visibility.in) return true
-	} else return false
+const showWebpage = (item) => {
+  const vis = item?.visibility
+  const layout = item?.web_block?.layout
+  if (!layout || !item.show) return false
+  if (filterBlock.value === 'all') return true
+  if (filterBlock.value === 'logged-out' && vis?.out) return true
+  if (filterBlock.value === 'logged-in' && vis?.in) return true
+  return false
 }
 
 const checkScreenType = () => {
   const width = window.innerWidth
-  if (width < 640) screenType.value = 'mobile'
-  else if (width < 1024) screenType.value = 'tablet'
-  else screenType.value = 'desktop'
+  screenType.value = width < 640 ? 'mobile' : width < 1024 ? 'tablet' : 'desktop'
 }
 
-const updateData = (newVal: any) => {
-  sendMessageToParent("autosave", newVal)
+const updateData = (val: any) => {
+  sendMessageToParent("autosave", val)
 }
 
 const handleMessage = (event: MessageEvent) => {
   const { key, value } = event.data
+
   if (key === "isPreviewLoggedIn") filterBlock.value = value
   if (key === "isPreviewMode") isPreviewMode.value = value
   if (key === "activeBlock") {
@@ -61,15 +60,25 @@ const handleMessage = (event: MessageEvent) => {
     const el = document.querySelector(`[data-block-id="${value}"]`)
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
   }
-  if (key === "reload") {
-    router.reload({ only: ["footer", "header", "webpage"] })
+  if (key === "reload") reloadPage()
+
+  // ✅ Accept new webpage from iframe message
+  if (key === "setWebpage") {
+    data.value = value
   }
 }
 
+const reloadPage = () => {
+  router.reload({ only: ["webpage"] })
+}
+
+provide("reloadPage", reloadPage)
+provide("reloadPage", reloadPage)
+
 onMounted(() => {
   window.addEventListener("message", handleMessage)
-  checkScreenType()
   window.addEventListener("resize", checkScreenType)
+  checkScreenType()
 })
 
 onBeforeUnmount(() => {
@@ -77,85 +86,58 @@ onBeforeUnmount(() => {
   window.removeEventListener("message", handleMessage)
 })
 
-
-const reloadPage = () =>{ 
- router.reload({ only: ["footer", "header", "webpage"] })
-  console.log('ionininion',props.webpage)
-};
-
-provide("reloadPage", reloadPage);
-
+watch(() => props.webpage, (val) => {
+  data.value = val ? { ...val } : undefined
+})
 </script>
 
 <template>
-  <Head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </Head>
-
   <div class="editor-class" :style="getStyles(layout.container?.properties, screenType)">
-    <div class="shadow-xl px-1">
-      <div v-if="webpage">
-        <div v-if="props.webpage?.layout?.web_blocks.length">
+    <div class="shadow-xl px-1 py-1">
+      <div>
+        <div v-if="data?.layout?.web_blocks?.length">
           <TransitionGroup tag="div" name="list" class="relative">
-            <template v-for="(activityItem, idx) in props.webpage?.layout?.web_blocks" :key="activityItem.id">
-              <section
-			  	      v-show="showWebpage(activityItem)"
-                class="w-full min-h-[50px] relative"
-                :data-block-id="idx"
-                :class="{
-                  'border-4 border-[#4F46E5] active-block': activeBlock === idx,
-                }"
-                @click="() => sendMessageToParent('activeBlock', idx)"
-              >
+            <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
+              <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[50px] relative"
+                :class="{ 'border-4 active-block': activeBlock === idx }"
+                :style="activeBlock === idx ? { borderColor: layout?.app?.theme[0] } : {}"
+                @click="() => sendMessageToParent('activeBlock', idx)">
+                <!-- Toolbar Controls -->
                 <div v-if="activeBlock === idx" class="trapezoid-button" @click.stop>
                   <div class="flex">
-                    <div
-                      class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition hover:text-indigo-500"
-                      v-tooltip="trans('Add Block Before')"
-                      @click="() => sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })"
-                    >
+                    <div v-tooltip="trans('Add Block Before')"
+                      class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition"
+                      @click="() => sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })">
                       <FontAwesomeIcon :icon="faSendBackward" fixed-width />
                     </div>
 
-                    <div
-                      class="py-1 px-2 cursor-pointer hover:bg-gray-200 hover:text-indigo-500 transition md:block hidden"
-                      v-tooltip="trans('Add Block After')"
-                      @click="() => sendMessageToParent('addBlock', { type: 'after', parentIndex: idx })"
-                    >
+                    <div v-tooltip="trans('Add Block After')"
+                      class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition md:block hidden"
+                      @click="() => sendMessageToParent('addBlock', { type: 'after', parentIndex: idx })">
                       <FontAwesomeIcon :icon="faBringForward" fixed-width />
                     </div>
 
-                    <div
+                    <div v-tooltip="trans('Delete')"
                       class="py-1 px-2 cursor-pointer hover:bg-red-100 hover:text-red-600 transition"
-                      v-tooltip="trans('Delete')"
-                      @click="() => sendMessageToParent('deleteBlock', activityItem)"
-                    >
+                      @click="() => sendMessageToParent('deleteBlock', block)">
                       <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                     </div>
                   </div>
                 </div>
 
-                <component
-                  class="w-full"
-                  :is="getComponent(activityItem.type)"
-                  :webpageData="webpage"
-                  :blockData="activityItem"
-                  @autoSave="() => updateData(activityItem)"
-                  v-model="activityItem.web_block.layout.data.fieldValue"
-                  :screenType="screenType"
-                />
+                <!-- Dynamic Block -->
+                <component :is="getComponent(block.type)" class="w-full" :webpageData="data" :blockData="block"
+                  v-model="block.web_block.layout.data.fieldValue" :screenType="screenType"
+                  @autoSave="() => updateData(block)" />
               </section>
             </template>
           </TransitionGroup>
         </div>
 
-        <EmptyState
-          v-else
-          :data="{
+        <EmptyState v-else :data="{
             title: trans('Pick First Block For Your Website'),
             description: trans('Pick block from list'),
-          }"
-        />
+          }" />
       </div>
     </div>
   </div>
@@ -181,24 +163,15 @@ provide("reloadPage", reloadPage);
 }
 
 .trapezoid-button {
-  position: absolute;
-  top: -37px;
-  left: 50%;
+  @apply absolute z-[99] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
   transform: translateX(-50%);
-  padding: 5px 20px;
-  background-color: #4F46E5;
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
+  background-color: v-bind('layout?.app?.theme[0]') !important;
   clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
-  transition: background 0.3s;
-  box-shadow: 0 4px 0px #4F46E5;
+  box-shadow: 0 4px 0px v-bind('layout?.app?.theme[0]') !important;
   border: none;
-  z-index: 99;
-}
 
-.trapezoid-button:hover {
-  background-color: #3F3ABF;
+  &:hover {
+    background-color: v-bind('layout?.app?.theme[0]') !important;
+  }
 }
 </style>

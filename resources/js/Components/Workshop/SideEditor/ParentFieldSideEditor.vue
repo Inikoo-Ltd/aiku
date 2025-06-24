@@ -9,6 +9,7 @@ import RenderFields from './RenderFields.vue'
 import ChildFieldSideEditor from '@/Components/Workshop/SideEditor/ChildFieldSideEditor.vue'
 import { getFormValue, setFormValue } from '@/Composables/SideEditorHelper'
 import { routeType } from '@/types/route'
+import { useLayoutStore } from '@/Stores/layout'
 
 // FontAwesome setup
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -35,6 +36,7 @@ const emits = defineEmits<{
     (e: 'update:modelValue', value: number): void
 }>()
 
+const layout = useLayoutStore()
 const modelValue = defineModel()
 
 
@@ -114,24 +116,44 @@ const isFutureDatePassed = (futureDate: string) => {
     </div>
 </template>
 
-<style lang="scss" scoped>
-.editor-content {
-    background-color: white;
-    border: solid;
+<style scoped lang="scss">
+/* Override PrimeVue accordion active panel header */
+.p-accordionpanel.p-accordionpanel-active > .p-accordionheader {
+  background-color:  v-bind('layout?.app?.theme[0]') !important;
+  border-radius: 0 !important;
+  color: white !important;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out;
 }
 
-.p-inputtext {
-    width: 100%;
-}
-
-.p-accordionpanel.p-accordionpanel-active>.p-accordionheader {
-    background-color: #433cc3 !important;
-    border-radius: 0 !important;
-    color: #fdfdfd !important;
-}
-
+/* Accordion content styling */
 .p-accordioncontent-content {
-    padding: 10px !important;
-    background-color: #f9f9f9 !important;
+  padding: 1rem !important;
+  background-color: #f9f9f9 !important;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Input width standardization */
+.p-inputtext {
+  width: 100%;
+}
+
+/* Optional: Add smooth transition to open/close */
+.p-accordionpanel {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Section 'New' badge (optional refinement) */
+.new-badge {
+  background-color: #fef9c3;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 </style>

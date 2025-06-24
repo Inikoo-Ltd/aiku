@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
@@ -30,6 +31,8 @@ class AttachCollectionToModel extends OrgAction
                     'type' => 'sub_department',
                 ]);
             }
+
+            ProductCategoryHydrateCollections::dispatch($parent);
         }
         if ($parent instanceof Shop) {
             $parent->collections()->attach($collection->id, [

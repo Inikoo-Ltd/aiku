@@ -13,11 +13,16 @@ use TheIconic\NameParser\Parser;
 
 trait WithProcessContactNameComponents
 {
-    protected function processComponents(string $contactName): array
+    protected function processContactNameComponents(?string $contactName): array
     {
+        if ($contactName == null) {
+            $contactName = '';
+        }
+
+
         $parser = new Parser();
         $parsedName =  $parser->parse($contactName);
-        $component = [
+        return [
             'first_name' => $parsedName->getFirstName(),
             'middle_name' => $parsedName->getMiddleName(),
             'last_name'  => $parsedName->getLastName(),
@@ -25,6 +30,5 @@ trait WithProcessContactNameComponents
             'suffix' => $parsedName->getSuffix(),
         ];
 
-        return $component;
     }
 }

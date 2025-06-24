@@ -50,7 +50,7 @@ const fallbackPerRow = {
 
 const perRow = computed(() => {
   return (
-    props.fieldValue?.setting?.per_row?.[props.screenType] ||
+    props.fieldValue?.settings?.per_row?.[props.screenType] ||
     fallbackPerRow[props.screenType] ||
     1
   );

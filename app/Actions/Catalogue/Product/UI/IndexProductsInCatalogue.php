@@ -328,7 +328,7 @@ class IndexProductsInCatalogue extends OrgAction
         $this->bucket = 'all';
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(shop: $shop, bucket: $this->bucket);
+        return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -337,7 +337,7 @@ class IndexProductsInCatalogue extends OrgAction
         $this->bucket = 'current';
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(shop: $shop, bucket: $this->bucket);
+        return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -346,7 +346,7 @@ class IndexProductsInCatalogue extends OrgAction
         $this->bucket = 'in_process';
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(shop: $shop, bucket: $this->bucket);
+        return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -355,7 +355,7 @@ class IndexProductsInCatalogue extends OrgAction
         $this->bucket = 'discontinued';
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(shop: $shop, bucket: $this->bucket);
+        return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array

@@ -221,6 +221,7 @@ class ShowProduct extends OrgAction
                     'afterTitle' => [
                         'label' => $product->name
                     ],
+                    'iconRight' => $product->state->stateIcon()[$product->state->value],
                     'actions'    => [
                         $product->webpage
                             ?

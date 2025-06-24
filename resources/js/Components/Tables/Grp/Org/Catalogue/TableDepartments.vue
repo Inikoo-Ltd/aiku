@@ -36,13 +36,6 @@ function departmentRoute(department: Department) {
                     (route().params as RouteParams).shop,
                     department.slug]);
         case "grp.org.shops.index":
-            return route(
-                "grp.org.shops.show.catalogue.departments.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    department.shop_slug,
-                    department.slug]);
-
         case "grp.overview.catalogue.departments.index":
             return route(
                 "grp.org.shops.show.catalogue.departments.show",
@@ -50,6 +43,7 @@ function departmentRoute(department: Department) {
                     (route().params as RouteParams).organisation,
                     department.shop_slug,
                     department.slug]);
+
 
         default:
             return null;
@@ -66,6 +60,34 @@ function shopRoute(department: Department) {
     }
     return undefined;
 }
+
+
+function subDepartmentsRoute(department: Department) {
+    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+        return route(
+            "grp.org.shops.show.catalogue.departments.show.sub_departments.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                department.slug
+            ]);
+    }
+    return undefined;
+}
+
+function subCollectionsRoute(department: Department) {
+    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+        return route(
+            "grp.org.shops.show.catalogue.departments.show.collection.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                department.slug
+            ]);
+    }
+    return undefined;
+}
+
 
 function familyRoute(department: Department) {
     if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
@@ -100,7 +122,7 @@ function organisationRoute(department: Department) {
 function departmentsInShopRoute(department: Department) {
     return route(
         "grp.org.shops.show.catalogue.departments.index",
-        [department.organisation_slug,department.shop_slug]);
+        [department.organisation_slug, department.shop_slug]);
 }
 
 
@@ -135,6 +157,16 @@ const isLoadingDetach = ref<string[]>([]);
         <template #cell(number_current_families)="{ item: department }">
             <Link :href="familyRoute(department) as string" class="secondaryLink">
                 {{ department["number_current_families"] }}
+            </Link>
+        </template>
+        <template #cell(number_current_sub_departments)="{ item: department }">
+            <Link :href="subDepartmentsRoute(department) as string" class="secondaryLink">
+                {{ department["number_current_sub_departments"] }}
+            </Link>
+        </template>
+        <template #cell(number_current_collections)="{ item: department }">
+            <Link :href="subCollectionsRoute(department) as string" class="secondaryLink">
+                {{ department["number_current_collections"] }}
             </Link>
         </template>
         <template #cell(number_current_products)="{ item: department }">

@@ -21,8 +21,6 @@ use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
 use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
-use App\Actions\Retina\Dropshipping\ApiToken\UI\GetApiToken;
-use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowApiTokenRetinaDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForBasket;
@@ -127,10 +125,9 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('api')->as('api.')->group(function () {
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-        Route::get('/show', ShowApiTokenRetinaDropshipping::class)->name('show');
-        Route::get('/token', GetApiToken::class)->name('show.token');
     });
 });
+
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
