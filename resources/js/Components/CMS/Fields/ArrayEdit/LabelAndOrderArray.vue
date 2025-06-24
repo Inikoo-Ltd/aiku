@@ -52,7 +52,7 @@ const onChangeProperty = (index: number, data: object) => {
   modelValue.value = newValue;
 };
 
-console.log('sss',modelValue.value)
+
 </script>
 
 

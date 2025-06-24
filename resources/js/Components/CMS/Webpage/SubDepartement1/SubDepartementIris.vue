@@ -76,7 +76,7 @@ const mergedItems = computed(() => {
 
   return [...subs, ...collections]
 })
-
+console.log(props)
 </script>
 
 <template>

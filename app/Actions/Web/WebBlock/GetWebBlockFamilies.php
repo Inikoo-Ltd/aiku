@@ -47,7 +47,7 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'webpages.url', 'title'])
+                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'webpages.url','webpages.url', 'title'])
                 ->where('collection_has_models.collection_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])

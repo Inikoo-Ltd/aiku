@@ -41,7 +41,7 @@ const props = defineProps<{
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-console.log(props)
+
 const layout = inject('layout', retinaLayoutStructure)
 const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
 const loadingInitial = ref(false)
@@ -261,7 +261,7 @@ const fetchProductHasPortfolio = async () => {
     productHasPortfolio.value.isLoading = true
     try {
         const apiUrl = getRouteForProductPortfolio()
-        console.log('sss',apiUrl)
+        
         if (!apiUrl) {
             throw new Error('Invalid model_type or missing route configuration')
         }

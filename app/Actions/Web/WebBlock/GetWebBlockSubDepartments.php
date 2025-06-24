@@ -27,7 +27,7 @@ class GetWebBlockSubDepartments
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
-            ->select(['product_categories.slug', 'product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.image_id', 'webpages.url as url'])
+            ->select(['product_categories.slug', 'product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'webpages.url as url'])
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('product_categories.show_in_website', true)
             ->whereNotNull('webpages.id')
@@ -35,7 +35,7 @@ class GetWebBlockSubDepartments
             ->whereNull('product_categories.deleted_at')
             ->get();
 
-        $productRoute = [
+       /*  $productRoute = [
             'workshop' => [
                 'name'       => 'grp.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
@@ -44,13 +44,13 @@ class GetWebBlockSubDepartments
                 'name'       => 'iris.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
-        ];
+        ]; */
 
         $permissions = [];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+      /*   data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute); */
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
 
