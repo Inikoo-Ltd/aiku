@@ -479,7 +479,7 @@ watch(currentView, (newValue) => {
 const fullScreeen = ref(false)
 
 const compUsersEditThisPage = computed(() => {
-	return useLiveUsers().liveUsersArray.filter(user => user.current_page?.route_name === layout.currentRoute).map(user => user.name ?? user.username)
+	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
 const filterBlock = ref('all')
@@ -570,6 +570,7 @@ console.log('webpage workshop props :',props)
 						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
 					</div> -->
 				</div>
+
 				<!-- Users edit same page -->
 				<div v-if="compUsersEditThisPage?.length > 1"
 					v-tooltip="compUsersEditThisPage.join(', ') + trans('. Your changes may conflict each others.')"
