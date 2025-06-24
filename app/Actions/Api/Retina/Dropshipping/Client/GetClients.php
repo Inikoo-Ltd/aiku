@@ -10,6 +10,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
+use App\Actions\RetinaApiAction;
 use App\Actions\RetinaWebhookAction;
 use App\Http\Resources\Api\CustomerClientsResource;
 use App\Models\Dropshipping\CustomerClient;
@@ -20,7 +21,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetClients extends RetinaWebhookAction
+class GetClients extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
@@ -52,10 +53,10 @@ class GetClients extends RetinaWebhookAction
         ->withQueryString();
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($request);
-        return $this->handle($customerSalesChannel, $this->validateAttributes());
+        $this->initialisationFromDropshipping($request);
+        return $this->handle($this->customerSalesChannel, $this->validatedData);
     }
 
 

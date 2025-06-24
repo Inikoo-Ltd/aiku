@@ -10,6 +10,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Portfolio;
 
+use App\Actions\RetinaApiAction;
 use App\Http\Resources\Api\PortfoliosResource;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -23,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetPortfolios
+class GetPortfolios extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -55,9 +56,8 @@ class GetPortfolios
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $customerSalesChannel = $request->user();
-        $this->fillFromRequest($request);
-        return $this->handle($customerSalesChannel, $this->validateAttributes());
+        $this->initialisationFromDropshipping($request);
+        return $this->handle($this->customerSalesChannel, $this->validatedData);
     }
 
 
