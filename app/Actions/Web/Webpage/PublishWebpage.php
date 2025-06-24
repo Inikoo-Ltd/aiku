@@ -97,6 +97,8 @@ class PublishWebpage extends OrgAction
 
         $webpage->update($updateData);
 
+        BreakWebpageCache::run($webpage);
+
         return $webpage;
     }
 
