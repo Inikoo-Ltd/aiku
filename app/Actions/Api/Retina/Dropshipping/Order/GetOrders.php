@@ -10,6 +10,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
+use App\Actions\RetinaApiAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\OrdersResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -22,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetOrders
+class GetOrders extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -49,10 +50,8 @@ class GetOrders
         $query->where('orders.state', '!=', OrderStateEnum::CREATING);
 
 
-        if (Arr::get($modelData, 'search')) {
-            $query->where(function ($query) use ($modelData) {
-                $query->where('orders.reference', '=', $modelData['search']);
-            });
+        if (Arr::get($modelData, 'reference')) {
+            $this->getReferenceSearch($query, Arr::get($modelData, 'reference'));
         }
 
         return $query->defaultSort('orders.id')
@@ -86,12 +85,17 @@ class GetOrders
             ->withQueryString();
     }
 
+    public function getReferenceSearch($query, string $ref): QueryBuilder
+    {
+        return $query->where(function ($query) use ($ref) {
+            $query->where('orders.reference', $ref);
+        });
+    }
+
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-
-        $customerSalesChannel = $request->user();
-        $this->fillFromRequest($request);
-        return $this->handle($customerSalesChannel, $this->validateAttributes());
+        $this->initialisationFromDropshipping($request);
+        return $this->handle($this->customerSalesChannel, $this->validateAttributes());
     }
 
 
@@ -103,7 +107,7 @@ class GetOrders
     public function rules(): array
     {
         return [
-            'search' => ['nullable', 'string'],
+            'reference' => ['nullable', 'string'],
             'page' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
             'sort' => ['nullable', 'string'],
@@ -114,7 +118,7 @@ class GetOrders
     {
         $request->merge(
             [
-                'search' => $request->query('search', null),
+                'reference' => $request->query('reference', null),
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),

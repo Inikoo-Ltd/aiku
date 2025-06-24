@@ -14,7 +14,7 @@ Route::get('/ping', function () {
 })->name('ping');
 
 Route::middleware(['auth:sanctum', 'ability:retina', 'set.treblle.authorize', 'treblle'])->group(function () {
-    Route::get('/profile', GetProfile::class)->name('profile');
+    Route::get('/user-profile', GetProfile::class)->name('profile');
 
     Route::prefix("dropshipping")
         ->name("dropshipping.")
