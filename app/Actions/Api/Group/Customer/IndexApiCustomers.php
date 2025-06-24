@@ -18,6 +18,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexApiCustomers extends OrgAction
 {
@@ -28,12 +29,14 @@ class IndexApiCustomers extends OrgAction
         $query->where('customers.shop_id', $shop->id)
             ->leftJoin('customer_stats', 'customers.id', 'customer_stats.customer_id');
 
-        if (Arr::get($modelData, 'search')) {
-            $query->where(function ($query) use ($modelData) {
-                $query->whereAnyWordStartWith('customers.contact_name', $modelData['search'])
-                    ->orWhereStartWith('customers.email', $modelData['search'])
-                    ->orWhere('customers.reference', $modelData['search']);
-            });
+        if (Arr::get($modelData, 'global')) {
+            $this->getGlobalSearch($query, Arr::get($modelData, 'global'));
+        } elseif (Arr::get($modelData, 'email')) {
+            $this->getEmailSearch($query, Arr::get($modelData, 'email'));
+        } elseif (Arr::get($modelData, 'name')) {
+            $this->getNameSearch($query, Arr::get($modelData, 'name'));
+        } elseif (Arr::get($modelData, 'reference')) {
+            $this->getReferenceSearch($query, Arr::get($modelData, 'reference'));
         }
 
         return $query->defaultSort('customers.id')
@@ -56,6 +59,36 @@ class IndexApiCustomers extends OrgAction
             ->withQueryString();
     }
 
+    public function getGlobalSearch($query, string $value): QueryBuilder
+    {
+            return $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('customers.contact_name', $value)
+                    ->orWhereStartWith('customers.email', $value)
+                    ->orWhere('customers.reference', $value);
+            });
+    }
+
+    public function getEmailSearch($query, string $email): QueryBuilder
+    {
+            return $query->where(function ($query) use ($email) {
+                $query->where('customers.email', $email);
+            });
+    }
+
+    public function getNameSearch($query, string $name): QueryBuilder
+    {
+            return $query->where(function ($query) use ($name) {
+                $query->whereAnyWordStartWith('customers.contact_name', $name);
+            });
+    }
+
+    public function getReferenceSearch($query, string $ref): QueryBuilder
+    {
+            return $query->where(function ($query) use ($ref) {
+                $query->where('customers.reference', $ref);
+            });
+    }
+
     public function asController(Shop $shop, ActionRequest $request)
     {
         $this->initialisationFromShop($shop, $request);
@@ -71,7 +104,10 @@ class IndexApiCustomers extends OrgAction
     public function rules(): array
     {
         return [
-            'search' => ['nullable', 'string'],
+            'global' => ['nullable', 'string'],
+            'name' => ['nullable', 'string'],
+            'email' => ['nullable', 'string'],
+            'reference' => ['nullable', 'string'],
             'page' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
             'sort' => ['nullable', 'string'],
@@ -82,7 +118,7 @@ class IndexApiCustomers extends OrgAction
     {
         $request->merge(
             [
-                'search' => $request->query('search', null),
+                'global' => $request->query('global', null),
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),
