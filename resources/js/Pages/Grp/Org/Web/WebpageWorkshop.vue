@@ -101,9 +101,9 @@ const addNewBlock = async ({ block, type }) => {
   if (addBlockCancelToken.value) addBlockCancelToken.value();
   let position  = data.value.layout.web_blocks.length
   if(type == 'before' ) {
-    position =  addBlockParentIndex.value 
+    position =  addBlockParentIndex.value.parentIndex
   }else if(type == 'after'){
-    position =  addBlockParentIndex.value + 1;
+    position =  addBlockParentIndex.value.parentIndex + 1;
   }
 
 
