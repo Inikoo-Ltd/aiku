@@ -16,16 +16,16 @@ defineProps<{
 
 function masterSubDepartmentRoute(subDepartment: {}) {
     switch (route().current()) {
-        case 'grp.masters.departments.sub_departments.index':
+        case 'grp.masters.master_departments.show.master_sub_departments.index':
             return route(
-                'grp.masters.departments.sub_departments.show',
+                'grp.masters.master_departments.show.master_sub_departments.show',
                 [
                     (route().params as RouteParams).masterDepartment,
                     subDepartment.slug
                 ]);
         default:
             return route(
-                'grp.masters.shops.show.sub-departments.show',
+                'grp.masters.master_shops.show.master_sub_departments.show',
                 [
                     (route().params as RouteParams).masterShop,
                     (route().params as RouteParams).masterDepartment,

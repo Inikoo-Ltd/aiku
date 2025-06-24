@@ -16,14 +16,14 @@ defineProps<{
 }>()
 
 function departmentRoute(masterDepartment: MasterDepartment) {
-  if (route().current()=='grp.masters.departments.index') {
-    return route('grp.masters.departments.show',
+  if (route().current()=='grp.masters.master_departments.index') {
+    return route('grp.masters.master_departments.show',
       {
         masterDepartment: masterDepartment.slug }
 
     )
   }else{
-    return route('grp.masters.shops.show.departments.show',
+    return route('grp.masters.master_shops.show.master_departments.show',
       {
         masterShop: (route().params as RouteParams).masterShop,
         masterDepartment: masterDepartment.slug }
@@ -33,7 +33,7 @@ function departmentRoute(masterDepartment: MasterDepartment) {
 }
 
 function masterShopRoute(masterDepartment: MasterDepartment) {
-  return route('grp.masters.shops.show',
+  return route('grp.masters.master_shops.show',
     {
       masterShop: masterDepartment.master_shop_slug
     }

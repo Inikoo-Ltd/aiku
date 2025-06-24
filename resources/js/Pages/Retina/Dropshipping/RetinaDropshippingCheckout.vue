@@ -108,6 +108,14 @@ const component = computed(() => {
     <PageHeading :data="pageHead"> </PageHeading>
 
     <!-- <pre>{{ to_pay_data }}</pre> -->
+    <div class="xflex xjustify-end gap-x-4 mt-4 px-4">
+        <ButtonWithLink
+            :icon="faArrowLeft"
+            type="tertiary"
+            :label="trans('Back to basket')"
+            :routeTarget="routes.back_to_basket"
+        />
+    </div>
 
     <div v-if="!box_stats" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
@@ -134,19 +142,19 @@ const component = computed(() => {
 
         <!-- If balance can't cover -->
         <div v-else-if="to_pay_data.by_other > 0" class="mt-10 mx-10 ">
-            <div class="mx-auto text-center text-lg border border-gray-300 py-4 rounded">
+            <div v-if="to_pay_data.by_balance > 0" class="mx-auto text-center text-lg border border-gray-300 py-4 rounded">
                 <div>
                     <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale.currencyFormat(currency_code, to_pay_data.by_balance) }} of {{ locale.currencyFormat(currency_code, to_pay_data.total) }}</span>
                     will paid with balance
                 </div>
                 
                 <div class="text-gray-500 text-sm mt-1">
-                    Please paid the rest with your preferred method below:
+                    {{ trans("Please paid the rest with your preferred method below:") }}
                 </div>
             </div>
 
             <div class="mt-5 border border-gray-300">
-                <div v-if="props.paymentMethods?.length" class="max-w-lg">
+                <div v-if="props.paymentMethods?.length > 1" class="max-w-lg">
                     <div class="grid grid-cols-1 sm:hidden">
                         <!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
                         <select aria-label="Select a tab" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
@@ -210,7 +218,7 @@ const component = computed(() => {
             <ButtonWithLink
                 :icon="faArrowLeft"
                 type="tertiary"
-                label="Back to basket"
+                :label="trans('Back to basket')"
                 :routeTarget="routes.back_to_basket"
             />
         </div>

@@ -61,7 +61,8 @@ class IrisProductsInWebpageResource extends JsonResource
             'units'         => $this->units,
             'unit'          => $this->unit,
             'url'           => $this->url,
-            'image'         => $image
+            'image'         => $image,
+            'web_images'    => $this->web_images
         ];
     }
 

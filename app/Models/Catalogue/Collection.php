@@ -49,6 +49,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property int|null $webpage_id
+ * @property string|null $url
+ * @property array<array-key, mixed> $web_images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -88,12 +90,14 @@ class Collection extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'data'  => 'array',
-        'state' => CollectionStateEnum::class,
+        'data'       => 'array',
+        'web_images' => 'array',
+        'state'      => CollectionStateEnum::class,
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'       => '{}',
+        'web_images' => '{}',
     ];
 
     public function getRouteKeyName(): string
@@ -138,15 +142,15 @@ class Collection extends Model implements Auditable, HasMedia
     public function departments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'department')
-                    ->withTimestamps();
+            ->wherePivot('type', 'department')
+            ->withTimestamps();
     }
 
     public function subDepartments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
-                    ->wherePivot('type', 'sub_department')
-                    ->withTimestamps();
+            ->wherePivot('type', 'sub_department')
+            ->withTimestamps();
     }
 
     public function products(): MorphToMany
@@ -166,8 +170,6 @@ class Collection extends Model implements Auditable, HasMedia
     {
         return $this->morphOne(Webpage::class, 'model');
     }
-
-
 
 
 }

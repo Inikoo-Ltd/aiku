@@ -9,6 +9,7 @@ import { isArray } from 'lodash-es'
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
+import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
@@ -62,6 +63,10 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 	<!-- page background -->
 	<div class="-z-[1] fixed inset-0 bg-slate-100" />
 
+	<ScreenWarning v-if="layout.app.environment === 'staging'">
+		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+	</ScreenWarning>
+
 	<div
 		class="isolate relative min-h-screen transition-all"
 		:class="{
@@ -101,10 +106,12 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[
-						'min-w-56 w-56 fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform transition-transform z-50 md:z-0',
+						'fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform z-50 md:z-0 transition-all',
 						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
 						'md:relative md:translate-x-0 md:flex md:flex-col',
-					]" />
+						layout.leftSidebar.show ? 'min-w-56 w-56' : 'min-w-14 w-14 '
+					]"
+				/>
 
 				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
@@ -126,7 +133,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						</Link>
 					</div>
 					<div
-						style="max-width: calc(1280px - 200px)"
+						xstyle="max-width: calc(1280px - 200px)"
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
 						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
 						<slot name="default" />

@@ -10,7 +10,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -27,18 +28,30 @@ class SetTreblleAuthorize
      */
     public function handle(Request $request, Closure $next)
     {
-        /** @var Customer $customer */
-        $customer = $request->user();
+        $model = $request->user();
 
-        $apiKey = Arr::get($customer->shop->settings, 'treblle.api_key');
-        $projectId = Arr::get($customer->shop->settings, 'treblle.project_id');
+        if ($model instanceof CustomerSalesChannel) {
+            $apiKey = Arr::get($model->shop->settings, 'treblle.api_key');
+            $projectId = Arr::get($model->shop->settings, 'treblle.project_id');
 
-        if ($apiKey && $projectId) {
-            config([
-                'treblle.api_key' => $apiKey,
-                'treblle.project_id' => $projectId,
-            ]);
+            if ($apiKey && $projectId) {
+                config([
+                    'treblle.api_key' => $apiKey,
+                    'treblle.project_id' => $projectId,
+                ]);
+            }
+        } elseif ($model instanceof User) {
+            $apiKey = Arr::get($model->group->settings, 'treblle.api_key');
+            $projectId = Arr::get($model->group->settings, 'treblle.project_id');
+
+            if ($apiKey && $projectId) {
+                config([
+                    'treblle.api_key' => $apiKey,
+                    'treblle.project_id' => $projectId,
+                ]);
+            }
         }
+
 
         return $next($request);
     }

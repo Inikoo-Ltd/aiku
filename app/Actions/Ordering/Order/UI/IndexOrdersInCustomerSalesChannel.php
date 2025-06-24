@@ -29,7 +29,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use UnexpectedValueException;
 
 class IndexOrdersInCustomerSalesChannel extends OrgAction
 {
@@ -61,14 +60,14 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
         $queryBuilder = QueryBuilder::for(Order::class);
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $queryBuilder->where('orders.customer_id', $customerSalesChannel->customer->id);
+        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
+            $queryBuilder->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
         } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
                 $join->on('shopify_user_has_fulfilments.model_id', '=', 'orders.id')
                         ->where('shopify_user_has_fulfilments.model_type', '=', 'Order');
             });
             $queryBuilder->where('shopify_user_has_fulfilments.shopify_user_id', $customerSalesChannel->customer->shopifyUser->id);
-        } else {
-            throw new UnexpectedValueException('To be implemented');
         }
 
 

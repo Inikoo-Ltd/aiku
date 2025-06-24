@@ -48,7 +48,7 @@ class ShowMastersDashboard extends OrgAction
                             'name'  => 'Master Shops',
                             'icon'  => ['fal', 'fa-books'],
                             'route' => [
-                                'name'       => 'grp.masters.shops.index',
+                                'name'       => 'grp.masters.master_shops.index',
                                 'parameters' => []
                             ],
                             'index' => [

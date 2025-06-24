@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 20-06-2025-09h-12m
@@ -12,9 +13,6 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
-use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\SubmitOrder;
-use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedEbayAddress;
 use App\Actions\Traits\WithActionUpdate;
@@ -50,7 +48,7 @@ class StoreFulfilmentFromEbay extends OrgAction
         $ebayProducts = collect($modelData['line_items']);
 
         if (!$customerClient) {
-            $customerClient = StoreCustomerClient::make()->action($ebayUser->customerSalesChannel, $deliveryAttributes);
+            StoreCustomerClient::make()->action($ebayUser->customerSalesChannel, $deliveryAttributes);
         }
 
         $ebayUserHasProductExists = $ebayUser->customerSalesChannel->portfolios()
@@ -70,14 +68,13 @@ class StoreFulfilmentFromEbay extends OrgAction
             ], false);
 
             $storedItems = [];
-            $allComplete = true;
-            $someComplete = false;
+
 
             foreach ($ebayProducts as $ebayProduct) {
                 /** @var Portfolio $ebayUserHasProduct */
                 $ebayUserHasProduct = $ebayUser->customerSalesChannel->portfolios()
                     ->where('platform_product_id', $ebayProduct['legacyItemId'])->first(); //legacyItemId is listing id which we can get from publishing offer
-                
+
                 if (!$ebayUserHasProduct) {
                     continue;
                 }
@@ -89,11 +86,7 @@ class StoreFulfilmentFromEbay extends OrgAction
                 $itemQuantity = (int) $ebayUserHasProduct->item->total_quantity;
                 $requiredQuantity = $ebayProduct['quantity'];
 
-                if ($itemQuantity >= $requiredQuantity) {
-                    $someComplete = true;
-                } else {
-                    $allComplete = false;
-                }
+
 
                 $this->update($ebayUserHasProduct->item, [
                     'total_quantity' => $itemQuantity - $requiredQuantity

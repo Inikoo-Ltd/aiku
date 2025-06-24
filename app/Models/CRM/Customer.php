@@ -125,9 +125,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $approved_at
  * @property numeric $amount_in_basket
  * @property int|null $current_order_in_basket_id
- * @property string|null $first_name
- * @property string|null $last_name
  * @property int $number_exclusive_products
+ * @property array<array-key, mixed>|null $contact_name_components
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers
@@ -205,6 +204,7 @@ class Customer extends Model implements HasMedia, Auditable
 
     protected $casts = [
         'data'                        => 'array',
+        'contact_name_components'     => 'array',
         'settings'                    => 'array',
         'location'                    => 'array',
         'migration_data'              => 'array',
@@ -226,7 +226,8 @@ class Customer extends Model implements HasMedia, Auditable
         'data'           => '{}',
         'settings'       => '{}',
         'location'       => '{}',
-        'migration_data' => '{}'
+        'migration_data' => '{}',
+        'contact_name_components' => '{}'
     ];
 
     protected $guarded = [];

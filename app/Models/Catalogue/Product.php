@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 08 Apr 2024 09:52:43 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Mon, 08 Apr 2024 09:52:43 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -86,8 +86,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $historic_source_id
- * @property bool $is_for_sale For sale products including out of stock
+ * @property bool $is_for_sale For-sale products including out of stock
  * @property int|null $exclusive_for_customer_id
+ * @property int|null $webpage_id
+ * @property string|null $url
+ * @property array<array-key, mixed> $web_images
+ * @property int|null $top_seller
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
@@ -144,6 +148,7 @@ class Product extends Model implements Auditable, HasMedia
         'rrp'                    => 'decimal:2',
         'data'                   => 'array',
         'settings'               => 'array',
+        'web_images'             => 'array',
         'variant_is_visible'     => 'boolean',
         'state'                  => ProductStateEnum::class,
         'status'                 => ProductStatusEnum::class,
@@ -154,8 +159,9 @@ class Product extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
+        'data'       => '{}',
+        'settings'   => '{}',
+        'web_images' => '{}',
     ];
 
     public function generateTags(): array

@@ -81,9 +81,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
- * @property string|null $first_name
- * @property string|null $last_name
  * @property bool $is_opt_in
+ * @property array<array-key, mixed>|null $contact_name_components
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -116,6 +115,7 @@ class Prospect extends Model implements Auditable
     protected $casts = [
         'data'                 => 'array',
         'location'             => 'array',
+        'contact_name_components'     => 'array',
         'state'                => ProspectStateEnum::class,
         'contacted_state'      => ProspectContactedStateEnum::class,
         'fail_status'          => ProspectFailStatusEnum::class,
@@ -135,6 +135,7 @@ class Prospect extends Model implements Auditable
     ];
 
     protected $attributes = [
+        'contact_name_components' => '{}',
         'data'     => '{}',
         'location' => '{}',
     ];
