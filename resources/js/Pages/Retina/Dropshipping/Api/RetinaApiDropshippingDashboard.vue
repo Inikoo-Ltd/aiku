@@ -15,15 +15,23 @@ import {  } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import RetinaTableApiKey from "@/Components/Tables/Retina/RetinaTableApiKey.vue"
 import { routeType } from "@/types/route"
+import { Table as TSTable } from '@/types/Table'
+import { useTabChange } from "@/Composables/tab-change"
+import Tabs from "@/Components/Navigation/Tabs.vue"
 library.add()
 
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	data: any
-	dataTable: {
+	data: {
+        api_tokens: TSTable
+    }
+    tabs:{
+        current: string
+    }
+	// dataTable: {
 
-	}
+	// }
 	routes: {
 		create_token: routeType
 	}
@@ -72,6 +80,8 @@ const onGenerateApiToken = async () => {
 }
 
 
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 // Method: On recently copied
 const isRecentlyCopied = ref(false)
 const onClickCopyButton = async (text: string) => {
@@ -104,10 +114,11 @@ const onClickCopyButton = async (text: string) => {
 			</button>
 		</Link>
 	</div> -->
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
 	<RetinaTableApiKey
 		:data="data.api_tokens"
-		tab="api_tokens"
+		:tab="tabs.current"
 	/>
 
 	<Modal :isOpen="isModalApiToken" @onClose="() => (isModalApiToken = false)" width="w-fit max-w-xl"

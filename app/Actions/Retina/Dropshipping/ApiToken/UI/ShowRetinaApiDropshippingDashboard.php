@@ -10,27 +10,57 @@
 
 namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\RetinaAction;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Http\RedirectResponse;
+use App\Enums\UI\SysAdmin\ApiTokenRetinaTabsEnum;
+use App\Http\Resources\Api\ApiTokensRetinaResource;
+use App\Http\Resources\History\HistoryResource;
+use App\InertiaTable\InertiaTable;
+use App\Models\CRM\Customer;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Spatie\QueryBuilder\AllowedFilter;
+use App\Services\QueryBuilder;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ShowRetinaApiDropshippingDashboard extends RetinaAction
 {
     use AsAction;
 
+    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    {
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): Response
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('name', $value);
+            });
+        });
+
+        $queryBuilder = QueryBuilder::for(PersonalAccessToken::class);
+        $queryBuilder->where('tokenable_type', class_basename($customer))
+        ->where('tokenable_id', $customer->id);
+
+        return $queryBuilder
+            ->defaultSort('-created_at')
+            ->select(['id', 'name',  'last_used_at', 'created_at', 'expires_at'])
+            ->allowedSorts(['name', 'created_at', 'last_used_at'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    public function htmlResponse(LengthAwarePaginator $apiTokens, ActionRequest $request): Response
     {
         return Inertia::render(
             'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    __('Api Token')
-                ),
                 'title'       => __('Api Token'),
                 'pageHead'    => [
                     'title'     => 'API Token',
@@ -49,45 +79,59 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     // ],
 
                 ],
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    __('Api Token')
+                ),
+                'tabs'                        => [
+                    'current'    => $this->tab,
+                    'navigation' => ApiTokenRetinaTabsEnum::navigation()
+                ],
+                'routes'                   => [
+                    'create_token' => [
+                        'name'       => 'retina.models.access_token.create',
+                        'parameters' => [
+                            'customer' => $this->customer->slug,
+                        ]
+                    ],
+                ],
                 'data'       => [
-                    'route_generate' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
-                        'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->slug,
-                        ],
-                    ],
-                    'route_documentation' => '#',
-                    'route_show' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.api.show',
-                        'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->slug,
-                        ],
-                    ],
+                    // 'route_generate' => [
+                    //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
+                    //     'parameters' => [
+                    //         'customerSalesChannel' => $customerSalesChannel->slug,
+                    //     ],
+                    // ],
+                    // 'route_documentation' => '#',
+                    // 'route_show' => [
+                    //     'name' => 'retina.dropshipping.customer_sales_channels.api.show',
+                    //     'parameters' => [
+                    //         'customerSalesChannel' => $customerSalesChannel->slug,
+                    //     ],
+                    // ],
+
+                    ApiTokenRetinaTabsEnum::SHOWCASE->value => $this->tab == ApiTokenRetinaTabsEnum::SHOWCASE->value ?
+                        fn () => ApiTokensRetinaResource::collection($apiTokens)
+                        : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
+                    ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($this->customer))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer))),
                 ],
-                'routes'    => [
-                    'create_token' => [  // TODO: route for creating a new API token
-                        // 'name' => 'retina.dropshipping.customer_sales_channels.api.create.token',
-                        // 'parameters' => [
-                        //     'customerSalesChannel' => $customerSalesChannel->slug,
-                        // ],
-                    ],
-                ],
-                'dataTable' => [],  // TODO: for Table
             ]
-        );
+        )
+        ->table(IndexHistory::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
+        ->table($this->tableStructure(ApiTokenRetinaTabsEnum::SHOWCASE->value));
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response|RedirectResponse
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($request);
-        return $this->handle($customerSalesChannel, $request);
+        $this->initialisation($request)->withTab(ApiTokenRetinaTabsEnum::values());
+        return $this->handle($this->customer, $request);
     }
 
     public function getBreadcrumbs($label = null): array
     {
         return [
             [
-
                 'type'   => 'simple',
                 'simple' => [
                     'icon'  => 'fal fa-home',
@@ -95,9 +139,27 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         'name' => 'retina.dashboard.show'
                     ]
                 ]
-
             ],
-
         ];
+    }
+
+    public function tableStructure($prefix = null, array $modelOperations = []): Closure
+    {
+        return function (InertiaTable $table) use ($prefix, $modelOperations) {
+            if ($prefix) {
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
+            }
+            $table
+                ->withGlobalSearch()
+                ->withModelOperations($modelOperations)
+                ->column(key: 'name', label: __('Token ID'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true, type: 'date_hms')
+                ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true, type: 'date_hms')
+                ->column(key: 'expires_at', label: __('Expires At'), sortable: true, type: 'date_hms')
+                ->column(key: 'actions', label: __('Actions'))
+                ->defaultSort('created_at');
+        };
     }
 }
