@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Api\Order;
+namespace App\Actions\Api\Group\Order;
 
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;

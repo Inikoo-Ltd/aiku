@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Api\Invoice;
+namespace App\Actions\Api\Group\Invoice;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Api\InvoiceApiResource;
