@@ -18,7 +18,7 @@ enum ApiTokenRetinaTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE     = 'showcase';
+    case API_TOKENS   = 'api_tokens';
     case HISTORY      = 'history';
 
 
@@ -32,9 +32,10 @@ enum ApiTokenRetinaTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            ApiTokenRetinaTabsEnum::SHOWCASE => [
-                'title' => __('Showcase'),
-                'icon'  => 'fal fa-tachometer-alt',
+            ApiTokenRetinaTabsEnum::API_TOKENS => [
+                'title' => __('api tokens'),
+                'icon'  => 'fal fa-key',
+                'type'  => 'icon',
             ],
 
         };
