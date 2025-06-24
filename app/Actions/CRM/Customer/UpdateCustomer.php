@@ -103,7 +103,7 @@ class UpdateCustomer extends OrgAction
         }
 
         if (Arr::has($modelData, 'contact_name')) {
-            data_set($modelData, 'contact_name_components', $this->processComponents(Arr::get($modelData, 'contact_name')));
+            data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
         }
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);

@@ -59,7 +59,7 @@ class StoreCustomer extends OrgAction
      */
     public function handle(Shop $shop, array $modelData): Customer
     {
-        data_set($modelData, 'contact_name_components', $this->processComponents(Arr::get($modelData, 'contact_name')));
+        data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
 
         $contactAddressData = Arr::get($modelData, 'contact_address', []);
         Arr::forget($modelData, 'contact_address');

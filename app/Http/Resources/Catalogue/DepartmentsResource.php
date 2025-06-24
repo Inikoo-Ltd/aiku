@@ -32,6 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $organisation_code
  * @property mixed $number_current_sub_departments
+ * @property mixed $number_current_collections
  */
 class DepartmentsResource extends JsonResource
 {
@@ -58,6 +59,7 @@ class DepartmentsResource extends JsonResource
             'number_current_families'        => $this->number_current_families,
             'number_current_products'        => $this->number_current_products,
             'number_current_sub_departments' => $this->number_current_sub_departments,
+            'number_current_collections'     => $this->number_current_collections,
             'sales'                          => $this->sales_all,
             'invoices'                       => $this->invoices_all,
             'organisation_name'              => $this->organisation_name,
