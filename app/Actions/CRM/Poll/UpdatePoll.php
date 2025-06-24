@@ -41,9 +41,12 @@ class UpdatePoll extends OrgAction
     {
         $type = Arr::pull($modelData, 'type.type');
         $options = Arr::pull($modelData, 'type.poll_options', []);
-        data_set($modelData, 'type', $type);
+        if ($type) {
+            data_set($modelData, 'type', $type);
+        }
         $poll = $this->update($poll, $modelData);
         if ($poll->type == PollTypeEnum::OPTION && $options) {
+            $oldOptions = $poll->pollOptions;
             foreach ($options ?? [] as $index => $option) {
                 if (isset($option['id'])) {
                     UpdatePollOption::make()->action(
@@ -51,6 +54,9 @@ class UpdatePoll extends OrgAction
                         [
                             'label' => $option['label'],
                         ]
+                    );
+                    $oldOptions = $oldOptions->reject(
+                        fn (PollOption $pollOption) => $pollOption->id == $option['id']
                     );
                 } else {
                     StorePollOption::make()->action(
@@ -62,9 +68,16 @@ class UpdatePoll extends OrgAction
                     );
                 }
             }
-        } else {
-            DeletePollOptions::run($poll, true);
+            if (!empty($oldOptions)) {
+                foreach ($oldOptions as $oldOption) {
+                    DeletePollOptions::run(
+                        $oldOption,
+                        true
+                    );
+                }
+            }
         }
+
         ShopHydratePolls::dispatch($poll->shop);
         PollHydrateCustomers::dispatch($poll);
         //todo put hydrators here if in_registration|in_registration_required|in_iris|in_iris_required has changed

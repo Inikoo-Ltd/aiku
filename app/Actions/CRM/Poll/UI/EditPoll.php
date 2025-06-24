@@ -42,7 +42,8 @@ class EditPoll extends OrgAction
     public function htmlResponse(Poll $poll, ActionRequest $request): Response
     {
         $optionsPool = [];
-        if ($poll->type === PollTypeEnum::OPTION) {
+        $options = $poll->pollOptions;
+        if ($options->isNotEmpty()) {
             $optionsPool = PollOptionsResource::collection($poll->pollOptions)->toArray($request);
         }
 
