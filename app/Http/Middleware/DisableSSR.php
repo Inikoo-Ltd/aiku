@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 class DisableSSR
 {
 
-    public function handle(Request $request, Closure $next): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+    public function handle(Request $request, Closure $next)
     {
         config(['inertia.ssr.enabled' => false]);
         return $next($request);
