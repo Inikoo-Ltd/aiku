@@ -76,7 +76,7 @@ const mergedItems = computed(() => {
 
   return [...subs, ...collections]
 })
-console.log(props)
+console.log('subDepartement',props)
 </script>
 
 <template>

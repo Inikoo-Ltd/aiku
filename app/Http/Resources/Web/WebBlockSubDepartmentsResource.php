@@ -13,6 +13,13 @@ use App\Http\Resources\HasSelfCall;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property string $slug
+ * @property string $code
+ * @property string $name
+ * @property int $image_id
+ * @property mixed $web_images
+ */
 class WebBlockSubDepartmentsResource extends JsonResource
 {
     use HasSelfCall;
@@ -31,16 +38,7 @@ class WebBlockSubDepartmentsResource extends JsonResource
             $image        = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
-
-        $decoded = $this->web_images;
-
-        if (is_string($decoded)) {
-            $decoded = json_decode($decoded, true);
-
-            if (is_string($decoded)) {
-                $decoded = json_decode($decoded, true); 
-            }
-        }
+        
 
 
         return [
@@ -49,7 +47,7 @@ class WebBlockSubDepartmentsResource extends JsonResource
             'name'  => $this->name,
             'image' => $imageSources,
             'url'   => $this->url,
-            'web_images' =>  $decoded,
+            'web_images' => json_encode(json_encode($this->web_images), true),
         ];
     }
 }
