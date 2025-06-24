@@ -37,6 +37,7 @@ class ShowIrisWebpage
 
 
         return [
+            'breadcrumbs' => null,  // TODO: same structure as Grp and Retina
             'meta'   => $webpage->seo_data,
             'script_website' => Arr::get($webpage->website->settings, 'script_website.header', null),
             'web_blocks' => $webBlocks,
