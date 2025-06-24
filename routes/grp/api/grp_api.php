@@ -13,6 +13,7 @@ use App\Actions\Api\Invoice\IndexApiInvoices;
 use App\Actions\Api\Order\IndexApiOrders;
 use App\Actions\Api\Order\ShowApiOrder;
 use App\Actions\Catalogue\Shop\Api\IndexApiShops;
+use App\Actions\Catalogue\Shop\Api\ShowApiShop;
 use App\Actions\SysAdmin\Group\Api\ShowApiGroup;
 use App\Actions\SysAdmin\Organisation\Api\IndexApiOrganisations;
 use App\Actions\SysAdmin\Organisation\Api\ShowApiOrganisation;
@@ -22,7 +23,7 @@ Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'set.treblle.authorize', 'treblle'])->group(function () {
     Route::get('/profile', GetApiProfile::class)->name('profile');
     Route::get('/group', ShowApiGroup::class)->name('group.show');
 
@@ -30,26 +31,28 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/organisations/{organisation:id}', ShowApiOrganisation::class)->name('organisations.show');
     Route::get('/organisations/{organisation:id}/shops', [IndexApiShops::class, 'inOrganisation'])->name('organisations.show.shops.index');
 
-    Route::get('/shops', IndexApiShops::class)->name('shops.index');
 
 
 
-    Route::prefix('shop')->as('shop.')->group(function () {
+
+    Route::prefix('shops')->as('shops.')->group(function () {
+        Route::get('', IndexApiShops::class)->name('index');
         Route::prefix('{shop:id}')->as('show.')->group(function () {
-            Route::prefix('order')->as('order.')->group(function () {
+            Route::get('', ShowApiShop::class);
+            Route::prefix('orders')->as('orders.')->group(function () {
                 Route::get('', IndexApiOrders::class)->name('index');
                 Route::get('{order:id}', ShowApiOrder::class)->name('show');
             });
-            Route::prefix('customer')->as('customer.')->group(function () {
+            Route::prefix('customers')->as('customers.')->group(function () {
                 Route::get('', IndexApiCustomers::class)->name('index');
                 Route::get('{customer:id}', ShowApiCustomer::class)->name('show');
 
-                Route::get('invoices', [IndexApiInvoices::class, 'inCustomer'])->name('invoices');
-                Route::get('orders', [IndexApiOrders::class, 'inCustomer'])->name('orders');
+                Route::get('{customer:id}/invoices', [IndexApiInvoices::class, 'inCustomer'])->name('invoices');
+                Route::get('{customer:id}/orders', [IndexApiOrders::class, 'inCustomer'])->name('orders');
             });
-            Route::prefix('invoice')->as('invoice.')->group(function () {
+            Route::prefix('invoices')->as('invoices.')->group(function () {
                 Route::get('', IndexApiInvoices::class)->name('index');
-                Route::get('{customer:id}', ShowApiCustomer::class)->name('show');
+                Route::get('{invoice:id}', ShowApiCustomer::class)->name('show');
             });
         });
     });

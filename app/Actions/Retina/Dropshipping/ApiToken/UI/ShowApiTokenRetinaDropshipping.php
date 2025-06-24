@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,7 +21,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     use AsAction;
 
 
-    public function handle(Platform $platform, ActionRequest $request): Response
+    public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $env = app()->environment('production')
             ? 'production'
@@ -55,7 +56,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                     'route_generate' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
                         'parameters' => [
-                            'customerSalesChannel' => $platform->slug,
+                            'customerSalesChannel' => $customerSalesChannel->slug,
                         ],
                     ],
                 ],
@@ -64,11 +65,11 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
     }
 
 
-    public function asController(Platform $platform, ActionRequest $request): Response
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $this->initialisation($request);
 
-        return $this->handle($platform, $request);
+        return $this->handle($customerSalesChannel, $request);
     }
 
 

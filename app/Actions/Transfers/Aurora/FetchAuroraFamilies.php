@@ -74,18 +74,7 @@ class FetchAuroraFamilies extends FetchAuroraAction
             } else {
                 try {
                     $imageData = Arr::pull($familyData['family'], 'image');
-                    if (isset($imageData['image_path']) and isset($imageData['filename'])) {
-                        SaveModelImages::run(
-                            $family,
-                            [
-                                'path'         => $imageData['image_path'],
-                                'originalName' => $imageData['filename'],
 
-                            ],
-                            'photo',
-                            'product_images'
-                        );
-                    }
 
                     $family = StoreProductCategory::make()->action(
                         parent: $familyData['parent'],
@@ -108,6 +97,21 @@ class FetchAuroraFamilies extends FetchAuroraAction
                     DB::connection('aurora')->table('Category Dimension')
                         ->where('Category Key', $sourceData[1])
                         ->update(['aiku_family_id' => $family->id]);
+
+                    if (isset($imageData['image_path']) and isset($imageData['filename'])) {
+                        SaveModelImages::run(
+                            $family,
+                            [
+                                'path'         => $imageData['image_path'],
+                                'originalName' => $imageData['filename'],
+
+                            ],
+                            'photo',
+                            'product_images'
+                        );
+                    }
+
+
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $familyData['family'], 'Family', 'store');
 

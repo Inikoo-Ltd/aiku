@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -17,8 +19,23 @@ class DetachCollectionFromModel extends OrgAction
 {
     public function handle(Shop|ProductCategory $parent, Collection $collection): Shop|ProductCategory
     {
+        $oldParent = $collection->parent;
 
         $parent->collections()->detach($collection);
+
+        if ($parent instanceof ProductCategory) {
+            $shop = $parent->shop;
+            ProductCategoryHydrateCollections::dispatch($parent);
+        } else {
+            $shop = $parent;
+        }
+        ShopHydrateCollections::dispatch($shop);
+
+        if ($oldParent instanceof ProductCategory) {
+            ProductCategoryHydrateCollections::dispatch($oldParent);
+        }
+
+
         return $parent;
     }
 
@@ -44,7 +61,7 @@ class DetachCollectionFromModel extends OrgAction
         return $this->handle($productCategory, $collection);
     }
 
-    public function htmlResponse()
+    public function htmlResponse(): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         return back();
     }

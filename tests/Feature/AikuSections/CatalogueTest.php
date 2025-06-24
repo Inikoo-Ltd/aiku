@@ -31,6 +31,7 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\ProductCategory\HydrateDepartments;
 use App\Actions\Catalogue\ProductCategory\HydrateFamilies;
+use App\Actions\Catalogue\ProductCategory\HydrateSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
@@ -661,6 +662,11 @@ test('hydrate departments', function (ProductCategory $department) {
     HydrateDepartments::run($department);
     $this->artisan('hydrate:departments')->assertExitCode(0);
 })->depends('create department');
+
+test('hydrate sub-departments', function (ProductCategory $department) {
+    HydrateSubDepartments::run($department);
+    $this->artisan('hydrate:sub_departments')->assertExitCode(0);
+})->depends('create sub department');
 
 test('hydrate families', function (ProductCategory $family) {
     HydrateFamilies::run($family);

@@ -38,7 +38,7 @@ class IndexApiInvoices extends OrgAction
 
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
-                $query->where('invoices.reference', 'like', '%' . $modelData['search'] . '%');
+                $query->where('invoices.reference', '=', $modelData['search']);
             });
         }
 

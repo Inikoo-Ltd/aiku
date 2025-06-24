@@ -53,6 +53,9 @@ class DepartmentHydrateSubDepartments implements ShouldBeUnique
             )
         );
 
+        $stats['number_current_sub_departments'] = $stats['number_sub_departments_state_active'] + $stats['number_sub_departments_state_discontinuing'];
+
+
         $productCategory->stats()->update($stats);
     }
 

@@ -11,7 +11,9 @@
 namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use Cassandra\Type\Custom;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,7 +25,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
     use AsAction;
 
 
-    public function handle(Platform $platform): Response
+    public function handle(CustomerSalesChannel $customerSalesChannel): Response
     {
         return Inertia::render(
             'Dropshipping/Api/RetinaApiDropshippingDashboard',
@@ -35,14 +37,14 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     'route_generate' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
                         'parameters' => [
-                            'customerSalesChannel' => $platform->slug,
+                            'customerSalesChannel' => $customerSalesChannel->slug,
                         ],
                     ],
                     'route_documentation' => '#',
                     'route_show' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.api.show',
                         'parameters' => [
-                            'customerSalesChannel' => $platform->slug,
+                            'customerSalesChannel' => $customerSalesChannel->slug,
                         ],
                     ],
                 ],
@@ -50,10 +52,10 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         );
     }
 
-    public function asController(Platform $platform, ActionRequest $request): Response|RedirectResponse
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response|RedirectResponse
     {
         $this->initialisation($request);
-        return $this->handle($platform, $request);
+        return $this->handle($customerSalesChannel, $request);
     }
 
     public function getBreadcrumbs($label = null): array

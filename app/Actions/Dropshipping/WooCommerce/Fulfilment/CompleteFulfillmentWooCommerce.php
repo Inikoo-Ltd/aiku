@@ -6,35 +6,31 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\WooCommerce\Orders;
+namespace App\Actions\Dropshipping\WooCommerce\Fulfilment;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\WooCommerceUser;
-use App\Models\Ordering\Order;
+use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class FulfillOrderToWooCommerce extends OrgAction
+class CompleteFulfillmentWooCommerce extends OrgAction
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Order $order): void
+    public function handle(PalletReturn $palletReturn): void
     {
-        $fulfillOrderId = Arr::get($order->data, 'id');
+        $fulfillOrderId = Arr::get($palletReturn->data, 'order_key');
 
         /** @var WooCommerceUser $wooCommerceUser */
-        $wooCommerceUser = $order->customerSalesChannel->user;
-
-        /** @var DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes->first();
+        $wooCommerceUser = $palletReturn->customerSaleChannel->user;
 
         $shipments = [];
-        foreach ($deliveryNote->shipments as $shipment) {
+        foreach ($order->shipments ?? [] as $shipment) {
             $shipments[] = [
                 'tracking_provider'    => 'Other',
                 'tracking_number'      => $shipment->tracking,

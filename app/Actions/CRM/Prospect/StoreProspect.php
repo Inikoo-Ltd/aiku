@@ -50,7 +50,7 @@ class StoreProspect extends OrgAction
      */
     public function handle(Shop $shop, array $modelData): Prospect
     {
-        data_set($modelData, 'contact_name_components', $this->processComponents(Arr::get($modelData, 'contact_name')));
+        data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
 
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
