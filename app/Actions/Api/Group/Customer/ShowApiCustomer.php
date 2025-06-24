@@ -9,8 +9,8 @@
 
 namespace App\Actions\Api\Group\Customer;
 
+use App\Actions\Api\Group\Resources\CustomerApiResource;
 use App\Actions\OrgAction;
-use App\Http\Resources\Api\CustomerApiResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;

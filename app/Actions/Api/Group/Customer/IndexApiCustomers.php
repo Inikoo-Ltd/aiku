@@ -9,8 +9,8 @@
 
 namespace App\Actions\Api\Group\Customer;
 
+use App\Actions\Api\Group\Resources\CustomersApiResource;
 use App\Actions\OrgAction;
-use App\Http\Resources\Api\CustomersApiResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;

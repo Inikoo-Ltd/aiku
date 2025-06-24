@@ -9,8 +9,8 @@
 
 namespace App\Actions\Api\Group\Order;
 
+use App\Actions\Api\Group\Resources\OrderApiResource;
 use App\Actions\OrgAction;
-use App\Http\Resources\Api\OrderResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,9 +22,9 @@ class ShowApiOrder extends OrgAction
         return $order;
     }
 
-    public function jsonResponse(Order $order): \Illuminate\Http\Resources\Json\JsonResource|OrderResource
+    public function jsonResponse(Order $order): \Illuminate\Http\Resources\Json\JsonResource|OrderApiResource
     {
-        return OrderResource::make($order);
+        return OrderApiResource::make($order);
     }
 
     public function asController(Shop $shop, Order $order, ActionRequest $request): Order

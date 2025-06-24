@@ -10,9 +10,9 @@
 
 namespace App\Actions\Api\Group\Order;
 
+use App\Actions\Api\Group\Resources\OrdersApiResource;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Api\OrdersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
@@ -101,7 +101,7 @@ class IndexApiOrders extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
     {
-        return OrdersResource::collection($orders);
+        return OrdersApiResource::collection($orders);
     }
 
     public function rules(): array

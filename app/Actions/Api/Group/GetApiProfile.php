@@ -8,7 +8,7 @@
 
 namespace App\Actions\Api\Group;
 
-use App\Http\Resources\Api\Profile\ProfileApiResource;
+use App\Actions\Api\Group\Resources\ProfileApiResource;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

@@ -18,7 +18,6 @@ use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class DuplicateModelHasWebBlock extends OrgAction
@@ -28,7 +27,7 @@ class DuplicateModelHasWebBlock extends OrgAction
 
 
     public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
-    {  
+    {
         $position = $webpage->modelHasWebBlocks()->max('position') + 1;
         // $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
 

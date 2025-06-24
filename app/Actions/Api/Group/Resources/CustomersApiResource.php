@@ -1,13 +1,14 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 23-06-2025-13h-27m
- * github: https://github.com/KirinZero0
- * copyright 2025
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 24-06-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
 */
 
-namespace App\Http\Resources\Api;
+namespace App\Actions\Api\Group\Resources;
 
 use App\Http\Resources\HasSelfCall;
 use App\Models\CRM\Customer;

@@ -12,7 +12,6 @@ namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\OrdersResource;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;

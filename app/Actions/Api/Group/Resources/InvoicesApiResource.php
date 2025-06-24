@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Http\Resources\Api;
+namespace App\Actions\Api\Group\Resources;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;

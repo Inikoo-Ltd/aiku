@@ -10,7 +10,7 @@
 
 namespace App\Actions\Api\Group;
 
-use App\Http\Resources\Api\CustomersResource;
+use App\Actions\Api\Group\Resources\CustomersApiResource;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,9 +24,9 @@ class GetRetinasApiProfile
         return $request->user();
     }
 
-    public function jsonResponse(Customer $customer): CustomersResource
+    public function jsonResponse(Customer $customer): CustomersApiResource
     {
-        return CustomersResource::make($customer);
+        return CustomersApiResource::make($customer);
     }
 
 }
