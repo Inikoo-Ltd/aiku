@@ -33,6 +33,24 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     __('Api Token')
                 ),
+                'title'       => __('Api Token'),
+                'pageHead'    => [
+                    'title'     => 'API Token',
+                    'icon'      => 'fal fa-key',
+                    'noCapitalise'  => true,
+                    // 'actions'   => [
+                    //     [
+                    //         'type'  => 'button',
+                    //         'style' => 'edit',
+                    //         'route' => [
+                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    //             'parameters' => $request->route()->originalParameters()
+                    //         ]
+                    //     ],
+
+                    // ],
+
+                ],
                 'data'       => [
                     'route_generate' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
@@ -48,6 +66,15 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         ],
                     ],
                 ],
+                'routes'    => [
+                    'create_token' => [  // TODO: route for creating a new API token
+                        // 'name' => 'retina.dropshipping.customer_sales_channels.api.create.token',
+                        // 'parameters' => [
+                        //     'customerSalesChannel' => $customerSalesChannel->slug,
+                        // ],
+                    ],
+                ],
+                'dataTable' => [],  // TODO: for Table
             ]
         );
     }
