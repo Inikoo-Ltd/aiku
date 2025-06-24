@@ -72,7 +72,7 @@ const fallbackPerRow = {
 
 const perRow = computed(() => {
   return (
-    props.modelValue?.setting?.per_row?.[props.screenType] ||
+    props.modelValue?.settings?.per_row?.[props.screenType] ||
     fallbackPerRow[props.screenType] ||
     1
   );
@@ -100,7 +100,7 @@ const mergedItems = computed(() => {
   return [...subs, ...collections]
 })
 
-console.log(props)
+
 </script>
 
 <template>
