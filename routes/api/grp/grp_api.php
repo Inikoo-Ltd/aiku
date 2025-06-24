@@ -11,6 +11,7 @@ use App\Actions\Api\Group\Customer\IndexApiCustomers;
 use App\Actions\Api\Group\Customer\ShowApiCustomer;
 use App\Actions\Api\Group\GetApiProfile;
 use App\Actions\Api\Group\Invoice\IndexApiInvoices;
+use App\Actions\Api\Group\Invoice\ShowApiInvoice;
 use App\Actions\Api\Group\Order\IndexApiOrders;
 use App\Actions\Api\Group\Order\ShowApiOrder;
 use App\Actions\Catalogue\Shop\Api\IndexApiShops;
@@ -53,7 +54,7 @@ Route::middleware(['auth:sanctum', 'set.treblle.authorize', 'treblle'])->group(f
             });
             Route::prefix('invoices')->as('invoices.')->group(function () {
                 Route::get('', IndexApiInvoices::class)->name('index');
-                Route::get('{invoice:id}', ShowApiCustomer::class)->name('show');
+                Route::get('{invoice:id}', ShowApiInvoice::class)->name('show');
             });
         });
     });

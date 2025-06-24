@@ -324,9 +324,10 @@ class IndexFamilies extends OrgAction
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
                 ];
-                $iconRight  = [
-                    'icon' => 'fal fa-folder',
-                ];
+                // $iconRight  = [
+                //     'icon' => 'fal fa-folder',
+                // ];
+                $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
                     'label' => __('Families')
@@ -338,9 +339,10 @@ class IndexFamilies extends OrgAction
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
                 ];
-                $iconRight  = [
-                    'icon' => 'fal fa-folder',
-                ];
+                // $iconRight  = [
+                //     'icon' => 'fal fa-folder',
+                // ];
+                $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
                     'label' => __('Families')
