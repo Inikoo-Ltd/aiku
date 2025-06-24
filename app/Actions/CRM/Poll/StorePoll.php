@@ -18,6 +18,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
@@ -34,17 +35,22 @@ class StorePoll extends OrgAction
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
 
+        $type = Arr::pull($modelData, 'type.type');
+        $options = Arr::pull($modelData, 'type.poll_options', []);
+        data_forget($modelData, 'type');
+        data_set($modelData, 'type', $type);
+
         $poll = $shop->polls()->create($modelData);
         $poll->stats()->create([
             'poll_id' => $poll->id,
         ]);
 
         if ($poll->type == PollTypeEnum::OPTION) {
-            foreach ($modelData['options'] ?? [] as $option) {
+            foreach ($options as $index => $option) {
                 StorePollOption::make()->action(
                     $poll,
                     [
-                        'value' => $option['value'],
+                        'value' => $shop->id . $poll->id . $index,
                         'label' => $option['label'],
                     ]
                 );
@@ -90,20 +96,18 @@ class StorePoll extends OrgAction
             'in_registration_required' => ['required', 'boolean'],
             'in_iris'                  => ['required', 'boolean'],
             'in_iris_required'         => ['sometimes', 'required', 'boolean'],
-            'type'                     => ['required', Rule::enum(PollTypeEnum::class)],
-            'options'                => [
-                new RequiredIf($this->get('type') === PollTypeEnum::OPTION->value),
+            // 'type'                     => ['required', Rule::enum(PollTypeEnum::class)],
+            'type'                => [
+                'required',
                 'array',
             ],
-            'options.*.label'        => [
-                'required_with:options',
-                'string',
-                'max:255',
+            'type.type'        => [
+                'required',
+                Rule::enum(PollTypeEnum::class)
             ],
-            'options.*.value'        => [
-                'required_with:options',
-                'string',
-                'max:255',
+            'type.poll_options'        => [
+                new RequiredIf($this->get('type.type') === PollTypeEnum::OPTION->value),
+                'array',
             ],
         ];
 
@@ -128,7 +132,6 @@ class StorePoll extends OrgAction
         }
 
         $this->initialisationFromShop($shop, $request);
-
         return $this->handle($shop, $this->validatedData);
     }
     public function htmlResponse(Poll $poll): RedirectResponse

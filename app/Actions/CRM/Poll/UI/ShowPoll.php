@@ -105,6 +105,7 @@ class ShowPoll extends OrgAction
         $poll = Poll::where('slug', $routeParameters['poll'])->first();
 
         return match ($routeName) {
+            'grp.org.shops.show.crm.polls.edit',
             'grp.org.shops.show.crm.polls.show' =>
             array_merge(
                 IndexPolls::make()->getBreadcrumbs('grp.org.shops.show.crm.polls.show', [

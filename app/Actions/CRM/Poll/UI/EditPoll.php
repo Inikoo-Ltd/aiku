@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\CRM\Poll\PollTypeEnum;
+use App\Http\Resources\CRM\PollOptionsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Models\SysAdmin\Organisation;
@@ -40,10 +41,21 @@ class EditPoll extends OrgAction
 
     public function htmlResponse(Poll $poll, ActionRequest $request): Response
     {
+        $optionsPool = [];
+        $options = $poll->pollOptions;
+        if ($options->isNotEmpty()) {
+            $optionsPool = PollOptionsResource::collection($poll->pollOptions)->toArray($request);
+        }
+
+        // dd($poll->type->value);
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('poll'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
                     'title'   => $poll->name,
                     'icon'    => [
@@ -78,9 +90,14 @@ class EditPoll extends OrgAction
                                     'value' => $poll->label
                                 ],
                                 'type' => [
-                                    'type'    => 'select',
+                                    'type'    => 'poll_type_select',
+                                    'type_options' => $optionsPool,
                                     'label'   => __('type'),
-                                    'options' => Options::forEnum(PollTypeEnum::class)
+                                    'options' => Options::forEnum(PollTypeEnum::class),
+                                    'value' => [
+                                        'type' => $poll->type->value,
+                                        'poll_options' => $optionsPool
+                                    ]
                                 ],
                                 'in_registration' => [
                                     'type'  => 'toggle',
@@ -114,6 +131,15 @@ class EditPoll extends OrgAction
                     ]
                 ]
             ]
+        );
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        return ShowPoll::make()->getBreadcrumbs(
+            routeName: preg_replace('/edit$/', 'show', $routeName),
+            routeParameters: $routeParameters,
+            suffix: '('.__('Editing').')'
         );
     }
 }

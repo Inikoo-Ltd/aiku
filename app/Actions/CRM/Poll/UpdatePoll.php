@@ -12,14 +12,16 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
 use App\Actions\CRM\PollOption\DeletePollOptions;
 use App\Actions\CRM\PollOption\StorePollOption;
+use App\Actions\CRM\PollOption\UpdatePollOption;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
+use App\Models\CRM\PollOption;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePoll extends OrgAction
@@ -37,20 +39,45 @@ class UpdatePoll extends OrgAction
 
     public function handle(Poll $poll, array $modelData): Poll
     {
-        $poll = $this->update($poll, $modelData);
-        if ($poll->type == PollTypeEnum::OPTION && !isset($modelData['options'])) {
-            foreach ($modelData['options'] ?? [] as $option) {
-                StorePollOption::make()->action(
-                    $poll,
-                    [
-                        'value' => $option['value'],
-                        'label' => $option['label'],
-                    ]
-                );
-            }
-        } else {
-            DeletePollOptions::run($poll, true);
+        $type = Arr::pull($modelData, 'type.type');
+        $options = Arr::pull($modelData, 'type.poll_options', []);
+        if ($type) {
+            data_set($modelData, 'type', $type);
         }
+        $poll = $this->update($poll, $modelData);
+        if ($poll->type == PollTypeEnum::OPTION && $options) {
+            $oldOptions = $poll->pollOptions;
+            foreach ($options ?? [] as $index => $option) {
+                if (isset($option['id'])) {
+                    UpdatePollOption::make()->action(
+                        PollOption::findOrFail($option['id']),
+                        [
+                            'label' => $option['label'],
+                        ]
+                    );
+                    $oldOptions = $oldOptions->reject(
+                        fn (PollOption $pollOption) => $pollOption->id == $option['id']
+                    );
+                } else {
+                    StorePollOption::make()->action(
+                        $poll,
+                        [
+                            'value' => $poll->shop->id . $poll->id . $index,
+                            'label' => $option['label'],
+                        ]
+                    );
+                }
+            }
+            if (!empty($oldOptions)) {
+                foreach ($oldOptions as $oldOption) {
+                    DeletePollOptions::run(
+                        $oldOption,
+                        true
+                    );
+                }
+            }
+        }
+
         ShopHydratePolls::dispatch($poll->shop);
         PollHydrateCustomers::dispatch($poll);
         //todo put hydrators here if in_registration|in_registration_required|in_iris|in_iris_required has changed
@@ -94,20 +121,17 @@ class UpdatePoll extends OrgAction
                     ]
                 ),
             ],
-            'type'                     => ['sometimes', Rule::enum(PollTypeEnum::class)],
-            'options'                => [
-                new RequiredIf($this->get('type') === PollTypeEnum::OPTION->value),
+            'type'                => [
+                'sometimes',
                 'array',
             ],
-            'options.*.label'        => [
-                'required_with:options',
-                'string',
-                'max:255',
+            'type.type'        => [
+                'sometimes',
+                Rule::enum(PollTypeEnum::class)
             ],
-            'options.*.value'        => [
-                'required_with:options',
-                'string',
-                'max:255',
+            'type.poll_options'        => [
+                'sometimes',
+                'array',
             ],
             'in_registration'          => ['sometimes', 'boolean'],
             'in_registration_required' => ['sometimes', 'boolean'],

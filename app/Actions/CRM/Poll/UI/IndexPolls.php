@@ -229,6 +229,8 @@ class IndexPolls extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.crm.polls.create',
+            'grp.org.shops.show.crm.polls.edit',
             'grp.org.shops.show.crm.polls.show',
             'grp.org.shops.show.crm.polls.index' =>
             array_merge(

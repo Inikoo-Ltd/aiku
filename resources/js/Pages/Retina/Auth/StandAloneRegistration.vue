@@ -36,13 +36,10 @@ const props = defineProps<{
 }>()
 
 
-
 const initialPollReplies = props.polls.map((poll) => ({
-	id: poll.id,
-	type: poll.type,
-	label: poll.label,
+	...poll,
 	answer: poll.type === "option" ? null : "",
-	is_required: poll.in_registration_required,
+	// is_required: poll.in_registration_required,
 }))
 
 
