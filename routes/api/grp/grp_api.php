@@ -10,15 +10,15 @@
 use App\Actions\Api\Group\Customer\IndexApiCustomers;
 use App\Actions\Api\Group\Customer\ShowApiCustomer;
 use App\Actions\Api\Group\GetApiProfile;
+use App\Actions\Api\Group\Group\ShowApiGroup;
 use App\Actions\Api\Group\Invoice\IndexApiInvoices;
 use App\Actions\Api\Group\Invoice\ShowApiInvoice;
 use App\Actions\Api\Group\Order\IndexApiOrders;
 use App\Actions\Api\Group\Order\ShowApiOrder;
-use App\Actions\Catalogue\Shop\Api\IndexApiShops;
-use App\Actions\Catalogue\Shop\Api\ShowApiShop;
-use App\Actions\SysAdmin\Group\Api\ShowApiGroup;
-use App\Actions\SysAdmin\Organisation\Api\IndexApiOrganisations;
-use App\Actions\SysAdmin\Organisation\Api\ShowApiOrganisation;
+use App\Actions\Api\Group\Organisation\IndexApiOrganisations;
+use App\Actions\Api\Group\Organisation\ShowApiOrganisation;
+use App\Actions\Api\Group\Shop\IndexApiShops;
+use App\Actions\Api\Group\Shop\ShowApiShop;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
@@ -28,14 +28,9 @@ Route::get('/ping', function () {
 Route::middleware(['auth:sanctum', 'set.treblle.authorize', 'treblle'])->group(function () {
     Route::get('/profile', GetApiProfile::class)->name('profile');
     Route::get('/group', ShowApiGroup::class)->name('group.show');
-
     Route::get('/organisations', IndexApiOrganisations::class)->name('organisations.index');
     Route::get('/organisations/{organisation:id}', ShowApiOrganisation::class)->name('organisations.show');
     Route::get('/organisations/{organisation:id}/shops', [IndexApiShops::class, 'inOrganisation'])->name('organisations.show.shops.index');
-
-
-
-
 
     Route::prefix('shops')->as('shops.')->group(function () {
         Route::get('', IndexApiShops::class)->name('index');

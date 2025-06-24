@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 20 Jun 2025 00:33:09 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 24 Jun 2025 19:05:54 Malaysia Time, Sheffield, United Kingdom
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Shop\Api;
+namespace App\Actions\Api\Group\Shop;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;

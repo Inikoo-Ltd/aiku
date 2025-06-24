@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SysAdmin\Group\Api;
+namespace App\Actions\Api\Group\Group;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Api\SysAdmin\GroupApiResource;

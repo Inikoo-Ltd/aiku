@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Catalogue\Shop\Api;
+namespace App\Actions\Api\Group\Shop;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;

@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SysAdmin\Organisation\Api;
+namespace App\Actions\Api\Group\Organisation;
 
 use App\Actions\OrgAction;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
