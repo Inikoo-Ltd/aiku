@@ -10,13 +10,14 @@
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\RetinaApiAction;
 use App\Http\Resources\Api\TransactionResource;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class UpdateApiOrderTransaction
+class UpdateApiOrderTransaction extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -45,9 +46,8 @@ class UpdateApiOrderTransaction
 
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
-        $this->fillFromRequest($request);
-        $validatedData = $this->validateAttributes();
+        $this->initialisationFromDropshipping($request);
 
-        return $this->handle($transaction, $validatedData);
+        return $this->handle($transaction, $this->validatedData);
     }
 }

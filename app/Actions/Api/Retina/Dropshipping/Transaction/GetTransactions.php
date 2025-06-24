@@ -10,6 +10,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
+use App\Actions\RetinaApiAction;
 use App\Http\Resources\Api\TransactionsResource;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -21,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetTransactions
+class GetTransactions extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -76,8 +77,8 @@ class GetTransactions
 
     public function asController(Order $order, ActionRequest $request): LengthAwarePaginator
     {
-        $this->fillFromRequest($request);
-        return $this->handle($order, $this->validateAttributes());
+        $this->initialisationFromDropshipping($request);
+        return $this->handle($order, $this->validatedData);
     }
 
 

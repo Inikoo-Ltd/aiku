@@ -10,13 +10,15 @@
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
 use App\Actions\Ordering\Transaction\DeleteTransaction;
+use App\Actions\RetinaApiAction;
+use App\Http\Controllers\Api\RetinaApiDoc;
 use App\Http\Resources\Api\TransactionResource;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeleteApiOrderTransaction
+class DeleteApiOrderTransaction extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -41,6 +43,7 @@ class DeleteApiOrderTransaction
 
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
+        $this->initialisationFromDropshipping($request);
         return $this->handle($transaction);
     }
 }

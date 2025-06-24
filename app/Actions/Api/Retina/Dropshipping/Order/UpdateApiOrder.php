@@ -10,13 +10,14 @@
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\RetinaApiAction;
 use App\Http\Resources\Api\OrderResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class UpdateApiOrder
+class UpdateApiOrder extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -45,9 +46,8 @@ class UpdateApiOrder
 
     public function asController(Order $order, ActionRequest $request): Order
     {
-        $this->fillFromRequest($request);
-        $validatedData = $this->validateAttributes();
+        $this->initialisationFromDropshipping($request);
 
-        return $this->handle($order, $validatedData);
+        return $this->handle($order, $this->validatedData);
     }
 }

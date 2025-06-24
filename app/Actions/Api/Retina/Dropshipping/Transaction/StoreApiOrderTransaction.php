@@ -10,6 +10,7 @@
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\RetinaApiAction;
 use App\Http\Resources\Api\TransactionResource;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Ordering\Order;
@@ -18,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreApiOrderTransaction
+class StoreApiOrderTransaction extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -41,10 +42,9 @@ class StoreApiOrderTransaction
 
     public function asController(Order $order, Portfolio $portfolio, ActionRequest $request): Transaction
     {
-        $this->fillFromRequest($request);
-        $validatedData = $this->validateAttributes();
+        $this->initialisationFromDropshipping($request);
 
-        return $this->handle($order, $portfolio, $validatedData);
+        return $this->handle($order, $portfolio, $this->validatedData);
     }
 
     public function jsonResponse(Transaction $transaction)
