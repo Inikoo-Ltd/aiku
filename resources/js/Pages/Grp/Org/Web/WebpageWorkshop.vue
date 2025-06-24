@@ -106,7 +106,7 @@ const addNewBlock = async ({ block, type }) => {
 
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
-    { web_block_type_id: block.id, positions  : position },
+    { web_block_type_id: block.id, position  : position },
     {
       onStart: () => isAddBlockLoading.value = "addBlock" + block.id,
       onFinish: () => {
