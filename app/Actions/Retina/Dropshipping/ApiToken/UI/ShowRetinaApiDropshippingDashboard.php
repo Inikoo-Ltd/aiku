@@ -94,28 +94,28 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         ]
                     ],
                 ],
-                'data'       => [
-                    // 'route_generate' => [
-                    //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
-                    //     'parameters' => [
-                    //         'customerSalesChannel' => $customerSalesChannel->slug,
-                    //     ],
-                    // ],
-                    // 'route_documentation' => '#',
-                    // 'route_show' => [
-                    //     'name' => 'retina.dropshipping.customer_sales_channels.api.show',
-                    //     'parameters' => [
-                    //         'customerSalesChannel' => $customerSalesChannel->slug,
-                    //     ],
-                    // ],
+                // 'data'       => [
+                //     // 'route_generate' => [
+                //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
+                //     //     'parameters' => [
+                //     //         'customerSalesChannel' => $customerSalesChannel->slug,
+                //     //     ],
+                //     // ],
+                //     // 'route_documentation' => '#',
+                //     // 'route_show' => [
+                //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show',
+                //     //     'parameters' => [
+                //     //         'customerSalesChannel' => $customerSalesChannel->slug,
+                //     //     ],
+                //     // ],
 
-                    ApiTokenRetinaTabsEnum::API_TOKENS->value => $this->tab == ApiTokenRetinaTabsEnum::API_TOKENS->value ?
-                        fn () => ApiTokensRetinaResource::collection($apiTokens)
-                        : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
-                    ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($this->customer))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer))),
-                ],
+                // ],
+                ApiTokenRetinaTabsEnum::API_TOKENS->value => $this->tab == ApiTokenRetinaTabsEnum::API_TOKENS->value ?
+                    fn () => ApiTokensRetinaResource::collection($apiTokens)
+                    : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
+                ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
+                fn () => HistoryResource::collection(IndexHistory::run($this->customer))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
