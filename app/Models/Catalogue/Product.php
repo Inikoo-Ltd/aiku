@@ -264,9 +264,9 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphOne(Webpage::class, 'model');
     }
 
-    public function portfolio(): MorphOne
+    public function portfolios(): MorphMany
     {
-        return $this->morphOne(Portfolio::class, 'item');
+        return $this->morphMany(Portfolio::class, 'item');
     }
 
     public function favourites(): HasMany
