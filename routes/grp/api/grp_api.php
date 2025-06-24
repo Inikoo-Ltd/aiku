@@ -6,9 +6,9 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Api\Customer\IndexApiCustomers;
-use App\Actions\Api\Customer\ShowApiCustomer;
-use App\Actions\Api\GetApiProfile;
+use App\Actions\Api\Group\Customer\IndexApiCustomers;
+use App\Actions\Api\Group\Customer\ShowApiCustomer;
+use App\Actions\Api\Group\GetApiProfile;
 use App\Actions\Api\Invoice\IndexApiInvoices;
 use App\Actions\Api\Order\IndexApiOrders;
 use App\Actions\Api\Order\ShowApiOrder;

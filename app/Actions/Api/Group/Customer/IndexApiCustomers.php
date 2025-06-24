@@ -7,17 +7,17 @@
  * copyright 2025
 */
 
-namespace App\Actions\Api\Customer;
+namespace App\Actions\Api\Group\Customer;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Api\CustomersApiResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use Lorisleiva\Actions\ActionRequest;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class IndexApiCustomers extends OrgAction
 {
