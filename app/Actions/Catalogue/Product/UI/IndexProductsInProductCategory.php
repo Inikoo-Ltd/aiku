@@ -195,9 +195,10 @@ class IndexProductsInProductCategory extends OrgAction
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('Department')
             ];
-            $iconRight  = [
-                'icon' => 'fal fa-cube',
-            ];
+            // $iconRight  = [
+            //     'icon' => 'fal fa-cube',
+            // ];
+            $iconRight = $productCategory->state->stateIcon()[$productCategory->state->value];
             $afterTitle = [
                 'label' => __('Products')
             ];
@@ -208,14 +209,16 @@ class IndexProductsInProductCategory extends OrgAction
                 'icon'  => ['fal', 'fa-folder'],
                 'title' => __('Family')
             ];
-            $iconRight  = [
-                'icon' => 'fal fa-cube',
-            ];
+            // $iconRight  = [
+            //     'icon' => 'fal fa-cube',
+            // ];
+            $iconRight = $productCategory->state->stateIcon()[$productCategory->state->value];
             $afterTitle = [
                 'label' => __('Products')
             ];
+        } else {
+            $iconRight = $productCategory->state->stateIcon()[$productCategory->state->value];
         }
-
 
         return Inertia::render(
             'Org/Catalogue/Products',

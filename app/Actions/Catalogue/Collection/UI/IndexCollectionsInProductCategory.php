@@ -150,9 +150,11 @@ class IndexCollectionsInProductCategory extends OrgAction
 
 
         $title      = $productCategory->name;
-        $iconRight  = [
-            'icon' => 'fal fa-album-collection',
-        ];
+        // $iconRight  = [
+        //     'icon' => 'fal fa-album-collection',
+        // ];
+        $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
+
         $afterTitle = [
             'label' => __('Collections')
         ];
