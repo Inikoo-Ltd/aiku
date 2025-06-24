@@ -1,23 +1,21 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 23-06-2025-13h-29m
- * github: https://github.com/KirinZero0
- * copyright 2025
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 24-06-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
 */
 
-namespace App\Http\Resources\Api;
+
+namespace App\Actions\Api\Group\Resources;
 
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\AddressResource;
 use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property int $number_current_customer_clients
- */
-class CustomerApiResource extends JsonResource
+class CustomersApiResource extends JsonResource
 {
     use HasSelfCall;
 
@@ -25,18 +23,19 @@ class CustomerApiResource extends JsonResource
     {
         /** @var Customer $customer */
         $customer = $this;
+
         return [
+            'id'                     => $customer->id,
             'slug'                   => $customer->slug,
             'reference'              => $customer->reference,
             'name'                   => $customer->name,
             'contact_name'           => $customer->contact_name,
             'company_name'           => $customer->company_name,
             'location'               => $customer->location,
-            'address'                => AddressResource::make($customer->address),
             'email'                  => $customer->email,
             'phone'                  => $customer->phone,
             'created_at'             => $customer->created_at,
-            'number_current_customer_clients' => $this->number_current_customer_clients,
+            'updated_at'             => $customer->updated_at,
         ];
     }
 }

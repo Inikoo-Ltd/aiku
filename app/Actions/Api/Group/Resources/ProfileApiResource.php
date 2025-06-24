@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\Api\Profile;
+namespace App\Actions\Api\Group\Resources;
 
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Http\Resources\SysAdmin\GuestResource;

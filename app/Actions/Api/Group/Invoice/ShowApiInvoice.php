@@ -9,8 +9,8 @@
 
 namespace App\Actions\Api\Group\Invoice;
 
+use App\Actions\Api\Group\Resources\InvoiceApiResource;
 use App\Actions\OrgAction;
-use App\Http\Resources\Api\InvoiceApiResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
