@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\Api\Transaction;
+namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Http\Resources\Api\TransactionResource;

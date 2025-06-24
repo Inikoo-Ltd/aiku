@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Retina\Api;
+namespace App\Actions\Api\Retina\Fulfilment;
 
 use App\Http\Resources\Api\CustomersResource;
 use App\Models\CRM\Customer;

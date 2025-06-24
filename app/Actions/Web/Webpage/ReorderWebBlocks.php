@@ -24,7 +24,9 @@ class ReorderWebBlocks extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
-        $webpage->webBlocks()->syncWithoutDetaching(Arr::get($modelData, 'positions', []));
+        // dd($modelData);
+        $positions = Arr::pull($modelData, 'positions', []);
+        $webpage->webBlocks()->syncWithoutDetaching($positions);
         UpdateWebpageContent::run($webpage->refresh());
 
         return $webpage;

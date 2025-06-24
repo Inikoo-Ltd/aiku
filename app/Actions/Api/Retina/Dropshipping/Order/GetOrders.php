@@ -8,18 +8,19 @@
  *
 */
 
-namespace App\Actions\Retina\Api\Order;
+namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Api\OrdersResource;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
-use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetOrders
@@ -27,11 +28,11 @@ class GetOrders
     use AsAction;
     use WithAttributes;
 
-    public function handle(Customer $customer, array $modelData): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Order::class);
 
-        $query->where('orders.customer_id', $customer->id);
+        $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
 
         $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
@@ -51,7 +52,7 @@ class GetOrders
 
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
-                $query->where('orders.reference', 'like', '%' . $modelData['search'] . '%');
+                $query->where('orders.reference', '=', $modelData['search']);
             });
         }
 
@@ -89,9 +90,9 @@ class GetOrders
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
 
-        $customer = $request->user();
+        $customerSalesChannel = $request->user();
         $this->fillFromRequest($request);
-        return $this->handle($customer, $this->validateAttributes());
+        return $this->handle($customerSalesChannel, $this->validateAttributes());
     }
 
 

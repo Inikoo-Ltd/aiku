@@ -8,17 +8,17 @@
  *
 */
 
-namespace App\Actions\Retina\Api\Client;
+namespace App\Actions\Api\Retina\Dropshipping\Client;
 
 use App\Actions\RetinaWebhookAction;
 use App\Http\Resources\Api\CustomerClientsResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Lorisleiva\Actions\ActionRequest;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class GetClients extends RetinaWebhookAction
 {
@@ -26,12 +26,8 @@ class GetClients extends RetinaWebhookAction
     {
         $query = QueryBuilder::for(CustomerClient::class);
 
-
-
-        $query->where('customer_clients.customer_id', $customer->id);
-        $query->where('customer_clients.platform_id', $platform->id);
-
-
+        $query->where('customer_clients.customer_sales_channel_id', $customerSalesChannel->id);
+        
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
                 $value = $modelData['search'];
