@@ -36,10 +36,10 @@ class IndexApiInvoices extends OrgAction
         $query->leftJoin('currencies', 'invoices.currency_id', 'currencies.id');
         $query->leftJoin('invoice_stats', 'invoice_stats.invoice_id', 'invoices.id');
 
-        if (Arr::get($modelData, 'search')) {
-            $query->where(function ($query) use ($modelData) {
-                $query->where('invoices.reference', '=', $modelData['search']);
-            });
+        if (Arr::get($modelData, 'reference')) {
+            $this->getReferenceSearch($query, Arr::get($modelData, 'reference'));
+        } elseif (Arr::get($modelData, 'customerId')) {
+            $this->getCustomerIdSearch($query, Arr::get($modelData, 'customerId'));
         }
 
         return $query->defaultSort('-date')
@@ -83,10 +83,25 @@ class IndexApiInvoices extends OrgAction
         return InvoicesApiResource::collection($invoices);
     }
 
+    public function getReferenceSearch($query, string $ref): QueryBuilder
+    {
+        return $query->where(function ($query) use ($ref) {
+            $query->where('invoices.reference', $ref);
+        });
+    }
+
+    public function getCustomerIdSearch($query, string $id): QueryBuilder
+    {
+        return $query->where(function ($query) use ($id) {
+            $query->where('invoices.customer_id', $id);
+        });
+    }
+
     public function rules(): array
     {
         return [
-            'search' => ['nullable', 'string'],
+            'reference' => ['nullable', 'string'],
+            'customerId' => ['nullable', 'string'],
             'page' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
             'sort' => ['nullable', 'string'],
@@ -97,7 +112,8 @@ class IndexApiInvoices extends OrgAction
     {
         $request->merge(
             [
-                'search' => $request->query('search', null),
+                'reference' => $request->query('reference', null),
+                'customerId' => $request->query('customerId', null),
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),

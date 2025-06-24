@@ -111,10 +111,10 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
         $platformNavigation['api_token'] = [
             'label' => __('Api'),
             'icon'  => ['fal', 'fa-key'],
-            'root'  => 'retina.dropshipping.customer_sales_channels.api.',
+            'root'  => 'retina.dropshipping.api.',
             'route' => [
-                'name'       => 'retina.dropshipping.customer_sales_channels.api.dashboard',
-                'parameters' => [$customerSalesChannel->slug]
+                'name'       => 'retina.dropshipping.api.dashboard',
+                'parameters' => []
             ],
         ];
 
