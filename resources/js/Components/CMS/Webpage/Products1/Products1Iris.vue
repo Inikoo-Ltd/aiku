@@ -259,7 +259,6 @@ const getRouteForProductPortfolio = () => {
 
 const fetchProductHasPortfolio = async () => {
     productHasPortfolio.value.isLoading = true
-   console.log('dsfsdf',props.fieldValue.model_type)
     try {
         const apiUrl = getRouteForProductPortfolio()
         console.log('sss',apiUrl)

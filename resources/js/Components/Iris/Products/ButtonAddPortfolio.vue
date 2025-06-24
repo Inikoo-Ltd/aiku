@@ -155,6 +155,7 @@ watch(() => props.productHasPortfolio, (newVal) => {
   productHasPortfolioList.value = [...newVal]
 })
 
+console.log(channelList)
 </script>
 
 <template>
