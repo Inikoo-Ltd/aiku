@@ -17,6 +17,7 @@ use App\Http\Resources\Api\ApiTokensRetinaResource;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -30,8 +31,9 @@ use Laravel\Sanctum\PersonalAccessToken;
 class ShowRetinaApiDropshippingDashboard extends RetinaAction
 {
     use AsAction;
+    private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -44,8 +46,8 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         });
 
         $queryBuilder = QueryBuilder::for(PersonalAccessToken::class);
-        $queryBuilder->where('tokenable_type', class_basename($customer))
-        ->where('tokenable_id', $customer->id);
+        $queryBuilder->where('tokenable_type', class_basename($customerSalesChannel))
+        ->where('tokenable_id', $customerSalesChannel->id);
 
         return $queryBuilder
             ->defaultSort('-created_at')
@@ -88,9 +90,9 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 ],
                 'routes'                   => [
                     'create_token' => [
-                        'name'       => 'retina.models.access_token.create',
+                        'name'       => 'retina.models.customer_sales_channel.access_token.create',
                         'parameters' => [
-                            'customer' => $this->customer->slug,
+                            'customerSalesChannel' => $this->customerSalesChannel->id,
                         ]
                     ],
                 ],
@@ -122,10 +124,11 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         ->table($this->tableStructure(ApiTokenRetinaTabsEnum::API_TOKENS->value));
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel,ActionRequest $request): LengthAwarePaginator
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request)->withTab(ApiTokenRetinaTabsEnum::values());
-        return $this->handle($this->customer, $request);
+        return $this->handle($customerSalesChannel, $request);
     }
 
     public function getBreadcrumbs($label = null): array

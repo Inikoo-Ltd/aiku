@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\ApiToken;
 
 use App\Actions\RetinaAction;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -29,16 +30,16 @@ class StoreCustomerToken extends RetinaAction
      */
     private Customer $parent;
 
-    public function handle(Customer $customer): string
+    public function handle(CustomerSalesChannel $customerSalesChannel): string
     {
-        $plainTextToken = $customer->createToken(Str::random(6), ['retina'])->plainTextToken;
+        $plainTextToken = $customerSalesChannel->createToken(Str::random(6), ['retina'])->plainTextToken;
 
         $tokenParts = explode('|', $plainTextToken);
         $tokenValue = $tokenParts[1] ?? '';
 
         $tokenPrefix = substr($tokenValue, 0, 3);
 
-        $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$customer->slug;
+        $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$customerSalesChannel->slug;
 
         if (!empty($tokenPrefix)) {
             DB::table('personal_access_tokens')->where('id', $tokenParts[0])->update([
@@ -46,32 +47,32 @@ class StoreCustomerToken extends RetinaAction
             ]);
         }
 
-        $customer->auditEvent     = 'create';
-        $customer->isCustomEvent  = true;
-        $customer->auditCustomOld = [
+        $customerSalesChannel->customer->auditEvent     = 'create';
+        $customerSalesChannel->customer->isCustomEvent  = true;
+        $customerSalesChannel->customer->auditCustomOld = [
             'api_token' => ''
         ];
-        $customer->auditCustomNew = [
-            'api_token' => __('Api token created').' ('.$tokenName.')'
+        $customerSalesChannel->customer->auditCustomNew = [
+            'api_token' => __('Api token for'. $customerSalesChannel->platform->name.' created').' ('.$tokenName.')'
         ];
 
-        Event::dispatch(new AuditCustom($customer));
+        Event::dispatch(new AuditCustom($customerSalesChannel->customer));
 
         return $plainTextToken;
     }
 
-    public function afterValidator(Validator $validator): void
-    {
-        if (!$this->customer->status) {
-            $validator->errors()->add('customer', __('Customer is not active'));
-        }
-    }
+    // public function afterValidator(Validator $validator): void
+    // {
+    //     if (!$this->customer->status) {
+    //         $validator->errors()->add('customer', __('Customer is not active'));
+    //     }
+    // }
 
-    public function asController(ActionRequest $request): string
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): string
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer);
+        return $this->handle($customerSalesChannel);
     }
 
     public function jsonResponse(string $token): array

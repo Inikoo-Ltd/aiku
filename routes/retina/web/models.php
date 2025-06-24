@@ -229,10 +229,10 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
 
     Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
     Route::post('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
+    Route::post('access-token', StoreCustomerToken::class)->name('access_token.create');
 });
 
 
-Route::post('/access-token', StoreCustomerToken::class)->name('access_token.create');
 Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('access_token.delete');
 
 
