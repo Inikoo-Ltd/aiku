@@ -60,18 +60,22 @@ class StoreOrgStockMovement extends OrgAction
 
         data_set($modelData, 'flow', $flow);
 
+        /** @var OrgStockMovement $orgStockMovement */
         $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
 
 
-        $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
+        if($this->strict) {
+            $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
 
-
-        UpdateLocationOrgStock::run(
-            $locationOrgStock,
-            [
-                'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
-            ]
-        );
+            if ($locationOrgStock) {
+                UpdateLocationOrgStock::run(
+                    $locationOrgStock,
+                    [
+                        'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
+                    ]
+                );
+            }
+        }
 
         OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
 
