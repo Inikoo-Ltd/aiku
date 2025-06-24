@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Api\Order;
+namespace App\Actions\Api\Group\Order;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Api\OrderResource;
