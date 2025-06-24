@@ -8,17 +8,17 @@
  *
 */
 
-namespace App\Actions\Retina\Api\Transaction;
+namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
 use App\Http\Resources\Api\TransactionsResource;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetTransactions

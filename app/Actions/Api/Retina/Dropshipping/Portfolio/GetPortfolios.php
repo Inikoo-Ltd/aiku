@@ -8,19 +8,19 @@
  *
 */
 
-namespace App\Actions\Retina\Api\Portfolio;
+namespace App\Actions\Api\Retina\Dropshipping\Portfolio;
 
 use App\Http\Resources\Api\PortfoliosResource;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
-use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetPortfolios

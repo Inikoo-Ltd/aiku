@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\Api\Order;
+namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Http\Resources\Api\OrderResource;

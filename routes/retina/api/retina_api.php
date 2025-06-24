@@ -6,18 +6,18 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Retina\Api\Client\GetClients;
-use App\Actions\Retina\Api\GetProfile;
-use App\Actions\Retina\Api\Order\GetOrder;
-use App\Actions\Retina\Api\Order\GetOrders;
-use App\Actions\Retina\Api\Order\StoreApiOrder;
-use App\Actions\Retina\Api\Order\SubmitApiOrder;
-use App\Actions\Retina\Api\Order\UpdateApiOrder;
-use App\Actions\Retina\Api\Portfolio\GetPortfolios;
-use App\Actions\Retina\Api\Transaction\DeleteApiOrderTransaction;
-use App\Actions\Retina\Api\Transaction\GetTransactions;
-use App\Actions\Retina\Api\Transaction\StoreApiOrderTransaction;
-use App\Actions\Retina\Api\Transaction\UpdateApiOrderTransaction;
+use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
+use App\Actions\Api\Retina\Dropshipping\GetProfile;
+use App\Actions\Api\Retina\Dropshipping\Order\GetOrder;
+use App\Actions\Api\Retina\Dropshipping\Order\GetOrders;
+use App\Actions\Api\Retina\Dropshipping\Order\StoreApiOrder;
+use App\Actions\Api\Retina\Dropshipping\Order\SubmitApiOrder;
+use App\Actions\Api\Retina\Dropshipping\Order\UpdateApiOrder;
+use App\Actions\Api\Retina\Dropshipping\Portfolio\GetPortfolios;
+use App\Actions\Api\Retina\Dropshipping\Transaction\DeleteApiOrderTransaction;
+use App\Actions\Api\Retina\Dropshipping\Transaction\GetTransactions;
+use App\Actions\Api\Retina\Dropshipping\Transaction\StoreApiOrderTransaction;
+use App\Actions\Api\Retina\Dropshipping\Transaction\UpdateApiOrderTransaction;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {

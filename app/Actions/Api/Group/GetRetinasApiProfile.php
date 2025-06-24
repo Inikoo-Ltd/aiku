@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Api;
+namespace App\Actions\Api\Group;
 
 use App\Http\Resources\Api\CustomersResource;
 use App\Models\CRM\Customer;

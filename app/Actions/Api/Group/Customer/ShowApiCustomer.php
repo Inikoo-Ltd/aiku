@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Api\Customer;
+namespace App\Actions\Api\Group\Customer;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Api\CustomerApiResource;
