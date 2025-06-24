@@ -19,7 +19,6 @@ enum DepartmentTabsEnum: string
     case SHOWCASE = 'showcase';
     case SALES = 'sales';
     case OFFERS = 'offers';
-    // case MAILSHOTS = 'mailshots';
     case RELATED_CATEGORIES = 'related_categories';
 
     case HISTORY = 'history';
@@ -51,10 +50,6 @@ enum DepartmentTabsEnum: string
                 'title' => __('offers'),
                 'icon'  => 'fal fa-tags',
             ],
-            // DepartmentTabsEnum::MAILSHOTS => [
-            //     'title' => __('mailshots'),
-            //     'icon'  => 'fal fa-bullhorn',
-            // ],
             DepartmentTabsEnum::RELATED_CATEGORIES => [
                 'title' => __('related categories'),
                 'icon'  => 'fal fa-project-diagram',
