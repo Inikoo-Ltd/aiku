@@ -17,6 +17,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
+use Google\Service\Oauth2;
 use Illuminate\Validation\Validator;
 
 class ShowRetinaRegisterWithGoogle extends IrisAction
@@ -52,24 +53,36 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
     public function rules(): array
     {
         return [
-            'google_credential' => ['required', 'string'],
+            'google_access_token' => ['required', 'string'],
         ];
     }
 
     public function prepareForValidation(ActionRequest $request)
     {
-        $this->set('google_credential', $request->input('google_credential'));
+        $this->set('google_access_token', $request->input('google_access_token'));
     }
 
     public function afterValidator(Validator $validator)
     {
-        $credential = $this->get('google_credential');
-        $client  = new Google_Client(['client_id' => config('services.google.client_id')]);
-        $payload = $client->verifyIdToken($credential);
-        if (!$payload) {
-            $validator->errors()->add('google_credential', __('The provided Google credential is invalid.'));
-        } else {
+        $googleAccessToken = $this->get('google_access_token');
+        try {
+            $client = new Google_Client();
+            $client->setClientId(config('services.google.client_id'));
+
+            $client->setAccessToken(['access_token' => $googleAccessToken]);
+
+            $oauth2 = new Oauth2($client);
+
+            $googleUser = $oauth2->userinfo->get();
+
+            $payload =  [
+                'id'    => $googleUser->getId(),
+                'email' => $googleUser->getEmail(),
+                'name'  => $googleUser->getName(),
+            ];
             $this->set('googleData', $payload);
+        } catch (\Exception $e) {
+            $validator->errors()->add('google_access_token', __('The provided Google credential is invalid: :message', ['message' => $e->getMessage()]));
         }
     }
 
