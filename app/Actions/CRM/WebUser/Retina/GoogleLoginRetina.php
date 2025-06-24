@@ -14,13 +14,14 @@ use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\IrisAction;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
-use Google_Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use App\Exceptions\GoogleCredentialVerificationException;
+use Google\Service\Oauth2;
+use Google_Client;
 
 class GoogleLoginRetina extends IrisAction
 {
@@ -52,7 +53,7 @@ class GoogleLoginRetina extends IrisAction
             return response()->json([
                 'logged_in'         => false,
                 'google_user'       => $result,
-                'google_credential' => $request->input('google_credential'),
+                'google_access_token' => $request->input('google_access_token'),
             ]);
         }
 
@@ -97,38 +98,45 @@ class GoogleLoginRetina extends IrisAction
     /**
      * @throws \App\Exceptions\GoogleCredentialVerificationException
      */
-    private function verifyGoogleCredential(string $credential): array
+    private function verifyGoogleCredential(string $googleAccessToken): array
     {
-        $client  = new Google_Client(['client_id' => config('services.google.client_id')]);
-        $payload = $client->verifyIdToken($credential);
-        if ($payload) {
+        try {
+            $client = new Google_Client();
+            $client->setClientId(config('services.google.client_id'));
+
+            $client->setAccessToken(['access_token' => $googleAccessToken]);
+
+            $oauth2 = new Oauth2($client);
+            $googleUser = $oauth2->userinfo->get();
+
             return [
-                'id'    => $payload['sub'],
-                'email' => $payload['email'],
-                'name'  => $payload['name'],
+                'id'    => $googleUser->getId(),
+                'email' => $googleUser->getEmail(),
+                'name'  => $googleUser->getName(),
             ];
+        } catch (\Exception $e) {
+            throw new GoogleCredentialVerificationException($e->getMessage());
         }
-        throw new GoogleCredentialVerificationException();
     }
 
 
     public function rules(): array
     {
         return [
-            'google_credential' => ['required', 'string', 'max:2048'],
+            'google_access_token' => ['required', 'string', 'max:2048'],
         ];
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        $googleCredential = $request->input('google_credential');
+        $googleCredential = $request->input('google_access_token');
         if ($googleCredential) {
             try {
                 $googleUser = $this->verifyGoogleCredential($googleCredential);
-                $googleUser['google_credential'] = $googleCredential;
+                $googleUser['google_access_token'] = $googleCredential;
                 $this->set('google_user', $googleUser);
             } catch (\Exception $e) {
-                $validator->errors()->add('google_credential', $e->getMessage());
+                $validator->errors()->add('google_access_token', $e->getMessage());
             }
         }
     }

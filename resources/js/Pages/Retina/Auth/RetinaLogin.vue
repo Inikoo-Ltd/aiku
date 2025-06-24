@@ -60,7 +60,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
     // Section: Submit
     isLoadingGoogle.value = true
     const data = await  axios.post(route('retina.login_google', {}), {
-        google_credential: e.credential,
+        google_access_token: e.access_token,
     })
 
     console.log('Google login response:', data.data)
@@ -150,6 +150,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
                     <GoogleLogin
                         :clientId="google?.client_id"
+                        popup-type="TOKEN"
                         :callback="(e: GoogleLoginResponse) => onCallbackGoogleLogin(e)"
                         :error="(e: Error) => console.log('error', e)"
                     >
@@ -196,7 +197,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                         :routeTarget="{
                             name: 'retina.register_from_google',
                             parameters: {
-                                google_credential: registerAccount?.google_credential
+                                google_access_token: registerAccount?.google_access_token
                             }
                         }"
                         :label="trans('Yes')"

@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3";
+import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import { capitalize } from "@/Composables/capitalize";
-import { inject, ref } from "vue";
+import {capitalize} from "@/Composables/capitalize";
+import {inject, ref} from "vue";
 
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
-import { Tabs as TSTabs } from "@/types/Tabs";
+import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {Tabs as TSTabs} from "@/types/Tabs";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { routeType } from "@/types/route";
+import {routeType} from "@/types/route";
 
-import { trans } from "laravel-vue-i18n";
+import {trans} from "laravel-vue-i18n";
 import Modal from "@/Components/Utils/Modal.vue";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import { notify } from "@kyvg/vue3-notification";
+import {notify} from "@kyvg/vue3-notification";
 
 
-import { faGlobe, faExternalLinkAlt, faUnlink, faUsers } from "@fal";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { layoutStructure } from "@/Composables/useLayoutStructure";
+import {faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
+import {library} from "@fortawesome/fontawesome-svg-core";
+import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import axios from "axios";
 
@@ -112,16 +112,25 @@ const wooCommerceInput = ref({
     name: null as null | string,
     url: null as null | string
 });
-const onSubmitWoocommerce = async () => {
-    const response = await axios.post(
-        route(props.type_woocommerce.connectRoute.name, props.type_woocommerce.connectRoute.parameters),
-        wooCommerceInput.value);
-    isModalWooCommerce.value = false;
-    wooCommerceInput.value.name = null;
-    wooCommerceInput.value.url = null;
 
-    window.location.href = response.data;
-};
+const onSubmitWoocommerce = async () => {
+    try {
+        const response = await axios.post(
+            route(props.type_woocommerce.connectRoute.name, props.type_woocommerce.connectRoute.parameters),
+            wooCommerceInput.value);
+        isModalWooCommerce.value = false;
+        wooCommerceInput.value.name = null;
+        wooCommerceInput.value.url = null;
+
+        window.location.href = response.data;
+    } catch (error) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.response?.data?.message,
+            type: "error"
+        });
+    };
+}
 
 // Section: ebay
 const onSubmitEbay = async () => {
@@ -143,8 +152,8 @@ const onSubmitAmazon = async () => {
 
 <template>
 
-    <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <Head :title="capitalize(title)"/>
+    <PageHeading :data="pageHead"/>
     <div class="px-6">
         <div class="text-xl py-2 w-fit">E-Commerce</div>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -160,7 +169,7 @@ const onSubmitAmazon = async () => {
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full />
+                    <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full/>
                 </div>
             </div>
 
@@ -177,7 +186,7 @@ const onSubmitAmazon = async () => {
 
                 <!-- Button: Connect -->
                 <div class="relative w-full">
-                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full />
+                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
                 </div>
             </div>
 
@@ -196,8 +205,8 @@ const onSubmitAmazon = async () => {
                     <a target="_blank" class="w-full" :href="tiktokAuth?.url">
                         <Button v-if="layout?.app?.environment === 'local'"
                                 :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')"
-                                type="primary" full />
-                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+                                type="primary" full/>
+                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                     </a>
 
                 </div>
@@ -212,7 +221,10 @@ const onSubmitAmazon = async () => {
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Woocommerce</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{ trans("Channels") }}</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{
+                                trans("Channels")
+                            }}
+                        </div>
                     </div>
                 </div>
 
@@ -316,7 +328,7 @@ const onSubmitAmazon = async () => {
                 </div>
             </Transition>
 
-            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6" />
+            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
 
@@ -338,10 +350,10 @@ const onSubmitAmazon = async () => {
                 <PureInputWithAddOn v-model="wooCommerceInput.url" :leftAddOn="{
                     icon: 'fal fa-globe'
                 }" :placeholder="trans('e.g https://storeurlexample.com')"
-                                    @keydown.enter="() => onSubmitWoocommerce()" />
+                                    @keydown.enter="() => onSubmitWoocommerce()"/>
             </div>
 
-            <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6" />
+            <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
 </template>

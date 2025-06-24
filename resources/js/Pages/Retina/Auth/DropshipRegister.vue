@@ -140,7 +140,7 @@ const onCallbackGoogleLogin = (e) => {
             shop: layout.website?.id
         }),
         {
-            google_credential: e.credential,
+            google_access_token: e.access_token,
         },
         {
             preserveScroll: true,
@@ -249,6 +249,7 @@ const onCallbackGoogleLogin = (e) => {
 
                     <GoogleLogin
                         :clientId="google.client_id"
+                        popup-type="TOKEN"
                         :callback="(e) => onCallbackGoogleLogin(e)"
                         :error="(e) => console.log('yyyyyy error', e)"
                     >
