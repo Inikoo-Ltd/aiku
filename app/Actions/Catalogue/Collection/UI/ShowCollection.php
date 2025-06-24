@@ -139,8 +139,9 @@ class ShowCollection extends OrgAction
                     'title' => __('sub department')
                 ];
             }
+        } else {
+            $iconRight = $collection->state->stateIcon()[$collection->state->value];
         }
-
         return Inertia::render(
             'Org/Catalogue/Collection',
             [
