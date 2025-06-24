@@ -9,6 +9,7 @@ import { isArray } from 'lodash-es'
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
+import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
@@ -61,6 +62,10 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 <template>
 	<!-- page background -->
 	<div class="-z-[1] fixed inset-0 bg-slate-100" />
+
+	<ScreenWarning v-if="layout.app.environment === 'staging'">
+		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+	</ScreenWarning>
 
 	<div
 		class="isolate relative min-h-screen transition-all"
