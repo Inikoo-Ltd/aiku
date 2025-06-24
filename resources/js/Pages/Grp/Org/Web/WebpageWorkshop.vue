@@ -99,11 +99,14 @@ const sendToIframe = (data: any) => {
 // Block Handlers
 const addNewBlock = async ({ block, type }) => {
   if (addBlockCancelToken.value) addBlockCancelToken.value();
-  let position = type === 'before' ? addBlockParentIndex.value : addBlockParentIndex.value + 1;
+  let position  = data.value.layout.web_blocks.length
+  if(type) {
+    position = type === 'before' ? addBlockParentIndex.value : addBlockParentIndex.value + 1;
+  }
 
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
-    { web_block_type_id: block.id, position },
+    { web_block_type_id: block.id, positions  : position },
     {
       onStart: () => isAddBlockLoading.value = "addBlock" + block.id,
       onFinish: () => {
@@ -116,11 +119,13 @@ const addNewBlock = async ({ block, type }) => {
         data.value = e.props.webpage;
         sendToIframe({ key: 'reload', value: {} });
       },
-      onError: error => notify({
+      onError: error => {
+        console.log('sss',error)
+        notify({
         title: trans("Something went wrong"),
         text: error.message,
         type: "error"
-      })
+      })}
     }
   );
 };
