@@ -28,28 +28,23 @@ class DuplicateModelHasWebBlock extends OrgAction
 
 
     public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
-    {
-        $position = null;
-        if ($modelHasWebBlocks->webpage_id == $webpage->id) {
-            $position = $modelHasWebBlocks->position + 1;
-        } else {
-            $position = Arr::pull($modelData, 'position', $webpage->modelHasWebBlocks()->max('position') + 1);
-        }
-        $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
+    {  
+        $position = $webpage->modelHasWebBlocks()->max('position') + 1;
+        // $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
 
-        if (!$webBlocks->isEmpty()) {
-            $positions = [];
+        // if (!$webBlocks->isEmpty()) {
+        //     $positions = [];
 
-            /** @var ModelHasWebBlocks $block */
-            foreach ($webBlocks as $block) {
-                if ($block->position >= $position) {
-                    $positions[$block->webBlock->id] = ['position' => $block->position + 1];
-                }
-            }
-
-            ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
-        }
-
+        //     /** @var ModelHasWebBlocks $block */
+        //     foreach ($webBlocks as $block) {
+        //         if ($block->position >= $position) {
+        //             $positions[$block->webBlock->id] = ['position' => $block->position + 1];
+        //         } else {
+        //             $positions[$block->webBlock->id] = ['position' => $block->position];
+        //         }
+        //     }
+        //     ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
+        // }
         $webBlockType = WebBlockType::find($modelHasWebBlocks->webBlock->web_block_type_id);
 
         $webBlock = StoreWebBlock::run($webBlockType, [
@@ -77,9 +72,9 @@ class DuplicateModelHasWebBlock extends OrgAction
         return $modelHasWebBlockCopy;
     }
 
-    public function asController(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks, ActionRequest $request): void
+    public function asController(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlock, ActionRequest $request): void
     {
         $this->initialisationFromShop($webpage->shop, $request);
-        $this->handle($webpage, $modelHasWebBlocks);
+        $this->handle($webpage, $modelHasWebBlock);
     }
 }
