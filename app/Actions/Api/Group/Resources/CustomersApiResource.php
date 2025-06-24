@@ -8,7 +8,6 @@
  *
 */
 
-
 namespace App\Actions\Api\Group\Resources;
 
 use App\Http\Resources\HasSelfCall;
