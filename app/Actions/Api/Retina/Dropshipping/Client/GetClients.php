@@ -26,12 +26,8 @@ class GetClients extends RetinaWebhookAction
     {
         $query = QueryBuilder::for(CustomerClient::class);
 
-
-
-        $query->where('customer_clients.customer_id', $customer->id);
-        $query->where('customer_clients.platform_id', $platform->id);
-
-
+        $query->where('customer_clients.customer_sales_channel_id', $customerSalesChannel->id);
+        
         if (Arr::get($modelData, 'search')) {
             $query->where(function ($query) use ($modelData) {
                 $value = $modelData['search'];
