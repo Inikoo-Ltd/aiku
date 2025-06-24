@@ -10,7 +10,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\CRM\Customer;
 use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -30,7 +30,7 @@ class SetTreblleAuthorize
     {
         $model = $request->user();
 
-        if ($model instanceof CustomerSalesChannel) {
+        if ($model instanceof Customer) {
             $apiKey = Arr::get($model->shop->settings, 'treblle.api_key');
             $projectId = Arr::get($model->shop->settings, 'treblle.project_id');
 
