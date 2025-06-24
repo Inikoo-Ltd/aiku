@@ -35,7 +35,7 @@ const isStaging = layout.app.environment === 'staging'
 
 <template>
     <div class="-z-[1] fixed inset-0 bg-slate-100" />
-    <div class="isolate relative min-h-full transition-all"
+    <div class="xformodalupload_isolate relative min-h-full transition-all"
         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
     
     
