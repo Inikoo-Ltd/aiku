@@ -76,6 +76,7 @@ class ShowDepartment extends OrgAction
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('department')
                     ],
+                    'iconRight' => $department->state->stateIcon()[$department->state->value],
                     'actions'       => [
                         $this->getWebpageActions($department),
                         $this->canEdit ? [
