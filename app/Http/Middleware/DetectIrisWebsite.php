@@ -25,34 +25,43 @@ class DetectIrisWebsite
         }
 
 
-        $websiteData = Cache::remember('iris-website-data-'.$domain, 30, function () use ($domain) {
-            /** @var Website $website */
-            $website = Website::where('domain', $domain)->first();
-            $shop    = $website->shop;
-
-            return [
-                'domain'        => $website->domain,
-                'website'       => $website,
-                'currency_data' => [
-                    'code'   => $shop->currency->code,
-                    'symbol' => $shop->currency->symbol,
-                    'name'   => $shop->currency->name,
-                ],
-                'shop_type'     => $shop->type->value,
-                'favicons'      => [
-                    '16'  => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),
-                    '32'  => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
-                    '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
-                    '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png')
-
-                ]
-            ];
-        });
+        $websiteData = Cache::remember(
+            config('iris.cache.website.prefix')."_$domain",
+            config('iris.cache.website.ttl'),
+            function () use ($domain) {
+                return $this->getWebpageData($domain);
+            }
+        );
 
 
         $request->merge($websiteData);
 
         return $next($request);
+    }
+
+    public function getWebpageData(string $domain): array
+    {
+        /** @var Website $website */
+        $website = Website::where('domain', $domain)->first();
+        $shop    = $website->shop;
+
+        return [
+            'domain'        => $website->domain,
+            'website'       => $website,
+            'currency_data' => [
+                'code'   => $shop->currency->code,
+                'symbol' => $shop->currency->symbol,
+                'name'   => $shop->currency->name,
+            ],
+            'shop_type'     => $shop->type->value,
+            'favicons'      => [
+                '16'  => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),
+                '32'  => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
+                '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
+                '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png')
+
+            ]
+        ];
     }
 
 
