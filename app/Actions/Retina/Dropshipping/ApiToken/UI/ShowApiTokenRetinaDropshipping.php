@@ -10,7 +10,6 @@ namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
