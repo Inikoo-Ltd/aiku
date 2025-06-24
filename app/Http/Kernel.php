@@ -103,6 +103,7 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
+            ApiBindGroupInstance::class
         ],
 
         'han' => [

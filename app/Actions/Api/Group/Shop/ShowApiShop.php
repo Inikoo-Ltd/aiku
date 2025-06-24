@@ -17,7 +17,21 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowApiShop extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+
+        return $request->user()->authTo(
+            [
+                'org-supervisor.'.$this->organisation->id,
+                'shops-view'.$this->organisation->id,
+                "crm.{$this->shop->id}.view",
+                "accounting.{$this->shop->organisation_id}.view",
+                "products.{$this->shop->id}.view"
+            ]
+        );
+    }
+
 
     public function handle(Shop $shop): Shop
     {
