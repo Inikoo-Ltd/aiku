@@ -153,7 +153,7 @@ const copyBlock = () => {
 }
 const pasteBlock = () => {
   if (!copiedBlock.value) return
-  emits('onDuplicateBlock', copiedBlock.value.web_block.id)
+  emits('onDuplicateBlock', copiedBlock.value.id)
   closeContextMenu()
 }
 
