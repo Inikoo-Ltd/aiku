@@ -38,7 +38,8 @@ use App\Http\Middleware\IrisRelaxAuthenticate;
 use App\Http\Middleware\LogWebUserRequestMiddleware;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
-use App\Http\Middleware\SetTreblleAuthorize;
+use App\Http\Middleware\SetGrpApiTreblle;
+use App\Http\Middleware\SetRetinaApiTreblle;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -95,6 +96,7 @@ class Kernel extends HttpKernel
         ],
 
         'retina-api' => [
+            SetRetinaApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -127,6 +129,7 @@ class Kernel extends HttpKernel
         ],
         'grp'         => [
             DisableSSR::class,
+            SetGrpApiTreblle::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -263,7 +266,6 @@ class Kernel extends HttpKernel
         'abilities'              => CheckAbilities::class,
         'ability'                => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
-        'set.treblle.authorize'  => SetTreblleAuthorize::class,
         'treblle'                => TreblleMiddleware::class,
     ];
 }
