@@ -25,7 +25,7 @@ Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
-Route::middleware(['auth:sanctum', 'set.treblle.authorize', 'treblle'])->group(function () {
+Route::middleware(['auth:sanctum','treblle'])->group(function () {
     Route::get('/profile', GetApiProfile::class)->name('profile');
     Route::get('/group', ShowApiGroup::class)->name('group.show');
     Route::get('/organisations', IndexApiOrganisations::class)->name('organisations.index');

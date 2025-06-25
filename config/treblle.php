@@ -8,15 +8,18 @@ return [
      */
     'url' => null,
 
-    /*
-     * A valid Treblle API key. You can get started for FREE by visiting https://treblle.com/
-     */
-    'api_key' => env('TREBLLE_API_KEY'),
 
-    /*
-     * A valid Treblle project ID. Create your first project on https://treblle.com/
-     */
-    'project_id' => env('TREBLLE_PROJECT_ID'),
+    'grp'=>[
+        'enable' => env('TREBLLE_GRP_ENABLE', false),
+        'api_key' => env('TREBLLE_GRP_API_KEY'),
+        'project_id' => env('TREBLLE_GRP_PROJECT_ID'),
+    ],
+    'retina'=>[
+        'enable' => env('TREBLLE_RETINA_ENABLE', false),
+        'api_key' => env('TREBLLE_RETINA_API_KEY'),
+        'project_id' => env('TREBLLE_RETINA_PROJECT_ID'),
+    ],
+
 
     /*
      * Define which environments should Treblle ignore and not monitor
