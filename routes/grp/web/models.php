@@ -64,6 +64,9 @@ use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
+use App\Actions\CRM\Poll\DeletePoll;
+use App\Actions\CRM\Poll\StorePoll;
+use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
@@ -815,6 +818,14 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
 
 
 Route::delete('access-token/{token:id}', DeleteUserAccessToken::class)->name('access_token.delete');
+
+
+Route::post('shops/{shop}/poll/store', StorePoll::class)->name('poll.store');
+
+Route::name('poll.')->prefix('poll')->group(function () {
+    Route::patch('{poll:id}/update', UpdatePoll::class)->name('update')->withoutScopedBindings();
+    Route::delete('{poll:id}/delete', DeletePoll::class)->name('delete')->withoutScopedBindings();
+});
 
 
 require __DIR__."/models/inventory/warehouse.php";

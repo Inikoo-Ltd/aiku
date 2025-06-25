@@ -9,16 +9,19 @@ import { computed } from "vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
+type FamilyOrCollectionType = {
+  name: string
+  description: string
+  images: { source: string }[]
+}
+
 const props = defineProps<{
   fieldValue: {
-    families: {
-      name: string
-      description: string
-      images: { source: string }[]
-    }[]
+    families: FamilyOrCollectionType[]
+    collections: FamilyOrCollectionType[]
   }
   webpageData?: any
-  blockData?: Object
+  blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
@@ -44,7 +47,10 @@ const responsiveGridClass = computed(() => {
     :style="getStyles(fieldValue.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
     <div :class="['grid gap-8', responsiveGridClass]">
-      <a v-for="(item, index) in props.fieldValue.families" :key="index" :href="`/${item.url}`">
+      <a v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`/${item.url}`">
+        <Family1Render :data="item" />
+      </a>
+      <a v-for="(item, index) in props?.fieldValue?.collections || []" :key="index" :href="`/${item.url}`">
         <Family1Render :data="item" />
       </a>
     </div>

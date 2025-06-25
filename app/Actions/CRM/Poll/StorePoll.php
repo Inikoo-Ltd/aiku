@@ -8,19 +8,24 @@
 
 namespace App\Actions\CRM\Poll;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
+use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
+use App\Actions\CRM\PollOption\StorePollOption;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Rules\IUnique;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePoll extends OrgAction
 {
-    use WithCRMEditAuthorisation;
     use WithNoStrictRules;
 
     public function handle(Shop $shop, array $modelData): Poll
@@ -28,9 +33,31 @@ class StorePoll extends OrgAction
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
 
-        $poll = $shop->polls()->create($modelData);
+        $type = Arr::pull($modelData, 'type.type');
+        $options = Arr::pull($modelData, 'type.poll_options', []);
+        data_forget($modelData, 'type');
+        data_set($modelData, 'type', $type);
 
-        //todo add Store,Org,Group hydrators here
+        /** @var \App\Models\CRM\Poll $poll */
+        $poll = $shop->polls()->create($modelData);
+        $poll->stats()->create([
+            'poll_id' => $poll->id,
+        ]);
+
+        if ($poll->type == PollTypeEnum::OPTION) {
+            foreach ($options as $index => $option) {
+                StorePollOption::make()->action(
+                    $poll,
+                    [
+                        'value' => $shop->id . $poll->id . $index,
+                        'label' => $option['label'],
+                    ]
+                );
+            }
+        }
+
+        ShopHydratePolls::dispatch($shop);
+        PollHydrateCustomers::dispatch($poll);
 
         return $poll;
     }
@@ -66,7 +93,19 @@ class StorePoll extends OrgAction
             'in_registration_required' => ['required', 'boolean'],
             'in_iris'                  => ['required', 'boolean'],
             'in_iris_required'         => ['sometimes', 'required', 'boolean'],
-            'type'                     => ['required', Rule::enum(PollTypeEnum::class)],
+            // 'type'                     => ['required', Rule::enum(PollTypeEnum::class)],
+            'type'                => [
+                'required',
+                'array',
+            ],
+            'type.type'        => [
+                'required',
+                Rule::enum(PollTypeEnum::class)
+            ],
+            'type.poll_options'        => [
+                new RequiredIf($this->get('type.type') === PollTypeEnum::OPTION->value),
+                'array',
+            ],
         ];
 
         if (!$this->strict) {
@@ -78,9 +117,26 @@ class StorePoll extends OrgAction
 
     public function asController(Shop $shop, ActionRequest $request): Poll
     {
-        $this->initialisationFromShop($shop, $request);
+        // this because field in_iris hidden for now
+        if ($request->get('in_registration', false)) {
+            $request->merge([
+                'in_iris' => true,
+            ]);
+        } else {
+            $request->merge([
+                'in_iris' => false,
+            ]);
+        }
 
+        $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
+    }
+    public function htmlResponse(Poll $poll): RedirectResponse
+    {
+        return Redirect::route('grp.org.shops.show.crm.polls.index', [
+            'organisation' => $poll->organisation->slug,
+            'shop'         => $poll->shop->slug
+        ]);
     }
 
     public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Poll

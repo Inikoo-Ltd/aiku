@@ -47,9 +47,6 @@ class GetOrders extends RetinaApiAction
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
 
-        $query->where('orders.state', '!=', OrderStateEnum::CREATING);
-
-
         if (Arr::get($modelData, 'reference')) {
             $this->getReferenceSearch($query, Arr::get($modelData, 'reference'));
         }

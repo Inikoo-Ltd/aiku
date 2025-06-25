@@ -7,8 +7,10 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref } from "vue"
+import { ref,inject} from "vue"
 import { getStyles } from "@/Composables/styles"
+import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faCube, faLink)
 
@@ -28,15 +30,18 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
+const layout = inject('layout', layoutStructure)
+const migration_redirect = layout?.iris?.migration_redirect
+
 </script>
 
 <template>
 	<div :style="getStyles(fieldValue.container.properties,screenType)">
 		<div class="relative  px-6 py-24 text-center sm:px-16">
-			<section v-html="fieldValue.headline" />
+			<section v-html="resolveMigrationHrefInHTML(fieldValue.headline,migration_redirect)" />
 
 			<div class="mt-10 flex items-center justify-center gap-x-6">
-				<a  :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" typeof="button" :style="getStyles(fieldValue.button.container.properties,screenType)"
+				<a  :href="resolveMigrationLink(fieldValue?.button?.link?.href,migration_redirect)" :target="fieldValue?.button?.link?.target" typeof="button" :style="getStyles(fieldValue.button.container.properties,screenType)"
 					class="mt-10 flex items-center justify-center w-64 mx-auto gap-x-6">
 					{{ fieldValue.button.text }}
 			</a>
