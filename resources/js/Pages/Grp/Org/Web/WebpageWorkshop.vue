@@ -76,7 +76,7 @@ const debounceTimers = ref({});
 const addBlockCancelToken = ref<Function | null>(null);
 const orderBlockCancelToken = ref<Function | null>(null);
 const deleteBlockCancelToken = ref<Function | null>(null);
-const addBlockParentIndex = ref(0);
+const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.length ,type: "current" });
 const isLoadingDeleteBlock = ref<number | null>(null);
 const comment = ref("");
 const isLoadingPublish = ref(false);
@@ -99,28 +99,36 @@ const sendToIframe = (data: any) => {
 // Block Handlers
 const addNewBlock = async ({ block, type }) => {
   if (addBlockCancelToken.value) addBlockCancelToken.value();
-  let position = type === 'before' ? addBlockParentIndex.value : addBlockParentIndex.value + 1;
+  let position  = data.value.layout.web_blocks.length
+  if(type == 'before' ) {
+    position =  addBlockParentIndex.value.parentIndex
+  }else if(type == 'after'){
+    position =  addBlockParentIndex.value.parentIndex + 1;
+  }
+
 
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
-    { web_block_type_id: block.id, position },
+    { web_block_type_id: block.id, position  : position },
     {
       onStart: () => isAddBlockLoading.value = "addBlock" + block.id,
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = 0;
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" };
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
         sendToIframe({ key: 'reload', value: {} });
       },
-      onError: error => notify({
+      onError: error => {
+        console.log('sss',error)
+        notify({
         title: trans("Something went wrong"),
         text: error.message,
         type: "error"
-      })
+      })}
     }
   );
 };
@@ -137,7 +145,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = 0;
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" }
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
@@ -393,7 +401,6 @@ onMounted(() => {
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
-
     switch (key) {
       case 'autosave': return onSaveWorkshop(value);
       case 'activeBlock': return openedBlockSideEditor.value = value;
@@ -401,7 +408,7 @@ onMounted(() => {
       case 'addBlock':
         if (_WebpageSideEditor.value) {
           isModalBlockList.value = true;
-          addBlockParentIndex.value = value.parentIndex;
+          addBlockParentIndex.value = value;
           _WebpageSideEditor.value.addType = value.type;
         }
         break;
@@ -419,7 +426,7 @@ const compUsersEditThisPage = computed(() => {
 	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
-
+console.log(props)
 
 </script>
 

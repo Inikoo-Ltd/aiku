@@ -38,11 +38,18 @@ const onClickCopyButton = async (text: string) => {
 
 const generatePassword = () => {
   let target = props.form;
-  const array = new Uint32Array(1);
-  window.crypto.getRandomValues(array);
-  target[props.fieldName] = array[0].toString(36).slice(-8);
+
+  // Generate a random 8-character password
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghjkmnopqrstuvwxyz023456789';
+  let password = '';
+  for (let i = 0; i < 8; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    password += characters.charAt(randomIndex);
+  }
+
+  target[props.fieldName] = password;
   emits("update:form", target);
-  props.form.clearErrors()
+  props.form.clearErrors();
   if (_password.value) _password.value.showPassword = false; 
 };
 
@@ -58,7 +65,7 @@ const generatePassword = () => {
                     <Password ref="_password" :form="form" :fieldName="fieldName" :options="options" :fieldData="fieldData"
                     class="w-ful" />
                  </div>
-                
+
 
                 <!-- Copy Button Slot -->
                 <slot v-if="form[fieldName]?.length" name="copyButton">

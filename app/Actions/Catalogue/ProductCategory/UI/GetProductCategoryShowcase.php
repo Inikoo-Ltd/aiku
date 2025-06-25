@@ -50,7 +50,6 @@ class GetProductCategoryShowcase
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $data = [
                 'subDepartment' => SubDepartmentResource::make($productCategory)->toArray(request()),
-                'families'   => FamilyResource::collection($productCategory->getFamilies())->toArray(request()),
             ];
             $data['routeList'] = [
                 'collectionRoute' => [

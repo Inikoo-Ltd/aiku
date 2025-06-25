@@ -231,7 +231,7 @@ class IndexProductsWithNoFamily extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
-        return $this->handle($shop);
+        return $this->handle(shop:$shop, prefix: ProductsTabsEnum::INDEX->value);
     }
 
 }

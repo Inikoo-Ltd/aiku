@@ -118,6 +118,7 @@ class AppServiceProvider extends ServiceProvider
                 'WooCommerceUser'               => 'App\Models\Dropshipping\WooCommerceUser',
                 'EbayUser'                      => 'App\Models\Dropshipping\EbayUser',
                 'AmazonUser'                    => 'App\Models\Dropshipping\AmazonUser',
+                'CustomerSalesChannel'          => 'App\Models\Dropshipping\CustomerSalesChannel',
 
                 // Fulfilment
                 'FulfilmentCustomer'            => 'App\Models\Fulfilment\FulfilmentCustomer',

@@ -189,33 +189,30 @@ class IndexProductsInProductCategory extends OrgAction
         $model      = null;
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $title      = $productCategory->name;
-            $model      = '';
-            $icon       = [
+            $title = $productCategory->name;
+            $model = '';
+            $icon  = [
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('Department')
             ];
-            $iconRight  = [
-                'icon' => 'fal fa-cube',
-            ];
+            $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
             $afterTitle = [
                 'label' => __('Products')
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $title      = $productCategory->name;
-            $model      = '';
-            $icon       = [
+            $title = $productCategory->name;
+            $model = '';
+            $icon  = [
                 'icon'  => ['fal', 'fa-folder'],
                 'title' => __('Family')
             ];
-            $iconRight  = [
-                'icon' => 'fal fa-cube',
-            ];
+            $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
             $afterTitle = [
                 'label' => __('Products')
             ];
+        } else {
+            $iconRight = $productCategory->state->stateIcon()[$productCategory->state->value];
         }
-
 
         return Inertia::render(
             'Org/Catalogue/Products',
@@ -275,7 +272,7 @@ class IndexProductsInProductCategory extends OrgAction
         $this->parent = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(productCategory: $family);
+        return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -285,7 +282,7 @@ class IndexProductsInProductCategory extends OrgAction
         $this->parent      = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(productCategory: $family);
+        return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -295,7 +292,7 @@ class IndexProductsInProductCategory extends OrgAction
         $this->parent      = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(productCategory: $family);
+        return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -304,7 +301,7 @@ class IndexProductsInProductCategory extends OrgAction
         $this->parent = $department;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
-        return $this->handle(productCategory: $department);
+        return $this->handle(productCategory: $department, prefix: ProductsTabsEnum::INDEX->value);
     }
 
 

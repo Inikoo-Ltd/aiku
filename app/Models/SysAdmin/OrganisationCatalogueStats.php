@@ -158,11 +158,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_families_no_department
  * @property int $number_products_no_family
  * @property int $number_current_collections state=active+discontinuing
- * @property int $number_collection_state_in_process
- * @property int $number_collection_state_active
- * @property int $number_collection_state_inactive
- * @property int $number_collection_state_discontinuing
- * @property int $number_collection_state_discontinued
+ * @property int $number_collections_state_in_process
+ * @property int $number_collections_state_active
+ * @property int $number_collections_state_inactive
+ * @property int $number_collections_state_discontinuing
+ * @property int $number_collections_state_discontinued
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCatalogueStats newModelQuery()
  * @method static Builder<static>|OrganisationCatalogueStats newQuery()

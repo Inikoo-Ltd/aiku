@@ -11,7 +11,6 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle } from '@fal'
 import { faSearch, faBell } from '@far'
-import { faCheckCircle, faExclamationCircle, faInfo } from '@fas'
 import { provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
@@ -25,11 +24,12 @@ import { isArray } from "lodash"
 library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell)
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle } from "@fal"
+import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faTrashAlt, faCopy } from "@fal"
+import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo, faCircle } from '@fas'
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfo, faInfoCircle)
+library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
 
 
 provide('layout', useLayoutStore())

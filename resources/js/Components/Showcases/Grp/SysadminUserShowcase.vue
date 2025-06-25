@@ -71,19 +71,28 @@ const activeUsers = useLiveUsers().liveUsers
 
             <div class="px-4 py-6 sm:col-span-1 sm:px-0">
                 <dt class="text-sm font-medium">{{ trans("Email") }}:</dt>
-                <dd class="mt-1 text-sm sm:mt-2">{{ data?.data?.email || '-' }}</dd>
+                <!-- <dd class="mt-1 text-sm sm:mt-2">{{ data?.data?.email || '-' }}</dd> -->
+                <a
+                    v-if="data?.data?.email"
+					:href="`mailto:${data?.data?.email}`"
+					class="mt-1 text-sm sm:mt-2 xtext-gray-500 white w-full truncate hover:underline"
+					>{{ data?.data?.email }}</a
+				>
+                <div v-else>
+                    -
+                </div>
             </div>
-            <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
+            <!-- <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
                 <dt class="text-sm font-medium">{{ trans("Status") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2">
                     <Tag :label="activeUsers[data?.data?.id] ? trans('Online') : trans('Offline')" :theme="activeUsers[data?.data?.id] ? 3 : undefined" />
                 </dd>
-            </div>
+            </div> -->
 
             <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
                 <dt class="text-sm font-medium">{{ trans("Last Active") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2">
-                    {{ activeUsers[data?.data?.id]?.last_active ? useFormatTime(activeUsers[data?.data?.id].last_active) : 'Never' }}
+                    {{ activeUsers[data?.data?.id]?.last_active ? useFormatTime(activeUsers[data?.data?.id].last_active) : '-' }}
                 </dd>
             </div>
 

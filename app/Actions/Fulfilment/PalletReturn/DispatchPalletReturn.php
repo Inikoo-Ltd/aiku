@@ -76,13 +76,15 @@ class DispatchPalletReturn extends OrgAction
             CalculateRecurringBillTotals::run($recurringBill);
         }
 
-        match ($palletReturn->customerSalesChannel->platform->type) {
-            PlatformTypeEnum::WOOCOMMERCE => CompleteFulfillmentWooCommerce::run($palletReturn),
-            //                PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
-            //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
-            PlatformTypeEnum::SHOPIFY => DispatchFulfilmentOrderShopify::run($palletReturn),
-            default => null,
-        };
+        if ($palletReturn->customerSalesChannel) {
+            match ($palletReturn->customerSalesChannel?->platform?->type) {
+                PlatformTypeEnum::WOOCOMMERCE => CompleteFulfillmentWooCommerce::run($palletReturn),
+                //                PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
+                //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
+                PlatformTypeEnum::SHOPIFY => DispatchFulfilmentOrderShopify::run($palletReturn),
+                default => null,
+            };
+        }
 
         PalletReturnHydratePallets::dispatch($palletReturn);
         GroupHydratePalletReturns::dispatch($palletReturn->group);

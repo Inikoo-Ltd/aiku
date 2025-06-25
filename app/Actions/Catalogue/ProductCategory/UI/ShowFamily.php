@@ -145,6 +145,7 @@ class ShowFamily extends OrgAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('department')
                     ],
+                    'iconRight' => $family->state->stateIcon()[$family->state->value],
                     'actions' => $this->getActions($family, $request),
                     'parentTag' => $parentTag,
 

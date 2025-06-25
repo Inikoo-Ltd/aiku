@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
-use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
@@ -16,14 +15,11 @@ use App\Actions\SysAdmin\User\WithUsersSubNavigation;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
 use App\Http\Resources\SysAdmin\UsersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,7 +32,7 @@ class IndexUsers extends OrgAction
     use WithEmployeeSubNavigation;
 
     private string $scope;
-    private Group|Employee $parent;
+    private Group $parent;
 
     protected function getElementGroups(Group $group): array
     {
@@ -65,9 +61,9 @@ class IndexUsers extends OrgAction
 
     public function inSuspended(ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group        = group();
         $this->parent = $group;
-        $this->scope = 'suspended';
+        $this->scope  = 'suspended';
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
@@ -75,9 +71,9 @@ class IndexUsers extends OrgAction
 
     public function inActive(ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group        = group();
         $this->parent = $group;
-        $this->scope = 'active';
+        $this->scope  = 'active';
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
@@ -85,30 +81,19 @@ class IndexUsers extends OrgAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group        = group();
         $this->parent = $group;
-        $this->scope = 'all';
+        $this->scope  = 'all';
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
     }
 
-    public function inEmployee(Organisation $organisation, Employee $employee, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $employee;
-        $this->scope = 'employee';
-        $this->initialisation($organisation, $request);
 
-        return $this->handle($employee, $this->scope);
-    }
-
-    public function handle(Group|Employee $parent, $scope = 'active', $prefix = null): LengthAwarePaginator
+    public function handle(Group $group, $scope = 'active', $prefix = null): LengthAwarePaginator
     {
-        if ($parent instanceof Employee) {
-            $this->group = $parent->group;
-        } else {
-            $this->group  = $parent;
-        }
+        $this->group = $group;
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('users.contact_name', $value)
@@ -126,26 +111,22 @@ class IndexUsers extends OrgAction
 
         $queryBuilder->leftJoin('user_stats', 'user_stats.user_id', '=', 'users.id');
 
-        if ($parent instanceof Employee) {
-            $queryBuilder->leftjoin('user_has_models', 'user_has_models.user_id', '=', 'users.id');
-            $queryBuilder->where('user_has_models.model_id', $parent->id)
-                ->where('user_has_models.model_type', 'Employee');
-        } else {
-            if ($scope == 'active') {
-                $queryBuilder->where('status', true);
-            } elseif ($scope == 'suspended') {
-                $queryBuilder->where('status', false);
-            } elseif ($scope == 'all') {
-                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                    $queryBuilder->whereElementGroup(
-                        key: $key,
-                        allowedElements: array_keys($elementGroup['elements']),
-                        engine: $elementGroup['engine'],
-                        prefix: $prefix
-                    );
-                }
+
+        if ($scope == 'active') {
+            $queryBuilder->where('status', true);
+        } elseif ($scope == 'suspended') {
+            $queryBuilder->where('status', false);
+        } elseif ($scope == 'all') {
+            foreach ($this->getElementGroups($group) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
             }
         }
+
 
         return $queryBuilder
             ->defaultSort('username')
@@ -186,47 +167,36 @@ class IndexUsers extends OrgAction
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $users): AnonymousResourceCollection
-    {
-        return UsersResource::collection($users);
-    }
 
     public function htmlResponse(LengthAwarePaginator $users, ActionRequest $request): Response
     {
-        if ($this->parent instanceof Group) {
-            $subNavigation = $this->getUsersNavigation($this->group, $request);
-            $title = __('Active users');
+        $subNavigation = $this->getUsersNavigation($this->group, $request);
+        $title         = __('Active users');
+        $icon          = [
+            'icon'  => ['fal', 'fa-user-circle'],
+            'title' => __('active users')
+        ];
+        if ($this->scope == 'suspended') {
+            $title = __('Suspended users');
             $icon  = [
-                'icon'  => ['fal', 'fa-user-circle'],
-                'title' => __('active users')
+                'icon'  => ['fal', 'fa-user-slash'],
+                'title' => __('suspended users')
             ];
-            if ($this->scope == 'suspended') {
-                $title = __('Suspended users');
-                $icon  = [
-                    'icon'  => ['fal', 'fa-user-slash'],
-                    'title' => __('suspended users')
-                ];
-            } elseif ($this->scope == 'all') {
-                $title = __('Users');
-                $icon  = [
-                    'icon'  => ['fal', 'fa-users'],
-                    'title' => __('all users')
-                ];
-            }
-        } elseif ($this->parent instanceof Employee) {
-            $subNavigation = $this->getEmployeeSubNavigation($this->parent, $request);
+        } elseif ($this->scope == 'all') {
             $title = __('Users');
             $icon  = [
-                'icon'  => ['fal', 'fa-user-circle'],
-                'title' => __('users')
+                'icon'  => ['fal', 'fa-users'],
+                'title' => __('all users')
             ];
         }
+
+
         return Inertia::render(
             'SysAdmin/Users',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
                 'title'       => __('users'),
-                'pageHead' => [
+                'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
@@ -236,7 +206,7 @@ class IndexUsers extends OrgAction
                     'usernameNoSet' => __('username no set')
                 ],
 
-                'data'        => UsersResource::collection($users),
+                'data' => UsersResource::collection($users),
             ]
         )->table(
             $this->tableStructure(
@@ -247,8 +217,7 @@ class IndexUsers extends OrgAction
     }
 
 
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(string $routeName): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
@@ -294,15 +263,7 @@ class IndexUsers extends OrgAction
                     ]
                 ),
             ),
-            'grp.org.hr.employees.show.users.index' => array_merge(
-                ShowEmployee::make()->getBreadcrumbs($this->parent, $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.hr.employees.show.users.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
+
 
 
             default => []
