@@ -32,8 +32,9 @@ class MitSavedCardResource extends JsonResource
 
             'is_default'       => $mitSavedCard->priority === 1,
              'route_set_to_default' => [
+                 'method' => 'patch',
                  'name' => 'retina.models.mit_saved_card.set_to_default',
-                 'params' => [
+                 'parameters' => [
                      'mitSavedCard' => $mitSavedCard->id,
                  ],
              ],

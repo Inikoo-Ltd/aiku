@@ -16,35 +16,21 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateRetinaMitSavedCard extends RetinaAction
+class SetAsDefaultRetinaMitSavedCard extends RetinaAction
 {
     use WithActionUpdate;
 
     public function handle(MitSavedCard $mitSavedCard, array $modelData): MitSavedCard
     {
+        data_set($modelData, 'priority', 1);
+
         if (Arr::get($modelData, 'priority') === 1) {
             $this->customer->mitSavedCard()->where('priority', 1)
                 ->where('id', '!=', $mitSavedCard->id)
-                ->update(['priority' => 2]);
+                ->update(['priority' => $mitSavedCard->priority]);
         }
 
         return $this->update($mitSavedCard, $modelData);
-    }
-
-    public function rules(): array
-    {
-        return [
-            'token'            => ['sometimes', 'string'],
-            'last_four_digits' => ['sometimes', 'string', 'max:4'],
-            'card_type'        => ['sometimes', 'string'],
-            'expires_at'       => ['sometimes', 'date'],
-            'label'            => ['sometimes', 'string'],
-            'state'            => ['sometimes', Rule::enum(MitSavedCardStateEnum::class)],
-            'priority'         => ['sometimes', 'integer'],
-            'data'             => ['sometimes', 'array'],
-            'processed_at'     => ['sometimes', 'date'],
-            'failure_status'   => ['sometimes', 'nullable','string'],
-        ];
     }
 
     public function asController(MitSavedCard $mitSavedCard, ActionRequest $request): MitSavedCard

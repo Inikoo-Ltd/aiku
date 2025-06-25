@@ -21,6 +21,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import Icon from '@/Components/Icon.vue'
 
 
 const props = defineProps<{
@@ -147,11 +148,12 @@ const onSubmitToFamily = () => {
                 xoptionsList="(options) => dataFamilyList = options"
             >
                 <template #singlelabel="{ value }">
-                    <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
+                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
+                 <!--    <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div> -->
                 </template>
                 
                 <template #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.name }} <span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
+                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
                 </template>
             </PureMultiselectInfiniteScroll>
         </div>

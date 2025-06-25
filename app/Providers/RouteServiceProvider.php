@@ -68,7 +68,7 @@ class RouteServiceProvider extends ServiceProvider
             ->group(base_path('routes/retina/web/app.php'));
 
         Route::middleware('retina-api')
-            ->prefix('app/api')
+            ->prefix('app/re-api')
             ->name('retina.api.')
             ->group(base_path('routes/api/retina/retina_api.php'));
 
