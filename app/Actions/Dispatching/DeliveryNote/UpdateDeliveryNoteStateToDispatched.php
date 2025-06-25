@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -21,6 +20,9 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         data_set($modelData, 'dispatched_at', now());
@@ -42,6 +44,9 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
         return $deliveryNote;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
@@ -49,6 +54,9 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
