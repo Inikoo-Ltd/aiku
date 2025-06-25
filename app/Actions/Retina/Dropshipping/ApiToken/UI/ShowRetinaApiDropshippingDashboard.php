@@ -117,19 +117,19 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     fn () => ApiTokensRetinaResource::collection($apiTokens)
                     : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
                 ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($this->customer))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer))),
+                fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
-        ->table($this->tableStructure(ApiTokenRetinaTabsEnum::API_TOKENS->value));
+        ->table($this->tableStructure(prefix: ApiTokenRetinaTabsEnum::API_TOKENS->value));
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel,ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request)->withTab(ApiTokenRetinaTabsEnum::values());
-        return $this->handle($customerSalesChannel, $request);
+        return $this->handle($customerSalesChannel, ApiTokenRetinaTabsEnum::API_TOKENS->value);
     }
 
     public function getBreadcrumbs($label = null): array
@@ -163,7 +163,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true, type: 'date_hms')
                 ->column(key: 'expires_at', label: __('Expires At'), sortable: true, type: 'date_hms')
                 ->column(key: 'actions', label: __('Actions'))
-                ->defaultSort('created_at');
+                ->defaultSort('-created_at');
         };
     }
 }

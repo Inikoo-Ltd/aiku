@@ -29,6 +29,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCollections extends OrgAction
 {
@@ -44,6 +45,13 @@ class IndexCollections extends OrgAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('collections.name', $value)
+                    ->orWhereStartWith('collections.code', $value);
+            });
+        });
 
         $queryBuilder = QueryBuilder::for(Collection::class);
         $queryBuilder->where('collections.shop_id', $shop->id);
@@ -98,6 +106,7 @@ class IndexCollections extends OrgAction
 
 
         return $queryBuilder
+            ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name', 'number_parents', 'number_families', 'number_products'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
