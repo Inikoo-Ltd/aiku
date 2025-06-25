@@ -509,7 +509,8 @@ const convertRemToPx = (remString) => {
 
             <div class="bg-gray-100 rounded-xl border border-gray-300 divide-y divide-gray-400 isolate">
                 <!-- 1st row -->
-                   <section id="tiptap-toolbar" class="flex items-center divide-x divide-gray-400">
+                <section id="tiptap-toolbar"
+                    class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 overflow-x-auto sm:overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
                     <TiptapToolbarGroup>
                         <TiptapToolbarButton v-if="toogle.includes('undo')" label="Undo"
                             @click="editorInstance?.chain().focus().undo().run()"
@@ -563,9 +564,9 @@ const convertRemToPx = (remString) => {
                                     <!-- Display font size in px even if stored as rem -->
                                     <div v-else id="tiptapfontsize" class="text-gray-600 text-sm font-semibold h-5">
                                         {{
-                                            convertRemToPx(
-                                                editorInstance?.getAttributes('textStyle').fontSize
-                                            ) + 'px'
+                                        convertRemToPx(
+                                        editorInstance?.getAttributes('textStyle').fontSize
+                                        ) + 'px'
                                         }}
                                     </div>
                                     <!-- Clear Font Size Button -->
@@ -734,7 +735,8 @@ const convertRemToPx = (remString) => {
                 </section>
 
                 <!-- 2nd row -->
-                 <section id="tiptap-toolbar" class="flex items-center divide-x divide-gray-400">
+              <section id="tiptap-toolbar"
+                    class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 overflow-x-auto sm:overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
                     <Select v-if="toogle.includes('query')" @change="(e) => setVariabel(e.value.value)"
                         :options="irisVariable" optionLabel="label" size="small"
                         :placeholder="trans('Select a variable to put')" class="w-full md:w-56 max-w-56 mr-2" />
