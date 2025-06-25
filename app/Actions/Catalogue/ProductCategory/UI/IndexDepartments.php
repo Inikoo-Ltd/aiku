@@ -122,7 +122,7 @@ class IndexDepartments extends OrgAction
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
-            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_families', 'number_current_products'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_families', 'number_current_products', 'number_current_collections', 'number_current_sub_departments'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

@@ -302,12 +302,12 @@ class ShowCollection extends OrgAction
 
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
-                    fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection))
-                    : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection))),
+                    fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))
+                    : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))),
 
                 CollectionTabsEnum::PRODUCTS->value => $this->tab == CollectionTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection))),
+                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))),
 
 
 
