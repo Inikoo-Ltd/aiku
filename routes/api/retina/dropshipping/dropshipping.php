@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Api\Retina\Dropshipping\Client\DeleteApiCustomerClient;
+use App\Actions\Api\Retina\Dropshipping\Client\GetClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
 use App\Actions\Api\Retina\Dropshipping\Client\StoreApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Client\UpdateApiCustomerClient;
@@ -50,6 +51,7 @@ Route::prefix('portfolios')->as('portfolios.')->group(function () {
 Route::prefix('clients')->as('clients.')->group(function () {
     Route::get('', GetClients::class)->name('index');
     Route::post('', StoreApiCustomerClient::class)->name('create');
+    Route::get('{customerClient:id}', GetClient::class)->name('show');
     Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
     Route::delete('{customerClient:id}', DeleteApiCustomerClient::class)->name('delete');
 
