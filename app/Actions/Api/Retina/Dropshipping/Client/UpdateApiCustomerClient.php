@@ -51,7 +51,6 @@ class UpdateApiCustomerClient extends RetinaApiAction
                 ),
 
             ],
-            'status'         => ['sometimes', 'boolean'],
             'contact_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'          => ['sometimes', 'nullable', 'email'],
