@@ -36,13 +36,17 @@ class UpdateStateToDispatchedOrder extends OrgAction
         ];
 
         DB::transaction(function () use ($order, $data) {
-            $order->transactions()->update([
-                'state' => TransactionStateEnum::DISPATCHED
-            ]);
+
+            foreach($order->transactions as $transaction) {
+                $transaction->update([
+                    'state' => TransactionStateEnum::DISPATCHED,
+                    'quantity_dispatched' => $transaction->deliveryNoteItem->quantity_dispatched,
+                ]);
+            }
 
             $this->update($order, $data);
             $this->orderHydrators($order);
-
+            $order->refresh();
             match ($order->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                 PlatformTypeEnum::EBAY        => FulfillOrderToEbay::run($order),
