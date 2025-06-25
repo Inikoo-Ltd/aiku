@@ -111,6 +111,7 @@ class IndexDepartments extends OrgAction
                 'product_category_stats.number_current_families',
                 'product_category_stats.number_current_products',
                 'product_category_stats.number_current_sub_departments',
+                'product_category_stats.number_current_collections',
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
@@ -121,7 +122,7 @@ class IndexDepartments extends OrgAction
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
-            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_families', 'number_current_products'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_families', 'number_current_products', 'number_current_collections', 'number_current_sub_departments'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -180,9 +181,11 @@ class IndexDepartments extends OrgAction
 
 
                 if (class_basename($parent) != 'Collection') {
-                    $table->column(key: 'number_current_sub_departments', label: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
-                    $table->column(key: 'number_current_families', label: __('current families'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'number_current_sub_departments', label: __('sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'number_current_collections', label: __('collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
+
+                    $table->column(key: 'number_current_families', label: __('families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
+                        ->column(key: 'number_current_products', label: __('products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
                 if (class_basename($parent) == 'Collection') {

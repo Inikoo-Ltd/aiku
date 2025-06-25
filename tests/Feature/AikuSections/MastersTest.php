@@ -64,7 +64,7 @@ beforeEach(function () {
 
 test("UI Index Master Shops", function () {
     $response = get(
-        route("grp.masters.shops.index")
+        route("grp.masters.master_shops.index")
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -110,7 +110,7 @@ test('create master shop', function () {
 test("UI Show master shop", function (MasterShop $masterShop) {
     $this->withoutExceptionHandling();
     $response  = get(
-        route("grp.masters.shops.show", [$masterShop->slug])
+        route("grp.masters.master_shops.show", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) use ($masterShop) {
         $page
@@ -187,7 +187,7 @@ test('assign master shop to shop', function () {
 
 test("UI Index Master Departments", function (MasterShop $masterShop) {
     $response = get(
-        route("grp.masters.shops.show.departments.index", [$masterShop->slug])
+        route("grp.masters.master_shops.show.master_departments.index", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -222,7 +222,7 @@ test("UI Master Dashboard", function () {
 
 test("UI Index Master Families", function (MasterShop $masterShop) {
     $response = get(
-        route("grp.masters.shops.show.families.index", [$masterShop->slug])
+        route("grp.masters.master_shops.show.master_families.index", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -240,7 +240,7 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
 
 test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
     $response = get(
-        route("grp.masters.shops.show.sub-departments.index", [$masterShop->slug])
+        route("grp.masters.master_shops.show.master_sub_departments.index", [$masterShop->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -394,7 +394,7 @@ test('create master sub department', function (MasterProductCategory $masterDepa
 
 test("UI Index Master SubDepartments in Department", function (MasterProductCategory $masterDepartment) {
     $response = get(
-        route("grp.masters.departments.sub_departments.index", [$masterDepartment->slug])
+        route("grp.masters.master_departments.show.master_sub_departments.index", [$masterDepartment->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -413,7 +413,7 @@ test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubD
     $this->withoutExceptionHandling();
 
     $response = get(
-        route("grp.masters.departments.sub_departments.show", [
+        route("grp.masters.master_departments.show.master_sub_departments.show", [
             'masterDepartment' => $masterSubDepartment->parent->slug,
             'masterSubDepartment' => $masterSubDepartment->slug
         ])

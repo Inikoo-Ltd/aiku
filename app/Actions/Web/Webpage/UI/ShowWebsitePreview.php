@@ -24,6 +24,7 @@ class ShowWebsitePreview extends OrgAction
 {
     public function asController(Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
+
         $this->initialisation($website->organisation, $request);
 
         return $webpage;

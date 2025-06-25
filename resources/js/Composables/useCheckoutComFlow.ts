@@ -7,6 +7,7 @@
 import { ref } from "vue"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components'
 import { CheckoutComFlow } from "@/types/CheckoutComFlow"
+import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
 
 export function useCheckoutCom(checkoutComData: CheckoutComFlow) {
   const isLoading = ref(false)
@@ -19,7 +20,8 @@ export function useCheckoutCom(checkoutComData: CheckoutComFlow) {
         paymentSession: checkoutComData.data,
         publicKey: checkoutComData.public_key,
         environment: checkoutComData.environment,
-        locale: checkoutComData.locale,
+        locale: checkoutComData.locale ?? 'en',
+        translations: CheckoutTranslations,
         onReady: () => {
           console.log("onReady")
         },
@@ -32,6 +34,11 @@ export function useCheckoutCom(checkoutComData: CheckoutComFlow) {
         onError: (component, error) => {
           console.log("onError", error, "Component", component.type)
         },
+        appearance: {
+          // colorPrimary: '#ff0000',
+          // colorSecondary: '#ffff00',
+          colorAction: 'rgb(15, 22, 38)',
+        }
       })
 
       const flowComponent = checkout.create('flow')

@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\WebUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -52,8 +53,10 @@ class GetRetinaDropshippingNavigation
                 'type'          => $customerSalesChannels->platform->type,
                 'slug'          => $customerSalesChannels->slug,
                 'key'           => $customerSalesChannels->slug,
-                'label'         => $customerSalesChannels->platform->name.' ('.$reference.')',
+                // 'label'         => $customerSalesChannels->platform->name.' ('.$reference.')',
+                'label'         => $reference,
                 'img'           => $this->getPlatformLogo($customerSalesChannels),
+                'img_tooltip'   => $customerSalesChannels->platform->name,
                 'route'         => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.show',
                     'parameters' => [
@@ -106,14 +109,30 @@ class GetRetinaDropshippingNavigation
             ]
         ];
 
-        $groupNavigation['saved_credit_cards'] = [
-            'label' => __('Saved Cards'),
-            'icon'  => ['fal', 'fa-credit-card'],
-            'root'  => 'retina.dropshipping.mit_saved_cards.',
-            'route' => [
-                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
-            ],
-        ];
+        $hasNonManualChannels = $customer->customerSalesChannels()
+            ->whereHas('platform', function ($query) {
+                $query->where('type', '!=', PlatformTypeEnum::MANUAL);
+            })
+            ->exists();
+
+        $hasApiTokens = $customer->customerSalesChannels()
+            ->whereHas('tokens')
+            ->exists();
+
+        $hasCreditCards = $customer->mitSavedCard()
+            ->exists();
+
+        if ($hasNonManualChannels || $hasApiTokens || $hasCreditCards) {
+            $groupNavigation['saved_credit_cards'] = [
+                'label' => __('Saved Cards'),
+                'icon'  => ['fal', 'fa-credit-card'],
+                'root'  => 'retina.dropshipping.mit_saved_cards.',
+                'route' => [
+                    'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
+                ],
+                'indicator' => ! $hasCreditCards
+            ];
+        }
 
         $groupNavigation['sysadmin'] = [
             'label'   => __('manage account'),

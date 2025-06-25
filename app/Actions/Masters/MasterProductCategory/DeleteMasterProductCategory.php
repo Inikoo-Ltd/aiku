@@ -77,8 +77,8 @@ class DeleteMasterProductCategory extends OrgAction
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): \Illuminate\Http\Response|array|\Illuminate\Http\RedirectResponse
     {
         return match ($masterProductCategory->type) {
-            MasterProductCategoryTypeEnum::DEPARTMENT => Redirect::route('grp.masters.departments.index'),
-            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => Redirect::route('grp.masters.families.index'),
+            MasterProductCategoryTypeEnum::DEPARTMENT => Redirect::route('grp.masters.master_departments.index'),
+            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => Redirect::route('grp.masters.master_families.index'),
             default => []
         };
     }

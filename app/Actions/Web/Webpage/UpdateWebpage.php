@@ -8,6 +8,9 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Catalogue\Collection\UpdateCollection;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
@@ -21,6 +24,9 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\WebpageResource;
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
@@ -84,6 +90,22 @@ class UpdateWebpage extends OrgAction
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
+        if ($webpage->wasChanged('url')) {
+            $model = $webpage->model;
+            if ($model instanceof Product) {
+                UpdateProduct::make()->action($model, [
+                    'url' => $webpage->url,
+                ]);
+            } elseif ($model instanceof ProductCategory) {
+                UpdateProductCategory::make()->action($model, [
+                    'url' => $webpage->url,
+                ]);
+            } elseif ($model instanceof Collection) {
+                UpdateCollection::make()->action($model, [
+                    'url' => $webpage->url,
+                ]);
+            }
+        }
 
         if ($webpage->wasChanged('state')) {
             GroupHydrateWebpages::dispatch($webpage->group)->delay($this->hydratorsDelay);
@@ -146,7 +168,7 @@ class UpdateWebpage extends OrgAction
                 ),
 
             ],
-            'seo_image'       => [
+            'seo_image'      => [
                 'sometimes',
                 'nullable',
                 File::image()

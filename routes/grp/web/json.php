@@ -22,6 +22,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
@@ -85,7 +86,7 @@ Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name(
 Route::get('shop/{shop}/products', GetProductsInWorkshop::class)->name('shop.products');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
-Route::get('shop/{shop}/families', GetFamiliesInShop::class)->name('shop.families');
+Route::get('shop/{shop:id}/families', GetFamiliesInShop::class)->name('shop.families');
 Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.departments');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
@@ -101,6 +102,7 @@ Route::get('organisation/{organisation}/employees/packers', GetPackers::class)->
 Route::get('organisation/{organisation}/employees/pickers', GetPickers::class)->name('employees.pickers');
 Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers::class)->name('employees.picker_users');
 
+Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 

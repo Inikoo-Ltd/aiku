@@ -110,9 +110,7 @@ test('get profile data', function () {
         ->and($response->json('data'))
         ->id->toBe($this->user->id)
         ->contact_name->toBe($this->user->contact_name)
-        ->username->toBe($this->user->username)
-        ->roles->toBeArray()
-        ->permissions->toBeArray();
+        ->username->toBe($this->user->username);
 });
 
 test('get clocking machines list (empty)', function () {

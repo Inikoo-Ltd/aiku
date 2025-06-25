@@ -42,7 +42,7 @@ class GetIrisPortfoliosInProductCategory extends IrisAction
             $channels = json_decode(str_replace(['{', '}'], ['[', ']'], $data->customer_channels), true);
             $portfoliosData[$data->id] = $channels;
         }
-        
+
 
         return $portfoliosData;
     }

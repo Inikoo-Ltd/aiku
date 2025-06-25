@@ -171,11 +171,10 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
 const isLoadingSubmit = ref(false)
 
 
-
-const onAddProducts = async (product: {}) => {
-    console.log('products zzzz', product.transaction_id)
-    // return 
-
+const listLoadingProducts = ref({
+    
+})
+const onAddProducts = async (product: {historic_asset_id: number}) => {
 
     const routePost = product?.transaction_id ? 
         {
@@ -200,6 +199,9 @@ const onAddProducts = async (product: {}) => {
         routePost.body,
         {
             only: ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'],
+            onStart: () => {
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'loading'
+            },
             onBefore: () => 'isLoadingSubmit.value = true',
             onError: (error) => {
                 notify({
@@ -207,6 +209,7 @@ const onAddProducts = async (product: {}) => {
                     text: error.products || undefined,
                     type: "error"
                 })
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
                 notify({
@@ -214,8 +217,14 @@ const onAddProducts = async (product: {}) => {
                     text: trans("Successfully added portfolios"),
                     type: "success"
                 })
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
             },
-            onFinish: () => isLoadingSubmit.value = false
+            onFinish: () => {
+                isLoadingSubmit.value = false
+                setTimeout(() => {
+                    listLoadingProducts.value[`id-${product.historic_asset_id}`] = null
+                }, 3000)
+            }
         })
 }
 
@@ -236,23 +245,26 @@ console.log('basket ds', props)
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-group-upload-add>
-            <Button
-                @click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-                :label="trans('Upload products')"
-                icon="upload"
-                type="tertiary"
-            />
-        </template>
+        <template #button-group-upload-add="{ action }">
+            <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
+				<Button
+					v-if="upload_spreadsheet"
+					@click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
+					:label="trans('Upload products')"
+                    icon="upload"
+                    type="tertiary"
+					class="rounded-none border-0"
+				/>
+                <Button
+                    v-if="is_in_basket"
+                    @click="() => isModalProductListOpen = true"
+                    :label="trans('Add products')"
+                    type="tertiary"
+					icon="fas fa-plus"
+					class="rounded-none border-none"
+                />
+			</div>
 
-        <template #other>
-            <Button
-                v-if="is_in_basket"
-                @click="() => isModalProductListOpen = true"
-                :label="trans('Add products')"
-                icon="plus"
-                type="secondary"
-            />
         </template>
     </PageHeading>
 
@@ -340,6 +352,7 @@ console.log('basket ds', props)
             :routeFetch="props.routes.select_products"
             :isLoadingSubmit
             @submit="(products: {}) => onAddProducts(products)"
+            :listLoadingProducts
             withQuantity
         >
         </ProductsSelectorAutoSelect>

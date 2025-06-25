@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
+use App\Http\Resources\Catalogue\FamiliesSelectResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
@@ -24,11 +25,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 class GetFamiliesInShop extends OrgAction
 {
     use WithCatalogueAuthorisation;
-    private Shop $parent;
 
     public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle(parent: $shop);
@@ -54,9 +53,6 @@ class GetFamiliesInShop extends OrgAction
                 'product_categories.code',
                 'product_categories.name',
                 'product_categories.state',
-                'product_categories.description',
-                'product_categories.created_at',
-                'product_categories.updated_at',
                 'product_category_stats.number_current_products'
 
             ])
@@ -70,6 +66,6 @@ class GetFamiliesInShop extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $families): AnonymousResourceCollection
     {
-        return FamiliesResource::collection($families);
+        return FamiliesSelectResource::collection($families);
     }
 }

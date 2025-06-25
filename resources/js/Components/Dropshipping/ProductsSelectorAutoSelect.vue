@@ -2,25 +2,26 @@
 import { router } from '@inertiajs/vue3'
 import { inject, ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
-import Button from '@/Components/Elements/Buttons/Button.vue'
+// import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import Tag from '@/Components/Tag.vue'
+// import Tag from '@/Components/Tag.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '@/Components/Image.vue'
-import { RouteParams } from '@/types/route-params'
+// import { RouteParams } from '@/types/route-params'
 import { routeType } from '@/types/route'
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+// import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
-import { faTimes } from "@fal"
+// import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '../NumberWithButtonSave.vue'
-import ToggleSwitch from "primevue/toggleswitch"
+// import ToggleSwitch from "primevue/toggleswitch"
 import LoadingIcon from '../Utils/LoadingIcon.vue'
+import ConditionIcon from '../Utils/ConditionIcon.vue'
 library.add(faCheckCircle)
 
 const props = defineProps<{
@@ -32,6 +33,9 @@ const props = defineProps<{
     withQuantity?: boolean
     label_result?: string
     valueToRefetch?: string
+    listLoadingProducts: {
+        
+    }
 }>()
 
 
@@ -166,23 +170,25 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                                     {{ locale?.currencyFormat(layout?.iris?.currency?.code, item.price || 0) }}
                                                 </div>
 
-                                                <NumberWithButtonSave
-                                                    v-if="withQuantity && (item?.available_quantity && item?.available_quantity > 0)"
-                                                    :modelValue="get(item, 'quantity_ordered', 0)"
-                                                    :bindToTarget="{
-                                                        min: 0,
-                                                        max: item?.available_quantity
-                                                    }"
-                                                    @update:modelValue="(e: number) => (
-                                                        // Put auto select action here
-                                                        set(item, 'quantity_selected', e),
-                                                        debounceEmitSubmit(item)
-                                                    )"
-                                                    allowZero
-                                                    noUndoButton
-                                                    noSaveButton
-                                                    parentClass="w-min"
-                                                />
+                                                <div v-if="withQuantity && (item?.available_quantity && item?.available_quantity > 0)" class="flex items-center gap-x-2">
+                                                    <NumberWithButtonSave
+                                                        :modelValue="get(item, 'quantity_ordered', 0)"
+                                                        :bindToTarget="{
+                                                            min: 0,
+                                                            max: item?.available_quantity
+                                                        }"
+                                                        @update:modelValue="(e: number) => (
+                                                            // Put auto select action here
+                                                            set(item, 'quantity_selected', e),
+                                                            debounceEmitSubmit(item)
+                                                        )"
+                                                        allowZero
+                                                        noUndoButton
+                                                        noSaveButton
+                                                        parentClass="w-min"
+                                                    />
+                                                    <ConditionIcon class="xabsolute -right-3 top-1" :state="get(listLoadingProducts, [`id-${item.historic_asset_id}`], undefined)" />
+                                                </div>
                                             </div>
                                         </slot>
                                     </div>

@@ -80,15 +80,10 @@ class EditCustomer extends OrgAction
                             'title'  => __('contact information'),
                             'label'  => __('contact'),
                             'fields' => [
-                                'first_name' => [
+                                'contact_name' => [
                                     'type'  => 'input',
-                                    'label' => __('first name'),
-                                    'value' => $customer->first_name ?? $firstName
-                                ],
-                                'last_name' => [
-                                    'type'  => 'input',
-                                    'label' => __('last name'),
-                                    'value' => $customer->last_name ?? $lastName
+                                    'label' => __('contact name'),
+                                    'value' => $customer->contact_name
                                 ],
                                 'company_name' => [
                                     'type'  => 'input',

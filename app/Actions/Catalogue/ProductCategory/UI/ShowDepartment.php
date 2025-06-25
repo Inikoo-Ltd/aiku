@@ -76,6 +76,7 @@ class ShowDepartment extends OrgAction
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('department')
                     ],
+                    'iconRight' => $department->state->stateIcon()[$department->state->value],
                     'actions'       => [
                         $this->getWebpageActions($department),
                         $this->canEdit ? [
@@ -101,22 +102,6 @@ class ShowDepartment extends OrgAction
                     ],
                     'subNavigation' => $this->getDepartmentSubNavigation($department)
                 ],
-                /* 'collections_route' => [
-                    'name'       => 'grp.json.shop.catalogue.collections',
-                    'parameters' => [
-                        'shop'         => $department->shop->slug,
-                        'scope'   => $department->shop->slug
-                    ],
-                    'method' => 'get'
-                ],
-
-                'attach_collections_route' => $department->webpage ? [
-                    'name'       => 'grp.models.webpage.attach_collection',
-                    'parameters' => [
-                        'webpage'  => $department->webpage->id,
-                    ],
-                    'method' => 'post'
-                ] : [], */
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => DepartmentTabsEnum::navigation()

@@ -95,6 +95,7 @@ export const initialiseApp = () => {
                 action: 'navigate',
                 current_page: {
                     route_name: layout.currentRoute,
+                    route_params: layout.currentParams,
                     label: event.detail.page.props.title,
                     url: event.detail.page.url,
                     icon_left: usePage().props.live_users?.icon_left || null,

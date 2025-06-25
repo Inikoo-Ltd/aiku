@@ -25,6 +25,7 @@ export interface Navigation {
     scope?: string
     icon?: string[] | string
     route?: routeType
+    indicator?: boolean  // To show red dot indicator
     right_label?: {
         label?: string
         number?: number

@@ -122,7 +122,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                 'title' => __("There are no orders yet"),
                 'count' => 0
             ];
-
+            $table->withLabelRecord([__('order'), __('orders')]);
             $table->withGlobalSearch()
                 ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);

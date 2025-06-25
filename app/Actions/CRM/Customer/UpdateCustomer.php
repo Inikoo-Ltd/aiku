@@ -20,6 +20,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Http\Resources\CRM\CustomersResource;
@@ -37,6 +38,7 @@ class UpdateCustomer extends OrgAction
     use WithActionUpdate;
     use WithModelAddressActions;
     use WithNoStrictRules;
+    use WithProcessContactNameComponents;
 
     private Customer $customer;
 
@@ -100,9 +102,13 @@ class UpdateCustomer extends OrgAction
             $modelData['name'] = $company_name ?: $contact_name;
         }
 
+        if (Arr::has($modelData, 'contact_name')) {
+            data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
+        }
+
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
         $customer->comms->update($emailSubscriptionsData);
-        $customer = $this->update($customer, $modelData, ['data']);
+        $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
 
         if ($customer->wasChanged('state')) {

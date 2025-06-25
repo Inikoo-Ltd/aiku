@@ -24,7 +24,7 @@ interface PagePropsWithFlash extends InertiaPageProps {
 }
 
 const page = usePage<PagePropsWithFlash>()
-
+// console.log('checkout_com_data', props.checkout_com_data)
 const { isLoading, initializeCheckout } = useCheckoutCom(props.checkout_com_data)
 onMounted(() => {
     initializeCheckout("flow-container")
@@ -40,12 +40,11 @@ onMounted(() => {
         <div v-if="head_title" class="max-w-xl mx-auto">
             {{ head_title }}
         </div>
-        
-        <div class="isolate relative w-full max-w-xl mx-auto my-8 overflow-hidden pb-4">
-            <div v-show="!isLoading" id="flow-container" class="z-10 absolute">
 
-            </div>
-            <div class="w-full h-[437px] skeleton z-[2]" xxclass="isLoading ? 'skeleton' : ''">
+        <div class="isolate relative w-full max-w-xl mx-auto my-8 overflow-hidden pb-4">
+            <div xv-show="!isLoading" id="flow-container" class="absolute " />
+            <div class="w-full h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
+
             </div>
         </div>
     </div>
