@@ -23,6 +23,7 @@ import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfi
 import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 library.add(faSeedling)
 
 const props = defineProps<{
@@ -44,7 +45,7 @@ const props = defineProps<{
 
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-
+const isOpenModalPortfolios = ref(false)
 const locale = inject('locale', aikuLocaleStructure)
 
 const component = computed(() => {
@@ -61,11 +62,11 @@ const compSelectedFamiliesId = computed(() => Object.keys(selectedFamiliesId.val
 const isOpenModalAddToDepartment = ref(false)
 const selectedDepartmentId = ref(null)
 const isLoadingButton = ref(false)
+const isLoadingSubmit = ref(false)
 const onSubmitToDepartment = () => {
     isLoadingButton.value = true
 
     const selectedFamiliesIdToSubmit = compSelectedFamiliesId.value
-    console.log('ewqewq', selectedFamiliesIdToSubmit)
 
     router.post(
         route(props.routes.submit_route?.name, {
@@ -101,6 +102,35 @@ const onSubmitToDepartment = () => {
         }
     )
 }
+
+const onSubmitAddItem = async (idProduct: number[]) => {
+    router.post(route(props.routes.attach_families.name, props.routes.attach_families.parameters ),
+    {
+        families_id: idProduct
+    },
+    {
+        onBefore: () => isLoadingSubmit.value = true,
+        onError: (error) => {
+            notify({
+                title: "Something went wrong.",
+                text: error.products || undefined,
+                type: "error"
+            })
+        },
+        onSuccess: () => {
+            router.reload({only: ['data']})
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully added portfolios"),
+                type: "success"
+            })
+            isOpenModalPortfolios.value = false
+        },
+        onFinish: () => isLoadingSubmit.value = false
+    })
+}
+
+
 </script>
 
 <template>
@@ -117,6 +147,14 @@ const onSubmitToDepartment = () => {
                 :disabled="compSelectedFamiliesId.length < 1"
                 v-tooltip="compSelectedFamiliesId.length < 1 ? trans('Select at least one family') : ''"
             />
+
+            <Button
+                v-if="routes.fetch_families"
+                @click="() => isOpenModalPortfolios = true"
+                type="tertiary"
+                icon="fas fa-plus"
+                :label="trans('Attach families')"
+            />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
@@ -127,6 +165,7 @@ const onSubmitToDepartment = () => {
         :key="currentTab"
         :tab="currentTab"
         :data="props[currentTab]"
+        :routes="routes"
         :isCheckBox="is_orphan_families"
         @selectedRow="(productsId: {}) => (selectedFamiliesId = productsId)"
     />
@@ -160,5 +199,30 @@ const onSubmitToDepartment = () => {
             :loading="isLoadingButton"
             full
         />
+    </Modal>
+
+    <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
+        <ProductsSelector
+            v-if="routes.fetch_families"
+            :headLabel="trans('Add Family to portfolios')"
+            :route-fetch="routes.fetch_families"
+            :isLoadingSubmit
+            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
+        >
+            <template #product="{ item }">
+                <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
+                <div class="flex flex-col justify-between">
+                    <div class="w-fit" xclick="() => selectProduct(item)">
+                        <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                        <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                        <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                        <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                    </div>
+                    <div v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                        {{ locale?.number(item.number_current_products || 0) }} {{ trans("products") }}
+                    </div>
+                </div>
+            </template>
+        </ProductsSelector>
     </Modal>
 </template>

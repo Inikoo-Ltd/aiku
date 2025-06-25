@@ -29,6 +29,8 @@ const props = defineProps<{
     isCheckBox?: boolean
 }>()
 
+console.log(props)
+
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
 }>()
@@ -179,7 +181,7 @@ const isLoadingDetach = ref<string[]>([])
             <span v-else class="text-xs text-gray-400 italic">-</span>
         </template>
 
-        <template #cell(actions)="{ item }">
+        <template #cell(action)="{ item }">
             <Link
                 v-if="routes?.detach?.name"
                 as="button"

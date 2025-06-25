@@ -377,7 +377,14 @@ class IndexFamilies extends OrgAction
                         'parameters' => [
                             'productCategory' => $this->parent->slug
                         ]
-                    ]
+                    ],
+                    'fetch_families' => [
+                        'name'       => 'grp.json.shop.catalogue.departments.families',
+                        'parameters' => [
+                            'shop'  => $this->shop->slug,
+                            'productCategory'   => $this->parent->id
+                        ]
+                    ],
 
                 ];
             }
