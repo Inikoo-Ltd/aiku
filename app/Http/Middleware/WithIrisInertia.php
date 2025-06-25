@@ -34,34 +34,48 @@ trait WithIrisInertia
             $cartCount     = $orderInBasket ? $orderInBasket->stats->number_item_transactions : 0;
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
         }
+
+        $migrationRedirect = null;
+        if ($website->is_migrating) {
+            $migrationRedirect = [
+                'need_changes_url' => [
+                    'https://'.$website->domain,
+                    'http://'.$website->domain,
+                    'https://www.'.$website->domain.'/',
+                ],
+                'to_url'           => 'https://v2.'.$website->domain
+            ];
+        }
+
+
         return [
-            'header'       => array_merge(
+            'header'               => array_merge(
                 $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
             ),
-            'footer'       => array_merge(
+            'footer'               => array_merge(
                 $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
             ),
-            'menu'         => array_merge(
+            'menu'                 => array_merge(
                 $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
             ),
-            'shop'        => [
+            'shop'                 => [
                 'type' => $website->shop?->type?->value,
                 'id'   => $website->shop?->id,
                 'slug' => $website->shop?->slug,
                 'name' => $website->shop?->name,
             ],
-            "website"      => WebsiteIrisResource::make($website)->getArray(),
-            'theme'        => Arr::get($website->published_layout, 'theme'),
+            "website"              => WebsiteIrisResource::make($website)->getArray(),
+            'theme'                => Arr::get($website->published_layout, 'theme'),
             'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
-            'is_logged_in' => (bool)$webUser,
-            'currency' => [
-                    'code'   => $website->shop->currency->code,
-                    'symbol' => $website->shop->currency->symbol,
-                    'name'   => $website->shop->currency->name,
-                ],
-            'user_auth'    => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-            'customer'     => $webUser?->customer,
-            'variables'    => [
+            'is_logged_in'         => (bool)$webUser,
+            'currency'             => [
+                'code'   => $website->shop->currency->code,
+                'symbol' => $website->shop->currency->symbol,
+                'name'   => $website->shop->currency->name,
+            ],
+            'user_auth'            => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+            'customer'             => $webUser?->customer,
+            'variables'            => [
                 'reference'        => $webUser?->customer?->reference,
                 'name'             => $webUser?->contact_name,
                 'username'         => $webUser?->username,
@@ -70,14 +84,7 @@ trait WithIrisInertia
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ],
-            'migration_redirect'=>[
-                'need_chnages_url' => [
-                    'https://aw-dropship.com',
-                    'http://aw-dropship.com',
-                    'https://www.aw-dropship.com/',
-                ],
-                'to_url' => 'https://v2.aw-dropship.com'
-            ]
+            'migration_redirect'   => $migrationRedirect
         ];
     }
 }
