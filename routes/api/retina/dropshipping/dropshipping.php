@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Api\Retina\Dropshipping\Client\DeleteApiCustomerClient;
+use App\Actions\Api\Retina\Dropshipping\Client\DisableApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
 use App\Actions\Api\Retina\Dropshipping\Client\StoreApiCustomerClient;
@@ -55,6 +55,6 @@ Route::prefix('clients')->as('clients.')->group(function () {
     Route::post('', StoreApiCustomerClient::class)->name('create');
     Route::get('{customerClient:id}', GetClient::class)->name('show');
     Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
-    Route::delete('{customerClient:id}', DeleteApiCustomerClient::class)->name('delete');
+    Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete');
 
 });

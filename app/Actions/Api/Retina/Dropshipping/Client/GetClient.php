@@ -10,7 +10,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
-use App\Actions\Api\Group\Resources\CustomerClientApiResource;
+use App\Actions\Api\Retina\Dropshipping\Resource\CustomerClientApiResource;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerClient;
 use Lorisleiva\Actions\ActionRequest;

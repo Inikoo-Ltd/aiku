@@ -10,9 +10,9 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\CustomerClientResource;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\CRM\CustomerClientResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Rules\IUnique;
 use App\Rules\Phone;
@@ -51,13 +51,11 @@ class UpdateApiCustomerClient extends RetinaApiAction
                 ),
 
             ],
-            'status'         => ['sometimes', 'boolean'],
             'contact_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'          => ['sometimes', 'nullable', 'email'],
             'phone'          => ['sometimes', 'nullable', new Phone()],
             'address'        => ['sometimes', new ValidAddress()],
-            'deactivated_at' => ['sometimes', 'nullable', 'date'],
         ];
 
         return $rules;
