@@ -10,6 +10,7 @@ export interface Icon {
     icon: string | string[]
     tooltip?: string
     class?: string
+    icon_rotation?: number
 }
 
 export interface StateIcon {

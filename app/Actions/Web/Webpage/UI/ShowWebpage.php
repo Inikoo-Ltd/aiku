@@ -164,11 +164,11 @@ class ShowWebpage extends OrgAction
             'tooltip' => __('Product'),
             'icon'    => ["fal", "fa-cube"],
             'route'   => [
-                'name'       => 'grp.org.shops.show.catalogue.products.show',
+                'name'       => 'grp.org.shops.show.catalogue.products.all_products.show',
                 'parameters' => [
                     'organisation' => $webpage->organisation->slug,
                     'shop'         => $webpage->shop->slug,
-                    'department'   => $product->slug
+                    'product'   => $product->slug
                 ]
             ]
         ];

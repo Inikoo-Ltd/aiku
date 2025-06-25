@@ -6,10 +6,12 @@ import { ref, provide } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import { useColorTheme } from "@/Composables/useStockList"
 import { isArray } from 'lodash-es'
+import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 
 import IrisHeader from '@/Layouts/Iris/Header.vue'
 import IrisFooter from '@/Layouts/Iris/Footer.vue'
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
+import { trans } from "laravel-vue-i18n"
 initialiseRetinaApp()
 
 provide('layout', useLayoutStore())
@@ -25,6 +27,9 @@ const isStaging = layout.app.environment === 'staging'
 
 <template>
     <div class="-z-[1] fixed inset-0 bg-slate-100" />
+    <ScreenWarning v-if="isStaging">
+		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+	</ScreenWarning>
     <div class="isolate relative min-h-full transition-all"
     :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
         <IrisHeader

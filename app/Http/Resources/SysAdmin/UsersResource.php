@@ -8,9 +8,6 @@
 
 namespace App\Http\Resources\SysAdmin;
 
-use App\Http\Resources\HumanResources\EmployeeResource;
-use App\Http\Resources\SysAdmin\Group\GroupResource;
-use App\Http\Resources\SysAdmin\Organisation\UserOrganisationResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -63,19 +60,8 @@ class UsersResource extends JsonResource
             'number_expired_api_tokens' => $this->number_expired_api_tokens,
             'parent_type'               => $this->parent_type,
             'contact_name'              => $this->contact_name,
-            'parent'                    => $this->when($this->relationLoaded('parent'), function () {
-                return match (class_basename($this->resource->parent)) {
-                    'Employee' => new EmployeeResource($this->resource->parent),
-                    'Guest' => new GuestResource($this->resource->parent),
-                    default => [],
-                };
-            }),
-            'group'                     => GroupResource::make($this->group),
-            'organisations'             => UserOrganisationResource::collectionForUser($user->authorisedOrganisations, $this->resource),
-            'created_at'                => $user->created_at,
-            'updated_at'                => $user->updated_at,
-            'roles'                     => $user->getRoleNames()->toArray(),
-            'permissions'               => $user->getAllPermissions()->pluck('name')->toArray()
+
+
         ];
     }
 }

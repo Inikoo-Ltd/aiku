@@ -72,6 +72,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $webpage_id
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
+ * @property int|null $top_seller
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -234,10 +235,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
-    public function childrenCollections(): MorphMany
-    {
-        return $this->morphMany(Collection::class, 'parent')->withTimestamps();
-    }
 
     public function webpage(): MorphOne
     {

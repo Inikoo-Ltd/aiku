@@ -76,6 +76,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_collections
+ * @property int $number_current_collections state=active+discontinuing
+ * @property int $number_collections_state_in_process
+ * @property int $number_collections_state_active
+ * @property int $number_collections_state_inactive
+ * @property int $number_collections_state_discontinuing
+ * @property int $number_collections_state_discontinued
  * @method static Builder<static>|ProductCategoryStats newModelQuery()
  * @method static Builder<static>|ProductCategoryStats newQuery()
  * @method static Builder<static>|ProductCategoryStats query()

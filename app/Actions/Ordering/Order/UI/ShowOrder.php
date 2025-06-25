@@ -85,9 +85,8 @@ class ShowOrder extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, Order $order, ActionRequest $request): Order
+    public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)->where('platform_id', $platform->id)->first();
         $this->parent        = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
@@ -509,7 +508,7 @@ class ShowOrder extends OrgAction
             ),
             'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.show'
             => array_merge(
-                (new ShowCustomerSalesChannel())->getBreadcrumbs($this->parent->platform, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index', $routeParameters),
+                (new ShowCustomerSalesChannel())->getBreadcrumbs($order->customerSalesChannel, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index', $routeParameters),
                 $headCrumb(
                     $order,
                     [

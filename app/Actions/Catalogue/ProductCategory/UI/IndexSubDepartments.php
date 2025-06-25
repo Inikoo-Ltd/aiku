@@ -183,9 +183,11 @@ class IndexSubDepartments extends OrgAction
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('department')
             ];
-            $iconRight  = [
-                'icon' => 'fal fa-dot-circle',
-            ];
+            // $iconRight  = [
+            //     'icon' => 'fal fa-dot-circle',
+            // ];
+            $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
+
             $afterTitle = [
 
                 'label' => __('Sub-departments')

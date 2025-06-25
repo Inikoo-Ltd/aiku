@@ -14,6 +14,7 @@ import { faCubes, faSeedling, faRulerCombined } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 
 library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt)
 
@@ -68,7 +69,7 @@ const locale = inject('locale', aikuLocaleStructure)
             color: stat.color,
             xbackgroundColor: stat.backgroundColor
         }"
-        class="isolate relative overflow-hidden rounded-lg cursor-pointer border px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
+        class="block isolate relative overflow-hidden rounded-lg cursor-pointer border px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
         :class="stat.is_negative ? 'bg-red-100 hover:bg-red-200 border-red-200 hover:border-red-300 text-red-500' : 'bg-white hover:bg-gray-50 border-gray-200'"
         @start="() => isBoxLoading = true"
         @finish="() => isBoxLoading = false"
@@ -82,7 +83,9 @@ const locale = inject('locale', aikuLocaleStructure)
 
         <dd class="mt-1 text-3xl font-semibold tracking-tight flex gap-x-2 items-center tabular-nums">
             <LoadingIcon v-if="isBoxLoading" class='text-xl' />
-            <FontAwesomeIcon v-else-if="stat.icon" :icon='stat.icon' class='text-xl' fixed-width aria-hidden='true' />
+            <FontAwesomeIcon v-else-if="typeof stat.icon === 'string'" :icon='stat.icon' class='text-xl' fixed-width aria-hidden='true' />
+            <Icon v-else-if="stat.icon" :data="stat.icon" class="text-xl"/>
+
             <CountUp
                 :endVal='stat?.value'
                 :duration='1.5'
@@ -120,12 +123,14 @@ const locale = inject('locale', aikuLocaleStructure)
                 :href="meta.route?.name ? route(meta.route.name, meta.route.parameters) : ''"
                 @start="() => isLoadingMeta = idxMeta"
                 @finish="() => isLoadingMeta = null"
-                class="group/sub px-2 flex gap-x-0.5 items-center font-normal"
+                class="group/sub px-2 flex gap-x-1 items-center font-normal"
                 :class="meta.route?.name ? 'hover:underline' : ''"
                 v-tooltip="capitalize(meta.tooltip) || capitalize(meta.icon?.tooltip)"
             >
                 <LoadingIcon v-if="isLoadingMeta == idxMeta" class="md:opacity-50 group-hover/sub:opacity-100" />
-                <Icon v-else :data="meta.icon" class="" :class="meta.route?.name ? 'md:opacity-50 group-hover/sub:opacity-100' : 'md:opacity-50'" />
+                <span v-else-if="meta.logo_icon" v-html="ChannelLogo(meta.logo_icon)" class="flex items-center min-w-6 w-min max-w-10 min-h-4 h-auto max-h-7" />
+                <Icon v-else-if="meta.icon" :data="meta.icon" class="" :class="meta.route?.name ? 'md:opacity-50 group-hover/sub:opacity-100' : 'md:opacity-50'" />
+
                 <div class="group-hover/sub:text-gray-700">
                     {{ locale.number(meta.count) }}
                 </div>

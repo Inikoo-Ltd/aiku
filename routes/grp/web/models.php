@@ -325,9 +325,9 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
 });
-Route::prefix('sub-department/{subDepartment}')->name('sub-department.')->group(function () {
+Route::prefix('sub-department/{subDepartment:id}')->name('sub-department.')->group(function () {
     Route::post('families/attach', AttachFamiliesToSubDepartment::class)->name('families.attach');
-    Route::delete('family/{family}/detach', DetachFamilyToSubDepartment::class)->name('family.detach');
+    Route::delete('family/{family:id}/detach', DetachFamilyToSubDepartment::class)->name('family.detach')->withoutScopedBindings();
 });
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete')->withoutScopedBindings();

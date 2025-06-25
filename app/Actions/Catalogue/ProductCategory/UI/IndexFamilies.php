@@ -250,6 +250,10 @@ class IndexFamilies extends OrgAction
                 if (class_basename($parent) == 'Collection') {
                     $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
                 }
+
+                if($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
+                }
             }
         };
     }
@@ -324,9 +328,10 @@ class IndexFamilies extends OrgAction
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
                 ];
-                $iconRight  = [
-                    'icon' => 'fal fa-folder',
-                ];
+                // $iconRight  = [
+                //     'icon' => 'fal fa-folder',
+                // ];
+                $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
                     'label' => __('Families')
@@ -338,9 +343,10 @@ class IndexFamilies extends OrgAction
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
                 ];
-                $iconRight  = [
-                    'icon' => 'fal fa-folder',
-                ];
+                // $iconRight  = [
+                //     'icon' => 'fal fa-folder',
+                // ];
+                $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
                     'label' => __('Families')
@@ -349,6 +355,33 @@ class IndexFamilies extends OrgAction
         }
 
         $routes = null;
+
+        if($this->parent instanceof PRoductCategory) 
+        {
+            if($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $routes = [
+                    'attach' => [
+                        'name'       => 'grp.models.sub-department.families.attach',
+                        'parameters' => [
+                            'subDepartment' => $this->parent->id
+                        ]
+                    ],
+                    'detach' => [
+                        'method'  => 'delete',
+                        'name'       => 'grp.models.sub-department.family.detach',
+                        'parameters' => [
+                            'subDepartment' => $this->parent->id
+                        ]
+                    ],
+                    'fetch_families'   => [
+                        'name'      =>  'grp.json.product_category.families.index',
+                        'parameters' => [
+                            'productCategory' => $this->parent->slug
+                        ]
+                    ],
+                ];
+            }
+        }
 
 
         return Inertia::render(

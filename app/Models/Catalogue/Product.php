@@ -91,6 +91,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $webpage_id
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
+ * @property int|null $top_seller
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders

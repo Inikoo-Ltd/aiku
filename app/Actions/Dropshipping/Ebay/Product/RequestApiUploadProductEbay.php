@@ -40,14 +40,14 @@ class RequestApiUploadProductEbay extends RetinaAction
             if (app()->isProduction()) {
                 foreach ($product->images as $image) {
                     $images[] = [
-                        'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
+                        GetImgProxyUrl::run($image->getImage()->extension('jpg'))
                     ];
                 }
-
-                $imageUrls = [
-                    'imageUrls' => $images
-                ];
             }
+
+            $imageUrls = [
+                'imageUrls' => $images
+            ];
 
             $inventoryItem = [
                 'sku' => $product->code,
@@ -60,13 +60,23 @@ class RequestApiUploadProductEbay extends RetinaAction
                 'product' => [
                     'title' => $portfolio->customer_product_name,
                     'description' => $portfolio->customer_description,
+                    'aspects' =>  [
+                        'Brand' => [
+                            'AncientWisdom'
+                        ],
+                        'Type' => [
+                            $product->department->name.'/'.$product->family->name
+                        ],
+                    ],
+                    'brand' => 'AncientWisdom',
+                    'mpn' => $product->code,
                     ...$imageUrls
                 ]
             ];
 
             $ebayUser->storeProduct($inventoryItem);
 
-            $categories = $ebayUser->getCategorySuggestions(Arr::get($inventoryItem, 'product.title'));
+            $categories = $ebayUser->getCategorySuggestions($product->family->name);
 
             $offer = $ebayUser->storeOffer([
                 'sku' => Arr::get($inventoryItem, 'sku'),
@@ -74,7 +84,7 @@ class RequestApiUploadProductEbay extends RetinaAction
                 'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
                 'price' => $portfolio->customer_price,
                 'currency' => $portfolio->shop->currency->code,
-                'category_id' => Arr::get($categories, 'categorySuggestions.1.category.categoryId')
+                'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
             ]);
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));

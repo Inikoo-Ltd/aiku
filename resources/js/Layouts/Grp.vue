@@ -25,16 +25,17 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faTimes, faAsterisk } from '@fal'
+import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faClock, faTransporter, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faTimes, faAsterisk } from '@fal'
+import { faPauseCircle, faSunset, faSkull } from '@fal'
 import { faSearch, faBell } from '@far'
-import { faAsterisk as fasAsterisk, faExclamation, faInfo } from '@fas'
+import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { notify } from '@kyvg/vue3-notification'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-library.add(fasAsterisk, faExclamation, faInfo, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faTransporter, faParking, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk)
+library.add(faPauseCircle, faSunset, faSkull, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faClock, faTransporter, faParking, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())

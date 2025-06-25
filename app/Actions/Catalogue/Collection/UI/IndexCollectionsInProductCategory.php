@@ -30,6 +30,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCollectionsInProductCategory extends OrgAction
 {
@@ -48,6 +49,13 @@ class IndexCollectionsInProductCategory extends OrgAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('collections.name', $value)
+                    ->orWhereStartWith('collections.code', $value);
+            });
+        });
 
         $queryBuilder = QueryBuilder::for(Collection::class);
         $queryBuilder->join('model_has_collections', function ($join) {
@@ -93,6 +101,7 @@ class IndexCollectionsInProductCategory extends OrgAction
 
 
         return $queryBuilder
+            ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name', 'number_families', 'number_products'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -150,9 +159,11 @@ class IndexCollectionsInProductCategory extends OrgAction
 
 
         $title      = $productCategory->name;
-        $iconRight  = [
-            'icon' => 'fal fa-album-collection',
-        ];
+        // $iconRight  = [
+        //     'icon' => 'fal fa-album-collection',
+        // ];
+        $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
+
         $afterTitle = [
             'label' => __('Collections')
         ];

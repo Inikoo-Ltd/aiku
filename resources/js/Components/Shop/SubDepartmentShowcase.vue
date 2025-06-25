@@ -27,19 +27,7 @@ const props = defineProps<{
       created_at: string
       updated_at: string
     }
-    families: {
-      id: number
-      name: string
-      slug: string
-      image: ImageTS
-      code: string
-      state?: any
-      products?: {
-        id: number
-        name: string
-        image: ImageTS
-      }[]
-    }[]
+
     routes: {
       detach_family: routeType,
       attach_collections_route: routeType,
@@ -209,102 +197,10 @@ const UnassignCollection = async (id: number) => {
           </div>
         </div>
 
-        <!-- Family Section -->
-        <div>
-          <!-- Header -->
-          <div class="flex items-center justify-between mb-4 border-b pb-2">
-            <h2 class="text-lg font-semibold text-gray-800">
-              {{ trans("Family list") }} ({{ data.families.length }})
-            </h2>
-          </div>
 
-          <!-- List -->
-          <div v-if="data.families?.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div
-              v-for="family in data.families"
-              :key="family.id"
-              class="relative bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-5 flex flex-col"
-            >
-              <span class="absolute -top-3 left-3 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded shadow">Family</span>
-
-              <!-- Header -->
-              <div class="flex items-start gap-3 mb-4">
-                <Image
-                  :src="family.image"
-                  :alt="family.name"
-                  class="w-12 h-12 rounded-lg object-cover shadow-sm"
-                  imageCover
-                />
-                <div class="flex-1 min-w-0">
-                  <h3 class="text-base font-semibold text-gray-900 flex items-center gap-1">
-                    {{ family.name }}
-                    <Icon
-                      v-if="family.state"
-                      :data="family.state"
-                      :title="family.state.label"
-                      class="ml-1"
-                    />
-                  </h3>
-                  <p class="text-xs text-gray-500">Code: {{ family.code }}</p>
-                  <p class="text-xs text-gray-500">
-                    {{ family.products?.length || 0 }} product{{ family.products?.length === 1 ? '' : 's' }}
-                  </p>
-                </div>
-
-                <Button
-                  @click.stop="onDetachFamily(family.slug)"
-                  icon="fal fa-unlink"
-                  type="negative"
-                  size="xs"
-                  :loading="isLoadingDelete.includes(family.slug)"
-                />
-              </div>
-
-              <!-- Products -->
-              <div class="bg-gray-50 border rounded-lg px-4 py-2 max-h-56 overflow-y-auto custom-scroll space-y-2">
-                <template v-if="family.products?.length">
-                  <div
-                    v-for="product in family.products"
-                    :key="product.id"
-                    class="flex items-start gap-3 border-b last:border-b-0 py-2"
-                  >
-                    <FontAwesomeIcon :icon="['fal', 'seedling']" class="w-4 h-4 text-green-500 mt-1" />
-                    <div class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
-                      <Image
-                        :src="product.image?.source"
-                        :alt="product.name"
-                        class="w-full h-full object-cover"
-                        imageCover
-                      />
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm text-gray-700 truncate">{{ product.name }}</p>
-                      <p class="text-xs text-gray-500">Code: {{ product.id }}</p>
-                    </div>
-                  </div>
-                </template>
-                <div v-else class="text-xs text-gray-400 italic text-center">No products available.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty -->
-          <div v-else class="mx-auto max-w-md px-4 py-20 text-center">
-            <EmptyState :data="{ title: 'No families', description: 'This subdepartment has no families' }" />
-          </div>
-        </div>
       </div>
 
-      <!-- Right: Collection List -->
-     <!--  <CollectionList  v-if="data.has_webpage"
-        :collections="props.data.collections.data"
-        :routeFetch="props.data.routeList.collections_route"
-        :canAdd="true"
-        :loadingUnassignIds="unassignLoadingIds"
-        :isSubmitting="isLoadingSubmit"
-        @assign="assignCollection"
-        @unassign="UnassignCollection"
-      /> -->
+
     </div>
   </div>
 </template>

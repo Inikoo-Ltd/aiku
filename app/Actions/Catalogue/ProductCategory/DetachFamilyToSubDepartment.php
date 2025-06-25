@@ -18,6 +18,7 @@ use App\Http\Resources\Catalogue\FamilyResource;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Catalogue\ProductCategory;
+use Google\Service\Texttospeech\Voice;
 
 class DetachFamilyToSubDepartment extends OrgAction
 {
@@ -46,12 +47,12 @@ class DetachFamilyToSubDepartment extends OrgAction
         return $family;
     }
 
-    public function asController(ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function asController(ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): void
     {
         $this->initialisationFromShop($family->shop, $request);
 
-        return $this->handle($family);
-    }
+        $this->handle($family);
+    }   
 
 
     public function jsonResponse(ProductCategory $family): FamilyResource

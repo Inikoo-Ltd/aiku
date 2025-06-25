@@ -24,11 +24,11 @@ trait HasGetProductCategoryState
             return ProductCategoryStateEnum::ACTIVE;
         }
 
-        if (Arr::get($stats, 'number_stocks_state_discontinuing', 0) > 0) {
+        if (Arr::get($stats, 'number_products_state_discontinuing', 0) > 0) {
             return ProductCategoryStateEnum::DISCONTINUING;
         }
 
-        if (Arr::get($stats, 'number_stocks_state_in_process', 0) > 0) {
+        if (Arr::get($stats, 'number_products_state_in_process', 0) > 0) {
             return ProductCategoryStateEnum::IN_PROCESS;
         }
 

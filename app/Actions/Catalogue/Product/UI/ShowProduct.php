@@ -221,6 +221,7 @@ class ShowProduct extends OrgAction
                     'afterTitle' => [
                         'label' => $product->name
                     ],
+                    'iconRight' => $product->state->stateIcon()[$product->state->value],
                     'actions'    => [
                         $product->webpage
                             ?
@@ -546,7 +547,7 @@ class ShowProduct extends OrgAction
                     ],
                 ],
             ],
-            'grp.org.shops.show.catalogue.products.show' => [
+            'grp.org.shops.show.catalogue.products.all_products.show' => [
                 'label' => $product->name,
                 'route' => [
                     'name'       => $routeName,

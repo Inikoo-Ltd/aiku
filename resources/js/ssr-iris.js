@@ -77,5 +77,8 @@ createServer(
                 page.props.ziggy.location)
             });
         }
-      }), import.meta.env.VITE_INERTIA_SSR_PORT ?? 13714
+      }), {
+    port: import.meta.env.VITE_INERTIA_SSR_PORT ?? 13714,
+    cluster: true
+  }
 );

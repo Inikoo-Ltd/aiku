@@ -130,8 +130,9 @@ class EditProduct extends OrgAction
     {
         return [
             [
-                'label'  => __('Information'),
+                'label'  => __('Properties'),
                 'title'  => __('id'),
+                'icon'   => 'fa-light fa-fingerprint',
                 'fields' => [
                     'code'        => [
                         'type'     => 'input',
@@ -176,7 +177,7 @@ class EditProduct extends OrgAction
             ],
             [
                 'label'  => __('Family'),
-                'icon'   => 'fa-light fa-box',
+                'icon'   => 'fa-light fa-folder',
                 'fields' => [
                     'family_id' => [
                         'type'       => 'select_infinite',
@@ -196,7 +197,7 @@ class EditProduct extends OrgAction
                         ],
                         'valueProp'  => 'id',
                         'labelProp'  => 'code',
-                        'required'   => false,
+                        'required'   => true,
                         'value'      => $product->family->id ?? null,
                     ]
                 ],

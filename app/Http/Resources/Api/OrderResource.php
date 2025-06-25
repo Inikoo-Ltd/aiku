@@ -27,7 +27,6 @@ class OrderResource extends JsonResource
     {
         /** @var Order $order */
         $order = $this->resource;
-
         $payAmount   = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
@@ -56,6 +55,7 @@ class OrderResource extends JsonResource
                 ],
                 'estimated_weight' => $estWeight
             ],
+            'transactions' => TransactionsResource::collection($order->transactions),
         ];
     }
 }

@@ -31,7 +31,6 @@ import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import { notify } from '@kyvg/vue3-notification'
 import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
 import { inject } from 'vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Image from '@/Components/Image.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -49,7 +48,6 @@ library.add(
     faDiagramNext,
 )
 
-const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 

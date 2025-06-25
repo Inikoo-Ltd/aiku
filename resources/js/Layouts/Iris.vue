@@ -114,9 +114,10 @@ onBeforeUnmount(() => {
             <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation"
                 :screen-type="screenType" />
 
-            <Breadcrumbs v-if="usePage().props.breadcrumbs && usePage().props.navigation" id="iris_breadcrumbs"
-                class="md:py-4 px-2 w-full border-b-0 mx-auto transition-all xbg-gray-100"
-                :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
+            <Breadcrumbs v-if="usePage().props.breadcrumbs" id="iris_breadcrumbs"
+                class="md:py-4 px-2 w-full xborder-b-0 mx-auto transition-all xbg-gray-100 border-b border-gray-200"
+                :breadcrumbs="usePage().props.breadcrumbs ?? []"
+                :navigation="usePage().props.navigation ?? []"
                 :layout="layout" />
 
             <main>

@@ -92,6 +92,7 @@ class StoreTransaction extends OrgAction
             'tax_category_id'     => ['sometimes', 'required', 'exists:tax_categories,id'],
             'date'                => ['sometimes', 'required', 'date'],
             'submitted_at'        => ['sometimes', 'required', 'date'],
+            'data'                => ['sometimes', 'array'],
         ];
 
         if (!$this->strict) {
