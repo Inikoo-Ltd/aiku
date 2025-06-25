@@ -34,14 +34,14 @@ class WebBlockCollectionResource extends JsonResource
             $imageSources = GetPictureSources::run($image);
         }
 
-
+        $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
         return [
             'slug'  => $this->slug,
             'code'  => $this->code,
             'name'  => $this->name,
             'image' => $imageSources,
             'url'   => $this->url,
-            'web_images' => json_encode(json_encode($this->web_images), true),
+            'web_images' => $webImages,
             'products_route' => [
                 'name' => 'grp.json.collection.products.index',
                 'parameters' => [

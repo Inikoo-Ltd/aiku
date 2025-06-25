@@ -33,15 +33,14 @@ class WebBlockFamiliesResource extends JsonResource
             $imageSources = GetPictureSources::run($image);
         }
 
-
+        $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
         return [
             'code'  => $this->code,
             'name'  => $this->name,
             'title' => $this->title,
             'url'   => $this->url,
             'image' => $imageSources,
-            'web_images'  => $this.web_images
-
+            'web_images'  => $webImages
         ];
     }
 }
