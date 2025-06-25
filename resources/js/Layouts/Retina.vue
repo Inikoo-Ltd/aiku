@@ -25,11 +25,11 @@ library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAl
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faTrashAlt, faCopy } from "@fal"
-import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo } from '@fas'
+import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo, faCircle } from '@fas'
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfo, faInfoCircle, faTrashAlt, faCopy)
+library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
 
 
 provide('layout', useLayoutStore())

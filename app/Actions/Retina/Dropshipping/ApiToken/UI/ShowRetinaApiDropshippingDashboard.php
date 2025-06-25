@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\SysAdmin\ApiTokenRetinaTabsEnum;
 use App\Http\Resources\Api\ApiTokensRetinaResource;
 use App\Http\Resources\History\HistoryResource;
@@ -60,6 +61,20 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $apiTokens, ActionRequest $request): Response
     {
+
+        $hasNonManualChannels = $this->customer->customerSalesChannels()
+            ->whereHas('platform', function ($query) {
+                $query->where('type', '!=', PlatformTypeEnum::MANUAL);
+            })
+            ->exists();
+
+        $hasApiTokens = $this->customer->customerSalesChannels()
+            ->whereHas('tokens')
+            ->exists();
+
+        $hasCreditCards = $this->customer->mitSavedCard()
+            ->exists();
+
         return Inertia::render(
             'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
@@ -96,6 +111,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         ]
                     ],
                 ],
+                'is_need_to_add_card' => ($hasNonManualChannels || $hasApiTokens) && ! $hasCreditCards,
                 // 'data'       => [
                 //     // 'route_generate' => [
                 //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',

@@ -69,14 +69,16 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
             ]"
         >
             <Transition name="slide-to-left">
-                <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block"
-                    :class="[layout.leftSidebar.show ? '' : 'block md:hidden']">
+                <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block">
                     {{ nav.label }}
+                    <FontAwesomeIcon v-if="nav.indicator" icon="fas fa-circle" class="align-middle text-red-600 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
                 </span>
                 <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
                     {{ nav.label }}
+                    <FontAwesomeIcon v-if="nav.indicator" icon="fas fa-circle" class="align-middle text-red-600 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
                 </span>
             </Transition>
+
 
             <Transition name="spin-to-right">
                 <div v-if="layout.leftSidebar.show && nav.right_label" class="h-4 w-4 rounded-full flex justify-center items-center text-xs tabular-nums pr-2"

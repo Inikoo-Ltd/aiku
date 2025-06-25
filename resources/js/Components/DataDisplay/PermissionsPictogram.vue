@@ -66,6 +66,18 @@ const groupPositionList = {
             }
         ],
     },
+    group_webmaster: {
+        key: "group_webmaster",
+        department: trans("Group webmaster"),
+        level: "group_sysadmin",
+        icon: "fas fa-globe",
+        subDepartment: [
+        {
+            slug: "gp-wm", // Note, this is not slug is job position code
+            label: trans("Group webmaster")
+        }
+        ]
+    },
     group_supply_chain: {
         key: 'group_supply_chain',
         department: trans("Supply Chain"),
