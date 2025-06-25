@@ -33,16 +33,6 @@ class FulfillOrderToEbay extends OrgAction
         /** @var DeliveryNote $deliveryNote */
         $deliveryNote = $order->deliveryNotes->first();
 
-        $shipments = [];
-        foreach ($deliveryNote->shipments as $shipment) {
-            $shipments[] = [
-                'tracking_provider'    => 'Other',
-                'tracking_number'      => $shipment->tracking,
-                'custom_tracking_link' => $shipment->combined_label_url,
-                'date_shipped'         => now()->timestamp // current timestamp
-            ];
-        }
-
         $shipment = $deliveryNote->shipments()->first();
         $lineItems = [];
 
