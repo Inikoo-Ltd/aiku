@@ -32,7 +32,7 @@ class DetachModelFromCollection extends OrgAction
             CollectionHydrateFamilies::dispatch($collection);
         }
 
-
+        SyncIndirectProductsToCollection::dispatch($collection);
 
 
         return $collection;

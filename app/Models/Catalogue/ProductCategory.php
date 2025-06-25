@@ -235,6 +235,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
+    public function containedByCollections(): MorphToMany
+    {
+        return $this->morphToMany(Collection::class, 'model', 'collection_has_models')
+            ->withTimestamps();
+    }
 
     public function webpage(): MorphOne
     {

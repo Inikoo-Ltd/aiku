@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\OrgAction;
@@ -42,14 +41,6 @@ class IndexDepartments extends OrgAction
     private bool $sales = true;
 
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inCollection(Organisation $organisation, Shop $shop, Collection $collection, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $collection;
-        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
-
-        return $this->handle(parent: $collection, prefix: ProductCategoryTabsEnum::INDEX->value);
-    }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
@@ -122,7 +113,7 @@ class IndexDepartments extends OrgAction
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
-            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_families', 'number_current_products'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_families', 'number_current_products', 'number_current_collections', 'number_current_sub_departments'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -352,17 +343,7 @@ class IndexDepartments extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.collections.departments.index' =>
-            array_merge(
-                ShowCollection::make()->getBreadcrumbs('grp.org.shops.show.catalogue.collections.show', $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
+
 
 
             default => []

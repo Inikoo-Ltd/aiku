@@ -76,7 +76,7 @@ class FetchAuroraCollections extends FetchAuroraAction
             }
 
 
-            $productsDelete = $collection->products()->pluck('model_id')->all();
+            $productsDelete = $collection->products()->where('type', 'direct')->pluck('model_id')->all();
             $familiesDelete = $collection->families()->pluck('model_id')->all();
 
             foreach (

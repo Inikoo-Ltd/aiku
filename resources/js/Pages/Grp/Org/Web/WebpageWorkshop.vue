@@ -220,12 +220,14 @@ const debouncedSaveSiteSettings = debounce(block => {
 
 const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
 
-const onSaveWorkshop = block => {
+const onSaveWorkshop = (block, snedChangeValue = true) => {
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
-  sendToIframe({
-    key: 'setWebpage',
-    value: JSON.parse(JSON.stringify(data.value))
-  });
+  if (snedChangeValue) {
+    sendToIframe({
+      key: 'setWebpage',
+      value: JSON.parse(JSON.stringify(data.value))
+    });
+  }
   debounceSaveWorkshop(block);
 };
 
@@ -402,7 +404,7 @@ onMounted(() => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
     switch (key) {
-      case 'autosave': return onSaveWorkshop(value);
+      case 'autosave': return onSaveWorkshop(value,false);
       case 'activeBlock': return openedBlockSideEditor.value = value;
       case 'activeChildBlock': return openedChildSideEditor.value = value;
       case 'addBlock':
@@ -485,7 +487,8 @@ console.log(props)
         </div>
 
         <div class="flex items-center gap-2 text-sm text-gray-700">
-          <label for="sync-toggle">Sync with aurora</label>
+          <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
+            <label v-else for="sync-toggle">Disconnected from aurora</label>
           <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
             @update:modelValue="(e) => SyncAurora(e)" />
         </div>

@@ -36,6 +36,7 @@ import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll
 
 
 const GoogleSearch = defineAsyncComponent(() => import('@/Components/Forms/Fields/GoogleSearch.vue'))
+const PollTypeSelect = defineAsyncComponent(() => import('@/Components/Forms/Fields/PollTypeSelect.vue'))
 const EmployeeState = defineAsyncComponent(() => import('@/Components/Forms/Fields/Employee/EmployeeState.vue'))
 const Language = defineAsyncComponent(() => import("@/Components/Forms/Fields/Language.vue"))
 const WebRegistrations = defineAsyncComponent(() => import('@/Components/Forms/Fields/WebRegistrations.vue'))
@@ -91,6 +92,7 @@ export const componentsList: {[key: string]: Component} = {
     'tax_number' : TaxNumber,
     'editor' : EditorHtml,
     'structure_data_website' : StructureDataWebsite,
+    'poll_type_select': PollTypeSelect,
 
     'select_infinite': SelectInfiniteScroll
 }

@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\SysAdmin\ApiTokenRetinaTabsEnum;
 use App\Http\Resources\Api\ApiTokensRetinaResource;
 use App\Http\Resources\History\HistoryResource;
@@ -60,6 +61,20 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $apiTokens, ActionRequest $request): Response
     {
+
+        $hasNonManualChannels = $this->customer->customerSalesChannels()
+            ->whereHas('platform', function ($query) {
+                $query->where('type', '!=', PlatformTypeEnum::MANUAL);
+            })
+            ->exists();
+
+        $hasApiTokens = $this->customer->customerSalesChannels()
+            ->whereHas('tokens')
+            ->exists();
+
+        $hasCreditCards = $this->customer->mitSavedCard()
+            ->exists();
+
         return Inertia::render(
             'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
@@ -96,6 +111,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         ]
                     ],
                 ],
+                'is_need_to_add_card' => ($hasNonManualChannels || $hasApiTokens) && ! $hasCreditCards,
                 // 'data'       => [
                 //     // 'route_generate' => [
                 //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
@@ -116,19 +132,19 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     fn () => ApiTokensRetinaResource::collection($apiTokens)
                     : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
                 ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($this->customer))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer))),
+                fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
-        ->table($this->tableStructure(ApiTokenRetinaTabsEnum::API_TOKENS->value));
+        ->table($this->tableStructure(prefix: ApiTokenRetinaTabsEnum::API_TOKENS->value));
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel,ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request)->withTab(ApiTokenRetinaTabsEnum::values());
-        return $this->handle($customerSalesChannel, $request);
+        return $this->handle($customerSalesChannel, ApiTokenRetinaTabsEnum::API_TOKENS->value);
     }
 
     public function getBreadcrumbs($label = null): array
@@ -162,7 +178,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true, type: 'date_hms')
                 ->column(key: 'expires_at', label: __('Expires At'), sortable: true, type: 'date_hms')
                 ->column(key: 'actions', label: __('Actions'))
-                ->defaultSort('created_at');
+                ->defaultSort('-created_at');
         };
     }
 }

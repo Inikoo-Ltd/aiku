@@ -124,7 +124,6 @@ onBeforeUnmount(() => {
                 <div :style="getStyles(theme.container?.properties, screenType)">
                     <slot />
                 </div>
-
             </main>
 
             <Footer v-if="footer && !isArray(footer)" :data="footer" :colorThemed="theme" />

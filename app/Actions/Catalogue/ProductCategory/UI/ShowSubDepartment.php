@@ -115,7 +115,7 @@ class ShowSubDepartment extends OrgAction
                     'attach_families' => [
                         'name'       => 'grp.models.sub-department.families.attach',
                         'parameters' => [
-                            'subDepartment' => $subDepartment->slug,
+                            'subDepartment' => $subDepartment->id,
                         ],
                         'method'     => 'post'
                     ],

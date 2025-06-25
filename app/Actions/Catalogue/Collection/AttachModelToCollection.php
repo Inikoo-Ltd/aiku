@@ -28,7 +28,7 @@ class AttachModelToCollection extends OrgAction
             CollectionHydrateFamilies::dispatch($collection);
         }
 
-
+        SyncIndirectProductsToCollection::dispatch($collection);
 
         return $collection;
     }

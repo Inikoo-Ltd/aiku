@@ -10,9 +10,8 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\OrdersApiResource;
 use App\Actions\RetinaApiAction;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Api\OrdersResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
@@ -46,9 +45,6 @@ class GetOrders extends RetinaApiAction
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
-
-        $query->where('orders.state', '!=', OrderStateEnum::CREATING);
-
 
         if (Arr::get($modelData, 'reference')) {
             $this->getReferenceSearch($query, Arr::get($modelData, 'reference'));
@@ -101,7 +97,7 @@ class GetOrders extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
     {
-        return OrdersResource::collection($orders);
+        return OrdersApiResource::collection($orders);
     }
 
     public function rules(): array

@@ -21,7 +21,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexApiCustomers extends OrgAction
 {
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo(
@@ -71,32 +70,32 @@ class IndexApiCustomers extends OrgAction
 
     public function getGlobalSearch($query, string $value): QueryBuilder
     {
-            return $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('customers.contact_name', $value)
-                    ->orWhereStartWith('customers.email', $value)
-                    ->orWhere('customers.reference', $value);
-            });
+        return $query->where(function ($query) use ($value) {
+            $query->whereAnyWordStartWith('customers.contact_name', $value)
+                ->orWhereStartWith('customers.email', $value)
+                ->orWhere('customers.reference', $value);
+        });
     }
 
     public function getEmailSearch($query, string $email): QueryBuilder
     {
-            return $query->where(function ($query) use ($email) {
-                $query->where('customers.email', $email);
-            });
+        return $query->where(function ($query) use ($email) {
+            $query->where('customers.email', $email);
+        });
     }
 
     public function getNameSearch($query, string $name): QueryBuilder
     {
-            return $query->where(function ($query) use ($name) {
-                $query->whereAnyWordStartWith('customers.contact_name', $name);
-            });
+        return $query->where(function ($query) use ($name) {
+            $query->whereAnyWordStartWith('customers.contact_name', $name);
+        });
     }
 
     public function getReferenceSearch($query, string $ref): QueryBuilder
     {
-            return $query->where(function ($query) use ($ref) {
-                $query->where('customers.reference', $ref);
-            });
+        return $query->where(function ($query) use ($ref) {
+            $query->where('customers.reference', $ref);
+        });
     }
 
     public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator

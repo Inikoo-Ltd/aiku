@@ -17,4 +17,27 @@ enum PollTypeEnum: string
     case OPEN_QUESTION     = 'open_question';
     case OPTION            = 'option';
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::OPEN_QUESTION => __('Open Question'),
+            self::OPTION        => __('Multiple Choice'),
+        };
+    }
+
+    public static function stateIcon(): array
+    {
+        return [
+            self::OPEN_QUESTION->value => [
+                'tooltip' => __('Open Question'),
+                'icon'    => 'fal fa-question-circle',
+                'class'   => 'text-blue-500'
+            ],
+            self::OPTION->value => [
+                'tooltip' => __('Option'),
+                'icon'    => 'fal fa-list',
+                'class'   => 'text-green-500'
+            ]
+        ];
+    }
 }

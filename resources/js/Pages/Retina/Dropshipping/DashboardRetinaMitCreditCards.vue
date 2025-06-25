@@ -21,19 +21,22 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faUnlink, faCheckCircle, faClock, faExclamationTriangle);
 
 const props = defineProps<{
   mitSavedCards: {
-    data: {
-      id: number;
-      image: string;
-      card_type: string;
-      last_four_digits: string;
-      expires_at: string;
-      processed_at: string
-    }[]
+        data: {
+            id: number;
+            image: string;
+            card_type: string;
+            last_four_digits: string;
+            expires_at: string;
+            processed_at: string
+            route_set_to_default?: routeType
+            is_default?: boolean
+        }[]
   }
   delete_route: routeType
   head_title?: string
@@ -94,7 +97,10 @@ const page = usePage<PagePropsWithFlash>();
               </td> -->
 
               <td class="whitespace-nowrap px-3 py-5 text-sm">
-                <div class="font-bold">{{ card.card_type }}</div>
+                <div class="font-bold">
+                    {{ card.card_type }}
+                    <FontAwesomeIcon v-if="card.is_default" v-tooltip="trans('Default')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                </div>
               </td>
 
               <td class="whitespace-nowrap px-3 py-5 text-sm">
@@ -106,7 +112,7 @@ const page = usePage<PagePropsWithFlash>();
 
               <td class="whitespace-nowrap px-3 py-5 text-sm text-gray-500">{{ useFormatTime(card.processed_at) }}</td>
 
-              <td class="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+              <td class="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0 space-y-2 space-x-2">
                 <!-- <pre>{{ card }}</pre> -->
                 <ModalConfirmationDelete
                     :routeDelete="{
@@ -129,6 +135,13 @@ const page = usePage<PagePropsWithFlash>();
 
                     </template>
                 </ModalConfirmationDelete>
+
+                <ButtonWithLink
+                    v-if="!card.is_default"
+                    :label="trans('Set as default')"
+                    size="s"
+                    :routeTarget="card.route_set_to_default"
+                />
               </td>
             </tr>
             </tbody>

@@ -10,8 +10,8 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\TransactionsApiResource;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\TransactionsResource;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
@@ -84,7 +84,7 @@ class GetTransactions extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
     {
-        return TransactionsResource::collection($orders);
+        return TransactionsApiResource::collection($orders);
     }
 
     public function rules(): array

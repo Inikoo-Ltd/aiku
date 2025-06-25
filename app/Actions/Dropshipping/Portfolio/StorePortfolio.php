@@ -54,8 +54,8 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'item_name', $item->name);
         data_set($modelData, 'customer_product_name', $item->name);
         data_set($modelData, 'customer_description', $item->description);
-        data_set($modelData, 'customer_price', $priceIncVat);
         data_set($modelData, 'selling_price', $priceIncVat);
+        data_set($modelData, 'customer_price', $priceIncVat);
         data_set($modelData, 'price_inc_vat', $priceIncVat);
 
         if ($item instanceof Product) {

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -199,9 +198,10 @@ class IndexMasterSubDepartments extends GrpAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.collections.departments.index' =>
+
+            'grp.masters.master_departments.show.master_sub_departments.index' =>
             array_merge(
-                ShowCollection::make()->getBreadcrumbs('grp.org.shops.show.catalogue.collections.show', $routeParameters),
+                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -210,17 +210,7 @@ class IndexMasterSubDepartments extends GrpAction
                     $suffix
                 )
             ),
-            // 'grp.masters.master_departments.show.master_sub_departments.index' =>
-            // array_merge(
-            //     ShowMasterDepartment::make()->getBreadcrumbs($parent, , $routeName, $routeParameters),
-            //     $headCrumb(
-            //         [
-            //             'name'       => $routeName,
-            //             'parameters' => $routeParameters
-            //         ],
-            //         $suffix
-            //     )
-            // ),
+
 
 
             default => []

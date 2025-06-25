@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Web\Webpage\UI\IndexChangesWebpages;
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
@@ -56,7 +55,6 @@ class WebpageWorkshopResource extends JsonResource
                 WebpageTypeEnum::BLOG => ['fal', 'fa-newspaper'],
                 default => ['fal', 'fa-browser']
             },
-            'changes_webpage'                        => $this?->resource ? WebpagesResource::collection(IndexChangesWebpages::make()->handle($this->resource))->toArray(request()) : null,
             'is_dirty'                               => $webpage->is_dirty,
             'layout'                                 => $webPageLayout,
             'sub_type'                               => $webpage->sub_type,

@@ -83,7 +83,8 @@ class HandleIrisInertiaRequests extends Middleware
                 "layout"   => [
                     "app_theme" => Arr::get($websiteTheme, 'color'),
                 ],
-                'iris'     => $this->getIrisData($website, $webUser)
+                'iris'     => $this->getIrisData($website, $webUser),
+
 
             ],
             parent::share($request),

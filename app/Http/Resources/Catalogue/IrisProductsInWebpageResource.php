@@ -30,6 +30,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency
  * @property mixed $currency_code
  * @property mixed $web_images
+ * @property mixed $top_seller
  */
 class IrisProductsInWebpageResource extends JsonResource
 {
@@ -53,6 +54,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'units'      => $this->units,
             'unit'       => $this->unit,
             'url'        => $this->url,
+            'top_seller'  => $this->top_seller,
             'web_images' => $this->web_images
         ];
     }

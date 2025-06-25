@@ -9,7 +9,9 @@ import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "lodash"
-import { ref } from "vue"
+import { computed, ref } from "vue"
+import type { Component } from "vue";
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {  } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -19,13 +21,15 @@ import { Table as TSTable } from '@/types/Table'
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+// import { Message } from "primevue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 library.add()
 
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	api_tokens: TSTable
-	history: TSTable
+	api_tokens?: TSTable
+	history?: TSTable
     tabs:{
         current: string
 		navigation: {}
@@ -36,6 +40,7 @@ const props = defineProps<{
 	routes: {
 		create_token: routeType
 	}
+	is_need_to_add_card: boolean
 }>()
 
 const isModalApiToken = ref(false);
@@ -93,13 +98,15 @@ const onClickCopyButton = async (text: string) => {
     }, 3000)
 }
 
-const getComponent = (componentName: string) => {
-    const components: any = {
-        'api_tokens': RetinaTableApiKey,
-		'history': TableHistories
+const component = computed(() => {
+    const components: Component = {
+        api_tokens: RetinaTableApiKey,
+        history: TableHistories,
     };
-    return components[componentName]
-};
+    return components[currentTab.value];
+
+});
+
 </script>
 
 <template>
@@ -111,26 +118,30 @@ const getComponent = (componentName: string) => {
             </Button>
 		</template>
 	</PageHeading>
-	<!-- <div class="flex flex-col items-center justify-center h-48 bg-gray-50 rounded">
-		<p class="mb-2 text-base">click hare</p>
-		<Link
-			as="button"
-			:href="route(data.route_generate.name, data.route_generate.parameters)"
-			:method="'get'"
-			>
-			<button class="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded">
-				Get Started
-			</button>
-		</Link>
-	</div> -->
+	
+	<!-- Section: warning to add card -->
+	<div v-if="is_need_to_add_card" class="bg-yellow-100 border border-yellow-500 mx-4 my-2 px-4 py-1 rounded">
+        <div class="flex justify-between w-full">
+			<div class="flex items-center gap-x-2 text-yellow-700">
+				<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500 text-lg" fixed-width aria-hidden="true" />
+				{{ trans("You have no cards saved yet.") }}
+			</div>
+			
+			<ButtonWithLink
+				:label="trans('Add card')"
+				icon="fas fa-plus"
+				:routeTarget="{
+					'name': 'retina.dropshipping.mit_saved_cards.create',
+				}"
+				type="warning"
+			/>
+		</div>
+    </div>
+
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-	<component 
-		:is="getComponent(tabs.current)" 
-		:data="props[currentTab as keyof typeof props]"
-		:tab="currentTab"
-	>
-	</component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+
 
 	<!-- <RetinaTableApiKey
 		:data="data.api_tokens"

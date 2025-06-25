@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebBlock;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -79,6 +80,7 @@ class GetWebBlockFamilies
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
 
         return $webBlock;
     }
