@@ -30,6 +30,13 @@ class MitSavedCardResource extends JsonResource
             'expires_at'       => $mitSavedCard->expires_at?->format('m/y'),
             'processed_at'     => $mitSavedCard->processed_at,
 
+            'is_default'       => true,  // TODO: true if has been default
+            // 'route_set_to_default' => [  // TODO: route to set the card as default
+            //     'name' => 'retina.accounting.mit_saved_cards.set_to_default',
+            //     'params' => [
+            //         'mitSavedCard' => $mitSavedCard->id,
+            //     ],
+            // ],
             'priority'       => $mitSavedCard->priority,
             'state'          => $mitSavedCard->state,
             'failure_status' => $mitSavedCard->failure_status,

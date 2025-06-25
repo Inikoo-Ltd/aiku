@@ -487,7 +487,8 @@ console.log(props)
         </div>
 
         <div class="flex items-center gap-2 text-sm text-gray-700">
-          <label for="sync-toggle">Sync with aurora</label>
+          <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
+            <label v-else for="sync-toggle">Disconnected from aurora</label>
           <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
             @update:modelValue="(e) => SyncAurora(e)" />
         </div>

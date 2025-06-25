@@ -16,6 +16,7 @@ use App\Actions\Api\Retina\Dropshipping\Order\GetOrders;
 use App\Actions\Api\Retina\Dropshipping\Order\StoreApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\SubmitApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\UpdateApiOrder;
+use App\Actions\Api\Retina\Dropshipping\Portfolio\DeleteApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\GetPortfolios;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\StoreApiPortfolio;
@@ -46,6 +47,7 @@ Route::prefix('portfolios')->as('portfolios.')->group(function () {
     Route::post('product/{product:id}/store', StoreApiPortfolio::class)->name('store')->withoutScopedBindings();
     Route::get('{portfolio:id}', ShowApiPortfolio::class)->name('show');
     Route::patch('{portfolio:id}/update', UpdateApiPortfolio::class)->name('update');
+    Route::delete('{portfolio:id}/delete', DeleteApiPortfolio::class)->name('delete');
 });
 
 Route::prefix('clients')->as('clients.')->group(function () {
