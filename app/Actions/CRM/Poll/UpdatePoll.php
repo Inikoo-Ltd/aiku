@@ -26,8 +26,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePoll extends OrgAction
 {
-    // TODO: raul fix the permissions
-    // use WithCRMAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -39,7 +37,7 @@ class UpdatePoll extends OrgAction
 
     public function handle(Poll $poll, array $modelData): Poll
     {
-        $type = Arr::pull($modelData, 'type.type');
+        $type    = Arr::pull($modelData, 'type.type');
         $options = Arr::pull($modelData, 'type.poll_options', []);
         if ($type) {
             data_set($modelData, 'type', $type);
@@ -47,7 +45,7 @@ class UpdatePoll extends OrgAction
         $poll = $this->update($poll, $modelData);
         if ($poll->type == PollTypeEnum::OPTION && $options) {
             $oldOptions = $poll->pollOptions;
-            foreach ($options ?? [] as $index => $option) {
+            foreach ($options as $index => $option) {
                 if (isset($option['id'])) {
                     UpdatePollOption::make()->action(
                         PollOption::findOrFail($option['id']),
@@ -62,7 +60,7 @@ class UpdatePoll extends OrgAction
                     StorePollOption::make()->action(
                         $poll,
                         [
-                            'value' => $poll->shop->id . $poll->id . $index,
+                            'value' => $poll->shop->id.$poll->id.$index,
                             'label' => $option['label'],
                         ]
                     );
@@ -80,7 +78,7 @@ class UpdatePoll extends OrgAction
 
         ShopHydratePolls::dispatch($poll->shop);
         PollHydrateCustomers::dispatch($poll);
-        //todo put hydrators here if in_registration|in_registration_required|in_iris|in_iris_required has changed
+
         return $poll;
     }
 
@@ -121,11 +119,11 @@ class UpdatePoll extends OrgAction
                     ]
                 ),
             ],
-            'type'                => [
+            'type'                     => [
                 'sometimes',
                 'array',
             ],
-            'type.type'        => [
+            'type.type'                => [
                 'sometimes',
                 Rule::enum(PollTypeEnum::class)
             ],
@@ -145,9 +143,10 @@ class UpdatePoll extends OrgAction
 
         return $rules;
     }
+
     public function asController(Poll $poll, ActionRequest $request): Poll
     {
-        $this->poll          = $poll;
+        $this->poll = $poll;
         $this->initialisationFromShop($poll->shop, $request);
 
         return $this->handle($poll, $this->validatedData);

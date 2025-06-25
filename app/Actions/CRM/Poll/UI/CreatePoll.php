@@ -25,98 +25,95 @@ class CreatePoll extends OrgAction
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
 
-    public function handle(ActionRequest $request)
+    /**
+     * @throws \Exception
+     */
+    public function handle(ActionRequest $request): \Inertia\Response
     {
         return Inertia::render(
             'CreateModel',
             [
-               'title'       => __('poll'),
-               'breadcrumbs' => $this->getBreadcrumbs(
-                   $request->route()->getName(),
-                   $request->route()->originalParameters()
-               ),
-               'pageHead'    => [
-                   'title'   => __('new poll'),
-                   'icon'    => [
-                       'title' => __('polls'),
-                       'icon'  => 'fal fa-cube'
-                   ],
-                   'actions' => [
-                       [
-                           'type'  => 'button',
-                           'style' => 'cancel',
-                           'label' => __('cancel'),
-                           'route' => [
-                               'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                               'parameters' => array_values($request->route()->originalParameters())
-                           ],
-                       ]
-                   ]
-               ],
+                'title'       => __('poll'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'pageHead'    => [
+                    'title'   => __('new poll'),
+                    'icon'    => [
+                        'title' => __('polls'),
+                        'icon'  => 'fal fa-cube'
+                    ],
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'cancel',
+                            'label' => __('cancel'),
+                            'route' => [
+                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ],
+                        ]
+                    ]
+                ],
 
-               'formData' => [
-                   'blueprint' => [
-                       [
-                           'title'  => __('new poll'),
-                           'fields' => [
-                               'name' => [
-                                   'type'     => 'input',
-                                   'label'    => __('name'),
-                                   'required' => true
-                               ],
-                               'type' => [
-                                   'type'    => 'poll_type_select',
-                                   'label'   => __('type'),
-                                   'required' => true,
-                                   'options' => Options::forEnum(PollTypeEnum::class),
-                                   'value' => [
-                                        'type' => PollTypeEnum::OPTION->value,
+                'formData' => [
+                    'blueprint' => [
+                        [
+                            'title'  => __('new poll'),
+                            'fields' => [
+                                'name'                     => [
+                                    'type'     => 'input',
+                                    'label'    => __('name'),
+                                    'required' => true
+                                ],
+                                'type'                     => [
+                                    'type'     => 'poll_type_select',
+                                    'label'    => __('type'),
+                                    'required' => true,
+                                    'options'  => Options::forEnum(PollTypeEnum::class),
+                                    'value'    => [
+                                        'type'         => PollTypeEnum::OPTION->value,
                                         'poll_options' => []
                                     ]
-                               ],
-                               'label' => [
-                                   'type'     => 'input',
-                                   'label'    => __('label'),
-                                   'required' => true
-                               ],
-                               'in_registration' => [
-                                   'type'  => 'toggle',
-                                   'label' => __('in registration'),
-                                   'value' => false
-                               ],
-                               'in_registration_required' => [
-                                   'type'  => 'toggle',
-                                   'label' => __('registration required'),
-                                   'value' => false
-                               ],
-                            //    'in_iris' => [
-                            //        'type'  => 'toggle',
-                            //        'label' => __('in iris'),
-                            //        'value' => false
-                            //    ],
-                            //    'in_iris_required' => [
-                            //        'type'  => 'toggle',
-                            //        'label' => __('iris required'),
-                            //        'value' => false
-                            //    ],
-                           ],
-                       ]
-                   ],
+                                ],
+                                'label'                    => [
+                                    'type'     => 'input',
+                                    'label'    => __('label'),
+                                    'required' => true
+                                ],
+                                'in_registration'          => [
+                                    'type'  => 'toggle',
+                                    'label' => __('in registration'),
+                                    'value' => false
+                                ],
+                                'in_registration_required' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('registration required'),
+                                    'value' => false
+                                ],
+                            ],
+                        ]
+                    ],
 
-                   'route' => [
-                       'name'       => 'grp.models.poll.store',
-                       'parameters' => [
-                           'shop' => $this->shop->slug,
-                       ]
-                   ]
-               ]
+                    'route' => [
+                        'name'       => 'grp.models.poll.store',
+                        'parameters' => [
+                            'shop' => $this->shop->slug,
+                        ]
+                    ]
+                ]
             ]
         );
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request)
+    /**
+     * @throws \Exception
+     */
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): \Inertia\Response
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($request);
     }
 

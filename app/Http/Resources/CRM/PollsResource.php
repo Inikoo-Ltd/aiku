@@ -22,19 +22,19 @@ class PollsResource extends JsonResource
         $percentage = $poll->number_customers ? ($poll->number_customers / ($poll->total_customers > 0 ? $poll->total_customers : 1)) * 100 : 0;
 
         return [
-            'id'                        => $poll->id,
-            'slug'                      => $poll->slug,
-            'name'                      => $poll->name,
-            'label'                     => $poll->label,
-            'position'                  => $poll->position,
-            'number_customers'             => $poll->number_customers ?? 0,
-            'type'                      => $poll->type,
-            'percentage'             => round($percentage, 2) . '%',
-            'in_registration'           => $poll->in_registration,
-            'in_registration_required'  => $poll->in_registration_required,
-            'in_iris'                   => $poll->in_iris,
-            'in_iris_required'          => $poll->in_iris_required,
-            'options'                   => PollOptionsResource::collection($poll->pollOptions)->toArray($request),
+            'id'                       => $poll->id,
+            'slug'                     => $poll->slug,
+            'name'                     => $poll->name,
+            'label'                    => $poll->label,
+            'position'                 => $poll->position,
+            'number_customers'         => $poll->number_customers ?? 0,
+            'type'                     => $poll->type,
+            'percentage'               => round($percentage, 2).'%',
+            'in_registration'          => $poll->in_registration,
+            'in_registration_required' => $poll->in_registration_required,
+            'in_iris'                  => $poll->in_iris,
+            'in_iris_required'         => $poll->in_iris_required,
+            'options'                  => PollOptionsResource::collection($poll->pollOptions)->toArray($request),
         ];
     }
 }

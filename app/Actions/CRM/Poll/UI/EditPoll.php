@@ -27,6 +27,7 @@ class EditPoll extends OrgAction
 {
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
+
     public function handle(Poll $poll): Poll
     {
         return $poll;
@@ -39,15 +40,17 @@ class EditPoll extends OrgAction
         return $this->handle($poll);
     }
 
+    /**
+     * @throws \Exception
+     */
     public function htmlResponse(Poll $poll, ActionRequest $request): Response
     {
         $optionsPool = [];
-        $options = $poll->pollOptions;
+        $options     = $poll->pollOptions;
         if ($options->isNotEmpty()) {
             $optionsPool = PollOptionsResource::collection($poll->pollOptions)->toArray($request);
         }
 
-        // dd($poll->type->value);
         return Inertia::render(
             'EditModel',
             [
@@ -79,27 +82,27 @@ class EditPoll extends OrgAction
                         [
                             'title'  => __('edit poll'),
                             'fields' => [
-                                'name' => [
+                                'name'                     => [
                                     'type'  => 'input',
                                     'label' => __('name'),
                                     'value' => $poll->name
                                 ],
-                                'label' => [
+                                'label'                    => [
                                     'type'  => 'input',
                                     'label' => __('label'),
                                     'value' => $poll->label
                                 ],
-                                'type' => [
-                                    'type'    => 'poll_type_select',
+                                'type'                     => [
+                                    'type'         => 'poll_type_select',
                                     'type_options' => $optionsPool,
-                                    'label'   => __('type'),
-                                    'options' => Options::forEnum(PollTypeEnum::class),
-                                    'value' => [
-                                        'type' => $poll->type->value,
+                                    'label'        => __('type'),
+                                    'options'      => Options::forEnum(PollTypeEnum::class),
+                                    'value'        => [
+                                        'type'         => $poll->type->value,
                                         'poll_options' => $optionsPool
                                     ]
                                 ],
-                                'in_registration' => [
+                                'in_registration'          => [
                                     'type'  => 'toggle',
                                     'label' => __('in registration'),
                                     'value' => $poll->in_registration
@@ -109,16 +112,6 @@ class EditPoll extends OrgAction
                                     'label' => __('registration required'),
                                     'value' => $poll->in_registration_required
                                 ],
-                                // 'in_iris' => [
-                                //     'type'  => 'toggle',
-                                //     'label' => __('in iris'),
-                                //     'value' => $poll->in_iris
-                                // ],
-                                // 'in_iris_required' => [
-                                //     'type'  => 'toggle',
-                                //     'label' => __('iris required'),
-                                //     'value' => $poll->in_iris_required
-                                // ],
                             ],
                         ]
                     ],

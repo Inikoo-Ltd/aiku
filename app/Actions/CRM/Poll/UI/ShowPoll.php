@@ -21,9 +21,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-/**
- * @property Poll $poll
- */
 class ShowPoll extends OrgAction
 {
     use WithCustomersSubNavigation;
@@ -36,7 +33,6 @@ class ShowPoll extends OrgAction
         return $poll;
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function asController(Organisation $organisation, Shop $shop, Poll $poll, ActionRequest $request): Poll
     {
         $this->parent = $shop;

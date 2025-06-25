@@ -17,9 +17,6 @@ use App\Models\CRM\PollOption;
 
 class DeletePollOptions extends OrgAction
 {
-    // TODO: raul fix the permissions
-    // use WithCRMEditAuthorisation;
-
     public function handle(PollOption $pollOption, bool $forceDelete): PollOption
     {
         $poll = $pollOption->poll;

@@ -38,9 +38,8 @@ class IndexPolls extends OrgAction
 
     public function handle(Shop|Organisation $parent, $prefix = null): LengthAwarePaginator
     {
-
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
-            $query->where(function ($query) use ($value, $parent) {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('polls.name', $value)
                     ->orWhereAnyWordStartWith('polls.label', $value);
             });
@@ -60,15 +59,14 @@ class IndexPolls extends OrgAction
             $join->on('polls.id', '=', 'poll_stats.poll_id');
         });
 
-        $totalCustomer = 0;
         if ($parent instanceof Shop) {
             $totalCustomer = DB::table('shop_crm_stats')
-            ->where('shop_id', $parent->id)
-            ->value('number_customers') ?? 0;
+                ->where('shop_id', $parent->id)
+                ->value('number_customers') ?? 0;
         } else {
             $totalCustomer = DB::table('organisation_crm_stats')
-            ->where('organisation_id', $parent->id)
-            ->value('number_customers') ?? 0;
+                ->where('organisation_id', $parent->id)
+                ->value('number_customers') ?? 0;
         }
 
         $queryBuilder
@@ -82,7 +80,7 @@ class IndexPolls extends OrgAction
                 'polls.type',
                 'polls.in_registration',
                 'poll_stats.*',
-                DB::raw("'{$totalCustomer}' AS total_customers"),
+                DB::raw("'$totalCustomer' AS total_customers"),
             ])
             ->groupBy('polls.id', 'poll_stats.id');
 
@@ -97,11 +95,10 @@ class IndexPolls extends OrgAction
         Shop|Organisation $parent,
         ?array $modelOperations = null,
         $prefix = null,
-        $canEdit = false
     ): Closure {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
@@ -110,7 +107,7 @@ class IndexPolls extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Organisation', 'Shop' => [
-                            'title'       => __("No polls found"),
+                            'title' => __("No polls found"),
                         ],
                         default => null
                     }
@@ -137,27 +134,27 @@ class IndexPolls extends OrgAction
         if ($this->parent instanceof Shop) {
             $subNavigation = $this->getSubNavigation($request);
         }
-        $title = __('Polls');
-        $model = __('Poll');
-        $icon  = [
+        $title      = __('Polls');
+        $model      = __('Poll');
+        $icon       = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('polls')
         ];
         $afterTitle = null;
-        $iconRight = null;
+        $iconRight  = null;
 
         if ($this->parent instanceof Shop) {
-            $title = $this->parent->name;
-            $model = __('poll');
-            $icon  = [
+            $title      = $this->parent->name;
+            $model      = __('poll');
+            $icon       = [
                 'icon'  => ['fal', 'fa-cube'],
                 'title' => __('poll')
             ];
-            $iconRight    = [
+            $iconRight  = [
                 'icon' => 'fal fa-cube',
             ];
             $afterTitle = [
-                'label'     => __('Polls')
+                'label' => __('Polls')
             ];
         }
 
@@ -184,8 +181,8 @@ class IndexPolls extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('Polls'),
-                'pageHead' => [
+                'title'       => __('Polls'),
+                'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
@@ -194,7 +191,7 @@ class IndexPolls extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $action,
                 ],
-                'data'          => PollsResource::collection($polls),
+                'data'        => PollsResource::collection($polls),
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -203,6 +200,7 @@ class IndexPolls extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
+
         return $this->handle(parent: $organisation);
     }
 
@@ -210,6 +208,7 @@ class IndexPolls extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle(parent: $shop);
     }
 

@@ -1,20 +1,15 @@
 <script setup lang='ts'>
-import PureInput from '@/Components/Pure/PureInput.vue'
-import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import FileUpload from 'primevue/fileupload'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle } from '@fal'
 import { faFacebook, faLinkedin, faGoogle, faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
-import { ref } from 'vue'
-import Image from '@/Components/Image.vue'
-import { InputText, Select, Textarea } from 'primevue'
+import { InputText, Select } from 'primevue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faInfoCircle, faFacebook, faLinkedin, faGoogle, faTwitter)
 
-const props = defineProps<{
+defineProps<{
     form?: any
     fieldName: string
     options: {
@@ -29,35 +24,14 @@ const props = defineProps<{
     }
 }>()
 
-// const onFileSelect = (event: any) => {
-//     const file = event.files?.[0]
-//     if (!file) return
 
-//     const reader = new FileReader()
-
-//     reader.onload = (e) => {
-//         props.form[props.fieldName].image = {
-//             original: e.target?.result,
-//         }
-//     }
-
-//     reader.readAsDataURL(file)
-// }
-
-// const selectedPreview = ref('')
-// const xxxOptions = ref([
-//     { label: 'Option 1'},
-// ])
 </script>
 
 <template>
     <div class="max-w-2xl rounded-md">
         <div class="space-y-4 xpt-4">
             <div>
-                <!-- <label class="text-gray-600 font-semibold cursor-pointer">
-                    Select the type
-                </label> -->
-                <!-- <pre>{{ form }}</pre> -->
+
                 <Select
                     v-model="form[fieldName].type"
                     :options="fieldData.options"
@@ -69,11 +43,7 @@ const props = defineProps<{
             </div>
 
             <div class="xborder-t xborder-gray-300 xpt-3 ">
-                <!-- <Textarea
-                    v-if="selectedPreview === 'open_question'"
-                    placeholder="ssss"
-                /> -->
-                <!-- <pre>{{ form[fieldName].poll_options }}</pre> -->
+
                 
                 <div v-if="form[fieldName].type === 'option'" class="border-t border-gray-300 pt-3 grid gap-y-2">
                     <div v-for="(opt, optIdx) in form[fieldName].poll_options" class="flex gap-x-2 items-center">
