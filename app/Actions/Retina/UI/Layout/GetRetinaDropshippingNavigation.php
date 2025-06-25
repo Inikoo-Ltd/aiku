@@ -120,7 +120,7 @@ class GetRetinaDropshippingNavigation
         $hasCreditCards = $customer->mitSavedCard()
             ->exists();
 
-        if ($hasNonManualChannels || $hasApiTokens) {
+        if ($hasNonManualChannels || $hasApiTokens || $hasCreditCards) {
             $groupNavigation['saved_credit_cards'] = [
                 'label' => __('Saved Cards'),
                 'icon'  => ['fal', 'fa-credit-card'],
