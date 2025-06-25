@@ -22,6 +22,8 @@ class EditCollection extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
+    private Organisation|Shop|ProductCategory $parent;
+
     public function handle(Collection $collection): Collection
     {
         return $collection;
@@ -29,41 +31,26 @@ class EditCollection extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Collection $collection, ActionRequest $request): Collection
     {
+        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($collection, $request);
+        return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, Collection $collection, ActionRequest $request): Collection
     {
+        $this->parent = $department;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($collection);
     }
 
-    public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
-    {
-        $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($collection);
-    }
-
-    public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
-    {
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($collection);
-    }
-
-    public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, Collection $collection, ActionRequest $request): Collection
-    {
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($collection);
-    }
-
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
     {
+        $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($collection);
@@ -76,14 +63,16 @@ class EditCollection extends OrgAction
             [
                 'title'       => __('collections'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
+                    $collection,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'       => $collection->code,
-                    'model'       => __('Edit collections'),
-                    'icon'        => 'fal fa-cube',
-                    'actions'     => [
+                    'title'   => $collection->code,
+                    'model'   => __('Edit collections'),
+                    'icon'    => 'fal fa-cube',
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -94,12 +83,12 @@ class EditCollection extends OrgAction
                         ]
                     ]
                 ],
-                'formData' => [
+                'formData'    => [
                     'blueprint' => [
                         [
                             'label'  => __('Properties collection'),
                             'fields' => [
-                                'name' => [
+                                'name'        => [
                                     'type'  => 'input',
                                     'label' => __('name'),
                                     'value' => $collection->name
@@ -109,23 +98,23 @@ class EditCollection extends OrgAction
                                     'label' => __('description'),
                                     'value' => $collection->description
                                 ],
-                                "image"         => [
-                                    "type"    => "image_crop_square",
-                                    "label"   => __("Image"),
-                                    "value"   => $collection->imageSources(720, 480),
+                                "image"       => [
+                                    "type"  => "image_crop_square",
+                                    "label" => __("Image"),
+                                    "value" => $collection->imageSources(720, 480),
                                 ],
                             ]
                         ]
 
                     ],
-                    'args' => [
+                    'args'      => [
                         'updateRoute' => [
-                            'name'      => 'grp.models.org.catalogue.collections.update',
+                            'name'       => 'grp.models.org.catalogue.collections.update',
                             'parameters' => [
                                 'organisation' => $collection->organisation_id,
                                 'shop'         => $collection->shop_id,
                                 'collection'   => $collection->id
-                                ]
+                            ]
 
                         ],
                     ]
@@ -135,9 +124,11 @@ class EditCollection extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Organisation|Shop|ProductCategory $parent, Collection $collection, string $routeName, array $routeParameters): array
     {
         return ShowCollection::make()->getBreadcrumbs(
+            $parent,
+            $collection,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
