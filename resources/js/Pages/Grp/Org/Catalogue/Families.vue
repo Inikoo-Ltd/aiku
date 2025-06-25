@@ -104,7 +104,7 @@ const onSubmitToDepartment = () => {
 }
 
 const onSubmitAddItem = async (idProduct: number[]) => {
-    router.post(route(props.routes.attach_families.name, props.routes.attach_families.parameters ),
+    router.post(route(props.routes.attach.name, props.routes.attach.parameters ),
     {
         families_id: idProduct
     },
@@ -121,7 +121,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             router.reload({only: ['data']})
             notify({
                 title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
+                text: trans("Successfully added families"),
                 type: "success"
             })
             isOpenModalPortfolios.value = false

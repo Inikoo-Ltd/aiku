@@ -361,7 +361,7 @@ class IndexFamilies extends OrgAction
             if($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $routes = [
                     'attach' => [
-                        'name'       => 'grp.models.sub-department.families.attach ',
+                        'name'       => 'grp.models.sub-department.families.attach',
                         'parameters' => [
                             'subDepartment' => $this->parent->id
                         ]
@@ -373,20 +373,12 @@ class IndexFamilies extends OrgAction
                             'subDepartment' => $this->parent->id
                         ]
                     ],
-                    'list'   => [
+                    'fetch_families'   => [
                         'name'      =>  'grp.json.product_category.families.index',
                         'parameters' => [
                             'productCategory' => $this->parent->slug
                         ]
                     ],
-                    'fetch_families' => [
-                        'name'       => 'grp.json.shop.catalogue.departments.families',
-                        'parameters' => [
-                            'shop'  => $this->shop->slug,
-                            'productCategory'   => $this->parent->id
-                        ]
-                    ],
-
                 ];
             }
         }
