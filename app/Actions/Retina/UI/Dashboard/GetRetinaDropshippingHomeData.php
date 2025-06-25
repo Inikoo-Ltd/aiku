@@ -65,7 +65,12 @@ class GetRetinaDropshippingHomeData
                             'name'       => 'retina.dropshipping.customer_sales_channels.index',
                             'parameters' => []
                         ],
-                        // 'icon'  => 'fal fa-folder-tree',
+                        'color' => '#E87928',
+                        'icon'  => [
+                            'icon' => 'fal fa-code-branch',
+                            'tooltip' => __('Channels'),
+                            'icon_rotation' => '90',
+                        ],
                         // "color" => "",
                         'value' => $totalPlatforms,
 
