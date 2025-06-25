@@ -149,7 +149,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             />
 
             <Button
-                v-if="routes.fetch_families"
+                v-if="routes?.fetch_families"
                 @click="() => isOpenModalPortfolios = true"
                 type="tertiary"
                 icon="fas fa-plus"
@@ -203,7 +203,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
 
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
-            v-if="routes.fetch_families"
+            v-if="routes?.fetch_families"
             :headLabel="trans('Add Family to portfolios')"
             :route-fetch="routes.fetch_families"
             :isLoadingSubmit
