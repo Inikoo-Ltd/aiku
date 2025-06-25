@@ -17,7 +17,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowApiCustomer extends OrgAction
 {
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo(

@@ -22,7 +22,6 @@ use Illuminate\Support\Arr;
 
 class IndexApiInvoices extends OrgAction
 {
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo(

@@ -64,7 +64,7 @@ class StoreOrgStockMovement extends OrgAction
         $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
 
 
-        if($this->strict) {
+        if ($this->strict) {
             $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
 
             if ($locationOrgStock) {
