@@ -2,43 +2,38 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 14-05-2025, Bali, Indonesia
+ * Created on: 25-06-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
-namespace App\Http\Resources\Api;
+namespace App\Actions\Api\Retina\Dropshipping\Resource;
 
-use App\Models\Catalogue\Product;
-use App\Models\Fulfilment\StoredItem;
+use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Helpers\AddressResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property string $slug
- * @property string $code
- * @property mixed $created_at
- * @property mixed $updated_at
+ * @property string $ulid
+ * @property string $reference
  * @property string $name
- * @property mixed $state
- * @property string $shop_slug
- * @property mixed $shop_code
- * @property mixed $shop_name
- * @property mixed $department_slug
- * @property mixed $department_code
- * @property mixed $department_name
- * @property mixed $family_slug
- * @property mixed $family_code
- * @property mixed $family_name
- * @property StoredItem|Product $item
- *
+ * @property string $contact_name
+ * @property string $company_name
+ * @property string $email
+ * @property string $phone
+ * @property array $location
+ * @property string $created_at
+ * @property string $updated_at
  */
-class CustomerClientsResource extends JsonResource
+class CustomerClientApiResource extends JsonResource
 {
+    use HasSelfCall;
+
     public function toArray($request): array
     {
         return [
-            'id'                   => $this->id,
+            'id'                     => $this->id,
             'ulid'                   => $this->ulid,
             'reference'              => $this->reference,
             'name'                   => $this->name,
@@ -48,7 +43,8 @@ class CustomerClientsResource extends JsonResource
             'email'                  => $this->email,
             'phone'                  => $this->phone,
             'created_at'             => $this->created_at,
-            'updated_at'             => $this->updated_at
+            'updated_at'             => $this->updated_at,
+            'address'                => AddressResource::make($this->address),
         ];
     }
 }

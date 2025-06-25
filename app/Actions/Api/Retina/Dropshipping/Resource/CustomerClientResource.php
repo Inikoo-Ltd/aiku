@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Api\Group\Resources;
+namespace App\Actions\Api\Retina\Dropshipping\Resource;
 
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
@@ -26,7 +26,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $created_at
  * @property string $updated_at
  */
-class CustomerClientApiResource extends JsonResource
+class CustomerClientResource extends JsonResource
 {
     use HasSelfCall;
 
@@ -36,15 +36,17 @@ class CustomerClientApiResource extends JsonResource
             'id'                     => $this->id,
             'ulid'                   => $this->ulid,
             'reference'              => $this->reference,
+            'active'                 => $this->status,
             'name'                   => $this->name,
             'contact_name'           => $this->contact_name,
             'company_name'           => $this->company_name,
             'location'               => is_string($this->location) ? json_decode($this->location) : $this->location,
             'email'                  => $this->email,
             'phone'                  => $this->phone,
+            'address'                => AddressResource::make($this->address),
             'created_at'             => $this->created_at,
             'updated_at'             => $this->updated_at,
-            'address'                => AddressResource::make($this->address),
+            'deactivated_at'             => $this->deactivated_at
         ];
     }
 }
