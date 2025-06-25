@@ -41,6 +41,7 @@ class GetRetinaDropshippingHomeData
                     'icon'    => $platform->count() > 0 ? 'fas fa-check-circle' : 'fas fa-times-circle',
                     'class'   => $platform->count() > 0 ? 'text-green-500' : 'text-red-500'
                 ],
+                'logo_icon' => $platformType->value,
                 'count'   => $platform->count(),
                 // 'route' => [
                 //     'name'       => 'grp.org.shops.show.catalogue.departments.index',
@@ -56,7 +57,7 @@ class GetRetinaDropshippingHomeData
 
         return [
             'customer' => CustomerResource::make($customer)->getArray(),
-            'channels' => CustomerSalesChannelsResource::collection($customerChannels),
+            'channels' => CustomerSalesChannelsResource::collection($customerChannels)->toArray(request()),
             'stats'       => [
                     [
                         'label' => __('Channels'),
@@ -64,8 +65,13 @@ class GetRetinaDropshippingHomeData
                             'name'       => 'retina.dropshipping.customer_sales_channels.index',
                             'parameters' => []
                         ],
-                        'icon'  => 'fal fa-folder-tree',
-                        "color" => "",
+                        'color' => '#E87928',
+                        'icon'  => [
+                            'icon' => 'fal fa-code-branch',
+                            'tooltip' => __('Channels'),
+                            'icon_rotation' => '90',
+                        ],
+                        // "color" => "",
                         'value' => $totalPlatforms,
 
 
