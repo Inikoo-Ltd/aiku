@@ -25,7 +25,7 @@ use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWo
 use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfoliosToWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfolioToWooCommerce;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
-use App\Actions\Retina\Accounting\MitSavedCard\UpdateRetinaMitSavedCard;
+use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
@@ -287,5 +287,5 @@ Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('po
 
 Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
-    Route::patch('{mitSavedCard:id}/set-to-default', UpdateRetinaMitSavedCard::class)->name('set_to_default');
+    Route::patch('{mitSavedCard:id}/set-to-default', SetAsDefaultRetinaMitSavedCard::class)->name('set_to_default');
 });
