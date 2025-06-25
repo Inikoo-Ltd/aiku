@@ -10,9 +10,9 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\OrdersApiResource;
 use App\Actions\RetinaApiAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Api\OrdersResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
@@ -101,7 +101,7 @@ class GetOrders extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
     {
-        return OrdersResource::collection($orders);
+        return OrdersApiResource::collection($orders);
     }
 
     public function rules(): array

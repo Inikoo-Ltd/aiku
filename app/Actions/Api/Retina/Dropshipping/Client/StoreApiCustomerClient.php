@@ -9,7 +9,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
-use App\Actions\Api\Retina\Dropshipping\Resource\CustomerClientResource;
+use App\Actions\Api\Retina\Dropshipping\Resource\CustomerClientApiResource;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerClient;
@@ -41,9 +41,9 @@ class StoreApiCustomerClient extends RetinaApiAction
         return $this->handle($this->customerSalesChannel, $this->validatedData);
     }
 
-    public function jsonResponse(CustomerClient $customerClient): CustomerClientResource
+    public function jsonResponse(CustomerClient $customerClient): CustomerClientApiResource
     {
-        return CustomerClientResource::make($customerClient)
+        return CustomerClientApiResource::make($customerClient)
             ->additional([
                 'message' => __('Client created successfully'),
             ]);

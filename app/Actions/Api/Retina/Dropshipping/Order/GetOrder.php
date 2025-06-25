@@ -9,7 +9,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
-use App\Http\Resources\Api\OrderResource;
+use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,7 +27,7 @@ class GetOrder
 
     public function jsonResponse(Order $order)
     {
-        return OrderResource::make($order);
+        return OrderApiResource::make($order);
     }
 
     public function asController(Order $order, ActionRequest $request): Order
