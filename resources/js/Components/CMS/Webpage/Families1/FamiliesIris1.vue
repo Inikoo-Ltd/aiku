@@ -37,7 +37,6 @@ const responsiveGridClass = computed(() => {
   return `grid-cols-${count}`
 })
 
-console.log('families',props)
 </script>
 
 <template>
