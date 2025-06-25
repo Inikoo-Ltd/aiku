@@ -76,6 +76,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read ProductCategory|null $department
  * @property-read Group $group

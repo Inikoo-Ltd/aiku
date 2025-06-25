@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $code
  * @property string $name
  * @property int $image_id
+ * @property mixed $web_images
  */
 class WebBlockSubDepartmentsResource extends JsonResource
 {
@@ -38,13 +39,15 @@ class WebBlockSubDepartmentsResource extends JsonResource
             $imageSources = GetPictureSources::run($image);
         }
 
+        $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
 
         return [
             'slug'  => $this->slug,
             'code'  => $this->code,
             'name'  => $this->name,
             'image' => $imageSources,
-            'url'   => $this->url
+            'url'   => $this->url,
+            'web_images' => $webImages,
         ];
     }
 }

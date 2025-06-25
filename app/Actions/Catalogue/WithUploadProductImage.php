@@ -11,10 +11,7 @@ namespace App\Actions\Catalogue;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Collection;
 
 trait WithUploadProductImage
 {
@@ -51,8 +48,5 @@ trait WithUploadProductImage
         ];
     }
 
-    // public function jsonResponse($medias): AnonymousResourceCollection
-    // {
-    //     return ImageResource::collection($medias);
-    // }
+
 }

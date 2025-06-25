@@ -9,8 +9,6 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -31,39 +29,33 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $url
  * @property mixed $currency
  * @property mixed $currency_code
+ * @property mixed $web_images
+ * @property mixed $top_seller
  */
 class IrisProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
 
-
     public function toArray($request): array
     {
 
-        $image = null;
-        if ($this->image_id) {
-            $media = Media::find($this->image_id);
-            $image = ImageResource::make($media)->getArray();
-        }
-
         return [
-            'id'            => $this->id,
-            'image_id'      => $this->image_id,
-            'code'          => $this->code,
-            'name'          => $this->name,
-            'stock'         => $this->available_quantity,
-            'price'         => $this->price,
-            'rrp'           => $this->rrp,
-            'state'         => $this->state,
-            'status'        => $this->status,
-            'created_at'    => $this->created_at,
-            'updated_at'    => $this->updated_at,
-            'units'         => $this->units,
-            'unit'          => $this->unit,
-            'url'           => $this->url,
-            'top_seller'  => $this->top_seller,
-            'image'         => $image,
-            'web_images'    => $this->web_images
+            'id'         => $this->id,
+            'image_id'   => $this->image_id,
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'stock'      => $this->available_quantity,
+            'price'      => $this->price,
+            'rrp'        => $this->rrp,
+            'state'      => $this->state,
+            'status'     => $this->status,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'units'      => $this->units,
+            'unit'       => $this->unit,
+            'url'        => $this->url,
+            'top_seller' => $this->top_seller,
+            'web_images' => $this->web_images
         ];
     }
 

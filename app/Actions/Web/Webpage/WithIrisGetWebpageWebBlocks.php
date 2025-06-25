@@ -11,7 +11,6 @@ namespace App\Actions\Web\Webpage;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 
 trait WithIrisGetWebpageWebBlocks
 {
@@ -19,18 +18,7 @@ trait WithIrisGetWebpageWebBlocks
 
     public function getIrisWebBlocks(Webpage $webpage, array $webBlocks, bool $isLoggedIn): array
     {
-        if ($isLoggedIn) {
-            return $this->getParsedWebBlocks($webpage, $webBlocks, isLoggedIn: true);
-        }
-
-        $ttlSeconds = 60;
-
-        $key = 'iris-web-blocks-website-'.$webpage->website_id.'-webpage-'.$webpage->id;
-
-
-        return Cache::remember($key, $ttlSeconds, function () use ($webpage, $webBlocks) {
-            return $this->getParsedWebBlocks($webpage, $webBlocks, isLoggedIn: false);
-        });
+        return $this->getParsedWebBlocks($webpage, $webBlocks, isLoggedIn: $isLoggedIn);
     }
 
 

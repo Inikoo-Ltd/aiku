@@ -96,6 +96,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read \App\Models\Helpers\Currency $currency
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
@@ -111,7 +112,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read LaravelCollection<int, OrgStock> $orgStocks
  * @property-read Organisation $organisation
- * @property-read Portfolio|null $portfolio
+ * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, Product> $productVariants
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -265,9 +266,9 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphOne(Webpage::class, 'model');
     }
 
-    public function portfolio(): MorphOne
+    public function portfolios(): MorphMany
     {
-        return $this->morphOne(Portfolio::class, 'item');
+        return $this->morphMany(Portfolio::class, 'item');
     }
 
     public function favourites(): HasMany
@@ -295,6 +296,12 @@ class Product extends Model implements Auditable, HasMedia
     public function exclusiveForCustomer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function containedByCollections(): MorphToMany
+    {
+        return $this->morphToMany(Collection::class, 'model', 'collection_has_models')
+            ->withTimestamps();
     }
 
 }

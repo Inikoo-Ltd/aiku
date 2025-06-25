@@ -37,7 +37,6 @@ const props = withDefaults(defineProps<{
     step: "any" // Default step to allow any decimal value
 })
 
-console.log('sss',props)
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: string | number): void
