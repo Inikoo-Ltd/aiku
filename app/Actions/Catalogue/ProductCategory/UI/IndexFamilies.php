@@ -361,7 +361,7 @@ class IndexFamilies extends OrgAction
             if($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $routes = [
                     'attach' => [
-                        'name'       => 'grp.models.sub-department.families.attach ',
+                        'name'       => 'grp.models.sub-department.families.attach',
                         'parameters' => [
                             'subDepartment' => $this->parent->id
                         ]
