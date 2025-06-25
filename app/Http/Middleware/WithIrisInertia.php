@@ -71,9 +71,13 @@ trait WithIrisInertia
                 'cart_amount'      => $cartAmount,
             ],
             'migration_redirect'=>[
+                'need_chnages_url' => [
                     'https://aw-dropship.com',
-                    'https://v2.aw-dropship.com'
-                ]
+                    'http://aw-dropship.com',
+                    'https://www.aw-dropship.com/',
+                ],
+                'to_url' => 'https://v2.aw-dropship.com'
+            ]
         ];
     }
 }
