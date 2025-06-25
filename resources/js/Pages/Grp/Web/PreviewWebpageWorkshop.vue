@@ -33,8 +33,8 @@ const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 
 const showWebpage = (item) => {
   const vis = item?.visibility
-  const layout = item?.web_block?.layout
-  if (!layout || !item.show) return false
+  const layoutBlock = item?.web_block?.layout
+  if (!layoutBlock || !item.show) return false
   if (filterBlock.value === 'all') return true
   if (filterBlock.value === 'logged-out' && vis?.out) return true
   if (filterBlock.value === 'logged-in' && vis?.in) return true
@@ -47,7 +47,7 @@ const checkScreenType = () => {
 }
 
 const updateData = (val: any) => {
-  sendMessageToParent("autosave", val)
+  sendMessageToParent("autosave", JSON.parse(JSON.stringify(val)))
 }
 
 const handleMessage = (event: MessageEvent) => {
@@ -89,10 +89,12 @@ onBeforeUnmount(() => {
 watch(() => props.webpage, (val) => {
   data.value = val ? { ...val } : undefined
 })
+
+console.log(props)
 </script>
 
 <template>
-  <div class="editor-class" :style="getStyles(layout.container?.properties, screenType)">
+  <div class="editor-class" :style="getStyles(props.layout.container?.properties, screenType)">
     <div class="shadow-xl px-1 py-1">
       <div>
         <div v-if="data?.layout?.web_blocks?.length">
