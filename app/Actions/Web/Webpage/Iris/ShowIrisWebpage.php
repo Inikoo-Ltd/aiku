@@ -48,18 +48,25 @@ class ShowIrisWebpage
 
     public function asController(ActionRequest $request, string $path = null): array
     {
-        $key = config('iris.cache.webpage_path.prefix').'_'.$request->get('website')->id.'_'.$path;
+        if (config('iris.cache.webpage_path.ttl') == 0) {
+            $webpageID = $this->getWebpageID($request->get('website'), $path);
+        } else {
+            $key = config('iris.cache.webpage_path.prefix').'_'.$request->get('website')->id.'_'.$path;
+            $webpageID = cache()->remember($key, config('iris.cache.webpage_path.ttl'), function () use ($request, $path) {
+                return $this->getWebpageID($request->get('website'), $path);
+            });
+        }
 
-        $webpageID = cache()->remember($key, config('iris.cache.webpage_path.ttl'), function () use ($request, $path) {
-            return $this->getWebpageID($request->get('website'), $path);
-        });
 
         if ($webpageID === null) {
             abort(404, 'Not found');
         }
 
-        $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
 
+        if (config('iris.cache.webpage.ttl') == 0) {
+            return $this->getWebpageData($webpageID);
+        }
+        $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
 
         return cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
             return $this->getWebpageData($webpageID);

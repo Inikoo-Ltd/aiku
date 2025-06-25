@@ -25,13 +25,18 @@ class DetectIrisWebsite
         }
 
 
-        $websiteData = Cache::remember(
-            config('iris.cache.website.prefix')."_$domain",
-            config('iris.cache.website.ttl'),
-            function () use ($domain) {
-                return $this->getWebpageData($domain);
-            }
-        );
+        if (config('iris.cache.website.ttl') == 0) {
+            $websiteData = $this->getWebpageData($domain);
+        } else {
+            $key = config('iris.cache.website.prefix')."_$domain";
+            $websiteData = Cache::remember(
+                $key,
+                config('iris.cache.website.ttl'),
+                function () use ($domain) {
+                    return $this->getWebpageData($domain);
+                }
+            );
+        }
 
 
         $request->merge($websiteData);

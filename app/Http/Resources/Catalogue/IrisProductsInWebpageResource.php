@@ -36,9 +36,9 @@ class IrisProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
 
-
     public function toArray($request): array
     {
+
         return [
             'id'         => $this->id,
             'image_id'   => $this->image_id,
@@ -54,7 +54,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'units'      => $this->units,
             'unit'       => $this->unit,
             'url'        => $this->url,
-            'top_seller'  => $this->top_seller,
+            'top_seller' => $this->top_seller,
             'web_images' => $this->web_images
         ];
     }
