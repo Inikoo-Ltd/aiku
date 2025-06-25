@@ -6,8 +6,10 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
+use App\Actions\Api\Retina\Dropshipping\Client\DeleteApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
+use App\Actions\Api\Retina\Dropshipping\Client\StoreApiCustomerClient;
+use App\Actions\Api\Retina\Dropshipping\Client\UpdateApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrders;
 use App\Actions\Api\Retina\Dropshipping\Order\StoreApiOrder;
@@ -41,4 +43,8 @@ Route::prefix('portfolios')->as('portfolios.')->group(function () {
 
 Route::prefix('clients')->as('clients.')->group(function () {
     Route::get('', GetClients::class)->name('index');
+    Route::post('', StoreApiCustomerClient::class)->name('create');
+    Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
+    Route::delete('{customerClient:id}', DeleteApiCustomerClient::class)->name('delete');
+
 });
