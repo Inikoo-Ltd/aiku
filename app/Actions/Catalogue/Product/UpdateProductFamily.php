@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Collection\SyncIndirectProductsToCollection;
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
@@ -51,13 +52,27 @@ class UpdateProductFamily extends OrgAction
 
         if (Arr::has($changes, 'family_id')) {
             FamilyHydrateProducts::dispatch($product->family);
+
+
+            foreach ($product->family->collections as $collection) {
+                SyncIndirectProductsToCollection::dispatch($collection);
+            }
+
             if ($oldFamily) {
                 FamilyHydrateProducts::dispatch($oldFamily);
+                foreach ($oldFamily->collections as $collection) {
+                    SyncIndirectProductsToCollection::dispatch($collection);
+                }
             } else {
                 ShopHydrateProductsWithNoFamily::dispatch($product->shop);
                 OrganisationHydrateProductsWithNoFamily::dispatch($product->organisation);
                 GroupHydrateProductsWithNoFamily::dispatch($product->group);
             }
+
+
+
+
+
         }
 
         if (Arr::has($changes, 'department_id')) {
@@ -77,6 +92,9 @@ class UpdateProductFamily extends OrgAction
                 SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
             }
         }
+
+
+
 
         return $product;
     }
