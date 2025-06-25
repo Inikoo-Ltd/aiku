@@ -16,7 +16,7 @@ return new class () extends Migration {
         Schema::table('customer_stats', function (Blueprint $table) {
             $table->unsignedInteger('number_platforms')->default(0);
             foreach (PlatformTypeEnum::cases() as $platform) {
-                $table->unsignedInteger("number_platforms_type_{$platform->value}")->default(0);
+                $table->unsignedInteger("number_platforms_type_" . $platform->snake())->default(0);
             }
         });
     }
@@ -31,7 +31,7 @@ return new class () extends Migration {
         Schema::table('customer_stats', function (Blueprint $table) {
             $table->dropColumn('number_platforms');
             foreach (PlatformTypeEnum::cases() as $platform) {
-                $table->dropColumn("number_platforms_type_{$platform->value}");
+                $table->dropColumn("number_platforms_type_" . $platform->snake());
             }
         });
     }
