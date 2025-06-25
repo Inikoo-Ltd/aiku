@@ -15,7 +15,10 @@ import { debounce } from 'lodash-es'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import { useConfirm } from 'primevue/useconfirm'
 import { faSearch } from '@fal'
+import { faExclamationTriangle, faLayerGroup } from '@far'
+import ConfirmDialog from 'primevue/confirmdialog'
 
 
 const props = defineProps<{
@@ -57,8 +60,9 @@ const filter = ref({ data: {} })
 const showFilters = ref(false)
 const showAside = ref(false)
 const totalProducts = ref(props.fieldValue.products.meta.total)
-
+const settingPortfolio = ref(false)
 const isFetchingOutOfStock = ref(false)
+const confirm = useConfirm()
 
 const getRoutes = () => {
     if (props.fieldValue.model_type === 'ProductCategory') {
@@ -312,10 +316,53 @@ const responsiveGridClass = computed(() => {
   return `grid-cols-${count}`
 })
 
+const handleSetAllToPortfolio = () => {
+  confirm.require({
+    message: 'Are you sure you want to set all products to portfolio?',
+    header: 'Confirmation',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Yes',
+    rejectLabel: 'Cancel',
+    acceptClass: 'p-button-danger',
+    accept: async () => { 
+      /* settingPortfolio.value = true
+      try {
+        const apiUrl = route('iris.json.portfolio.set_all', {
+          model_type: props.fieldValue.model_type,
+          model_id: props.fieldValue.model_id,
+        })
+
+        await axios.post(apiUrl)
+
+        notify({
+          title: 'Success',
+          text: 'All products have been added to the portfolio.',
+          type: 'success',
+        })
+
+        fetchProductHasPortfolio()
+      } catch (error) {
+        console.error(error)
+        notify({
+          title: 'Error',
+          text: 'Failed to update portfolio status.',
+          type: 'error',
+        })
+      } finally {
+        settingPortfolio.value = false
+      } */
+    }
+  })
+}
 
 </script>
 
 <template>
+    <ConfirmDialog>
+          <template #icon>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+        </template>
+    </ConfirmDialog>
     <div class="flex flex-col lg:flex-row" :style="getStyles(fieldValue.container?.properties, screenType)">
 
         <!-- Sidebar Filters for Desktop -->
@@ -374,7 +421,17 @@ const responsiveGridClass = computed(() => {
                         {{ products.length === 1 ? 'product' : 'products' }}
                     </span>
                 </div>
-
+                <div>
+                    <Button
+                        :icon="faLayerGroup"
+                        :label="settingPortfolio ? 'Processing...' : 'Set All Products to Portfolio'"
+                        class="!p-3 !w-auto"
+                        type="secondary"
+                        :disabled="settingPortfolio"
+                        @click="handleSetAllToPortfolio"
+                        aria-label="Set all products to portfolio"
+                    />
+                </div>
             </div>
 
             <!-- Product Grid -->
