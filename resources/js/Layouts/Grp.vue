@@ -8,82 +8,100 @@
 
 
 <script setup lang="ts">
-import { ref, provide, defineAsyncComponent, watch } from 'vue'
-import { initialiseApp } from "@/Composables/initialiseApp"
-import { usePage } from "@inertiajs/vue3"
-import Footer from "@/Components/Footer/Footer.vue"
+import { ref, provide, defineAsyncComponent, watch } from "vue";
+import { initialiseApp } from "@/Composables/initialiseApp";
+import { usePage } from "@inertiajs/vue3";
+import Footer from "@/Components/Footer/Footer.vue";
 
-import { useLayoutStore } from "@/Stores/layout"
-import { useLocaleStore } from "@/Stores/locale"
+import { useLayoutStore } from "@/Stores/layout";
+import { useLocaleStore } from "@/Stores/locale";
 
-import "@/Composables/Icon/NavigationImportIcon"
-
-
-
-import TopBar from "@/Layouts/Grp/TopBar.vue"
-import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
-import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
-import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
-import Notification from '@/Components/Utils/Notification.vue'
-import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faPoll, faClock, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faTimes, faAsterisk } from '@fal'
-import { faPauseCircle, faSunset, faSkull } from '@fal'
-import { faSearch, faBell } from '@far'
-import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from '@fas'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { notify } from '@kyvg/vue3-notification'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Modal from '@/Components/Utils/Modal.vue'
-library.add(faPauseCircle, faSunset, faSkull, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faPoll, faClock, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk)
-
-provide('layout', useLayoutStore())
-provide('locale', useLocaleStore())
-provide('isMovePallet', true)
-
-initialiseApp()
-
-const StackedComponents = defineAsyncComponent(() => import('@/Layouts/Grp/StackedComponents.vue'))
+import "@/Composables/Icon/NavigationImportIcon";
 
 
-const layout = useLayoutStore()
-const sidebarOpen = ref(false)
+import TopBar from "@/Layouts/Grp/TopBar.vue";
+import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue";
+import RightSideBar from "@/Layouts/Grp/RightSideBar.vue";
+import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue";
+import Notification from "@/Components/Utils/Notification.vue";
+import {
+    faPoll,
+    faParking,
+    faUsers,
+    faTachometerAltFast,
+    faGlobe,
+    faParachuteBox,
+    faClock,
+    faTransporter,
+    faRulerTriangle,
+    faRulerCombined,
+    faAtom,
+    faFileInvoice,
+    faPaperPlane,
+    faDraftingCompass,
+    faCheck,
+    faTimes,
+    faAsterisk,faPauseCircle, faSunset, faSkull
+} from "@fal";
+import { faSearch, faBell } from "@far";
+import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { notify } from "@kyvg/vue3-notification";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { trans } from "laravel-vue-i18n";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import Modal from "@/Components/Utils/Modal.vue";
+
+library.add(faPoll, faPauseCircle, faSunset, faSkull, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faClock, faTransporter, faParking, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk);
+
+provide("layout", useLayoutStore());
+provide("locale", useLocaleStore());
+provide("isMovePallet", true);
+
+initialiseApp();
+
+const StackedComponents = defineAsyncComponent(() => import("@/Layouts/Grp/StackedComponents.vue"));
+
+
+const layout = useLayoutStore();
+const sidebarOpen = ref(false);
 
 // Section: Notification
 watch(() => usePage().props?.flash?.notification, (notif) => {
-    console.log('notif ret', notif)
-    if (!notif) return
+    console.log("notif ret", notif);
+    if (!notif) return;
 
     notify({
         title: notif.title,
         text: notif.description,
-        type: notif.status,
-    })
-})
+        type: notif.status
+    });
+});
 
 // Section: Modal
 interface Modal {
-    title: string
-    description: string
-    type: 'success' | 'error' | 'info' | 'warning'
+    title: string;
+    description: string;
+    type: "success" | "error" | "info" | "warning";
 }
-const selectedModal = ref<Modal | null>(null)
-const isModalOpen = ref(false)
-watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    console.log('modal ret', modal)
-    if (!modal) return
 
-    selectedModal.value = modal
-    isModalOpen.value = true
-})
+const selectedModal = ref<Modal | null>(null);
+const isModalOpen = ref(false);
+watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
+    console.log("modal ret", modal);
+    if (!modal) return;
+
+    selectedModal.value = modal;
+    isModalOpen.value = true;
+});
 </script>
 
 <template>
     <div id="grp_app" class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
-        :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
+         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
 
         <TopBar @sidebarOpen="(value: boolean) => sidebarOpen = value" :sidebarOpen="sidebarOpen"
-            :logoRoute="`grp.dashboard.show`" urlPrefix="grp." />
+                :logoRoute="`grp.dashboard.show`" urlPrefix="grp." />
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
@@ -93,16 +111,16 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
                 layout.app.environment === 'staging' ? 'top-11 lg:top-16' : 'top-11 lg:top-10'
             ]"
             :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
-            :layout="layout"    
+            :layout="layout"
         />
 
         <!-- Sidebar: Left -->
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden" v-if="sidebarOpen"
-                @click="sidebarOpen = !sidebarOpen" />
+                 @click="sidebarOpen = !sidebarOpen" />
             <LeftSideBar class="-left-2/3 z-20 block md:left-[0]"
-                :class="[{ 'left-[0]': sidebarOpen }]" @click="sidebarOpen = !sidebarOpen" />
+                         :class="[{ 'left-[0]': sidebarOpen }]" @click="sidebarOpen = !sidebarOpen" />
         </div>
 
         <!-- Main Content -->
@@ -117,7 +135,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 
         <!-- Sidebar: Right -->
         <RightSideBar class="fixed top-16 w-44 transition-all duration-200 ease-in-out"
-            :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0' : '-right-44']" />
+                      :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0' : '-right-44']" />
 
         <Teleport to="body">
             <Transition name="stacked-component">
@@ -135,10 +153,10 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
             <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                 <div>
                     <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon="fal fa-times" class="text-red-500 text-2xl" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon="fal fa-check" class="text-green-500 text-2xl" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon="fas fa-exclamation" class="text-orange-500 text-2xl" fixed aria-hidden="true" />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon="fas fa-info" class="text-gray-500 text-2xl" fixed-width aria-hidden="true" />
                     </div>
 
                     <div class="mt-3 text-center sm:mt-5">
@@ -185,6 +203,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     background-color: v-bind('layout?.app?.theme[2]');
     color: v-bind('layout?.app?.theme[3]')
 }
+
 .navigation {
     @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
     color: v-bind('layout?.app?.theme[1]')
@@ -193,6 +212,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 .subNavActive {
     @apply bg-indigo-200/20 sm:border-l-4 sm:border-indigo-100 text-white font-semibold transition-all duration-0 ease-in-out;
 }
+
 .subNav {
     @apply hover:bg-white/80 text-gray-100 hover:text-indigo-500 font-semibold transition-all duration-0 ease-in-out
 }
@@ -200,6 +220,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 .navigationSecondActive {
     @apply transition-all duration-100 ease-in-out;
 }
+
 .navigationSecond {
     @apply hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out
 }
@@ -208,19 +229,23 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     @apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
     background-color: v-bind('layout.app.theme[4]');
 }
+
 .bottomNavigation {
     @apply bg-gray-300 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out
 }
+
 .bottomNavigationSecondaryActive {
     @apply w-5/6 bg-gray-400 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
-    
+
 }
+
 .bottomNavigationSecondary {
     @apply bg-gray-200 w-0 group-hover:w-3/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out
 }
 
 .primaryLink {
     background: v-bind('`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "77"})`');
+
     &:hover, &:focus {
         color: v-bind('`${layout.app.theme[7]}`');
     }
@@ -236,6 +261,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 
 .secondaryLink {
     background: v-bind('`linear-gradient(to top, ${layout.app.theme[6] + "77"}, ${layout.app.theme[6] + "11"})`');
+
     &:hover, &:focus {
         color: v-bind('`${layout.app.theme[7]}`');
     }
@@ -263,6 +289,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     [background-size:100%_100%]
     focus:[background-size:100%_100%] px-1;
 }
+
 .specialBox {
     background: v-bind('`linear-gradient(to top, ${layout.app.theme[0]}, ${layout.app.theme[0] + "AA"})`');
     color: v-bind('`${layout.app.theme[0]}`');

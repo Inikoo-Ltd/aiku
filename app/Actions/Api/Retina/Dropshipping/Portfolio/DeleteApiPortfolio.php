@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 25-06-2025-13h-16m
@@ -11,13 +12,10 @@ namespace App\Actions\Api\Retina\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\PortfolioResource;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Ordering\Order;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
-
-use function Pest\Laravel\json;
 
 class DeleteApiPortfolio extends RetinaApiAction
 {
@@ -45,14 +43,13 @@ class DeleteApiPortfolio extends RetinaApiAction
                 'portfolio_id' => $portfolio->id,
                 'status' => $portfolio->status
             ]);
-        }
-        else {
+        } else {
             DeletePortfolio::make()->action($this->customerSalesChannel, $portfolio, []);
             return response()->json([
                 'message' => 'Portfolio has been deleted.',
                 'portfolio_id' => $portfolio->id
             ]);
-        }       
+        }
     }
 
     public function asController(Portfolio $portfolio, ActionRequest $request): JsonResponse

@@ -28,23 +28,21 @@ class StoreApiOrderTransaction extends RetinaApiAction
 
     public function handle(Order $order, Portfolio $portfolio, array $modelData): Transaction|JsonResponse
     {
-        if($order->state != OrderStateEnum::CREATING) {
+        if ($order->state != OrderStateEnum::CREATING) {
             return response()->json([
                 'message' => 'This order is already in the "' . $order->state->value . '" state and cannot be updated.',
             ]);
         }
-        $transaction = StoreTransaction::make()->action($order, $portfolio->item->historicAsset, $modelData);
+        return StoreTransaction::make()->action($order, $portfolio->item->historicAsset, $modelData);
 
-        return $transaction;
     }
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'quantity_ordered'    => ['required', 'numeric', 'min:0'],
         ];
 
-        return $rules;
     }
 
     public function asController(Order $order, Portfolio $portfolio, ActionRequest $request): Transaction|JsonResponse

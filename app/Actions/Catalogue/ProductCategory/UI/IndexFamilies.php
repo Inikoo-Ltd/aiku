@@ -251,7 +251,7 @@ class IndexFamilies extends OrgAction
                     $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
-                if($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                if ($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                     $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
                 }
             }
@@ -356,9 +356,8 @@ class IndexFamilies extends OrgAction
 
         $routes = null;
 
-        if($this->parent instanceof PRoductCategory) 
-        {
-            if($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+        if ($this->parent instanceof PRoductCategory) {
+            if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $routes = [
                     'attach' => [
                         'name'       => 'grp.models.sub-department.families.attach',

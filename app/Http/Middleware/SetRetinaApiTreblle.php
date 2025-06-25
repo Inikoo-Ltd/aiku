@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 25 Jun 2025 15:21:16 Malaysia Time, Sheffield, United Kingdom
@@ -7,15 +8,11 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 
 class SetRetinaApiTreblle
 {
-
     public function handle(Request $request, Closure $next)
     {
         config([

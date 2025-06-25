@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 25 Jun 2025 16:43:21 Malaysia Time, Sheffield, United Kingdom
@@ -8,9 +9,6 @@
 namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Models\Helpers\Media;
-use App\Actions\Helpers\Images\GetPictureSources;
-
 
 /**
  * @property mixed $id
@@ -22,7 +20,6 @@ use App\Actions\Helpers\Images\GetPictureSources;
  */
 class FamiliesSelectResource extends JsonResource
 {
-
     public function toArray($request): array
     {
 

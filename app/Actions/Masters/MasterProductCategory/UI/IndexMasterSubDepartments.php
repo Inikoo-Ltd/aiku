@@ -199,6 +199,18 @@ class IndexMasterSubDepartments extends GrpAction
                 )
             ),
 
+            'grp.masters.master_departments.show.master_sub_departments.index' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+
 
 
             default => []

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 25-06-2025-12h-05m
@@ -6,14 +7,11 @@
  * copyright 2025
 */
 
-
 namespace App\Actions\Catalogue\ProductCategory\Json;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

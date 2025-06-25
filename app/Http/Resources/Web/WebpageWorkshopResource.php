@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Web\Webpage\UI\IndexChangesWebpages;
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;

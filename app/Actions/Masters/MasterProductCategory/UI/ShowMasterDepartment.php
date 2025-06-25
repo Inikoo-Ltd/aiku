@@ -36,6 +36,7 @@ class ShowMasterDepartment extends GrpAction
 
     public function handle(MasterProductCategory $masterDepartment): MasterProductCategory
     {
+        $this->masterDepartment = $masterDepartment;
         return $masterDepartment;
     }
 
@@ -70,7 +71,6 @@ class ShowMasterDepartment extends GrpAction
                 'title'       => $tittle,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,
-                    $masterDepartment,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -126,7 +126,7 @@ class ShowMasterDepartment extends GrpAction
     }
 
 
-    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, MasterProductCategory $department, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (MasterProductCategory $department, array $routeParameters, ?string $suffix) {
             return [
@@ -157,7 +157,47 @@ class ShowMasterDepartment extends GrpAction
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
-                    $department,
+                    $this->masterDepartment,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_departments.index',
+                            'parameters' => []
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_departments.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_departments.show.master_sub_departments.index' =>
+            array_merge(
+                ShowMastersDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    $parent,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_departments.index',
+                            'parameters' => []
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_departments.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_departments.show.master_families.index' =>
+            array_merge(
+                ShowMastersDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    $parent,
                     [
                         'index' => [
                             'name'       => 'grp.masters.master_departments.index',
@@ -177,7 +217,7 @@ class ShowMasterDepartment extends GrpAction
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
-                    $department,
+                    $this->masterDepartment,
                     [
                         'index' => [
                             'name'       => 'grp.masters.master_shops.show.master_departments.index',

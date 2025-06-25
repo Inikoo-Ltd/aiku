@@ -2,12 +2,12 @@ export const resolveMigrationLink = (
 	href?: string,
 	migration_redirect?: MigrationRedirect | null
 ): string | undefined => {
-	if (!href || !migration_redirect?.need_chnages_url || !migration_redirect?.to_url) return href
+	if (!href || !migration_redirect?.need_changes_url || !migration_redirect?.to_url) return href
 
 	try {
-		const current = new URL(href, migration_redirect.need_chnages_url[0])
+		const current = new URL(href, migration_redirect.need_changes_url[0])
 
-		for (const fromUrl of migration_redirect.need_chnages_url) {
+		for (const fromUrl of migration_redirect.need_changes_url) {
 			const from = new URL(fromUrl)
 			const to = new URL(migration_redirect.to_url)
 
@@ -25,7 +25,7 @@ export const resolveMigrationHrefInHTML = (
 	html?: string,
 	migration_redirect?: MigrationRedirect | null
 ): string => {
-	if (!html || !migration_redirect?.need_chnages_url || !migration_redirect.to_url) return html
+	if (!html || !migration_redirect?.need_changes_url || !migration_redirect.to_url) return html
 
 	const tempEl = document.createElement('div')
 	tempEl.innerHTML = html

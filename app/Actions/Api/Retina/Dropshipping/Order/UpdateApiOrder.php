@@ -26,7 +26,7 @@ class UpdateApiOrder extends RetinaApiAction
 
     public function handle(Order $order, array $modelData): Order|JsonResponse
     {
-        if($order->state != OrderStateEnum::CREATING) {
+        if ($order->state != OrderStateEnum::CREATING) {
             return response()->json([
                 'message' => 'This order is already in the "' . $order->state->value . '" state and cannot be updated.',
             ]);
