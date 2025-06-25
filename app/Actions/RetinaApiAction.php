@@ -23,6 +23,7 @@ use App\Models\Dropshipping\TiktokUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -45,6 +46,7 @@ class RetinaApiAction
     protected ?FulfilmentCustomer $fulfilmentCustomer;
     protected Organisation $organisation;
     protected Shop $shop;
+    protected Group $group;
     protected bool $asAction = false;
 
 
@@ -53,11 +55,13 @@ class RetinaApiAction
     public function initialisationFromDropshipping(ActionRequest $request): static
     {
         $this->customerSalesChannel = $request->user();
+
         $this->customer = $this->customerSalesChannel->customer;
         $this->shop = $this->customer->shop;
         $this->platformUser = $this->customerSalesChannel->user;
         $this->platform = $this->customerSalesChannel->platform;
         $this->organisation = $this->shop->organisation;
+        $this->group = $this->shop->group;
         $this->fillFromRequest($request);
 
         $this->validatedData = $this->validateAttributes();
