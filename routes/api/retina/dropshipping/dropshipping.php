@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('order')->as('order.')->group(function () {
     Route::get('', GetOrders::class)->name('index');
-    Route::post('/store', StoreApiOrder::class)->name('store');
+    Route::post('/client/{customerClient:id}/store', StoreApiOrder::class)->name('store');
     Route::get('{order:id}', GetOrder::class)->name('show');
     Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
     Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
