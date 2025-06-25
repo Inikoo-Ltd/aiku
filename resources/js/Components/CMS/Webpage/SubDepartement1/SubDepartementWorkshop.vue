@@ -126,7 +126,7 @@ console.log(props)
             />
             <Image
               v-else
-              :src="item.image"
+              :src="item.web_images.main.gallery"
               class="w-full h-full object-contain"
             />
           </div>
