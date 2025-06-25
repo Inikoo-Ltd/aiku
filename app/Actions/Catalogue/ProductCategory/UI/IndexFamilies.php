@@ -373,20 +373,12 @@ class IndexFamilies extends OrgAction
                             'subDepartment' => $this->parent->id
                         ]
                     ],
-                    'list'   => [
+                    'fetch_families'   => [
                         'name'      =>  'grp.json.product_category.families.index',
                         'parameters' => [
                             'productCategory' => $this->parent->slug
                         ]
                     ],
-                    'fetch_families' => [
-                        'name'       => 'grp.json.shop.catalogue.departments.families',
-                        'parameters' => [
-                            'shop'  => $this->shop->slug,
-                            'productCategory'   => $this->parent->id
-                        ]
-                    ],
-
                 ];
             }
         }
