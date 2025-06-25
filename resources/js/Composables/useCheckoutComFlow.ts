@@ -32,6 +32,11 @@ export function useCheckoutCom(checkoutComData: CheckoutComFlow) {
         onError: (component, error) => {
           console.log("onError", error, "Component", component.type)
         },
+        appearance: {
+          // colorPrimary: '#ff0000',
+          // colorSecondary: '#ffff00',
+          colorAction: 'rgb(15, 22, 38)',
+        }
       })
 
       const flowComponent = checkout.create('flow')
