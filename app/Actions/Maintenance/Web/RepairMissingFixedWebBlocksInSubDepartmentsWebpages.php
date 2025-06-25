@@ -35,9 +35,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
     protected function processSubDepartmentWebpages(Webpage $webpage, Command $command): void
     {
-        foreach ($webpage->webBlocks as $webblock) {
-            print $webblock->webBlockType->code."\n";
-        }
+
 
 
         /** @var ProductCategory $subDepartment */
@@ -63,16 +61,25 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
 
         $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
+        if (count($collectionsWebBlock) > 0) {
+            foreach ($collectionsWebBlock as $webBlockData) {
+                DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
+                DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
 
-        if (count($collectionsWebBlock) == 0) {
-            $command->error('Webpage '.$webpage->code.' Collection Web Block not found');
-            $this->createWebBlock($webpage, 'collections-1', $subDepartment);
-        } elseif (count($collectionsWebBlock) > 1) {
-            $command->error('Webpage '.$webpage->code.' MORE than 1 Collection Web Block found');
+                DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
+                DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
+            };
         }
 
 
+        $webpage->refresh();
         UpdateWebpageContent::run($webpage);
+        foreach ($webpage->webBlocks as $webBlock) {
+            print $webBlock->webBlockType->code."\n";
+        }
+        print "=========\n";
 
         if ($webpage->is_dirty) {
             $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
