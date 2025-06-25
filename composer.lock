@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c6ae8a8acb3a527bb611d00250fa9bcb",
+    "content-hash": "68cb7a2a318a2694b485bd9bc4749f9f",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -24102,7 +24102,7 @@
     ],
     "aliases": [],
     "minimum-stability": "beta",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -24118,6 +24118,6 @@
         "ext-soap": "*",
         "ext-zlib": "*"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
 }

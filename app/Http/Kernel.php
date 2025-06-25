@@ -100,13 +100,15 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
+            InspectorOctaneMiddleware::class
         ],
 
         'grp-api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            ApiBindGroupInstance::class
+            ApiBindGroupInstance::class,
+            InspectorOctaneMiddleware::class
         ],
 
         'han' => [
@@ -141,6 +143,7 @@ class Kernel extends HttpKernel
             LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            InspectorOctaneMiddleware::class
         ],
         'web_errors'  => [
             EncryptCookies::class,
@@ -248,7 +251,7 @@ class Kernel extends HttpKernel
         'auth'                   => Authenticate::class,
         'retina-auth'            => RetinaAuthenticate::class,
         'cornea-auth'            => CorneaAuthenticate::class,
-        'iris-relax-auth'              => IrisRelaxAuthenticate::class, // Everybody can access, but we have user data if logged in
+        'iris-relax-auth'        => IrisRelaxAuthenticate::class, // Everybody can access, but we have user data if logged in
         'auth.basic'             => AuthenticateWithBasicAuth::class,
         'auth.session'           => AuthenticateSession::class,
         'cache.headers'          => SetCacheHeaders::class,
