@@ -25,6 +25,7 @@ import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import { definePreset } from '@primevue/themes';
 import Layout from "@/Layouts/Retina.vue";
+import ConfirmationService from "primevue/confirmationservice";
 
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS_AGENT_ID) {
   const options = {
@@ -101,6 +102,7 @@ createInertiaApp(
             .use(ZiggyVue, Ziggy)
             .use(Notifications)
             .use(FloatingVue)
+            .use(ConfirmationService)
             .use(PrimeVue, {
               theme: {
                 preset: MyPreset,

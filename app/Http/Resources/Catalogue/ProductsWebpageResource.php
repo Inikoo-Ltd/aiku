@@ -34,6 +34,7 @@ class ProductsWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
+        $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
         return [
             'slug'        => $this->slug,
             'image_id'    => $this->image_id,
@@ -49,7 +50,7 @@ class ProductsWebpageResource extends JsonResource
             'unit'        => $this->unit,
             'status'      => $this->status,
             'rrp'         => $this->rrp,
-            'web_images'  => $this->web_images
+            'web_images'  => $webImages
         ];
     }
 }
