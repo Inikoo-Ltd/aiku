@@ -96,6 +96,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         ]
                     ],
                 ],
+                'is_need_to_add_card' => true,  // TODO: Artha add condition
                 // 'data'       => [
                 //     // 'route_generate' => [
                 //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
