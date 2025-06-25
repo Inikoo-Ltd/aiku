@@ -9,7 +9,9 @@ import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "lodash"
-import { ref } from "vue"
+import { computed, ref } from "vue"
+import type { Component } from "vue";
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {  } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -24,8 +26,8 @@ library.add()
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	api_tokens: TSTable
-	history: TSTable
+	api_tokens?: TSTable
+	history?: TSTable
     tabs:{
         current: string
 		navigation: {}
@@ -93,13 +95,15 @@ const onClickCopyButton = async (text: string) => {
     }, 3000)
 }
 
-const getComponent = (componentName: string) => {
-    const components: any = {
-        'api_tokens': RetinaTableApiKey,
-		'history': TableHistories
+const component = computed(() => {
+    const components: Component = {
+        api_tokens: RetinaTableApiKey,
+        history: TableHistories,
     };
-    return components[componentName]
-};
+    return components[currentTab.value];
+
+});
+
 </script>
 
 <template>
@@ -125,12 +129,8 @@ const getComponent = (componentName: string) => {
 	</div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-	<component 
-		:is="getComponent(tabs.current)" 
-		:data="props[currentTab as keyof typeof props]"
-		:tab="currentTab"
-	>
-	</component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+
 
 	<!-- <RetinaTableApiKey
 		:data="data.api_tokens"
