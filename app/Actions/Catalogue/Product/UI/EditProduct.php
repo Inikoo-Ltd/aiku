@@ -146,7 +146,7 @@ class EditProduct extends OrgAction
                         'value' => $product->name,
                     ],
                     'description' => [
-                        'type'  => 'input',
+                        'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
                     ],

@@ -38,7 +38,7 @@ const checkScreenType = () => {
 }
 
 
-function injectMetaTagFromString(rawHtml: string) {
+/* function injectMetaTagFromString(rawHtml: string) {
   if (!rawHtml?.trim().startsWith('<')) return
 
   const wrapper = document.createElement('div')
@@ -57,7 +57,7 @@ function injectMetaTagFromString(rawHtml: string) {
 
     document.head.appendChild(element)
   }
-}
+} */
 
 
 
@@ -97,7 +97,6 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
-console.log('props_value_webpage',props)
 </script>
 
 <template>

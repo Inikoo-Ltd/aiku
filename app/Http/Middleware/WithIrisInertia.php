@@ -69,7 +69,11 @@ trait WithIrisInertia
                 'favourites_count' => $webUser?->customer?->stats?->number_favourites,
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
-            ]
+            ],
+            'migration_redirect'=>[
+                    'https://aw-dropship.com',
+                    'https://v2.aw-dropship.com'
+                ]
         ];
     }
 }
