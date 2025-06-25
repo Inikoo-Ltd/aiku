@@ -33,7 +33,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property StoredItem|Product $item
  *
  */
-class TransactionApiResource extends JsonResource
+class PortfoliosApiResource extends JsonResource
 {
     public function toArray($request): array
     {
