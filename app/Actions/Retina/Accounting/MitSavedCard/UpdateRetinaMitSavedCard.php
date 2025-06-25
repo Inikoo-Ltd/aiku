@@ -12,6 +12,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum;
 use App\Models\Accounting\MitSavedCard;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,7 +22,7 @@ class UpdateRetinaMitSavedCard extends RetinaAction
 
     public function handle(MitSavedCard $mitSavedCard, array $modelData): MitSavedCard
     {
-        if ($modelData['priority'] === 1) {
+        if (Arr::get($modelData, 'priority') === 1) {
             $this->customer->mitSavedCard()->where('priority', 1)
                 ->where('id', '!=', $mitSavedCard->id)
                 ->update(['priority' => 2]);
