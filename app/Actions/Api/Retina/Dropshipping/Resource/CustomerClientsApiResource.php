@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Http\Resources\Api;
+namespace App\Actions\Api\Retina\Dropshipping\Resource;
 
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
@@ -33,7 +33,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property StoredItem|Product $item
  *
  */
-class CustomerClientsResource extends JsonResource
+class CustomerClientsApiResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -41,6 +41,7 @@ class CustomerClientsResource extends JsonResource
             'id'                   => $this->id,
             'ulid'                   => $this->ulid,
             'reference'              => $this->reference,
+            'active'                 => $this->status,
             'name'                   => $this->name,
             'contact_name'           => $this->contact_name,
             'company_name'           => $this->company_name,
@@ -48,7 +49,8 @@ class CustomerClientsResource extends JsonResource
             'email'                  => $this->email,
             'phone'                  => $this->phone,
             'created_at'             => $this->created_at,
-            'updated_at'             => $this->updated_at
+            'updated_at'             => $this->updated_at,
+            'deactivated_at'          => $this->deactivated_at,
         ];
     }
 }

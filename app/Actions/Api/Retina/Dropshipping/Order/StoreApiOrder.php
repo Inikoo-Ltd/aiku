@@ -9,10 +9,10 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\OrderResource;
-use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,26 +26,26 @@ class StoreApiOrder extends RetinaApiAction
     /**
      * @throws \Throwable
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel): Order
+    public function handle(CustomerClient $customerClient): Order
     {
-        return StoreOrder::make()->action($customerSalesChannel->customer, [
-            'platform_id' => $customerSalesChannel->platform_id,
-            'customer_sales_channel_id' => $customerSalesChannel->id,
+        return StoreOrder::make()->action($customerClient, [
+            'platform_id' => $this->customerSalesChannel->platform_id,
+            'customer_sales_channel_id' => $this->customerSalesChannel->id,
         ]);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): Order
+    public function asController(CustomerClient $customerClient, ActionRequest $request): Order
     {
         $this->initialisationFromDropshipping($request);
-        return $this->handle($this->customerSalesChannel);
+        return $this->handle($customerClient);
     }
 
-    public function jsonResponse(Order $order): OrderResource
+    public function jsonResponse(Order $order): OrderApiResource
     {
-        return OrderResource::make($order)
+        return OrderApiResource::make($order)
             ->additional([
                 'message' => __('Order created successfully'),
             ]);

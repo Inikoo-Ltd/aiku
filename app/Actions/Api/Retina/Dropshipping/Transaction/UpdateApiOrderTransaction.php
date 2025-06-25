@@ -9,9 +9,9 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\TransactionApiResource;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\TransactionResource;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -38,7 +38,7 @@ class UpdateApiOrderTransaction extends RetinaApiAction
 
     public function jsonResponse(Transaction $transaction)
     {
-        return TransactionResource::make($transaction)
+        return TransactionApiResource::make($transaction)
             ->additional([
                 'message' => __('Transaction updated successfully'),
             ]);

@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Api\Group\Resources;
+namespace App\Actions\Api\Retina\Dropshipping\Resource;
 
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
@@ -36,6 +36,7 @@ class CustomerClientApiResource extends JsonResource
             'id'                     => $this->id,
             'ulid'                   => $this->ulid,
             'reference'              => $this->reference,
+            'active'                 => $this->status,
             'name'                   => $this->name,
             'contact_name'           => $this->contact_name,
             'company_name'           => $this->company_name,

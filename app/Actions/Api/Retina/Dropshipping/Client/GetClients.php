@@ -10,8 +10,8 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\CustomerClientsApiResource;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\CustomerClientsResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Services\QueryBuilder;
@@ -37,12 +37,19 @@ class GetClients extends RetinaApiAction
             });
         }
 
+        if (Arr::get($modelData, 'active') === 'true') {
+            $query->where('customer_clients.status', true);
+        } elseif (Arr::get($modelData, 'active') === 'false') {
+            $query->where('customer_clients.status', false);
+        }
+
         return $query
         ->defaultSort('customer_clients.reference')
         ->select([
             'customer_clients.location',
             'customer_clients.reference',
             'customer_clients.id',
+            'customer_clients.status',
             'customer_clients.name',
             'customer_clients.contact_name',
             'customer_clients.company_name',
@@ -64,13 +71,14 @@ class GetClients extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $customerClients): AnonymousResourceCollection
     {
-        return CustomerClientsResource::collection($customerClients);
+        return CustomerClientsApiResource::collection($customerClients);
     }
 
     public function rules(): array
     {
         return [
             'search' => ['nullable', 'string'],
+            'active' => ['nullable','string', 'in:true,false'],
             'page' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
             'sort' => ['nullable', 'string'],
@@ -79,9 +87,12 @@ class GetClients extends RetinaApiAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
+        $active = $request->query('active');
+
         $request->merge(
             [
                 'search' => $request->query('search', null),
+                'active' => $active,
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),

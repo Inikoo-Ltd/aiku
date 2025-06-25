@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Api\Retina\Dropshipping\Client\DeleteApiCustomerClient;
+use App\Actions\Api\Retina\Dropshipping\Client\DisableApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
 use App\Actions\Api\Retina\Dropshipping\Client\StoreApiCustomerClient;
@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('order')->as('order.')->group(function () {
     Route::get('', GetOrders::class)->name('index');
-    Route::post('/store', StoreApiOrder::class)->name('store');
+    Route::post('/client/{customerClient:id}/store', StoreApiOrder::class)->name('store');
     Route::get('{order:id}', GetOrder::class)->name('show');
     Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
     Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
@@ -55,6 +55,6 @@ Route::prefix('clients')->as('clients.')->group(function () {
     Route::post('', StoreApiCustomerClient::class)->name('create');
     Route::get('{customerClient:id}', GetClient::class)->name('show');
     Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
-    Route::delete('{customerClient:id}', DeleteApiCustomerClient::class)->name('delete');
+    Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete');
 
 });
