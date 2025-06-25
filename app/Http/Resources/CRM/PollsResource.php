@@ -12,6 +12,10 @@ namespace App\Http\Resources\CRM;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\CRM\Poll;
 
+/**
+ * @property mixed $number_customers
+ * @property mixed $total_customers
+ */
 class PollsResource extends JsonResource
 {
     public function toArray($request): array
@@ -19,7 +23,11 @@ class PollsResource extends JsonResource
         /** @var Poll $poll */
         $poll = $this->resource;
 
-        $percentage = $poll->number_customers ? ($poll->number_customers / ($poll->total_customers > 0 ? $poll->total_customers : 1)) * 100 : 0;
+        $percentage = 0;
+        if ($this->number_customers) {
+            $percentage = ($this->number_customers / ($this->total_customers > 0 ? $this->total_customers : 1)) * 100;
+        }
+
 
         return [
             'id'                       => $poll->id,

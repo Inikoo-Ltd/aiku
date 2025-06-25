@@ -26,8 +26,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePoll extends OrgAction
 {
-    // TODO: raul fix the permissions
-    // use WithCRMEditAuthorisation;
     use WithNoStrictRules;
 
     public function handle(Shop $shop, array $modelData): Poll
@@ -40,6 +38,7 @@ class StorePoll extends OrgAction
         data_forget($modelData, 'type');
         data_set($modelData, 'type', $type);
 
+        /** @var \App\Models\CRM\Poll $poll */
         $poll = $shop->polls()->create($modelData);
         $poll->stats()->create([
             'poll_id' => $poll->id,
@@ -59,8 +58,6 @@ class StorePoll extends OrgAction
 
         ShopHydratePolls::dispatch($shop);
         PollHydrateCustomers::dispatch($poll);
-
-        //todo add Store,Org,Group hydrators here
 
         return $poll;
     }

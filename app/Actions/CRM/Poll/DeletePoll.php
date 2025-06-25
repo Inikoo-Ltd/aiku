@@ -20,12 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeletePoll extends OrgAction
 {
-    // TODO: raul fix the permissions
-    // use WithCRMEditAuthorisation;
-
     public function handle(Poll $poll, bool $forceDelete): Poll
     {
-
         $poll->pollOptions()->delete();
         $poll->pollReplies()->delete();
         if ($forceDelete) {
@@ -43,6 +39,7 @@ class DeletePoll extends OrgAction
     {
         $this->initialisationFromShop($poll->shop, $request);
         $forceDelete = $request->boolean('force_delete');
+
         return $this->handle($poll, $forceDelete);
     }
 
