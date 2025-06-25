@@ -9,9 +9,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faImage } from "@fal"
+import { inject } from "vue"
+import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faCube, faLink, faImage)
 
@@ -22,6 +24,8 @@ const props = defineProps<{
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+const layout = inject('layout', layoutStructure)
+const migration_redirect = layout?.iris?.migration_redirect
 
 </script>
 
@@ -50,12 +54,12 @@ const props = defineProps<{
 
 			<div class="max-w-xl mx-auto w-full">
 				<!-- Rich Text Editor -->
-				<div v-html="fieldValue.text" class="mb-6"></div>
+				<div v-html="resolveMigrationHrefInHTML(fieldValue.text,migration_redirect)" class="mb-6"></div>
 
 				<!-- CTA Button -->
 			
 				<div class="flex justify-center">
-					<a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
+					<a :href="resolveMigrationLink(fieldValue?.button?.link?.href,migration_redirect)" :target="fieldValue?.button?.link?.taget"
 					typeof="button" :style="getStyles(fieldValue?.button?.container?.properties, screenType)"
 						class="mt-10 flex items-center justify-center w-64 gap-x-6">
 						{{ fieldValue?.button?.text }}
