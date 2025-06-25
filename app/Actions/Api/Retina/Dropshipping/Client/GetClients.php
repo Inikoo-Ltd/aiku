@@ -11,7 +11,6 @@
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
 use App\Actions\RetinaApiAction;
-use App\Actions\RetinaWebhookAction;
 use App\Http\Resources\Api\CustomerClientsResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -45,6 +44,9 @@ class GetClients extends RetinaApiAction
             'customer_clients.reference',
             'customer_clients.id',
             'customer_clients.name',
+            'customer_clients.contact_name',
+            'customer_clients.company_name',
+            'customer_clients.email',
             'customer_clients.ulid',
             'customer_clients.created_at'
         ])
