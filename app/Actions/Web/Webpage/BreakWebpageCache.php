@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 24 Jun 2025 13:03:07 Malaysia Time, Sheffield, United Kingdom
@@ -15,7 +16,7 @@ class BreakWebpageCache
 {
     use asObject;
 
-    public function handle(Webpage $webpage):void
+    public function handle(Webpage $webpage): void
     {
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
         Cache::forget($key);

@@ -24,9 +24,8 @@ class GetPhysicalGoodShowcase
         $stats = $this->getAllIntervalPercentage($sales, 'sales');
         return [
             'uploadImageRoute' => [
-                'name'       => 'grp.models.org.product.images.store',
+                'name'       => 'grp.models.product.images.store',
                 'parameters' => [
-                    'organisation' => $product->organisation_id,
                     'product'      => $product->id
                 ]
             ],

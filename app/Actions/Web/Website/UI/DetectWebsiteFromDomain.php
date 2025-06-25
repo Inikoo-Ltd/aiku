@@ -10,7 +10,6 @@ namespace App\Actions\Web\Website\UI;
 
 use App\Exceptions\IrisWebsiteNotFound;
 use App\Models\Web\Website;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class DetectWebsiteFromDomain
@@ -36,7 +35,7 @@ class DetectWebsiteFromDomain
 
     public function parseDomain(string $domain)
     {
-        $domain=strtolower($domain);
+        $domain = strtolower($domain);
         if (app()->environment('local')) {
             if ($domain == 'fulfilment.test') {
                 $domain = config('app.local.retina_fulfilment_domain');

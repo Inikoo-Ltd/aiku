@@ -10,7 +10,6 @@ namespace App\Actions\Web\WebBlock;
 
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetWebBlockProduct

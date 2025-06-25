@@ -71,8 +71,8 @@ class HandleIrisInertiaRequests extends Middleware
                 ],
                 'currency' => $request->get('currency_data'),
                 'flash'    => [
-                    'notification' => fn() => $request->session()->get('notification'),
-                    'modal'        => fn() => $request->session()->get('modal')
+                    'notification' => fn () => $request->session()->get('notification'),
+                    'modal'        => fn () => $request->session()->get('modal')
                 ],
                 'ziggy'    => [
                     'location' => $request->url(),

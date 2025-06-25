@@ -13,7 +13,6 @@ use App\Http\Resources\HasSelfCall;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 class WebBlockFamiliesResource extends JsonResource
 {
     use HasSelfCall;

@@ -38,7 +38,7 @@ class WebBlockSubDepartmentsResource extends JsonResource
             $image        = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
-        
+
         $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
 
         return [
