@@ -11,6 +11,7 @@ use App\Actions\Api\Retina\Dropshipping\Client\GetClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
 use App\Actions\Api\Retina\Dropshipping\Client\StoreApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Client\UpdateApiCustomerClient;
+use App\Actions\Api\Retina\Dropshipping\Order\DeleteApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrders;
 use App\Actions\Api\Retina\Dropshipping\Order\StoreApiOrder;
@@ -33,6 +34,7 @@ Route::prefix('order')->as('order.')->group(function () {
     Route::get('{order:id}', GetOrder::class)->name('show');
     Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
     Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
+    Route::delete('{order:id}/delete', DeleteApiOrder::class)->name('delete');
     Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index');
     Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
 });
