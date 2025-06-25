@@ -228,10 +228,10 @@ class ShowCollection extends OrgAction
                     ],
                     'products'    => [
                         'dataList'     => [
-                            'name'       => 'grp.json.shop.catalogue.collection.products',
+                            'name'       => 'shop.products.not_attached_to_collection',
                             'parameters' => [
-                                'shop'  => $collection->shop->slug,
-                                'scope' => $collection->slug
+                                'shop'  => $collection->shop->id,
+                                'scope' => $collection->id
                             ]
                         ],
                         'submitAttach' => [

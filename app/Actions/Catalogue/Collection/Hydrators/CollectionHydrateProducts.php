@@ -29,12 +29,13 @@ class CollectionHydrateProducts implements ShouldBeUnique
     public function handle(Collection $collection): void
     {
         $stats = [
-            'number_products' => $collection->products()->count(),
+            'number_products' => $collection->products()->where('type', 'direct')->count(),
         ];
 
         $count = DB::table('collection_has_models')
             ->leftJoin('products', 'products.id', '=', 'collection_has_models.model_id')
             ->where('collection_id', $collection->id)
+            ->where('type', 'direct')
             ->where('model_type', 'Product')
             ->selectRaw("products.state as state, count(*) as total")
             ->groupBy('products.state')

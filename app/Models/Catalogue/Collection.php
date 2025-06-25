@@ -154,10 +154,11 @@ class Collection extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
+    // Warning this includes both direct products and products in families
     public function products(): MorphToMany
     {
         return $this->morphedByMany(Product::class, 'model', 'collection_has_models')
-            ->withTimestamps();
+            ->withTimestamps()->withPivot('type');
     }
 
     public function families(): MorphToMany
