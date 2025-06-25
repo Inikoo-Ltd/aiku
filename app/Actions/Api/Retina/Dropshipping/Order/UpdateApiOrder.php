@@ -9,9 +9,9 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\OrderResource;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -38,7 +38,7 @@ class UpdateApiOrder extends RetinaApiAction
 
     public function jsonResponse(Order $order)
     {
-        return OrderResource::make($order)
+        return OrderApiResource::make($order)
             ->additional([
                 'message' => __('Order updated successfully'),
             ]);

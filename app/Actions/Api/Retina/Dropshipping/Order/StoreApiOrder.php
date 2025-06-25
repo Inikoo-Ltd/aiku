@@ -9,9 +9,9 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\OrderResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
@@ -43,9 +43,9 @@ class StoreApiOrder extends RetinaApiAction
         return $this->handle($this->customerSalesChannel);
     }
 
-    public function jsonResponse(Order $order): OrderResource
+    public function jsonResponse(Order $order): OrderApiResource
     {
-        return OrderResource::make($order)
+        return OrderApiResource::make($order)
             ->additional([
                 'message' => __('Order created successfully'),
             ]);
