@@ -56,7 +56,6 @@ class WebpageWorkshopResource extends JsonResource
                 WebpageTypeEnum::BLOG => ['fal', 'fa-newspaper'],
                 default => ['fal', 'fa-browser']
             },
-            'changes_webpage'                        => $this?->resource ? WebpagesResource::collection(IndexChangesWebpages::make()->handle($this->resource))->toArray(request()) : null,
             'is_dirty'                               => $webpage->is_dirty,
             'layout'                                 => $webPageLayout,
             'sub_type'                               => $webpage->sub_type,

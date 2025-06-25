@@ -250,6 +250,10 @@ class IndexFamilies extends OrgAction
                 if (class_basename($parent) == 'Collection') {
                     $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
                 }
+
+                if($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
+                }
             }
         };
     }
@@ -351,6 +355,41 @@ class IndexFamilies extends OrgAction
         }
 
         $routes = null;
+
+        if($this->parent instanceof PRoductCategory) 
+        {
+            if($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $routes = [
+                    'attach' => [
+                        'name'       => 'grp.models.sub-department.families.attach ',
+                        'parameters' => [
+                            'subDepartment' => $this->parent->id
+                        ]
+                    ],
+                    'detach' => [
+                        'method'  => 'delete',
+                        'name'       => 'grp.models.sub-department.family.detach',
+                        'parameters' => [
+                            'subDepartment' => $this->parent->id
+                        ]
+                    ],
+                    'list'   => [
+                        'name'      =>  'grp.json.product_category.families.index',
+                        'parameters' => [
+                            'productCategory' => $this->parent->slug
+                        ]
+                    ],
+                    'fetch_families' => [
+                        'name'       => 'grp.json.shop.catalogue.departments.families',
+                        'parameters' => [
+                            'shop'  => $this->shop->slug,
+                            'productCategory'   => $this->parent->id
+                        ]
+                    ],
+
+                ];
+            }
+        }
 
 
         return Inertia::render(
