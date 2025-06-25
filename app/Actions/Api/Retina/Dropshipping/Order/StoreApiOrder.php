@@ -10,13 +10,9 @@
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\RetinaAction;
 use App\Actions\RetinaApiAction;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Api\OrderResource;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

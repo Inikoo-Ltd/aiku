@@ -11,7 +11,6 @@ namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\RetinaApiAction;
-use App\Http\Controllers\Api\RetinaApiDoc;
 use App\Http\Resources\Api\TransactionResource;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;

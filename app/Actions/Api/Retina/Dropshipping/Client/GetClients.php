@@ -11,7 +11,6 @@
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
 use App\Actions\RetinaApiAction;
-use App\Actions\RetinaWebhookAction;
 use App\Http\Resources\Api\CustomerClientsResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
