@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\WebUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -106,14 +107,30 @@ class GetRetinaDropshippingNavigation
             ]
         ];
 
-        $groupNavigation['saved_credit_cards'] = [
-            'label' => __('Saved Cards'),
-            'icon'  => ['fal', 'fa-credit-card'],
-            'root'  => 'retina.dropshipping.mit_saved_cards.',
-            'route' => [
-                'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
-            ],
-        ];
+        $hasNonManualChannels = $customer->customerSalesChannels()
+            ->whereHas('platform', function ($query) {
+                $query->where('type', '!=', PlatformTypeEnum::MANUAL);
+            })
+            ->exists();
+
+        $hasApiTokens = $customer->customerSalesChannels()
+            ->whereHas('tokens')
+            ->exists();
+
+        $hasCreditCards = $customer->mitSavedCard()
+            ->exists();
+
+        if ($hasNonManualChannels || $hasApiTokens) {
+            $groupNavigation['saved_credit_cards'] = [
+                'label' => __('Saved Cards'),
+                'icon'  => ['fal', 'fa-credit-card'],
+                'root'  => 'retina.dropshipping.mit_saved_cards.',
+                'route' => [
+                    'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
+                ],
+                'indicator' => ! $hasCreditCards
+            ];
+        }
 
         $groupNavigation['sysadmin'] = [
             'label'   => __('manage account'),
