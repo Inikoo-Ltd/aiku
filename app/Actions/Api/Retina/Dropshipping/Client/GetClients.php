@@ -10,8 +10,8 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\CustomerClientsApiResource;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\CustomerClientsResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Services\QueryBuilder;
@@ -71,7 +71,7 @@ class GetClients extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $customerClients): AnonymousResourceCollection
     {
-        return CustomerClientsResource::collection($customerClients);
+        return CustomerClientsApiResource::collection($customerClients);
     }
 
     public function rules(): array
