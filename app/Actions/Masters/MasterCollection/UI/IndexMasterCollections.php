@@ -59,16 +59,16 @@ class IndexMasterCollections extends OrgAction
 
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_collections.master_shop_id', $parent->id);
-        } elseif ($parent instanceof Group) {
+        } else {
             $queryBuilder->where('master_collections.group_id', $parent->id);
         }
 
         $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_collections.master_shop_id');
         $queryBuilder->addSelect([
-                'master_shops.slug as master_shop_slug',
-                'master_shops.code as master_shop_code',
-                'master_shops.name as master_shop_name',
-            ]);
+            'master_shops.slug as master_shop_slug',
+            'master_shops.code as master_shop_code',
+            'master_shops.name as master_shop_name',
+        ]);
 
         return $queryBuilder
             ->defaultSort('master_collections.code')
@@ -78,9 +78,9 @@ class IndexMasterCollections extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|MasterShop $parent, ?array $modelOperations = null, $prefix = null): \Closure
+    public function tableStructure($prefix = null): \Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -88,7 +88,6 @@ class IndexMasterCollections extends OrgAction
             }
             $table
                 ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
                         'title' => __("No master collections found"),
@@ -111,22 +110,22 @@ class IndexMasterCollections extends OrgAction
     {
         $title = __('master collections');
 
-        $icon = '';
-        $model = null;
-        $afterTitle = null;
-        $iconRight = null;
+        $icon          = '';
+        $model         = null;
+        $afterTitle    = null;
+        $iconRight     = null;
         $subNavigation = null;
 
         if ($this->parent instanceof Group) {
-            $model         = '';
-            $icon          = [
+            $model      = '';
+            $icon       = [
                 'icon'  => ['fal', 'fa-album-collection'],
                 'title' => $title
             ];
-            $afterTitle    = [
+            $afterTitle = [
                 'label' => __('In group')
             ];
-            $iconRight     = [
+            $iconRight  = [
                 'icon' => 'fal fa-city',
             ];
         }
@@ -134,11 +133,7 @@ class IndexMasterCollections extends OrgAction
         return Inertia::render(
             'Masters/MasterCollections',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->parent,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
@@ -151,10 +146,10 @@ class IndexMasterCollections extends OrgAction
                 'data'        => MasterCollectionsResource::collection($masterCollections),
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(Group|MasterShop $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

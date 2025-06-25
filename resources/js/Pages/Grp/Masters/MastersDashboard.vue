@@ -7,14 +7,13 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBooks } from '@fal'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 library.add(faBooks)
 
-const props = defineProps<{
+defineProps<{
     title: string
     pageHead: {
         title: string
@@ -33,7 +32,6 @@ const props = defineProps<{
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <!-- <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" /> -->
 
     <!-- Stats: box -->
     <div class="p-6">
