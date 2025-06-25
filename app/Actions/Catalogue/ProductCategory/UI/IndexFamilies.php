@@ -367,6 +367,7 @@ class IndexFamilies extends OrgAction
                         ]
                     ],
                     'detach' => [
+                        'method'  => 'delete',
                         'name'       => 'grp.models.sub-department.family.detach',
                         'parameters' => [
                             'subDepartment' => $this->parent->id

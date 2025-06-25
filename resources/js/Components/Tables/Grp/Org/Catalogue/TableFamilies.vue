@@ -181,7 +181,7 @@ const isLoadingDetach = ref<string[]>([])
             <span v-else class="text-xs text-gray-400 italic">-</span>
         </template>
 
-        <template #cell(action)="{ item }">
+        <template #cell(actions)="{ item }">
             <Link
                 v-if="routes?.detach?.name"
                 as="button"
@@ -190,6 +190,24 @@ const isLoadingDetach = ref<string[]>([])
                 :data="{
                     family: item.id
                 }"
+                preserve-scroll
+                @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
+            >
+                <Button
+                    icon="fal fa-times"
+                    type="negative"
+                    size="xs"
+                    :loading="isLoadingDetach.includes('detach' + item.id)"
+                />
+            </Link>
+        </template>
+         <template #cell(action)="{ item }">
+            <Link
+                v-if="routes?.detach?.name"
+                as="button"
+                :href="route(routes.detach.name, {...routes.detach.parameters, family : item.id})"
+                :method="routes.detach.method"
                 preserve-scroll
                 @start="() => isLoadingDetach.push('detach' + item.id)"
                 @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
