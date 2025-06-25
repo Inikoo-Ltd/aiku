@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
@@ -225,17 +224,6 @@ class IndexMasterDepartments extends OrgAction
             'grp.masters.master_shops.show.master_departments.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.shops.show.catalogue.collections.departments.index' =>
-            array_merge(
-                ShowCollection::make()->getBreadcrumbs('grp.org.shops.show.catalogue.collections.show', $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

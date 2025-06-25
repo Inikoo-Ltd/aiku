@@ -23,13 +23,20 @@ class HandleInertiaGrpRequests extends Middleware
 
     public function share(Request $request): array
     {
+
+        if ($request->ajax() || $request->expectsJson()) {
+           return [];
+        }
+
+
         /** @var User $user */
         $user = $request->user();
 
         $firstLoadOnlyProps = [];
 
 
-        if (!$request->inertia() or Session::get('reloadLayout')) {
+        if (!$request->inertia() || Session::get('reloadLayout')) {
+
             $firstLoadOnlyProps          = GetFirstLoadProps::run($user);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
                 return array_merge((new Ziggy('grp'))->toArray(), [

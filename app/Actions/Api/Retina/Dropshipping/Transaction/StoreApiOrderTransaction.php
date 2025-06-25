@@ -12,9 +12,11 @@ namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 use App\Actions\Api\Retina\Dropshipping\Resource\TransactionApiResource;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaApiAction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -24,8 +26,13 @@ class StoreApiOrderTransaction extends RetinaApiAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order $order, Portfolio $portfolio, array $modelData): Transaction
+    public function handle(Order $order, Portfolio $portfolio, array $modelData): Transaction|JsonResponse
     {
+        if($order->state != OrderStateEnum::CREATING) {
+            return response()->json([
+                'message' => 'This order is already in the "' . $order->state->value . '" state and cannot be updated.',
+            ]);
+        }
         $transaction = StoreTransaction::make()->action($order, $portfolio->item->historicAsset, $modelData);
 
         return $transaction;
@@ -40,7 +47,7 @@ class StoreApiOrderTransaction extends RetinaApiAction
         return $rules;
     }
 
-    public function asController(Order $order, Portfolio $portfolio, ActionRequest $request): Transaction
+    public function asController(Order $order, Portfolio $portfolio, ActionRequest $request): Transaction|JsonResponse
     {
         $this->initialisationFromDropshipping($request);
 

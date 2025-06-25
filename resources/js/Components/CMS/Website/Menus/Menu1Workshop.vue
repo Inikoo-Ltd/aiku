@@ -4,8 +4,10 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faChevronRight, faSignOutAlt, faShoppingCart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faUserCircle } from '@fas';
 import { faHeart } from '@far';
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { getStyles } from "@/Composables/styles"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { resolveMigrationLink } from "@/Composables/SetUrl"
 
 library.add(faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faUserCircle);
 
@@ -15,6 +17,8 @@ const props = withDefaults(defineProps<{
 }>(), {});
 
 const isOpen = ref<number | null>(null)
+const layout = inject('layout', layoutStructure)
+const migration_redirect = layout?.iris?.migration_redirect
 
 const timeout = ref(null)
 const onMouseEnterMenu = (idxNavigation: number) => {
@@ -52,10 +56,10 @@ const onMouseLeaveMenu = () => {
                     <FontAwesomeIcon v-if="navigation.icon" :icon="navigation.icon" class="mr-2" />
                     <div v-if="navigation.type == 'multiple'" class="text-center">
                        <span v-if="!navigation?.link?.href">{{ navigation.label }}</span> 
-                        <a v-else :href="navigation?.link?.href" :target="navigation?.link?.target" class="text-center">{{ navigation.label }}</a>
+                        <a v-else :href="resolveMigrationLink(navigation?.link?.href,migration_redirect)" :target="navigation?.link?.target" class="text-center">{{ navigation.label }}</a>
                     </div>
                     
-                    <a v-else :href="navigation?.link?.href" :target="navigation?.link?.target" class="text-center">{{ navigation.label }}</a>
+                    <a v-else :href="resolveMigrationLink(navigation?.link?.href,migration_redirect)" :target="navigation?.link?.target" class="text-center">{{ navigation.label }}</a>
                     
                     <FontAwesomeIcon v-if="navigation.type == 'multiple'" :icon="faChevronDown"
                         class="ml-2 text-[11px]" fixed-width />
@@ -78,7 +82,7 @@ const onMouseLeaveMenu = () => {
                                     <div v-for="link in subnav.links" :key="link.url" class="flex items-center gap-x-3">
                                         <FontAwesomeIcon :icon="link.icon || faChevronRight"
                                             class="text-[10px] text-gray-400" />
-                                        <a :href="link?.link?.href" :target="link?.link?.target" :style="getStyles(fieldValue?.sub_navigation_link?.properties,screenType)" 
+                                        <a :href="resolveMigrationLink(link?.link?.href,migration_redirect)" :target="link?.link?.target" :style="getStyles(fieldValue?.sub_navigation_link?.properties,screenType)" 
                                             class="text-gray-500 hover:text-orange-500 hover:underline transition duration-200">
                                             {{ link.label }}
                                         </a>

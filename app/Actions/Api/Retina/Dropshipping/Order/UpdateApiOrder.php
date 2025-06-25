@@ -12,7 +12,9 @@ namespace App\Actions\Api\Retina\Dropshipping\Order;
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaApiAction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -22,8 +24,13 @@ class UpdateApiOrder extends RetinaApiAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order $order, array $modelData): Order
+    public function handle(Order $order, array $modelData): Order|JsonResponse
     {
+        if($order->state != OrderStateEnum::CREATING) {
+            return response()->json([
+                'message' => 'This order is already in the "' . $order->state->value . '" state and cannot be updated.',
+            ]);
+        }
         $order = UpdateOrder::make()->action($order, $modelData);
 
         return $order;
@@ -44,7 +51,7 @@ class UpdateApiOrder extends RetinaApiAction
             ]);
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(Order $order, ActionRequest $request): Order|JsonResponse
     {
         $this->initialisationFromDropshipping($request);
 

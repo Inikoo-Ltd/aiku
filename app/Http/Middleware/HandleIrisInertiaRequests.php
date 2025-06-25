@@ -88,10 +88,7 @@ class HandleIrisInertiaRequests extends Middleware
                     "app_theme" => Arr::get($websiteTheme, 'color'),
                 ],
                 'iris'     => $this->getIrisData($website, $webUser),
-                'migration_redirect'=>[
-                    'https://aw-dropship.com',
-                    'https://v2.aw-dropship.com/'
-                ]
+                
 
             ],
             parent::share($request),

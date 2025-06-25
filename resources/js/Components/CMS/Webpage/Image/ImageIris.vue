@@ -10,7 +10,9 @@ import { Autoplay, Pagination, Navigation } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/autoplay'
 import { resolveResponsiveValue } from "@/Composables/Workshop"
-
+import { inject } from "vue"
+import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faCube, faStar, faImage, faPencil)
 
@@ -45,9 +47,13 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+
+const layout = inject('layout', layoutStructure)
+const migration_redirect = layout?.iris?.migration_redirect
+
 const getHref = (index: number) => {
   const image = props.fieldValue?.value?.images?.[index]
-  return image?.link_data?.url || image?.link_data?.workshop_url || ''
+  return resolveMigrationLink(image?.link_data?.url) || image?.link_data?.workshop_url || ''
 }
 
 const getColumnWidthClass = (layoutType: string, index: number) => {
@@ -115,6 +121,7 @@ const getColumnWidthClass = (layoutType: string, index: number) => {
 const getVal = (base: any, path?: string[]) =>{
       return  resolveResponsiveValue(base, props.screenType, path);
 }
+
 </script>
 
 <template>
