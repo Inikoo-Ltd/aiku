@@ -220,12 +220,14 @@ const debouncedSaveSiteSettings = debounce(block => {
 
 const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
 
-const onSaveWorkshop = block => {
+const onSaveWorkshop = (block, snedChangeValue = true) => {
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
-  sendToIframe({
-    key: 'setWebpage',
-    value: JSON.parse(JSON.stringify(data.value))
-  });
+  if (snedChangeValue) {
+    sendToIframe({
+      key: 'setWebpage',
+      value: JSON.parse(JSON.stringify(data.value))
+    });
+  }
   debounceSaveWorkshop(block);
 };
 
@@ -402,7 +404,7 @@ onMounted(() => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
     switch (key) {
-      case 'autosave': return onSaveWorkshop(value);
+      case 'autosave': return onSaveWorkshop(value,false);
       case 'activeBlock': return openedBlockSideEditor.value = value;
       case 'activeChildBlock': return openedChildSideEditor.value = value;
       case 'addBlock':
