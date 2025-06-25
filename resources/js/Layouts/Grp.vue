@@ -25,7 +25,7 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faClock, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faTimes, faAsterisk } from '@fal'
+import { faParking,faUsers, faTachometerAltFast, faGlobe, faParachuteBox, faPoll, faClock, faTransporter, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faCheck, faTimes, faAsterisk } from '@fal'
 import { faPauseCircle, faSunset, faSkull } from '@fal'
 import { faSearch, faBell } from '@far'
 import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from '@fas'
@@ -35,7 +35,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-library.add(faPauseCircle, faSunset, faSkull, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faClock, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk)
+library.add(faPauseCircle, faSunset, faSkull, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faPoll, faClock, faTransporter, faParking, faRulerTriangle, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk)
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
@@ -140,7 +140,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
                         <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
-                    
+
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
                             {{ selectedModal?.title }}

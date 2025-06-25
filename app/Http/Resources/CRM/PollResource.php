@@ -1,48 +1,39 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 23-12-2024-15h-21m
- * github: https://github.com/KirinZero0
- * copyright 2024
+ * Author: Ganes <gustiganes@gmail.com>
+ * Created on: 18-06-2025, Bali, Indonesia
+ * Github: https://github.com/Ganes556
+ * Copyright: 2025
+ *
 */
 
 namespace App\Http\Resources\CRM;
 
+use App\Enums\CRM\Poll\PollTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\CRM\Poll;
 
-/**
- * @property mixed $number_customers
- * @property mixed $total_customers
- */
-class PollsResource extends JsonResource
+class PollResource extends JsonResource
 {
     public function toArray($request): array
     {
         /** @var Poll $poll */
-        $poll = $this->resource;
-
-        $percentage = 0;
-        if ($this->number_customers) {
-            $percentage = ($this->number_customers / ($this->total_customers > 0 ? $this->total_customers : 1)) * 100;
-        }
-
-
+        $poll = $this;
         return [
+            'created_at'               => $poll->created_at,
             'id'                       => $poll->id,
             'slug'                     => $poll->slug,
             'name'                     => $poll->name,
             'label'                    => $poll->label,
             'position'                 => $poll->position,
-            'number_customers'         => $poll->number_customers ?? 0,
             'type'                     => $poll->type,
-            'percentage'               => round($percentage, 2).'%',
             'in_registration'          => $poll->in_registration,
             'in_registration_required' => $poll->in_registration_required,
             'in_iris'                  => $poll->in_iris,
             'in_iris_required'         => $poll->in_iris_required,
-            'options'                  => PollOptionsResource::collection($poll->pollOptions)->toArray($request),
+            'options'                  => $poll->type == PollTypeEnum::OPTION ? PollOptionsResource::collection($poll->pollOptions)->toArray(request()) : [],
+            // 'stats'                    => PollStatResource($poll->stats),
         ];
     }
 }

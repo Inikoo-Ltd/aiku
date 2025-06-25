@@ -57,7 +57,7 @@ trait WithRetinaRegistration
             $pollType   = Arr::get($value, 'type');
             $pollAnswer = Arr::get($value, 'answer');
 
-            if (!$pollId || !$pollType || !$pollAnswer) {
+            if (!$pollId || !$pollType) {
                 $validator->errors()->add(
                     'poll_replies.'.$key,
                     "Poll reply not valid"
@@ -65,7 +65,19 @@ trait WithRetinaRegistration
                 continue;
             }
 
+
+            /** @var Poll $poll */
             $poll = $polls->get($pollId);
+
+            if (!$pollAnswer && $poll->in_registration_required) {
+                $validator->errors()->add(
+                    'poll_replies.'.$key,
+                    "The answer is required for this poll!"
+                );
+                continue;
+            } else {
+                $pollAnswer = $pollAnswer ?? '';
+            }
 
             if (!$poll) {
                 $validator->errors()->add(
