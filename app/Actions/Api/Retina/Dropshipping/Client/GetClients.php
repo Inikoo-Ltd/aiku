@@ -44,6 +44,9 @@ class GetClients extends RetinaApiAction
             'customer_clients.reference',
             'customer_clients.id',
             'customer_clients.name',
+            'customer_clients.contact_name',
+            'customer_clients.company_name',
+            'customer_clients.email',
             'customer_clients.ulid',
             'customer_clients.created_at'
         ])
