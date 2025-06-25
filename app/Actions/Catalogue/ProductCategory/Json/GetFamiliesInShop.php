@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\ProductCategory\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\Catalogue\FamiliesSelectResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;

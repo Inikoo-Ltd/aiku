@@ -26,8 +26,10 @@ use Spatie\Sluggable\SlugOptions;
  *
  * @property int $id
  * @property int $group_id
+ * @property int $master_shop_id
  * @property string $slug
  * @property string $code
+ * @property string|null $name
  * @property string|null $description
  * @property bool $status
  * @property array<array-key, mixed> $data
@@ -36,6 +38,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
+ * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection onlyTrashed()

@@ -27,17 +27,17 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
     {
         data_set($modelData, 'dispatched_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
-        
-        foreach($deliveryNote->deliveryNoteItems as $item) {
+
+        foreach ($deliveryNote->deliveryNoteItems as $item) {
             $this->update($item, [
                 'state' => DeliveryNoteItemStateEnum::DISPATCHED,
                 'dispatched_at' => now(),
                 'quantity_dispatched' => $item->quantity_packed
             ]);
         }
-        
+
         $deliveryNote = $this->update($deliveryNote, $modelData);
-    
+
         $deliveryNote->refresh();
         UpdateStateToDispatchedOrder::make()->action($deliveryNote->order);
 

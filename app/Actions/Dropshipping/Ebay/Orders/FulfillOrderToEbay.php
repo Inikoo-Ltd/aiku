@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 25-06-2025-12h-32m
@@ -36,7 +37,7 @@ class FulfillOrderToEbay extends OrgAction
         $shipment = $deliveryNote->shipments()->first();
         $lineItems = [];
 
-        foreach($order->transactions as $transaction) {
+        foreach ($order->transactions as $transaction) {
             $lineItems[] = [
                 'lineItemId' => Arr::get($transaction->data, 'lineItemId'),
                 'quantity' => $transaction->quantity_dispatched,

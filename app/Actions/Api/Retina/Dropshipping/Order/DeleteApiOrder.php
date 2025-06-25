@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 25-06-2025-15h-20m
@@ -8,12 +9,10 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
-use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
-use App\Actions\Ordering\Order\DeleteOrder;
 use App\Actions\RetinaApiAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
@@ -24,8 +23,6 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-use function Pest\Laravel\json;
-
 class DeleteApiOrder extends RetinaApiAction
 {
     use AsAction;
@@ -33,7 +30,7 @@ class DeleteApiOrder extends RetinaApiAction
 
     public function handle(Order $order): JsonResponse
     {
-        if($order->state != OrderStateEnum::CREATING) {
+        if ($order->state != OrderStateEnum::CREATING) {
             return response()->json([
                 'message' => 'You can not delete this order',
             ]);

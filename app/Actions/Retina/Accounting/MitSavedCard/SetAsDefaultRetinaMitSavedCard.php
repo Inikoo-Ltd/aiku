@@ -10,10 +10,8 @@ namespace App\Actions\Retina\Accounting\MitSavedCard;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum;
 use App\Models\Accounting\MitSavedCard;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetAsDefaultRetinaMitSavedCard extends RetinaAction

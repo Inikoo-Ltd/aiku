@@ -9,12 +9,12 @@ return [
     'url' => null,
 
 
-    'grp'=>[
+    'grp' => [
         'enable' => env('TREBLLE_GRP_ENABLE', false),
         'api_key' => env('TREBLLE_GRP_API_KEY'),
         'project_id' => env('TREBLLE_GRP_PROJECT_ID'),
     ],
-    'retina'=>[
+    'retina' => [
         'enable' => env('TREBLLE_RETINA_ENABLE', false),
         'api_key' => env('TREBLLE_RETINA_API_KEY'),
         'project_id' => env('TREBLLE_RETINA_PROJECT_ID'),

@@ -67,6 +67,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units_status_active
  * @property int $number_trade_units_status_discontinued
  * @property int $number_trade_units_status_anomaly
+ * @property int $number_master_collections
+ * @property int $number_current_master_collections status=true
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newQuery()

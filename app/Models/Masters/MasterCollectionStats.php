@@ -16,12 +16,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  *
  *
+ * @property int $id
  * @property int $master_collection_id
  * @property int $number_collections
  * @property int $number_collections_state_in_process
- * @property int $number_collections_state_open
- * @property int $number_collections_state_closing_down
- * @property int $number_collections_state_closed
+ * @property int $number_collections_state_active
+ * @property int $number_collections_state_inactive
+ * @property int $number_collections_state_discontinuing
+ * @property int $number_collections_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Masters\MasterCollection $masterCollection

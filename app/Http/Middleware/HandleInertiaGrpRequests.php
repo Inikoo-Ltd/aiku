@@ -25,7 +25,7 @@ class HandleInertiaGrpRequests extends Middleware
     {
 
         if ($request->ajax() || $request->expectsJson()) {
-           return [];
+            return [];
         }
 
 
