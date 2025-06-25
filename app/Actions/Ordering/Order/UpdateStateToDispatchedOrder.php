@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\OrgAction;
@@ -44,7 +45,7 @@ class UpdateStateToDispatchedOrder extends OrgAction
 
             match ($order->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
-                //                PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
+                PlatformTypeEnum::EBAY        => FulfillOrderToEbay::run($order),
                 //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                 PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
                 default => null,
