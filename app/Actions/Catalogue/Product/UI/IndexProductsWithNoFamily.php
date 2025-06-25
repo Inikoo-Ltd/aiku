@@ -170,7 +170,7 @@ class IndexProductsWithNoFamily extends OrgAction
                     'families_route' => [
                         'name' => 'grp.json.shop.families',
                         'parameters' => [
-                            'shop' => $this->shop->slug
+                            'shop' => $this->shop->id
                         ]
                     ],
                     'submit_route' => [

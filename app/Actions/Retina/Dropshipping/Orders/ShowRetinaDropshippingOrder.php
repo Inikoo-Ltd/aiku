@@ -54,6 +54,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $action = [];
 
+        $this->tab = $this->tab ?: OrderTabsEnum::TRANSACTIONS->value;
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingOrder',
