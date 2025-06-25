@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 25 Jun 2025 20:58:28 Malaysia Time, Sheffield, United Kingdom
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 use App\Stubs\Migrations\HasAssetCodeDescription;
 use Illuminate\Database\Migrations\Migration;
