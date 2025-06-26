@@ -209,7 +209,10 @@ class EditProduct extends OrgAction
                         'options'    => [
                             [
                                 'id'   => $product->family?->id,
-                                'code' => $product->family?->code
+                                'code' => $product->family?->code,
+                                'state' => $product->family?->state_icon,
+                                'name' => $product->family?->name,
+
                             ]
                         ],
                         'fetchRoute' => [
@@ -222,6 +225,7 @@ class EditProduct extends OrgAction
                         'labelProp'  => 'code',
                         'required'   => true,
                         'value'      => $product->family->id ?? null,
+                        'type_label' => 'families'
                     ]
                 ],
             ],
