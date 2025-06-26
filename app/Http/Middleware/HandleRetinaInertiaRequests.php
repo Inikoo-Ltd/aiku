@@ -26,9 +26,9 @@ class HandleRetinaInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        if ($request->ajax() || $request->expectsJson()) {
-            return [];
-        }
+        // if ($request->ajax() || $request->expectsJson()) {
+        //     return [];
+        // }
 
         /** @var WebUser $webUser */
         $webUser            = $request->user();
