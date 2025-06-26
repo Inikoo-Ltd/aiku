@@ -9,53 +9,42 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Order;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
-use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
+use App\Actions\Fulfilment\PalletReturn\DeletePalletReturn;
 use App\Actions\RetinaApiAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Ordering\Order;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteApiOrder extends RetinaApiAction
 {
-    use AsAction;
-    use WithAttributes;
-
-    public function handle(Order $order): JsonResponse
+    public function handle(PalletReturn $palletReturn, array $modelData): JsonResponse
     {
-        if ($order->state != OrderStateEnum::CREATING) {
+
+        if ($palletReturn->state != PalletReturnStateEnum::IN_PROCESS) {
             return response()->json([
-                'message' => 'You can not delete this order',
+                'message' => 'You can not delete this pallet return',
             ]);
         } else {
-            $client = $order->customerClient;
-            $order->transactions()->delete();
-            $order->delete();
 
-            ShopHydrateOrders::dispatch($this->shop);
-            OrganisationHydrateOrders::dispatch($this->organisation);
-            GroupHydrateOrders::dispatch($this->group);
-            CustomerHydrateOrders::dispatch($this->customer);
-            CustomerClientHydrateOrders::dispatch($client);
-            CustomerSalesChannelsHydrateOrders::dispatch($this->customerSalesChannel);
-
+            DeletePalletReturn::make()->action($palletReturn, $modelData);
             return response()->json([
-                'message' => 'Order deleted successfully',
-                'order_id' => $order->id
+                'message' => 'Pallet return deleted successfully',
+                'PalletReturn_id' => $palletReturn->id
             ]);
         }
     }
 
-    public function asController(Order $order, ActionRequest $request): JsonResponse
+    public function rules(): array
+    {
+        return [
+            'deleted_note' => ['required', 'string', 'max:4000'],
+        ];
+    }
+
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): JsonResponse
     {
         $this->initialisationFromFulfilment($request);
-        return $this->handle($order);
+        return $this->handle($palletReturn, $this->validatedData);
     }
 }
