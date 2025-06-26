@@ -11,7 +11,7 @@ export default {
                     useIn : ["desktop", "tablet", "mobile"],
                 },
                 {
-                    key: ["products"],
+                    key: ["products_data"],
                     label: "Show Products",
                     type: "select_product",
                 },

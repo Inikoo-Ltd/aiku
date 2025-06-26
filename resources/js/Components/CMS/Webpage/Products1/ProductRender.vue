@@ -134,7 +134,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         <!-- Top Section -->
         <div>
            
-               <div v-if="product.top_seller"
+               <div v-if="product?.top_seller"
                     class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
                     
                     <!-- Medal Icon -->
@@ -153,7 +153,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                 </div>
 
             <!-- Favorite Icon -->
-            <template v-if="layout.iris.is_logged_in">
+            <template v-if="layout.iris?.is_logged_in">
                 <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
                     <LoadingIcon />
                 </div>
@@ -164,13 +164,13 @@ const onUnselectFavourite = (product: ProductResource) => {
             </template>
 
             <!-- Product Image -->
-            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-64 mb-3 rounded">
-                <Image :src="product.web_images?.main?.gallery" alt="product image" :imageCover="true"
+            <component :is="product?.url ? Link : 'div'" :href="product?.url" class="block w-full h-64 mb-3 rounded">
+                <Image :src="product?.web_images?.main?.gallery" alt="product image" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
             </component>
 
             <!-- Title -->
-            <Link v-if="product.url" :href="product.url" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+            <Link v-if="product?.url" :href="product?.url" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
             </Link>
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
@@ -187,7 +187,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Rating and Stock -->
             <div class="flex justify-between items-center text-xs mb-2">
-                <div v-if="layout.iris.is_logged_in" class="flex items-center gap-1" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+                <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
                     <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
                     <span>({{ product.stock > 0 ? product.stock : 0 }})</span>
                 </div>
@@ -199,7 +199,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
 
             <!-- Prices -->
-            <div v-if="layout.iris.is_logged_in" class="mb-3">
+            <div v-if="layout?.iris?.is_logged_in" class="mb-3">
                 <div  class="flex justify-between text-sm font-semibold">
                     <span>{{ locale.currencyFormat(currency.code,product.price) }}</span>
                   <!--   <span class="text-xs">({{ locale.number(product.units) }}/{{ product.unit }})</span> -->

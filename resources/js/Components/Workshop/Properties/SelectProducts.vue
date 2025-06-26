@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { trans } from 'laravel-vue-i18n'
 import Icon from '@/Components/Icon.vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 const props = defineProps<{
   modelValue: {
@@ -15,22 +15,23 @@ const emits = defineEmits<{
   (e: 'update:modelValue', value: { type?: string; products?: any[] }): void
 }>()
 
+// Fallback-safe reactive model
 const localType = computed({
   get: () => props.modelValue?.type ?? '',
-  set: (val) => {
+  set: (val: string) => {
     emits('update:modelValue', {
-      ...(props.modelValue ?? { products: [] }),
-      type: val
+      type: val,
+      products: props.modelValue?.products ?? [],
     })
   }
 })
 
 const localProducts = computed({
   get: () => props.modelValue?.products ?? [],
-  set: (val) => {
+  set: (val: any[]) => {
     emits('update:modelValue', {
-      ...(props.modelValue ?? { type: 'custom' }),
-      products: val
+      type: props.modelValue?.type ?? 'custom',
+      products: val,
     })
   }
 })
@@ -42,29 +43,49 @@ function updateProductAt(index: number, newProduct: any) {
 }
 
 function addEmptyProduct() {
-  localProducts.value = [...localProducts.value, null] // bisa juga pakai {} jika kamu ingin default object
+  localProducts.value = [...localProducts.value, null]
+}
+
+function removeProduct(index: number) {
+  const updated = [...localProducts.value]
+  updated.splice(index, 1)
+  localProducts.value = updated
 }
 </script>
 
 <template>
   <!-- Type Selector -->
+  <label class="block mb-2 font-medium text-gray-700">Type</label>
   <select
     v-model="localType"
-    class="border border-gray-300 px-3 py-1 rounded mb-4"
+    class="border border-gray-300 px-3 py-1 rounded mb-6 w-full"
   >
     <option value="">Select type</option>
     <option value="custom">Custom</option>
-    <option value="best-seller">Best Seller</option>
+    <!-- Future: <option value="best-seller">Best Seller</option> -->
   </select>
 
-  <!-- Product Selectors -->
+  <!-- Product Inputs -->
   <div
     v-for="(product, index) in localProducts"
     :key="index"
-    class="mb-4"
+    class="mb-6 border border-gray-200 p-4 rounded relative bg-white shadow-sm"
   >
+    <div class="flex justify-between items-center mb-2">
+      <label class="font-semibold text-gray-700">Product {{ index + 1 }}</label>
+      <button
+        type="button"
+        class="text-red-600 hover:text-red-800 text-sm"
+        @click="removeProduct(index)"
+      >
+        Remove
+      </button>
+    </div>
+
+    <!-- Multiselect Product Field -->
     <PureMultiselectInfiniteScroll
       :modelValue="product"
+      :object="true"
       @update:modelValue="(val) => updateProductAt(index, val)"
       :fetchRoute="{
         name: 'grp.json.product_category.products.index',
@@ -72,27 +93,24 @@ function addEmptyProduct() {
           productCategory: '8265'
         }
       }"
-      placeholder="Select products"
-      valueProp="id"
+      placeholder="Select product"
+      valueProp="slug"
     >
-      <!-- Selected Label -->
       <template #singlelabel="{ value }">
-        <div>{{ value.code }} - {{ value.name }} <Icon :data="value.state" /></div>
+        <div v-if="value">
+          {{ value.code }} - {{ value.name }}
+        </div>
+        <div v-else class="text-gray-400 italic">Select product</div>
       </template>
 
-      <!-- Dropdown Options -->
       <template #option="{ option }">
-        <div>{{ option.code }} - {{ option.name }} <Icon :data="option.state" /></div>
+        <div>
+          {{ option.code }} - {{ option.name }}
+        </div>
       </template>
     </PureMultiselectInfiniteScroll>
   </div>
 
   <!-- Add Product Button -->
-  <button
-    type="button"
-    class="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 transition"
-    @click="addEmptyProduct"
-  >
-    + Add Product
-  </button>
+  <Button type="create" label="Product" full @click="addEmptyProduct" />
 </template>

@@ -66,7 +66,7 @@ const fetchProductList = async (url?: string) => {
         optionsMeta.value = xxx?.data.meta || null
         optionsLinks.value = xxx?.data.links || null
 
-        console.log('fetch', optionsList.value)
+        
 
         emits('optionsList', optionsList.value)
     } catch (error) {
