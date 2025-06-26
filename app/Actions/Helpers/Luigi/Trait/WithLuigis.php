@@ -108,7 +108,7 @@ trait WithLuigis
                         "type" => "item",
                         "fields" => array_filter([
                         "title" => $webpage->title,
-                        "web_url" => $webpage->getFullUrl(),
+                        "web_url" => $webpage->getUrl(),
                         "availability" => intval($product->state == ProductStateEnum::ACTIVE),
                         "stock_qty" => $product->available_quantity ?? 0,
                         "price" => $product->price ?? 0,
@@ -130,7 +130,7 @@ trait WithLuigis
                                 "identity" => $family?->webpage?->url,
                                 "fields" => array_filter([
                                     "title" => $family?->webpage?->title,
-                                    "web_url" => $family?->webpage?->getFullUrl(),
+                                    "web_url" => $family?->webpage?->getUrl(),
                                     "description" => $family?->webpage?->description,
                                     "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
                                 ]),
@@ -159,7 +159,7 @@ trait WithLuigis
                     "type" => "item",
                     "fields" => array_filter([
                         "title" => $webpage->title,
-                        "web_url" => $webpage->getFullUrl(),
+                        "web_url" => $webpage->getUrl(),
                         "availability" => intval($product->state == ProductStateEnum::ACTIVE),
                         "stock_qty" => $product->available_quantity ?? 0,
                         "price" => $product->price ?? 0,
@@ -176,7 +176,7 @@ trait WithLuigis
                                 "identity" => $family?->webpage?->url,
                                 "fields" => array_filter([
                                     "title" => $family?->webpage?->title,
-                                    "web_url" => $family?->webpage?->getFullUrl(),
+                                    "web_url" => $family?->webpage?->getUrl(),
                                     "description" => $family?->webpage?->description,
                                     "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
                                 ]),

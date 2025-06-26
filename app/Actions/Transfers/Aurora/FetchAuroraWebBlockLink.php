@@ -70,7 +70,7 @@ class FetchAuroraWebBlockLink extends OrgAction
 
             if ($linkedWebpage) {
                 data_set($linkData, 'id', $linkedWebpage->id);
-                data_set($linkData, 'url', $linkedWebpage->getFullUrl());
+                data_set($linkData, 'url', $linkedWebpage->getUrl());
                 data_set($linkData, 'workshop_url', route('grp.org.shops.show.web.webpages.workshop', [
                     $linkedWebpage->organisation->slug,
                     $linkedWebpage->shop->slug,
