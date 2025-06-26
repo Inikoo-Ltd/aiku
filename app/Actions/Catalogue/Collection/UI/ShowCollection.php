@@ -21,6 +21,7 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\CollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionResource;
+use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Catalogue\FamiliesInCollectionResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Collection;
@@ -250,10 +251,10 @@ class ShowCollection extends OrgAction
                     ],
                     'collections' => [
                         'dataList'     => [
-                            'name'       => 'grp.json.shop.catalogue.collections',
+                            'name'       => 'grp.json.shop.catalogue.collections.in-collection',
                             'parameters' => [
-                                'shop'  => $collection->shop->slug,
-                                'scope' => $collection->slug
+                                'shop'  => $collection->shop->id,
+                                'scope' => $collection->id
                             ]
                         ],
                         'submitAttach' => [
@@ -289,6 +290,10 @@ class ShowCollection extends OrgAction
                     fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))),
 
+                CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
+                    fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
+
 
             ]
         )
@@ -301,6 +306,11 @@ class ShowCollection extends OrgAction
                 IndexProductsInCollection::make()->tableStructure(
                     collection: $collection,
                     prefix: CollectionTabsEnum::PRODUCTS->value,
+                )
+            )->table(
+                IndexCollectionsInCollection::make()->tableStructure(
+                    collection: $collection,
+                    prefix: CollectionTabsEnum::COLLECTIONS->value,
                 )
             );
     }
