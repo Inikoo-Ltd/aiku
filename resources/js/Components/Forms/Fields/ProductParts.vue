@@ -66,7 +66,7 @@ const onDeleteParcel = (index: number) => {
                         <div class="col-span-2 xflex items-center space-x-2 w-16 xqwezxc">
                             <InputNumber
                                 :min="0.001"
-                                v-model="part.pivot_quantity"
+                                v-model="part.quantity"
                                 xclass="w-12"
                                 mode="decimal"
                                 :max-fraction-digits="2"
@@ -78,7 +78,7 @@ const onDeleteParcel = (index: number) => {
                         
                         <div class="col-span-9 xflex items-center gap-x-1 font-light w-64">
                             <PureMultiselectInfiniteScroll
-                                v-model="part.id"
+                                v-model="part.org_stock_id"
                                 aupdate:modelValue="(e) => (set(data, ['brand', 'id'], e), onAttachBrand(e))"
                                 :fetchRoute="fieldData.fetch_route"
                                 :placeholder="trans('Select brand')"
@@ -112,7 +112,7 @@ const onDeleteParcel = (index: number) => {
 
                         <div class="w-72">
                             <PureTextarea
-                                v-model="part.note"
+                                v-model="part.notes"
                                 xclass="w-32"
                                 size="small"
                                 :placeholder="trans('Note')"
@@ -132,7 +132,7 @@ const onDeleteParcel = (index: number) => {
             <!-- Repeat for more rows -->
             <div class="grid grid-cols-12 mt-2">
                 <div></div>
-                <div @click="() => props.form[props.fieldName].push({ id: null, pivot_quantity: 1, note: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                <div @click="() => props.form[props.fieldName].push({ org_stock_id: null, quantity: 1, notes: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                     {{ trans("Add another Part") }}
                 </div>
