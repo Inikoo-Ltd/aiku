@@ -103,7 +103,6 @@ trait WithIrisProductsInWebpage
     public function getData($queryBuilder)
     {
         return $queryBuilder->defaultSort('name')
-            ->select($this->getSelect())
             ->allowedSorts($this->getAllowedSorts())
             ->allowedFilters($this->getAllowedFilters())
             ->withIrisPaginator()

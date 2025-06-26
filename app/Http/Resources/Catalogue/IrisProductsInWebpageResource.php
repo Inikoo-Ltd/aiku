@@ -31,6 +31,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency_code
  * @property mixed $web_images
  * @property mixed $top_seller
+ * @property mixed $parent_url
  */
 class IrisProductsInWebpageResource extends JsonResource
 {
@@ -38,6 +39,11 @@ class IrisProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
+        $url = '';
+        if ($this->parent_url) {
+            $url = $this->parent_url.'/';
+        }
+        $url = $url.$this->url;
 
         return [
             'id'         => $this->id,
@@ -53,7 +59,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'updated_at' => $this->updated_at,
             'units'      => $this->units,
             'unit'       => $this->unit,
-            'url'        => $this->url,
+            'url'        => $url,
             'top_seller' => $this->top_seller,
             'web_images' => $this->web_images
         ];

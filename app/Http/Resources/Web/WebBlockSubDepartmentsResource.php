@@ -8,9 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -18,7 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $code
  * @property string $name
  * @property mixed $web_images
- * @property mixed $department_url
+ * @property mixed $parent_url
  * @property mixed $url
  */
 class WebBlockSubDepartmentsResource extends JsonResource
@@ -28,9 +26,9 @@ class WebBlockSubDepartmentsResource extends JsonResource
     public function toArray($request): array
     {
 
-        $url = $this->department_url;
-        if ($url) {
-            $url .= '/';
+        $url = '';
+        if ($this->parent_url) {
+            $url = $this->parent_url.'/';
         }
         $url = $url.$this->url;
 

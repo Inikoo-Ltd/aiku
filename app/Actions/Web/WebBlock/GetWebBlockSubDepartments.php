@@ -24,7 +24,7 @@ class GetWebBlockSubDepartments
     public function handle(Webpage $webpage, array $webBlock): array
     {
         /** @var ProductCategory $department */
-        $department=$webpage->model;
+        $department = $webpage->model;
 
         $subDepartments = DB::table('product_categories')->where('department_id', $webpage->model_id)
             ->leftjoin('webpages', function ($join) {
@@ -42,7 +42,7 @@ class GetWebBlockSubDepartments
                     'webpages.url as url'
                 ]
             )
-            ->selectRaw('\''.$department->url.'\' as department_url')
+            ->selectRaw('\''.$department->url.'\' as parent_url')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('product_categories.show_in_website', true)
             ->whereNotNull('webpages.id')

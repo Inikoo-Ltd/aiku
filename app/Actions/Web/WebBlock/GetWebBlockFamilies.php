@@ -32,6 +32,7 @@ class GetWebBlockFamilies
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
                 ->select(['product_categories.code','product_categories.web_images', 'name', 'image_id', 'webpages.url', 'title'])
+                ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT ? 'product_categories.department_id' : 'product_categories.sub_department_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
@@ -49,6 +50,7 @@ class GetWebBlockFamilies
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
                 ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id',  'product_categories.web_images' , 'webpages.url','webpages.url', 'title'])
+                ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
