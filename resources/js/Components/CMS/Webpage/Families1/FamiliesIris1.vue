@@ -10,8 +10,8 @@ import { computed } from "vue"
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
 type FamilyOrCollectionType = {
-  name: string
-  description: string
+  name: string,
+  description: string,
   images: { source: string }[]
 }
 

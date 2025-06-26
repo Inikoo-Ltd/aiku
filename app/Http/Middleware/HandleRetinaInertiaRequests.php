@@ -45,6 +45,7 @@ class HandleRetinaInertiaRequests extends Middleware
 
         $website                           = $request->get('website');
         $firstLoadOnlyProps['environment'] = app()->environment();
+        // $firstLoadOnlyProps['environment'] = "production";
 
 
         return array_merge(
