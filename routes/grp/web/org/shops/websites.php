@@ -24,6 +24,9 @@ use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexDepartmentWebpages;
+use App\Actions\Web\Webpage\UI\IndexFamilyWebpages;
+use App\Actions\Web\Webpage\UI\IndexProductWebpages;
+use App\Actions\Web\Webpage\UI\IndexSubDepartmentWebpages;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
 use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
@@ -89,6 +92,9 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/blog', [IndexWebpages::class, 'blog'])->name('index.type.blog');
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');
     Route::get('/sub-type/department', IndexDepartmentWebpages::class)->name('index.sub_type.department');
+    Route::get('/sub-type/sub-department', IndexSubDepartmentWebpages::class)->name('index.sub_type.sub_department');
+    Route::get('/sub-type/family', IndexFamilyWebpages::class)->name('index.sub_type.family');
+    Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
 
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')

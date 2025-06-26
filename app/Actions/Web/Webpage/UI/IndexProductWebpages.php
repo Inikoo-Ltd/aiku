@@ -1,7 +1,7 @@
 <?php
 /*
  * author Arya Permana - Kirin
- * created on 26-06-2025-17h-14m
+ * created on 26-06-2025-18h-07m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
@@ -34,7 +34,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexDepartmentWebpages extends OrgAction
+class IndexProductWebpages extends OrgAction
 {
     use WithWebAuthorisation;
     use WithWebpageSubNavigation;
@@ -98,7 +98,7 @@ class IndexDepartmentWebpages extends OrgAction
         }
 
         $queryBuilder->where('webpages.website_id', $parent->id);
-        $queryBuilder->where('webpages.sub_type', WebpageSubTypeEnum::DEPARTMENT);
+        $queryBuilder->where('webpages.sub_type', WebpageSubTypeEnum::PRODUCT);
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
@@ -186,7 +186,7 @@ class IndexDepartmentWebpages extends OrgAction
                 ),
                 'title'       => __('webpages'),
                 'pageHead'    => [
-                    'title'         => __('department webpages'),
+                    'title'         => __('product webpages'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('webpage')
@@ -218,7 +218,7 @@ class IndexDepartmentWebpages extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Department Webpages'),
+                        'label' => __('Product Webpages'),
                         'icon'  => 'fal fa-bars'
                     ],
                     'suffix' => $suffix
@@ -227,7 +227,7 @@ class IndexDepartmentWebpages extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.web.webpages.index.sub_type.department' =>
+            'grp.org.shops.show.web.webpages.index.sub_type.product' =>
             array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     'Shop',
@@ -235,7 +235,7 @@ class IndexDepartmentWebpages extends OrgAction
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.department',
+                        'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.product',
                         'parameters' => $routeParameters
                     ],
                     $suffix
