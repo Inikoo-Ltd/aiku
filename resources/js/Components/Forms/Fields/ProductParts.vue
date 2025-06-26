@@ -63,13 +63,22 @@ const onDeleteParcel = (index: number) => {
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="" fixed-width aria-hidden="true" />
                         </div>
                         
-                        <div class="col-span-2 xflex items-center space-x-2 w-12 xqwezxc">
-                            <InputNumber :min="0.001" v-model="part.qty" xclass="w-12" size="small" placeholder="0" fluid />
+                        <div class="col-span-2 xflex items-center space-x-2 w-16 xqwezxc">
+                            <InputNumber
+                                :min="0.001"
+                                v-model="part.quantity"
+                                xclass="w-12"
+                                mode="decimal"
+                                :max-fraction-digits="2"
+                                size="small"
+                                placeholder="0"
+                                fluid
+                            />
                         </div>
                         
                         <div class="col-span-9 xflex items-center gap-x-1 font-light w-64">
                             <PureMultiselectInfiniteScroll
-                                :modelValue="form[fieldName].code"
+                                v-model="part.org_stock_id"
                                 aupdate:modelValue="(e) => (set(data, ['brand', 'id'], e), onAttachBrand(e))"
                                 :fetchRoute="fieldData.fetch_route"
                                 :placeholder="trans('Select brand')"
@@ -103,10 +112,10 @@ const onDeleteParcel = (index: number) => {
 
                         <div class="w-72">
                             <PureTextarea
-                                v-model="part.description"
+                                v-model="part.notes"
                                 xclass="w-32"
                                 size="small"
-                                :placeholder="trans('Part description')"
+                                :placeholder="trans('Note')"
                                 rows="3"
                             />
                         </div>
@@ -118,11 +127,12 @@ const onDeleteParcel = (index: number) => {
                 </div> -->
                 
             </div>
+            <!-- <pre>{{ form[fieldName] }}</pre> -->
 
             <!-- Repeat for more rows -->
             <div class="grid grid-cols-12 mt-2">
                 <div></div>
-                <div @click="() => props.form[props.fieldName].push({ id: null, qty: 1, code: null, name: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                <div @click="() => props.form[props.fieldName].push({ org_stock_id: null, quantity: 1, notes: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                     {{ trans("Add another Part") }}
                 </div>

@@ -23,6 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
+use App\Http\Resources\Inventory\OrgStocksResource;
 
 class EditProduct extends OrgAction
 {
@@ -182,7 +183,7 @@ class EditProduct extends OrgAction
             [
                 'label'  => __('Parts'),
                 'fields' => [
-                    'product_parts'        => [
+                    'org_stocks'        => [
                         'type'      => 'product_parts',
                         'label'     => __('code'),
                         // 'readonly' => true,
@@ -193,11 +194,8 @@ class EditProduct extends OrgAction
                                 'organisation' => $product->organisation_id,
                             ]
                         ],
-                        'init_options' => [  // TODO: change to the correct data
-                            [],
-                            []
-                        ],
-                        'value' => $value
+                        'init_options'  => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+                        'value'         => $value
                     ],
                 ]
             ],

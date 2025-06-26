@@ -61,6 +61,7 @@ class GetOrgStocksInProduct extends OrgAction
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
                 'product_has_org_stocks.quantity as pivot_quantity',
+                'product_has_org_stocks.notes as pivot_notes',
             ])
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts(['code', 'name', 'family_code', 'unit_value', 'pivot_quantity'])

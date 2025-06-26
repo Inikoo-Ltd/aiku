@@ -60,7 +60,9 @@ class IndexRetinaDropshippingOrders extends RetinaAction
             'orders.slug',
             'orders.state',
             'orders.total_amount',
+            'orders.data',
             'platforms.name as platform_name',
+            'platforms.type as platform_type',
             'number_item_transactions',
             'customer_clients.name as client_name',
         ]);
@@ -73,7 +75,8 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                 'number_item_transactions',
                 'total_amount',
                 'client_name',
-                'platform_name'
+                'platform_name',
+                'platform_type'
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
