@@ -22,12 +22,9 @@ class OrgStocksInProductResource extends JsonResource
             'code'                            => $this->code,
             'name'                            => $this->name,
             'unit_value'                      => $this->unit_value,
-            'number_locations'                => $this->number_location,
-            'quantity_locations'              => $this->quantity_in_locations,
             'discontinued_in_organisation_at' => $this->discontinued_in_organisation_at,
             'family_slug'                     => $this->family_slug,
             'family_code'                     => $this->family_code,
-            'pivot_id'                        => $this->pivot_id,
             'pivot_quantity'                  => $this->pivot_quantity,
         ];
     }
