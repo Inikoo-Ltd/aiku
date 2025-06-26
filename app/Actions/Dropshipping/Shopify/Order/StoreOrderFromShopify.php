@@ -44,10 +44,15 @@ class StoreOrderFromShopify extends OrgAction
         $shopifyProducts = collect($modelData['line_items']);
 
         $attributes = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
-        $billingAddressAttribute = $this->getAttributes(Arr::get($modelData, 'customer'), $billingAddress);
+
+        if ($billingAddress) {
+            $billingAddressAttribute = $this->getAttributes(Arr::get($modelData, 'customer'), $billingAddress);
+            $billingAddress = Arr::get($billingAddressAttribute, 'address');
+        } else {
+            $billingAddress = Arr::get($attributes, 'address');
+        }
 
         $deliveryAddress = Arr::get($attributes, 'address');
-        $billingAddress = Arr::get($billingAddressAttribute, 'address');
 
         if (!$customerClient) {
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);

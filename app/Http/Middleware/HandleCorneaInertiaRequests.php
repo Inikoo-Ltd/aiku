@@ -28,7 +28,7 @@ class HandleCorneaInertiaRequests extends Middleware
 
         $firstLoadOnlyProps = [];
 
-        if (!$request->inertia() or Session::get('reloadLayout')) {
+        if (!$request->inertia() || Session::get('reloadLayout')) {
 
             $firstLoadOnlyProps          = GetCorneaFirstLoadProps::run($request, $supplierUser);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {

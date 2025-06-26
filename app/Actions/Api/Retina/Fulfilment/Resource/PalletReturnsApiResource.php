@@ -22,7 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency_code
  * @property mixed $date
  */
-class PalletReturnsResource extends JsonResource
+class PalletReturnsApiResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -50,14 +50,8 @@ class PalletReturnsResource extends JsonResource
             'created_at'            => $this->created_at,
             'slug'                  => $this->slug,
             'reference'             => $this->reference,
-            'platform_name'         => $this->platform_name,
             'state'                 => $this->state,
-            'state_label'           => $this->state->labels()[$this->state->value],
-            'state_icon'            => $this->state->stateIcon()[$this->state->value],
             'type'                  => $this->type,
-            'type_label'            => $this->type->labels()[$this->type->value],
-            'type_icon'             => $this->type->stateIcon()[$this->type->value],
-            'customer_reference'    => $this->customer_reference,
             'number_pallets'        => $this->number_pallets,
             'number_stored_items'     => $this->number_stored_items,
             'number_services'       => $this->number_services,
@@ -70,7 +64,6 @@ class PalletReturnsResource extends JsonResource
             'picking_at'            => $this->picking_at,
             'dispatched_at'         => $this->dispatched_at,
             'cancel_at'             => $this->cancel_at,
-            'customer_has_platform_id' => $this->customer_has_platform_id ?? null,
         ];
     }
 }

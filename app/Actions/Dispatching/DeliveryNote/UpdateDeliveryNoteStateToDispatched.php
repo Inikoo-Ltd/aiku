@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStateToDispatched extends OrgAction
@@ -25,21 +26,26 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        data_set($modelData, 'dispatched_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
+        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
+            data_set($modelData, 'dispatched_at', now());
+            data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
 
-        foreach ($deliveryNote->deliveryNoteItems as $item) {
-            $this->update($item, [
-                'state' => DeliveryNoteItemStateEnum::DISPATCHED,
-                'dispatched_at' => now(),
-                'quantity_dispatched' => $item->quantity_packed
-            ]);
-        }
+            foreach ($deliveryNote->deliveryNoteItems as $item) {
+                $this->update($item, [
+                    'state' => DeliveryNoteItemStateEnum::DISPATCHED,
+                    'dispatched_at' => now(),
+                    'quantity_dispatched' => $item->quantity_packed
+                ]);
+            }
 
-        $deliveryNote = $this->update($deliveryNote, $modelData);
+            $deliveryNote = $this->update($deliveryNote, $modelData);
 
-        $deliveryNote->refresh();
-        UpdateStateToDispatchedOrder::make()->action($deliveryNote->order);
+            $deliveryNote->refresh();
+            foreach ($deliveryNote->orders as $order) {
+                UpdateStateToDispatchedOrder::make()->action($order);
+            }
+            return $deliveryNote;
+        });
 
         return $deliveryNote;
     }

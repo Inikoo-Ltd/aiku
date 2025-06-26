@@ -2,18 +2,17 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 13-05-2025, Bali, Indonesia
+ * Created on: 26-06-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
-namespace App\Actions\Api\Retina\Fulfilment\Transaction;
+namespace App\Actions\Api\Retina\Fulfilment\SKU;
 
-use App\Actions\Api\Retina\Fulfilment\Resource\SKUOrderApiResource;
+use App\Actions\Api\Retina\Fulfilment\Resource\SKUsApiResource;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -21,22 +20,23 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetTransactions extends RetinaApiAction
+class GetSKUs extends RetinaApiAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, array $modelData): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
 
         $queryBuilder = QueryBuilder::for(PalletStoredItem::class)
         ->leftJoin('stored_items', 'pallet_stored_items.stored_item_id', '=', 'stored_items.id')
-        ->leftJoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id')
-        ->leftJoin('pallet_return_items', 'pallet_stored_items.id', '=', 'pallet_return_items.pallet_stored_item_id');
+        ->leftJoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id');
 
         $queryBuilder->where('pallets.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
-        $queryBuilder->where('pallet_return_items.pallet_return_id', $palletReturn->id);
+
 
         if (Arr::get($modelData, 'reference')) {
             $this->getReferenceSearch($queryBuilder, Arr::get($modelData, 'reference'));
         }
+
+
 
         $queryBuilder
             ->defaultSort('stored_items.id')
@@ -46,7 +46,6 @@ class GetTransactions extends RetinaApiAction
                 'stored_items.slug',
                 'stored_items.name',
                 'stored_items.total_quantity',
-                'pallet_return_items.quantity_ordered',
                 'pallet_stored_items.id'
             ]);
 
@@ -64,16 +63,16 @@ class GetTransactions extends RetinaApiAction
         });
     }
 
-    public function asController(PalletReturn $palletReturn, ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromFulfilment($request);
-        return $this->handle($this->customerSalesChannel, $palletReturn, $this->validateAttributes());
+        return $this->handle($this->customerSalesChannel, $this->validateAttributes());
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $palletStoredItems): AnonymousResourceCollection
     {
-        return SKUOrderApiResource::collection($orders);
+        return SKUsApiResource::collection($palletStoredItems);
     }
 
     public function rules(): array
@@ -90,7 +89,7 @@ class GetTransactions extends RetinaApiAction
     {
         $request->merge(
             [
-                'reference' => ['nullable', 'string'],
+                'reference' => $request->query('reference', null),
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),
