@@ -21,6 +21,7 @@ import {library} from "@fortawesome/fontawesome-svg-core";
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import axios from "axios";
+import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg" 
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
 
@@ -221,7 +222,8 @@ const onSubmitAmazon = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12"> -->
+                    <div v-html="ChannelLogo('shopify')" class="h-12"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
@@ -238,10 +240,11 @@ const onSubmitAmazon = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12"> -->
+                    <div v-html="ChannelLogo('tiktok')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
@@ -260,8 +263,9 @@ const onSubmitAmazon = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="truncate xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
-                         alt="" class="h-12">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
+                         alt="" class="h-12"> -->
+                    <div v-html="ChannelLogo('woocommerce')" class="h-12"></div>
 
                     <div class="flex flex-col">
                         <div class="font-semibold text-lg">Woocommerce</div>
@@ -296,7 +300,7 @@ const onSubmitAmazon = async () => {
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Ebay</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
@@ -318,14 +322,15 @@ const onSubmitAmazon = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
                         alt="" class="h-12 filter"
                         :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"
-                    >
+                    > -->
+                    <div v-html="ChannelLogo('amazon_simple')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"></div>
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Amazon</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
@@ -339,6 +344,38 @@ const onSubmitAmazon = async () => {
                     />
 
                     <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+
+                </div>
+            </div>
+
+            <!-- Section: Magento -->
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+                <div
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
+                        alt="" class="h-12 filter"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"
+                    > -->
+                    <div v-html="ChannelLogo('magento')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale' : ''">
+
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div class="font-semibold">Magento</div>
+                        <!-- <div class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div> -->
+                    </div>
+                </div>
+
+                <div class="w-full flex justify-end">
+                    <!-- <Button
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="onSubmitAmazon"
+                    /> -->
+
+                    <Button cv-else :label="trans('Coming soon')" type="tertiary" disabled full />
 
                 </div>
             </div>
