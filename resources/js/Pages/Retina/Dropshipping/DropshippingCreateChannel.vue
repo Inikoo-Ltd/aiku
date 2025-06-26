@@ -112,11 +112,10 @@ const wooCommerceInput = ref({
     name: null as null | string,
     url: null as null | string
 });
-
 const onSubmitWoocommerce = async () => {
     try {
         const response = await axios.post(
-            route(props.type_woocommerce.connectRoute.name, props.type_woocommerce.connectRoute.parameters),
+            route(props.type_woocommerce?.connectRoute?.name, props.type_woocommerce.connectRoute.parameters),
             wooCommerceInput.value);
         isModalWooCommerce.value = false;
         wooCommerceInput.value.name = null;
@@ -124,12 +123,52 @@ const onSubmitWoocommerce = async () => {
 
         window.location.href = response.data;
     } catch (error) {
+        console.log("error", error);
         notify({
             title: trans("Something went wrong"),
             text: error.response?.data?.message,
             type: "error"
         });
     };
+}
+
+// Section: Manual
+const isModalManual = ref(false)
+const errManual = ref('')
+const manualInput = ref({
+    name: null as null | string,
+    // url: null as null | string
+});
+const onSubmitManual = async () => {
+    isLoading.value = true;
+    try {
+        const response = await axios.post(
+            route(props.type_manual?.createRoute.name, props.type_manual?.createRoute.parameters),
+            manualInput.value);
+        isModalManual.value = false;
+        manualInput.value.name = null;
+
+        // console.log("response", response.data.slug);
+        // window.location.href = response.data.slug;
+        notify({
+            title: trans("Success!"),
+            text: trans("Your Manual store has been created."),
+            type: "success",
+        })
+        router.get(
+            route('retina.dropshipping.customer_sales_channels.show', {
+                customerSalesChannel: response.data.slug
+            })
+        )
+    } catch (error) {
+        errManual.value = error.response?.data?.message
+        notify({
+            title: trans("Something went wrong"),
+            text: error.response?.data?.message,
+            type: "error"
+        });
+    };
+    isLoading.value = false;
 }
 
 // Section: ebay
@@ -169,7 +208,12 @@ const onSubmitAmazon = async () => {
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full/>
+                    <!-- <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full/> -->
+                    <Button
+                        @click="() => isModalManual = true"
+                        :label="trans('Create')"
+                        full
+                    />
                 </div>
             </div>
 
@@ -329,6 +373,36 @@ const onSubmitAmazon = async () => {
             </Transition>
 
             <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+        </div>
+    </Modal>
+
+    <!-- Modal: Manual -->
+    <Modal :isOpen="isModalManual" @onClose="isModalManual = false" width="w-full max-w-lg">
+        <div class="">
+            <div class="mb-4">
+                <div class="text-center font-semibold text-xl">
+                    {{ trans("WooCommerce store detail") }}
+                </div>
+
+                <div class="text-center text-xs text-gray-500">
+                    {{ trans("Enter your Woocommerce store detail") }}
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-y-2" :class="errManual ? 'errorShake' : ''">
+                <PureInput
+                    v-model="manualInput.name"
+                    @update:modelValue="() => errManual = ''"
+                    :placeholder="trans('Your store name')"
+                    :maxLength="28"
+                    @onEnter="() => onSubmitManual()"></PureInput>
+            </div>
+            
+            <div v-if="errManual" class="text-red-500 italic text-sm mt-2" >
+                *{{ errManual }}
+            </div>
+
+            <Button @click="() => onSubmitManual()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
 
