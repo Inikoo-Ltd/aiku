@@ -8,16 +8,23 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class BreakWebsiteCache extends OrgAction
 {
     public function handle(Website $website): Website
     {
-        dd("break cache");
+        $key = config('iris.cache.website.prefix')."_$website->domain";
+        Cache::forget($key);
+
+        ClearCacheByWildcard::run( config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
+        ClearCacheByWildcard::run( config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
+
         return $website;
     }
 
@@ -26,6 +33,11 @@ class BreakWebsiteCache extends OrgAction
         $this->initialisationFromShop($website->shop, $request);
 
         return $this->handle($website);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
 }
