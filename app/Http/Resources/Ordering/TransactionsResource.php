@@ -60,6 +60,7 @@ class TransactionsResource extends JsonResource
             'product_slug'        => $this->product_slug,
             'created_at'          => $this->created_at,
             'currency_code'       => $this->currency_code,
+            'available_quantity'  => $this->available_quantity ?? 0,
 
             'deleteRoute' => $request->user() instanceof User
                 ? [

@@ -34,7 +34,12 @@ class ProductsWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-        $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
+
+        if (!is_array($this->web_images)) {
+            $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
+        } else {
+            $webImages = $this->web_images;
+        }
         return [
             'slug'        => $this->slug,
             'image_id'    => $this->image_id,

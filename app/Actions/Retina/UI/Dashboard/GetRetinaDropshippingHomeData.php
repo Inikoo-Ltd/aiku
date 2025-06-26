@@ -10,10 +10,15 @@
 
 namespace App\Actions\Retina\UI\Dashboard;
 
+use App\Actions\Utils\Abbreviate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
+use App\Services\QueryBuilder;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetRetinaDropshippingHomeData
@@ -55,29 +60,79 @@ class GetRetinaDropshippingHomeData
 
         }
 
+        $webUser = request()->user();
+
+
+        if ($webUser instanceof WebUser) {
+            $webRequest = $webUser->webUserRequests();
+            $queryBuilder = QueryBuilder::for($webRequest);
+            $queryBuilder->where('route_name', 'like', 'retina.dropshipping.customer_sales_channels.%');
+
+            $latestWebRequests = $queryBuilder->orderBy('date', 'desc')->take(5)->get();
+
+            $latestChannel = [];
+            foreach ($latestWebRequests as $latestWebRequest) {
+                if (!$latestWebRequest->route_params) {
+                    continue;
+                }
+
+
+                foreach (PlatformTypeEnum::cases() as $platformType) {
+                    $platform = Str::lower(Abbreviate::run($platformType->value));
+
+                    $params = json_decode($latestWebRequest->route_params, true);
+                    $customerSalesChannel = Arr::get($params, 'customerSalesChannel');
+                    if ($customerSalesChannel) {
+                        if (Str::startsWith($customerSalesChannel, $platform)) {
+                            $latestChannel[$customerSalesChannel] = [
+                                'route' => route(
+                                    $latestWebRequest->route_name,
+                                    array_merge(
+                                        $params,
+                                        ['customerSalesChannel' => $customerSalesChannel]
+                                    )
+                                ),
+                                'slug' => $customerSalesChannel,
+                                'date' => $latestWebRequest->date,
+                                'platform' => $platformType->value,
+                            ];
+                            break;
+                        }
+                    }
+                }
+
+            }
+
+
+            // route, slug, date, nama channel
+            $latestChannel = array_values($latestChannel);
+        }
+
+
         return [
             'customer' => CustomerResource::make($customer)->getArray(),
             'channels' => CustomerSalesChannelsResource::collection($customerChannels)->toArray(request()),
             'stats'       => [
-                    [
-                        'label' => __('Channels'),
-                        'route' => [
-                            'name'       => 'retina.dropshipping.customer_sales_channels.index',
-                            'parameters' => []
-                        ],
-                        'color' => '#E87928',
-                        'icon'  => [
-                            'icon' => 'fal fa-code-branch',
-                            'tooltip' => __('Channels'),
-                            'icon_rotation' => '90',
-                        ],
-                        // "color" => "",
-                        'value' => $totalPlatforms,
-
-
-                        'metas' => $metas
+                [
+                    'label' => __('Channels'),
+                    'route' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.index',
+                        'parameters' => []
                     ],
-            ]
+                    'color' => '#E87928',
+                    'icon'  => [
+                        'icon' => 'fal fa-code-branch',
+                        'tooltip' => __('Channels'),
+                        'icon_rotation' => '90',
+                    ],
+                    // "color" => "",
+                    'value' => $totalPlatforms,
+
+
+                    'metas' => $metas
+                ],
+            ],
+            'last_visited_channels' => $latestChannel
         ];
     }
 }

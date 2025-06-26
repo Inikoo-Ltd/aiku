@@ -46,6 +46,8 @@ use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallet
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
 use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Tag\Json\GetTags;
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -113,6 +115,7 @@ Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransa
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
+Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 
 Route::get('trade-units/{tradeUnit}/tags', [GetTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
@@ -131,3 +134,4 @@ Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollect
 Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsInCollection::class)->name('collection.parent.sub_departments.index');
 
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
+Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');

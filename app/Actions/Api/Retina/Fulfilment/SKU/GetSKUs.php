@@ -10,19 +10,19 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\SKU;
 
-use App\Actions\Api\Retina\Fulfilment\Resource\SKUApiResource;
+use App\Actions\Api\Retina\Fulfilment\Resource\SKUsApiResource;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetSKUs extends RetinaApiAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
 
         $queryBuilder = QueryBuilder::for(PalletStoredItem::class)
@@ -32,9 +32,9 @@ class GetSKUs extends RetinaApiAction
         $queryBuilder->where('pallets.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
 
 
-        // if (Arr::get($modelData, 'reference')) {
-        //     $this->getReferenceSearch($queryBuilder, Arr::get($modelData, 'reference'));
-        // }
+        if (Arr::get($modelData, 'reference')) {
+            $this->getReferenceSearch($queryBuilder, Arr::get($modelData, 'reference'));
+        }
 
 
 
@@ -56,29 +56,29 @@ class GetSKUs extends RetinaApiAction
             ->withQueryString();
     }
 
-    // public function getReferenceSearch($query, string $ref): QueryBuilder
-    // {
-    //     return $query->where(function ($query) use ($ref) {
-    //         $query->where('stored_items.reference', $ref);
-    //     });
-    // }
+    public function getReferenceSearch($query, string $ref): QueryBuilder
+    {
+        return $query->where(function ($query) use ($ref) {
+            $query->where('stored_items.reference', $ref);
+        });
+    }
 
-    public function asController(PalletReturn $palletReturn, ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromFulfilment($request);
-        return $this->handle($this->customerSalesChannel, $palletReturn, $this->validateAttributes());
+        return $this->handle($this->customerSalesChannel, $this->validateAttributes());
     }
 
 
     public function jsonResponse(LengthAwarePaginator $palletStoredItems): AnonymousResourceCollection
     {
-        return SKUApiResource::collection($palletStoredItems);
+        return SKUsApiResource::collection($palletStoredItems);
     }
 
     public function rules(): array
     {
         return [
-            // 'reference' => ['nullable', 'string'],
+            'reference' => ['nullable', 'string'],
             'page' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
             'sort' => ['nullable', 'string'],
@@ -89,7 +89,7 @@ class GetSKUs extends RetinaApiAction
     {
         $request->merge(
             [
-                // 'reference' => $request->query('reference', null),
+                'reference' => $request->query('reference', null),
                 'page' => $request->query('page', 1),
                 'per_page' => $request->query('per_page', 50),
                 'sort' => $request->query('sort', 'id'),
