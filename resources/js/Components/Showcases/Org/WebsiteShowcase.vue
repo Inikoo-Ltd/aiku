@@ -5,12 +5,14 @@
   -->
 
 <script setup lang="ts">
-import { faGlobe, faLink, faPencil } from "@fal";
+import { faFragile, faGlobe, faLink, faPencil } from "@fal";
 import { ref } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { trans } from "laravel-vue-i18n";
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { Link } from '@inertiajs/vue3';
 
 library.add(faGlobe, faLink);
 
@@ -40,9 +42,8 @@ const links = ref([
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- URL Box -->
       <div class="bg-white w-fit h-fit flex items-center gap-x-3 md:w-96">
-        <a :href="props.data.url" target="_blank"
-           v-tooltip="trans('Go To Website')"
-           class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
+        <a :href="props.data.url" target="_blank" v-tooltip="trans('Go To Website')"
+          class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
           <div class="bg-gray-200 py-2 px-2">
             <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
           </div>
@@ -53,17 +54,19 @@ const links = ref([
       </div>
 
 
+
       <!-- Buttons Card (in the right part of the grid) -->
       <div class="bg-white flex justify-end">
         <div class="w-64 border border-gray-300 rounded-md p-2">
           <div v-for="(item, index) in links" :key="index" class="p-2">
-            <ButtonWithLink
-              :routeTarget="item.route_target"
-              full
-              :icon="item.icon"
-              :label="item.label"
-              type="secondary"
-            />
+            <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
+              type="secondary" />
+          </div>
+          <div class="p-2">
+            <Link :href="route('grp.models.website.break_cache', {website:data?.id})" method="post"
+              :data="{}" as="button" class="w-full">
+            <Button :icon="faFragile" type="secondary" full label="Break Chace" />
+            </Link>
           </div>
         </div>
       </div>
