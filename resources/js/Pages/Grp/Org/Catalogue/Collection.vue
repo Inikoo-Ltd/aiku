@@ -25,6 +25,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 
 import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -52,6 +53,7 @@ const selectedProductsId = ref<number[]>([])
 const isModalOpen = {
     families: ref(false),
     products: ref(false),
+    collections: ref(false),
 }
 
 const handleTabUpdate = (tabSlug: string) => {
@@ -64,6 +66,7 @@ const component = computed(() => {
         showcase: CollectionsShowcase,
         families: TableFamilies,
         products: TableProducts,
+        collections: TableCollections,
     }
     return components[currentTab.value]
 })
@@ -143,6 +146,15 @@ const onSubmitAttach = async ({
                     :tooltip="trans('Attach products to this collections')"
                 />
             </section>
+            <section v-if="currentTab == 'collections'">
+                <Button
+                    type="secondary"
+                    label="Attach collections"
+                    icon="fal fa-plus"
+                    @click="isModalOpen.collections.value = true"
+                    :tooltip="trans('Attach products to this collections')"
+                />
+            </section>
         </template>
     </PageHeading>
 
@@ -159,6 +171,7 @@ const onSubmitAttach = async ({
         :routes="props.routes[currentTab]"
     />
 
+    <!-- Modal: Products -->
     <Modal
         :isOpen="isModalOpen.products.value"
         @onClose="isModalOpen.products.value = false"
@@ -180,6 +193,29 @@ const onSubmitAttach = async ({
         />
     </Modal>
 
+    <!-- Modal: Collections -->
+    <Modal
+        :isOpen="isModalOpen.collections.value"
+        @onClose="isModalOpen.collections.value = false"
+        width="w-full max-w-6xl"
+    >
+        <ListSelector
+            :headLabel="`${trans('Add collections to collection')}`"
+            :routeFetch="routes.collections.dataList"
+            :isLoadingSubmit="isLoading"
+            @submit="(ids) =>
+                onSubmitAttach({
+                    closeModal: () => (isModalOpen.collections.value = false),
+                    scope: 'collections',
+                    routeToSubmit: routes.collections.submitAttach,
+                    selectedIds: ids,
+                    resetSelection: resetSelectionByScope.collections,
+                })
+            "
+        />
+    </Modal>
+
+    <!-- Modal: Families -->
     <Modal
         :isOpen="isModalOpen.families.value"
         @onClose="isModalOpen.families.value = false"

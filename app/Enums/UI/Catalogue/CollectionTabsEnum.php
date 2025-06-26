@@ -24,7 +24,7 @@ enum CollectionTabsEnum: string
     // case DEPARTMENTS         = 'departments';
     case FAMILIES            = 'families';
     case PRODUCTS            = 'products';
-    // case COLLECTIONS         = 'collections';
+    case COLLECTIONS         = 'collections';
     // case SALES               = 'sales';
     // case CUSTOMERS           = 'customers';
     // case OFFERS              = 'offers';
@@ -99,10 +99,10 @@ enum CollectionTabsEnum: string
                 'title' => __('Products')." ({$parent->stats->number_products})",
                 'icon'  => 'fal fa-cube',
             ],
-            // CollectionTabsEnum::COLLECTIONS => [
-            //     'title' => __('Collections')." ({$parent->stats->number_collections})",
-            //     'icon'  => 'fal fa-cube',
-            // ],
+            CollectionTabsEnum::COLLECTIONS => [
+                'title' => __('Collections')." ({$parent->stats->number_collections})",
+                'icon'  => 'fal fa-cube',
+            ],
         };
     }
 }

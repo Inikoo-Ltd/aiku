@@ -30,6 +30,7 @@ class HandleInertiaGrpRequests extends Middleware
             return [];
         }
 
+
         /** @var User $user */
         $user = $request->user();
 

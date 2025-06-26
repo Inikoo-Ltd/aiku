@@ -34,6 +34,9 @@ class GetCollections extends OrgAction
         } elseif ($scope instanceof ProductCategory) {
             $queryBuilder->whereNotIn('collections.id', $scope->collections()->pluck('collection_id'))
                             ->where('collections.id', '!=', $scope->id);
+        } elseif ($scope instanceof Collection) {
+            $queryBuilder->whereNotIn('collections.id', $scope->collections()->pluck('collection_id'))
+                            ->where('collections.id', '!=', $scope->id);
         }
         $queryBuilder
             ->defaultSort('collections.code')
@@ -69,6 +72,7 @@ class GetCollections extends OrgAction
 
     public function inCollection(Shop $shop, Collection $scope, ActionRequest $request): LengthAwarePaginator
     {
+        // dd('xx');
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
         return $this->handle(parent: $shop, scope: $scope);

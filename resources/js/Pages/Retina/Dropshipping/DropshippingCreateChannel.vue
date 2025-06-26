@@ -21,6 +21,7 @@ import {library} from "@fortawesome/fontawesome-svg-core";
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import axios from "axios";
+import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg" 
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
 
@@ -112,11 +113,10 @@ const wooCommerceInput = ref({
     name: null as null | string,
     url: null as null | string
 });
-
 const onSubmitWoocommerce = async () => {
     try {
         const response = await axios.post(
-            route(props.type_woocommerce.connectRoute.name, props.type_woocommerce.connectRoute.parameters),
+            route(props.type_woocommerce?.connectRoute?.name, props.type_woocommerce.connectRoute.parameters),
             wooCommerceInput.value);
         isModalWooCommerce.value = false;
         wooCommerceInput.value.name = null;
@@ -124,12 +124,52 @@ const onSubmitWoocommerce = async () => {
 
         window.location.href = response.data;
     } catch (error) {
+        console.log("error", error);
         notify({
             title: trans("Something went wrong"),
             text: error.response?.data?.message,
             type: "error"
         });
     };
+}
+
+// Section: Manual
+const isModalManual = ref(false)
+const errManual = ref('')
+const manualInput = ref({
+    name: null as null | string,
+    // url: null as null | string
+});
+const onSubmitManual = async () => {
+    isLoading.value = true;
+    try {
+        const response = await axios.post(
+            route(props.type_manual?.createRoute.name, props.type_manual?.createRoute.parameters),
+            manualInput.value);
+        isModalManual.value = false;
+        manualInput.value.name = null;
+
+        // console.log("response", response.data.slug);
+        // window.location.href = response.data.slug;
+        notify({
+            title: trans("Success!"),
+            text: trans("Your Manual store has been created."),
+            type: "success",
+        })
+        router.get(
+            route('retina.dropshipping.customer_sales_channels.show', {
+                customerSalesChannel: response.data.slug
+            })
+        )
+    } catch (error) {
+        errManual.value = error.response?.data?.message
+        notify({
+            title: trans("Something went wrong"),
+            text: error.response?.data?.message,
+            type: "error"
+        });
+    };
+    isLoading.value = false;
 }
 
 // Section: ebay
@@ -160,7 +200,7 @@ const onSubmitAmazon = async () => {
             <!-- Section: Manual -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">{{ trans("Manual") }}</div>
@@ -169,15 +209,21 @@ const onSubmitAmazon = async () => {
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full/>
+                    <!-- <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full/> -->
+                    <Button
+                        @click="() => isModalManual = true"
+                        :label="trans('Create')"
+                        full
+                    />
                 </div>
             </div>
 
             <!-- Section: Shopify -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12"> -->
+                    <div v-html="ChannelLogo('shopify')" class="h-12"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
@@ -193,11 +239,12 @@ const onSubmitAmazon = async () => {
             <!-- Section: Tiktok -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12"> -->
+                    <div v-html="ChannelLogo('tiktok')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
@@ -215,12 +262,13 @@ const onSubmitAmazon = async () => {
             <!-- Section: Woocommerce -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
-                         alt="" class="h-12">
+                    class="truncate xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
+                         alt="" class="h-12"> -->
+                    <div v-html="ChannelLogo('woocommerce')" class="h-12"></div>
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Woocommerce</div>
+                        <div class="font-semibold text-lg">Woocommerce</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{
                                 trans("Channels")
                             }}
@@ -230,40 +278,42 @@ const onSubmitAmazon = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="layout?.app?.environment === 'production'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
 
-                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+                    <Button v-else :label="trans('Only in Production')" type="tertiary" disabled full />
 
                 </div>
             </div>
             <!-- Section: Ebay -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
-                         alt="" class="h-12">
+                        alt="" class="h-12"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                    >
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Ebay</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
                     <Button
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="onSubmitEbay"
                     />
 
-                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 
                 </div>
             </div>
@@ -271,26 +321,61 @@ const onSubmitAmazon = async () => {
             <!-- Section: Amazon -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
-                         alt="" class="h-12">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
+                        alt="" class="h-12 filter"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                    > -->
+                    <div v-html="ChannelLogo('amazon_simple')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Amazon</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.amazon }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
                     <Button
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="onSubmitAmazon"
                     />
 
-                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+
+                </div>
+            </div>
+
+            <!-- Section: Magento -->
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+                <div
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
+                        alt="" class="h-12 filter"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                    > -->
+                    <div v-html="ChannelLogo('magento')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''">
+
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div class="font-semibold">Magento</div>
+                        <!-- <div class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div> -->
+                    </div>
+                </div>
+
+                <div class="w-full flex justify-end">
+                    <!-- <Button
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="onSubmitAmazon"
+                    /> -->
+
+                    <Button cv-else :label="trans('Coming soon')" type="tertiary" disabled full />
 
                 </div>
             </div>
@@ -329,6 +414,36 @@ const onSubmitAmazon = async () => {
             </Transition>
 
             <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+        </div>
+    </Modal>
+
+    <!-- Modal: Manual -->
+    <Modal :isOpen="isModalManual" @onClose="isModalManual = false" width="w-full max-w-lg">
+        <div class="">
+            <div class="mb-4">
+                <div class="text-center font-semibold text-xl">
+                    {{ trans("WooCommerce store detail") }}
+                </div>
+
+                <div class="text-center text-xs text-gray-500">
+                    {{ trans("Enter your Woocommerce store detail") }}
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-y-2" :class="errManual ? 'errorShake' : ''">
+                <PureInput
+                    v-model="manualInput.name"
+                    @update:modelValue="() => errManual = ''"
+                    :placeholder="trans('Your store name')"
+                    :maxLength="28"
+                    @onEnter="() => onSubmitManual()"></PureInput>
+            </div>
+            
+            <div v-if="errManual" class="text-red-500 italic text-sm mt-2" >
+                *{{ errManual }}
+            </div>
+
+            <Button @click="() => onSubmitManual()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
 
