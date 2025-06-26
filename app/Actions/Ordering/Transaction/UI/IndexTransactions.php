@@ -80,6 +80,7 @@ class IndexTransactions extends OrgAction
                 'assets.type as asset_type',
                 'products.price as price',
                 'products.slug as product_slug',
+                'products.available_quantity as available_quantity',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
             ])
