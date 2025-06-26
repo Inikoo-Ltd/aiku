@@ -10,9 +10,9 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Order;
 
+use App\Actions\Api\Retina\Fulfilment\Resource\PalletReturnsApiResource;
 use App\Actions\RetinaApiAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\PalletReturn;
 use App\Services\QueryBuilder;
@@ -86,7 +86,7 @@ class GetOrders extends RetinaApiAction
 
     public function jsonResponse(LengthAwarePaginator $palletReturns): AnonymousResourceCollection
     {
-        return PalletReturnsResource::collection($palletReturns);
+        return PalletReturnsApiResource::collection($palletReturns);
     }
 
     public function rules(): array

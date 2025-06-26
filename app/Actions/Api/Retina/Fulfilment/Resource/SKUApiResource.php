@@ -38,7 +38,7 @@ class SKUApiResource extends JsonResource
             'reference'             => $this->reference,
             'slug'                  => $this->slug,
             'name'                  => $this->name,
-            'total_quantity'        => $this->total_quantity,
+            'total_quantity'        => (int) $this->total_quantity,
         ];
     }
 }
