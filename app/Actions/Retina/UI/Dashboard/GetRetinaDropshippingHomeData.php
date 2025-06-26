@@ -59,24 +59,27 @@ class GetRetinaDropshippingHomeData
             'customer' => CustomerResource::make($customer)->getArray(),
             'channels' => CustomerSalesChannelsResource::collection($customerChannels)->toArray(request()),
             'stats'       => [
-                    [
-                        'label' => __('Channels'),
-                        'route' => [
-                            'name'       => 'retina.dropshipping.customer_sales_channels.index',
-                            'parameters' => []
-                        ],
-                        'color' => '#E87928',
-                        'icon'  => [
-                            'icon' => 'fal fa-code-branch',
-                            'tooltip' => __('Channels'),
-                            'icon_rotation' => '90',
-                        ],
-                        // "color" => "",
-                        'value' => $totalPlatforms,
-
-
-                        'metas' => $metas
+                [
+                    'label' => __('Channels'),
+                    'route' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.index',
+                        'parameters' => []
                     ],
+                    'color' => '#E87928',
+                    'icon'  => [
+                        'icon' => 'fal fa-code-branch',
+                        'tooltip' => __('Channels'),
+                        'icon_rotation' => '90',
+                    ],
+                    // "color" => "",
+                    'value' => $totalPlatforms,
+
+
+                    'metas' => $metas
+                ],
+            ],
+            'last_visited_channels' => [  // TODO
+                
             ]
         ];
     }
