@@ -13,6 +13,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Dropshipping\FulfilmentPortfolioResource;
+use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -127,6 +128,12 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                         ]
                     ]
                 ],
+                'step'             => [
+                    'current' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
+                        default => 0
+                    }
+                ],
 
                 'content' => [
                     'portfolio_empty' => [
@@ -142,7 +149,9 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'products' => FulfilmentPortfolioResource::collection($portfolios)
+                'products' => FulfilmentPortfolioResource::collection($portfolios),
+                'platform_user_id' => $this->customerSalesChannel->user?->id,
+                'platform_data'    => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
             ]
         )->table($this->tableStructure(prefix: 'products'));
     }

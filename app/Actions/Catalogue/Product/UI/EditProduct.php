@@ -183,11 +183,10 @@ class EditProduct extends OrgAction
                         'label'     => __('code'),
                         // 'readonly' => true,
                         'full'      => true,
-                        'fetch_route'   => [  // TODO: change to the correct route
-                            'name' => 'grp.org.shops.show.catalogue.products.current_products.index',
+                        'fetch_route'   => [
+                            'name' => 'grp.json.product.org_stocks.index',
                             'parameters' => [
-                                'organisation' =>'aw',
-                                'shop' =>'awd',
+                                'product' => $product->id,
                             ]
                         ],
                         'init_options' => [  // TODO: change to the correct data

@@ -109,7 +109,11 @@ const onUploadToShopify = () => {
 
 const downloadUrl = (type: string) => {
     // return '';
-    return route(props.download_route[type].name, props.download_route[type].parameters);
+    if (props.download_route?.[type]?.name) {
+        return route(props.download_route[type].name, props.download_route[type].parameters);
+    } else {
+        return ''
+    }
 };
 
 const _popover = ref()

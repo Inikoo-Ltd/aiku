@@ -93,26 +93,26 @@ const mergedItems = computed(() => {
       <div class="grid gap-4" :class="gridColsClass">
         <a
           v-for="item in mergedItems"
-          :key="item.code"
-          :href="`${item.url}`"
+          :key="item?.code"
+          :href="`${item?.url}`"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
-          :aria-label="`Go to ${item.name}`"
+          :aria-label="`Go to ${item?.name}`"
         >
 
           <div class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">
             <FontAwesomeIcon
-              v-if="item.icon"
-              :icon="item.icon"
+              v-if="item?.icon"
+              :icon="item?.icon"
               class="text-xl w-5 h-5"
             />
             <Image
               v-else
-              :src="item.web_images.main.gallery"
+              :src="item?.web_images?.main.gallery"
               class="max-w-full max-h-full object-contain"
-              :alt="item.name"
+              :alt="item?.name"
             />
           </div>
-          <span class="flex-1 text-center">{{ item.name }}</span>
+          <span class="flex-1 text-center">{{ item?.name }}</span>
         </a>
       </div>
     </div>
