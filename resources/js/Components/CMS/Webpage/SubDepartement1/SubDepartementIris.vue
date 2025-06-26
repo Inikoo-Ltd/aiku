@@ -107,7 +107,7 @@ const mergedItems = computed(() => {
             />
             <Image
               v-else
-              :src="item?.web_images?.main.gallery"
+              :src="item?.web_images?.main?.gallery"
               class="max-w-full max-h-full object-contain"
               :alt="item?.name"
             />
