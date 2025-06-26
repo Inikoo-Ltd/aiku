@@ -182,7 +182,7 @@ class EditProduct extends OrgAction
             [
                 'label'  => __('Parts'),
                 'fields' => [
-                    'product_parts'        => [
+                    'org_stocks'        => [
                         'type'      => 'product_parts',
                         'label'     => __('code'),
                         // 'readonly' => true,
