@@ -10,8 +10,10 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -34,7 +36,10 @@ class RetinaDropshippingOrdersResources extends JsonResource
         return [
             'id'                       => $this->id,
             'date'                     => $this->date,
-            'platform_order_id'        => $this->platform_order_id,
+            'platform_order_id'        => match ($this->platform_type) {
+                PlatformTypeEnum::SHOPIFY->value => Arr::get($this->data, 'order_id'),
+                default => $this->platform_order_id
+            },
             'reference'                => $this->reference,
             'slug'                     => $this->slug,
             'client_name'              => $this->client_name,
