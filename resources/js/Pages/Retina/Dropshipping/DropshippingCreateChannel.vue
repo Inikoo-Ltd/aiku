@@ -241,7 +241,7 @@ const onSubmitAmazon = async () => {
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <!-- <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12"> -->
-                    <div v-html="ChannelLogo('tiktok')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"></div>
+                    <div v-html="ChannelLogo('tiktok')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
                         <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}</div>
@@ -295,7 +295,7 @@ const onSubmitAmazon = async () => {
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
                         alt="" class="h-12"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
                     >
 
                     <div class="flex flex-col">
@@ -324,9 +324,9 @@ const onSubmitAmazon = async () => {
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
                         alt="" class="h-12 filter"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
                     > -->
-                    <div v-html="ChannelLogo('amazon_simple')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"></div>
+                    <div v-html="ChannelLogo('amazon_simple')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Amazon</div>
@@ -354,9 +354,9 @@ const onSubmitAmazon = async () => {
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
                         alt="" class="h-12 filter"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
                     > -->
-                    <div v-html="ChannelLogo('magento')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale' : ''">
+                    <div v-html="ChannelLogo('magento')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''">
 
                     </div>
 
