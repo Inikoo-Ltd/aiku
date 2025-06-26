@@ -8,10 +8,12 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Http\Resources\Inventory\OrgStocksInProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -128,6 +130,8 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
+        $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
+        
         return [
             [
                 'label'  => __('Properties'),
@@ -184,24 +188,16 @@ class EditProduct extends OrgAction
                         // 'readonly' => true,
                         'full'      => true,
                         'fetch_route'   => [
-                            'name' => 'grp.json.product.org_stocks.index',
+                            'name' => 'grp.json.org_stocks.index',
                             'parameters' => [
-                                'product' => $product->id,
+                                'organisation' => $product->organisation_id,
                             ]
                         ],
                         'init_options' => [  // TODO: change to the correct data
                             [],
                             []
                         ],
-                        'value' => [
-                            [
-                                'id'            => $product->id,
-                                'qty'           => 1,
-                                'code'          => $product->code,
-                                'name'          => $product->name,
-                                'description'   => $product->description,
-                            ]
-                        ]
+                        'value' => $value
                     ],
                 ]
             ],
