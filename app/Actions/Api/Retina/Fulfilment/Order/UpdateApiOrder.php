@@ -9,52 +9,54 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Order;
 
-use App\Actions\Api\Retina\Fulfilment\Resource\OrderApiResource;
-use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Api\Retina\Fulfilment\Resource\PalletReturnApiResource;
+use App\Actions\Retina\Fulfilment\PalletReturn\UpdateRetinaPalletReturn;
 use App\Actions\RetinaApiAction;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Ordering\Order;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateApiOrder extends RetinaApiAction
 {
-    use AsAction;
-    use WithAttributes;
+    private PalletReturn $palletReturn;
 
-    public function handle(Order $order, array $modelData): Order|JsonResponse
+    public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn|JsonResponse
     {
-        if ($order->state != OrderStateEnum::CREATING) {
+        if ($palletReturn->state != PalletReturnStateEnum::IN_PROCESS) {
             return response()->json([
-                'message' => 'This order is already in the "' . $order->state->value . '" state and cannot be updated.',
+                'message' => 'This PalletReturn is already in the "' . $palletReturn->state->value . '" state and cannot be updated.',
             ]);
         }
-        $order = UpdateOrder::make()->action($order, $modelData);
+        $palletReturn = UpdateRetinaPalletReturn::make()->action($palletReturn, $modelData);
 
-        return $order;
+        return $palletReturn;
     }
 
     public function rules(): array
     {
         return [
-            'public_notes'        => ['required', 'nullable', 'string', 'max:4000'],
+            'customer_reference'        => ['sometimes', 'nullable', 'string', Rule::unique('pallet_returns', 'customer_reference')
+                ->ignore($this->palletReturn->id)],
+            'estimated_delivery_date'   => ['sometimes', 'date'],
+            'customer_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
         ];
     }
 
-    public function jsonResponse(Order $order)
+    public function jsonResponse(PalletReturn $palletReturn)
     {
-        return OrderApiResource::make($order)
+        return PalletReturnApiResource::make($palletReturn)
             ->additional([
-                'message' => __('Order updated successfully'),
+                'message' => __('PalletReturn updated successfully'),
             ]);
     }
 
-    public function asController(Order $order, ActionRequest $request): Order|JsonResponse
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn|JsonResponse
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($request);
 
-        return $this->handle($order, $this->validatedData);
+        return $this->handle($palletReturn, $this->validatedData);
     }
 }

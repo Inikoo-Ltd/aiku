@@ -9,8 +9,8 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Order;
 
-use App\Actions\Api\Retina\Fulfilment\Resource\OrderApiResource;
-use App\Models\Ordering\Order;
+use App\Actions\Api\Retina\Fulfilment\Resource\PalletReturnApiResource;
+use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -20,18 +20,18 @@ class GetOrder
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order $order): Order
+    public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $order;
+        return $palletReturn;
     }
 
-    public function jsonResponse(Order $order)
+    public function jsonResponse(PalletReturn $palletReturn)
     {
-        return OrderApiResource::make($order);
+        return PalletReturnApiResource::make($palletReturn);
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
-        return $this->handle($order);
+        return $this->handle($palletReturn);
     }
 }

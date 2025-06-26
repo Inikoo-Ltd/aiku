@@ -9,10 +9,10 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Order;
 
-use App\Actions\Api\Retina\Fulfilment\Resource\OrderApiResource;
-use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Api\Retina\Fulfilment\Resource\PalletReturnApiResource;
+use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
 use App\Actions\RetinaApiAction;
-use App\Models\Ordering\Order;
+use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -22,24 +22,24 @@ class SubmitApiOrder extends RetinaApiAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order $order): Order
+    public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        $order = SubmitOrder::make()->action($order);
+        $palletReturn = SubmitPalletReturn::run($palletReturn, [], true);
 
-        return $order;
+        return $palletReturn;
     }
 
-    public function jsonResponse(Order $order)
+    public function jsonResponse(PalletReturn $palletReturn)
     {
-        return OrderApiResource::make($order)
+        return PalletReturnApiResource::make($palletReturn)
             ->additional([
-                'message' => __('Order submitted successfully'),
+                'message' => __('PalletReturn submitted successfully'),
             ]);
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->initialisationFromFulfilment($request);
-        return $this->handle($order);
+        return $this->handle($palletReturn);
     }
 }

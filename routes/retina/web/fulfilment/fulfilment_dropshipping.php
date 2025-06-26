@@ -69,11 +69,11 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('client')->as('client.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel::class)->name('index');
-            Route::get('{customerClient}', ShowRetinaFulfilmentCustomerClient::class)->name('show');
-            Route::get('/{customerClient}/edit', EditRetinaFulfilmentPlatformCustomerClient::class)->name('edit');
             Route::get('create', CreateRetinaFulfilmentPlatformCustomerClient::class)->name('create');
             Route::get('fetch', FetchRetinaFulfilmentCustomerClientFromShopify::class)->name('fetch');
             Route::get('wc-fetch', FetchRetinaFulfilmentCustomerClientFromWooCommerce::class)->name('wc-fetch');
+            Route::get('{customerClient}', ShowRetinaFulfilmentCustomerClient::class)->name('show');
+            Route::get('/{customerClient}/edit', EditRetinaFulfilmentPlatformCustomerClient::class)->name('edit');
         });
 
         Route::prefix('portfolios')->as('portfolios.')->group(function () {
