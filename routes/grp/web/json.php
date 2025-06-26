@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
+use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
@@ -124,6 +125,7 @@ Route::get('workshop/department/{department}/sub-departments', GetSubDepartments
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/product-category/{productCategory:id}/top-products', GetTopProductsInProductCategory::class)->name('product_category.top_products.index');
 Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
 
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
