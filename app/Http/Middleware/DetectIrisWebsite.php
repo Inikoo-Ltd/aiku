@@ -26,14 +26,14 @@ class DetectIrisWebsite
 
 
         if (config('iris.cache.website.ttl') == 0) {
-            $websiteData = $this->getWebpageData($domain);
+            $websiteData = $this->getWebsiteData($domain);
         } else {
             $key = config('iris.cache.website.prefix')."_$domain";
             $websiteData = Cache::remember(
                 $key,
                 config('iris.cache.website.ttl'),
                 function () use ($domain) {
-                    return $this->getWebpageData($domain);
+                    return $this->getWebsiteData($domain);
                 }
             );
         }
@@ -44,7 +44,7 @@ class DetectIrisWebsite
         return $next($request);
     }
 
-    public function getWebpageData(string $domain): array
+    public function getWebsiteData(string $domain): array
     {
         /** @var Website $website */
         $website = Website::where('domain', $domain)->first();

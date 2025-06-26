@@ -21,7 +21,6 @@ class DetectWebsiteFromDomain
      */
     public function handle($domain): ?Website
     {
-
         $domain = $this->parseDomain($domain);
 
         /** @var Website $website */
@@ -44,20 +43,20 @@ class DetectWebsiteFromDomain
             } else {
                 $domain = config('app.local.retina_b2b_domain');
             }
+
             return $domain;
         }
-        if ($domain == config('app.domain') ||  $domain == 'app.'.config('app.domain')) {
+        $domain = str_replace('www.', '', $domain);
+        $domain = str_replace('v2.', '', $domain);
+        if ($domain == config('app.domain') || $domain == 'app.'.config('app.domain')) {
             return null;
         }
 
         if (app()->environment('staging')) {
             $domain = str_replace('canary.', '', $domain);
         }
-        $domain = str_replace('www.', '', $domain);
-        return  str_replace('v2.', '', $domain);
 
-
-
+        return $domain;
     }
 
 }
