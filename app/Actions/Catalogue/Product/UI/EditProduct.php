@@ -213,10 +213,9 @@ class EditProduct extends OrgAction
                             ]
                         ],
                         'fetchRoute' => [
-                            'name'       => 'grp.org.shops.show.catalogue.families.index',
+                            'name'       => 'grp.json.shop.families',
                             'parameters' => [
-                                'organisation' => $product->organisation->slug,
-                                'shop'         => $product->shop->slug
+                                'shop'         => $product->shop->id
                             ]
                         ],
                         'valueProp'  => 'id',
