@@ -11,7 +11,7 @@ use App\Actions\Api\Retina\Fulfilment\Client\GetClient;
 use App\Actions\Api\Retina\Fulfilment\Client\GetClients;
 use App\Actions\Api\Retina\Fulfilment\Client\StoreApiCustomerClient;
 use App\Actions\Api\Retina\Fulfilment\Client\UpdateApiCustomerClient;
-use App\Actions\Api\Retina\Fulfilment\Order\DeleteApiOrder;
+use App\Actions\Api\Retina\Fulfilment\Order\CancelApiOrder;
 use App\Actions\Api\Retina\Fulfilment\Order\GetOrder;
 use App\Actions\Api\Retina\Fulfilment\Order\GetOrders;
 use App\Actions\Api\Retina\Fulfilment\Order\StoreApiOrder;
@@ -23,10 +23,8 @@ use App\Actions\Api\Retina\Fulfilment\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\UpdateApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\SKU\GetSKUs;
-use App\Actions\Api\Retina\Fulfilment\Transaction\DeleteApiOrderTransaction;
+use App\Actions\Api\Retina\Fulfilment\Transaction\AttachApiOrderTransaction;
 use App\Actions\Api\Retina\Fulfilment\Transaction\GetTransactions;
-use App\Actions\Api\Retina\Fulfilment\Transaction\StoreApiOrderTransaction;
-use App\Actions\Api\Retina\Fulfilment\Transaction\UpdateApiOrderTransaction;
 
 Route::prefix('order')->as('order.')->group(function () {
     Route::get('', GetOrders::class)->name('index');
@@ -34,14 +32,9 @@ Route::prefix('order')->as('order.')->group(function () {
     Route::get('{palletReturn:id}', GetOrder::class)->name('show');
     Route::patch('{palletReturn:id}/update', UpdateApiOrder::class)->name('update');
     Route::patch('{palletReturn:id}/submit', SubmitApiOrder::class)->name('submit');
-    Route::delete('{palletReturn:id}/delete', DeleteApiOrder::class)->name('delete');
-    Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index');
-    Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
-});
-
-Route::prefix('transaction')->as('transaction.')->group(function () {
-    Route::patch('{transaction:id}/update', UpdateApiOrderTransaction::class)->name('update');
-    Route::delete('{transaction:id}/delete', DeleteApiOrderTransaction::class)->name('delete');
+    Route::post('{palletReturn:id}/cancel', CancelApiOrder::class)->name('cancel');
+    Route::get('{palletReturn:id}/transactions', GetTransactions::class)->name('transaction.index');
+    Route::post('/{palletReturn:id}/sku/{sku:id}/store', AttachApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
 });
 
 Route::prefix('portfolios')->as('portfolios.')->group(function () {

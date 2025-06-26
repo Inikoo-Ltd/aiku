@@ -24,14 +24,16 @@ class UpdateApiOrder extends RetinaApiAction
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn|JsonResponse
     {
-        if ($palletReturn->state != PalletReturnStateEnum::IN_PROCESS) {
-            return response()->json([
-                'message' => 'This PalletReturn is already in the "' . $palletReturn->state->value . '" state and cannot be updated.',
-            ]);
-        }
         $palletReturn = UpdateRetinaPalletReturn::make()->action($palletReturn, $modelData);
 
         return $palletReturn;
+    }
+
+    public function afterValidator($validator)
+    {
+        if ($this->palletReturn->state != PalletReturnStateEnum::IN_PROCESS) {
+            $validator->errors()->add('message', 'This Order is already in the "' . $this->palletReturn->state->value . '" state and cannot be updated.');
+        }
     }
 
     public function rules(): array
@@ -48,7 +50,7 @@ class UpdateApiOrder extends RetinaApiAction
     {
         return PalletReturnApiResource::make($palletReturn)
             ->additional([
-                'message' => __('PalletReturn updated successfully'),
+                'message' => __('Order updated successfully'),
             ]);
     }
 

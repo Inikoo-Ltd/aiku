@@ -27,21 +27,19 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency_code
  * @property mixed $date
  */
-class SKUApiResource extends JsonResource
+class SKUOrderApiResource extends JsonResource
 {
     public function toArray($request): array
     {
 
-        /** @var PalletStoredItem $palletStoredItem */
-        $palletStoredItem = $this->resource;
-        $storedItem = $palletStoredItem->storedItem;
         return [
-            'id'                    => $palletStoredItem->id,
-            'stored_item_id'        => $palletStoredItem->stored_item_id,
-            'reference'             => $storedItem->reference,
-            'slug'                  => $storedItem->slug,
-            'name'                  => $storedItem->name,
-            'total_quantity'        => (int) $storedItem->total_quantity,
+            'id'                    => $this->id,
+            'stored_item_id'        => $this->stored_item_id,
+            'reference'             => $this->reference,
+            'slug'                  => $this->slug,
+            'name'                  => $this->name,
+            'quantity_ordered'      => (int) $this->quantity_ordered,
+            'total_quantity'        => (int) $this->total_quantity,
         ];
     }
 }
