@@ -54,7 +54,7 @@ class ShowIrisWebpage
     }
 
 
-    public function handle(string $path, array $parentPaths, ActionRequest $request): array
+    public function handle(?string $path, array $parentPaths, ActionRequest $request): array
     {
         if (config('iris.cache.webpage_path.ttl') == 0) {
             $webpageID = $this->getWebpageID($request->get('website'), $path);
