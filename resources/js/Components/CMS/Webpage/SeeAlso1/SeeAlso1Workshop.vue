@@ -1,78 +1,171 @@
 <script setup lang="ts">
-import { getStyles } from "@/Composables/styles";
-import { faCube, faStar } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faHeart } from '@far';
+import { faCircle, faStar } from '@fas';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { getStyles } from "@/Composables/styles"
+import { computed } from "vue";
 
-import { Swiper, SwiperSlide } from "swiper/vue";
-import "swiper/swiper-bundle.css"; // Swiper styles
-import { onMounted } from 'vue';
+const dummyProductImage = '/product/product_dummy.jpeg'
 
-library.add(faCube, faStar);
-
-// Props
 const props = defineProps<{
-    modelValue: any,
-    properties: {}
-}>();
+  modelValue: any
+  webpageData?: any
+  blockData?: Object
+  screenType: "mobile" | "tablet" | "desktop"
+}>()
 
 const products = [
-    {
-        id: 1,
-        name: 'Leather Long Wallet',
-        color: 'Natural',
-        price: '$75',
-        href: '#',
-        imageSrc: 'https://tailwindui.com/plus/img/ecommerce-images/home-page-04-trending-product-02.jpg',
-        imageAlt: 'Hand stitched, orange leather long wallet.',
-    },
-    {
-        id: 2,
-        name: 'Leather Long Wallet',
-        color: 'Natural',
-        price: '$75',
-        href: '#',
-        imageSrc: 'https://tailwindui.com/plus/img/ecommerce-images/home-page-04-trending-product-02.jpg',
-        imageAlt: 'Hand stitched, orange leather long wallet.',
-    },
+  {
+    title: 'Macrame Soft Chandelier - Natural',
+    sku: 'Macrame-C1',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 41,
+    inStock: true,
+    memberOnly: true,
+    image: ''
+  },
+  {
+    title: 'Macrame Soft Chandelier - Natural',
+    sku: 'Macrame-C1',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 41,
+    inStock: true,
+    memberOnly: true,
+    image: ''
+  },
+  {
+    title: 'Macrame Soft Chandelier - Natural',
+    sku: 'Macrame-C1',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 41,
+    inStock: true,
+    memberOnly: true,
+    image: ''
+  },
+  {
+    title: 'Macrame Soft Chandelier - Natural',
+    sku: 'Macrame-C1',
+    rrp: 3.95,
+    price: 9.6,
+    oldPrice: 9.6,
+    memberPrice: 8.0,
+    oldMemberPrice: 8.0,
+    stock: 41,
+    inStock: true,
+    memberOnly: true,
+    image: ''
+  },
 ]
+
+const responsiveGridClass = computed(() => {
+  const perRow = props.modelValue?.settings?.per_row ?? {}
+
+  const columnCount = {
+    desktop: perRow.desktop ?? 4,
+    tablet: perRow.tablet ?? 4,
+    mobile: perRow.mobile ?? 2,
+  }
+
+  const count = columnCount[props.screenType] ?? 1
+  return `grid-cols-${count}`
+})
 </script>
 
 <template>
-    <div class="bg-white">
-        <div class="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
-            <div class="md:flex md:items-center md:justify-between">
-                <h2 class="text-2xl font-bold tracking-tight text-gray-900">See Also</h2>
-                <a href="#" class="hidden text-sm font-medium text-indigo-600 hover:text-indigo-500 md:block">
-                    Shop the collection
-                    <span aria-hidden="true"> &rarr;</span>
-                </a>
-            </div>
+  <div
+    class="grid gap-6 p-4"
+    :class="responsiveGridClass"
+    :style="getStyles(modelValue.container?.properties, screenType)"
+  >
+    <div
+      v-for="(product, index) in products"
+      :key="index"
+      class="border p-3 relative rounded shadow-sm bg-white"
+    >
+      <!-- Bestseller Badge -->
+      <div
+        v-if="product.bestseller"
+        class="absolute top-2 left-2 bg-white border border-black text-black text-xs font-bold px-2 py-0.5 rounded"
+      >
+        BESTSELLER
+      </div>
 
-            <div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-4 md:gap-y-0 lg:gap-x-8">
-                <div v-for="product in products" :key="product.id" class="group relative">
-                    <div
-                        class="h-56 w-full overflow-hidden rounded-md bg-gray-200 group-hover:opacity-75 lg:h-72 xl:h-80">
-                        <img :src="product.imageSrc" :alt="product.imageAlt"
-                            class="h-full w-full object-cover object-center" />
-                    </div>
-                    <h3 class="mt-4 text-sm text-gray-700">
-                        <a :href="product.href">
-                            <span class="absolute inset-0" />
-                            {{ product.name }}
-                        </a>
-                    </h3>
-                    <p class="mt-1 text-sm text-gray-500">{{ product.color }}</p>
-                    <p class="mt-1 text-sm font-medium text-gray-900">{{ product.price }}</p>
-                </div>
-            </div>
+      <!-- Favorite Icon -->
+      <FontAwesomeIcon
+        :icon="faHeart"
+        class="absolute top-2 right-2 text-gray-400 text-xl"
+      />
 
-            <div class="mt-8 text-sm md:hidden">
-                <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">
-                    Shop the collection
-                    <span aria-hidden="true"> &rarr;</span>
-                </a>
-            </div>
+      <!-- Product Image -->
+      <img :src="dummyProductImage" class="w-full h-62 object-cover mb-3 rounded" />
+
+      <!-- Title -->
+      <div class="font-medium text-sm mb-1">{{ product.title }}</div>
+
+      <!-- SKU and RRP -->
+      <div class="flex justify-between text-xs text-gray-600 mb-1">
+        <span>{{ product.sku }}</span>
+        <span>RRP: £{{ product.rrp }}/Piece</span>
+      </div>
+
+      <!-- Rating and Stock -->
+      <div class="flex justify-between items-center text-xs mb-2">
+        <div class="flex items-center gap-1 text-green-600">
+          <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
+          <span>({{ product.stock }})</span>
         </div>
+        <div class="flex items-center space-x-[1px] text-gray-500">
+          <FontAwesomeIcon
+            v-for="i in 5"
+            :key="i"
+            :class="i <= product.rating ? 'fas' : 'far'"
+            :icon="faStar"
+            class="text-xs"
+          />
+          <span class="ml-1">{{ product.stock }}</span>
+        </div>
+      </div>
+
+      <!-- Prices -->
+      <div class="mb-3">
+        <div class="flex justify-between text-sm font-semibold">
+          <span>£{{ product.price.toFixed(2) }}
+            <span class="text-xs">({{ (product.price / 8).toFixed(2) }}/Piece)</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div v-if="product.inStock" class="flex items-center gap-2">
+        <div class="flex items-center border px-2 rounded">
+          <button class="text-lg font-bold text-gray-600">-</button>
+          <span class="px-2 text-sm">1</span>
+          <button class="text-lg font-bold text-gray-600">+</button>
+        </div>
+        <button class="bg-gray-800 text-white px-3 py-1 rounded text-sm w-full">
+          Order Now
+        </button>
+      </div>
+
+      <div v-else>
+        <button class="w-full text-sm px-3 py-1 bg-gray-300 text-gray-600 rounded" disabled>
+          Out of Stock
+        </button>
+      </div>
     </div>
+  </div>
 </template>
+
+<style scoped></style>

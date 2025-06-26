@@ -44,6 +44,7 @@ import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import ToggleSwitch from 'primevue/toggleswitch';
 import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
+import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -86,7 +87,8 @@ export const getComponent = (componentName: string) => {
         'switch' : ToggleSwitch ,
         'fontFamily' : fontFamily,
         'min_max_price' : MinMaxPrice, 
-        'video-settings' : VideoSettings
+        'video-settings' : VideoSettings,
+        'select_product' : SelectProducts
     }
     return components[componentName] ?? NotFoundComponents
 }
