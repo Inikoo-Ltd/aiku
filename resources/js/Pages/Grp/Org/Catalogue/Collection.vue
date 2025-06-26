@@ -25,6 +25,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 
 import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -64,6 +65,7 @@ const component = computed(() => {
         showcase: CollectionsShowcase,
         families: TableFamilies,
         products: TableProducts,
+        collections: TableCollections,
     }
     return components[currentTab.value]
 })

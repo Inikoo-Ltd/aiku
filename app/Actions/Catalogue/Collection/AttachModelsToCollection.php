@@ -37,6 +37,13 @@ class AttachModelsToCollection extends OrgAction
             }
         }
 
+        foreach (Arr::get($modelData, 'collections', []) as $modelID) {
+            if (!DB::table('collection_has_models')->where('collection_id', $collection->id)->where('model_type', 'Collection')->where('model_id', $modelID)->exists()) {
+                $collection = Collection::find($collection);
+                AttachModelToCollection::make()->action($collection, $collection);
+            }
+        }
+
 
         return $collection;
     }
@@ -48,6 +55,8 @@ class AttachModelsToCollection extends OrgAction
             'families.*' => [Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)->where('shop_id', $this->shop->id)],
             'products'   => ['nullable', 'array'],
             'products.*' => [Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
+            'collections'   => ['nullable', 'array'],
+            'collections.*' => [Rule::exists('collections', 'id')->where('shop_id', $this->shop->id)],
         ];
     }
 
