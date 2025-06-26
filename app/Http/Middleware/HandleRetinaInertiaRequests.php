@@ -26,9 +26,10 @@ class HandleRetinaInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        // if ($request->ajax() || $request->expectsJson()) {
-        //     return [];
-        // }
+        $routeName = $request->route()->getName();
+        if (str_starts_with($routeName, 'grp.retina.')) {
+            return [];
+        }
 
         /** @var WebUser $webUser */
         $webUser            = $request->user();

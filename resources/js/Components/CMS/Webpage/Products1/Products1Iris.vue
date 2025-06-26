@@ -419,6 +419,7 @@ const handleSetAllToPortfolio = () => {
                 </div>
                 <div>
                     <Button
+                        v-if="layout.iris.is_logged_in"
                         :icon="faLayerGroup"
                         :label="settingPortfolio ? 'Processing...' : 'Set All Products to Portfolio'"
                         class="!p-3 !w-auto"

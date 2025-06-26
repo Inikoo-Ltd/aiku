@@ -69,6 +69,24 @@ class RetinaApiAction
         return $this;
     }
 
+    public function initialisationFromFulfilment(ActionRequest $request): static
+    {
+        $this->customerSalesChannel = $request->user();
+
+        $this->customer = $this->customerSalesChannel->customer;
+        $this->shop = $this->customer->shop;
+        $this->platformUser = $this->customerSalesChannel->user;
+        $this->platform = $this->customerSalesChannel->platform;
+        $this->organisation = $this->shop->organisation;
+        $this->group = $this->shop->group;
+        $this->fulfilmentCustomer = $this->customerSalesChannel->customer->fulfilmentCustomer;
+        $this->fillFromRequest($request);
+
+        $this->validatedData = $this->validateAttributes();
+
+        return $this;
+    }
+
 
     public function authorize(ActionRequest $request): bool
     {

@@ -24,9 +24,11 @@ class HandleInertiaGrpRequests extends Middleware
     public function share(Request $request): array
     {
 
-        // if ($request->ajax() || $request->expectsJson()) {
-        //     return [];
-        // }
+
+        $routeName = $request->route()->getName();
+        if (str_starts_with($routeName, 'grp.json.')) {
+            return [];
+        }
 
 
         /** @var User $user */

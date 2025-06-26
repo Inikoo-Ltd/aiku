@@ -176,7 +176,7 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
                     'download' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.client.upload_templates',
                         'parameters' => [
-                            'customerSalesChannel' => $this->customerSalesChannel->id,
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
                         ],
                     ]
                 ],

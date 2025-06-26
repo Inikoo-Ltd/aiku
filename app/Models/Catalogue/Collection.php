@@ -167,6 +167,12 @@ class Collection extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
+    public function collections(): MorphToMany
+    {
+        return $this->morphedByMany(Collection::class, 'model', 'collection_has_models')
+            ->withTimestamps();
+    }
+
 
     public function webpage(): MorphOne
     {
