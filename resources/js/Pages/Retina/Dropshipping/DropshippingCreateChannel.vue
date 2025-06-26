@@ -199,7 +199,7 @@ const onSubmitAmazon = async () => {
             <!-- Section: Manual -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">{{ trans("Manual") }}</div>
@@ -220,7 +220,7 @@ const onSubmitAmazon = async () => {
             <!-- Section: Shopify -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
@@ -237,7 +237,7 @@ const onSubmitAmazon = async () => {
             <!-- Section: Tiktok -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
@@ -259,12 +259,12 @@ const onSubmitAmazon = async () => {
             <!-- Section: Woocommerce -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="truncate xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
                          alt="" class="h-12">
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Woocommerce</div>
+                        <div class="font-semibold text-lg">Woocommerce</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{
                                 trans("Channels")
                             }}
@@ -274,23 +274,25 @@ const onSubmitAmazon = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="layout?.app?.environment === 'production'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
 
-                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+                    <Button v-else :label="trans('Only in Production')" type="tertiary" disabled full />
 
                 </div>
             </div>
             <!-- Section: Ebay -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
-                         alt="" class="h-12">
+                        alt="" class="h-12"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"
+                    >
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Ebay</div>
@@ -300,14 +302,14 @@ const onSubmitAmazon = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="onSubmitEbay"
                     />
 
-                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 
                 </div>
             </div>
@@ -315,26 +317,28 @@ const onSubmitAmazon = async () => {
             <!-- Section: Amazon -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="hover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
-                         alt="" class="h-12">
+                        alt="" class="h-12 filter"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale' : ''"
+                    >
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Amazon</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.amazon }} {{ trans("Channels") }}</div>
+                        <div class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
                     <Button
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="onSubmitAmazon"
                     />
 
-                    <!-- <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full /> -->
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 
                 </div>
             </div>
