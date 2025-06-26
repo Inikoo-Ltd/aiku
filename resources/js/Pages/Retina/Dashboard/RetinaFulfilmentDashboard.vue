@@ -152,18 +152,17 @@ const optionRadio = [
 ]
 
 const isLoading = ref<string | boolean>(false)
-const tabs = {
-	pallets_storage: true,
-	items_storage: true,
-	dropshipping: false,
-	space_rental: true,
-}
+// const tabs = {
+// 	pallets_storage: true,
+// 	items_storage: true,
+// 	dropshipping: false,
+// 	space_rental: true,
+// }
 const radioValue = ref<string[]>(
-	Object.keys(props?.data?.fulfilment_customer?.radioTabs || tabs).filter(
-		(key) => props?.data?.fulfilment_customer?.radioTabs[key] || tabs[key]
+	Object.keys(props?.data?.fulfilment_customer?.radioTabs).filter(
+		(key) => props?.data?.fulfilment_customer?.radioTabs[key]
 	)
 )
-const isLoadingButtonRentalAgreement = ref(false)
 </script>
 
 <template>
@@ -217,7 +216,9 @@ const isLoadingButtonRentalAgreement = ref(false)
 			<div class="grid md:grid-cols-2 gap-y-2 gap-x-1 sm:gap-x-2">
 				<div
 					v-for="radio in optionRadio"
-					class="text-xs w-full sm:text-sm flex flex-auto items-center text-left gap-x-1.5 sm:gap-x-2 rounded-lg px-2 sm:px-3 py-2 select-none border disabled:bg-gray-300 disabled:cursor-default">
+					class="text-xs w-full sm:text-sm flex flex-auto items-center text-left gap-x-1.5 sm:gap-x-2 rounded-lg px-2 sm:px-3 py-2 select-none border disabled:bg-gray-300 disabled:cursor-default"
+					v-tooltip="radioValue.includes(radio.value) ? 'You subscribed this service' : ''"
+				>
 					<FontAwesomeIcon
 						v-if="radioValue.includes(radio.value)"
 						icon="fas fa-check-circle"
@@ -227,10 +228,10 @@ const isLoadingButtonRentalAgreement = ref(false)
 					<FontAwesomeIcon
 						v-else
 						icon="fal fa-circle"
-						class="text-green-600"
+						class="text-gray-400"
 						fixed-width
 						aria-hidden="true" />
-					<span class="whitespace-nowrap">{{ radio.label }}</span>
+					<span class="whitespace-nowrap" :class="radioValue.includes(radio.value) ? '' : 'text-gray-500'">{{ radio.label }}</span>
 				</div>
 			</div>
 
