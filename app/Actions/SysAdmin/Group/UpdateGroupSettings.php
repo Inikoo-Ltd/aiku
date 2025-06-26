@@ -61,15 +61,8 @@ class UpdateGroupSettings extends GrpAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'grant_type');
         }
-        if (Arr::exists($modelData, 'treblle_project_id')) {
-            data_set($modelData, "settings.treblle.project_id", Arr::pull($modelData, 'treblle_project_id'));
-        }
 
-        if (Arr::exists($modelData, 'treblle_api_key')) {
-            data_set($modelData, "settings.treblle.api_key", Arr::pull($modelData, 'treblle_api_key'));
-        }
-
-        return $this->update($group, $modelData, ['settings']);
+        return $this->update($group, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -94,8 +87,6 @@ class UpdateGroupSettings extends GrpAction
             'client_id'                         => ['sometimes', 'string', 'nullable'],
             'client_secret'                     => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],
-            'treblle_api_key'          => ['sometimes', 'nullable', 'string'],
-            'treblle_project_id'       => ['sometimes', 'nullable', 'string'],
         ];
     }
 
