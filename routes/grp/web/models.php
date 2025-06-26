@@ -247,6 +247,7 @@ use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
+use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
@@ -828,6 +829,9 @@ Route::name('poll.')->prefix('poll')->group(function () {
     Route::patch('{poll:id}/update', UpdatePoll::class)->name('update')->withoutScopedBindings();
     Route::delete('{poll:id}/delete', DeletePoll::class)->name('delete')->withoutScopedBindings();
 });
+
+Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
+
 
 
 require __DIR__."/models/inventory/warehouse.php";
