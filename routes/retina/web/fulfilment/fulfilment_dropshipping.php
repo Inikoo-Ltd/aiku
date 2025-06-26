@@ -20,6 +20,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Fulfilment\Basket\UI\IndexRetinaFulfilmentBaskets;
 use App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI\IndexFulfilmentCustomerSalesChannels;
+use App\Actions\Retina\Fulfilment\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\FetchRetinaFulfilmentCustomerClientFromShopify;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\FetchRetinaFulfilmentCustomerClientFromWooCommerce;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\CreateRetinaFulfilmentPlatformCustomerClient;
@@ -82,6 +83,10 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
         Route::prefix('orders')->as('orders.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentOrders::class)->name('index');
             Route::get('/{palletReturn}', ShowRetinaStoredItemReturn::class)->name('show');
+        });
+
+        Route::prefix('api')->as('api.')->group(function () {
+            Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
         });
 
 
