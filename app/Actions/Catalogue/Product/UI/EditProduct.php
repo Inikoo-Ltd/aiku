@@ -132,7 +132,36 @@ class EditProduct extends OrgAction
     public function getBlueprint(Product $product): array
     {
         $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
-        
+
+
+        $family = $product->family;
+        if ($family) {
+            $stateData = [
+                'label' => $family->state->labels()[$family->state->value],
+                'icon'  => $family->state->stateIcon()[$family->state->value]['icon'],
+                'class' => $family->state->stateIcon()[$family->state->value]['class']
+            ];
+
+            $familyOptions = [
+                'id'                      => $family->id,
+                'code'                    => $family->code,
+                'state'                   => $stateData,
+                'name'                    => $family->name,
+                'number_current_products' => $family->stats->number_current_products,
+
+            ];
+        }else{
+            $familyOptions = [
+                'id'                      => null,
+                'code'                    => null,
+                'state'                   => null,
+                'name'                    => null,
+                'number_current_products' => null,
+
+            ];
+        }
+
+
         return [
             [
                 'label'  => __('Properties'),
@@ -183,19 +212,19 @@ class EditProduct extends OrgAction
             [
                 'label'  => __('Parts'),
                 'fields' => [
-                    'org_stocks'        => [
-                        'type'      => 'product_parts',
-                        'label'     => __('code'),
+                    'org_stocks' => [
+                        'type'         => 'product_parts',
+                        'label'        => __('code'),
                         // 'readonly' => true,
-                        'full'      => true,
-                        'fetch_route'   => [
-                            'name' => 'grp.json.org_stocks.index',
+                        'full'         => true,
+                        'fetch_route'  => [
+                            'name'       => 'grp.json.org_stocks.index',
                             'parameters' => [
                                 'organisation' => $product->organisation_id,
                             ]
                         ],
-                        'init_options'  => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-                        'value'         => $value
+                        'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+                        'value'        => $value
                     ],
                 ]
             ],
@@ -207,18 +236,12 @@ class EditProduct extends OrgAction
                         'type'       => 'select_infinite',
                         'label'      => __('Family'),
                         'options'    => [
-                            [
-                                'id'   => $product->family?->id,
-                                'code' => $product->family?->code,
-                                'state' => $product->family?->state_icon,
-                                'name' => $product->family?->name,
-
-                            ]
+                            $familyOptions
                         ],
                         'fetchRoute' => [
                             'name'       => 'grp.json.shop.families',
                             'parameters' => [
-                                'shop'         => $product->shop->id
+                                'shop' => $product->shop->id
                             ]
                         ],
                         'valueProp'  => 'id',
