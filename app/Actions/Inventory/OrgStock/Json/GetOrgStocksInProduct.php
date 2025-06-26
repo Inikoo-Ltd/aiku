@@ -10,7 +10,7 @@ namespace App\Actions\Inventory\OrgStock\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Http\Resources\Inventory\OrgStocksInProductResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
@@ -57,15 +57,11 @@ class GetOrgStocksInProduct extends OrgAction
                 'org_stocks.code',
                 'org_stocks.name',
                 'org_stocks.unit_value',
-                'org_stock_stats.number_locations',
-                'org_stock_stats.quantity_in_locations',
                 'org_stocks.discontinued_in_organisation_at',
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
-                'product_has_org_stocks.id as pivot_id',
                 'product_has_org_stocks.quantity as pivot_quantity',
             ])
-            ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts(['code', 'name', 'family_code', 'unit_value', 'pivot_quantity'])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
@@ -75,6 +71,6 @@ class GetOrgStocksInProduct extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $stocks): AnonymousResourceCollection
     {
-        return OrgStocksResource::collection($stocks);
+        return OrgStocksInProductResource::collection($stocks);
     }
 }
