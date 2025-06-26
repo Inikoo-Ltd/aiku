@@ -69,7 +69,6 @@ class GetRetinaDropshippingHomeData
             $queryBuilder->where('route_name', 'like', 'retina.dropshipping.customer_sales_channels.%');
 
             $latestWebRequests = $queryBuilder->orderBy('date', 'desc')->take(5)->get();
-
             $latestChannel = [];
             foreach ($latestWebRequests as $latestWebRequest) {
                 if (!$latestWebRequest->route_params) {

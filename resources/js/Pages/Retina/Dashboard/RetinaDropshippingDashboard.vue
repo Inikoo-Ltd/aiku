@@ -27,101 +27,14 @@ const props = defineProps<{
         stats: {
 
         }[]
+        last_visited_channels: {
+
+        }[]
     }
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
 
-const ccccxcx = [
-    {
-        "label": "Departments",
-        "route": {
-            "name": "retina.dashboard.show",
-            "parameters": {
-            "organisation": "aw",
-            "shop": "awd"
-            }
-        },
-        "icon": "fal fa-folder-tree",
-        "color": "#f59e0b",
-        "value": 15,
-        "metaRight": {
-            "tooltip": "Sub Departments",
-            "icon": {
-            "icon": "fal fa-folder-tree",
-            "class": ""
-            },
-            "count": 0
-        },
-        "metas": [
-            {
-                "tooltip": "Active departments",
-                "icon": {
-                    "tooltip": "active",
-                    "icon": "fas fa-check-circle",
-                    "class": "text-green-500"
-                },
-                "count": 15,
-                "route": {
-                    "name": "retina.dashboard.show",
-                    "parameters": {
-                    "organisation": "aw",
-                    "shop": "awd",
-                    "index_elements[state]": "active"
-                    }
-                }
-            },
-            {
-                "tooltip": "Discontinuing",
-                "icon": {
-                    "icon": "fas fa-times-circle",
-                    "class": "text-amber-500"
-                },
-                "count": 0,
-                "route": {
-                    "name": "retina.dashboard.show",
-                    "parameters": {
-                    "organisation": "aw",
-                    "shop": "awd",
-                    "index_elements[state]": "discontinuing"
-                    }
-                }
-            },
-            {
-                "tooltip": "Discontinued Departments",
-                "icon": {
-                    "icon": "fas fa-times-circle",
-                    "class": "text-red-500"
-                },
-                "count": 0,
-                "route": {
-                    "name": "retina.dashboard.show",
-                    "parameters": {
-                    "organisation": "aw",
-                    "shop": "awd",
-                    "index_elements[state]": "discontinued"
-                    }
-                }
-            },
-            {
-                "tooltip": "In process",
-                "icon": {
-                    "icon": "fal fa-seedling",
-                    "class": "text-green-500 animate-pulse"
-                },
-                "count": 0,
-                "route": {
-                    "name": "retina.dashboard.show",
-                    "parameters": {
-                    "organisation": "aw",
-                    "shop": "awd",
-                    "index_elements[state]": "in_process"
-                    }
-                }
-            }
-        ]
-    }
-]
 </script>
 
 <template>
@@ -138,22 +51,63 @@ const ccccxcx = [
             <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
         </svg> -->
         
-        <div class="mx-auto max-w-7xl px-6 pb-12 pt-10 lg:flex lg:px-14 ">
-            <div v-if="data.channels.length" class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0">
+        <div class="mx-auto px-6 pb-12 pt-10 lg:flex lg:px-14 ">
+            <div v-if="data.channels.length" class="w-full lg:shrink-0">
 
-                <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
-                    {{ trans("Your channels summary") }}
-                </h1>
+                <div class="mx-auto xmax-w-2xl lg:mx-0 ">
+                    <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
+                        {{ trans("Your channels summary") }}
+                    </h1>
+                    <p class="mt-8 text-pretty text-lg xfont-medium text-gray-500 sm:text-xl/8">
+                        {{ trans("Have a look at your channels summary.") }}
+                    </p>
+                </div>
 
-                <p class="mt-8 text-pretty text-lg xfont-medium text-gray-500 sm:text-xl/8">
-                    {{ trans("Have a look at your channels summary.") }}
-                </p>
+                <div class="flex gapx8">
 
-                <div class="mt-4 grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2">
-                    <StatsBox
-                        v-for="(stat, idxStat) in data.stats"
-                        :stat="stat"
-                    />
+                    <div class="w-full max-w-96 mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
+                        <StatsBox
+                            v-for="(stat, idxStat) in data.stats"
+                            :stat="stat"
+                        />
+
+                        <div v-if="data.last_visited_channels?.length" class="overflow-hidden border border-gray-300 rounded-md mt-5 relative">
+                            <div class="sticky top-0 z-10 border-y border-b-gray-200 border-t-gray-100 bg-gray-50 px-3 py-1.5 text-sm/6 font-semibold text-gray-900">
+                                <h3>{{ trans("Your last visited channels") }}</h3>
+                            </div>
+
+                            <ul role="list" class="divide-y divide-gray-100">
+                                <li v-for="channel in data.last_visited_channels" xkey="person.email" class="flex gap-x-4 px-3 py-2">
+                                    <div v-html="ChannelLogo(channel.platform)" class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"></div>
+                                    <div class="w-full xflex-shrink-0 justify-between flex items-center">
+                                        <div class="min-w-0">
+                                            <p class="text-sm/6 font-semibold">
+                                                {{ channel.slug }}
+                                            </p>
+                                            <p v-if="channel.baskets_count" class="xmt-1 truncate text-xs/5 text-gray-500">
+                                                {{ channel.baskets_count ?? 0 }} in Baskets
+                                            </p>
+                                        </div>
+
+                                        <ButtonWithLink
+                                            xrouteTarget="{
+                                                name: 'retina.dropshipping.customer_sales_channels.show',
+                                                params: {
+                                                    channel: 'shopify'
+                                                }
+                                            }"
+                                            :url="channel.route"
+                                            xlabel="View channel"
+                                            iconRight="far fa-arrow-right"
+                                            xclass="mt-2"
+                                            type="transparent"
+                                            key="2"
+                                        />
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
