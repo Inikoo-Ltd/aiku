@@ -105,6 +105,7 @@ class Kernel extends HttpKernel
         ],
 
         'grp-api' => [
+            SetGrpApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -132,7 +133,6 @@ class Kernel extends HttpKernel
         ],
         'grp'         => [
             DisableSSR::class,
-            SetGrpApiTreblle::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
