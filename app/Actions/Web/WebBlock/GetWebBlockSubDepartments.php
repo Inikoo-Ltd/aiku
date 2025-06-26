@@ -12,6 +12,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Http\Resources\Web\WebBlockSubDepartmentsResource;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -22,12 +23,26 @@ class GetWebBlockSubDepartments
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+        /** @var ProductCategory $department */
+        $department=$webpage->model;
+
         $subDepartments = DB::table('product_categories')->where('department_id', $webpage->model_id)
             ->leftjoin('webpages', function ($join) {
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
-            ->select(['product_categories.slug', 'product_categories.code', 'product_categories.name', 'product_categories.web_images', 'product_categories.image_id', 'webpages.url as url'])
+            ->select(
+                [
+                    'product_categories.id',
+                    'product_categories.slug',
+                    'product_categories.code',
+                    'product_categories.name',
+                    'product_categories.web_images',
+                    'product_categories.image_id',
+                    'webpages.url as url'
+                ]
+            )
+            ->selectRaw('\''.$department->url.'\' as department_url')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->where('product_categories.show_in_website', true)
             ->whereNotNull('webpages.id')
@@ -38,11 +53,11 @@ class GetWebBlockSubDepartments
         $productRoute = [
             'workshop' => [
                 'name'       => 'grp.json.product_category.products.index',
-                'parameters' => [$webpage->model->slug],
+                'parameters' => [$department->slug],
             ],
             'iris'     => [
                 'name'       => 'iris.json.product_category.products.index',
-                'parameters' => [$webpage->model->slug],
+                'parameters' => [$department->slug],
             ],
         ];
 

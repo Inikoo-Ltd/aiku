@@ -17,8 +17,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $slug
  * @property string $code
  * @property string $name
- * @property int $image_id
  * @property mixed $web_images
+ * @property mixed $department_url
+ * @property mixed $url
  */
 class WebBlockSubDepartmentsResource extends JsonResource
 {
@@ -27,26 +28,20 @@ class WebBlockSubDepartmentsResource extends JsonResource
     public function toArray($request): array
     {
 
-
-        $imageSources = null;
-        $media        = Media::find($this->image_id);
-        if ($media) {
-            $width  = 0;
-            $height = 0;
-
-
-            $image        = $media->getImage()->resize($width, $height);
-            $imageSources = GetPictureSources::run($image);
+        $url = $this->department_url;
+        if ($url) {
+            $url .= '/';
         }
+        $url = $url.$this->url;
+
 
         $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
 
         return [
-            'slug'  => $this->slug,
-            'code'  => $this->code,
-            'name'  => $this->name,
-            'image' => $imageSources,
-            'url'   => $this->url,
+            'slug'       => $this->slug,
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'url'        => $url,
             'web_images' => $webImages,
         ];
     }
