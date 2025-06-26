@@ -72,6 +72,7 @@ class GetCollections extends OrgAction
 
     public function inCollection(Shop $shop, Collection $scope, ActionRequest $request): LengthAwarePaginator
     {
+        // dd('xx');
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
         return $this->handle(parent: $shop, scope: $scope);

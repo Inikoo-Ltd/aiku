@@ -39,8 +39,8 @@ class AttachModelsToCollection extends OrgAction
 
         foreach (Arr::get($modelData, 'collections', []) as $modelID) {
             if (!DB::table('collection_has_models')->where('collection_id', $collection->id)->where('model_type', 'Collection')->where('model_id', $modelID)->exists()) {
-                $collection = Collection::find($collection);
-                AttachModelToCollection::make()->action($collection, $collection);
+                $collectionToAttach = Collection::find($modelID);
+                AttachModelToCollection::make()->action($collection, $collectionToAttach);
             }
         }
 

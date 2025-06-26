@@ -229,10 +229,10 @@ class ShowCollection extends OrgAction
                     ],
                     'products'    => [
                         'dataList'     => [
-                            'name'       => 'shop.products.not_attached_to_collection',
+                            'name'       => 'grp.json.shop.products.not_attached_to_collection',
                             'parameters' => [
-                                'shop'  => $collection->shop->id,
-                                'scope' => $collection->id
+                                'shop'          => $collection->shop->id,
+                                'collection'    => $collection->id
                             ]
                         ],
                         'submitAttach' => [
