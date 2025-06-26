@@ -30,10 +30,10 @@ use App\Actions\Api\Retina\Fulfilment\Transaction\UpdateApiOrderTransaction;
 Route::prefix('order')->as('order.')->group(function () {
     Route::get('', GetOrders::class)->name('index');
     Route::post('/client/{customerClient:id}/store', StoreApiOrder::class)->name('store');
-    Route::get('{order:id}', GetOrder::class)->name('show');
+    Route::get('{palletReturn:id}', GetOrder::class)->name('show');
     Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
     Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
-    Route::delete('{order:id}/delete', DeleteApiOrder::class)->name('delete');
+    Route::delete('{palletReturn:id}/delete', DeleteApiOrder::class)->name('delete');
     Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index');
     Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
 });

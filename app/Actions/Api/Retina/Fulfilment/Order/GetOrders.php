@@ -10,10 +10,11 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Order;
 
-use App\Actions\Api\Retina\Fulfilment\Resource\OrdersApiResource;
 use App\Actions\RetinaApiAction;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Ordering\Order;
+use App\Models\Fulfilment\PalletReturn;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -29,53 +30,41 @@ class GetOrders extends RetinaApiAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
-        $query = QueryBuilder::for(Order::class);
-
-        $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
-
-        $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
-        $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
-
-        $query->leftJoin('model_has_payments', function ($join) {
-            $join->on('orders.id', '=', 'model_has_payments.model_id')
-                ->where('model_has_payments.model_type', '=', 'Order');
-        })
-            ->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id');
-
-        $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
-        $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
-        $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
+        $query = QueryBuilder::for(PalletReturn::class);
 
         if (Arr::get($modelData, 'reference')) {
             $this->getReferenceSearch($query, Arr::get($modelData, 'reference'));
         }
 
-        return $query->defaultSort('orders.id')
-        ->select([
-            'orders.id',
-            'orders.reference',
-            'orders.date',
-            'orders.state',
-            'orders.created_at',
-            'orders.updated_at',
-            'orders.slug',
-            'orders.net_amount',
-            'orders.total_amount',
-            'customers.name as customer_name',
-            'customers.slug as customer_slug',
-            'customer_clients.name as client_name',
-            'customer_clients.ulid as client_ulid',
-            'payments.state as payment_state',
-            'payments.status as payment_status',
+
+        $query->where('pallet_returns.type', PalletReturnTypeEnum::STORED_ITEM);
+        $query->where('pallet_returns.platform_id', $customerSalesChannel->platform->id);
+        $query->where('pallet_returns.customer_sales_channel_id', $customerSalesChannel->id);
+
+        $query->where('pallet_returns.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
+
+        $query->leftJoin('currencies', 'pallet_returns.currency_id', '=', 'currencies.id');
+        $query->leftJoin('pallet_return_stats', 'pallet_returns.id', '=', 'pallet_return_stats.pallet_return_id');
+
+
+        $query->select(
+            'pallet_returns.id',
+            'pallet_returns.slug',
+            'pallet_returns.reference',
+            'pallet_returns.state',
+            'pallet_returns.type',
+            'pallet_returns.customer_reference',
+            'pallet_return_stats.number_pallets as number_pallets',
+            'pallet_return_stats.number_services as number_services',
+            'pallet_return_stats.number_physical_goods as number_physical_goods',
+            'pallet_returns.date',
+            'pallet_returns.total_amount',
+            'pallet_returns.created_at',
             'currencies.code as currency_code',
-            'currencies.id as currency_id',
-            'shops.name as shop_name',
-            'shops.slug as shop_slug',
-            'organisations.name as organisation_name',
-            'organisations.slug as organisation_slug',
-        ])
-            ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount'])
+        );
+
+        return $query->defaultSort('id')
+            ->allowedSorts(['id'])
             ->withBetweenDates(['date'])
             ->withPaginator(null, queryName: 'per_page')
             ->withQueryString();
@@ -84,7 +73,7 @@ class GetOrders extends RetinaApiAction
     public function getReferenceSearch($query, string $ref): QueryBuilder
     {
         return $query->where(function ($query) use ($ref) {
-            $query->where('orders.reference', $ref);
+            $query->where('pallet_returns.reference', $ref);
         });
     }
 
@@ -95,9 +84,9 @@ class GetOrders extends RetinaApiAction
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $palletReturns): AnonymousResourceCollection
     {
-        return OrdersApiResource::collection($orders);
+        return PalletReturnsResource::collection($palletReturns);
     }
 
     public function rules(): array
