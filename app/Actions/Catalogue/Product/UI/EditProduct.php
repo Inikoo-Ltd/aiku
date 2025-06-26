@@ -176,6 +176,36 @@ class EditProduct extends OrgAction
                 ]
             ],
             [
+                'label'  => __('Parts'),
+                'fields' => [
+                    'product_parts'        => [
+                        'type'      => 'product_parts',
+                        'label'     => __('code'),
+                        // 'readonly' => true,
+                        'full'      => true,
+                        'fetch_route'   => [
+                            'name' => 'grp.json.product.org_stocks.index',
+                            'parameters' => [
+                                'product' => $product->id,
+                            ]
+                        ],
+                        'init_options' => [  // TODO: change to the correct data
+                            [],
+                            []
+                        ],
+                        'value' => [
+                            [
+                                'id'            => $product->id,
+                                'qty'           => 1,
+                                'code'          => $product->code,
+                                'name'          => $product->name,
+                                'description'   => $product->description,
+                            ]
+                        ]
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Family'),
                 'icon'   => 'fa-light fa-folder',
                 'fields' => [
