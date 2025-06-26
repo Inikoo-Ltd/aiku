@@ -1,10 +1,7 @@
 import type { Component } from 'vue'
 
 import WowsbarBanner from '@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerWorkshop.vue'
-import ProductPage from '@/Components/CMS/Webpage/ProductPage.vue'
 import Text from '@/Components/CMS/Webpage/Text/TextContentWorkshop.vue'
-import FamilyPageOffer from '@/Components/CMS/Webpage/FamilyPage-offer.vue'
-import ProductList from '@/Components/CMS/Webpage/ProductList.vue'
 import CTA from '@/Components/CMS/Webpage/CTA/CTAWorkshop.vue'
 import ImageWorkshop from '@/Components/CMS/Webpage/Image/ImageWorkshop.vue'
 import CTA2 from '@/Components/CMS/Webpage/CTA2/CTA2Workshop.vue'
@@ -46,6 +43,7 @@ import CTAVideo1Workshop from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Works
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
 import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
 import Cta4 from '@/Components/CMS/Webpage/CTAImageLeft/CTA4Workshop.vue'
+import SeeAlso1Workshop from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'
 
 
 export const getComponent = (componentName: string) => {
@@ -84,6 +82,9 @@ export const getComponent = (componentName: string) => {
 
         //product list
         'products-1' : Products1Workshop,
+
+        //see-also
+        'see-also-1' : SeeAlso1Workshop,
 
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,
