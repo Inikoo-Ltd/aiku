@@ -22,6 +22,7 @@ use App\Actions\Api\Retina\Fulfilment\Portfolio\GetPortfolios;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\UpdateApiPortfolio;
+use App\Actions\Api\Retina\Fulfilment\SKU\GetSKUs;
 use App\Actions\Api\Retina\Fulfilment\Transaction\DeleteApiOrderTransaction;
 use App\Actions\Api\Retina\Fulfilment\Transaction\GetTransactions;
 use App\Actions\Api\Retina\Fulfilment\Transaction\StoreApiOrderTransaction;
@@ -31,8 +32,8 @@ Route::prefix('order')->as('order.')->group(function () {
     Route::get('', GetOrders::class)->name('index');
     Route::post('/client/{customerClient:id}/store', StoreApiOrder::class)->name('store');
     Route::get('{palletReturn:id}', GetOrder::class)->name('show');
-    Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
-    Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
+    Route::patch('{palletReturn:id}/update', UpdateApiOrder::class)->name('update');
+    Route::patch('{palletReturn:id}/submit', SubmitApiOrder::class)->name('submit');
     Route::delete('{palletReturn:id}/delete', DeleteApiOrder::class)->name('delete');
     Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index');
     Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
@@ -58,4 +59,9 @@ Route::prefix('clients')->as('clients.')->group(function () {
     Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
     Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete');
 
+});
+
+
+Route::prefix('sku')->as('sku.')->group(function () {
+    Route::get('', GetSKUs::class)->name('index');
 });

@@ -22,7 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency_code
  * @property mixed $date
  */
-class PalletReturnsResource extends JsonResource
+class PalletReturnsApiResource extends JsonResource
 {
     public function toArray($request): array
     {
