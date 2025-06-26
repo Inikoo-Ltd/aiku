@@ -140,7 +140,7 @@ const _multiselectRef = ref()
             :hideSelected="false"
             :clearOnSelect="false"
             searchable
-            :clearOnBlur="false"
+            :clearOnBlur="true"
             clearOnSearch
             autofocus
             :caret="isComponentLoading ? false : true"

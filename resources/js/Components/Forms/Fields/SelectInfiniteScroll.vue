@@ -63,6 +63,7 @@ onMounted(() => {
                 :caret="!fieldData.readonly"
 				:labelProp="fieldData.labelProp || 'label'"
 				:valueProp="fieldData.valueProp || 'value'"
+				:clear
 			>
 			<template v-if="props.fieldData.type_label == 'families'" #singlelabel="{ value }">
                        <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
