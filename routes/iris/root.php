@@ -14,23 +14,6 @@ Route::get(".well-known/apple-developer-merchantid-domain-association", function
     return config('services.apple_pay.verification_string', '');
 })->name("apple-pay-verification");
 
-
-Route::middleware(["iris-relax-auth:retina"])->group(function () {
-    Route::prefix("")->group(function () {
-        Route::group([], __DIR__.'/system.php');
-        Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
-        Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
-        Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
-        Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');
-        Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{path}', [ShowIrisWebpage::class, 'deep3'])->name('iris_webpage.deep3');
-        Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{parentPath4}/{path}', [ShowIrisWebpage::class, 'deep4'])->name('iris_webpage.deep4');
-    });
-
-    Route::prefix("models")
-        ->name("models.")
-        ->group(__DIR__."/models.php");
-});
-
 Route::prefix("disclosure")
     ->name("disclosure.")
     ->group(__DIR__."/disclosure.php");
@@ -42,3 +25,23 @@ Route::prefix("unsubscribe")
 Route::prefix("json")
     ->name("json.")
     ->group(__DIR__."/json.php");
+
+
+Route::middleware(["iris-relax-auth:retina"])->group(function () {
+    Route::prefix("models")
+        ->name("models.")
+        ->group(__DIR__."/models.php");
+
+    Route::prefix("")->group(function () {
+        Route::group([], __DIR__.'/system.php');
+        Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
+        Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
+        Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
+        Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');
+        Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{path}', [ShowIrisWebpage::class, 'deep3'])->name('iris_webpage.deep3');
+        Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{parentPath4}/{path}', [ShowIrisWebpage::class, 'deep4'])->name('iris_webpage.deep4');
+    });
+    // do not put any route below here, put it above {parentPath1}/... routes
+
+});
+
