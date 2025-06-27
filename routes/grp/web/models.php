@@ -538,7 +538,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('website', StoreWebsite::class)->name('website.store');
 
     Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
-        Route::patch('', [UpdateWebpage::class, 'inShop'])->name('update')->withoutScopedBindings();
         Route::delete('', [DeleteWebpage::class, 'inShop'])->name('delete')->withoutScopedBindings();
     });
 
@@ -641,6 +640,8 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
+    Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
+
     Route::post('publish', PublishWebpage::class)->name('publish');
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();

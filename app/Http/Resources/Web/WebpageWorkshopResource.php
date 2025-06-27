@@ -41,9 +41,8 @@ class WebpageWorkshopResource extends JsonResource
             'type'                                  => $webpage->type,
             'allow_fetch'                         => $webpage->allow_fetch,
             'route_webpage_edit' => [
-                'name'       => 'grp.models.shop.webpage.update',
+                'name'       => 'grp.models.webpage.update',
                 'parameters' => [
-                    'shop'         => $webpage->shop->id,
                     'webpage'      => $webpage->id
                 ],
                 'method' => 'patch'
