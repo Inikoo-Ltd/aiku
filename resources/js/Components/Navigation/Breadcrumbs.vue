@@ -26,6 +26,7 @@ const props = defineProps<{
             overlay?: string
             label?: string
             route?: routeType
+            url?: string
         }
         creatingModel: {
             label?: string
@@ -34,31 +35,30 @@ const props = defineProps<{
             index: {
                 icon?: string
                 label?: string
-                route?: {
-                    name: string
-                    parameters?: string[]
-                }
+                route?: routeType
+                url?: string
             }
             model: {
                 icon?: string
                 label?: string
-                route?: {
-                    name: string
-                    parameters?: string[]
-                }
+                route?: routeType
+                url?: string
             }
         }
         suffix?: string
         options?: object
     }[]
-    navigation: {
+
+    navigation?: {
         next?: {
             label?: string,
             route?: routeType
+            url?: string
         }
         previous?: {
             label?: string,
             route?: routeType
+            url?: string
         }
     }
     layout?: any  // useLayoutStore
@@ -97,10 +97,10 @@ const isLoading = ref<string | boolean>(false)
                     <template v-if="breadcrumb.type === 'simple'">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
                         <component
-                            :is="breadcrumb.simple.route ? Link : 'span'"
-                            :class="'hover:text-gray-700' || ''"
-                            :href="breadcrumb.simple?.route?.name ? route( breadcrumb.simple.route.name, breadcrumb.simple.route.parameters ) : '#' "
-                            class="overflow-hidden"
+                            :is="breadcrumb.simple.url || breadcrumb.simple.route?.name ? Link : 'span'"
+                            xclass="'' || ''"
+                            :href="breadcrumb.simple.url ? breadcrumb.simple.url : breadcrumb.simple?.route?.name ? route( breadcrumb.simple.route.name, breadcrumb.simple.route.parameters ) : '#' "
+                            class="hover:text-gray-700 overflow-hidden"
                         >
                             <Transition name="spin-to-down">
                                 <FontAwesomeIcon v-if="breadcrumb.simple?.icon" :class="breadcrumb.simple.label ? 'mr-1' : ''" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
@@ -119,13 +119,16 @@ const isLoading = ref<string | boolean>(false)
                     <template v-else-if="breadcrumb.type === 'modelWithIndex'">
                         <div class="hidden md:inline-flex">
                             <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50 place-self-center" icon="fa-regular fa-chevron-right" aria-hidden="true" />
-                            <component :is="breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'"  class="hover:text-gray-700 grid grid-flow-col items-center" :href="breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' ">
+                            <component :is="breadcrumb.modelWithIndex?.index?.url || breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'"  class="hover:text-gray-700 grid grid-flow-col items-center"
+                                :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' ">
                                 <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5 mr-1" aria-hidden="true" />
                                 <span>{{ breadcrumb.modelWithIndex.index.label }}</span>
                             </component>
                         </div>
                         <span class="mx-3 select-none">→</span>
-                        <component :is="breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'" class="breadcrumbSection" :href="breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'">
+                        <component
+                            :is="breadcrumb.modelWithIndex?.model?.url || breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'" class="breadcrumbSection"
+                            :href="breadcrumb.modelWithIndex?.model?.url ? breadcrumb.modelWithIndex?.model?.url : breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'">
                             {{ breadcrumb.modelWithIndex.model.label }}
                         </component>
                     </template>
@@ -145,9 +148,10 @@ const isLoading = ref<string | boolean>(false)
                     class="origin-top-right absolute left-4 top-9 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-200 focus:outline-none">
                     <MenuItem v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx" class="">
                     <template v-if="breadcrumb.type === 'simple'">
-                        <component :is="breadcrumb.simple?.route ? Link : 'span'"
-                            :class="'py-2 grid grid-flow-col items-center justify-start' || ''"
-                            :href="breadcrumb.simple?.route?.name ? route(breadcrumb.simple.route.name, breadcrumb.simple.route.parameters) : ''"
+                        <component :is="breadcrumb.simple?.url || breadcrumb.simple?.route?.name ? Link : 'span'"
+                            xclass="'' || ''"
+                            class="py-2 grid grid-flow-col items-center justify-start"
+                            :href="breadcrumb.simple?.url ? breadcrumb.simple?.url : breadcrumb.simple?.route?.name ? route(breadcrumb.simple.route.name, breadcrumb.simple.route.parameters) : ''"
                             :style="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                         >
                             <!-- Icon Section -->
@@ -175,8 +179,8 @@ const isLoading = ref<string | boolean>(false)
 
                     <template v-else-if="breadcrumb.type === 'modelWithIndex'">
                         <div class="divide-y divide-gray-200">
-                            <component :is="breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'" Link class="py-2 grid grid-flow-col justify-start items-center"
-                                :href="breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' "
+                            <component :is="breadcrumb.modelWithIndex?.index?.url || breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'" class="py-2 grid grid-flow-col justify-start items-center"
+                                :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' "
                                 :style="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                             >
                                 <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
@@ -189,8 +193,8 @@ const isLoading = ref<string | boolean>(false)
                             </component>
 
                             <!-- Subpage -->
-                            <component :is="breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'"  class="py-2 grid grid-flow-col justify-start items-center text-indigo-400"
-                                :href="breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'"
+                            <component :is="breadcrumb.modelWithIndex?.model.url || breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'"  class="py-2 grid grid-flow-col justify-start items-center text-indigo-400"
+                                :href="breadcrumb.modelWithIndex?.model.url ? breadcrumb.modelWithIndex?.model.url : breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'"
                                 :style="{ paddingLeft: 12 + (breadcrumbIdx + 1) * 7 + 'px', }"
                             >
                                 <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
@@ -211,7 +215,7 @@ const isLoading = ref<string | boolean>(false)
                 <Link v-if="props.navigation.previous"
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
-                    :href="props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
+                    :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-900"
                     :title="props.navigation.previous?.label"
                 >
@@ -228,7 +232,7 @@ const isLoading = ref<string | boolean>(false)
                     @finish="() => isLoading = false"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-900"
                     :title="props.navigation.next?.label"
-                    :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
+                    :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >
                     <LoadingIcon v-if="isLoading === 'bcNext'" />
                     <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="" aria-hidden="true" />
