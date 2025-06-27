@@ -91,7 +91,7 @@ class ShowWebsite extends OrgAction
                             ]
                         ],
                         'icon'  => 'fal fa-folder-tree',
-                        "color" => "#a3e635",
+                        "color" => "#b45309",
                         'value' => $website->webStats->number_webpages_sub_type_department,
                     ],
                     [
@@ -105,7 +105,7 @@ class ShowWebsite extends OrgAction
                             ]
                         ],
                         'icon'  => 'fal fa-folder-tree',
-                        "color" => "#a3e635",
+                        "color" => "#f59e0b",
                         'value' => $website->webStats->number_webpages_sub_type_sub_department,
                     ],
                     [
@@ -119,7 +119,7 @@ class ShowWebsite extends OrgAction
                             ]
                         ],
                         'icon'  => 'fal fa-folder',
-                        "color" => "#e879f9",
+                        "color" => "#4338ca",
                         'value' => $website->webStats->number_webpages_sub_type_family,
                     ],
                     [
@@ -133,7 +133,7 @@ class ShowWebsite extends OrgAction
                             ]
                         ],
                         'icon'  => 'fal fa-cube',
-                        "color" => "#38bdf8",
+                        "color" => "#6366f1",
                         'value' => $shop->stats->number_current_products,
                         'value' => $website->webStats->number_webpages_sub_type_product,
                     ],

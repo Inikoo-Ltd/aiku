@@ -36,7 +36,7 @@ const onDeleteParcel = (index: number) => {
         <Fieldset :legend="`${trans('Parts')} (${props.form[props.fieldName].length})`" xclass="mb-4">
             
             <!--  -->
-            <div class="grid gap-y-2 xmax-h-64 xoverflow-y-auto pr-2">
+            <div class="grid gap-y-2 xmax-h-64 xoverflow-y-auto xpr-2">
                 <!-- Header Row -->
                 <div class="flex items-center gap-x-6 mb-2">
     
@@ -125,8 +125,8 @@ const onDeleteParcel = (index: number) => {
             </div>
 
             <!-- Repeat for more rows -->
-            <div class="grid grid-cols-12 mt-2">
-                <div></div>
+            <div class="mt-2">
+                <!-- <div></div> -->
                 <div @click="() => props.form[props.fieldName].push({ org_stock_id: null, quantity: 1, notes: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                     {{ trans("Add another Part") }}
