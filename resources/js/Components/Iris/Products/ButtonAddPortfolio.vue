@@ -109,7 +109,7 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
                 isLoadingSpecificChannel.value.push(channelId)
             },
             onSuccess: () => {
-                if (!productHasPortfolioList.value.includes(channelId)) {
+                if (!productHasPortfolioList.value?.includes(channelId)) {
                     productHasPortfolioList.value = [...productHasPortfolioList.value, channelId]
                 }
 
@@ -142,12 +142,12 @@ const _popover = ref()
 
 const isInAllChannels = computed(() => {
   const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.some(id => productHasPortfolioList.value.includes(id))
+  return allChannelIds.some(id => productHasPortfolioList.value?.includes(id))
 })
 
 const CheckChannels = computed(() => {
   const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.every(id => productHasPortfolioList.value.includes(id))
+  return allChannelIds.every(id => productHasPortfolioList.value?.includes(id))
 })
 
 
