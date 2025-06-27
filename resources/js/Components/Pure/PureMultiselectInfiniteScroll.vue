@@ -31,6 +31,9 @@ const props = defineProps<{
     initOptions?: {}[]
     valueProp?: string
     object?: boolean
+    clearOnSelect? : boolean,
+    clearOnBlur? : boolean
+    clearOnFocus? :boolean
 }>()
 const emits = defineEmits<{
     (e: 'optionsList', value: any[]): void
@@ -116,6 +119,22 @@ onUnmounted(() => {
 
 const _multiselectRef = ref()
 
+const onOpen = () => {
+    // Ensure search is cleared visually
+    _multiselectRef.value?.clearSearch?.()
+
+    // Get internal input element and trigger input event with empty string
+    if(props.clearOnFocus){
+        setTimeout(() => {
+                const input = _multiselectRef.value?.$el?.querySelector('.multiselect-search')
+                if (input) {
+                    input.value = ' '
+                    input.dispatchEvent(new Event('input', { bubbles: true }))
+                }
+            }, 0)
+    }
+    
+}
 </script>
 
 <template>
@@ -138,9 +157,9 @@ const _multiselectRef = ref()
             :closeOnSelect="mode == 'multiple' ? false : true"
             :canDeselect="!required"
             :hideSelected="false"
-            :clearOnSelect="false"
+            :clearOnSelect="props?.clearOnSelect ?? false"
             searchable
-            :clearOnBlur="true"
+            :clearOnBlur="props?.clearOnBlur ?? false"
             clearOnSearch
             autofocus
             :caret="isComponentLoading ? false : true"
@@ -148,7 +167,7 @@ const _multiselectRef = ref()
             :placeholder="placeholder || trans('Select option')"
             :resolve-on-load="true"
             :min-chars="1"
-            @open="() => optionsList?.length ? false : fetchProductList()"
+            @open="() => onOpen()"
             @search-change="(ee) => onSearchQuery(ee)"
         >
 

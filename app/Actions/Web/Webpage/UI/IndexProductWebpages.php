@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 26-06-2025-18h-07m
@@ -9,18 +10,14 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
@@ -46,7 +43,31 @@ class IndexProductWebpages extends OrgAction
         $this->website = $website;
         $this->initialisationFromShop($website->shop, $request);
 
-        return $this->handle(parent: $website, bucket: $this->bucket);
+        return $this->handle(parent: $website);
+    }
+
+    public function inDepartmentWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
+    }
+
+    public function inSubDepartmentWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
+    }
+
+    public function inFamilyWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
     }
 
     protected function getElementGroups(Website $parent): array
@@ -68,7 +89,7 @@ class IndexProductWebpages extends OrgAction
         ];
     }
 
-    public function handle(Website $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Website $parent, Webpage|null $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
     {
 
         if ($bucket) {
@@ -102,7 +123,19 @@ class IndexProductWebpages extends OrgAction
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
-
+        $queryBuilder->leftJoin('products', function ($join) {
+            $join->on('webpages.model_id', '=', 'products.id')
+                ->where('webpages.model_type', '=', 'Product');
+        });
+        if($scope instanceof Webpage ) {
+            if ($scope->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+                $queryBuilder->where('products.department_id', $scope->model_id);
+            } elseif ($scope->sub_type == WebpageSubTypeEnum::SUB_DEPARTMENT) {
+                $queryBuilder->where('products.sub_department_id', $scope->model_id);
+            } elseif ($scope->sub_type == WebpageSubTypeEnum::FAMILY) {
+                $queryBuilder->where('products.family_id', $scope->model_id);
+            }
+        }
         return $queryBuilder
             ->defaultSort('webpages.level')
             ->select([
@@ -150,15 +183,15 @@ class IndexProductWebpages extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
-                        [
+                    [
                             'title' => __("No webpages found"),
                             'count' => $parent->webStats->number_webpages,
                         ]
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('level');
         };
     }

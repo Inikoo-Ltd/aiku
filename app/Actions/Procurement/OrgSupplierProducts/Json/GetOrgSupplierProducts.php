@@ -25,7 +25,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetOrgSupplierProducts extends OrgAction
 {
-
     public function handle(Organisation|OrgAgent|OrgSupplier $parent, PurchaseOrder $purchaseOrder): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

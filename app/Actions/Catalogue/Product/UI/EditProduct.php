@@ -150,7 +150,7 @@ class EditProduct extends OrgAction
                 'number_current_products' => $family->stats->number_current_products,
 
             ];
-        }else{
+        } else {
             $familyOptions = [
                 'id'                      => null,
                 'code'                    => null,
@@ -214,7 +214,7 @@ class EditProduct extends OrgAction
                 'fields' => [
                     'org_stocks' => [
                         'type'         => 'product_parts',
-                        'label'        => __('code'),
+                        'label'        => __('Parts'),
                         // 'readonly' => true,
                         'full'         => true,
                         'fetch_route'  => [

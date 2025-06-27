@@ -15,45 +15,12 @@ import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
+import { StatsBoxTS } from '@/types/Components/StatsBox'
 
 library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt)
 
 const props = defineProps<{
-    stat: {
-        id: number
-        label: string
-        value: number
-        change: number
-        changeType: string
-        icon: string
-        color: string
-        backgroundColor?: string
-        is_negative?: boolean
-        route: {
-            name: string
-            parameters: {}
-        }
-        metaRight?: {
-            count: number
-            icon: {
-                icon: string
-                class: string
-                tooltip: string
-            }
-            route: routeType
-            tooltip: string
-        }
-        metas?: {
-            count: number
-            icon: {
-                icon: string
-                class: string
-                tooltip: string
-            }
-            route: routeType
-            tooltip: string
-        }[]
-    }
+    stat: StatsBoxTS
 }>()
 
 const isBoxLoading = ref(false)
@@ -135,6 +102,9 @@ const locale = inject('locale', aikuLocaleStructure)
                     {{ locale.number(meta.count) }}
                 </div>
             </component>
+        </div>
+        <div v-else class="mt-3">
+
         </div>
     </Link>
 </template>

@@ -10,9 +10,11 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreCustomerSalesChannel extends OrgAction
@@ -37,6 +39,7 @@ class StoreCustomerSalesChannel extends OrgAction
             'reference' => 'nullable|string|max:255',
             'platform_user_type' => ['sometimes','nullable','string','max:255'],
             'platform_user_id'   => ['sometimes','nullable','integer'],
+            'state'   => ['sometimes','nullable', Rule::enum(CustomerSalesChannelStateEnum::class)],
         ];
     }
 

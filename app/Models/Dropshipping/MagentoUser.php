@@ -17,6 +17,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+/**
+ *
+ *
+ * @property WebUserTypeEnum $state
+ * @property WebUserAuthTypeEnum $auth_type
+ * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MagentoUser newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MagentoUser newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MagentoUser query()
+ * @mixin \Eloquent
+ */
 class MagentoUser extends Model
 {
     use InCustomer;
@@ -40,9 +55,7 @@ class MagentoUser extends Model
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-            ->generateSlugsFrom(function () {
-                return $this->name;
-            })
+            ->generateSlugsFrom($this->username)
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
             ->doNotGenerateSlugsOnUpdate();

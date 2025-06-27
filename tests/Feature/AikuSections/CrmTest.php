@@ -85,20 +85,20 @@ beforeAll(function () {
 });
 
 beforeEach(
-/**
- * @throws \Throwable
- */
+    /**
+     * @throws \Throwable
+     */
     function () {
         list(
             $this->organisation,
             $this->user,
             $this->shop
-            ) = createShop();
+        ) = createShop();
 
         list(
             $this->tradeUnit,
             $this->product
-            ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
         $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
 
@@ -565,7 +565,7 @@ test('store open question poll', function () {
             'in_iris'                  => true,
             'in_iris_required'         => true,
             'type'                     => [
-                'type'=>PollTypeEnum::OPEN_QUESTION
+                'type' => PollTypeEnum::OPEN_QUESTION
             ]
         ]
     );
@@ -654,7 +654,7 @@ test('UI Index customers', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'customers')
                     ->etc()
             )
@@ -681,7 +681,7 @@ test('UI show customer', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $customer->name)
                     ->etc()
             )
@@ -700,7 +700,7 @@ test('UI edit customer', function () {
             ->has('formData')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.customer.update')
                     ->where('parameters', [$customer->id])
             )
@@ -721,7 +721,7 @@ test('UI Index customer web users', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -742,7 +742,7 @@ test('UI Create customer web users', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Create web user')
                     ->etc()
             )
@@ -768,7 +768,7 @@ test('UI show customer web users', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $webUser->username)
                     ->etc()
             )
@@ -793,7 +793,7 @@ test('UI Edit customer web users', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Edit web user')
                     ->etc()
             )
@@ -820,7 +820,7 @@ test('UI Index customer orders', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $customer->name)
                     ->has('subNavigation')
                     ->etc()
@@ -853,7 +853,7 @@ test('UI show order', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $order->reference)
                     ->etc()
             )
@@ -1090,7 +1090,7 @@ test('UI Index polls', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->shop->name)
                     ->has('subNavigation')
                     ->etc()
@@ -1113,7 +1113,7 @@ test('UI Show prospects', function (Prospect $prospect) {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $prospect->name)
                     ->has('subNavigation')
                     ->etc()

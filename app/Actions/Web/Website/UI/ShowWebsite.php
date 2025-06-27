@@ -78,6 +78,66 @@ class ShowWebsite extends OrgAction
             'partialWebVitals',
             'partialWebVitalsData',
         ]);
+        $shop = $website->shop;
+        $stats =  [
+                    [
+                        'label' => __('Departments'),
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.department',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                                'website'      => $website->slug
+                            ]
+                        ],
+                        'icon'  => 'fal fa-folder-tree',
+                        "color" => "#b45309",
+                        'value' => $website->webStats->number_webpages_sub_type_department,
+                    ],
+                    [
+                        'label' => __('Sub Departments'),
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.sub_department',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                                'website'      => $website->slug
+                            ]
+                        ],
+                        'icon'  => 'fal fa-folder-tree',
+                        "color" => "#f59e0b",
+                        'value' => $website->webStats->number_webpages_sub_type_sub_department,
+                    ],
+                    [
+                        'label' => __('Families'),
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.family',        // TODO
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                                'website'      => $website->slug
+                            ]
+                        ],
+                        'icon'  => 'fal fa-folder',
+                        "color" => "#4338ca",
+                        'value' => $website->webStats->number_webpages_sub_type_family,
+                    ],
+                    [
+                        'label' => __('Products'),
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.product',        // TODO
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                                'website'      => $website->slug
+                            ]
+                        ],
+                        'icon'  => 'fal fa-cube',
+                        "color" => "#6366f1",
+                        'value' => $shop->stats->number_current_products,
+                        'value' => $website->webStats->number_webpages_sub_type_product,
+                    ],
+                ];
 
         return Inertia::render(
             'Org/Web/Website',
@@ -126,7 +186,7 @@ class ShowWebsite extends OrgAction
                     'navigation' => WebsiteTabsEnum::navigation()
                 ],
 
-                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']]) : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
+                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats]) : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
                 WebsiteTabsEnum::WEB_USERS->value     => $this->tab == WebsiteTabsEnum::WEB_USERS->value
                     ?

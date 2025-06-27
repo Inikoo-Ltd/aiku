@@ -3,6 +3,7 @@
 namespace App\Actions\Dropshipping\Magento;
 
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -14,15 +15,15 @@ trait WithMagentoApiRequest
     protected function getMagentoConfig(): array
     {
         return [
-            'base_url' => $this->magento_base_url ?? config('services.magento.base_url'),
-            'token' => $this->magento_token ?? null,
+            'base_url' => Arr::get($this->settings, 'credentials.base_url'),
+            'token' => Arr::get($this->settings, 'credentials.access_token')
         ];
     }
 
     /**
      * Get or generate access token for Magento API
      */
-    protected function getMagentoToken(): string
+    public function getMagentoToken(): string
     {
         $config = $this->getMagentoConfig();
 
@@ -32,16 +33,20 @@ trait WithMagentoApiRequest
 
         try {
             $response = Http::post($config['base_url'] . '/rest/V1/integration/admin/token', [
-                'username' => $config['username'],
-                'password' => $config['password']
+                'username' => $this->username,
+                'password' => $this->password
             ]);
 
             if ($response->successful()) {
                 $token = $response->json();
 
-                // Store token in model if possible
                 if ($this->exists && $this->getTable()) {
-                    $this->update(['magento_token' => $token]);
+                    $this->update(['settings' => [
+                        'credentials' => [
+                            ...Arr::get($this->settings, 'credentials'),
+                            'access_token' => $token
+                        ]
+                    ]]);
                 }
 
                 return $token;
@@ -52,6 +57,22 @@ trait WithMagentoApiRequest
             Log::error('Magento token generation failed: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    public function validateMagentoAccount(string $username, string $password, string $baseUrl): bool
+    {
+        $response = Http::post($baseUrl . '/rest/V1/integration/admin/token', [
+            'username' => $username,
+            'password' => $password
+        ]);
+
+        if ($response->successful()) {
+            $token = $response->json();
+
+            return (bool) $token;
+        }
+
+        return false;
     }
 
     /**

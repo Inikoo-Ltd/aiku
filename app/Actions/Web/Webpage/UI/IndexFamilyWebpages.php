@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 26-06-2025-18h-05m
@@ -9,18 +10,15 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Web\ProductCategoryWebpagesResource;
 use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
@@ -46,7 +44,23 @@ class IndexFamilyWebpages extends OrgAction
         $this->website = $website;
         $this->initialisationFromShop($website->shop, $request);
 
-        return $this->handle(parent: $website, bucket: $this->bucket);
+        return $this->handle(parent: $website);
+    }
+
+    public function inDepartmentWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
+    }
+
+    public function inSubDepartmentWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
     }
 
     protected function getElementGroups(Website $parent): array
@@ -68,7 +82,7 @@ class IndexFamilyWebpages extends OrgAction
         ];
     }
 
-    public function handle(Website $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Website $parent, Webpage|null $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
     {
 
         if ($bucket) {
@@ -102,6 +116,19 @@ class IndexFamilyWebpages extends OrgAction
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
+        $queryBuilder->leftJoin('product_categories', function ($join) {
+            $join->on('webpages.model_id', '=', 'product_categories.id')
+                ->where('webpages.model_type', '=', 'ProductCategory');
+        });
+        $queryBuilder->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id');
+
+        if($scope instanceof Webpage ) {
+            if ($scope->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+                $queryBuilder->where('product_categories.department_id', $scope->model_id);
+            } elseif ($scope->sub_type == WebpageSubTypeEnum::SUB_DEPARTMENT) {
+                $queryBuilder->where('product_categories.sub_department_id', $scope->model_id);
+            }
+        }
 
         return $queryBuilder
             ->defaultSort('webpages.level')
@@ -118,7 +145,8 @@ class IndexFamilyWebpages extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
+                'product_category_stats.number_current_products',
             ])
             ->allowedSorts(['code', 'type', 'level', 'url'])
             ->allowedFilters([$globalSearch])
@@ -150,22 +178,23 @@ class IndexFamilyWebpages extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
-                        [
+                    [
                             'title' => __("No webpages found"),
                             'count' => $parent->webStats->number_webpages,
                         ]
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('level');
         };
     }
 
     public function jsonResponse(LengthAwarePaginator $webpages): AnonymousResourceCollection
     {
-        return WebpagesResource::collection($webpages);
+        return ProductCategoryWebpagesResource::collection($webpages);
     }
 
     public function htmlResponse(LengthAwarePaginator $webpages, ActionRequest $request): Response
@@ -204,7 +233,7 @@ class IndexFamilyWebpages extends OrgAction
                         ]
                     ]
                 ],
-                'data'        => WebpagesResource::collection($webpages),
+                'data'        => ProductCategoryWebpagesResource::collection($webpages),
 
             ]
         )->table($this->tableStructure(parent: $this->website));

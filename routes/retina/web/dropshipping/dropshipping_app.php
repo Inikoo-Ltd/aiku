@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Amazon\AuthorizeRetinaAmazonUser;
 use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
+use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
@@ -66,6 +67,8 @@ Route::prefix('platform')->as('platform.')->group(function () {
 
     Route::post('amazon-user/authorize', AuthorizeRetinaAmazonUser::class)->name('amazon.authorize');
     Route::get('amazon-user-callback', CallbackRetinaAmazonUser::class)->name('amazon.callback');
+
+    Route::post('magento/authorize', StoreMagentoUser::class)->name('magento.store');
 });
 
 Route::prefix('client')->as('client.')->group(function () {

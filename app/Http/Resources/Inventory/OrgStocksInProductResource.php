@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 26-06-2025-15h-33m
@@ -8,7 +9,6 @@
 
 namespace App\Http\Resources\Inventory;
 
-use App\Models\Inventory\OrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrgStocksInProductResource extends JsonResource

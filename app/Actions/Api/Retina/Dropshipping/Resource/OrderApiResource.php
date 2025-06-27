@@ -11,7 +11,6 @@
 namespace App\Actions\Api\Retina\Dropshipping\Resource;
 
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
-use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
@@ -19,7 +18,7 @@ use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class  OrderApiResource extends JsonResource
+class OrderApiResource extends JsonResource
 {
     use IsOrder;
     use HasSelfCall;
