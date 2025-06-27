@@ -15,6 +15,7 @@ use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Http\Resources\Web\ProductCategoryWebpagesResource;
 use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -99,7 +100,11 @@ class IndexFamilyWebpages extends OrgAction
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
-
+        $queryBuilder->leftJoin('product_categories', function ($join) {
+            $join->on('webpages.model_id', '=', 'product_categories.id')
+                ->where('webpages.model_type', '=', 'ProductCategory');
+        });
+        $queryBuilder->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id');
         return $queryBuilder
             ->defaultSort('webpages.level')
             ->select([
@@ -115,7 +120,8 @@ class IndexFamilyWebpages extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
+                'product_category_stats.number_current_products',
             ])
             ->allowedSorts(['code', 'type', 'level', 'url'])
             ->allowedFilters([$globalSearch])
@@ -154,15 +160,16 @@ class IndexFamilyWebpages extends OrgAction
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('level');
         };
     }
 
     public function jsonResponse(LengthAwarePaginator $webpages): AnonymousResourceCollection
     {
-        return WebpagesResource::collection($webpages);
+        return ProductCategoryWebpagesResource::collection($webpages);
     }
 
     public function htmlResponse(LengthAwarePaginator $webpages, ActionRequest $request): Response
@@ -201,7 +208,7 @@ class IndexFamilyWebpages extends OrgAction
                         ]
                     ]
                 ],
-                'data'        => WebpagesResource::collection($webpages),
+                'data'        => ProductCategoryWebpagesResource::collection($webpages),
 
             ]
         )->table($this->tableStructure(parent: $this->website));

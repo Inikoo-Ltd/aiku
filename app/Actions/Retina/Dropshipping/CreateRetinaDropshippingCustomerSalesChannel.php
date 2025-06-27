@@ -132,6 +132,16 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         'method' => 'post'
                     ],
                 ],
+                'type_magento' => [
+                    'connectRoute' => [
+                        'name' => match ($customer->is_fulfilment) {
+                            true   => 'retina.fulfilment.dropshipping.platform.magento.store', // TODO: Create in fulfilment
+                            default => 'retina.dropshipping.platform.magento.store',
+                        },
+                        'parameters' => [],
+                        'method' => 'post'
+                    ],
+                ],
             ]
         );
     }

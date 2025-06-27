@@ -55,9 +55,7 @@ class MagentoUser extends Model
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-            ->generateSlugsFrom(function () {
-                return $this->name;
-            })
+            ->generateSlugsFrom($this->username)
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
             ->doNotGenerateSlugsOnUpdate();
