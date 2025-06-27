@@ -48,6 +48,11 @@ export default {
 			],
 		},
 		{
+			key: ["text"],
+			label: "Text",
+			type: "editorhtml",
+		},
+		{
 			key: ["link"],
 			label: "Link",
 			type: "link",
