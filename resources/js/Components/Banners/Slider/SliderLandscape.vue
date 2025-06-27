@@ -111,7 +111,7 @@ onMounted(() => {
         <div class="relative mx-auto transition-all duration-200 ease-in-out" :class="[
             // production ? 'w-full' : 'mx-auto',
             $props.view
-                ? { 'aspect-[2/1] w-[50%]' : $props.view == 'mobile',
+                ? { 'aspect-[2/1] w-[100%]' : $props.view == 'mobile',
                     'aspect-[3/1] w-[75%]' : $props.view == 'tablet',
                     'aspect-[4/1] w-full' : $props.view == 'desktop'}
                 : 'aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1] w-full'
