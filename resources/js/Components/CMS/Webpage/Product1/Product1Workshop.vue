@@ -14,7 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import ProductContents from "./ProductContents.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
-import { PropertyDescriptorParsingType } from "html2canvas/dist/types/css/IPropertyDescriptor"
+import { useAttrs } from 'vue'
 
 library.add(faCube, faLink)
 
@@ -72,12 +72,16 @@ const saveDescriptions = (value: string) => {
 function formatNumber(value : Number) {
   return Number.parseFloat(value).toString();
 }
-console.log(props.modelValue)
 
+defineOptions({
+  inheritAttrs: false,
+})
+
+const attrs = useAttrs()
 </script>
 
 <template>
-    <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
+    <div v-bind="attrs" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="flex justify-between mb-4 items-start">
