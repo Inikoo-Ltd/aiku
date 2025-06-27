@@ -10,11 +10,12 @@ namespace App\Actions\Web\Website\UI;
 
 use App\Exceptions\IrisWebsiteNotFound;
 use App\Models\Web\Website;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class DetectWebsiteFromDomain
 {
-    use AsObject;
+    use AsAction;
 
     /**
      * @throws \App\Exceptions\IrisWebsiteNotFound
