@@ -17,7 +17,7 @@ use Illuminate\Support\Arr;
 
 trait WithImageSeo
 {
-    public function processSeo(array $modelData, Webpage $model): Webpage
+    public function processSeoImage(array $modelData, Webpage $model): Webpage
     {
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */

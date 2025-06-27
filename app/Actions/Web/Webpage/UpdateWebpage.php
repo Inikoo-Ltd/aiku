@@ -27,7 +27,6 @@ use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
 use App\Rules\IUnique;
@@ -75,7 +74,7 @@ class UpdateWebpage extends OrgAction
 
         $imageSeo = Arr::pull($modelData, 'seo_image');
         if ($imageSeo) {
-            $webpage = $this->processSeo([
+            $webpage = $this->processSeoImage([
                 'image' => $imageSeo
             ], $webpage);
 
@@ -201,7 +200,6 @@ class UpdateWebpage extends OrgAction
             'ready_at'       => ['sometimes', 'date'],
             'live_at'        => ['sometimes', 'date'],
             'title'          => ['sometimes', 'string'],
-            'description'    => ['sometimes', 'string'],
             'show_in_parent' => ['sometimes', 'nullable', 'boolean'],
             'allow_fetch'    => ['sometimes', 'nullable', 'boolean'],
         ];
@@ -233,16 +231,7 @@ class UpdateWebpage extends OrgAction
     {
         $this->webpage = $webpage;
 
-        $this->initialisation($webpage->organisation, $request);
-
-        return $this->handle($webpage, $this->validatedData);
-    }
-
-
-    public function inShop(Shop $shop, Webpage $webpage, ActionRequest $request): Webpage
-    {
-        $this->webpage = $webpage;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($webpage->shop, $request);
 
         $modelData = [];
         foreach ($this->validatedData as $key => $value) {
@@ -256,8 +245,12 @@ class UpdateWebpage extends OrgAction
             );
         }
 
+
         return $this->handle($webpage, $modelData);
     }
+
+
+
 
     public function jsonResponse(Webpage $webpage): WebpageResource
     {
