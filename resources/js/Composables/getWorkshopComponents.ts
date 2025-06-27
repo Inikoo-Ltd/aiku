@@ -1,10 +1,7 @@
 import type { Component } from 'vue'
 
 import WowsbarBanner from '@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerWorkshop.vue'
-import ProductPage from '@/Components/CMS/Webpage/ProductPage.vue'
 import Text from '@/Components/CMS/Webpage/Text/TextContentWorkshop.vue'
-import FamilyPageOffer from '@/Components/CMS/Webpage/FamilyPage-offer.vue'
-import ProductList from '@/Components/CMS/Webpage/ProductList.vue'
 import CTA from '@/Components/CMS/Webpage/Cta1/Cta1Workshop.vue'
 import ImageWorkshop from '@/Components/CMS/Webpage/Image/ImageWorkshop.vue'
 import CTA2 from '@/Components/CMS/Webpage/CTA2/CTA2Workshop.vue'
