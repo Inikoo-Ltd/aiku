@@ -34,11 +34,15 @@ class StoreMagentoUser extends OrgAction
         $password = Arr::get($modelData, 'password');
         $storeUrl = Arr::pull($modelData, 'url');
 
+        if ($customer->magentoUsers()->whereJsonContains('settings->credentials->base_url', $storeUrl)->exists()) {
+            throw ValidationException::withMessages(['username' => __('The store already exists.')]);
+        }
+
         $validated = $this->validateMagentoAccount($username, $password, $storeUrl);
 
-        //        if (! $validated) {
-        //            throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
-        //        }
+        if (! $validated) {
+            throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
+        }
 
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
