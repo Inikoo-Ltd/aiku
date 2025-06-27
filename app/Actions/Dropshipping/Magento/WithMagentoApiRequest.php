@@ -345,6 +345,16 @@ trait WithMagentoApiRequest
         return $this->magentoApiRequest('get', "stockItems/{$sku}");
     }
 
+    public function getStores(): array
+    {
+        try {
+            return $this->magentoApiRequest('get', 'store/storeViews');
+        } catch (Exception $e) {
+            Log::warning('Store views endpoint failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
     /**
      * Update product stock
      */
