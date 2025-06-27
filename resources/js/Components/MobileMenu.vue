@@ -44,22 +44,22 @@ const props = defineProps<{
     menu?: { data: Array<{ type: string, label: string, subnavs?: Array<{ title: string, link: { href: string, target: string }, links: Array<{ label: string, link: { href: string, target: string } }> }>, link?: { href: string, target: string } }> }
 }>();
 
-const visible = ref(false);
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout')
+const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
 
 </script>
 
 <template>
     <div>
-        <button @click="visible = true">
+        <button @click="isOpenMenuMobile = true">
             <FontAwesomeIcon :icon="header?.mobile?.menu?.icon || faBars"
                 :style="getStyles(header?.mobile?.menu?.container?.properties)" />
         </button>
 
-        <Drawer v-model:visible="visible" :header="''" :style="getStyles(props.menu?.container?.properties)">
+        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :style="getStyles(props.menu?.container?.properties)">
             <template #closeicon>
-                <FontAwesomeIcon :icon="faTimesCircle" @click="visible = false" class="text-sm" />
+                <FontAwesomeIcon :icon="faTimesCircle" @click="isOpenMenuMobile = false" class="text-sm" />
             </template>
 
             <template #header>

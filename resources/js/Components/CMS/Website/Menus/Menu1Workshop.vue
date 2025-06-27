@@ -67,26 +67,38 @@ onMounted(() => {
         window.addEventListener('resize', checkScroll)
     })
 })
+
+const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
+
 </script>
 
 <template>
     <!-- Main Navigation -->
     <div class="bg-white  border-b border-gray-300" :style="getStyles(fieldValue?.container?.properties,screenType)">
-        <div @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())" :style="getStyles(fieldValue?.navigation_container?.properties,screenType)" class="relative container flex xflex-col justify-between items-center px-4">
+        <div
+            @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
+            :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
+            class="relative container flex xflex-col justify-between items-center gap-x-6 px-4">
 
             <!-- All categories -->
-            <div class="flex items-center gap-x-2 h-fit px-5 py-1.5 rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
-                <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" />
-                <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
-            </div>
-
-            <Transition>
-                <div v-if="isAbleScrollToLeft" @click="() => scrollLeft()"
-                    class="w-8 h-8 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
-                >
-                    <FontAwesomeIcon icon="fal fa-chevron-left" class="" fixed-width aria-hidden="true" />
+            <div class="relative">
+                <div @click="() => isOpenMenuMobile = true" class="flex items-center gap-x-2 h-fit px-5 py-1.5 rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
+                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
                 </div>
-            </Transition>
+
+                <!-- <div class="qwezxc bg-gradient from-white to-transparent absolute -right-12 z-10 top-0 h-full w-8 pointer-events-none"
+                    xv-if="isAbleScrollToLeft">
+                </div> -->
+                
+                <Transition>
+                    <div v-if="isAbleScrollToLeft" @click="() => scrollLeft()"
+                        class="w-8 h-8 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-8 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
+                    >
+                        <FontAwesomeIcon icon="fal fa-chevron-left" class="" fixed-width aria-hidden="true" />
+                    </div>
+                </Transition>
+            </div>
 
             
             <Transition>
@@ -97,7 +109,9 @@ onMounted(() => {
                 </div>
             </Transition>
 
-            <nav ref="_scrollContainer" @scroll="() => checkScroll()" class="relative flex text-sm text-gray-600 w-full overflow-x-auto">
+            
+            <nav ref="_scrollContainer" @scroll="() => checkScroll()" class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide">
+
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
                     <a
                         :href="resolveMigrationLink(navigation?.link?.href,migration_redirect)"
