@@ -127,7 +127,7 @@ class IndexProductWebpages extends OrgAction
             $join->on('webpages.model_id', '=', 'products.id')
                 ->where('webpages.model_type', '=', 'Product');
         });
-        if($scope instanceof Webpage ) {
+        if ($scope instanceof Webpage) {
             if ($scope->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('products.department_id', $scope->model_id);
             } elseif ($scope->sub_type == WebpageSubTypeEnum::SUB_DEPARTMENT) {
