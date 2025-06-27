@@ -44,4 +44,3 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     // do not put any route below here, put it above {parentPath1}/... routes
 
 });
-
