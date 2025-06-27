@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Magento;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\MagentoUser;
@@ -25,7 +25,6 @@ class StoreMagentoUser extends OrgAction
 {
     use AsAction;
     use WithAttributes;
-    use WithActionUpdate;
     use WithMagentoApiRequest;
 
     public function handle(Customer $customer, array $modelData): MagentoUser
@@ -33,17 +32,17 @@ class StoreMagentoUser extends OrgAction
         $platform = Platform::where('type', PlatformTypeEnum::MAGENTO->value)->first();
         $username = Arr::get($modelData, 'username');
         $password = Arr::get($modelData, 'password');
-        $storeUrl = Arr::get($modelData, 'url');
+        $storeUrl = Arr::pull($modelData, 'url');
 
         $validated = $this->validateMagentoAccount($username, $password, $storeUrl);
 
-        if (! $validated) {
-            throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
-        }
+        //        if (! $validated) {
+        //            throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
+        //        }
 
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'name', Arr::get($modelData, 'name'));
+        data_set($modelData, 'name', Arr::get($modelData, 'username'));
         data_set($modelData, 'platform_id', $platform->id);
         data_set($modelData, 'settings.credentials.base_url', $storeUrl);
 
@@ -54,12 +53,14 @@ class StoreMagentoUser extends OrgAction
             'platform_user_type' => class_basename($magentoUser),
             'platform_user_id' => $magentoUser->id,
             'reference' => $magentoUser->name,
-            'name' => $magentoUser->name
+            'name' => $magentoUser->name,
+            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
         ]);
 
+        $magentoUser->refresh();
         $accessToken = $magentoUser->getMagentoToken();
 
-        $this->update($magentoUser, [
+        $magentoUser->update([
             'customer_sales_channel_id' => $customerSalesChannel->id,
             'settings' => [
                 'credentials' => [
@@ -70,6 +71,13 @@ class StoreMagentoUser extends OrgAction
         ]);
 
         return $magentoUser;
+    }
+
+    public function jsonResponse(MagentoUser $magentoUser): array
+    {
+        return [
+            'slug' => $magentoUser->customerSalesChannel->slug
+        ];
     }
 
     public function rules(): array

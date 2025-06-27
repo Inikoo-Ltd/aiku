@@ -2,7 +2,6 @@
 
 namespace App\Actions\Dropshipping\Magento;
 
-use App\Actions\Traits\WithActionUpdate;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -10,8 +9,6 @@ use Illuminate\Support\Facades\Log;
 
 trait WithMagentoApiRequest
 {
-    use WithActionUpdate;
-
     /**
      * Get Magento API configuration
      */
@@ -26,7 +23,7 @@ trait WithMagentoApiRequest
     /**
      * Get or generate access token for Magento API
      */
-    protected function getMagentoToken(): string
+    public function getMagentoToken(): string
     {
         $config = $this->getMagentoConfig();
 
@@ -44,7 +41,7 @@ trait WithMagentoApiRequest
                 $token = $response->json();
 
                 if ($this->exists && $this->getTable()) {
-                    $this->update($this, ['settings' => [
+                    $this->update(['settings' => [
                         'credentials' => [
                             'access_token' => $token
                         ]

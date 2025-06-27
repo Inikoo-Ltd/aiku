@@ -215,9 +215,10 @@ const onSubmitMagento = async () => {
 
         notify({
             title: trans("Success!"),
-            text: trans("Your Manual store has been created."),
+            text: trans("Your Magento store has been created."),
             type: "success",
         })
+
         router.get(
             route('retina.dropshipping.customer_sales_channels.show', {
                 customerSalesChannel: response.data.slug
