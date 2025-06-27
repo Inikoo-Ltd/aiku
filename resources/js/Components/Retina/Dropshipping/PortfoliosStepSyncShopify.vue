@@ -52,6 +52,11 @@ const selectSocketi = (porto: {}) => {
             event: `amazon.${props.platid}.upload-product.${porto.id}`,
             action: '.amazon-upload-progress'
         }
+    } else if (props.platform_data.type === 'magento') {
+        return {
+            event: `magento.${props.platid}.upload-product.${porto.id}`,
+            action: '.magento-upload-progress'
+        }
     }
 }
 

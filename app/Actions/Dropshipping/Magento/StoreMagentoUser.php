@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Magento;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -57,8 +58,7 @@ class StoreMagentoUser extends OrgAction
             'platform_user_type' => class_basename($magentoUser),
             'platform_user_id' => $magentoUser->id,
             'reference' => $magentoUser->name,
-            'name' => $magentoUser->name,
-            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+            'name' => $magentoUser->name
         ]);
 
         $magentoUser->refresh();
@@ -72,6 +72,10 @@ class StoreMagentoUser extends OrgAction
                     'access_token' => $accessToken
                 ]
             ]
+        ]);
+
+        UpdateCustomerSalesChannel::run($customerSalesChannel, [
+            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
         ]);
 
         return $magentoUser;

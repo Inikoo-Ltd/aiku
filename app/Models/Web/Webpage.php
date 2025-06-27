@@ -180,6 +180,7 @@ class Webpage extends Model implements Auditable, HasMedia
 
     protected array $auditInclude = [
         'code',
+        'title',
         'url',
         'state',
         'ready_at',
@@ -262,9 +263,9 @@ class Webpage extends Model implements Auditable, HasMedia
             'production' => 'https://' . $domain . '/' . $this->url,
             'staging' => 'https://canary.' . $domain . '/' . $this->url,
             default => match ($this->shop->type) {
-                ShopTypeEnum::DROPSHIPPING => 'https://www.ds.test/' . $this->url,
-                ShopTypeEnum::B2B, ShopTypeEnum::B2C => 'https://www.ecom.test/' . $this->url,
-                default => 'https://www.fulfilment.test/' . $this->url
+                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/' . $this->url,
+                ShopTypeEnum::B2B, ShopTypeEnum::B2C => 'https://ecom.test/' . $this->url,
+                default => 'https://fulfilment.test/' . $this->url
             }
         };
     }

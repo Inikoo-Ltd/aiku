@@ -16,7 +16,6 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\ProductCategoryWebpagesResource;
-use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
@@ -122,7 +121,7 @@ class IndexFamilyWebpages extends OrgAction
         });
         $queryBuilder->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id');
 
-        if($scope instanceof Webpage ) {
+        if ($scope instanceof Webpage) {
             if ($scope->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('product_categories.department_id', $scope->model_id);
             } elseif ($scope->sub_type == WebpageSubTypeEnum::SUB_DEPARTMENT) {

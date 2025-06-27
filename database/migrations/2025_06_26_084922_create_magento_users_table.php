@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 27 Jun 2025 08:41:06 British Summer Time, Sheffield, United Kingdom
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

@@ -27,10 +27,6 @@ trait WithMagentoApiRequest
     {
         $config = $this->getMagentoConfig();
 
-        if ($config['token']) {
-            return $config['token'];
-        }
-
         try {
             $response = Http::post($config['base_url'] . '/rest/V1/integration/admin/token', [
                 'username' => $this->username,
@@ -81,7 +77,7 @@ trait WithMagentoApiRequest
     protected function magentoApiRequest(string $method, string $endpoint, array $data = []): array
     {
         $config = $this->getMagentoConfig();
-        $token = $this->getMagentoToken();
+        $token = $this->getMagentoConfig()['token'];
 
         $url = rtrim($config['base_url'], '/') . '/rest/V1/' . ltrim($endpoint, '/');
 
@@ -93,6 +89,19 @@ trait WithMagentoApiRequest
 
             if ($response->successful()) {
                 return $response->json() ?? [];
+            }
+
+            if ($response->status() === 401) {
+                $token = $this->getMagentoToken();
+
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json',
+                ])->$method($url, $data);
+
+                if ($response->successful()) {
+                    return $response->json() ?? [];
+                }
             }
 
             throw new Exception("Magento API request failed: {$response->status()} - {$response->body()}");
@@ -107,20 +116,8 @@ trait WithMagentoApiRequest
      */
     public function uploadProduct(array $productData): array
     {
-        // Ensure required product structure
         $product = [
-            'product' => [
-                'sku' => $productData['sku'],
-                'name' => $productData['name'],
-                'attribute_set_id' => $productData['attribute_set_id'] ?? 4,
-                'price' => $productData['price'],
-                'status' => $productData['status'] ?? 1, // 1 = enabled
-                'visibility' => $productData['visibility'] ?? 4, // 4 = catalog & search
-                'type_id' => $productData['type_id'] ?? 'simple',
-                'weight' => $productData['weight'] ?? 1,
-                'extension_attributes' => $productData['extension_attributes'] ?? [],
-                'custom_attributes' => $productData['custom_attributes'] ?? [],
-            ]
+            'product' => $productData
         ];
 
         return $this->magentoApiRequest('post', 'products', $product);
