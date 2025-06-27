@@ -71,6 +71,7 @@ const checkScreenType = () => {
 
 onMounted(() => {
     checkScreenType()
+    layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 })
 
@@ -121,7 +122,7 @@ onBeforeUnmount(() => {
                 :layout="layout" />
 
             <main>
-                <div :style="getStyles(theme.container?.properties, screenType)">
+                <div>
                     <slot />
                 </div>
 

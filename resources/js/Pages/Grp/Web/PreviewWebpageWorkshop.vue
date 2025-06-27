@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, provide, shallowRef, watch, toRaw } from "vue"
+import { ref, onMounted, onBeforeUnmount, provide, shallowRef, watch, toRaw, inject } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSendBackward, faBringForward, faTrashAlt } from "@fas"
 import { trans } from "laravel-vue-i18n"
-import { useLayoutStore } from "@/Stores/layout"
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
 
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
@@ -19,11 +19,12 @@ defineOptions({ layout: WebPreview })
 
 const props = defineProps<{
   webpage?: RootWebpage
-  layout: {}
+  layout: {
+    color: string[]
+  }
 }>()
 
-const layout = useLayoutStore()
-
+const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
 
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
@@ -40,6 +41,11 @@ const showWebpage = (item) => {
   if (filterBlock.value === 'logged-in' && vis?.in) return true
   return false
 }
+
+onMounted(() => {
+  layout.app.theme = props.layout.color,
+  layout.app.webpage_layout = props.layout
+})
 
 const checkScreenType = () => {
   const width = window.innerWidth
@@ -90,11 +96,10 @@ watch(() => props.webpage, (val) => {
   data.value = val ? { ...val } : undefined
 })
 
-console.log(props)
 </script>
 
 <template>
-  <div class="editor-class" :style="getStyles(props.layout.container?.properties, screenType)">
+  <div class="editor-class">
     <div class="shadow-xl px-1 py-1">
       <div>
         <div v-if="data?.layout?.web_blocks?.length">

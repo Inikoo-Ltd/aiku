@@ -235,6 +235,13 @@ export const resolveResponsiveValue = (
         boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor)
     };
 
+  
 
-    return Object.fromEntries(Object.entries(styles).filter(([_, val]) => val !== null));
+   const data = Object.fromEntries(
+        Object.entries(styles)
+            .filter(([_, val]) => val !== null && val !== undefined && val !== 'undefined') // 🧹 filter out null and "undefined"
+            .map(([key, val]) => [key, `${val} !important`])
+        );
+    return data;
+
 };

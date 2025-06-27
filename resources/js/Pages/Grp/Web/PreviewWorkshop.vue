@@ -7,14 +7,13 @@
 <script setup lang="ts">
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import { ref, onMounted, provide, onBeforeUnmount } from 'vue'
+import { ref, onMounted, provide, onBeforeUnmount,inject } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
 import { sendMessageToParent} from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
 import { router } from '@inertiajs/vue3'
 import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
-
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
 
@@ -35,7 +34,7 @@ const props = defineProps<{
 
     }
 }>()
-
+const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;
 const isPreviewMode = ref(mode != 'iris' ? false : true)
@@ -55,6 +54,8 @@ const updateData = (newVal) => {
 }
 
 onMounted(() => {
+    layout.app.theme = props.layout.color,
+    layout.app.webpage_layout = props.layout
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
@@ -63,8 +64,6 @@ onMounted(() => {
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation'],
                 onSuccess: () => {
-                    /*   if(props.footer?.footer) Object.assign(layout.footer, toRaw(props.footer.footer));
-                      if(props.header?.data) Object.assign(layout.header, toRaw(props.header.data)); */
                     if (props.webpage) data.value = props.webpage
                 }
             });
@@ -98,7 +97,7 @@ provide('isPreviewMode', isPreviewMode)
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
         </div>
 
-        <div class="shadow-xl" :class="layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
+        <div class="shadow-xl" :class="props.layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
             <div>
                 <RenderHeaderMenu 
                     v-if="header?.data" 
