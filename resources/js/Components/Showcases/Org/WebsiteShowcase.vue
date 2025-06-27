@@ -63,10 +63,20 @@ const links = ref([
               type="secondary" />
           </div>
           <div class="p-2">
-            <Link :href="route('grp.models.website.break_cache', {website:data?.id})" method="post"
-              :data="{}" as="button" class="w-full">
-            <Button :icon="faFragile" type="secondary" full label="Break cache" />
-            </Link>
+            
+            <ButtonWithLink
+              :routeTarget="{
+                name: 'grp.models.website.break_cache',
+                parameters: {
+                  website:data?.id
+                }
+              }"
+              method="post"
+              :icon="faFragile"
+              type="tertiary"
+              :label="trans('Break cache')"
+              full
+            />
           </div>
         </div>
       </div>
