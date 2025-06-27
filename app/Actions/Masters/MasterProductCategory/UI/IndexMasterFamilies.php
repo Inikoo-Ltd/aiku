@@ -9,13 +9,14 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
+use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -31,6 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexMasterFamilies extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
+    use WithMasterDepartmentSubNavigation;
 
     private Group|MasterShop|MasterProductCategory $parent;
 
@@ -190,13 +192,13 @@ class IndexMasterFamilies extends OrgAction
             $iconRight  = [
                 'icon' => 'fal fa-city',
             ];
-        } elseif ($this->parent instanceof ProductCategory) {
-            if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        } elseif ($this->parent instanceof MasterProductCategory) {
+            if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $icon = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('Master department')
                 ];
-                $subNavigation = $this->getMasterShopNavigation($this->parent);
+                $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
             }
         }
 
@@ -254,6 +256,17 @@ class IndexMasterFamilies extends OrgAction
             'grp.masters.master_shops.show.master_families.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_departments.show.master_families.index' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

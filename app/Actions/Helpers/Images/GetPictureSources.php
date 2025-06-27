@@ -24,7 +24,7 @@ class GetPictureSources
         ];
 
 
-        if (in_array('avif', config('img-proxy.formats')) and !$image->is_animated) {
+        if (in_array('avif', config('img-proxy.formats')) && !$image->is_animated) {
             $sources['avif'] = GetImgProxyUrl::run($image->extension('avif'));
         }
 
@@ -37,7 +37,7 @@ class GetPictureSources
         }
 
 
-        if ($image->getWidth() or $image->getHeight()) {
+        if ($image->getWidth() || $image->getHeight()) {
             $image_2x = $image->resize(
                 ($image->getWidth() ?? 0)  * 2,
                 ($image->getHeight() ?? 0) * 2,

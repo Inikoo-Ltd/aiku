@@ -76,6 +76,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read ProductCategory|null $department
  * @property-read Group $group
@@ -235,6 +236,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
+    public function containedByCollections(): MorphToMany
+    {
+        return $this->morphToMany(Collection::class, 'model', 'collection_has_models')
+            ->withTimestamps();
+    }
 
     public function webpage(): MorphOne
     {

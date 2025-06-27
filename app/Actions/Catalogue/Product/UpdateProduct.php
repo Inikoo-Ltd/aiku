@@ -23,6 +23,7 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Cache;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -89,6 +90,37 @@ class UpdateProduct extends OrgAction
             ProductRecordSearch::dispatch($product);
         }
 
+        if (Arr::hasAny(
+            $changed,
+            [
+                    'code',
+                    'name',
+                    'description',
+                    'state',
+                    'price',
+                    'available_quantity'
+                ]
+        )
+            && $product->webpage) {
+            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_in_'.$product->webpage->id;
+            Cache::forget($key);
+            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_out_'.$product->webpage->id;
+            Cache::forget($key);
+        }
+
+        if (Arr::hasAny(
+            $changed,
+            [
+                    'code',
+                    'name',
+                    'state',
+                    'price',
+                ]
+        )) {
+            BreakProductInWebpagesCache::dispatch($product);
+        }
+
+
         return $product;
     }
 
@@ -122,9 +154,8 @@ class UpdateProduct extends OrgAction
             'follow_master' => ['sometimes', 'boolean'],
             'family_id'     => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
 
-            'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
-            'images'                    => ['sometimes', 'array'],
+            'webpage_id' => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'        => ['sometimes', 'nullable', 'string', 'max:250'],
 
             'exclusive_for_customer_id' => [
                 'sometimes',

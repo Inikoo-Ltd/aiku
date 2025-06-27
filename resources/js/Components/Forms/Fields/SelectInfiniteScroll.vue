@@ -8,9 +8,12 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { onMounted } from "vue"
+import { onMounted ,inject} from "vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { routeType } from "@/types/route"
+import Icon from '@/Components/Icon.vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { trans } from 'laravel-vue-i18n'
 library.add(faExclamationCircle, faCheckCircle)
 
 const props = defineProps<{
@@ -26,9 +29,11 @@ const props = defineProps<{
         readonly?: boolean
 		labelProp?: string
 		valueProp?: string
+		type_label? :string
     }
 }>()
 
+const locale = inject('locale', aikuLocaleStructure)
 // Auto assign to first option if 'required' and value is null
 onMounted(() => {
     if(props.fieldData?.required && !props.form[props.fieldName]) {
@@ -58,7 +63,19 @@ onMounted(() => {
                 :caret="!fieldData.readonly"
 				:labelProp="fieldData.labelProp || 'label'"
 				:valueProp="fieldData.valueProp || 'value'"
-			/>
+				:clearOnBlur="true"
+				:clearOnSelect="true"
+				:clearOnFocus="true"
+				:clear
+			>
+				<template v-if="props.fieldData.type_label == 'families'" #singlelabel="{ value }">
+                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
+                </template>
+                
+                <template v-if="props.fieldData.type_label == 'families'" #option="{ option, isSelected, isPointed }">
+                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
+                </template>
+		</PureMultiselectInfiniteScroll>
 			<div
 				v-if="form.errors[fieldName] || form.recentlySuccessful"
 				class="absolute inset-y-2/4 right-0 pr-3 flex items-center pointer-events-none bg-red-500">

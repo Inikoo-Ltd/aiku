@@ -3,7 +3,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import { inject, ref,toRaw } from 'vue'
+import { inject, ref, toRaw, watch, computed } from 'vue'
 import { Image as ImageTS } from '@/types/Image'
 import { Popover } from 'primevue'
 
@@ -49,9 +49,6 @@ const channelList = layout?.user?.customerSalesChannels || []
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (product: ProductResource) => {
-    // Emit an event or call a method to handle adding the product to the portfolio
-    console.log(`Adding product with ID ${product.name} to portfolio`)
-    
     // Section: Submit
     router.post(
         route('iris.models.all_channels.portfolio.store'),
@@ -90,32 +87,40 @@ const onAddToAllPortfolios = (product: ProductResource) => {
 
 // Section: Add to a specific Portfolios channel
 const isLoadingSpecificChannel = ref([])
-const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) => {
-    console.log(`Adding product with ID ${product.id} to portfolio`)
-    
+const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) => {
+    if (!channel || typeof channel.id === 'undefined') {
+        console.warn('Channel ID is undefined', channel)
+        return
+    }
+
+    const channelId = Number(channel.id)
+    console.log(`Adding product with ID ${product.id} to portfolio for channel ID ${channelId}`)
+
     router.post(
         route('iris.models.multi_channels.portfolio.store'),
         {
-            customer_sales_channel_ids: [channel.id],
+            customer_sales_channel_ids: [channelId],
             item_id: [product.id]
         },
         {
             preserveScroll: true,
             preserveState: true,
             onStart: () => {
-                isLoadingSpecificChannel.value.push(channel.id)
+                isLoadingSpecificChannel.value.push(channelId)
             },
             onSuccess: () => {
-                const channelId = Number(channel.id)
-                productHasPortfolioList.value = [...props.productHasPortfolio, channelId]
+                if (!productHasPortfolioList.value.includes(channelId)) {
+                    productHasPortfolioList.value = [...productHasPortfolioList.value, channelId]
+                }
+
                 notify({
                     title: trans("Success"),
-                    text: `Added product ${product.name} to channel ${channel.name}`,
+                    text: trans(`Added product ${product.name}`),
                     type: "success"
                 })
             },
-            onError: errors => {
-                console.log(errors)
+            onError: (errors) => {
+                console.error(errors)
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to add to portfolio"),
@@ -123,17 +128,32 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: {}) =
                 })
             },
             onFinish: () => {
-                if (isLoadingSpecificChannel.value.includes(channel.id)) {
-                    isLoadingSpecificChannel.value.splice(
-                        isLoadingSpecificChannel.value.indexOf(channel.id), 1
-                    )
+                const idx = isLoadingSpecificChannel.value.indexOf(channelId)
+                if (idx !== -1) {
+                    isLoadingSpecificChannel.value.splice(idx, 1)
                 }
-            },
+            }
         }
     )
 }
 
+
 const _popover = ref()
+
+const isInAllChannels = computed(() => {
+  const allChannelIds = Object.keys(channelList).map(Number)
+  return allChannelIds.some(id => productHasPortfolioList.value.includes(id))
+})
+
+const CheckChannels = computed(() => {
+  const allChannelIds = Object.keys(channelList).map(Number)
+  return allChannelIds.every(id => productHasPortfolioList.value.includes(id))
+})
+
+
+watch(() => props.productHasPortfolio, (newVal) => {
+  productHasPortfolioList.value = [...newVal]
+})
 
 </script>
 
@@ -142,21 +162,20 @@ const _popover = ref()
     <div v-if="layout?.iris?.is_logged_in" class="w-full">
         <div v-if="product.stock > 0" class="flex items-center gap-2 mt-2">
             <div class="flex gap-2  w-full">
-
                 <div class="w-full flex flex-nowrap relative">
-                    <Button v-if="Object.keys(channelList).every(key => productHasPortfolioList.includes(Number(key)))"
-                        label="Exist on all Portfolios" type="tertiary" disabled
-                        class="border-none border-transparent rounded-r-none" full />
+                    <Button v-if="isInAllChannels"
+                        :label="CheckChannels ? 'Exist on all channels' : 'Exist on some channels'" type="tertiary" disabled
+                        class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
                         :loading="isLoadingAllPortfolios" :icon="faPlus"
                         class="border-none border-transparent rounded-r-none" full size="l" style="border: 0px" />
 
-                    <Button
+                    <Button v-if="!CheckChannels"
                         @click="(e) => (_popover?.toggle(e), Object.keys(channelList).length ? null : emits('refreshChannels'))"
                         :icon="faEllipsisV" :loading="!!isLoadingSpecificChannel.length"
                         class="!px-1 border-none border-transparent rounded-l-none h-full" />
 
-                    <Popover ref="_popover">
+                    <Popover  ref="_popover">
                         <div class="w-64 relative">
                             <div class="text-sm mb-2">
                                 {{ trans("Add product to a specific channel") }}:
@@ -165,7 +184,7 @@ const _popover = ref()
                             <div class="space-y-2">
                                 <Button v-for="[key, channel] in Object.entries(channelList)"
                                     :key="channel.customer_sales_channel_id"
-                                    @click="() => onAddPortfoliosSpecificChannel(product, {...channel, id : key})" type="tertiary"
+                                    @click="() => onAddPortfoliosSpecificChannel(product, { ...channel, id: Number(key) })" type="tertiary"
                                     :label="channel.platform_name" full
                                     :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
                                     <template #icon>

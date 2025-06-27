@@ -88,6 +88,7 @@ export const initialiseApp = () => {
                 }
             }
 
+            console.log('page props', usePage().props)  // Delete after able to login to prod
             const dataActiveUser = {
                 ...usePage().props.auth.user,
                 name: null,

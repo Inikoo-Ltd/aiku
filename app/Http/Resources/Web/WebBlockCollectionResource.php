@@ -14,12 +14,6 @@ use App\Http\Resources\HasSelfCall;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property string $slug
- * @property string $code
- * @property string $name
- * @property int $image_id
- */
 class WebBlockCollectionResource extends JsonResource
 {
     use HasSelfCall;
@@ -39,14 +33,14 @@ class WebBlockCollectionResource extends JsonResource
             $imageSources = GetPictureSources::run($image);
         }
 
-
+        $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
         return [
             'slug'  => $this->slug,
             'code'  => $this->code,
             'name'  => $this->name,
             'image' => $imageSources,
             'url'   => $this->url,
-
+            'web_images' => $webImages,
             'products_route' => [
                 'name' => 'grp.json.collection.products.index',
                 'parameters' => [

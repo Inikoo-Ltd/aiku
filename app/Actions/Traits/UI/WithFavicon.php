@@ -16,25 +16,27 @@ use Illuminate\Support\Facades\Cache;
 
 trait WithFavicon
 {
-    public function processWebsiteFavicon(array $modelData, Website $model): Website
+    public function processWebsiteFavicon(array $modelData, Website $website): Website
     {
         if (Arr::has($modelData, 'favicon')) {
             /** @var UploadedFile $image */
-            $image = Arr::pull($modelData, 'favicon');
+            $image     = Arr::pull($modelData, 'favicon');
             $imageData = [
                 'path'         => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
                 'extension'    => $image->getClientOriginalExtension(),
             ];
-            $model     = SaveModelFavicon::run(
-                model: $model,
+            $website   = SaveModelFavicon::run(
+                model: $website,
                 imageData: $imageData,
                 scope: 'favicon'
             );
+
+            $key = config('iris.cache.website.prefix')."_$website->domain";
+            Cache::forget($key);
+
         }
 
-        Cache::forget('iris-favicon-'.$model->id);
-
-        return $model;
+        return $website;
     }
 }

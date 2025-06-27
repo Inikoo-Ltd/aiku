@@ -9,6 +9,8 @@
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,27 @@ class GroupHydrateMasterAssets implements ShouldBeUnique
             'number_current_master_assets' => DB::table('master_assets')->where('group_id', $group->id)->where('status', true)->count()
         ];
 
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'master_assets',
+                field: 'type',
+                enum: MasterAssetTypeEnum::class,
+                models: MasterAsset::class,
+                where: function ($q) use ($group) {
+                    $q->where('group_id', $group->id);
+                }
+            )
+        );
+
+        foreach (MasterAssetTypeEnum::cases() as $type) {
+            $stats['number_current_master_assets_type_' . $type->value] = DB::table('master_assets')
+                ->where('group_id', $group->id)
+                ->where('status', true)
+                ->where('type', $type->value)
+                ->whereNull('deleted_at')
+                ->count();
+        }
 
         $group->goodsStats()->update($stats);
     }

@@ -110,14 +110,6 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.registration.require_approval", Arr::pull($modelData, 'required_approval'));
         }
 
-        if (Arr::exists($modelData, 'treblle_api_key')) {
-            data_set($modelData, "settings.treblle.api_key", Arr::pull($modelData, 'treblle_api_key'));
-        }
-
-        if (Arr::exists($modelData, 'treblle_project_id')) {
-            data_set($modelData, "settings.treblle.project_id", Arr::pull($modelData, 'treblle_project_id'));
-        }
-
 
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
@@ -201,8 +193,6 @@ class UpdateShop extends OrgAction
             'registration_number'      => ['sometimes', 'string'],
             'vat_number'               => ['sometimes', 'string'],
             'required_approval'        => ['sometimes', 'boolean'],
-            'treblle_api_key'          => ['sometimes', 'nullable', 'string'],
-            'treblle_project_id'       => ['sometimes', 'nullable', 'string'],
             'invoice_footer'           => ['sometimes', 'string', 'max:10000'],
             'image'                    => [
                 'sometimes',

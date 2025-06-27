@@ -8,24 +8,51 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStateToDispatched extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        data_set($modelData, 'dispatched_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
+        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
+            data_set($modelData, 'dispatched_at', now());
+            data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
 
-        return $this->update($deliveryNote, $modelData);
+            foreach ($deliveryNote->deliveryNoteItems as $item) {
+                $this->update($item, [
+                    'state' => DeliveryNoteItemStateEnum::DISPATCHED,
+                    'dispatched_at' => now(),
+                    'quantity_dispatched' => $item->quantity_packed
+                ]);
+            }
+
+            $deliveryNote = $this->update($deliveryNote, $modelData);
+
+            $deliveryNote->refresh();
+            foreach ($deliveryNote->orders as $order) {
+                UpdateStateToDispatchedOrder::make()->action($order);
+            }
+            return $deliveryNote;
+        });
+
+        return $deliveryNote;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
@@ -33,6 +60,9 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);

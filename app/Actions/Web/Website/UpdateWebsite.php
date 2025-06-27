@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\UI\WithFavicon;
 use App\Actions\Traits\UI\WithLogo;
 use App\Actions\Traits\WithActionUpdate;
@@ -20,6 +20,7 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\Website;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateWebsite extends OrgAction
 {
     use WithActionUpdate;
-    // use WithWebAuthorisation;
+    use WithWebEditAuthorisation;
     use WithLogo;
     use WithFavicon;
 
@@ -70,7 +71,23 @@ class UpdateWebsite extends OrgAction
         }
 
         $website = $this->update($website, $modelData, ['data', 'settings']);
-        WebsiteRecordSearch::run($website);
+
+        $changes = Arr::except($website->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (Arr::hasAny($changes, [
+            'code',
+            'name',
+            'domain',
+            'type',
+            'state',
+        ])) {
+            WebsiteRecordSearch::run($website);
+        }
+
+        if (Arr::has($changes, 'domain')) {
+            $key = config('iris.cache.website.prefix')."_$website->domain";
+            Cache::forget($key);
+        }
 
         return $website;
     }

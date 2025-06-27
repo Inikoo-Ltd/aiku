@@ -28,10 +28,6 @@ class IndexPalletsInReturn extends OrgAction
 {
     use WithFulfilmentShopAuthorisation;
 
-    private PalletReturn $palletReturn;
-
-    private bool $selectStoredPallets = false;
-
 
     public function handle(PalletReturn $palletReturn, $prefix = null): LengthAwarePaginator
     {
@@ -80,7 +76,7 @@ class IndexPalletsInReturn extends OrgAction
             );
 
 
-        return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name'])
+        return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name', 'id'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -107,8 +103,7 @@ class IndexPalletsInReturn extends OrgAction
 
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
-
-
+            $table->column(key: 'pallet_id', label: __('Id'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 

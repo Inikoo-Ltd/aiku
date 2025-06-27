@@ -28,6 +28,7 @@ use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
+use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -437,6 +438,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function amazonUsers(): HasMany
     {
         return $this->hasMany(AmazonUser::class);
+    }
+
+    public function magentoUsers(): HasMany
+    {
+        return $this->hasMany(MagentoUser::class);
     }
 
     public function deliveryNotes(): HasMany

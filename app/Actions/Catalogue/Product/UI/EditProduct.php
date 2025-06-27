@@ -8,10 +8,12 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Http\Resources\Inventory\OrgStocksInProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -21,6 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
+use App\Http\Resources\Inventory\OrgStocksResource;
 
 class EditProduct extends OrgAction
 {
@@ -128,10 +131,42 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
+        $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
+
+
+        $family = $product->family;
+        if ($family) {
+            $stateData = [
+                'label' => $family->state->labels()[$family->state->value],
+                'icon'  => $family->state->stateIcon()[$family->state->value]['icon'],
+                'class' => $family->state->stateIcon()[$family->state->value]['class']
+            ];
+
+            $familyOptions = [
+                'id'                      => $family->id,
+                'code'                    => $family->code,
+                'state'                   => $stateData,
+                'name'                    => $family->name,
+                'number_current_products' => $family->stats->number_current_products,
+
+            ];
+        } else {
+            $familyOptions = [
+                'id'                      => null,
+                'code'                    => null,
+                'state'                   => null,
+                'name'                    => null,
+                'number_current_products' => null,
+
+            ];
+        }
+
+
         return [
             [
-                'label'  => __('Information'),
+                'label'  => __('Properties'),
                 'title'  => __('id'),
+                'icon'   => 'fa-light fa-fingerprint',
                 'fields' => [
                     'code'        => [
                         'type'     => 'input',
@@ -145,7 +180,7 @@ class EditProduct extends OrgAction
                         'value' => $product->name,
                     ],
                     'description' => [
-                        'type'  => 'input',
+                        'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
                     ],
@@ -175,29 +210,45 @@ class EditProduct extends OrgAction
                 ]
             ],
             [
+                'label'  => __('Parts'),
+                'fields' => [
+                    'org_stocks' => [
+                        'type'         => 'product_parts',
+                        'label'        => __('code'),
+                        // 'readonly' => true,
+                        'full'         => true,
+                        'fetch_route'  => [
+                            'name'       => 'grp.json.org_stocks.index',
+                            'parameters' => [
+                                'organisation' => $product->organisation_id,
+                            ]
+                        ],
+                        'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+                        'value'        => $value
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Family'),
-                'icon'   => 'fa-light fa-box',
+                'icon'   => 'fa-light fa-folder',
                 'fields' => [
                     'family_id' => [
                         'type'       => 'select_infinite',
                         'label'      => __('Family'),
                         'options'    => [
-                            [
-                                'id'   => $product->family?->id,
-                                'code' => $product->family?->code
-                            ]
+                            $familyOptions
                         ],
                         'fetchRoute' => [
-                            'name'       => 'grp.org.shops.show.catalogue.families.index',
+                            'name'       => 'grp.json.shop.families',
                             'parameters' => [
-                                'organisation' => $product->organisation->slug,
-                                'shop'         => $product->shop->slug
+                                'shop' => $product->shop->id
                             ]
                         ],
                         'valueProp'  => 'id',
                         'labelProp'  => 'code',
-                        'required'   => false,
+                        'required'   => true,
                         'value'      => $product->family->id ?? null,
+                        'type_label' => 'families'
                     ]
                 ],
             ],

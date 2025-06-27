@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateCollections;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\OrgAction;
@@ -17,23 +18,26 @@ use App\Models\Catalogue\ProductCategory;
 
 class AttachModelToCollection extends OrgAction
 {
-    public function handle(Collection $collection, ProductCategory|Product $model): Collection
+    public function handle(Collection $collection, ProductCategory|Product|Collection $model): Collection
     {
 
         if ($model instanceof Product) {
             $collection->products()->attach($model->id);
             CollectionHydrateProducts::dispatch($collection);
+        } elseif ($model instanceof Collection) {
+            $collection->collections()->attach($model->id);
+            CollectionHydrateCollections::dispatch($collection);
         } else {
             $collection->families()->attach($model->id);
             CollectionHydrateFamilies::dispatch($collection);
         }
 
-
+        SyncIndirectProductsToCollection::dispatch($collection);
 
         return $collection;
     }
 
-    public function action(Collection $collection, ProductCategory|Product $model): Collection
+    public function action(Collection $collection, ProductCategory|Product|Collection $model): Collection
     {
 
         $this->asAction = true;

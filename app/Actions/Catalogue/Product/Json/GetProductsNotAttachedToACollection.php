@@ -14,20 +14,19 @@ use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetProducts extends OrgAction
+class GetProductsNotAttachedToACollection extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
     private Shop $parent;
 
-    public function handle(Shop $parent, Order|Collection $scope, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $parent, Collection $collection, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -38,11 +37,9 @@ class GetProducts extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.shop_id', $parent->id);
-        if ($scope instanceof Collection) {
-            $queryBuilder->whereNotIn('products.id', $scope->products()->pluck('model_id'));
-        } elseif ($scope instanceof Order) {
-            $queryBuilder->whereNotIn('products.current_historic_asset_id', $scope->transactions()->pluck('historic_asset_id'));
-        }
+
+        $queryBuilder->whereNotIn('products.id', $collection->products()->where('type', 'direct')->pluck('model_id'));
+
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -72,20 +69,14 @@ class GetProducts extends OrgAction
         return ProductsResource::collection($products);
     }
 
-    public function asController(Shop $shop, Collection $scope, ActionRequest $request): LengthAwarePaginator
+    public function asController(Shop $shop, Collection $collection, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent: $shop, scope: $scope);
+        return $this->handle(parent: $shop, collection: $collection);
     }
 
-    public function inOrder(Shop $shop, Order $scope, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent: $shop, scope: $scope);
-    }
 
 }

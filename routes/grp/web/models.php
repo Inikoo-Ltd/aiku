@@ -64,6 +64,9 @@ use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
+use App\Actions\CRM\Poll\DeletePoll;
+use App\Actions\CRM\Poll\StorePoll;
+use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
@@ -244,6 +247,7 @@ use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
+use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
@@ -325,9 +329,9 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
 });
-Route::prefix('sub-department/{subDepartment}')->name('sub-department.')->group(function () {
+Route::prefix('sub-department/{subDepartment:id}')->name('sub-department.')->group(function () {
     Route::post('families/attach', AttachFamiliesToSubDepartment::class)->name('families.attach');
-    Route::delete('family/{family}/detach', DetachFamilyToSubDepartment::class)->name('family.detach');
+    Route::delete('family/{family:id}/detach', DetachFamilyToSubDepartment::class)->name('family.detach')->withoutScopedBindings();
 });
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete')->withoutScopedBindings();
@@ -387,7 +391,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/shop/{shop:id}/product/', [StoreProduct::class, 'inShop'])->name('show.product.store');
     Route::delete('/shop/{shop:id}/product/{product:id}', [DeleteProduct::class, 'inShop'])->name('shop.product.delete');
 
-    Route::post('product/{product:id}/images', UploadImagesToProduct::class)->name('product.images.store')->withoutScopedBindings();
     Route::post('product/{product:id}/images/attach', AttachImagesToProduct::class)->name('product.images.attach')->withoutScopedBindings();
     Route::delete('product/{product:id}/images/{media:id}/media', DeleteImagesFromProduct::class)->name('product.images.delete')->withoutScopedBindings();
 
@@ -413,11 +416,14 @@ Route::patch('recurring-bill-transaction/{recurringBillTransaction:id}', UpdateR
 Route::delete('recurring-bill-transaction/{recurringBillTransaction:id}', DeleteRecurringBillTransaction::class)->name('recurring_bill_transaction.delete');
 
 Route::name('product.')->prefix('product')->group(function () {
+
     Route::post('/product/', StoreProduct::class)->name('store');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
+    Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
+
 });
 
 
@@ -815,6 +821,17 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
 
 
 Route::delete('access-token/{token:id}', DeleteUserAccessToken::class)->name('access_token.delete');
+
+
+Route::post('shops/{shop}/poll/store', StorePoll::class)->name('poll.store');
+
+Route::name('poll.')->prefix('poll')->group(function () {
+    Route::patch('{poll:id}/update', UpdatePoll::class)->name('update')->withoutScopedBindings();
+    Route::delete('{poll:id}/delete', DeletePoll::class)->name('delete')->withoutScopedBindings();
+});
+
+Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
+
 
 
 require __DIR__."/models/inventory/warehouse.php";

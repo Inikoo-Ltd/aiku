@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Api;
 
+use App\Http\Resources\Accounting\MitSavedCardResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -33,6 +34,8 @@ class CustomersResource extends JsonResource
             'location'               => $customer->location,
             'email'                  => $customer->email,
             'phone'                  => $customer->phone,
+            'balance'                => $customer->balance,
+            'saved_cards'            => MitSavedCardResource::collection($customer->mitSavedCard),
             'created_at'             => $customer->created_at,
             'updated_at'             => $customer->updated_at,
         ];

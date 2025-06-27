@@ -44,45 +44,52 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     {
         $title = __('Channel Dashboard');
 
-        $stepLabel = __('Great! You just complete first step.');
-        $stepLabel = __('Almost! Setup credit card to make you easier in the future.');
-        $stepLabel = __('Very very last! Add products to your store.');
-
-        $stepTitle = __('Connect your store');
-        $stepTitle = __('Setup your credit card');
-        $stepTitle = __('Add products to your store');
-
-        $stepDescription = __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.');
-        $stepDescription = __('To manage your payment methods. If you mind to do it later, you can skip this step.');
-        $stepDescription = __('Add products to your store to start selling. Select items from our catalogue or upload your own products to showcase in your sales channel.');
-
-        $stepButton = [
-            'label'       => __('Connect your store'),
-            'route_target' => [
-                'name'       => 'retina.dropshipping.customer_sales_channels.index',
+        $step = match ($customerSalesChannel->state) {
+            CustomerSalesChannelStateEnum::CREATED => [
+                'label' => __('Great! You just complete first step.'),
+                'title' => __('Connect your store'),
+                'description' => __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.'),
+                'button' => [
+                    'label' => __('Connect your store'),
+                    'route_target' => [
+                        'name' => 'retina.dropshipping.customer_sales_channels.index',
+                    ],
+                ],
+                'icon' => 'fal fa-link',
             ],
-        ];
-
-        $stepButton = [
-            'label'       => __('Setup credit card'),
-            'route_target' => [
-                'name'       => 'retina.dropshipping.mit_saved_cards.create',
+            CustomerSalesChannelStateEnum::AUTHENTICATED => [
+                'label' => __('Almost! Setup credit card to make you easier in the future.'),
+                'title' => __('Setup your credit card'),
+                'description' => __('To manage your payment methods. If you mind to do it later, you can skip this step.'),
+                'button' => [
+                    'label' => __('Setup credit card'),
+                    'route_target' => [
+                        'name' => 'retina.dropshipping.mit_saved_cards.create',
+                    ],
+                ],
+                'icon' => 'fal fa-credit-card',
             ],
-        ];
-
-        $stepButton = [
-            'label'       => __('Add portfolios'),
-            'route_target' => [
-                'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.index',
-                'parameters' => [
-                    'customerSalesChannel' => $customerSalesChannel->slug,
-                ]
+            CustomerSalesChannelStateEnum::CARD_SAVED => [
+                'label' => __('Very very last! Add products to your store.'),
+                'title' => __('Add products to your store'),
+                'description' => __('Add products to your store to start selling. Select items from our catalogue or upload your own products to showcase in your sales channel.'),
+                'button' => [
+                    'label' => __('Add portfolios'),
+                    'route_target' => [
+                        'name' => 'retina.dropshipping.customer_sales_channels.portfolios.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $customerSalesChannel->slug,
+                        ]
+                    ],
+                ],
+                'icon' => 'fal fa-cube',
             ],
-        ];
-
-        $stepIcon = 'fal fa-link';
-        $stepIcon = 'fal fa-cube';
-        $stepIcon = 'fal fa-credit-card';
+            CustomerSalesChannelStateEnum::PORTFOLIO_ADDED,
+            CustomerSalesChannelStateEnum::READY,
+            CustomerSalesChannelStateEnum::NOT_READY => [
+                // Handle these states as needed
+            ],
+        };
 
         return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
             'title'                  => $title,
@@ -125,13 +132,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'platform'               => $customerSalesChannel->platform,
             'platform_logo'          => $this->getPlatformLogo($customerSalesChannel),
             'platformData'           => $this->getPlatformData($customerSalesChannel),
-            'step'  => [
-                'label'         => $stepLabel,
-                'title'         => $stepTitle,
-                'description'   => $stepDescription,
-                'button'        => $stepButton,
-                'icon'          => $stepIcon,
-            ]
+            'step'  => $step
         ]);
     }
 

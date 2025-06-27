@@ -547,7 +547,7 @@ class ShowProduct extends OrgAction
                     ],
                 ],
             ],
-            'grp.org.shops.show.catalogue.products.show' => [
+            'grp.org.shops.show.catalogue.products.all_products.show' => [
                 'label' => $product->name,
                 'route' => [
                     'name'       => $routeName,

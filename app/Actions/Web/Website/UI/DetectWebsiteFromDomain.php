@@ -10,38 +10,18 @@ namespace App\Actions\Web\Website\UI;
 
 use App\Exceptions\IrisWebsiteNotFound;
 use App\Models\Web\Website;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsObject;
 
 class DetectWebsiteFromDomain
 {
-    use AsAction;
+    use AsObject;
 
     /**
      * @throws \App\Exceptions\IrisWebsiteNotFound
      */
     public function handle($domain): ?Website
     {
-
-        if (app()->environment('staging')) {
-            $domain = str_replace('canary.', '', $domain);
-        }
-        $domain = str_replace('www.', '', $domain);
-        $domain = str_replace('v2.', '', $domain);
-
-        if ($domain == config('app.domain') ||  $domain == 'app.'.config('app.domain')) {
-            return null;
-        }
-
-        if (app()->environment('local')) {
-            if ($domain == 'fulfilment.test') {
-                $domain = config('app.local.retina_fulfilment_domain');
-            } elseif ($domain == 'ds.test') {
-                $domain = config('app.local.retina_dropshipping_domain');
-            } else {
-                $domain = config('app.local.retina_b2b_domain');
-            }
-            //$domain = config('app.local.retina_fulfilment_domain');
-        }
+        $domain = $this->parseDomain($domain);
 
         /** @var Website $website */
         $website = Website::where('domain', $domain)->first();
@@ -50,6 +30,33 @@ class DetectWebsiteFromDomain
         }
 
         return $website;
+    }
+
+    public function parseDomain(string $domain)
+    {
+        $domain = strtolower($domain);
+        if (app()->environment('local')) {
+            if ($domain == 'fulfilment.test') {
+                $domain = config('app.local.retina_fulfilment_domain');
+            } elseif ($domain == 'ds.test') {
+                $domain = config('app.local.retina_dropshipping_domain');
+            } else {
+                $domain = config('app.local.retina_b2b_domain');
+            }
+
+            return $domain;
+        }
+        $domain = str_replace('www.', '', $domain);
+        $domain = str_replace('v2.', '', $domain);
+        if ($domain == config('app.domain') || $domain == 'app.'.config('app.domain')) {
+            return null;
+        }
+
+        if (app()->environment('staging')) {
+            $domain = str_replace('canary.', '', $domain);
+        }
+
+        return $domain;
     }
 
 }

@@ -12,7 +12,7 @@ import { faHeart } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck } from '@far'
 import { faPlus, faVial } from '@fal'
-import { faCircle, faStar, faHeart as fasHeart, faEllipsisV } from '@fas'
+import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal} from '@fas'
 import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
 
@@ -26,7 +26,7 @@ interface ProductResource {
     name: string
     code: string
     image?: {
-        source: ImageTS
+        source: ImageTS,
     }
     rpp?: number
     unit: string
@@ -39,6 +39,13 @@ interface ProductResource {
     is_favourite?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
+    top_seller : number | null
+    web_images : {
+        main : {
+            original: ImageTS,
+            gallery : ImageTS
+        }    
+    }
 }
 
 const props = defineProps<{
@@ -117,6 +124,8 @@ const onUnselectFavourite = (product: ProductResource) => {
         }
     )
 }
+
+
 </script>
 
 <template>
@@ -124,12 +133,24 @@ const onUnselectFavourite = (product: ProductResource) => {
 
         <!-- Top Section -->
         <div>
-            <!-- {{ product.currency_code }} -->
-            <!-- Bestseller Badge -->
-            <div v-if="product.bestseller"
-                class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
-                BESTSELLER
-            </div>
+           
+               <div v-if="product.top_seller"
+                    class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
+                    
+                    <!-- Medal Icon -->
+                    <FontAwesomeIcon
+                    :icon="faMedal"
+                    class="w-3.5 h-3.5 mr-2"
+                    :class="{
+                        'text-[#FFD700]': product.top_seller === 1, // Gold
+                        'text-[#C0C0C0]': product.top_seller === 2, // Silver
+                        'text-[#CD7F32]': product.top_seller === 3  // Bronze
+                    }"
+                    />
+
+                    <!-- Bestseller Text -->
+                    <span>BESTSELLER</span>
+                </div>
 
             <!-- Favorite Icon -->
             <template v-if="layout.iris.is_logged_in">
@@ -144,7 +165,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-64 mb-3 rounded">
-                <Image :src="product.image?.source" alt="product image" :imageCover="true"
+                <Image :src="product?.web_images?.main?.gallery" alt="product image" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
             </component>
 

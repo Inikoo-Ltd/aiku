@@ -44,10 +44,10 @@ class GetProductsInCollection extends OrgAction
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
 
-        $queryBuilder->join('model_has_collections', function ($join) use ($collection) {
-            $join->on('products.id', '=', 'model_has_collections.model_id')
-                ->where('model_has_collections.model_type', '=', 'Product')
-                ->where('model_has_collections.collection_id', '=', $collection->id);
+        $queryBuilder->join('collection_has_models', function ($join) use ($collection) {
+            $join->on('products.id', '=', 'collection_has_models.model_id')
+                ->where('collection_has_models.model_type', '=', 'Product')
+                ->where('collection_has_models.collection_id', '=', $collection->id);
         });
 
 

@@ -125,7 +125,6 @@ onBeforeUnmount(() => {
                 <div>
                     <slot />
                 </div>
-
             </main>
 
             <Footer v-if="footer && !isArray(footer)" :data="footer" :colorThemed="theme" />

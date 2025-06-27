@@ -4,6 +4,8 @@ import { checkVisible } from "@/Composables/Workshop"
 import { inject } from "vue"
 import Image from "@/Components/Image.vue"
 import MobileHeader from "../MobileHeader.vue";
+import { resolveMigrationLink } from "@/Composables/SetUrl"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 const props = defineProps<{
 	fieldValue: {
@@ -32,6 +34,9 @@ const props = defineProps<{
 }>()
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
+const layout = inject('layout', layoutStructure)
+const migration_redirect = layout?.iris?.migration_redirect
+
 </script>
 
 <template>
@@ -42,7 +47,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 				<component
 					v-if="fieldValue?.logo?.image?.source"
 					:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
-					:href="fieldValue?.logo?.link?.href || '#'"
+					:href="resolveMigrationLink(props.fieldValue?.logo?.link?.href,migration_redirect)"
 					:target="fieldValue?.logo?.link?.target || '_self'"
 					rel="noopener noreferrer"
 					class="block w-fit h-auto">

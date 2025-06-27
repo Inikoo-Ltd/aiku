@@ -144,6 +144,8 @@ const onUnselectFavourite = (product: ProductResource) => {
         }
     )
 }
+
+console.log(props)
 </script>
 
 <template>
@@ -220,8 +222,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                     
                     <ButtonAddPortfolio
                         :product="fieldValue.product"
-                        :channels="channels"
-                        @refreshChannels="fetchChannels"
+                        :productHasPortfolio="fieldValue.productChannels"
                     />
                 </div>
                 <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
