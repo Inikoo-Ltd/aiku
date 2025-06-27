@@ -24,7 +24,7 @@ class ShowIrisWebpage
     use WithIrisGetWebpageWebBlocks;
 
 
-    public function getWebpageData($webpageID,array $parentPaths): array
+    public function getWebpageData($webpageID, array $parentPaths): array
     {
         $webpage = Webpage::find($webpageID);
         if (!$webpage) {
@@ -46,7 +46,7 @@ class ShowIrisWebpage
 
         return [
             'status'         => 'ok',
-            'breadcrumbs'    =>  $this->getIrisBreadcrumbs(
+            'breadcrumbs'    => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
@@ -75,12 +75,12 @@ class ShowIrisWebpage
 
 
         if (config('iris.cache.webpage.ttl') == 0) {
-            $webpageData = $this->getWebpageData($webpageID,$parentPaths);
+            $webpageData = $this->getWebpageData($webpageID, $parentPaths);
         } else {
             $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
 
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
-                return $this->getWebpageData($webpageID,$parentPaths);
+            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID,$parentPaths) {
+                return $this->getWebpageData($webpageID, $parentPaths);
             });
         }
 
@@ -139,16 +139,24 @@ class ShowIrisWebpage
         return $webpageID;
     }
 
-    public function getIrisBreadcrumbs(Webpage $webpage,array $parentPaths): array
+    public function getIrisBreadcrumbs(Webpage $webpage, array $parentPaths): array
     {
+
+        $webpageUrl = $webpage->url;
+
         return [
             [
                 'type'   => 'simple',
                 'simple' => [
-                    'icon'  => 'fal fa-home',
-                    'route' => [
-                        'name' => 'retina.dashboard.show'
-                    ]
+                    'icon' => 'fal fa-home',
+                    'url'  => ''
+                ]
+            ],
+            [
+                'type'   => 'simple',
+                'simple' => [
+                    'label' => $webpage->title,
+                    'url'   => $webpageUrl
                 ]
             ],
         ];

@@ -104,6 +104,7 @@ class EditWebpage extends OrgAction
                                     'label'         => __('State'),
                                     'placeholder'   => __('Select webpage state'),
                                     'value'         => $webpage->state,
+                                    'required'      => true,
                                     'options'       => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'    => true
                                 ],
