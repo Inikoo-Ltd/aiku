@@ -161,6 +161,54 @@ class EditWebpage extends OrgAction
                             ]
                         ],
                         [
+                            'label'  => __('Set as as online'),
+                            'icon'   => 'fal fa-trash-alt',
+                            'fields' => [
+
+                                'name' => [
+                                    'hidden'=>true,
+                                    'type'   => 'action',
+                                    'action' => [
+                                        'type'  => 'button',
+                                        'style' => 'delete',
+                                        'label' => __('set as online'),
+                                        'route' => [
+                                            'method'     => 'delete',
+                                            'name'       => 'grp.models.shop.webpage.delete',
+                                            'parameters' => [
+                                                'shop'    => $webpage->shop->id,
+                                                'webpage' => $webpage->id,
+                                            ]
+                                        ],
+                                    ],
+                                ]
+                            ]
+                        ],
+                        [
+                            'label'  => __('Set as offline'),
+
+                            'icon'   => 'fal fa-trash-alt',
+                            'fields' => [
+                                'name' => [
+                                    'hidden'=>true,
+                                    'type'   => 'action',
+                                    'action' => [
+                                        'type'  => 'button',
+                                        'style' => 'delete',
+                                        'label' => __('Set as offline'),
+                                        'route' => [
+                                            'method'     => 'delete',
+                                            'name'       => 'grp.models.shop.webpage.delete',
+                                            'parameters' => [
+                                                'shop'    => $webpage->shop->id,
+                                                'webpage' => $webpage->id,
+                                            ]
+                                        ],
+                                    ],
+                                ]
+                            ]
+                        ],
+                        [
                             'label'  => __('Delete'),
                             'icon'   => 'fal fa-trash-alt',
                             'fields' => [

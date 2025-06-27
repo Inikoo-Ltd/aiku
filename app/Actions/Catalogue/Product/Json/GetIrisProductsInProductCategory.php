@@ -26,33 +26,13 @@ class GetIrisProductsInProductCategory extends IrisAction
         $queryBuilder->select($this->getSelect());
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);
-            $parentUrl = $productCategory->url ?? '';
-            $queryBuilder->selectRaw('\''.$parentUrl.'\' as parent_url');
-
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $parentUrl = $productCategory->department->url ?? '';
-            if ($parentUrl) {
-                $parentUrl .= '/';
-            }
-            if ($productCategory->subDepartment && $productCategory->subDepartment->url) {
-                $parentUrl .= $productCategory->subDepartment->url.'/';
-            }
-            $parentUrl .= $productCategory->url;
-
-            $queryBuilder->selectRaw('\''.$parentUrl.'\' as parent_url');
-
             $queryBuilder->where('family_id', $productCategory->id);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $parentUrl = $productCategory->department->url ?? '';
-            if ($parentUrl) {
-                $parentUrl .= '/'.$productCategory->url;
-            }
-            $queryBuilder->selectRaw('\''.$parentUrl.'\' as parent_url');
-
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
 
-
+        $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
         return $this->getData($queryBuilder);
     }
 
