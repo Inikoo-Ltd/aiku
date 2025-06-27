@@ -38,9 +38,7 @@ trait WithIrisProductsInWebpage
     public function getBaseQuery(string $stockMode): QueryBuilder
     {
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->leftJoin('webpages', function ($join) {
-            $join->on('webpages.model_id', '=', 'products.id');
-        })->where('webpages.model_type', 'Product');
+        $queryBuilder->leftJoin('webpages','webpages.id', '=', 'products.webpage_id');
 
 
         $queryBuilder->where('products.is_for_sale', true);
