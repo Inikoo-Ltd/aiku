@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { computed, inject, onBeforeMount, onMounted, ref } from "vue"
+import { computed, inject, onBeforeMount, ref } from "vue"
 
 const layout = inject('layout', layoutStructure)
 const isLogin = computed(() => {
@@ -9,6 +9,13 @@ const isLogin = computed(() => {
 
 // Init: Search result
 const LBInitSearchResult = async () => {
+    // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
+
+    if (!layout.iris?.luigisbox_tracker_id) {
+        console.error("Luigi tracker id didn't provided")
+        return
+    }
+
     await Luigis.Search(
         {
             TrackerId: layout.iris?.luigisbox_tracker_id,
@@ -40,12 +47,16 @@ onBeforeMount(() => {
     const script = document.createElement('script');
     script.src = "https://cdn.luigisbox.com/search.js";
     script.async = true;
+    script.onload = () => {
+        console.log('Luigi autocomplete script loaded');
+        LBInitSearchResult();
+    };
+    script.onerror = () => {
+        console.error('Failed to load Luigi autocomplete script');
+    }
     document.head.appendChild(script);
 })
 
-onMounted(() => {
-    LBInitSearchResult()
-})
 const inputValue = ref('')
 </script>
 
