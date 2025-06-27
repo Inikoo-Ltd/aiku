@@ -68,7 +68,7 @@ console.log(props)
 <template>
   <div class="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-4">
     <EditorV2
-      v-model="props?.modelValue?.family?.description"
+      v-model="props.modelValue.family.description"
       placeholder="Family Description"
       @update:model-value="saveDescription"
       :uploadImageRoute="{
