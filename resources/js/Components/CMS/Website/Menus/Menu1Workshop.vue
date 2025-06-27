@@ -11,6 +11,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { resolveMigrationLink } from "@/Composables/SetUrl"
 import { onMounted } from 'vue'
 import { debounce } from 'lodash'
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faChevronLeft, falChevronRight, faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faUserCircle);
 
@@ -71,7 +72,13 @@ onMounted(() => {
 <template>
     <!-- Main Navigation -->
     <div class="bg-white  border-b border-gray-300" :style="getStyles(fieldValue?.container?.properties,screenType)">
-        <div @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())" :style="getStyles(fieldValue?.navigation_container?.properties,screenType)" class="relative container  flex flex-col justify-between items-center px-4">
+        <div @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())" :style="getStyles(fieldValue?.navigation_container?.properties,screenType)" class="relative container flex xflex-col justify-between items-center px-4">
+
+            <!-- All categories -->
+            <div class="flex items-center gap-x-2 h-fit px-5 py-1.5 rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
+                <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" />
+                <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
+            </div>
 
             <Transition>
                 <div v-if="isAbleScrollToLeft" @click="() => scrollLeft()"
@@ -108,7 +115,7 @@ onMounted(() => {
                     >
                         <FontAwesomeIcon v-if="navigation.icon" :icon="navigation.icon" class="mr-2" />
 
-                        <span xv-if="!navigation?.link?.href" class="text-center">{{ navigation.label }}</span>
+                        <span xv-if="!navigation?.link?.href" class="text-center whitespace-nowrap">{{ navigation.label }}</span>
                         
                         <FontAwesomeIcon v-if="navigation.type == 'multiple'" :icon="faChevronDown"
                             class="ml-2 text-[11px]" fixed-width />
