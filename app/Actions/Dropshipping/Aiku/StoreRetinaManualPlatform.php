@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydratePlatforms;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\RetinaAction;
@@ -16,6 +17,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,7 +30,7 @@ class StoreRetinaManualPlatform extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer): CustomerSalesChannel
+    public function handle(Customer $customer, array $modelData): CustomerSalesChannel
     {
         $platform = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
 
@@ -37,11 +39,12 @@ class StoreRetinaManualPlatform extends RetinaAction
             $customer,
             $platform,
             [
-                'reference' => (string)$customer->id,
+                'reference' => (string) $customer->id,
+                'name' => Arr::get($modelData, 'name')
             ]
         );
 
-
+        CustomerHydratePlatforms::dispatch($customer);
         CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
 
         return $customerSalesChannel;
@@ -54,10 +57,17 @@ class StoreRetinaManualPlatform extends RetinaAction
         ]));
     }
 
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255', 'unique:customer_sales_channels,name']
+        ];
+    }
+
     public function asController(ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer);
+        return $this->handle($this->customer, $this->validatedData);
     }
 }

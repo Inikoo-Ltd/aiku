@@ -13,6 +13,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -40,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\CRM\Poll $poll
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\CRM\PollOptionStat|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption newModelQuery()
@@ -100,5 +102,9 @@ class PollOption extends Model implements Auditable
         return $this->belongsTo(Poll::class);
     }
 
+    public function pollReplies(): HasMany
+    {
+        return $this->hasMany(PollReply::class);
+    }
 
 }

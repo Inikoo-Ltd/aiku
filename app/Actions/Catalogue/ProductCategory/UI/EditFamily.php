@@ -137,6 +137,11 @@ class EditFamily extends OrgAction
                                     'label' => __('name'),
                                     'value' => $family->name
                                 ],
+                                 'description' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('description'),
+                                    'value' => $family->description
+                                ],
                                 "image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),

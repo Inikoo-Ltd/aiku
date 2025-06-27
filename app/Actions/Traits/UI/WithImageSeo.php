@@ -31,7 +31,7 @@ trait WithImageSeo
                 model: $model,
                 imageData: $imageData,
                 scope: 'seo',
-                foreignkeyMedia: 'seo_image_id'
+                foreignKeyMedia: 'seo_image_id'
             );
         }
         return $model;

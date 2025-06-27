@@ -30,8 +30,8 @@ class HandleIrisInertiaRequests extends Middleware
         /** @var WebUser $webUser */
         $webUser = Auth::guard('retina')->user();
 
-        $website                           = $request->get('website');
-        $shop                              = $website->shop;
+        $website = $request->get('website');
+
         $firstLoadOnlyProps['environment'] = app()->environment();
         $firstLoadOnlyProps['ziggy']       = function () use ($request) {
             return array_merge((new Ziggy('iris'))->toArray(), [
@@ -43,7 +43,7 @@ class HandleIrisInertiaRequests extends Middleware
         $websiteTheme = Arr::get($website->published_layout, 'theme');
 
         $customerSalesChannels = [];
-        if ($webUser && $shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($webUser && $request->get('shop_type') == ShopTypeEnum::DROPSHIPPING->value) {
             $channels = DB::table('customer_sales_channels')
                 ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
                 ->select('customer_sales_channels.id', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
@@ -69,11 +69,7 @@ class HandleIrisInertiaRequests extends Middleware
                     'webUser_count'         => $webUser?->customer?->webUsers?->count() ?? 1,
                     'customerSalesChannels' => $customerSalesChannels
                 ],
-                'currency' => [
-                    'code'   => $shop->currency->code,
-                    'symbol' => $shop->currency->symbol,
-                    'name'   => $shop->currency->name,
-                ],
+                'currency' => $request->get('currency_data'),
                 'flash'    => [
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')
@@ -82,12 +78,13 @@ class HandleIrisInertiaRequests extends Middleware
                     'location' => $request->url(),
                 ],
                 "retina"   => [
-                    "type" => $shop->type->value,
+                    "type" => $request->get('shop_type'),
                 ],
                 "layout"   => [
                     "app_theme" => Arr::get($websiteTheme, 'color'),
                 ],
-                'iris'     => $this->getIrisData($website, $webUser)
+                'iris'     => $this->getIrisData($website, $webUser),
+
 
             ],
             parent::share($request),

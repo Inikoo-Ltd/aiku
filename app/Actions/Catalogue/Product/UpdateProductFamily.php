@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Collection\SyncIndirectProductsToCollection;
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
@@ -32,9 +33,8 @@ class UpdateProductFamily extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-
-        $oldFamily = $product->family;
-        $oldDepartment = $product->department;
+        $oldFamily        = $product->family;
+        $oldDepartment    = $product->department;
         $oldSubDepartment = $product->subDepartment;
 
         $family = ProductCategory::find(Arr::get($modelData, 'family_id'));
@@ -44,15 +44,26 @@ class UpdateProductFamily extends OrgAction
         data_set($modelData, 'sub_department_id', $family->sub_department_id);
 
         $product = $this->update($product, $modelData);
-        $changes         = $product->getChanges();
+        $changes = $product->getChanges();
 
         $product->refresh();
 
 
         if (Arr::has($changes, 'family_id')) {
             FamilyHydrateProducts::dispatch($product->family);
+            BreakProductInWebpagesCache::make()->breakCache($product->family->webpage);
+
+
+            foreach ($product->family->collections as $collection) {
+                SyncIndirectProductsToCollection::dispatch($collection);
+            }
+
             if ($oldFamily) {
                 FamilyHydrateProducts::dispatch($oldFamily);
+                foreach ($oldFamily->collections as $collection) {
+                    SyncIndirectProductsToCollection::dispatch($collection);
+                }
+                BreakProductInWebpagesCache::make()->breakCache($oldFamily->webpage);
             } else {
                 ShopHydrateProductsWithNoFamily::dispatch($product->shop);
                 OrganisationHydrateProductsWithNoFamily::dispatch($product->organisation);
@@ -62,21 +73,26 @@ class UpdateProductFamily extends OrgAction
 
         if (Arr::has($changes, 'department_id')) {
             if ($product->department_id) {
+                BreakProductInWebpagesCache::make()->breakCache($product->department->webpage);
                 DepartmentHydrateProducts::dispatch($product->department);
             }
             if ($oldDepartment) {
                 DepartmentHydrateProducts::dispatch($oldDepartment);
+                BreakProductInWebpagesCache::make()->breakCache($oldDepartment->webpage);
             }
         }
 
         if (Arr::has($changes, 'sub_department_id')) {
             if ($product->sub_department_id) {
+                BreakProductInWebpagesCache::make()->breakCache($product->subDepartment->webpage);
                 SubDepartmentHydrateProducts::dispatch($product->subDepartment);
             }
             if ($oldSubDepartment) {
                 SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+                BreakProductInWebpagesCache::make()->breakCache($oldSubDepartment->webpage);
             }
         }
+
 
         return $product;
     }

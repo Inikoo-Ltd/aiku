@@ -31,6 +31,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
 use App\Rules\IUnique;
+use Cache;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -50,6 +51,7 @@ class UpdateWebpage extends OrgAction
         $currentSeoData = Arr::get($modelData, 'seo_data');
 
         $oldSeoData = $webpage->seo_data;
+        $oldUrl     = $webpage->url;
 
         if ($currentSeoData) {
             $isUseCanonicalUrl = Arr::pull($currentSeoData, 'is_use_canonical_url');
@@ -90,7 +92,10 @@ class UpdateWebpage extends OrgAction
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
-        if ($webpage->wasChanged('url')) {
+        $changes = Arr::except($webpage->getChanges(), ['updated_at', 'last_fetched_at']);
+
+
+        if (Arr::has($changes, 'url')) {
             $model = $webpage->model;
             if ($model instanceof Product) {
                 UpdateProduct::make()->action($model, [
@@ -105,9 +110,14 @@ class UpdateWebpage extends OrgAction
                     'url' => $webpage->url,
                 ]);
             }
+
+            $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url);
+            Cache::forget($key);
+            $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($oldUrl);
+            Cache::forget($key);
         }
 
-        if ($webpage->wasChanged('state')) {
+        if (Arr::has($changes, 'state')) {
             GroupHydrateWebpages::dispatch($webpage->group)->delay($this->hydratorsDelay);
             OrganisationHydrateWebpages::dispatch($webpage->organisation)->delay($this->hydratorsDelay);
             WebsiteHydrateWebpages::dispatch($webpage->website)->delay($this->hydratorsDelay);
@@ -116,8 +126,16 @@ class UpdateWebpage extends OrgAction
             }
         }
 
+        if (Arr::hasAny($changes, [
+            'code',
+            'url',
+            'state',
+            'type',
+            'state',
+        ])) {
+            WebpageRecordSearch::dispatch($webpage);
+        }
 
-        WebpageRecordSearch::dispatch($webpage);
 
         return $webpage;
     }

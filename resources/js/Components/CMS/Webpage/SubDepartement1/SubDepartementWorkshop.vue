@@ -114,23 +114,23 @@ const mergedItems = computed(() => {
       <div class="grid gap-4" :class="gridColsClass">
         <button
           v-for="item in mergedItems"
-          :key="item.code"
+          :key="item?.code"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
           @click="openModal(item)"
         >
           <div class="flex items-center justify-center w-5 h-5 shrink-0 text-xl">
             <FontAwesomeIcon
-              v-if="item.icon"
-              :icon="item.icon"
+              v-if="item?.icon"
+              :icon="item?.icon"
               class="text-xl w-5 h-5"
             />
             <Image
               v-else
-              :src="item.image"
+              :src="item?.web_images?.main?.gallery"
               class="w-full h-full object-contain"
             />
           </div>
-          <span class="flex-1 text-center">{{ item.name }}</span>
+          <span class="flex-1 text-center">{{ item?.name }}</span>
         </button>
       </div>
     </div>

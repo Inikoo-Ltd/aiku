@@ -23,7 +23,7 @@ class AttachImagesToProduct extends OrgAction
     use WithWebAuthorisation;
     use WithAttachMediaToModel;
 
-    public function handle(Product $product, $scope, array $modelData)
+    public function handle(Product $product, $scope, array $modelData): Product
     {
         foreach ($modelData['images'] as $image) {
             $media = Media::find($image);
@@ -36,7 +36,7 @@ class AttachImagesToProduct extends OrgAction
     public function rules(): array
     {
         return [
-            'images'   => ['required', 'array'],
+            'images' => ['required', 'array'],
         ];
     }
 
@@ -45,9 +45,8 @@ class AttachImagesToProduct extends OrgAction
         return ImageResource::collection($medias);
     }
 
-    public function asController(Organisation $organisation, Product $product, ActionRequest $request)
+    public function asController(Organisation $organisation, Product $product, ActionRequest $request): void
     {
-        $this->scope = $organisation;
         $this->initialisation($organisation, $request);
 
         $this->handle($product, 'image', $this->validatedData);

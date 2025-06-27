@@ -111,6 +111,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_collection_snapshot_id
  * @property int|null $live_collection_snapshot_id
  * @property string|null $published_collection_checksum
+ * @property bool $is_migrating
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks

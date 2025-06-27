@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\OrgAction;
@@ -35,16 +36,20 @@ class UpdateStateToDispatchedOrder extends OrgAction
         ];
 
         DB::transaction(function () use ($order, $data) {
-            $order->transactions()->update([
-                'state' => TransactionStateEnum::DISPATCHED
-            ]);
+            foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
+                $dispatchedQuantity = $transaction->deliveryNoteItem->quantity_dispatched;
+                $transaction->update([
+                    'state' => TransactionStateEnum::DISPATCHED,
+                    'quantity_dispatched' => $dispatchedQuantity,
+                ]);
+            }
 
             $this->update($order, $data);
             $this->orderHydrators($order);
-
+            $order->refresh();
             match ($order->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
-                //                PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
+                PlatformTypeEnum::EBAY        => FulfillOrderToEbay::run($order),
                 //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                 PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
                 default => null,

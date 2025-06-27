@@ -26,6 +26,11 @@ class HandleRetinaInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
+        $routeName = $request->route()->getName();
+        if (str_starts_with($routeName, 'grp.retina.')) {
+            return [];
+        }
+
         /** @var WebUser $webUser */
         $webUser            = $request->user();
         $firstLoadOnlyProps = [];

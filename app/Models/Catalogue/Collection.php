@@ -51,7 +51,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $webpage_id
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
+ * @property int|null $master_collection_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
  * @property-read Group $group
@@ -153,15 +155,22 @@ class Collection extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
+    // Warning this includes both direct products and products in families
     public function products(): MorphToMany
     {
         return $this->morphedByMany(Product::class, 'model', 'collection_has_models')
-            ->withTimestamps();
+            ->withTimestamps()->withPivot('type');
     }
 
     public function families(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'collection_has_models')
+            ->withTimestamps();
+    }
+
+    public function collections(): MorphToMany
+    {
+        return $this->morphedByMany(Collection::class, 'model', 'collection_has_models')
             ->withTimestamps();
     }
 

@@ -21,11 +21,13 @@ class GetIrisProductsInCollection extends IrisAction
     {
         $queryBuilder = $this->getBaseQuery($stockMode);
 
-        $queryBuilder->join('model_has_collections', function ($join) use ($collection) {
-            $join->on('products.id', '=', 'model_has_collections.model_id')
-                ->where('model_has_collections.model_type', '=', 'Product')
-                ->where('model_has_collections.collection_id', '=', $collection->id);
+        $queryBuilder->join('collection_has_models', function ($join) use ($collection) {
+            $join->on('products.id', '=', 'collection_has_models.model_id')
+                ->where('collection_has_models.model_type', '=', 'Product')
+                ->where('collection_has_models.collection_id', '=', $collection->id);
         });
+        $queryBuilder->select($this->getSelect());
+        $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
 
 
         return $this->getData($queryBuilder);

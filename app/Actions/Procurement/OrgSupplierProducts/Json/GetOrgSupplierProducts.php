@@ -25,9 +25,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetOrgSupplierProducts extends OrgAction
 {
-    private OrgSupplier|OrgAgent|Organisation $parent;
-
-    public function handle(Organisation|OrgAgent|OrgSupplier $parent, PurchaseOrder $purchaseOrder, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|OrgAgent|OrgSupplier $parent, PurchaseOrder $purchaseOrder): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -69,9 +67,6 @@ class GetOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            // ->addSelect([
-            //     'purchase_order_transactions.quantity_ordered as quantity_ordered'
-            // ])
             ->select([
                 'org_supplier_products.id',
                 'supplier_products.code',
@@ -100,14 +95,12 @@ class GetOrgSupplierProducts extends OrgAction
 
     public function inOrgAgent(OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $orgAgent;
         $this->initialisation($orgAgent->organisation, $request);
         return $this->handle($orgAgent, $purchaseOrder);
     }
 
     public function inOrgSupplier(OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $orgSupplier;
         $this->initialisation($orgSupplier->organisation, $request);
         return $this->handle($orgSupplier, $purchaseOrder);
     }

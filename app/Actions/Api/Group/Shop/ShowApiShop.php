@@ -10,14 +10,12 @@
 namespace App\Actions\Api\Group\Shop;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Api\Dropshipping\ShopResource;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowApiShop extends OrgAction
 {
-
     public function authorize(ActionRequest $request): bool
     {
 

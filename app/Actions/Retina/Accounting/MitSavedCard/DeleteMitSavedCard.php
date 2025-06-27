@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Accounting\MitSavedCard;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\MitSavedCard;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -19,9 +20,18 @@ class DeleteMitSavedCard extends RetinaAction
 {
     use AsController;
     use WithAttributes;
+    use WithActionUpdate;
 
     public function handle(MitSavedCard $mitSavedCard): void
     {
+        $mitSavedCards = $this->customer->mitSavedCard()->where('id', '!=', $mitSavedCard->id)->orderBy('priority')->get();
+
+        foreach ($mitSavedCards as $key => $currentMitSavedCard) {
+            $this->update($currentMitSavedCard, [
+                'priority' => $key + 1
+            ]);
+        }
+
         $mitSavedCard->delete();
     }
 

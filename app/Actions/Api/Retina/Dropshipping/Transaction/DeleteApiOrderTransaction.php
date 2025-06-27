@@ -9,11 +9,12 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\TransactionApiResource;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\RetinaApiAction;
-use App\Http\Controllers\Api\RetinaApiDoc;
-use App\Http\Resources\Api\TransactionResource;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Transaction;
+use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,8 +24,13 @@ class DeleteApiOrderTransaction extends RetinaApiAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Transaction $transaction): Transaction
+    public function handle(Transaction $transaction): Transaction|JsonResponse
     {
+        if ($transaction->order->state != OrderStateEnum::CREATING) {
+            return response()->json([
+                'message' => 'This order is already in the "' . $transaction->order->state->value . '" state and cannot be updated.',
+            ]);
+        }
         return DeleteTransaction::make()->action($transaction);
     }
 
@@ -35,13 +41,13 @@ class DeleteApiOrderTransaction extends RetinaApiAction
 
     public function jsonResponse(Transaction $transaction)
     {
-        return TransactionResource::make($transaction)
+        return TransactionApiResource::make($transaction)
             ->additional([
                 'message' => __('Transaction deleted successfully'),
             ]);
     }
 
-    public function asController(Transaction $transaction, ActionRequest $request): Transaction
+    public function asController(Transaction $transaction, ActionRequest $request): Transaction|JsonResponse
     {
         $this->initialisationFromDropshipping($request);
         return $this->handle($transaction);

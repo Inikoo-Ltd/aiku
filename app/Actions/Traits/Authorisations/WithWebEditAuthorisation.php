@@ -20,41 +20,49 @@ trait WithWebEditAuthorisation
         }
 
         $routeName = $request->route()->getName();
+        $user      = $request->user();
 
-        if (str_starts_with($routeName, 'grp.org.websites.')) {
-            return $request->user()->authTo([
-                "org-supervisor.{$this->organisation->id}",
-                "websites-edit.{$this->organisation->id}",
-                "group-webmaster.view"
-            ]);
-        } elseif (str_starts_with($routeName, 'grp.overview.')) {
+
+        if ($routeName == 'grp.websites.webpage.preview') {
+            return true;
+        }
+
+        if (str_starts_with($routeName, 'grp.overview.')) {
             return false;
-        } elseif (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
-            return $request->user()->authTo([
+        }
+
+        if (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
+            return $user->authTo([
                 "supervisor-web.{$this->shop->id}",
                 "web.{$this->shop->id}.edit",
                 "group-webmaster.view"
             ]);
-        } elseif (str_starts_with($routeName, 'grp.org.fulfilments.show.web.')) {
-            return $request->user()->authTo([
+        }
+
+        if (str_starts_with($routeName, 'grp.org.fulfilments.show.web.')) {
+            return $user->authTo([
                 "supervisor-fulfilment-shop.{$this->fulfilment->id}",
                 "fulfilment-shop.{$this->fulfilment->id}.edit",
                 "group-webmaster.view"
             ]);
-        } elseif (str_starts_with($routeName, 'grp.models.')) {
+        }
+
+        if (str_starts_with($routeName, 'grp.models.')) {
             $permissions = [
                 "group-webmaster.view",
                 "supervisor-web.{$this->shop->id}",
                 "web.{$this->shop->id}.edit",
             ];
-            if ($this->shop->type === ShopTypeEnum::FULFILMENT) {
+            if (
+                isset($this->shop->type)
+                && $this->shop->type === ShopTypeEnum::FULFILMENT
+                && isset($this->shop->fulfilment)
+            ) {
                 $permissions[] = "supervisor-fulfilment-shop.{$this->shop->fulfilment->id}";
                 $permissions[] = "fulfilment-shop.{$this->shop->fulfilment->id}.edit";
             }
 
-            return $request->user()->authTo($permissions);
-        } elseif ($routeName == 'grp.websites.webpage.preview') {
-            return true;
+            return $user->authTo($permissions);
         }
 
         return false;

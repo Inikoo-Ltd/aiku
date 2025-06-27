@@ -70,6 +70,7 @@ class WebBlockProductResource extends JsonResource
             'description'     => $product->description,
             'units'           => $product->units,
             'unit'            => $product->unit,
+            'web_images'      => $product->web_images,
             'created_at'      => $product->created_at,
             'updated_at'      => $product->updated_at,
             'images'          => ImageResource::collection($product->images)->toArray($request),

@@ -34,5 +34,6 @@ class HydrateCollection
         CollectionHydrateFamilies::run($collection);
         CollectionHydrateState::run($collection);
         CollectionHydrateParents::run($collection);
+        SyncIndirectProductsToCollection::run($collection);
     }
 }

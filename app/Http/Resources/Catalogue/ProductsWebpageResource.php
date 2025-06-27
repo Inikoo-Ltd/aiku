@@ -9,8 +9,6 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -28,6 +26,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $rrp
  * @property mixed $description
+ * @property mixed $web_images
  */
 class ProductsWebpageResource extends JsonResource
 {
@@ -35,11 +34,12 @@ class ProductsWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-        $media = null;
-        if ($this->image_id) {
-            $media = Media::find($this->image_id);
-        }
 
+        if (!is_array($this->web_images)) {
+            $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
+        } else {
+            $webImages = $this->web_images;
+        }
         return [
             'slug'        => $this->slug,
             'image_id'    => $this->image_id,
@@ -55,7 +55,7 @@ class ProductsWebpageResource extends JsonResource
             'unit'        => $this->unit,
             'status'      => $this->status,
             'rrp'         => $this->rrp,
-            'image'       => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'web_images'  => $webImages
         ];
     }
 }

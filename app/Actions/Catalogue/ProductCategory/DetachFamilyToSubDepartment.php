@@ -46,11 +46,11 @@ class DetachFamilyToSubDepartment extends OrgAction
         return $family;
     }
 
-    public function asController(ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function asController(ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): void
     {
         $this->initialisationFromShop($family->shop, $request);
 
-        return $this->handle($family);
+        $this->handle($family);
     }
 
 

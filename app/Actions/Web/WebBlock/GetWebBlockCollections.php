@@ -43,7 +43,7 @@ class GetWebBlockCollections
             ->where('webpages.model_type', 'Collection')
             ->where('model_has_collections.model_id', $webpage->model_id)
             ->where('model_has_collections.model_type', $webpage->model_type)
-            ->select(['collections.slug', 'collections.code', 'collections.name', 'collections.image_id', 'webpages.url as url'])
+            ->select(['collections.slug', 'collections.code', 'collections.name', 'collections.image_id', 'collections.web_images', 'webpages.url as url'])
             ->whereNull('collections.deleted_at')
             ->get();
     }

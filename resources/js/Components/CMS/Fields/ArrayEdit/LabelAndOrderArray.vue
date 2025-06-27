@@ -8,6 +8,7 @@ import { routeType } from "@/types/route";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import SideEditorArrayEdit from "./SideEditorArrayEdit.vue";
 import draggable from "vuedraggable";
+import { debounce } from 'lodash-es'
 
 // Add icons to FontAwesome library
 library.add(faPlus, faTrash);
@@ -27,7 +28,7 @@ const props = withDefaults(defineProps<{
   can_add: true
 });
 
-const modelValue = defineModel<{}[]>({ required: true })
+const modelValue = defineModel({ required: true })
 
 if (!modelValue.value) {
   modelValue.value = []
@@ -46,13 +47,16 @@ const removeValue = (index: number) => {
   modelValue.value = newValue;
 };
 
-const onChangeProperty = (index: number, data: object) => {
+// Original function logic
+const updateProperty = (index: number, data: object) => {
   const newValue = toRaw(modelValue.value);
   newValue[index] = data;
   modelValue.value = newValue;
-};
+}
 
-console.log('sss',modelValue.value)
+// Debounced version
+const onChangeProperty = debounce(updateProperty, 500)
+
 </script>
 
 

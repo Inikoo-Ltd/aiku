@@ -24,6 +24,7 @@ trait WithFillIrisWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
+
         if ($webBlockType === 'banner') {
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
         } elseif (in_array($webBlockType, ['departments'])) {
