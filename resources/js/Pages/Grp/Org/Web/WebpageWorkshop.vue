@@ -41,6 +41,7 @@ import {
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
 
 library.add(
   faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars,
@@ -53,6 +54,7 @@ const props = defineProps<{
   pageHead: PageHeadingTypes,
   webpage: RootWebpage,
   webBlockTypes: Root
+  url : string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -205,15 +207,17 @@ const debouncedSaveSiteSettings = debounce(block => {
     route('grp.models.model_has_web_block.bulk.update'),
     { web_blocks: block },
     {
+      preserveScroll: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
-      onSuccess: () => sendToIframe({ key: 'reload', value: {} }),
+      onSuccess: () => {
+        sendToIframe({ key: 'reload', value: {} })
+      },
       onError: error => notify({
         title: trans("Something went wrong"),
         text: error.message,
         type: "error"
       }),
-      preserveScroll: true
     }
   );
 }, 1500);
@@ -429,12 +433,9 @@ const compUsersEditThisPage = computed(() => {
 	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
-console.log(props)
-
 const openWebsite = () => {
-  console.log('props',props)
+  window.open(props.url, '_blank')
 }
-
 </script>
 
 <template>
@@ -457,6 +458,7 @@ const openWebsite = () => {
       </div>
     </template>
   </PageHeading>
+
 
   <ConfirmDialog group="alert-publish" />
 

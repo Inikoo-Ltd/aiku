@@ -13,7 +13,7 @@ export default {
 					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
-				},
+				},	
 				{
 					key: ["properties", "object_fit"],
 					label: "Object Image",
