@@ -10,7 +10,7 @@ import Table from '@/Components/Table/Table.vue';
 import { Webpage } from "@/types/webpage";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
-    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam
+    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink
 } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '@/Components/Icon.vue';
@@ -24,7 +24,9 @@ const props = defineProps<{
     tab?: string
 }>()
 
-
+const openWebsite = (href: string) => {
+    window.open(href, '_blank')
+}
 function webpageRoute(webpage: Webpage) {
 
 //   console.log(route().current())
@@ -115,6 +117,17 @@ function webpageRoute(webpage: Webpage) {
         <template #cell(type)="{ item: webpage }">
             <!-- <FontAwesomeIcon :icon="webpage.typeIcon.icon" class="" /> -->
             <Icon :data="webpage.typeIcon" class="px-1" />
+        </template>
+        <template #cell(action)="{ item: webpage }">
+            <div
+                class="px-2 cursor-pointer"
+                v-tooltip="'Go to website'"
+                @click="openWebsite(webpage.href)"
+                role="button"
+                tabindex="0"
+            >
+                <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
+            </div>
         </template>
 
         <template #heading(level)="{ item: column }">

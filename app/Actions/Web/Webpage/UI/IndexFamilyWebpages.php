@@ -162,7 +162,7 @@ class IndexFamilyWebpages extends OrgAction
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('level');
         };
     }
