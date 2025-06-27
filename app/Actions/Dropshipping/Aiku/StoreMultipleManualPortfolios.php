@@ -57,7 +57,7 @@ class StoreMultipleManualPortfolios extends OrgAction
 
 
 
-        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
+        CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
     }
 
     public function rules(): array
