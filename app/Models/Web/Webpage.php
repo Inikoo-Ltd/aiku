@@ -180,6 +180,7 @@ class Webpage extends Model implements Auditable, HasMedia
 
     protected array $auditInclude = [
         'code',
+        'title',
         'url',
         'state',
         'ready_at',

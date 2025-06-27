@@ -92,8 +92,14 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/blog', [IndexWebpages::class, 'blog'])->name('index.type.blog');
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');
     Route::get('/sub-type/department', IndexDepartmentWebpages::class)->name('index.sub_type.department');
+    Route::get('/sub-type/department/{scope}/sub-departments', [IndexSubDepartmentWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.sub_departments');
+    Route::get('/sub-type/department/{scope}/families', [IndexFamilyWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.families');
+    Route::get('/sub-type/department/{scope}/products', [IndexProductWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.products');
     Route::get('/sub-type/sub-department', IndexSubDepartmentWebpages::class)->name('index.sub_type.sub_department');
+    Route::get('/sub-type/sub-department/{scope}/families', [IndexFamilyWebpages::class, 'inSubDepartmentWebpages'])->name('index.sub_type.sub_department.families');
+    Route::get('/sub-type/sub-department/{scope}/products', [IndexProductWebpages::class, 'inSubDepartmentWebpages'])->name('index.sub_type.sub_department.products');
     Route::get('/sub-type/family', IndexFamilyWebpages::class)->name('index.sub_type.family');
+    Route::get('/sub-type/family/{scope}/products', [IndexProductWebpages::class, 'inFamilyWebpages'])->name('index.sub_type.family.products');
     Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
 
     Route::get('create', CreateWebpage::class)->name('create');

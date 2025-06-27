@@ -43,7 +43,7 @@ class StoreMultipleManualPortfolios extends OrgAction
                     /** @var Product $item */
                     $item = Product::find($itemID);
                 }
-                if ($item->portfolio()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
+                if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
                     continue;
                 }
 

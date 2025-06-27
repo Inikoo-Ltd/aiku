@@ -24,7 +24,7 @@ class ShowIrisWebpage
     use WithIrisGetWebpageWebBlocks;
 
 
-    public function getWebpageData($webpageID): array
+    public function getWebpageData($webpageID, array $parentPaths): array
     {
         $webpage = Webpage::find($webpageID);
         if (!$webpage) {
@@ -46,7 +46,10 @@ class ShowIrisWebpage
 
         return [
             'status'         => 'ok',
-            'breadcrumbs'    => null,
+            'breadcrumbs'    => $this->getIrisBreadcrumbs(
+                webpage: $webpage,
+                parentPaths: $parentPaths
+            ),
             'meta'           => $webpage->seo_data,
             'script_website' => Arr::get($webpage->website->settings, 'script_website.header'),
             'web_blocks'     => $webBlocks,
@@ -72,12 +75,12 @@ class ShowIrisWebpage
 
 
         if (config('iris.cache.webpage.ttl') == 0) {
-            $webpageData = $this->getWebpageData($webpageID);
+            $webpageData = $this->getWebpageData($webpageID, $parentPaths);
         } else {
             $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
 
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
-                return $this->getWebpageData($webpageID);
+            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID,$parentPaths) {
+                return $this->getWebpageData($webpageID, $parentPaths);
             });
         }
 
@@ -136,5 +139,27 @@ class ShowIrisWebpage
         return $webpageID;
     }
 
+    public function getIrisBreadcrumbs(Webpage $webpage, array $parentPaths): array
+    {
+
+        $webpageUrl = $webpage->url;
+
+        return [
+            [
+                'type'   => 'simple',
+                'simple' => [
+                    'icon' => 'fal fa-home',
+                    'url'  => ''
+                ]
+            ],
+            [
+                'type'   => 'simple',
+                'simple' => [
+                    'label' => $webpage->title,
+                    'url'   => $webpageUrl
+                ]
+            ],
+        ];
+    }
 
 }

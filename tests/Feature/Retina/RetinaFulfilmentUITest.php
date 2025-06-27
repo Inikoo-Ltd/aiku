@@ -207,7 +207,12 @@ beforeEach(function () {
         'inertia.testing.page_paths',
         [resource_path('js/Pages/Retina')]
     );
-    DetectWebsiteFromDomain::shouldRun()->with('localhost')->andReturn($this->website);
+
+    DetectWebsiteFromDomain::mock()
+        ->shouldReceive('handle')
+        ->with('localhost')
+        ->andReturn($this->website);
+
 });
 
 test('show log in', function () {
