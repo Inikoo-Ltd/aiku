@@ -82,8 +82,14 @@ const onSubmitSubscribe = async () => {
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-solid border-gray-700">
             <div class="overflow-hidden flex-1 flex items-center justify-center md:justify-start ">
-                <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true" :alt="modelValue?.logo?.alt"
-                    :imgAttributes="modelValue?.logo?.attributes" :style="getStyles(modelValue?.logo?.properties)" />
+                <Image v-if="modelValue?.logo?.source"
+                    :src="modelValue?.logo?.source"
+                    :imageCover="true"
+                    class="w-full md:w-fit h-full flex justify-center items-center"
+                    :alt="modelValue?.logo?.alt"
+                    :imgAttributes="modelValue?.logo?.attributes"
+                    :style="getStyles(modelValue?.logo?.properties)"
+                />
             </div>
 
             <div v-if="modelValue?.email"
