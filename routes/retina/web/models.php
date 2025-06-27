@@ -12,6 +12,8 @@ use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
 use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
+use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
+use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfolioToShopify;
@@ -252,6 +254,9 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings();
     Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings();
+
+    Route::post('{magentoUser:id}/magento-batch-upload', SyncronisePortfoliosToMagento::class)->name('magento.batch_upload')->withoutScopedBindings();
+    Route::post('{magentoUser:id}/magento-single-upload/{portfolio:id}', SyncronisePortfolioToMagento::class)->name('magento.single_upload')->withoutScopedBindings();
 
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::post('tiktok/{tiktokUser:id}/products', StoreProductToTiktok::class)->name('tiktok.product.store')->withoutScopedBindings();
