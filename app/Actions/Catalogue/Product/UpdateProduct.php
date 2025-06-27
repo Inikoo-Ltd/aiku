@@ -45,8 +45,14 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::has($modelData, 'org_stocks')) {
-            $orgStocks = Arr::pull($modelData, 'org_stocks', []);
+            $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
+            $orgStocks = [];
+            foreach ($orgStocksRaw as $item) {
+                $orgStocks[] = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+            }
+
             $product->orgStocks()->sync($orgStocks);
+
         }
 
         $assetData = [];
