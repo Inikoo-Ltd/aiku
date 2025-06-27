@@ -36,9 +36,18 @@ class RequestApiUploadProductMagento extends RetinaAction
 
             $images = [];
             if (app()->isProduction()) {
-                foreach ($product->images as $image) {
+                foreach ($product->images as $key => $image) {
                     $images[] = [
-                        'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
+                        'media_type' => 'image',
+                        'label' => 'Product Image 1',
+                        'position' => $key + 1,
+                        'disabled' => false,
+                        'types' => $key === 0 ? ['image', 'small_image', 'thumbnail'] : ['image'],
+                        'content' => [
+                            'base64_encoded_data' => base64_encode(file_get_contents(GetImgProxyUrl::run($image->getImage()->extension('png')))),
+                            'type' => 'image/png',
+                            'name' => $image->file_name
+                        ]
                     ];
                 }
             }
@@ -54,14 +63,13 @@ class RequestApiUploadProductMagento extends RetinaAction
                 'weight' => $product->gross_weight,
                 'extension_attributes' => [
                     'stock_item' => [
-                        'is_in_stock' => 1,
+                        'is_in_stock' => true,
                         'qty' => $product->available_quantity,
+                        'manage_stock' => true,
+                        'use_config_manage_stock' => false
                     ]
                 ],
-                'custom_attributes' => [
-                    'product_id' => $product->id,
-                    'portfolio_id' => $portfolio->id,
-                ],
+                'media_gallery_entries' => $images
             ];
 
             $result = $magentoUser->uploadProduct($wooCommerceProduct);

@@ -34,7 +34,7 @@ class SyncronisePortfoliosToMagento extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            RequestApiUploadProductMagento::run($magentoUser, $portfolio);
+            RequestApiUploadProductMagento::dispatch($magentoUser, $portfolio);
         }
     }
 
