@@ -29,6 +29,7 @@ import TableProductFavourites from "@/Components/Tables/Grp/Org/Catalogue/TableP
 import TableProductBackInStockReminders from "@/Components/Tables/Grp/Org/Catalogue/TableProductBackInStockReminders.vue"
 import TableTradeUnits from '@/Components/Tables/Grp/Goods/TableTradeUnits.vue'
 import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -62,6 +63,7 @@ const props = defineProps<{
     service: {}
     rental: {}
     trade_units?: {}
+    history?: {}
     stocks?: {}
     taxonomy: {
         department?: {
@@ -95,11 +97,11 @@ const component = computed(() => {
         details: ModelDetails,
         service: ProductService,
         rental: ProductRental,
-        history: ModelChangelog,
+        history: TableHistories,
         favourites: TableProductFavourites,
         reminders: TableProductBackInStockReminders,
         trade_units: TableTradeUnits,
-        stocks: TableOrgStocks
+        stocks: TableOrgStocks,
     }
     return components[currentTab.value]
 })

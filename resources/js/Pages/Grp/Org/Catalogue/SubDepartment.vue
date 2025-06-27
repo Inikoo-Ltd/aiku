@@ -35,6 +35,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Image from '@/Components/Image.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { routeType } from '@/types/route'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(
     faFolder,
@@ -71,6 +72,7 @@ const props = defineProps<{
     customers: {}
     mailshots: {}
     products: {}
+    history?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -83,7 +85,7 @@ const component: Component = computed(() => {
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,
-        history: ModelChangelog,
+        history: TableHistories,
     }
     return components[currentTab.value]
 
