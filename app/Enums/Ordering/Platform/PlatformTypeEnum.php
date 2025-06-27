@@ -20,6 +20,7 @@ enum PlatformTypeEnum: string
     case EBAY = 'ebay';
     case MANUAL = 'manual';
     case AMAZON = 'amazon';
+    case MAGENTO = 'magento';
 
     public function labels(): array
     {
@@ -30,7 +31,7 @@ enum PlatformTypeEnum: string
             'ebay'        => 'Ebay',
             'amazon'        => 'Amazon',
             'manual'        => __('Manual'),
-            'amazon'        => __('Amazon')
+            'magento'        => 'Magento'
         ];
     }
 }
