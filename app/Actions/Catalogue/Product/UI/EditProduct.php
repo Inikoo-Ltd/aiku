@@ -214,7 +214,7 @@ class EditProduct extends OrgAction
                 'fields' => [
                     'org_stocks' => [
                         'type'         => 'product_parts',
-                        'label'        => __('code'),
+                        'label'        => __('Parts'),
                         // 'readonly' => true,
                         'full'         => true,
                         'fetch_route'  => [
