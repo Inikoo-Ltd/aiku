@@ -57,7 +57,7 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
      */
     public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
     {
-        if(!$shopifyUser->customer_id ){
+        if (!$shopifyUser->customer_id) {
             abort(422);
         }
 

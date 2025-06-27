@@ -22,8 +22,8 @@ class BreakWebsiteCache extends OrgAction
         $key = config('iris.cache.website.prefix')."_$website->domain";
         Cache::forget($key);
 
-        ClearCacheByWildcard::run( config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
-        ClearCacheByWildcard::run( config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
+        ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
+        ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
 
         return $website;
     }

@@ -1,11 +1,11 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 26-06-2025-18h-22m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
-
 
 namespace App\Actions\Catalogue\Product\Json;
 
