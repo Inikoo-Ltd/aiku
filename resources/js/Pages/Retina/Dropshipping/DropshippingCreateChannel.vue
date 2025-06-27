@@ -346,12 +346,11 @@ const onSubmitMagento = async () => {
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
                          alt="" class="h-12"
-                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
                     >
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Ebay</div>
-                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        <div
                              class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}
                         </div>
                     </div>
@@ -359,15 +358,11 @@ const onSubmitMagento = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="onSubmitEbay"
                     />
-
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
-
                 </div>
             </div>
 

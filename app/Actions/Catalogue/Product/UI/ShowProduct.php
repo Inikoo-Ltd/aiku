@@ -15,6 +15,7 @@ use App\Actions\CRM\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
@@ -23,6 +24,7 @@ use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Product;
@@ -295,6 +297,10 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
                     fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
                     : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
+                
+                ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
+                                    fn () => HistoryResource::collection(IndexHistory::run($product))
+                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
 
 
             ]
@@ -302,7 +308,8 @@ class ShowProduct extends OrgAction
             ->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
-            ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value));
+            ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value));
     }
 
     public function jsonResponse(Product $product): ProductsResource

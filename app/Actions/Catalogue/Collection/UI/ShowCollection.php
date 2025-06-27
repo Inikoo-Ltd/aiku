@@ -16,6 +16,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -24,6 +25,7 @@ use App\Http\Resources\Catalogue\CollectionResource;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Catalogue\FamiliesInCollectionResource;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -294,6 +296,9 @@ class ShowCollection extends OrgAction
                     fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))
                     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
 
+                CollectionTabsEnum::HISTORY->value => $this->tab == CollectionTabsEnum::HISTORY->value ?
+                                    fn () => HistoryResource::collection(IndexHistory::run($collection))
+                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($collection))),
 
             ]
         )
@@ -312,7 +317,7 @@ class ShowCollection extends OrgAction
                     collection: $collection,
                     prefix: CollectionTabsEnum::COLLECTIONS->value,
                 )
-            );
+            )->table(IndexHistory::make()->tableStructure(prefix: CollectionTabsEnum::HISTORY->value));
     }
 
     public function jsonResponse(Collection $collection): CollectionResource

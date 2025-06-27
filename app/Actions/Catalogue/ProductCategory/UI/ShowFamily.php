@@ -12,12 +12,14 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -166,10 +168,14 @@ class ShowFamily extends OrgAction
                     fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
                     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
+                FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
+                                    fn () => HistoryResource::collection(IndexHistory::run($family))
+                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family))),
 
             ]
         )->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure($family));
+            ->table(IndexMailshots::make()->tableStructure($family))
+            ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value));
     }
 
 
