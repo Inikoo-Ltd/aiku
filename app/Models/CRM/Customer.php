@@ -151,6 +151,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, MagentoUser> $magentoUsers
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, MitSavedCard> $mitSavedCard
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
