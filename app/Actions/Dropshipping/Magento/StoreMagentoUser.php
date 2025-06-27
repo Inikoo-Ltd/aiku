@@ -63,6 +63,7 @@ class StoreMagentoUser extends OrgAction
 
         $magentoUser->refresh();
         $accessToken = $magentoUser->getMagentoToken();
+        $stores = $magentoUser->getStores();
 
         $magentoUser->update([
             'customer_sales_channel_id' => $customerSalesChannel->id,
@@ -71,7 +72,8 @@ class StoreMagentoUser extends OrgAction
                     ...Arr::get($magentoUser->settings, 'credentials'),
                     'access_token' => $accessToken
                 ]
-            ]
+            ],
+            'name' => Arr::get($stores, '0.name')
         ]);
 
         UpdateCustomerSalesChannel::run($customerSalesChannel, [

@@ -60,7 +60,7 @@ class RequestApiUploadProductMagento extends RetinaAction
                 'status' => 1, // 1 = enabled
                 'visibility' => 4, // 4 = catalog & search
                 'type_id' => 'simple',
-                'weight' => $product->gross_weight,
+                'weight' => $product->gross_weight / 453.59237, // Change to lbs
                 'extension_attributes' => [
                     'stock_item' => [
                         'is_in_stock' => true,
