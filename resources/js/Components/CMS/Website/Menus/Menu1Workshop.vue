@@ -78,7 +78,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
         <div
             @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
             :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
-            class="relative container flex xflex-col justify-between items-center gap-x-6 px-4">
+            class="relative container flex xflex-col justify-between items-center gap-x-2 px-4">
 
             <!-- All categories -->
             <div class="relative">
@@ -87,19 +87,22 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                     <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
                 </div>
 
-                <!-- <div class="qwezxc bg-gradient from-white to-transparent absolute -right-12 z-10 top-0 h-full w-8 pointer-events-none"
-                    xv-if="isAbleScrollToLeft">
-                </div> -->
+                <Transition>
+                    <div v-if="isAbleScrollToLeft" class="bg-gradient-to-r from-white via-white to-transparent absolute -right-20 z-10 top-0 h-full w-16 pointer-events-none" />
+                </Transition>
                 
                 <Transition>
                     <div v-if="isAbleScrollToLeft" @click="() => scrollLeft()"
-                        class="w-8 h-8 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-8 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
+                        class="w-8 h-8 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-10 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
                     >
                         <FontAwesomeIcon icon="fal fa-chevron-left" class="" fixed-width aria-hidden="true" />
                     </div>
                 </Transition>
             </div>
 
+            <Transition>
+                <div v-if="isAbleScrollToRight" class="bg-gradient-to-l from-white via-white to-transparent absolute right-8 z-10 top-0 h-full w-16 pointer-events-none" />
+            </Transition>
             
             <Transition>
                 <div v-if="isAbleScrollToRight" @click="() => scrollRight()"
