@@ -103,6 +103,82 @@ function webpageRoute(webpage: Webpage) {
     }
 }
 
+function subDepartmentsRoute(webpage: Webpage) {
+    switch (route().current()) {
+
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+    }
+}
+
+function familiesRoute(webpage: Webpage) {
+    switch (route().current()) {
+
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.department.families',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+        case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+    }
+}
+
+function productsRoute(webpage: Webpage) {
+    switch (route().current()) {
+
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.department.products',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+        case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.sub_department.products',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+        case 'grp.org.shops.show.web.webpages.index.sub_type.family':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.family.products',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+    }
+}
+
 </script>
 
 
@@ -111,6 +187,21 @@ function webpageRoute(webpage: Webpage) {
         <template #cell(code)="{ item: webpage }">
             <Link :href="webpageRoute(webpage)" class="primaryLink">
             {{ webpage['code'] }}
+            </Link>
+        </template>
+        <template #cell(number_current_sub_departments)="{ item: webpage }">
+            <Link :href="subDepartmentsRoute(webpage)" class="primaryLink">
+                {{ webpage['number_current_sub_departments'] }}
+            </Link>
+        </template>
+        <template #cell(number_current_families)="{ item: webpage }">
+            <Link :href="familiesRoute(webpage)" class="primaryLink">
+                {{ webpage['number_current_families'] }}
+            </Link>
+        </template>
+        <template #cell(number_current_products)="{ item: webpage }">
+            <Link :href="productsRoute(webpage)" class="primaryLink">
+                {{ webpage['number_current_products'] }}
             </Link>
         </template>
 
