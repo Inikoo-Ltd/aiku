@@ -207,15 +207,17 @@ const debouncedSaveSiteSettings = debounce(block => {
     route('grp.models.model_has_web_block.bulk.update'),
     { web_blocks: block },
     {
+      preserveScroll: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
-      onSuccess: () => sendToIframe({ key: 'reload', value: {} }),
+      onSuccess: () => {
+        sendToIframe({ key: 'reload', value: {} })
+      },
       onError: error => notify({
         title: trans("Something went wrong"),
         text: error.message,
         type: "error"
       }),
-      preserveScroll: true
     }
   );
 }, 1500);
