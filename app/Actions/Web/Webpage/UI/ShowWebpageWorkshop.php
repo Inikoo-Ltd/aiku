@@ -85,7 +85,7 @@ class ShowWebpageWorkshop extends OrgAction
                         ],
                     ],
                 ],
-
+                'url'   => 'https://v2.'.$webpage->website->domain. '/' . $webpage->url,
                 'webpage'     => WebpageWorkshopResource::make($webpage)->getArray(),
                 'webBlockTypes' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get()

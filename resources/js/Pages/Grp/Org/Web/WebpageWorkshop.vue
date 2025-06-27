@@ -41,6 +41,7 @@ import {
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
 
 library.add(
   faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars,
@@ -53,6 +54,7 @@ const props = defineProps<{
   pageHead: PageHeadingTypes,
   webpage: RootWebpage,
   webBlockTypes: Root
+  url : string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -429,12 +431,9 @@ const compUsersEditThisPage = computed(() => {
 	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
-console.log(props)
-
 const openWebsite = () => {
-  console.log('props',props)
+  window.open(props.url, '_blank')
 }
-
 </script>
 
 <template>
@@ -457,6 +456,7 @@ const openWebsite = () => {
       </div>
     </template>
   </PageHeading>
+
 
   <ConfirmDialog group="alert-publish" />
 
