@@ -43,6 +43,7 @@ trait WithMagentoApiRequest
                 if ($this->exists && $this->getTable()) {
                     $this->update(['settings' => [
                         'credentials' => [
+                            ...Arr::get($this->settings, 'credentials'),
                             'access_token' => $token
                         ]
                     ]]);

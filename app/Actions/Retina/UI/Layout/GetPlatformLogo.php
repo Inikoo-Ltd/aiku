@@ -21,6 +21,7 @@ trait GetPlatformLogo
             'manual' => 'https://aw.aurora.systems/art/aurora_log_v2_orange.png',
             'ebay' => 'https://cdn-icons-png.flaticon.com/512/888/888848.png',
             'amazon' => 'https://cdn-icons-png.flaticon.com/512/14079/14079391.png',
+            'magento' => 'https://cdn-icons-png.flaticon.com/512/825/825535.png',
             default => null,
         };
     }
