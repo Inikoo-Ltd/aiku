@@ -399,6 +399,7 @@ const SyncAurora = () => {
   );
 };
 
+
 onMounted(() => {
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
@@ -429,6 +430,10 @@ const compUsersEditThisPage = computed(() => {
 })
 
 console.log(props)
+
+const openWebsite = () => {
+  console.log('props',props)
+}
 
 </script>
 

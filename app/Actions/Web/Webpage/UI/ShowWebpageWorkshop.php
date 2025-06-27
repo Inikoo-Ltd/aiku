@@ -85,6 +85,7 @@ class ShowWebpageWorkshop extends OrgAction
                         ],
                     ],
                 ],
+                
                 'webpage'     => WebpageWorkshopResource::make($webpage)->getArray(),
                 'webBlockTypes' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get()
