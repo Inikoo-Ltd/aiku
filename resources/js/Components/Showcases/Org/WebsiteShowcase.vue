@@ -11,8 +11,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { Link } from '@inertiajs/vue3'
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 
@@ -59,7 +57,7 @@ const links = ref([
 
                 <div class="border-t border-gray-300 mt-6 pt-4">
                     <div class="font-semibold w-fit text-lg mb-2">
-                        Stats of department
+                        {{trans('Product Catalogue')}}
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
