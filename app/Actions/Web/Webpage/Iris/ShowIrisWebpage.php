@@ -139,27 +139,64 @@ class ShowIrisWebpage
         return $webpageID;
     }
 
+
+    public function getPathWebpage(Webpage $webpage, string $parentPath): ?Webpage
+    {
+        $parentPathWebpageId = $this->getWebpageID($webpage->website, $parentPath);
+        if ($parentPathWebpageId == $webpage->id) {
+            return null;
+        }
+        $parentWebpage = Webpage::find($parentPathWebpageId);
+        if ($parentWebpage) {
+            return $parentWebpage;
+        }
+
+        return null;
+    }
+
     public function getIrisBreadcrumbs(Webpage $webpage, array $parentPaths): array
     {
-
-        $webpageUrl = $webpage->url;
-
-        return [
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon' => 'fal fa-home',
-                    'url'  => ''
-                ]
-            ],
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'label' => $webpage->title,
-                    'url'   => $webpageUrl
-                ]
-            ],
+        $breadcrumbs[] = [
+            'type'   => 'simple',
+            'simple' => [
+                'icon' => 'fal fa-home',
+                'url'  => '/'
+            ]
         ];
+
+        $runningUrl = '/';
+        foreach ($parentPaths as $parentPath) {
+            /** @var Webpage $parentWebpage */
+            $parentWebpage = $this->getPathWebpage($webpage, $parentPath);
+
+            if ($parentWebpage && $parentWebpage->url) {
+                $breadcrumbs[] =
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'label' => $parentWebpage->breadcrumb_label,
+                            'url'   => $runningUrl.$parentWebpage->url
+                        ]
+
+                    ];
+
+                $runningUrl .= $parentWebpage->url.'/';
+            }
+        }
+
+
+        $breadcrumbs[] = [
+
+            'type'   => 'simple',
+            'simple' => [
+                'label' => $webpage->breadcrumb_label,
+                'url'   => $runningUrl.$webpage->url
+            ]
+
+        ];
+
+
+        return $breadcrumbs;
     }
 
 }
