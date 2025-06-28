@@ -79,7 +79,7 @@ class ShowIrisWebpage
         } else {
             $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
 
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID,$parentPaths) {
+            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths) {
                 return $this->getWebpageData($webpageID, $parentPaths);
             });
         }

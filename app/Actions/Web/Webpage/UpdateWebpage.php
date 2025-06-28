@@ -47,6 +47,8 @@ class UpdateWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
+        dd($modelData);
+
         $currentSeoData = Arr::get($modelData, 'seo_data');
 
         $oldSeoData = $webpage->seo_data;
@@ -143,7 +145,7 @@ class UpdateWebpage extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'url'            => [
+            'url'                       => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -165,7 +167,7 @@ class UpdateWebpage extends OrgAction
                     ]
                 ),
             ],
-            'code'           => [
+            'code'                      => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -185,23 +187,25 @@ class UpdateWebpage extends OrgAction
                 ),
 
             ],
-            'seo_image'      => [
+            'seo_image'                 => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'level'          => ['sometimes', 'integer'],
-            'sub_type'       => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
-            'type'           => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
-            'state'          => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'google_search'  => ['sometimes', 'array'],
-            'webpage_type'   => ['sometimes', 'array'],
-            'ready_at'       => ['sometimes', 'date'],
-            'live_at'        => ['sometimes', 'date'],
-            'title'          => ['sometimes', 'string'],
-            'show_in_parent' => ['sometimes', 'nullable', 'boolean'],
-            'allow_fetch'    => ['sometimes', 'nullable', 'boolean'],
+            'seo_data'                  => ['sometimes', 'array:meta_title'],
+         //   'seo_data.meta_title'       => ['sometimes', 'nullable', 'string', 'max:72'],
+         //   'seo_data.meta_description' => ['sometimes', 'nullable', 'string', 'max:320'],
+            'level'                     => ['sometimes', 'integer'],
+            'sub_type'                  => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
+            'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
+            'state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            'webpage_type'              => ['sometimes', 'array'],
+            'ready_at'                  => ['sometimes', 'date'],
+            'live_at'                   => ['sometimes', 'date'],
+            'title'                     => ['sometimes', 'string'],
+            'show_in_parent'            => ['sometimes', 'nullable', 'boolean'],
+            'allow_fetch'               => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {
@@ -229,27 +233,18 @@ class UpdateWebpage extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
+
+        dd($request->all());
+
         $this->webpage = $webpage;
-
         $this->initialisationFromShop($webpage->shop, $request);
-
         $modelData = [];
-        foreach ($this->validatedData as $key => $value) {
-            data_set(
-                $modelData,
-                match ($key) {
-                    'google_search', 'webpage_type' => 'seo_data',
-                    default => $key
-                },
-                $value
-            );
-        }
+
+
 
 
         return $this->handle($webpage, $modelData);
     }
-
-
 
 
     public function jsonResponse(Webpage $webpage): WebpageResource

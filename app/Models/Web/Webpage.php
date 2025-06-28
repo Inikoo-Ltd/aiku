@@ -84,6 +84,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $allow_fetch If false changes in Aurora webpages are not fetched
  * @property bool|null $show_in_parent
  * @property int|null $seo_image_id
+ * @property int|null $redirect_webpage_id
+ * @property string|null $seo_title
+ * @property string|null $seo_description
+ * @property string|null $breadcrumb_label
+ * @property string|null $llms_description
+ * @property array<array-key, mixed>|null $structured_data
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -135,6 +141,7 @@ class Webpage extends Model implements Auditable, HasMedia
         'published_layout' => 'array',
         'migration_data'   => 'array',
         'seo_data'         => 'array',
+        'structured_data'  => 'array',
         'state'            => WebpageStateEnum::class,
         'sub_type'         => WebpageSubTypeEnum::class,
         'type'             => WebpageTypeEnum::class,
@@ -150,7 +157,8 @@ class Webpage extends Model implements Auditable, HasMedia
         'settings'         => '{}',
         'published_layout' => '{}',
         'seo_data'         => '{}',
-        'migration_data'   => '{}'
+        'migration_data'   => '{}',
+        'structured_data'  => '{}'
     ];
 
     protected $guarded = [];
@@ -256,16 +264,16 @@ class Webpage extends Model implements Auditable, HasMedia
         $domain = $this->website->domain;
 
         if ($withWWW && !str_starts_with($domain, 'www.')) {
-            $domain = 'www.' . $domain;
+            $domain = 'www.'.$domain;
         }
 
         return match (app()->environment()) {
-            'production' => 'https://' . $domain . '/' . $this->url,
-            'staging' => 'https://canary.' . $domain . '/' . $this->url,
+            'production' => 'https://'.$domain.'/'.$this->url,
+            'staging' => 'https://canary.'.$domain.'/'.$this->url,
             default => match ($this->shop->type) {
-                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/' . $this->url,
-                ShopTypeEnum::B2B, ShopTypeEnum::B2C => 'https://ecom.test/' . $this->url,
-                default => 'https://fulfilment.test/' . $this->url
+                ShopTypeEnum::DROPSHIPPING => 'https://ds.test/'.$this->url,
+                ShopTypeEnum::B2B, ShopTypeEnum::B2C => 'https://ecom.test/'.$this->url,
+                default => 'https://fulfilment.test/'.$this->url
             }
         };
     }
@@ -273,8 +281,8 @@ class Webpage extends Model implements Auditable, HasMedia
     public function externalLinks()
     {
         return $this->belongsToMany(ExternalLink::class, 'web_block_has_external_link')
-                    ->withPivot('website_id', 'web_block_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('website_id', 'web_block_id', 'show')
+            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
