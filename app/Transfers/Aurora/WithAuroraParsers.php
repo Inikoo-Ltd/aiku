@@ -14,6 +14,7 @@ use App\Actions\Transfers\Aurora\FetchAuroraBarcodes;
 use App\Actions\Transfers\Aurora\FetchAuroraCharges;
 use App\Actions\Transfers\Aurora\FetchAuroraClockingMachines;
 use App\Actions\Transfers\Aurora\FetchAuroraCollections;
+use App\Actions\Transfers\Aurora\FetchAuroraCustomerClients;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedCustomers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedEmployees;
@@ -97,6 +98,7 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferComponent;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Goods\Ingredient;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
@@ -473,6 +475,21 @@ trait WithAuroraParsers
         }
 
         return $customer;
+    }
+
+    public function parseCustomerClient(string $sourceId): ?Customer
+    {
+        if (!$sourceId) {
+            return null;
+        }
+
+        $customerClient = CustomerClient::withTrashed()->where('source_id', $sourceId)->first();
+        if (!$customerClient) {
+            $sourceData = explode(':', $sourceId);
+            $customerClient   = FetchAuroraCustomerClients::run($this->organisationSource, $sourceData[1]);
+        }
+
+        return $customerClient;
     }
 
     public function parseWebUser(string $sourceId): ?WebUser
