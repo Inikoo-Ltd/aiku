@@ -34,11 +34,12 @@ class StoreWebUserRequest extends GrpAction
         GroupHydrateWebUserRequests::dispatch($webUser->group_id)->delay(900);
         OrganisationHydrateWebUserRequests::dispatch($webUser->organisation_id)->delay(600);
         WebsiteHydrateWebUserRequests::dispatch($webUser->website_id)->delay(300);
-        WebpageHydrateWebUserRequests::dispatch($webUserRequest->webpage_id);
-        WebUserHydrateWebUserRequests::dispatch($webUserRequest->webpage_id);
+        if ($webUserRequest->webpage_id) {
+            WebpageHydrateWebUserRequests::dispatch($webUserRequest->webpage_id);
+        }
+        WebUserHydrateWebUserRequests::dispatch($webUserRequest->web_user_id);
 
         return $webUserRequest;
-
     }
 
     public function authorize(ActionRequest $request): bool
