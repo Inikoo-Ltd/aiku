@@ -40,7 +40,6 @@ trait WithIrisProductsInWebpage
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
-
         $queryBuilder->where('products.is_for_sale', true);
         if ($stockMode == 'in_stock') {
             $queryBuilder->where('products.available_quantity', '>', 0);
@@ -98,12 +97,12 @@ trait WithIrisProductsInWebpage
     }
 
 
-    public function getData($queryBuilder)
+    public function getData($queryBuilder, ?int $numberOfRecords = null): LengthAwarePaginator
     {
         return $queryBuilder->defaultSort('name')
             ->allowedSorts($this->getAllowedSorts())
             ->allowedFilters($this->getAllowedFilters())
-            ->withIrisPaginator()
+            ->withIrisPaginator($numberOfRecords)
             ->withQueryString();
     }
 
