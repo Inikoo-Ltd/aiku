@@ -127,7 +127,7 @@ class IndexOutboxes extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            $table->column(key: 'type', label: '', type: 'icon', canBeHidden: false)
+            $table->column(key: 'type', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
@@ -254,30 +254,14 @@ class IndexOutboxes extends OrgAction
             ),
             'grp.overview.comms-marketing.outboxes.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => 'grp.overview.comms-marketing.outboxes.index',
                     ]
                 )
             ),
-            'grp.org.fulfilments.show.operations.comms.outboxes' =>
-            array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'grp.org.fulfilments.show.operations.comms.outboxes',
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => __('Outboxes')
-                        ]
-                    ]
-                ]
-            ),
-            'grp.org.fulfilments.show.operations.comms.outboxes.dispatched-email.show' =>
+            'grp.org.fulfilments.show.operations.comms.outboxes', 'grp.org.fulfilments.show.operations.comms.outboxes.dispatched-email.show' =>
             array_merge(
                 ShowFulfilment::make()->getBreadcrumbs($routeParameters),
                 [
