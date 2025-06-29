@@ -1,4 +1,3 @@
-
 <!--
   - Author: Raul Perusquia <raul@inikoo.com>
   - Created: Sat, 28 Jun 2025 20:33:45 British Summer Time, Sheffield, UK
@@ -11,7 +10,6 @@ import  PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TableWebUserRequests from "@/Components/Tables/Grp/Org/Web/TableWebUserRequests.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
-import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue";
 
 defineProps <{
     pageHead: PageHeadingTypes
