@@ -2,9 +2,9 @@
 import { Collapse } from "vue-collapsed";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faChevronRight, faSignOutAlt, faShoppingCart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faUserCircle } from "@fas";
+import { faChevronRight, faSignOutAlt, faShoppingCart, faSearch, faChevronDown, faTimes, faPlusCircle, faUserCircle } from "@fas";
 import { faHeart } from "@far";
-import { faChevronLeft, faChevronRight as falChevronRight } from "@fal";
+import { faBars, faChevronLeft, faChevronRight as falChevronRight } from "@fal";
 import { ref, inject, nextTick, onMounted } from "vue";
 import { getStyles } from "@/Composables/styles";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
