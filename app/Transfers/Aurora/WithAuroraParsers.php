@@ -477,7 +477,7 @@ trait WithAuroraParsers
         return $customer;
     }
 
-    public function parseCustomerClient(string $sourceId): ?Customer
+    public function parseCustomerClient(string $sourceId): ?CustomerClient
     {
         if (!$sourceId) {
             return null;
