@@ -14,6 +14,7 @@ use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetFirstLoadProps
@@ -22,18 +23,45 @@ class GetFirstLoadProps
 
     public function handle(?User $user): array
     {
-
-        if ($user) {
-            $language = $user->language;
-        } else {
+        if (!$user) {
             $language = Language::where('code', App::currentLocale())->first();
+
+            return [
+
+                'localeData' =>
+                    [
+                        'language'        => LanguageResource::make($language)->getArray(),
+                    ],
+
+                'layout'      => [],
+                'environment' => app()->environment(),
+            ];
         }
+
+        $key= 'grp.first_load_props.'.$user->id;
+
+        $props= Cache::remember(
+            $key,
+            604800,
+            function () use ($user) {
+                return $this->getFirstLoadProps($user);
+            }
+        );
+
+
+        $props['environment'] = app()->environment();
+
+        return $props;
+    }
+
+    public function getFirstLoadProps(User $user): array
+    {
+        $language = $user->language;
+
         if (!$language) {
             $language = Language::where('code', 'en')->first();
         }
-
-        return
-            [
+        return  [
             'localeData' =>
                 [
                     'language'        => LanguageResource::make($language)->getArray(),
@@ -41,11 +69,10 @@ class GetFirstLoadProps
                 ],
 
             'layout'      => GetLayout::run($user),
-            'environment' => app()->environment(),
-
-
-
 
         ];
+
     }
+
+
 }
