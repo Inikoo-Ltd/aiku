@@ -243,12 +243,14 @@ class IndexSubDepartmentWebpages extends OrgAction
                 ],
             ];
         };
-
+        /** @var Website $website */
+        $website = request()->route()->parameter('website');
         return match ($routeName) {
             'grp.org.shops.show.web.webpages.index.sub_type.sub_department' =>
             array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
+                    $website,
+                    'grp.org.shops.show.web.websites.show',
                     $routeParameters
                 ),
                 $headCrumb(

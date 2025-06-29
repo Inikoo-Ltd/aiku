@@ -711,7 +711,7 @@ test('UI edit customer', function () {
 
 test('UI Index customer web users', function () {
     $customer = Customer::first();
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web-users.index', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.index', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page
@@ -732,7 +732,7 @@ test('UI Index customer web users', function () {
 
 test('UI Create customer web users', function () {
     $customer = Customer::first();
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web-users.create', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.create', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -753,7 +753,7 @@ test('UI Create customer web users', function () {
 test('UI show customer web users', function () {
     $webUser = WebUser::first();
 
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web-users.show', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.show', [
         $this->organisation->slug,
         $this->shop->slug,
         $webUser->customer->slug,
@@ -778,7 +778,7 @@ test('UI show customer web users', function () {
 
 test('UI Edit customer web users', function () {
     $webUser  = WebUser::first();
-    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web-users.edit', [
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.edit', [
         $this->organisation->slug,
         $this->shop->slug,
         $webUser->customer->slug,

@@ -62,7 +62,7 @@ trait WithFulfilmentCustomerSubNavigation
 
             $subNavigation[] = [
                 'route' => [
-                    'name'      => 'grp.org.fulfilments.show.crm.customers.show.web-users.index',
+                    'name'      => 'grp.org.fulfilments.show.crm.customers.show.web_users.index',
                     'parameters' => $request->route()->originalParameters()
 
                 ],

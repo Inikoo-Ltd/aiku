@@ -70,6 +70,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_webpages_sub_type_sub_department
+ * @property int $number_web_user_requests
  * @property-read \App\Models\Web\Website $website
  * @method static Builder<static>|WebsiteStats newModelQuery()
  * @method static Builder<static>|WebsiteStats newQuery()

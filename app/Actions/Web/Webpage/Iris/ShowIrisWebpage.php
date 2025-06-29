@@ -16,11 +16,11 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsController;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowIrisWebpage
 {
-    use AsController;
+    use AsAction;
     use WithIrisGetWebpageWebBlocks;
 
 
@@ -127,7 +127,7 @@ class ShowIrisWebpage
     }
 
 
-    private function getWebpageID(Website $website, ?string $path): ?int
+    public function getWebpageID(Website $website, ?string $path): ?int
     {
         if ($path === null) {
             $webpageID = $website->storefront_id;

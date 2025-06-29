@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Analytics\WebUserRequest;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
@@ -113,6 +114,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
+ * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Collection<int, \App\Models\Web\WebpageHasProduct> $webpageHasProducts
  * @property-read Collection<int, Webpage> $webpages
  * @property-read \App\Models\Web\Website $website
@@ -313,6 +315,11 @@ class Webpage extends Model implements Auditable, HasMedia
     public function redirectedTo(): HasOne
     {
         return $this->hasOne(Redirect::class, 'from_webpage_id');
+    }
+
+    public function webUserRequests(): HasMany
+    {
+        return $this->hasMany(WebUserRequest::class);
     }
 
 }

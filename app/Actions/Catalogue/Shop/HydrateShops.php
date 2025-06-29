@@ -44,6 +44,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePurges;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\Shop;
 
@@ -96,6 +97,7 @@ class HydrateShops
         ShopHydrateFamiliesWithNoDepartment::run($shop);
         ShopHydrateProductsWithNoFamily::run($shop);
         ShopHydratePolls::run($shop);
+        ShopHydrateWebUsers::run($shop);
     }
 
 }

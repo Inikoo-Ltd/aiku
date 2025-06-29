@@ -37,6 +37,9 @@ trait WithCustomersSubNavigation
             ]
         ];
 
+
+
+
         $meta[] = [
             // 'route'     => [
             //     'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
@@ -62,6 +65,21 @@ trait WithCustomersSubNavigation
             'leftIcon' => [
                 'icon'    => 'fal fa-poll',
                 'tooltip' => __('polls')
+            ]
+        ];
+
+
+        $meta[] = [
+            'route'     => [
+                'name'       => 'grp.org.shops.show.crm.web_users.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+            'align'    => 'right',
+            'number'   => $this->parent->crmStats->number_web_users,
+            'label'    => __('Web users'),
+            'leftIcon' => [
+                'icon'    => 'fal fa-user-circle',
+                'tooltip' => __('Website users')
             ]
         ];
 

@@ -6,8 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\CRM\WebUser\IndexWebUsers;
-use App\Actions\CRM\WebUser\ShowWebUser;
+use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequests;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
@@ -16,7 +15,6 @@ use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
-use App\Actions\Web\Webpage\UI\CreateArticle;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
@@ -32,6 +30,7 @@ use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
 use App\Actions\Web\Website\UI\ShowWebsite;
+use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshopPreview;
 use Illuminate\Support\Facades\Route;
@@ -93,10 +92,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
         });
 });
 
-Route::prefix('{website}/web-users')->name('web_users.')->group(function () {
-    Route::get('', [IndexWebUsers::class, 'inFulfilment'])->name('index');
-    Route::get('{webUser}', [ShowWebUser::class, 'inFulfilment'])->name('show');
-});
+
 
 Route::prefix('{website}/banners')->name('banners.')->group(function () {
     Route::get('', [IndexBanners::class, 'inFulfilment'])->name('index');
@@ -107,4 +103,7 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
     Route::get('/{banner}/edit', [EditBanner::class, 'inFulfilment'])->name('edit');
 });
 
-//  Route::get('/blog/article/create', CreateArticle::class)->name('show.blog.article.create');
+Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
+    Route::get('', [ShowWebsiteAnalyticsDashboard::class,'inFulfilment'])->name('dashboard');
+    Route::get('web-user-requests', [IndexWebUserRequests::class,'inFulfilment'])->name('web_user_requests.index');
+});
