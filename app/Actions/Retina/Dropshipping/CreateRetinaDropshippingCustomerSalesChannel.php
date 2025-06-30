@@ -110,7 +110,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         'parameters' => [],
                         'method' => 'post'
                     ],
-                    'isConnected' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::WOOCOMMERCE->value)->exists()
+                    'isConnected' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->exists(),
                 ],
                 'type_ebay' => [
                     'connectRoute' => [
