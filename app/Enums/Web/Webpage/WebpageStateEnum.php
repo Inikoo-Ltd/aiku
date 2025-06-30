@@ -19,7 +19,6 @@ enum WebpageStateEnum: string
 
     case IN_PROCESS = 'in_process';
     case READY      = 'ready';
-
     case LIVE   = 'live';
     case CLOSED = 'closed';
 

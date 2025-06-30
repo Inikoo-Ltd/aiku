@@ -127,49 +127,70 @@ const onUnselectFavourite = (product: ProductResource) => {
 </script>
 
 <template>
-    <div class="relative flex flex-col justify-between h-full" >
+    <div class="relative flex flex-col justify-between h-full">
 
         <!-- Top Section -->
         <div>
-           
-               <div v-if="product.top_seller"
-                    class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
-                    
-                    <!-- Medal Icon -->
-                    <FontAwesomeIcon
-                    :icon="faMedal"
-                    class="w-3.5 h-3.5 mr-2"
-                    :class="{
+
+            <div v-if="product.top_seller"
+                class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
+
+                <!-- Medal Icon -->
+                <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-2" :class="{
                         'text-[#FFD700]': product.top_seller === 1, // Gold
                         'text-[#C0C0C0]': product.top_seller === 2, // Silver
                         'text-[#CD7F32]': product.top_seller === 3  // Bronze
-                    }"
-                    />
+                    }" />
 
-                    <!-- Bestseller Text -->
-                    <span>BESTSELLER</span>
-                </div>
+                <!-- Bestseller Text -->
+                <span>BESTSELLER</span>
+            </div>
 
             <!-- Favorite Icon -->
             <template v-if="layout?.iris?.is_logged_in">
                 <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
                     <LoadingIcon />
                 </div>
-                <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)" class="cursor-pointer absolute top-2 right-2 group text-xl ">
-                    <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
-                    <FontAwesomeIcon v-else :icon="faHeart" fixed-width class="text-gray-400 group-hover:text-pink-400" />
+                <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                    class="cursor-pointer absolute top-2 right-2 group text-xl ">
+                    <FontAwesomeIcon 
+                        v-if="product.is_favourite" 
+                        :icon="fasHeart" 
+                        fixed-width 
+                        class="text-pink-500 w-6 h-6 p-[1px]" 
+                        />
+                                        
+                        <svg 
+                        v-else
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 512 512"
+                        class="w-6 h-6 group-hover:fill-pink-400"
+                        fill="white"
+                        stroke="black"
+                        stroke-width="4"
+                        stroke-linejoin="round"
+                        style="overflow: visible"
+                        >
+                        <path d="M462.3 62.7c-54.5-46.4-136-38.3-186.4 13.7L256 96.6l-19.9-20.2C186.1 24.4 104.6 16.3 50.1 62.7-16.6 128.6-10.6 230.8 43 284.6l175.4 178.7c10 10.2 23.2 15.9 37.6 15.9s27.6-5.7 37.6-15.9L469 284.6c53.6-53.8 59.6-156 6.7-221.9z"/>
+                        </svg>
+
+
+
+
                 </div>
             </template>
 
+
             <!-- Product Image -->
-            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-64 mb-3 rounded">
+            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-68 mb-3 rounded">
                 <Image :src="product?.web_images?.main?.gallery" alt="product image" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
             </component>
 
             <!-- Title -->
-            <Link v-if="product.url" :href="product.url" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                {{ product.name }}
+            <Link v-if="product.url" :href="product.url"
+                class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+            {{ product.name }}
             </Link>
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
@@ -185,7 +206,8 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Rating and Stock -->
             <div class="flex justify-between items-center text-xs mb-2">
-                <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+                <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1"
+                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
                     <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
                     <span>({{ product.stock > 0 ? product.stock : 0 }})</span>
                 </div>
@@ -198,18 +220,15 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Prices -->
             <div v-if="layout?.iris?.is_logged_in" class="mb-3">
-                <div  class="flex justify-between text-sm font-semibold">
+                <div class="flex justify-between text-sm font-semibold">
                     <span>{{ locale.currencyFormat(currency.code,product.price) }}</span>
-                  <!--   <span class="text-xs">({{ locale.number(product.units) }}/{{ product.unit }})</span> -->
+                    <!--   <span class="text-xs">({{ locale.number(product.units) }}/{{ product.unit }})</span> -->
                 </div>
             </div>
         </div>
-        
+
         <!-- Button: add to portfolios -->
-        <ButtonAddPortfolio
-            :product="product"
-            :productHasPortfolio="productHasPortfolio"
-        />
+        <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
     </div>
 </template>
 
