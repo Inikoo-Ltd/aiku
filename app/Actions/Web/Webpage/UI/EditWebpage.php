@@ -56,6 +56,7 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+        // dd([WebpageResource::make($webpage->redirectWebpage)]);
         return Inertia::render(
             'EditModel',
             [
@@ -97,14 +98,14 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                'state'       => [
+                                'state_data'       => [
                                     'type'        => 'toggle_state_webpage',
                                     'label'       => __('State'),
                                     'placeholder' => __('Select webpage state'),
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'  => true,
-                                    'init_options'  => $webpage->redirect_webpage_id ? [WebpageResource::make($webpage->redirect_webpage_id)] : [],
+                                    'init_options'  => $webpage->redirectWebpage ? WebpageResource::make($webpage->redirectWebpage) : null,
                                     'value'       => [
                                         'state'                 => $webpage->state,
                                         'redirect_webpage_id'   => $webpage->redirect_webpage_id,

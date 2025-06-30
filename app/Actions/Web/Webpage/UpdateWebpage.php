@@ -47,8 +47,6 @@ class UpdateWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
-        dd($modelData);
-
         $currentSeoData = Arr::get($modelData, 'seo_data');
 
         $oldSeoData = $webpage->seo_data;
@@ -89,7 +87,18 @@ class UpdateWebpage extends OrgAction
                 data_set($modelData, 'seo_data.image', $source);
             }
         }
+        // dd($modelData);
+        if (Arr::has($modelData, 'state_data')) {
+            if (Arr::has($modelData, 'state_data.state')) {
+                data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
+            }
 
+            if(Arr::has($modelData, 'state_data.redirect_webpage_id')) {
+                data_set($modelData, 'redirect_webpage_id', Arr::get($modelData, 'state_data.redirect_webpage_id'));
+            }
+
+            data_forget($modelData, 'state_data');
+        }
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
@@ -199,7 +208,10 @@ class UpdateWebpage extends OrgAction
             'level'                     => ['sometimes', 'integer'],
             'sub_type'                  => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
             'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
-            'state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            'state_data'                     => ['sometimes', 'array'],
+            'state_data.state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            'state_data.redirect_webpage_id'       => ['sometimes', 'nullable', 'exists:webpages,id'],
+            // 'state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
             'webpage_type'              => ['sometimes', 'array'],
             'ready_at'                  => ['sometimes', 'date'],
             'live_at'                   => ['sometimes', 'date'],
@@ -215,7 +227,7 @@ class UpdateWebpage extends OrgAction
 
         return $rules;
     }
-
+    
     public function action(Webpage $webpage, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Webpage
     {
         if (!$audit) {
@@ -234,16 +246,11 @@ class UpdateWebpage extends OrgAction
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
 
-        dd($request->all());
+        // dd($request->all());
 
         $this->webpage = $webpage;
         $this->initialisationFromShop($webpage->shop, $request);
-        $modelData = [];
-
-
-
-
-        return $this->handle($webpage, $modelData);
+        return $this->handle($webpage, $this->validatedData);
     }
 
 
