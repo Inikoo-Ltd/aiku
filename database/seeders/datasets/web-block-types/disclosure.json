@@ -1,7 +1,7 @@
 {
 	"slug": "disclosure",
 	"code": "disclosure",
-	"name": "disclosure",
+	"name": "Disclosure",
 	"scope": "webpage",
 	"icon": ["fal", "rectangle-wide"],
 	"category": "block",
