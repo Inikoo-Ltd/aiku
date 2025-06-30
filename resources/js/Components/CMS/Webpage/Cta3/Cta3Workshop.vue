@@ -66,7 +66,10 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 				</div>
 
 
-				<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
+				<Button :injectStyle="{
+						...getStyles(modelValue?.button?.container?.properties, screenType),
+						width: 'fit-content !important'
+					}"
 					:label="modelValue?.button?.text" @click.stop="() => {
 						sendMessageToParent('activeBlock', indexBlock)
 						sendMessageToParent('activeChildBlock', bKeys[2])
