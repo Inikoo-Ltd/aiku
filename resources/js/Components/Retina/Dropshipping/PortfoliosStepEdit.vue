@@ -3,7 +3,7 @@ import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import { Checkbox, Column, ColumnGroup, DataTable, IconField, InputIcon, InputNumber, InputText, RadioButton, Row } from 'primevue'
-import { inject, onMounted, ref } from 'vue'
+import { inject, onMounted, ref, watch } from 'vue'
 
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
@@ -17,9 +17,26 @@ import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 library.add(faSearch, faText)
 
+interface Portfolio {
+    id: string
+    code: string
+    name: string
+    category: string
+    image: string
+    quantity_left: number
+    price: number
+    price_inc_vat: number
+    currency_code: string
+    customer_price: number
+    margin: number
+    description: string
+    is_inc_exc?: 'inc' | 'exc'
+}
+
 const props = defineProps<{
-    portfolios: {}[]
+    portfolios: Portfolio[]
     listState: { [key: string]: { [key: string]: string } }
+    recentlyUpdatedProduct: Portfolio
 }>()
 
 const locale = inject('locale', {})
@@ -32,6 +49,22 @@ const emits = defineEmits<{
 
 onMounted(() => {
     emits('mounted')
+})
+
+// Manipulate Portfolio after update (to get updated data)
+watch(() => props.recentlyUpdatedProduct, (newPorto) => {
+    if (newPorto) {
+
+        const index = props.portfolios.findIndex(
+            (item) => item.id === newPorto.id
+        );
+
+        if (index !== -1) {
+            console.log('33333', props.portfolios[index])
+            console.log('4444', newPorto)
+            props.portfolios[index] = newPorto;
+        }
+    }
 })
 
 
@@ -156,8 +189,8 @@ const debounceUpdateDescription = debounce((description: string) => {
                 <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
                     <InputNumber
                         v-if="isIncludeVat"
-                        v-model="data.price_inc_vat"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
+                        :modelValue="data.price_inc_vat"
+                        aupdate:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
                         mode="currency"
                         :placeholder="data.price_inc_vat"
                         :currency="data.currency_code"
@@ -165,12 +198,13 @@ const debounceUpdateDescription = debounce((description: string) => {
                         fluid
                         :inputStyle="{textAlign: 'right'}"
                         xdisabled="data.is_inc_exc !== 'inc'"
+                        disabled
                         class="min-w-12"
                     />
                     <InputNumber
                         v-else
-                        v-model="data.price"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
+                        :modelValue="data.price"
+                        aupdate:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
                         mode="currency"
                         :placeholder="data.price"
                         :currency="data.currency_code"
@@ -178,6 +212,7 @@ const debounceUpdateDescription = debounce((description: string) => {
                         fluid
                         :inputStyle="{textAlign: 'right'}"
                         xdisabled="data.is_inc_exc !== 'exc'"
+                        disabled
                         class="min-w-12"
                     />
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'inc_exc_vat'], undefined)" />
@@ -214,7 +249,7 @@ const debounceUpdateDescription = debounce((description: string) => {
             </template>
         </Column> -->
 
-        <Column field="customer_price" header="Selling Price (Inc VAT)" style="max-width: 250px;">
+        <Column field="customer_price" header="RPP/Selling Price (Inc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber

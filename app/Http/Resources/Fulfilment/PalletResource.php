@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Fulfilment\Pallet;
@@ -75,7 +76,29 @@ class PalletResource extends JsonResource
             'status_icon'           => $pallet->status->statusIcon()[$pallet->status->value],
             'items'                 => StoredItemResource::collection($this->storedItems ?? []),
             'timeline'              => $timeline,
-            'audit'                 => $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first()?->id
+            'audit'                 => $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first()?->id,
+            'pallet_delivery'       => $pallet->palletDelivery ? [
+                'reference' => $pallet->palletDelivery->reference,
+                'route'     => [
+                    'name' => 'grp.org.fulfilments.show.operations.pallet-deliveries.show',
+                    'parameters' => [
+                        'organisation' => $pallet->organisation->slug,
+                        'fulfilment' => $pallet->fulfilment->slug,
+                        'palletDelivery' => $pallet->palletDelivery->slug
+                    ]
+                ]
+            ] : [],
+            'pallet_return'         => $pallet->palletReturn ? [
+                'reference' => $pallet->palletReturn->reference,
+                'route'     => [
+                    'name' => $pallet->palletReturn->type == PalletReturnTypeEnum::PALLET ? 'grp.org.fulfilments.show.operations.pallet-returns.show' : 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
+                    'parameters' => [
+                        'organisation' => $pallet->organisation->slug,
+                        'fulfilment' => $pallet->fulfilment->slug,
+                        'palletReturn' => $pallet->palletReturn->slug
+                    ]
+                ]
+            ] : []
         ];
     }
 }
