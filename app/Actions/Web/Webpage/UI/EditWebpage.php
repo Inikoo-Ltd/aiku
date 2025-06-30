@@ -23,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Http\Resources\Web\WebpageResource;
 
 class EditWebpage extends OrgAction
 {
@@ -97,13 +98,17 @@ class EditWebpage extends OrgAction
                                     'required'            => true,
                                 ],
                                 'state'       => [
-                                    'type'        => 'select',
+                                    'type'        => 'toggle_state_webpage',
                                     'label'       => __('State'),
                                     'placeholder' => __('Select webpage state'),
-                                    'value'       => $webpage->state,
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
-                                    'searchable'  => true
+                                    'searchable'  => true,
+                                    'init_options'  => $webpage->redirect_webpage_id ? [WebpageResource::make($webpage->redirect_webpage_id)] : [],
+                                    'value'       => [
+                                        'state'                 => $webpage->state,
+                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    ],
                                 ],
                                 'allow_fetch' => [
                                     'type'  => 'toggle',
