@@ -40,13 +40,13 @@ import SubDepartement1Blueprint from "@/Components/CMS/Webpage/SubDepartement1/B
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
-import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CTAVideo1/Blueprint'
+import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
-import Cta4Blueprint from "@/Components/CMS/Webpage/CTAImageLeft/Blueprint"
+import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 
 import { data } from "autoprefixer"
-import CTAVideo1Workshop from "@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue"
+import CTAVideo1Workshop from "@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue"
 
 export const getBlueprint = (componentName: string) => {
 	const components: Component = {

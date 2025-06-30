@@ -39,10 +39,10 @@ import SubDepartments1Workshop from '@/Components/CMS/Webpage/SubDepartement1/Su
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
-import CTAVideo1Workshop from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue'
+import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
 import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
-import Cta4 from '@/Components/CMS/Webpage/CTAImageLeft/CTA4Workshop.vue'
+import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Workshop.vue'
 
 
 export const getComponent = (componentName: string) => {
