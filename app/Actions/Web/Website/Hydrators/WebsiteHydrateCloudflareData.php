@@ -55,7 +55,7 @@ class WebsiteHydrateCloudflareData implements ShouldBeUnique
         $groupSettings  = $website->group->settings;
         $this->apiToken = Arr::get($groupSettings, 'cloudflare.apiToken');
         if (!$this->apiToken) {
-            $this->apiToken = env('CLOUDFLARE_ANALYTICS_API_TOKEN'); // from env cause group not stored api token yet
+            $this->apiToken = config('app.analytics.cloudflare.api_token'); // from env cause group not stored api token yet
             if (!$this->apiToken) {
                 return;
             }

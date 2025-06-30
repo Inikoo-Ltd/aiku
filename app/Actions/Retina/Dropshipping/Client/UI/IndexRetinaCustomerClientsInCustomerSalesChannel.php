@@ -13,6 +13,7 @@ use App\Actions\Retina\Fulfilment\Dropshipping\WithInCustomerSalesChannelAuthori
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\CRM\RetinaCustomerClientsTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerClient;
@@ -33,7 +34,7 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
     private CustomerSalesChannel $customerSalesChannel;
 
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, bool $status = true, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -49,6 +50,12 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(CustomerClient::class);
         $queryBuilder->where('customer_clients.customer_sales_channel_id', $customerSalesChannel->id);
+
+        if($status) {
+            $queryBuilder->where('customer_clients.status', true);
+        } else {
+            $queryBuilder->where('customer_clients.status', false);
+        }
 
         return $queryBuilder
             ->defaultSort('customer_clients.reference')
@@ -71,7 +78,7 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisation($request);
+        $this->initialisation($request)->withTab(RetinaCustomerClientsTabsEnum::values());
 
         return $this->handle($customerSalesChannel);
     }
@@ -203,10 +210,24 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
                     'actions'    => $actions
                 ],
                 'data'        => CustomerClientResource::collection($customerClients),
-                'upload_spreadsheet' => $spreadsheetRoute
+                'upload_spreadsheet' => $spreadsheetRoute,
+
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => RetinaCustomerClientsTabsEnum::navigation(),
+                ],
+
+                RetinaCustomerClientsTabsEnum::ACTIVE->value => $this->tab == RetinaCustomerClientsTabsEnum::ACTIVE->value ?
+                    fn () => CustomerClientResource::collection($customerClients)
+                    : Inertia::lazy(fn () => CustomerClientResource::collection($customerClients)),
+
+                RetinaCustomerClientsTabsEnum::INACTIVE->value => $this->tab == RetinaCustomerClientsTabsEnum::INACTIVE->value ?
+                    fn () => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false))
+                    : Inertia::lazy(fn () => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false))),
 
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure(prefix: RetinaCustomerClientsTabsEnum::ACTIVE->value))
+        ->table($this->tableStructure(prefix: RetinaCustomerClientsTabsEnum::INACTIVE->value));
     }
 
     public function getBreadcrumbs($routeName, $routeParameters): array

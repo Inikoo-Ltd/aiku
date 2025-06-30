@@ -80,7 +80,7 @@ class EditRetinaCustomerClient extends RetinaAction
                                     ],
                                     'address'      => [
                                         'type'    => 'address',
-                                        'label'   => __('Address'),
+                                        'label'   => __('Delivery Address'),
                                         'value'   => AddressFormFieldsResource::make(
                                             $customerClient->address
                                         )->getArray(),
@@ -89,6 +89,17 @@ class EditRetinaCustomerClient extends RetinaAction
 
                                         ]
                                     ]
+                                ]
+                            ],
+                            [
+                                "label"  => __("Status"),
+                                'title'  => __('status'),
+                                'fields' => [
+                                    'status' => [
+                                        'type'  => 'toggle',
+                                        'label' => __('status'),
+                                        'value' => $customerClient->status
+                                    ],
                                 ]
                             ]
                         ],
