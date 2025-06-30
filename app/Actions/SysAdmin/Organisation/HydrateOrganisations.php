@@ -70,6 +70,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouseArea
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouses;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebsites;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUserRequests;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
@@ -116,7 +118,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateOutboxes::run($organisation);
         OrganisationHydrateCustomerBalances::run($organisation);
         OrganisationHydrateDispatchedEmails::run($organisation);
-
+        OrganisationHydrateWebUsers::run($organisation);
 
         if ($organisation->type == OrganisationTypeEnum::SHOP) {
             OrganisationHydrateRegistrationIntervals::run($organisation);
@@ -160,7 +162,7 @@ class HydrateOrganisations extends HydrateModel
 
             OrganisationHydrateFamiliesWithNoDepartment::run($organisation);
             OrganisationHydrateProductsWithNoFamily::run($organisation);
-
+            OrganisationHydrateWebUserRequests::run($organisation->id);
 
             foreach (ShopTypeEnum::cases() as $type) {
                 if ($type != ShopTypeEnum::FULFILMENT) {

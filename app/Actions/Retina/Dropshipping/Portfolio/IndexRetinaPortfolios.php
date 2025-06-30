@@ -131,6 +131,12 @@ class IndexRetinaPortfolios extends RetinaAction
                                 'amazonUser' => $this->customerSalesChannel->user->id
                             ]
                         ],
+                        PlatformTypeEnum::MAGENTO => [
+                            'name'       => 'retina.models.dropshipping.magento.batch_upload',
+                            'parameters' => [
+                                'magentoUser' => $this->customerSalesChannel->user->id
+                            ]
+                        ],
                         default => false
                     },
                     'itemRoute'                 => [

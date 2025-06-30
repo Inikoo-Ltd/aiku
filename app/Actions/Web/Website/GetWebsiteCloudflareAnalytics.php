@@ -12,6 +12,7 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Carbon\Carbon;
 use Exception;
@@ -33,11 +34,11 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
      */
     public function handle(Website $website, array $modelData): array
     {
-
+        /** @var User $user */
         $user = auth()->user();
 
 
-        $cacheKey = "ui_state-user:{$user->id};website:{$website->id};filter-analytics:" . md5(json_encode($modelData));
+        $cacheKey = "ui_state-user:$user->id;website:$website->id;filter-analytics:" . md5(json_encode($modelData));
 
         $cachedData = cache()->get($cacheKey);
 
@@ -66,7 +67,7 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
 
         $showTopNs = Arr::get($modelData, 'showTopNs') ?? 'visits';
         $rumAnalyticsTopNsPromise = async(fn () => []);
-        $rumAnalyticsTimeseriesPromise = async(fn () => []);
+        $rumAnalyticsTimeSeriesPromise = async(fn () => []);
         $rumWebVitalsPromise = async(fn () => []);
         if ($showTopNs) {
             switch ($showTopNs) {
@@ -84,19 +85,21 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
                     break;
                 case 'pageViews':
                 case 'visits':
-                    $rumAnalyticsTopNsPromise = async(fn () => $this->getRumAnalyticsTopNs($modelData));
-                    $rumAnalyticsTimeseriesPromise = async(fn () => $this->getRumAnalyticsTimeseries($modelData));
+                    $rumAnalyticsTopNsPromise      = async(fn () => $this->getRumAnalyticsTopNs($modelData));
+                    $rumAnalyticsTimeSeriesPromise = async(fn () => $this->getRumAnalyticsTimeseries($modelData));
                     break;
+                default:
+                    //
             }
         }
 
         $rumSparklinePromise = async(fn () => $this->getRumSparkline($modelData));
         $zonePromise = async(fn () => $this->getZone($modelData));
 
-        [$rumAnalyticsTopNs, $rumSparkline, $rumAnalyticsTimeseries, $zone] = await([
+        [$rumAnalyticsTopNs, $rumSparkline, $rumAnalyticsTimeSeries, $zone] = await([
             $rumAnalyticsTopNsPromise,
             $rumSparklinePromise,
-            $rumAnalyticsTimeseriesPromise,
+            $rumAnalyticsTimeSeriesPromise,
             $zonePromise
         ]);
         $rumWebVitals = [];
@@ -108,7 +111,7 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
         $data = array_filter([
             'rumAnalyticsTopNs' => $rumAnalyticsTopNs,
             'rumSparkline' => $rumSparkline,
-            'rumAnalyticsTimeseries' => $rumAnalyticsTimeseries,
+            'rumAnalyticsTimeSeries' => $rumAnalyticsTimeSeries,
             'rumWebVitals' => $rumWebVitals,
             'zone' => $zone,
         ]);
@@ -120,9 +123,9 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
 
     private function partialHandle($partialShowTopNs, $modelData): array
     {
-        $partialFilterTimeseries = Arr::get($modelData, 'partialFilterTimeseries');
+        $partialFilterTimeSeries = Arr::get($modelData, 'partialFilterTimeSeries');
         $partialFilterPerfAnalytics = Arr::get($modelData, 'partialFilterPerfAnalytics');
-        $partialTimeseriesData = Arr::get($modelData, 'partialTimeseriesData');
+        $partialTimeSeriesData = Arr::get($modelData, 'partialTimeSeriesData');
         data_set($modelData, "showTopNs", $partialShowTopNs);
         data_forget($modelData, 'partialShowTopNs');
         switch ($partialShowTopNs) {
@@ -135,35 +138,35 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
             case 'pageViews':
             case 'visits':
                 $rumAnalyticsTopNsPromise = async(fn () => $this->getRumAnalyticsTopNs($modelData));
-                data_set($modelData, 'filterData', $partialTimeseriesData);
-                data_set($modelData, 'filter', $partialFilterTimeseries);
-                $rumAnalyticsTimeseriesPromise = async(fn () => $this->getRumAnalyticsTimeseries($modelData));
-                [$rumAnalyticsTopNs, $rumAnalyticsTimeseries] = await([$rumAnalyticsTopNsPromise, $rumAnalyticsTimeseriesPromise]);
+                data_set($modelData, 'filterData', $partialTimeSeriesData);
+                data_set($modelData, 'filter', $partialFilterTimeSeries);
+                $rumAnalyticsTimeSeriesPromise = async(fn () => $this->getRumAnalyticsTimeseries($modelData));
+                [$rumAnalyticsTopNs, $rumAnalyticsTimeSeries] = await([$rumAnalyticsTopNsPromise, $rumAnalyticsTimeSeriesPromise]);
                 return [
                     'rumAnalyticsTopNs' => $rumAnalyticsTopNs,
-                    'rumAnalyticsTimeseries' => $rumAnalyticsTimeseries,
+                    'rumAnalyticsTimeSeries' => $rumAnalyticsTimeSeries,
                 ];
             default:
                 return [];
         }
     }
 
-    private function isIso8601($dateString)
+    private function isIso8601($dateString): bool
     {
         try {
             $date = Carbon::parse($dateString);
             return $date->toIso8601String() === $dateString;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
 
-    private function isDate($dateString)
+    private function isDate($dateString): bool
     {
         try {
             $date = Carbon::parse($dateString);
             return $date->toDateString() === $dateString;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -175,16 +178,16 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
             'until' => ['sometimes'],
             'showTopNs' => ['sometimes', 'string', 'in:visits,pageViews,performance,webVitals'],
             'partialShowTopNs' => ['sometimes', 'string', 'in:visits,pageViews,performance,webVitals'],
-            'partialFilterTimeseries' => [
+            'partialFilterTimeSeries' => [
                 'sometimes',
                 'string',
                 'required_with:partialShowTopNs',
                 'in:all,referer,host,country,path,browser,os,deviceType'
             ],
-            'partialTimeseriesData' => [
+            'partialTimeSeriesData' => [
                 'sometimes',
                 'string',
-                'required_with:partialFilterTimeseries'
+                'required_with:partialFilterTimeSeries'
             ],
             'partialFilterPerfAnalytics' => [
                 'sometimes',
@@ -206,7 +209,7 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
         ];
     }
 
-    public function withValidator($validator)
+    public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
             $since = $this->since;
@@ -221,6 +224,9 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
         });
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Website $website, array $modelData, bool $strict = true): array
     {
 

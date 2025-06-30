@@ -8,21 +8,16 @@
 
 namespace App\Actions\Web\Website\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\CRM\WebUser\IndexWebUsers;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
-use App\Actions\Web\Website\GetWebsiteCloudflareAnalytics;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
-use App\Http\Resources\CRM\WebUsersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
 use App\Http\Resources\Web\RedirectsResource;
@@ -44,19 +39,17 @@ class ShowWebsite extends OrgAction
     private Fulfilment|Shop|Organisation $parent;
 
 
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $shop;
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(WebsiteTabsEnum::values());
+
         return $website;
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {
-        $this->scope  = $fulfilment;
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(WebsiteTabsEnum::values());
 
@@ -66,25 +59,73 @@ class ShowWebsite extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-
-        $analyticReq = $request->only([
-            'since',
-            'until',
-            'showTopNs',
-            'partialShowTopNs',
-            'partialFilterTimeseries',
-            'partialTimeseriesData',
-            'partialFilterPerfAnalytics',
-            'partialWebVitals',
-            'partialWebVitalsData',
-        ]);
+        $shop  = $website->shop;
+        $stats = [
+            [
+                'label' => __('Departments'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.department',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-folder-tree',
+                "color" => "#b45309",
+                'value' => $website->webStats->number_webpages_sub_type_department,
+            ],
+            [
+                'label' => __('Sub Departments'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.sub_department',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-folder-tree',
+                "color" => "#f59e0b",
+                'value' => $website->webStats->number_webpages_sub_type_sub_department,
+            ],
+            [
+                'label' => __('Families'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.family',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-folder',
+                "color" => "#4338ca",
+                'value' => $website->webStats->number_webpages_sub_type_family,
+            ],
+            [
+                'label' => __('Products'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.product',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-cube',
+                "color" => "#6366f1",
+                'value' => $website->webStats->number_webpages_sub_type_product,
+            ],
+        ];
 
         return Inertia::render(
             'Org/Web/Website',
             [
                 'title'       => __('Website'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    class_basename($this->scope),
+                    $website,
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => $this->parent instanceof Organisation ? [
@@ -120,28 +161,15 @@ class ShowWebsite extends OrgAction
 
 
                 ],
-                // "website_layout" =>  GetWebsiteWorkshopLayout::run($this->scope, $website),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => WebsiteTabsEnum::navigation()
                 ],
 
-                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']]) : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
+                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats])
+                    : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
-                WebsiteTabsEnum::WEB_USERS->value     => $this->tab == WebsiteTabsEnum::WEB_USERS->value
-                    ?
-                    WebUsersResource::collection(
-                        IndexWebUsers::run(
-                            parent: $website,
-                            prefix: 'web_users'
-                        )
-                    )
-                    : Inertia::lazy(fn () => WebUsersResource::collection(
-                        IndexWebUsers::run(
-                            parent: $website,
-                            prefix: 'web_users'
-                        )
-                    )),
+
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($website))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($website))),
@@ -154,27 +182,10 @@ class ShowWebsite extends OrgAction
                     fn () => RedirectsResource::collection(IndexRedirects::run($website))
                     : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($website))),
 
-                WebsiteTabsEnum::ANALYTICS->value => $this->tab == WebsiteTabsEnum::ANALYTICS->value ?
-                    fn () => GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq)
-                    : Inertia::lazy(fn () => GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq))
             ]
-        )->table(
-            IndexWebUsers::make()->tableStructure(
-                parent: $website,
-                modelOperations: [
-                    'createLink' => $this->canEdit ? [
-                        'route' => [
-                            'name'       => 'grp.org.shop.show.websites.show.web-users.create',
-                            'parameters' => array_values($request->route()->originalParameters())
-                        ],
-                        'label' => __('users')
-                    ] : false,
-                ],
-                prefix: 'web_users'
-            )
         )->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))
-        ->table(IndexRedirects::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::REDIRECTS->value))
-        ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value));
+            ->table(IndexRedirects::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::REDIRECTS->value))
+            ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value));
     }
 
 
@@ -183,19 +194,18 @@ class ShowWebsite extends OrgAction
         return new WebsiteResource($website);
     }
 
-    public function getBreadcrumbs(string $scope, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(Website $website, string $routeName, array $routeParameters, $suffix = null): array
     {
-
-        $website = Website::where('slug', $routeParameters['website'])->first();
-
-        $modelRoute = match ($scope) {
-            'Shop' => [
+        $modelRoute = match ($routeName) {
+            'grp.org.shops.show.web.websites.show',
+            'grp.org.shops.show.web.websites.edit' => [
                 'name'       => 'grp.org.shops.show.web.websites.show',
-                'parameters' => Arr::only($routeParameters, ['organisation','shop','website'])
+                'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website'])
             ],
-            'Fulfilment' => [
+            'grp.org.fulfilments.show.web.websites.show',
+            'grp.org.fulfilments.show.web.websites.edit' => [
                 'name'       => 'grp.org.fulfilments.show.web.websites.show',
-                'parameters' => Arr::only($routeParameters, ['organisation','fulfilment','website'])
+                'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website'])
             ],
             default => null
         };
@@ -218,7 +228,7 @@ class ShowWebsite extends OrgAction
                             ],
                             'model' => [
                                 'route' => $modelRoute,
-                                'label' => $website->code,
+                                'label' => $website->domain,
                                 'icon'  => 'fal fa-bars'
                             ]
 
@@ -228,79 +238,6 @@ class ShowWebsite extends OrgAction
                     ]
                 ]
             );
-
-    }
-
-    public function getBreadcrumbsold(string $routeName, array $routeParameters, string $suffix = ''): array
-    {
-        $headCrumb = function (string $type, Website $website, array $routeParameters, string $suffix) {
-            return [
-                [
-
-                    'type'           => $type,
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Websites')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $website->code,
-                        ],
-                    ],
-                    'simple'         => [
-                        'route' => $routeParameters['model'],
-                        'label' => $website->code
-                    ],
-                    'suffix'         => $suffix
-
-                ],
-            ];
-        };
-
-        return match ($routeName) {
-            'grp.org.shops.show.web.websites.show',
-            'grp.org.shops.show.web.websites.edit' =>
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    'modelWithIndex',
-                    Website::where('slug', $routeParameters['website'])->first(),
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.web.websites.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.web.websites.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-            'grp.org.fulfilments.show.web.websites.show',
-            'grp.org.fulfilments.show.web.websites.edit' =>
-            array_merge(
-                ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    'modelWithIndex',
-                    Website::where('slug', $routeParameters['website'])->first(),
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.web.websites.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.web.websites.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-            default => []
-        };
     }
 
     public function getPrevious(Website $website, ActionRequest $request): ?array

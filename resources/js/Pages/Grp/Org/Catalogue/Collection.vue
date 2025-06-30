@@ -26,6 +26,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -36,6 +37,7 @@ const props = defineProps<{
     families?: {}
     products?: {}
     collections?: {}
+    history?: {};
     routes: {
         families: { dataList: routeType, submitAttach: routeType, detach: routeType }
         products: { dataList: routeType, submitAttach: routeType, detach: routeType }
@@ -67,6 +69,7 @@ const component = computed(() => {
         families: TableFamilies,
         products: TableProducts,
         collections: TableCollections,
+        history: TableHistories
     }
     return components[currentTab.value]
 })

@@ -106,7 +106,8 @@ class ShowFooterWorkshop extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Workshop')
+                            'label' => __('Workshop'),
+                            'icon' => 'fal fa-drafting-compass',
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

@@ -20,7 +20,7 @@ use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
-use App\Actions\CRM\WebUser\IndexWebUsers;
+use App\Actions\CRM\WebUser\IndexWebUsersInFulfilmentCRM;
 use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannelsInFulfilment;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannelInFulfilment;
@@ -89,8 +89,8 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
 
     Route::get('webhook', FetchNewWebhookFulfilmentCustomer::class)->name('.webhook.fetch');
 
-    Route::prefix('web-users')->as('.web-users.')->group(function () {
-        Route::get('', [IndexWebUsers::class, 'inFulfilmentCustomer'])->name('index');
+    Route::prefix('web-users')->as('.web_users.')->group(function () {
+        Route::get('', IndexWebUsersInFulfilmentCRM::class)->name('index');
         Route::get('create', [CreateWebUser::class, 'inFulfilmentCustomer'])->name('create');
         Route::prefix('{webUser}')->group(function () {
             Route::get('', [ShowWebUser::class, 'inFulfilmentCustomer'])->name('show');
@@ -203,4 +203,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     Route::get('/stored-item-audits', [IndexStoredItemAudits::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.index');
     Route::get('/stored-item-audits/create', [CreateStoredItemAudit::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.create');
     Route::get('/stored-item-audits/{storedItemAudit}', [ShowStoredItemAudit::class, 'inFulfilmentCustomer'])->name('.stored-item-audits.show');
+
+
+
 });

@@ -2,7 +2,6 @@
 import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { AutoComplete } from "primevue"
 
 
 // vika_luigi.js
@@ -12,7 +11,6 @@ import { AutoComplete } from "primevue"
 const inputValue = ref('')
 
 
-console.log('xxx')
 
 const isLogin = computed(() => {
     return layout.is_logged_in
@@ -20,9 +18,17 @@ const isLogin = computed(() => {
 
 
 const LBInitAutocompleteNew = async () => {
-    await AutoComplete(
+    // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
+
+    if (!layout.iris?.luigisbox_tracker_id) {
+        console.error("Luigi tracker id didn't provided")
+        return
+    }
+
+    const xxx = await AutoComplete(
         {
             Layout: "heromobile",
+            // TrackerId: '483878-588294',
             TrackerId: layout.iris?.luigisbox_tracker_id,
             Locale: 'en',
             Translations: {
@@ -92,14 +98,10 @@ const LBInitAutocompleteNew = async () => {
         },
         "#inputLuigi"
     )
+    // console.log('xxx', xxx)
 
     console.log("Init autocomplete")
 }
-
-
-
-
-
 
 
 // Import Luigi CSS style
@@ -117,19 +119,22 @@ const importStyleCSS = () => {
 
 const layout = inject('layout', {})
 const locale = inject('locale', {})
-console.log('layout:', layout)
-console.log('locale:', locale)
 
 onBeforeMount(() => {
     const script = document.createElement('script');
     script.src = "https://cdn.luigisbox.com/autocomplete.js";
     script.async = true;
     document.head.appendChild(script);
+    script.onload = () => {
+        console.log('Luigi autocomplete script loaded');
+        LBInitAutocompleteNew();
+    };
+    script.onerror = () => {
+        console.error('Failed to load Luigi autocomplete script');
+    }
 })
-
 onMounted(() => {
     importStyleCSS()
-    LBInitAutocompleteNew()
 })
 </script>
 

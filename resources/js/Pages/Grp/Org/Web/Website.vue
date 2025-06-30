@@ -27,8 +27,9 @@ import { capitalize } from "@/Composables/capitalize"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import WebsiteShowcase from "@/Components/Showcases/Org/WebsiteShowcase.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
-import WebsiteAnalytics from "@/Components/DataDisplay/WebsiteAnalytics.vue"
+import WebsiteAnalytics from "@/Pages/Grp/Org/Web/WebsiteAnalytics.vue"
 import TableRedirects from "@/Components/Tables/Grp/Org/Web/TableRedirects.vue"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(
     faChartLine,
@@ -48,8 +49,8 @@ library.add(
 
 
 const props = defineProps<{
-    title: string,
-    pageHead: object,
+    pageHead: PageHeadingTypes
+    title: string
     tabs: {
         current: string
         navigation: object

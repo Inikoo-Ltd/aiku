@@ -31,7 +31,7 @@ class WebBlockFamiliesResource extends JsonResource
         if ($this->parent_url) {
             $url = $this->parent_url.'/';
         }
-        $url = $url.$this->url;
+        $url = '/'.$url.$this->url;
 
 
         return [

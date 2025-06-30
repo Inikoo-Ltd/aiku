@@ -24,8 +24,10 @@ library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
 const layout = useIrisLayoutStore()
-
+const isOpenMenuMobile = ref(false)
 provide('layout', layout)
+provide('isOpenMenuMobile', isOpenMenuMobile)
+
 
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu

@@ -42,28 +42,34 @@ class ShowWebpageWorkshop extends OrgAction
 
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+        $url = $webpage->website->domain.'/'.$webpage->url;
+        if ($webpage->website->is_migrating) {
+            $url = 'https://v2.'.$url;
+        } else {
+            $url = 'https://'.$url;
+        }
 
         return Inertia::render(
             'Org/Web/WebpageWorkshop',
             [
-                'title'       => $webpage->code . ' ' . __("workshop"),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'         => $webpage->code.' '.__("workshop"),
+                'breadcrumbs'   => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'pageHead'    => [
-                    'title'     => $webpage->code,
-                    'afterTitle'   => [
-                        'label'     => '../' . $webpage->url,
+                'pageHead'      => [
+                    'title'      => $webpage->code,
+                    'afterTitle' => [
+                        'label' => '../'.$webpage->url,
                     ],
-                    'icon'      => [
+                    'icon'       => [
                         'title' => __('webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
-                     'iconRight'          => $webpage->state->stateIcon()[$webpage->state->value],
-                    'model' => __('Workshop'),
+                    'iconRight'  => $webpage->state->stateIcon()[$webpage->state->value],
+                    'model'      => __('Workshop'),
 
-                    'actions'   => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exit',
@@ -85,8 +91,8 @@ class ShowWebpageWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'url'   => 'https://v2.'.$webpage->website->domain. '/' . $webpage->url,
-                'webpage'     => WebpageWorkshopResource::make($webpage)->getArray(),
+                'url'           => $url,
+                'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
                 'webBlockTypes' => WebBlockTypesResource::collection(
                     $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get()
                 )

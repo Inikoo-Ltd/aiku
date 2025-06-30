@@ -43,7 +43,7 @@ class StoreMultipleManualPortfolios extends OrgAction
                     /** @var Product $item */
                     $item = Product::find($itemID);
                 }
-                if ($item->portfolio()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
+                if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
                     continue;
                 }
 
@@ -57,7 +57,7 @@ class StoreMultipleManualPortfolios extends OrgAction
 
 
 
-        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
+        CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
     }
 
     public function rules(): array

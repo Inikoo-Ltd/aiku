@@ -16,7 +16,6 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\ProductCategoryWebpagesResource;
-use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
@@ -44,7 +43,15 @@ class IndexSubDepartmentWebpages extends OrgAction
         $this->website = $website;
         $this->initialisationFromShop($website->shop, $request);
 
-        return $this->handle(parent: $website, bucket: $this->bucket);
+        return $this->handle(parent: $website);
+    }
+
+    public function inDepartmentWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
     }
 
     protected function getElementGroups(Website $parent): array
@@ -66,7 +73,7 @@ class IndexSubDepartmentWebpages extends OrgAction
         ];
     }
 
-    public function handle(Website $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Website $parent, Webpage|null $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
     {
 
         if ($bucket) {
@@ -105,6 +112,11 @@ class IndexSubDepartmentWebpages extends OrgAction
                 ->where('webpages.model_type', '=', 'ProductCategory');
         });
         $queryBuilder->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id');
+
+        if ($scope instanceof Webpage) {
+            $queryBuilder->where('product_categories.department_id', $scope->model_id);
+        }
+
         return $queryBuilder
             ->defaultSort('webpages.level')
             ->select([
@@ -231,12 +243,14 @@ class IndexSubDepartmentWebpages extends OrgAction
                 ],
             ];
         };
-
+        /** @var Website $website */
+        $website = request()->route()->parameter('website');
         return match ($routeName) {
             'grp.org.shops.show.web.webpages.index.sub_type.sub_department' =>
             array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
+                    $website,
+                    'grp.org.shops.show.web.websites.show',
                     $routeParameters
                 ),
                 $headCrumb(

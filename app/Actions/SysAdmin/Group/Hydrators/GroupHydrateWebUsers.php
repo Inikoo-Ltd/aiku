@@ -33,7 +33,7 @@ class GroupHydrateWebUsers implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
-            'number_web_users' => $group->WebUsers()->count(),
+            'number_web_users' => $group->webUsers()->count(),
         ];
 
         $stats = array_merge(
@@ -63,13 +63,6 @@ class GroupHydrateWebUsers implements ShouldBeUnique
         );
 
         $group->crmStats()->update($stats);
-    }
-    public string $commandSignature = 'hydrate:group_web_users';
-
-    public function asCommand($command): void
-    {
-        $group = Group::first();
-        $this->handle($group);
     }
 
 

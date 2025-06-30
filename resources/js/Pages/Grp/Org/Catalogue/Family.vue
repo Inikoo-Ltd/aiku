@@ -28,6 +28,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 
 library.add(
     faFolder,
@@ -54,7 +55,7 @@ const props = defineProps<{
     mailshots: object
     showcase: object
     details: object
-    history: object
+    history?: object;
     is_orphan?: boolean
 }>()
 
@@ -71,7 +72,7 @@ const component = computed(() => {
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,
-        history: ModelChangelog
+        history: TableHistories
     }
     return components[currentTab.value] ?? ModelDetails
 })

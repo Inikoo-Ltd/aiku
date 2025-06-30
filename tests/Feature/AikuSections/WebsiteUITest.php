@@ -40,7 +40,7 @@ beforeEach(function () {
             $this->organisation,
             $this->user,
             $this->shop
-        )                        = createShop();
+            ) = createShop();
         $web = createWebsite($this->shop);
     } else {
         $this->organisation = $web->organisation;
@@ -48,14 +48,14 @@ beforeEach(function () {
         $this->shop         = $web->shop;
     }
     $web->refresh();
-    $this->web               = $web;
-    $this->warehouse         = createWarehouse();
+    $this->web       = $web;
+    $this->warehouse = createWarehouse();
 
     if ($this->web->shop->fulfilment) {
-        $this->fulfilment = $this->web->shop->fulfilment;
+        $this->fulfilment        = $this->web->shop->fulfilment;
         $this->fulfilmentWebsite = $this->web;
     } else {
-        $this->fulfilment = createFulfilment($this->organisation);
+        $this->fulfilment        = createFulfilment($this->organisation);
         $this->fulfilmentWebsite = createWebsite($this->fulfilment->shop);
     }
 
@@ -92,7 +92,6 @@ beforeEach(function () {
 
 
 test('can show fulfilment website', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -114,7 +113,6 @@ test('can show fulfilment website', function () {
 });
 
 test('can show fulfilment website (tab showcase)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -134,7 +132,7 @@ test('can show fulfilment website (tab showcase)', function () {
             ->has('title')
             ->has(
                 "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::SHOWCASE->value)->etc()
+                fn(AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::SHOWCASE->value)->etc()
             )
             ->has(WebsiteTabsEnum::SHOWCASE->value)
             ->has('breadcrumbs', 2);
@@ -142,7 +140,6 @@ test('can show fulfilment website (tab showcase)', function () {
 });
 
 test('can show fulfilment website (tab external links)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -162,71 +159,14 @@ test('can show fulfilment website (tab external links)', function () {
             ->has('title')
             ->has(
                 "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::EXTERNAL_LINKS->value)->etc()
+                fn(AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::EXTERNAL_LINKS->value)->etc()
             )
             ->has(WebsiteTabsEnum::EXTERNAL_LINKS->value)
             ->has('breadcrumbs', 2);
     });
 });
 
-test('can show fulfilment website (tab analytics)', function () {
-
-    $website = $this->fulfilmentWebsite;
-
-    $response = get(
-        route(
-            'grp.org.fulfilments.show.web.websites.show',
-            [
-                $this->organisation->slug,
-                $this->fulfilment->slug,
-                $website->slug,
-                'tab' => WebsiteTabsEnum::ANALYTICS->value
-            ]
-        )
-    );
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Web/Website')
-            ->has('title')
-            ->has(
-                "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::ANALYTICS->value)->etc()
-            )
-            ->has(WebsiteTabsEnum::ANALYTICS->value)
-            ->has('breadcrumbs', 2);
-    });
-})->todo();
-
-test('can show fulfilment website (tab web users)', function () {
-
-    $website = $this->fulfilmentWebsite;
-
-    $response = get(
-        route(
-            'grp.org.fulfilments.show.web.websites.show',
-            [
-                $this->organisation->slug,
-                $this->fulfilment->slug,
-                $website->slug,
-                'tab' => WebsiteTabsEnum::WEB_USERS->value
-            ]
-        )
-    );
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Web/Website')
-            ->has('title')
-            ->has(
-                "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::WEB_USERS->value)->etc()
-            )
-            ->has(WebsiteTabsEnum::WEB_USERS->value)
-            ->has('breadcrumbs', 2);
-    });
-});
-
 test('can show webpages list in fulfilment website', function () {
-
     $website  = $this->fulfilmentWebsite;
     $response = get(
         route(
@@ -248,7 +188,6 @@ test('can show webpages list in fulfilment website', function () {
 });
 
 test('can show fulfilments website workshop', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -267,15 +206,14 @@ test('can show fulfilments website workshop', function () {
             ->where('title', "Website's workshop")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Workshop")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "Workshop")->etc()
             )
-            ->has('breadcrumbs', 3)
+            ->has('breadcrumbs', 2)
             ->has('tabs');
     });
 });
 
 test('can show fulfilments website workshop (header)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -294,7 +232,7 @@ test('can show fulfilments website workshop (header)', function () {
             ->where('title', "Website Header's Workshop")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Header's Workshop")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "Header's Workshop")->etc()
             )
             ->has('breadcrumbs', 0)
             ->has('uploadImageRoute')
@@ -306,7 +244,6 @@ test('can show fulfilments website workshop (header)', function () {
 });
 
 test('can show fulfilments website workshop (footer)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -325,7 +262,7 @@ test('can show fulfilments website workshop (footer)', function () {
             ->where('title', "footer")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $website->code)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $website->code)->etc()
             )
             ->has('breadcrumbs', 0)
             ->has('uploadImageRoute')
@@ -352,7 +289,7 @@ test('UI index websites in organisation', function () {
             ->has('breadcrumbs', 2)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "websites")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "websites")->etc()
             )
             ->has('data');
     });
@@ -376,7 +313,7 @@ test('index fulfilment banner', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "banners")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "banners")->etc()
             )
             ->has('data');
     });
@@ -402,7 +339,7 @@ test('show fulfilment banner', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $this->banner->name)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $this->banner->name)->etc()
             )
             ->has('tabs');
     });
@@ -435,7 +372,7 @@ test('edit fulfilment banner', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $this->banner->name)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $this->banner->name)->etc()
             )
             ->has('formData');
     });
@@ -467,9 +404,9 @@ test('delete banner in shop', function () {
             'grp.org.shops.show.web.banners.index',
             [
                 'organisation' => $this->organisation->slug,
-                'shop' => $this->shop->slug,
-                'website' => $this->shop->website->slug,
-                'banner' => $banner->slug
+                'shop'         => $this->shop->slug,
+                'website'      => $this->shop->website->slug,
+                'banner'       => $banner->slug
             ]
         )
     );
@@ -497,7 +434,7 @@ test('show fulfilment banner workshop', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Workshop')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'Workshop')->etc()
             )
             ->has('publishRoute')
             ->has('imagesUploadRoute')
@@ -527,7 +464,7 @@ test('show fulfilment edit website', function () {
             ->has('breadcrumbs', 2)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Settings')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'Settings')->etc()
             )
             ->has('formData');
     });
@@ -551,7 +488,7 @@ test('create banner', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'banner')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'banner')->etc()
             )
             ->has('formData');
     });
@@ -575,7 +512,7 @@ test('web website workshop menu', function () {
             ->has('breadcrumbs')
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Menu's Workshop")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "Menu's Workshop")->etc()
             )
             ->has('autosaveRoute')
             ->has('data')
@@ -604,7 +541,7 @@ test('can show webpages in shop website', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $this->webpage->code)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $this->webpage->code)->etc()
             )
             ->has('tabs');
     });
@@ -630,7 +567,7 @@ test('can show workshop webpages in shop website', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $this->webpage->code)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $this->webpage->code)->etc()
             )
             ->has('webpage')
             ->has('webBlockTypes');
@@ -640,8 +577,8 @@ test('can show workshop webpages in shop website', function () {
 test('UI get section route show shop website', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.web.websites.show', [
         'organisation' => $this->organisation->slug,
-        'shop' => $this->shop->slug,
-        'website' => $this->web->slug
+        'shop'         => $this->shop->slug,
+        'website'      => $this->web->slug
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_WEBSITE->value)
@@ -656,9 +593,9 @@ test('ui index redirects in website', function () {
             'grp.org.fulfilments.show.web.websites.show',
             [
                 'organisation' => $this->organisation->slug,
-                'fulfilment' => $this->fulfilment->slug,
-                'website' => $this->fulfilmentWebsite,
-                'tab' => WebsiteTabsEnum::REDIRECTS->value
+                'fulfilment'   => $this->fulfilment->slug,
+                'website'      => $this->fulfilmentWebsite,
+                'tab'          => WebsiteTabsEnum::REDIRECTS->value
             ]
         )
     );
@@ -668,7 +605,7 @@ test('ui index redirects in website', function () {
             ->has('title')
             ->has(
                 "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::REDIRECTS->value)->etc()
+                fn(AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::REDIRECTS->value)->etc()
             )
             ->has('breadcrumbs', 2);
     });
@@ -681,10 +618,10 @@ test('ui index redirects in webpage', function () {
             'grp.org.shops.show.web.webpages.show',
             [
                 'organisation' => $this->organisation->slug,
-                'shop' => $this->shop->slug,
-                'website' => $this->web->slug,
-                'webpage' => $this->webpage->slug,
-                'tab' => WebsiteTabsEnum::REDIRECTS->value
+                'shop'         => $this->shop->slug,
+                'website'      => $this->web->slug,
+                'webpage'      => $this->webpage->slug,
+                'tab'          => WebsiteTabsEnum::REDIRECTS->value
             ]
         )
     );
@@ -694,7 +631,7 @@ test('ui index redirects in webpage', function () {
             ->has('title')
             ->has(
                 "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebpageTabsEnum::REDIRECTS->value)->etc()
+                fn(AssertableInertia $page) => $page->where("current", WebpageTabsEnum::REDIRECTS->value)->etc()
             )
             ->has('breadcrumbs', 3);
     });

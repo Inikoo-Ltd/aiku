@@ -316,22 +316,22 @@ class GetShopNavigation
                                 ],
                             ],
                             [
-                                "label"   => __("outboxes"),
-                                "tooltip" => __("outboxes"),
-                                "icon"    => ["fal", "fa-comment-dollar"],
-                                'root'    => 'grp.org.shops.show.web.websites.outboxes',
-                                "route"   => [
-                                    "name"       => "grp.org.shops.show.web.websites.outboxes",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
-                                ],
-                            ],
-                            [
                                 "label"   => __("banners"),
                                 "tooltip" => __("banners"),
                                 "icon"    => ["fal", "fa-sign"],
                                 'root'    => 'grp.org.shops.show.web.banners.',
                                 "route"   => [
                                     "name"       => "grp.org.shops.show.web.banners.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("analytics"),
+                                "tooltip" => __("analytics"),
+                                "icon"    => ["fal", "fa-analytics"],
+                                'root'    => 'grp.org.shops.show.web.analytics.',
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.web.analytics.dashboard",
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],

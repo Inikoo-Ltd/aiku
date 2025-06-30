@@ -7,6 +7,7 @@
  */
 
 
+use Illuminate\Support\Facades\Route;
 
 Route::prefix("customers")
     ->name("customers.")
@@ -15,3 +16,7 @@ Route::prefix("customers")
 Route::prefix("prospects")
     ->name("prospects.")
     ->group(__DIR__."/prospects.php");
+
+Route::prefix("web-users")
+    ->name("web_users.")
+    ->group(__DIR__."/web_users.php");

@@ -43,7 +43,31 @@ class IndexProductWebpages extends OrgAction
         $this->website = $website;
         $this->initialisationFromShop($website->shop, $request);
 
-        return $this->handle(parent: $website, bucket: $this->bucket);
+        return $this->handle(parent: $website);
+    }
+
+    public function inDepartmentWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
+    }
+
+    public function inSubDepartmentWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
+    }
+
+    public function inFamilyWebpages(Organisation $organisation, Shop $shop, Website $website, Webpage $scope, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle(parent: $website, scope: $scope);
     }
 
     protected function getElementGroups(Website $parent): array
@@ -65,7 +89,7 @@ class IndexProductWebpages extends OrgAction
         ];
     }
 
-    public function handle(Website $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Website $parent, Webpage|null $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
     {
 
         if ($bucket) {
@@ -99,7 +123,19 @@ class IndexProductWebpages extends OrgAction
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
-
+        $queryBuilder->leftJoin('products', function ($join) {
+            $join->on('webpages.model_id', '=', 'products.id')
+                ->where('webpages.model_type', '=', 'Product');
+        });
+        if ($scope instanceof Webpage) {
+            if ($scope->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+                $queryBuilder->where('products.department_id', $scope->model_id);
+            } elseif ($scope->sub_type == WebpageSubTypeEnum::SUB_DEPARTMENT) {
+                $queryBuilder->where('products.sub_department_id', $scope->model_id);
+            } elseif ($scope->sub_type == WebpageSubTypeEnum::FAMILY) {
+                $queryBuilder->where('products.family_id', $scope->model_id);
+            }
+        }
         return $queryBuilder
             ->defaultSort('webpages.level')
             ->select([
@@ -222,12 +258,14 @@ class IndexProductWebpages extends OrgAction
                 ],
             ];
         };
-
+        /** @var Website $website */
+        $website = request()->route()->parameter('website');
         return match ($routeName) {
             'grp.org.shops.show.web.webpages.index.sub_type.product' =>
             array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
+                    $website,
+                    'grp.org.shops.show.web.websites.show',
                     $routeParameters
                 ),
                 $headCrumb(

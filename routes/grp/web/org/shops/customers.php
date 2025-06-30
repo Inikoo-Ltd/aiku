@@ -20,7 +20,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\WebUser\CreateWebUser;
 use App\Actions\CRM\WebUser\EditWebUser;
-use App\Actions\CRM\WebUser\IndexWebUsers;
+use App\Actions\CRM\WebUser\IndexWebUsersInCRM;
 use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
@@ -75,8 +75,8 @@ Route::prefix('{customer}')->as('show')->group(function () {
             });
         });
     });
-    Route::prefix('web-users')->as('.web-users')->group(function () {
-        Route::get('', IndexWebUsers::class)->name('.index');
+    Route::prefix('web-users')->as('.web_users')->group(function () {
+        Route::get('', IndexWebUsersInCRM::class)->name('.index');
         Route::get('create', CreateWebUser::class)->name('.create');
         Route::prefix('{webUser}')->group(function () {
             Route::get('', ShowWebUser::class)->name('.show');

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Dropshipping\Magento\DeleteMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\WooCommerce\DeleteWooCommerceUser;
 use App\Actions\OrgAction;
@@ -34,6 +35,7 @@ class UnlinkCustomerSalesChannel extends OrgAction
             match ($customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => DeleteRetinaShopifyUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::WOOCOMMERCE => DeleteWooCommerceUser::run($customerSalesChannel->user),
+                PlatformTypeEnum::MAGENTO => DeleteMagentoUser::run($customerSalesChannel->user),
                 default => null
             };
         }

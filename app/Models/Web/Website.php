@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Website\WebsiteCloudflareStatusEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
+use App\Models\Analytics\WebUserRequest;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
@@ -139,6 +140,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Snapshot|null $unpublishedSubDepartmentSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
+ * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Collection<int, \App\Models\Web\Webpage> $webpages
  * @method static \Database\Factories\Web\WebsiteFactory factory($count = null, $state = [])
  * @method static Builder<static>|Website newModelQuery()
@@ -364,6 +366,11 @@ class Website extends Model implements Auditable, HasMedia
                 default => 'https://fulfilment.test/app'
             }
         };
+    }
+
+    public function webUserRequests(): HasMany
+    {
+        return $this->hasMany(WebUserRequest::class);
     }
 
 }

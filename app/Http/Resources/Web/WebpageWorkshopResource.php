@@ -38,15 +38,14 @@ class WebpageWorkshopResource extends JsonResource
             'website_layout'                         => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
             'code'                                   => $webpage->code,
             'url'                                    => $webpage->url,
-            'type'                                  => $webpage->type,
-            'allow_fetch'                         => $webpage->allow_fetch,
-            'route_webpage_edit' => [
-                'name'       => 'grp.models.shop.webpage.update',
+            'type'                                   => $webpage->type,
+            'allow_fetch'                            => $webpage->allow_fetch,
+            'route_webpage_edit'                     => [
+                'name'       => 'grp.models.webpage.update',
                 'parameters' => [
-                    'shop'         => $webpage->shop->id,
-                    'webpage'      => $webpage->id
+                    'webpage' => $webpage->id
                 ],
-                'method' => 'patch'
+                'method'     => 'patch'
             ],
             'typeIcon'                               => match ($webpage->type) {
                 WebpageTypeEnum::STOREFRONT => ['fal', 'fa-home'],
@@ -82,7 +81,6 @@ class WebpageWorkshopResource extends JsonResource
             ],
         ];
     }
-
 
 
 }

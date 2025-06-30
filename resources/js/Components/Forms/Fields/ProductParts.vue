@@ -1,15 +1,11 @@
 <script setup lang='ts'>
-import PureInput from '@/Components/Pure/PureInput.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import FileUpload from 'primevue/fileupload'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle } from '@fal'
 import { faFacebook, faLinkedin, faGoogle, faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
-import { ref } from 'vue'
-import Image from '@/Components/Image.vue'
-import { InputNumber } from 'primevue'
+import { Fieldset, InputNumber } from 'primevue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { routeType } from '@/types/route'
 
@@ -36,28 +32,28 @@ const onDeleteParcel = (index: number) => {
 
 <template>
     <div class="max-w-2xl rounded-md">
-        <!-- <pre>{{ props.form[props.fieldName] }}</pre> -->
 
-        <Fieldset :legend="`${trans('Parcels')} (0)`">
-            <!-- Header Row -->
-            <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
-                <div class="flex justify-center">
-                    <!-- <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" /> -->
-                </div>
-
-                <div class="col-span-2 flex items-center space-x-1">
-                    <!-- <FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" /> -->
-                    <span>Qty</span>
-                </div>
-                <div class="col-span-9 flex items-center space-x-1">
-                    <!-- <FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" /> -->
-                    <span>Stock name</span>
-                </div>
-            </div>
-
+        <Fieldset :legend="`${trans('Parts')} (${props.form[props.fieldName].length})`" xclass="mb-4">
+            
             <!--  -->
-            <div class="grid gap-y-2 xmax-h-64 xoverflow-y-auto pr-2">
-                <TransitionGroup xv-if="parcelsCopy?.length" name="list">
+            <div class="grid gap-y-2 xmax-h-64 xoverflow-y-auto xpr-2">
+                <!-- Header Row -->
+                <div class="flex items-center gap-x-6 mb-2">
+    
+                    <div class="ml-12 w-16 flex items-center space-x-1">
+                        <span>Qty</span>
+                    </div>
+
+                    <div class="w-64 flex items-center space-x-1">
+                        <span>Stock name</span>
+                    </div>
+
+                    <div class="w-72 flex items-center space-x-1">
+                        <span>Note</span>
+                    </div>
+                </div>
+
+                <TransitionGroup v-if="form[fieldName].length" name="list">
                     <div v-for="(part, pIndex) in form[fieldName]" :key="pIndex" class="flex xgrid grid-cols-12 xitems-center gap-x-6">
                         <div @click="() => onDeleteParcel(pIndex)" class="mt-2 xflex justify-center text-red-400 hover:text-red-600 cursor-pointer">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="" fixed-width aria-hidden="true" />
@@ -122,16 +118,15 @@ const onDeleteParcel = (index: number) => {
                     </div>
                 </TransitionGroup>
 
-                <!-- <div v-else class="text-center text-gray-400">
-                    {{ trans('No parcels') }}
-                </div> -->
+                <div v-else class="text-center text-gray-400">
+                    {{ trans('No Parts yet') }}
+                </div>
                 
             </div>
-            <!-- <pre>{{ form[fieldName] }}</pre> -->
 
             <!-- Repeat for more rows -->
-            <div class="grid grid-cols-12 mt-2">
-                <div></div>
+            <div class="mt-2">
+                <!-- <div></div> -->
                 <div @click="() => props.form[props.fieldName].push({ org_stock_id: null, quantity: 1, notes: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                     {{ trans("Add another Part") }}

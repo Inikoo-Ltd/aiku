@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Magento;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -34,11 +35,15 @@ class StoreMagentoUser extends OrgAction
         $password = Arr::get($modelData, 'password');
         $storeUrl = Arr::pull($modelData, 'url');
 
+        if ($customer->magentoUsers()->whereJsonContains('settings->credentials->base_url', $storeUrl)->exists()) {
+            throw ValidationException::withMessages(['username' => __('The store already exists.')]);
+        }
+
         $validated = $this->validateMagentoAccount($username, $password, $storeUrl);
 
-        //        if (! $validated) {
-        //            throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
-        //        }
+        if (! $validated) {
+            throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
+        }
 
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
@@ -53,12 +58,12 @@ class StoreMagentoUser extends OrgAction
             'platform_user_type' => class_basename($magentoUser),
             'platform_user_id' => $magentoUser->id,
             'reference' => $magentoUser->name,
-            'name' => $magentoUser->name,
-            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+            'name' => $magentoUser->name
         ]);
 
         $magentoUser->refresh();
         $accessToken = $magentoUser->getMagentoToken();
+        $stores = $magentoUser->getStores();
 
         $magentoUser->update([
             'customer_sales_channel_id' => $customerSalesChannel->id,
@@ -67,7 +72,12 @@ class StoreMagentoUser extends OrgAction
                     ...Arr::get($magentoUser->settings, 'credentials'),
                     'access_token' => $accessToken
                 ]
-            ]
+            ],
+            'name' => Arr::get($stores, '0.name')
+        ]);
+
+        UpdateCustomerSalesChannel::run($customerSalesChannel, [
+            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
         ]);
 
         return $magentoUser;

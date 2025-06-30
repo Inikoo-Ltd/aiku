@@ -254,7 +254,6 @@ class FetchAuroraWebpage extends FetchAurora
                 'parent_id'       => $parentId,
                 'code'            => $url,
                 'title'           => $title,
-                'description'     => (string)$auroraModelData->{'Webpage Meta Description'},
                 'url'             => strtolower($url),
                 'state'           => $status,
                 'sub_type'        => $subType,
