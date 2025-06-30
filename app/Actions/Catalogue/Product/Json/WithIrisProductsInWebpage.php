@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -32,6 +33,14 @@ trait WithIrisProductsInWebpage
         return AllowedFilter::callback('price_range', function ($query, $value) {
             [$min, $max] = explode(',', $value);
             $query->whereBetween('price', [(float)$min, (float)$max]);
+        });
+    }
+
+    public function getNewArrivalsFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('new_arrivals', function ($query, $value) {
+            $days = is_numeric($value) ? (int) $value : 3;
+            $query->where('products.created_at', '>=', now()->subDays($days));
         });
     }
 
@@ -59,8 +68,9 @@ trait WithIrisProductsInWebpage
     {
         $globalSearch     = $this->getGlobalSearch();
         $priceRangeFilter = $this->getPriceRangeFilter();
+        $newArrivalsFilter = $this->getNewArrivalsFilter();
 
-        return [$globalSearch, $priceRangeFilter];
+        return [$globalSearch, $priceRangeFilter, $newArrivalsFilter];
     }
 
     public function getSelect(): array
