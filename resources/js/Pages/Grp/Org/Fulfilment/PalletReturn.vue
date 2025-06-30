@@ -357,6 +357,24 @@ provide("listError", listError.value)
 			<div v-else></div>
 		</template>
 
+		<!-- Button: Upload -->
+		<template #button-pdf="{ action }">
+			<a
+				:style="action.style"
+				:href="route(action.route.name, action.route.parameters)"
+				target="_blank"
+				download
+				v-tooltip="action.tooltip"
+			>
+				<Button
+					:label="action.label"
+					:icon="action.icon"
+					xkey="`ActionButton${action.label}${action.style}`"
+					type="tertiary"
+				/>
+			</a>
+		</template>
+
 		<!-- Button: delete Return -->
 		<template #button-delete-return="{ action }">
 			<div>

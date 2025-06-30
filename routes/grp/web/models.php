@@ -122,6 +122,8 @@ use App\Actions\Fulfilment\PalletReturn\DeletePalletReturnAddress;
 use App\Actions\Fulfilment\PalletReturn\DetachPalletFromReturn;
 use App\Actions\Fulfilment\PalletReturn\DispatchPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingStoredItemReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
 use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
@@ -479,6 +481,8 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     // This is wrong ImportPalletsInPalletDelivery is used when creating a pallet delivery
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
     Route::patch('/', UpdatePalletReturn::class)->name('update');
+    Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
+    Route::get('pallet-picking-pdf', PdfPickingPalletReturn::class)->name('pallet_picking.pdf');
     Route::get('pdf', PdfPalletReturn::class)->name('pdf');
 
 

@@ -19,6 +19,7 @@ import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
 import { faExclamationTriangle, faLayerGroup } from "@far";
 import ConfirmDialog from "primevue/confirmdialog";
+import { trans } from "laravel-vue-i18n"
 
 
 const props = defineProps<{
@@ -466,7 +467,7 @@ const handleSetAllToPortfolio = () => {
                     <template v-if="loadingMore">
                         <LoadingText />
                     </template>
-                    <template v-else>Load More</template>
+                    <template v-else>{{ trans("Load More") }}</template>
                 </Button>
             </div>
         </main>

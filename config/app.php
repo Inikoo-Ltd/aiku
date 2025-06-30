@@ -246,6 +246,14 @@ return [
         'retina_b2b_domain'          => env('LOCAL_B2B_RETINA_DOMAIN'),
     ],
 
+    'analytics' => [
+        'cloudflare' => [
+            'api_token'  => env('CLOUDFLARE_ANALYTICS_API_TOKEN'),
+        ],
+        'google'     => [
+            'client_oauth_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
+        ],
+    ],
 
     'currency_exchange' => [
         'pivot'     => env('EXCHANGE_PIVOT_CURRENCY', 'GBP'),

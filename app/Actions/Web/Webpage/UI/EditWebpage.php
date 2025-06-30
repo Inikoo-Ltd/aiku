@@ -23,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Http\Resources\Web\WebpagesResource;
+
 
 class EditWebpage extends OrgAction
 {
@@ -55,6 +57,7 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+
         return Inertia::render(
             'EditModel',
             [
@@ -96,14 +99,25 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                'state'       => [
-                                    'type'        => 'select',
+                                'state_data'       => [
+                                    'type'        => 'toggle_state_webpage',
                                     'label'       => __('State'),
                                     'placeholder' => __('Select webpage state'),
-                                    'value'       => $webpage->state,
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
-                                    'searchable'  => true
+                                    'searchable'  => true,
+                                    'init_options'  => $webpage->redirectWebpage ? [
+                                        [
+                                            'code'          => $webpage->redirectWebpage->code,
+                                            'id'            => $webpage->redirectWebpage->id,
+                                            'href'          => 'https://'.$webpage->redirectWebpage->website->domain.'/'.$webpage->redirectWebpage->url,
+                                            "typeIcon"      => $webpage->redirectWebpage->type->stateIcon()[$webpage->redirectWebpage->type->value] ?? ["fal", "fa-browser"],
+                                        ]
+                                    ] : null,
+                                    'value'       => [
+                                        'state'                 => $webpage->state,
+                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    ],
                                 ],
                                 'allow_fetch' => [
                                     'type'  => 'toggle',

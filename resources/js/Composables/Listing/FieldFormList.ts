@@ -49,6 +49,7 @@ const JobPosition = defineAsyncComponent(() => import('@/Components/Forms/Fields
 const Interest = defineAsyncComponent(() => import('@/Components/Forms/Fields/Interest.vue'))
 const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/Fields/EmployeePosition.vue'))
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
+import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -95,6 +96,7 @@ export const componentsList: {[key: string]: Component} = {
     'editor' : EditorHtml,
     'structure_data_website' : StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
+    'toggle_state_webpage': ToggleStateWebpage,
 
     'select_infinite': SelectInfiniteScroll
 }
