@@ -5,26 +5,58 @@
   -->
 
 <script setup lang="ts">
-import {ref, onMounted, onBeforeUnmount} from 'vue'
-import Action from '@/Components/Forms/Fields/Action.vue'
-import FieldForm from '@/Components/Forms/FieldForm.vue'
-import { get as getLodash } from 'lodash-es'
+import { ref, onMounted, onBeforeUnmount, inject } from "vue"
+import Action from "@/Components/Forms/Fields/Action.vue"
+import FieldForm from "@/Components/Forms/FieldForm.vue"
+import { get as getLodash } from "lodash-es"
 import { capitalize } from "@/Composables/capitalize"
-import { useLayoutStore } from '@/Stores/layout'
-import {library} from "@fortawesome/fontawesome-svg-core"
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faGoogle} from "@fortawesome/free-brands-svg-icons"
-import { routeType } from '@/types/route'
-import PageHeading from '@/Components/Headings/PageHeading.vue';
-import { inject } from 'vue'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faGoogle } from "@fortawesome/free-brands-svg-icons"
+import { routeType } from "@/types/route"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 
-import { faUserLock, faEnvelope, faTag,faShoePrints, faShoppingBag, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH, faCog, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode, faExchange } from '@fal'
-import { faBrowser,faPowerOff, faDoorClosed } from '@fal'
-import { faBan } from '@far'
-import { Head, usePage } from '@inertiajs/vue3'
-import axios from "axios";
+import {
+    faMicrophoneAltSlash,
+    faImage,
+    faTag,
+    faBrowser,
+    faPowerOff,
+    faDoorClosed,
+    faUserLock,
+    faEnvelope,
+    faShoePrints,
+    faShoppingBag,
+    faBell,
+    faCopyright,
+    faUserCircle,
+    faMobileAndroidAlt,
+    faKey,
+    faClone,
+    faPaintBrush,
+    faMoonStars,
+    faLightbulbOn,
+    faCheck,
+    faPhone,
+    faIdCard,
+    faFingerprint,
+    faLanguage,
+    faAddressBook,
+    faTrashAlt,
+    faSlidersH,
+    faCog,
+    faFlagCheckered,
+    faBracketsCurly,
+    faFileInvoice,
+    faTransporter,
+    faCode,
+    faExchange
+} from "@fal"
+import { faBan } from "@far"
+import { Head, usePage } from "@inertiajs/vue3"
+import axios from "axios"
 
-library.add(faBan, faEnvelope, faPowerOff, faTag, faShoePrints, faShoppingBag, faBrowser, faUserLock,faBell,faCopyright,faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faExchange,faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint,faLanguage,faAddressBook,faTrashAlt, faSlidersH, faCog, faGoogle, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode, faDoorClosed)
+library.add(faTag, faMicrophoneAltSlash, faImage, faBan, faEnvelope, faPowerOff, faShoePrints, faShoppingBag, faBrowser, faUserLock, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faExchange, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH, faCog, faGoogle, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode, faDoorClosed)
 
 
 const props = defineProps<{
@@ -39,7 +71,7 @@ const props = defineProps<{
         }
     },
     formData: {
-        current?:string,
+        current?: string,
         blueprint: {
             [key: string]: {
                 // sectionData
@@ -75,8 +107,8 @@ const props = defineProps<{
 }>()
 
 // const layout = useLayoutStore()
-const layout: any = inject('layout')
-const currentTab = ref<string|number>(props.formData?.current || parseInt(Object.keys(props.formData?.blueprint)[0]))  // if formData.current not exist, take first navigation
+const layout: any = inject("layout")
+const currentTab = ref<string | number>(props.formData?.current || parseInt(Object.keys(props.formData?.blueprint)[0]))  // if formData.current not exist, take first navigation
 const _buttonRefs = ref([])  // For click linked to Navigation
 const isMobile = ref(false)
 const tabActive: any = ref({})
@@ -88,44 +120,44 @@ const updateViewportWidth = () => {
 }
 
 const handleIntersection = (element: Element, index: number) => (entries) => {
-    const [entry] = entries;
-    tabActive.value[`${index}`] = entry.isIntersecting;
+    const [entry] = entries
+    tabActive.value[`${index}`] = entry.isIntersecting
 }
 
 onMounted(() => {
     updateViewportWidth()
-    window.addEventListener('resize', updateViewportWidth)
+    window.addEventListener("resize", updateViewportWidth)
 
     // Animate the selected section
     route().v().query?.section ? (
-        currentTab.value = getLodash(route().v().query, 'section'),
-        setTimeout(() => {
-            fieldGroupAnimateSection.value = ['bg-yellow-500/20']
+        currentTab.value = getLodash(route().v().query, "section"),
             setTimeout(() => {
-                fieldGroupAnimateSection.value = []
-            }, 600)
-        }, 100)
-    ) : ''
+                fieldGroupAnimateSection.value = ["bg-yellow-500/20"]
+                setTimeout(() => {
+                    fieldGroupAnimateSection.value = []
+                }, 600)
+            }, 100)
+    ) : ""
 
     // To indicate active state that on viewport
     _buttonRefs.value.forEach((element: any, index: number) => {
-        const observer = new IntersectionObserver(handleIntersection(element, index));
-        observer.observe(element);
+        const observer = new IntersectionObserver(handleIntersection(element, index))
+        observer.observe(element)
 
         // Clean up the observer when the component is unmounted
         element.cleanupObserver = () => {
-            observer.disconnect();
-        };
-    });
+            observer.disconnect()
+        }
+    })
 
     // Clean up all the observers when the component is unmounted
     return () => {
-        _buttonRefs.value.forEach((button: any) => button.cleanupObserver());
-    };
+        _buttonRefs.value.forEach((button: any) => button.cleanupObserver())
+    }
 })
 
 onBeforeUnmount(() => {
-    window.removeEventListener('resize', updateViewportWidth)
+    window.removeEventListener("resize", updateViewportWidth)
 })
 
 // Error
@@ -137,7 +169,7 @@ onBeforeUnmount(() => {
 function connectToPlatform(routeName, parameters) {
     axios.post(route(routeName, parameters))
         .then((response) => {
-            window.location.href = response.data;
+            window.location.href = response.data
         })
 }
 
@@ -145,7 +177,7 @@ function connectToPlatform(routeName, parameters) {
 
 
 <template>
-    <Head :title="capitalize(title)"/>
+    <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
     <!-- If overflow-hidden, affect to Multiselect on Address -->
@@ -158,25 +190,25 @@ function connectToPlatform(routeName, parameters) {
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
                         <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))" @click="currentTab = key"
-                            :class="[
+                             :class="[
                                 key == currentTab
                                     ? `navigationSecondActive`
                                     : `navigationSecond`,
                                 'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
                             ]"
-                            :style="[key == currentTab ? {
+                             :style="[key == currentTab ? {
                                 'border-left': `4px solid ${layout.app?.theme[2]}`,
                                 'background-color': `color-mix(in srgb, ${layout?.app?.theme[2]} 20%, white)`,
                                 'color': `color-mix(in srgb, ${layout?.app?.theme[3]} 50%, black)`,
                             } : {}]"
                         >
                             <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" class="flex-shrink-0 -ml-1 mr-2 h-4 w-4"
-                                :class="[
+                                             :class="[
                                     tabActive[key]
                                         ? 'text-gray-400 group-hover:text-gray-500'
                                         : 'text-gray-400',
                                 ]"
-                                :icon="sectionData.icon" />
+                                             :icon="sectionData.icon" />
                             <span class="truncate">{{ sectionData.label }}</span>
                             <!-- {{ tabActive }} -- {{ key == currentTab }} -->
                         </div>
@@ -189,7 +221,7 @@ function connectToPlatform(routeName, parameters) {
                 <!-- Section: Error in models -->
                 <Transition name="spin-to-down">
                     <div v-if="usePage().props?.errors?.error_in_models" class="mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
-                        <FontAwesomeIcon v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'" icon='far fa-ban' class='text-lg' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'" icon="far fa-ban" class="text-lg" fixed-width aria-hidden="true" />
                         <div class="">{{ usePage().props.errors.error_in_models }}</div>
                     </div>
                 </Transition>
@@ -197,8 +229,8 @@ function connectToPlatform(routeName, parameters) {
                 <template v-for="(sectionData, sectionIdx ) in formData.blueprint" :key="sectionIdx">
                     <!-- If Section: all fields is not hidden -->
                     <template v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))">
-                        <div v-show="sectionIdx == currentTab" class="pt-4" >
-                            <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`"/>
+                        <div v-show="sectionIdx == currentTab" class="pt-4">
+                            <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`" />
                             <!-- Title -->
                             <div v-if="sectionData.title || sectionData.subtitle" class="mb-4 flex items-center gap-x-2" ref="_buttonRefs">
                                 <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700 capitalize">
@@ -215,7 +247,7 @@ function connectToPlatform(routeName, parameters) {
                                     <!-- Field: is not hidden = true -->
                                     <div v-if="!fieldData?.hidden" class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
                                         <Action v-if="fieldData.type==='action'" :action="fieldData.action" :dataToSubmit="fieldData.action?.data" />
-                                        <FieldForm  v-else :key="fieldName+index" ref="_fieldForm" :field="fieldName" :fieldData="fieldData" :args="formData.args" :refForms="_fieldForm"/>
+                                        <FieldForm v-else :key="fieldName+index" ref="_fieldForm" :field="fieldName" :fieldData="fieldData" :args="formData.args" :refForms="_fieldForm" />
                                     </div>
                                 </template>
                             </div>
@@ -226,9 +258,9 @@ function connectToPlatform(routeName, parameters) {
                 <!-- For button Authorize -->
                 <div class="py-2 px-3 flex justify-end max-w-2xl" v-if="formData.blueprint?.[currentTab]?.button" :id="formData.title">
                     <component :is="'button'"
-                         @click="connectToPlatform(formData.blueprint[currentTab].button.route.name, formData.blueprint[currentTab].button.route.parameters)"
-                        class="px-3 py-1.5 rounded"
-                        :class="[formData.blueprint[currentTab].button.disable ? 'bg-orange-200 cursor-default text-white' : 'text-gray-100 bg-green-500 hover:bg-green-600']"
+                               @click="connectToPlatform(formData.blueprint[currentTab].button.route.name, formData.blueprint[currentTab].button.route.parameters)"
+                               class="px-3 py-1.5 rounded"
+                               :class="[formData.blueprint[currentTab].button.disable ? 'bg-orange-200 cursor-default text-white' : 'text-gray-100 bg-green-500 hover:bg-green-600']"
                     >
                         {{ formData.blueprint[currentTab].button.title }}
                     </component>
@@ -246,18 +278,18 @@ function connectToPlatform(routeName, parameters) {
                 >
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
                         <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
-                            class="flex-shrink-0 mr-3 h-5 w-5"
-                            :class="[
+                                         class="flex-shrink-0 mr-3 h-5 w-5"
+                                         :class="[
                                 key === currentTab ? 'text-gray-400' : 'text-gray-500',
-                            ]"/>
+                            ]" />
                         <span class="capitalize truncate">{{ sectionData.label }}</span>
                     </div>
                     <div class="px-5">
-                        <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields" >
+                        <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields">
                             <!-- Field: is not hidden = true -->
                             <div v-if="!fieldData?.hidden" class="py-4">
                                 <Action v-if="fieldData.type === 'action'" :action="fieldData.action" :dataToSubmit="fieldData.action?.data" />
-                                <FieldForm v-else :key="index" :field="fieldName" :fieldData="fieldData" :args="formData.args" :id="fieldData.name" :refForms="_fieldForm"/>
+                                <FieldForm v-else :key="index" :field="fieldName" :fieldData="fieldData" :args="formData.args" :id="fieldData.name" :refForms="_fieldForm" />
                             </div>
                         </template>
                     </div>

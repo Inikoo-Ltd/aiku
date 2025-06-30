@@ -19,7 +19,6 @@ enum WebpageStateEnum: string
 
     case IN_PROCESS = 'in_process';
     case READY      = 'ready';
-
     case LIVE   = 'live';
     case CLOSED = 'closed';
 
@@ -71,7 +70,7 @@ enum WebpageStateEnum: string
             'closed' => [
                 'tooltip' => __('Closed'),
                 'icon'    => 'fal fa-skull',
-                'class'   => 'text-gray-500'
+                'class'   => 'text-red-500'
             ],
         ];
     }
