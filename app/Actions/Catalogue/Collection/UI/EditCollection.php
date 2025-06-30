@@ -117,7 +117,8 @@ class EditCollection extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Properties collection'),
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 "image"       => [
                                     "type"  => "image_crop_square",
