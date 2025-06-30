@@ -47,7 +47,7 @@ const props = defineProps<{
     blockData?: Object
     screenType: "mobile" | "tablet" | "desktop"
 }>();
-
+console.log(props.fieldValue)
 const layout = inject("layout", retinaLayoutStructure);
 const products = ref<any[]>(toRaw(props.fieldValue.products.data || []));
 const loadingInitial = ref(false);
@@ -115,7 +115,7 @@ function buildFilters(): Record<string, any> {
     return filters;
 }
 
-const fetchProducts = async (isLoadMore = false) => {
+const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
     if (isLoadMore) {
         loadingMore.value = true;
     } else {
@@ -151,10 +151,10 @@ const fetchProducts = async (isLoadMore = false) => {
             products.value = data?.data ?? [];
         }
 
-        if (!useOutOfStock && page.value >= lastPage.value) {
+       if (!ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value) {
             isFetchingOutOfStock.value = true;
             page.value = 1;
-            await fetchProducts(true);
+            await fetchProducts(true, true);
         }
 
     } catch (error) {
@@ -172,19 +172,19 @@ const debFetchProducts = debounce(fetchProducts, 300);
 const handleSearch = () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
-    debFetchProducts(false);
+    debFetchProducts(false, true);
 };
 
 watch([q, orderBy], () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
-    debFetchProducts(false);
+    debFetchProducts(false, true);
 }, { deep: true });
 
 watch(filter, () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
-    debFetchProducts(false);
+    debFetchProducts(false, true);
 }, { deep: true });
 
 const loadMore = () => {
