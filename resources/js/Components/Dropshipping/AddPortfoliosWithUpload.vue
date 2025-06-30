@@ -36,6 +36,7 @@ const props = defineProps<{
 
 const emits = defineEmits<(e: "onDone") => void>()
 
+const recentlyUpdatedProduct = ref(null)
 
 // Section: Add portfolios
 const isLoadingSubmit = ref(false)
@@ -123,13 +124,16 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 
 	try {
-		await axios[props.routes.updatePortfolioRoute.method || 'patch'](
+		const response = await axios[props.routes.updatePortfolioRoute.method || 'patch'](
 			route(props.routes.updatePortfolioRoute.name,
 				{
 					portfolio: portfolio.id,
 				}
 			), modelData
 		)
+
+        // console.log('11111 Portfolio updated successfully:', response.data)
+        recentlyUpdatedProduct.value = response.data
 		set(listState.value, [portfolio.id, section], 'success')
 	} catch (error) {
         console.log('Error updating portfolio:', error)
@@ -365,6 +369,7 @@ onMounted(() => {
                         @updateSelectedProducts="updateSelectedProducts"
                         :listState
                         amounted="() => fetchIndexUnuploadedPortfolios()"
+                        :recentlyUpdatedProduct
                     />
                     <EmptyState
                         v-else
