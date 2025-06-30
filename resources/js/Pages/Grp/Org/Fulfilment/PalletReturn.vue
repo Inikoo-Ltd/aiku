@@ -363,7 +363,6 @@ provide("listError", listError.value)
 				:style="action.style"
 				:href="route(action.route.name, action.route.parameters)"
 				target="_blank"
-				download
 				v-tooltip="action.tooltip"
 			>
 				<Button
