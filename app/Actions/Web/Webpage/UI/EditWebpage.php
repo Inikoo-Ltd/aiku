@@ -108,22 +108,6 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                'state_data'  => [
-                                    'type'               => 'toggle_state_webpage',
-                                    'label'              => __('State'),
-                                    'placeholder'        => __('Select webpage state'),
-                                    'required'           => true,
-                                    'options'            => Options::forEnum(WebpageStateEnum::class),
-                                    'searchable'         => true,
-                                    'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
-                                    'init_options'       => $webpage->redirectWebpage ? [
-                                        $this->getFieldWebpageData($webpage->redirectWebpage)
-                                    ] : null,
-                                    'value'              => [
-                                        'state'               => $webpage->state,
-                                        'redirect_webpage_id' => $webpage->redirect_webpage_id,
-                                    ],
-                                ],
                                 'allow_fetch' => [
                                     'type'  => 'toggle',
                                     'label' => __('Allow fetch'),
@@ -179,51 +163,25 @@ class EditWebpage extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Set as as online'),
+                            'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
                             'fields' => [
-
-                                'name' => [
-                                //    'hidden' => $webpage->state != WebpageStateEnum::CLOSED,
-                                    'type'   => 'action',
-                                    'action' => [
-                                        'type'  => 'button',
-                                        'style' => 'delete',
-                                        'label' => __('set as online'),
-                                        'route' => [
-                                            'method'     => 'delete',
-                                            'name'       => 'grp.models.shop.webpage.delete',
-                                            'parameters' => [
-                                                'shop'    => $webpage->shop->id,
-                                                'webpage' => $webpage->id,
-                                            ]
-                                        ],
+                                'state_data'       => [
+                                    'type'        => 'toggle_state_webpage',
+                                    'label'       => __('State'),
+                                    'placeholder' => __('Select webpage state'),
+                                    'required'    => true,
+                                    'options'     => Options::forEnum(WebpageStateEnum::class),
+                                    'searchable'  => true,
+                                    'default_storefront' =>$this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'init_options'  => $webpage->redirectWebpage ? [
+                                        $this->getFieldWebpageData($webpage->redirectWebpage)
+                                    ] : null,
+                                    'value'       => [
+                                        'state'                 => $webpage->state,
+                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
                                     ],
-                                ]
-                            ]
-                        ],
-                        [
-                            'label' => __('Set as offline'),
-
-                            'icon'   => 'fal fa-microphone-alt-slash',
-                            'fields' => [
-                                'name' => [
-                            //        'hidden' => $webpage->state != WebpageStateEnum::LIVE,
-                                    'type'   => 'action',
-                                    'action' => [
-                                        'type'  => 'button',
-                                        'style' => 'delete',
-                                        'label' => __('Set as offline'),
-                                        'route' => [
-                                            'method'     => 'delete',
-                                            'name'       => 'grp.models.shop.webpage.delete',
-                                            'parameters' => [
-                                                'shop'    => $webpage->shop->id,
-                                                'webpage' => $webpage->id,
-                                            ]
-                                        ],
-                                    ],
-                                ]
+                                ],
                             ]
                         ],
                         [
@@ -231,19 +189,23 @@ class EditWebpage extends OrgAction
                             'icon'   => 'fal fa-trash-alt',
                             'fields' => [
                                 'name' => [
-                               //     'hidden' => $webpage->state == WebpageStateEnum::LIVE,
-                                    'type'   => 'action',
-                                    'action' => [
-                                        'type'  => 'button',
-                                        'style' => 'delete',
-                                        'label' => __('delete webpage'),
-                                        'route' => [
-                                            'method'     => 'delete',
-                                            'name'       => 'grp.models.webpage.delete',
-                                            'parameters' => [
-                                                'webpage' => $webpage->id,
-                                            ]
-                                        ],
+                                    'type'                  => 'delete_webpage',
+                                    'noSaveButton'          => true,
+                                    'default_storefront'    => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'init_options'  => $webpage->redirectWebpage ? [
+                                        $this->getFieldWebpageData($webpage->redirectWebpage)
+                                    ] : null,
+                                    'value'       => [
+                                        'state'                 => $webpage->state,
+                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    ],
+                                    'route_delete' => [
+                                        'method'     => 'delete',
+                                        'name'       => 'grp.models.shop.webpage.delete',
+                                        'parameters' => [
+                                            'shop'    => $webpage->shop->id,
+                                            'webpage' => $webpage->id,
+                                        ]
                                     ],
                                 ]
                             ]
