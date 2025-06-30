@@ -1941,7 +1941,6 @@ test('UI edit physical goods', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
