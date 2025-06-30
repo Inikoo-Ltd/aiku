@@ -54,7 +54,9 @@ const model = defineModel<ModelTopbar1>();
 const isLoggedIn = inject("isPreviewLoggedIn", false);
 const layout = inject("layout", {});
 
-
+const urlLoginWithRedirect = `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${
+  window?.location.search ? encodeURIComponent(window?.location.search) : ""
+}`;
 </script>
 
 <template>
@@ -140,7 +142,7 @@ const layout = inject("layout", {});
       <!-- Section: Login -->
       <ButtonWithLink
         v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-        url="/app/login"
+        :url="urlLoginWithRedirect"
         icon="fal fa-sign-in"
       >
         <template #label>

@@ -42,7 +42,7 @@ class WebsiteHydrateGoogleCloudSearch implements ShouldBeUnique
         $groupSettings = $website->group->settings;
         $apiToken      = Arr::get($groupSettings, 'gcp.oauthClientSecret');
         if (!$apiToken) {
-            $apiToken = env('GOOGLE_OAUTH_CLIENT_SECRET');
+            $apiToken = config('app.analytics.google.client_oauth_secret');
             if (!$apiToken) {
                 return;
             }

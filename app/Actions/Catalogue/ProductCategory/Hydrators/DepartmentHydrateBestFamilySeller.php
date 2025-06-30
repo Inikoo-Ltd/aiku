@@ -10,13 +10,10 @@
 
 namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 
-use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Models\Catalogue\Product;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class DepartmentHydrateBestFamilySeller implements ShouldBeUnique
@@ -32,40 +29,54 @@ class DepartmentHydrateBestFamilySeller implements ShouldBeUnique
 
     public function handle(ProductCategory $department): void
     {
+
+        if ($department->type !== ProductCategoryTypeEnum::DEPARTMENT) {
+            return;
+        }
+
         $families = $department->getFamilies();
-        // $stats = [
-        //     'number_products' => $department->getproducts()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
-        // ];
 
-        // $stats = array_merge(
-        //     $stats,
-        //     $this->getEnumStats(
-        //         model: 'products',
-        //         field: 'state',
-        //         enum: ProductStateEnum::class,
-        //         models: Product::class,
-        //         where: function ($q) use ($department) {
-        //             $q->where('is_main', true)->where('department_id', $department->id);
-        //         }
-        //     )
-        // );
-
-        // $stats['number_current_products'] = Arr::get($stats, 'number_products_state_active', 0) +
-        //     Arr::get($stats, 'number_products_state_discontinuing', 0);
-
-        // UpdateProductCategory::make()->action(
-        //     $department,
-        //     [
-        //         'state' => $this->getProductCategoryState($stats)
-        //     ]
-        // );
+        // Sort by sales_all in descending order, only if sales_all is not null
+        $topFamilies = $families->filter(function ($family) {
+            return isset($family->salesIntervals->sales_all) && $family->salesIntervals->sales_all > 0;
+        })->sortByDesc(function ($family) {
+            return $family->salesIntervals->sales_all;
+        });
 
 
+        // Apply rules based on total families count
+        $totalFamilies = $families->count();
+        if ($totalFamilies >= 4) {
+            $topCount = 1;
+            if ($totalFamilies >= 5) {
+                $topCount = 2;
+                if ($totalFamilies >= 7) {
+                    $topCount = 3;
+                }
+            }
+            $topFamilies = $topFamilies->take($topCount);
+        } else {
+            // If less than 4 families, don't update any
+            $topFamilies = collect();
+        }
 
+        // Reset all families top_seller flag first
+        foreach ($families as $family) {
+            if ($family->top_seller > 0) {
+                $family->update([
+                    'top_seller' => null
+                ]);
+            }
+        }
 
-
-        // $department->stats()->update($stats);
+        // Update top families
+        $index = 0;
+        foreach ($topFamilies as $family) {
+            $family->update([
+                'top_seller' => $index + 1,
+            ]);
+            $index++;
+        }
     }
-
 
 }

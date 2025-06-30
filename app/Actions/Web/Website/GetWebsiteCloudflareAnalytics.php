@@ -38,6 +38,18 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
         $user = auth()->user();
 
 
+        $groupSettings = $website->group->settings;
+        $dataWebsite = $website->data;
+
+        $apiToken = Arr::get($groupSettings, 'cloudflare.apiToken');
+        $zoneTag = Arr::get($dataWebsite, "cloudflare.zoneTag");
+        $accountTag = Arr::get($dataWebsite, "cloudflare.accountTag");
+        $siteTag = Arr::get($dataWebsite, "cloudflare.siteTag");
+
+        if (!$apiToken || !$zoneTag || !$accountTag || !$siteTag) {
+            return [];
+        }
+
         $cacheKey = "ui_state-user:$user->id;website:$website->id;filter-analytics:" . md5(json_encode($modelData));
 
         $cachedData = cache()->get($cacheKey);
@@ -46,13 +58,6 @@ class GetWebsiteCloudflareAnalytics extends OrgAction
             return $cachedData;
         }
 
-        $groupSettings = $website->group->settings;
-        $dataWebsite = $website->data;
-
-        $apiToken = Arr::get($groupSettings, 'cloudflare.apiToken');
-        $zoneTag = Arr::get($dataWebsite, "cloudflare.zoneTag");
-        $accountTag = Arr::get($dataWebsite, "cloudflare.accountTag");
-        $siteTag = Arr::get($dataWebsite, "cloudflare.siteTag");
 
         data_set($modelData, "zoneTag", $zoneTag);
         data_set($modelData, "accountTag", $accountTag);
