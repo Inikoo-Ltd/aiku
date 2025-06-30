@@ -96,11 +96,16 @@ class CallbackRetinaEbayUser extends OrgAction
                     ]
                 ];
 
+                $userData = $ebayUser->getUser();
+
                 $ebayUser = UpdateEbayUser::run($ebayUser, [
+                    'name' => Arr::get($userData, 'username'),
                     'settings' => $updatedSettings
                 ]);
 
                 UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
+                    'reference' => Arr::get($userData, 'username'),
+                    'name' => Arr::get($userData, 'username'),
                     'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
                 ]);
 
