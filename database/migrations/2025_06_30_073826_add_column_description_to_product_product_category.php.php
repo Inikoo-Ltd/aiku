@@ -9,11 +9,11 @@ return new class () extends Migration {
     {
         Schema::table('products', function (Blueprint $table) {
             $table->string('description_title')->nullable();
-            $table->string('description_extra')->nullable();
+            $table->text('description_extra')->nullable();
         });
         Schema::table('product_categories', function (Blueprint $table) {
             $table->string('description_title')->nullable();
-            $table->string('description_extra')->nullable();
+            $table->text('description_extra')->nullable();
         });
     }
 
