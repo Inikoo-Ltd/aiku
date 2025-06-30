@@ -74,14 +74,16 @@ class EditWebpage extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
                 'pageHead' => [
-                    'title' => __('webpage settings'),
-
-
-                    'iconRight' =>
-                        [
-                            'icon'  => ['fal', 'sliders-h'],
-                            'title' => __("Webpage settings")
-                        ],
+                    'title' => __('Settings'),
+                    'icon' => [
+                        'icon'  => ['fal', 'sliders-h'],
+                        'title' => __("Webpage settings")
+                    ],
+                    'model' => __('Webpage'),
+                    'iconRight' => WebpageStateEnum::stateIcon()[$webpage->state->value],
+                    'afterTitle' => [
+                        'label' => $webpage->getUrl(),
+                    ],
 
                     'actions' => [
                         [

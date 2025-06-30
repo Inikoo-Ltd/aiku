@@ -70,7 +70,7 @@ enum WebpageStateEnum: string
             'closed' => [
                 'tooltip' => __('Closed'),
                 'icon'    => 'fal fa-skull',
-                'class'   => 'text-gray-500'
+                'class'   => 'text-red-500'
             ],
         ];
     }
