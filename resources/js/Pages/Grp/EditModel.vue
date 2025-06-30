@@ -19,6 +19,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {
     faMicrophoneAltSlash,
     faImage,
+    faTag,
     faBrowser,
     faPowerOff,
     faDoorClosed,
@@ -49,7 +50,7 @@ import {
     faFileInvoice,
     faTransporter,
     faCode,
-    faExchange
+    faExchange,
 } from "@fal";
 import { faBan } from "@far";
 import { Head, usePage } from "@inertiajs/vue3";

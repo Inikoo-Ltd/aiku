@@ -99,6 +99,8 @@ class EditSubDepartment extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
                             'title'  => __('id'),
                             'fields' => [
                                 'code' => [
@@ -111,13 +113,63 @@ class EditSubDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $subDepartment->name
                                 ],
+                                'description' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description'),
+                                    'value' => $subDepartment->description
+                                ],
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $subDepartment->description_title
+                                ],
+                                'description_extra' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description extra'),
+                                    'value' => $subDepartment->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
+                            'fields' => [
                                 "image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),
                                     "value"   => $subDepartment->imageSources(720, 480),
                                 ],
                             ]
-                        ]
+                        ],
+                        [
+                            'label'  => __('Department'),
+                            'icon'   => 'fa-light fa-box',
+                            'fields' => [
+                                'department_id'  =>  [
+                                    'type'    => 'select_infinite',
+                                    'label'   => __('Department'),
+                                    'options'   => [
+                                        [
+                                            'id' => $subDepartment->department?->id,
+                                            'code' => $subDepartment->department?->code
+                                        ]
+                                    ],
+                                    'fetchRoute'    => [
+                                        'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                        'parameters' => [
+                                            'organisation' => $this->organisation->slug,
+                                            'shop' => $this->shop->slug
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required' => false,
+                                    'value'   => $subDepartment->department->id ?? null,
+                                ]
+                            ],
+
+                        ],
+
 
                     ],
                     'args'      => [

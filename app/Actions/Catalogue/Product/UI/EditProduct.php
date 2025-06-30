@@ -164,26 +164,41 @@ class EditProduct extends OrgAction
 
         return [
             [
+                'label'  => __('Name/Description'),
+                'icon'   => 'fa-light fa-tag',
+                'fields' => [
+                    'code' => [
+                        'type'  => 'input',
+                        'label' => __('code'),
+                        'value' => $product->code
+                    ],
+                    'name' => [
+                        'type'  => 'input',
+                        'label' => __('name'),
+                        'value' => $product->name
+                    ],
+                    'description_title' => [
+                        'type'  => 'input',
+                        'label' => __('description title'),
+                        'value' => $product->description_title
+                    ],
+                    'description' => [
+                        'type'  => 'textarea',
+                        'label' => __('description'),
+                        'value' => $product->description
+                    ],
+                    'description_extra' => [
+                        'type'  => 'textarea',
+                        'label' => __('description extra'),
+                        'value' => $product->description_extra
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-fingerprint',
                 'fields' => [
-                    'code'        => [
-                        'type'     => 'input',
-                        'label'    => __('code'),
-                        'value'    => $product->code,
-                        'readonly' => true
-                    ],
-                    'name'        => [
-                        'type'  => 'input',
-                        'label' => __('label'),
-                        'value' => $product->name,
-                    ],
-                    'description' => [
-                        'type'  => 'textEditor',
-                        'label' => __('description'),
-                        'value' => $product->description
-                    ],
                     'unit'        => [
                         'type'  => 'input',
                         'label' => __('unit'),

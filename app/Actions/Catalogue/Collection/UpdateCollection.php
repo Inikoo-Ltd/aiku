@@ -73,6 +73,8 @@ class UpdateCollection extends OrgAction
             'name'        => ['sometimes', 'max:250', 'string'],
             'image'       => ['sometimes'],
             'description' => ['sometimes', 'required', 'max:1500'],
+            'description_title' => ['sometimes', 'nullable', 'max:255'],
+            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                    => ['sometimes', 'array'],

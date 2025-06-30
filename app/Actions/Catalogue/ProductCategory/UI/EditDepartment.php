@@ -95,7 +95,8 @@ class EditDepartment extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit department'),
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
@@ -107,11 +108,27 @@ class EditDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $department->name
                                 ],
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $department->description_title
+                                ],
                                 'description' => [
                                     'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $department->description
                                 ],
+                                'description_extra' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description extra'),
+                                    'value' => $department->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
+                            'fields' => [
                                 'follow_master' => [
                                     'type'  => 'toggle',
                                     'label' => __('Follow Master'),
