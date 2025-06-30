@@ -51,7 +51,7 @@ class IndexRetinaCustomerClientsInCustomerSalesChannel extends RetinaAction
         $queryBuilder = QueryBuilder::for(CustomerClient::class);
         $queryBuilder->where('customer_clients.customer_sales_channel_id', $customerSalesChannel->id);
 
-        if($status) {
+        if ($status) {
             $queryBuilder->where('customer_clients.status', true);
         } else {
             $queryBuilder->where('customer_clients.status', false);

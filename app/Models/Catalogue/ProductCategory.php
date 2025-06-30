@@ -73,6 +73,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $top_seller
+ * @property string|null $description_title
+ * @property string|null $description_extra
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
