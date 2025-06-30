@@ -32,7 +32,7 @@ class StoreEbayUser extends OrgAction
 
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'name', $customer->name); // For store only, later will updated in callback
+        data_set($modelData, 'name', 'ebay-'. $customer->reference); // For store only, later will updated in callback
         data_set($modelData, 'platform_id', $platform->id);
 
         /** @var EbayUser $ebayUser */
@@ -41,8 +41,8 @@ class StoreEbayUser extends OrgAction
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
             'platform_user_type' => class_basename($ebayUser),
             'platform_user_id' => $ebayUser->id,
-            'reference' => $ebayUser->name,
-            'name' => $ebayUser->name
+            'reference' => 'ebay-'. $customer->reference,
+            'name' => 'ebay-'. $customer->reference
         ]);
 
         $ebayUser->update([
