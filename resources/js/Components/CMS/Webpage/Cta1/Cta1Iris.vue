@@ -10,10 +10,8 @@ import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject } from 'vue'
-import Button from "@/Components/Elements/Buttons/Button.vue"
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faImage } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faCube, faLink, faImage)
 
@@ -34,7 +32,7 @@ const layout: any = inject("layout", {})
 			...getStyles(fieldValue.container?.properties, screenType)
 		}">
 			<!-- 🖼️ Image Block -->
-			<div >
+			<div>
 				<div class="w-full flex" :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
 					<Image v-if="fieldValue?.image?.source" :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'" :imgAttributes="fieldValue.image.attributes"
@@ -48,17 +46,16 @@ const layout: any = inject("layout", {})
 			<!-- 📝 Text & Button Block -->
 			<div class="flex flex-col justify-center"
 				:style="getStyles(fieldValue?.text_block?.properties, screenType)">
-				<div class="max-w-xl mx-auto w-full" >
-						<div v-html="fieldValue.text" class="mb-6"></div>
+				<div class="max-w-xl mx-auto w-full">
+					<div v-html="fieldValue.text" class="mb-6"></div>
 
 					<div class="flex justify-center">
 						<a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
-					typeof="button" 
-						>
-						<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-							:label="fieldValue?.button?.text" />
-					</a>
-						
+							typeof="button">
+							<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+								:label="fieldValue?.button?.text" />
+						</a>
+
 					</div>
 				</div>
 			</div>

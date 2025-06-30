@@ -38,7 +38,6 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 			<div @click="() => {
 				sendMessageToParent('activeBlock', indexBlock)
 				sendMessageToParent('activeChildBlock', bKeys[0])
-				sendMessageToParent('activeChildBlock', bKeys[0])
 			}
 			">
 				<div class="w-full flex" :style="getStyles(modelValue?.image?.container?.properties, screenType)">

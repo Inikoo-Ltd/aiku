@@ -4,8 +4,8 @@ import WowsbarBanner from '@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerW
 import Text from '@/Components/CMS/Webpage/Text/TextContentWorkshop.vue'
 import CTA from '@/Components/CMS/Webpage/Cta1/Cta1Workshop.vue'
 import ImageWorkshop from '@/Components/CMS/Webpage/Image/ImageWorkshop.vue'
-import CTA2 from '@/Components/CMS/Webpage/CTA2/CTA2Workshop.vue'
-import CTA3 from '@/Components/CMS/Webpage/CTA3/CTA3Workshop.vue'
+import CTA2 from '@/Components/CMS/Webpage/Cta2/Cta2Workshop.vue'
+import CTA3 from '@/Components/CMS/Webpage/Cta3/Cta3Workshop.vue'
 import Gallery from '@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'
 import Pricing from '@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'
 import Timeline from '@/Components/CMS/Webpage/Timeline/TimelineWorkshop.vue'
@@ -13,7 +13,7 @@ import Iframe from '@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'
 import BentoGrid from '@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'
 import Overview from '@/Components/CMS/Webpage/Overview/OverviewWorkshop.vue'
 import Script from '@/Components/CMS/Webpage/Script/ScriptWorkShop.vue'
-import  CtaAurora1 from "@/Components/CMS/Webpage/CTAAurora1/CtaAurora1Workshop.vue"
+import  CtaAurora1 from "@/Components/CMS/Webpage/CtaAurora1/CtaAurora1Workshop.vue"
 import Overview2 from "@/Components/CMS/Webpage/Overview2/Overview2Workshop.vue"
 import Footer1 from '@/Components/CMS/Website/Footers/footerTheme1/Footer1Workshop.vue'
 import Topbar1 from '@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Workshop.vue'
