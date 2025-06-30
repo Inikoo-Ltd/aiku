@@ -106,6 +106,7 @@ class EditWebpage extends OrgAction
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'  => true,
+                                    'default_storefront' => [], // TODO: webpage Storefront resource
                                     'init_options'  => $webpage->redirectWebpage ? [
                                         [
                                             'code'          => $webpage->redirectWebpage->code,

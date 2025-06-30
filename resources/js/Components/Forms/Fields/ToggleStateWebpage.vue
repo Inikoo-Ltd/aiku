@@ -19,6 +19,7 @@ const props = defineProps<{
     fieldData?: {
         valueProp?: string,
         init_options?: {}[]
+        default_storefront?: {}
         options?: Array<{ value: string, label: string }>
     }
 }>()
@@ -137,6 +138,11 @@ const xxx = ref('')
                         </div>
                     </template>
                 </PureMultiselectInfiniteScroll>
+
+                <div v-if="fieldData?.default_storefront?.id" @click="form[fieldName].redirect_webpage_id = fieldData?.default_storefront?.id" class="text-gray-400 hover:text-gray-700 cursor-pointer mt-2 hover:underline w-fit">
+                    {{ fieldData?.default_storefront?.code }}
+                    <span class="text-sm text-gray-400">({{ fieldData?.default_storefront?.href }})</span>
+                </div>
             </div>
         </Transition>
 
