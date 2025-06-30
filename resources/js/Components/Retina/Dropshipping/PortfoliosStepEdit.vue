@@ -78,6 +78,48 @@ const selectedDataToEditDescription = ref({})
 const debounceUpdateDescription = debounce((description: string) => {
     emits('updateSelectedProducts', selectedDataToEditDescription.value, {customer_description: selectedDataToEditDescription.value.description}, 'customer_description')
 }, 1000)
+
+
+// Section: Modal Shipping
+const isModalShipping = ref(false)
+const selectedShippingToShowInModal = ref(null)
+const dummyShipping = [
+    {
+        form: '0kg',
+        to: '15kg',
+        code: 'SPP01',
+        location: 'UK Mainland',
+        expedited_tracked: '4.79'
+    },
+    {
+        form: '0kg',
+        to: '15kg',
+        code: 'SPP02',
+        location: 'UK Mainland',
+        expedited_tracked: '4.79'
+    },
+    {
+        form: '0kg',
+        to: '15kg',
+        code: 'SPP03',
+        location: 'UK Mainland',
+        expedited_tracked: '4.79'
+    },
+    {
+        form: '0kg',
+        to: '15kg',
+        code: 'SPP04',
+        location: 'UK Mainland',
+        expedited_tracked: '4.79'
+    },
+    {
+        form: '0kg',
+        to: '15kg',
+        code: 'SPP05',
+        location: 'UK Mainland',
+        expedited_tracked: '4.79'
+    }
+]
 </script>
 
 <template>
@@ -278,10 +320,10 @@ const debounceUpdateDescription = debounce((description: string) => {
 
         <Column field="shipping" header="Shipping (Exc VAT)">
             <template #body="{ data }">
-                <FontAwesomeIcon
-                    class="text-blue-500"
-                    icon="fal fa-box"
-                    aria-hidden="true" />
+                <div @click="isModalShipping = true, selectedShippingToShowInModal = data" class="text-gray-400 hover:text-gray-600 cursor-pointer hover:bg-gray-100 rounded flex justify-center py-1 items-center gap-x-1">
+                    <FontAwesomeIcon class="text-blue-500" icon="fal fa-box" fixed-width aria-hidden="true" />
+                    Show
+                </div>
             </template>
         </Column>
 
@@ -319,7 +361,8 @@ const debounceUpdateDescription = debounce((description: string) => {
         </Column>
     </DataTable>
 
-    <Modal :isOpen="isModalDescription" aonClose="isModalDescription = false" width="w-full max-w-3xl max-h-[85vh]">
+    <!-- Modal: Description (edit) -->
+    <Modal :isOpen="isModalDescription" @onClose="isModalDescription = false" closeButton :isClosableInBackground="false" width="w-full max-w-3xl max-h-[85vh]">
         <div>
             <div class=" text-lg text-center mb-4">
                 Edit Description for <span class="font-semibold">{{ selectedDataToEditDescription.code }}</span>
@@ -353,6 +396,33 @@ const debounceUpdateDescription = debounce((description: string) => {
                     @click="() => isModalDescription = false"
                     type="tertiary"
                     label="Done"
+                    full
+                />
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Shipping -->
+    <Modal :isOpen="isModalShipping" @onClose="isModalShipping = false" closeButton :isClosableInBackground="false" width="w-full max-w-4xl max-h-[500px]">
+        <div>
+            <div class=" text-lg text-center mb-4">
+                Shipping detail for <span class="font-semibold">{{ selectedShippingToShowInModal?.code }}</span>
+            </div>
+
+            <DataTable :value="dummyShipping" tableStyle="min-width: 50rem">
+                <Column field="form" header="form"></Column>
+                <Column field="to" header="to"></Column>
+                <Column field="code" header="code"></Column>
+                <Column field="location" header="location"></Column>
+                <Column field="expedited_tracked" header="expedited_tracked"></Column>
+            </DataTable>
+
+            
+            <div class="mt-4">
+                <Button
+                    @click="() => isModalShipping = false"
+                    type="tertiary"
+                    label="Close"
                     full
                 />
             </div>

@@ -39,10 +39,10 @@ import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
-import CTAVideo1Iris from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Iris.vue'
+import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
-import Cta4 from '@/Components/CMS/Webpage/CTAImageLeft/CTA4Iris.vue'
+import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 
