@@ -41,7 +41,7 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
                     'line_items' => $modelData['line_items']
                 ]);
 
-                $fulfilmentOrder = array_merge($fulfilmentOrder, Arr::only($modelData, ['customer', 'shipping_address']));
+                $fulfilmentOrder = array_merge($fulfilmentOrder, Arr::only($modelData, ['customer', 'shipping_address', 'billing_address']));
 
                 if ($shopifyUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
                     StoreFulfilmentFromShopify::run($shopifyUser, $fulfilmentOrder);
