@@ -23,7 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Http\Resources\Web\WebpageResource;
+use App\Http\Resources\Web\WebpagesResource;
+
 
 class EditWebpage extends OrgAction
 {
@@ -56,7 +57,7 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        // dd([WebpageResource::make($webpage->redirectWebpage)]);
+
         return Inertia::render(
             'EditModel',
             [
@@ -105,7 +106,14 @@ class EditWebpage extends OrgAction
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'  => true,
-                                    'init_options'  => $webpage->redirectWebpage ? WebpageResource::make($webpage->redirectWebpage) : null,
+                                    'init_options'  => $webpage->redirectWebpage ? [
+                                        [
+                                            'code'          => $webpage->redirectWebpage->code,
+                                            'id'            => $webpage->redirectWebpage->id,
+                                            'href'          => 'https://'.$webpage->redirectWebpage->website->domain.'/'.$webpage->redirectWebpage->url,
+                                            "typeIcon"      => $webpage->redirectWebpage->type->stateIcon()[$webpage->redirectWebpage->type->value] ?? ["fal", "fa-browser"],
+                                        ]
+                                    ] : null,
                                     'value'       => [
                                         'state'                 => $webpage->state,
                                         'redirect_webpage_id'   => $webpage->redirect_webpage_id,
