@@ -152,6 +152,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
                         <div v-if="!subnav?.link?.href && subnav.title" :style="getStyles(fieldValue?.sub_navigation?.properties,screenType)" class="font-semibold text-gray-700">{{ subnav.title }}</div>
+                        <a v-if="subnav?.link?.href && subnav.title" :href="subnav?.link?.href" :target="subnav?.link?.target" :style="getStyles(fieldValue?.sub_navigation?.properties,screenType)" class="font-semibold text-gray-700">{{ subnav.title }}</a>
                         <!-- Sub-navigation Links -->
                         <div class="flex flex-col gap-y-3">
                             <div v-for="link in subnav.links" :key="link.url" class="flex items-center gap-x-3">
