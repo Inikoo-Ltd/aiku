@@ -94,10 +94,10 @@ class CustomerClient extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'location'                      => 'array',
-        'deactivated_at'                => 'datetime',
-        'status'                        => 'boolean',
-        'amount_in_basket'              => 'decimal:2'
+        'location'         => 'array',
+        'deactivated_at'   => 'datetime',
+        'status'           => 'boolean',
+        'amount_in_basket' => 'decimal:2'
     ];
 
     protected $attributes = [
@@ -128,7 +128,9 @@ class CustomerClient extends Model implements Auditable
     {
         static::creating(
             function (CustomerClient $customerClient) {
-                $customerClient->name = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;
+                $name                 = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;
+                $name                 = trim($name);
+                $customerClient->name = $name;
             }
         );
 
@@ -137,7 +139,15 @@ class CustomerClient extends Model implements Auditable
                 CustomerHydrateClients::dispatch($customerClient->customer);
             }
             if ($customerClient->wasChanged(['company_name', 'contact_name'])) {
-                $customerClient->name = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;
+                $name = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;
+                $name = trim($name);
+
+
+                $customerClient->updateQuietly(
+                    [
+                        'name' => $name
+                    ]
+                );
             }
         });
     }
