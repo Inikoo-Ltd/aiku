@@ -99,6 +99,7 @@ class EditSubDepartment extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
+                            'label'  => __('Name/Description'),
                             'title'  => __('id'),
                             'fields' => [
                                 'code' => [
@@ -111,6 +112,26 @@ class EditSubDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $subDepartment->name
                                 ],
+                                'description' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description'),
+                                    'value' => $subDepartment->description
+                                ],
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $subDepartment->description_title
+                                ],
+                                'description_extra' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description extra'),
+                                    'value' => $subDepartment->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Properties'),
+                            'fields' => [
                                 "image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),
@@ -118,6 +139,7 @@ class EditSubDepartment extends OrgAction
                                 ],
                             ]
                         ]
+
 
                     ],
                     'args'      => [

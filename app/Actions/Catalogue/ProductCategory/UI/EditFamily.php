@@ -124,8 +124,8 @@ class EditFamily extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Information'),
-                            'title'  => __('id'),
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
@@ -137,11 +137,27 @@ class EditFamily extends OrgAction
                                     'label' => __('name'),
                                     'value' => $family->name
                                 ],
-                                 'description' => [
-                                    'type'  => 'textEditor',
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $family->description_title
+                                ],
+                                'description' => [
+                                    'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $family->description
                                 ],
+                                'description_extra' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description extra'),
+                                    'value' => $family->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Information'),
+                            'title'  => __('id'),
+                            'fields' => [
                                 "image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),

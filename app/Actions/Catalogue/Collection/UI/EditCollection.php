@@ -86,18 +86,39 @@ class EditCollection extends OrgAction
                 'formData'    => [
                     'blueprint' => [
                         [
-                            'label'  => __('Properties collection'),
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
                             'fields' => [
-                                'name'        => [
+                                'code' => [
+                                    'type'  => 'input',
+                                    'label' => __('code'),
+                                    'value' => $collection->code
+                                ],
+                                'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
                                     'value' => $collection->name
+                                ],
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $collection->description_title
                                 ],
                                 'description' => [
                                     'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $collection->description
                                 ],
+                                'description_extra' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description extra'),
+                                    'value' => $collection->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Properties collection'),
+                            'fields' => [
                                 "image"       => [
                                     "type"  => "image_crop_square",
                                     "label" => __("Image"),
