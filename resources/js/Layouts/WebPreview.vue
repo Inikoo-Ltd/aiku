@@ -1,19 +1,21 @@
 <script setup lang="ts">
 const props = defineProps<{}>()
 
-import { initialiseApp } from "@/Composables/initialiseApp"
-import { irisStyleVariables } from "@/Composables/Workshop"
-import { useLayoutStore } from "@/Stores/layout"
-import { onMounted, provide } from 'vue'
 
-const layout = useLayoutStore()
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
+import { provide } from 'vue'
+import { initialiseIrisApp } from '@/Composables/initialiseIris'
 
-initialiseApp()
+import { usePage } from "@inertiajs/vue3";
+
+
+initialiseIrisApp()
+const layout = useIrisLayoutStore()
 provide('layout', layout)
 
-onMounted(() => {
-    irisStyleVariables(layout?.app?.theme?.color)
-})
+
+
+console.log('web_preview',layout)
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 /*
  * author Arya Permana - Kirin
- * created on 30-06-2025-11h-28m
+ * created on 30-06-2025-11h-57m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
@@ -9,7 +9,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Pallet Return - {{ $palletReturn->reference }}</title>
+    <title>SKU Return - {{ $palletReturn->reference }}</title>
     <style>
         body { font-family: sans-serif; font-size: 10pt; }
         h1 { font-size: 14pt; }
@@ -27,8 +27,8 @@
 
 <!-- Header Section -->
 <div class="header">
-    <h1>Pallet Return</h1>
-    <p>Pallet Return No: {{ $palletReturn->reference }} | Date: {{ \Carbon\Carbon::parse($palletReturn->confirmed_at)->format('Y-m-d') }}</p>
+    <h1>SKU Return</h1>
+    <p>SKU Return No: {{ $palletReturn->reference }} | Date: {{ \Carbon\Carbon::parse($palletReturn->confirmed_at)->format('Y-m-d') }}</p>
 </div>
 
 <!-- Company and Customer Details -->
@@ -62,14 +62,18 @@
         <tr>
             <td>Location</td>
             <td>Pallet</td>
+            <td>SKU</td>
+            <td>Quantity Ordered</td>
             <td>Picked</td>
         </tr>
     </thead>
     <tbody>
         @foreach ($items as $item)
         <tr>
-            <td>{{ $item->location->code }}</td>
+            <td>{{ $item->pallet->location?->code ?? 'n/a' }}</td>
             <td>{{ $item->pallet->reference }} <small>({{ $item->pallet->customer_reference }})</small></td>
+            <td>{{ $item->storedItem->reference }} <small>({{ $item->storedItem->name }})</small></td>
+            <td>{{ number_format($item->quantity_ordered,0) }}</td>
             <td></td>
         </tr>
         @endforeach

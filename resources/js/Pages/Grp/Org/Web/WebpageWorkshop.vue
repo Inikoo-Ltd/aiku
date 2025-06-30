@@ -438,8 +438,6 @@ const openWebsite = () => {
 </script>
 
 <template>
-
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">

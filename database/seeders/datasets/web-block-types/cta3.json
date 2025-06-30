@@ -2,7 +2,7 @@
 	"scope": "webpage",
 	"slug": "cta3",
 	"code": "cta3",
-	"name": "CTA (with Image)",
+	"name": "CTA 2 (with Image)",
 	"icon": ["fal", "rectangle-wide"],
 	"category": "block",
 	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
@@ -22,90 +22,7 @@
 				},
 				"text": "Explore Here",
 				"container": {
-					"properties": {
-						"text": {
-							"color": "#ffffff",
-							"fontFamily": null
-						},
-						"border": {
-							"top": {
-								"value": 0
-							},
-							"left": {
-								"value": 0
-							},
-							"unit": "px",
-							"color": "#000000",
-							"right": {
-								"value": 0
-							},
-							"bottom": {
-								"value": 0
-							},
-							"rounded": {
-								"unit": "px",
-								"topleft": {
-									"value": 10
-								},
-								"topright": {
-									"value": 10
-								},
-								"bottomleft": {
-									"value": 10
-								},
-								"bottomright": {
-									"value": 10
-								}
-							}
-						},
-						"margin": {
-							"top": {
-								"value": 30
-							},
-							"left": {
-								"value": 0
-							},
-							"unit": "px",
-							"right": {
-								"value": 0
-							},
-							"bottom": {
-								"value": 0
-							}
-						},
-						"padding": {
-							"top": {
-								"value": 10
-							},
-							"left": {
-								"value": 10
-							},
-							"unit": "px",
-							"right": {
-								"value": 10
-							},
-							"bottom": {
-								"value": 10
-							}
-						},
-						"dimension": {
-							"width": {
-								"unit": "%",
-								"value": "70"
-							},
-							"height": {
-								"unit": "px",
-								"value": "auto"
-							}
-						},
-						"background": {
-							"type": "color",
-							"color": "#4F46E5",
-							"image": {
-								"original": null
-							}
-						}
-					}
+					"properties": null
 				}
 			},
 			"container": {
