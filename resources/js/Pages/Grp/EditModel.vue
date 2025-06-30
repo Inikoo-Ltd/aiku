@@ -5,16 +5,16 @@
   -->
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, inject } from "vue";
-import Action from "@/Components/Forms/Fields/Action.vue";
-import FieldForm from "@/Components/Forms/FieldForm.vue";
-import { get as getLodash } from "lodash-es";
-import { capitalize } from "@/Composables/capitalize";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faGoogle } from "@fortawesome/free-brands-svg-icons";
-import { routeType } from "@/types/route";
-import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { ref, onMounted, onBeforeUnmount, inject } from "vue"
+import Action from "@/Components/Forms/Fields/Action.vue"
+import FieldForm from "@/Components/Forms/FieldForm.vue"
+import { get as getLodash } from "lodash-es"
+import { capitalize } from "@/Composables/capitalize"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faGoogle } from "@fortawesome/free-brands-svg-icons"
+import { routeType } from "@/types/route"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 
 import {
     faMicrophoneAltSlash,
@@ -50,13 +50,13 @@ import {
     faFileInvoice,
     faTransporter,
     faCode,
-    faExchange,
-} from "@fal";
-import { faBan } from "@far";
-import { Head, usePage } from "@inertiajs/vue3";
-import axios from "axios";
+    faExchange
+} from "@fal"
+import { faBan } from "@far"
+import { Head, usePage } from "@inertiajs/vue3"
+import axios from "axios"
 
-library.add(faMicrophoneAltSlash, faImage, faBan, faEnvelope, faPowerOff, faShoePrints, faShoppingBag, faBrowser, faUserLock, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faExchange, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH, faCog, faGoogle, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode, faDoorClosed);
+library.add(faTag, faMicrophoneAltSlash, faImage, faBan, faEnvelope, faPowerOff, faShoePrints, faShoppingBag, faBrowser, faUserLock, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faExchange, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH, faCog, faGoogle, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode, faDoorClosed)
 
 
 const props = defineProps<{
@@ -104,61 +104,61 @@ const props = defineProps<{
         }
         title?: string
     }
-}>();
+}>()
 
 // const layout = useLayoutStore()
-const layout: any = inject("layout");
-const currentTab = ref<string | number>(props.formData?.current || parseInt(Object.keys(props.formData?.blueprint)[0]));  // if formData.current not exist, take first navigation
-const _buttonRefs = ref([]);  // For click linked to Navigation
-const isMobile = ref(false);
-const tabActive: any = ref({});
-const fieldGroupAnimateSection = ref();
-const _fieldForm = ref();
+const layout: any = inject("layout")
+const currentTab = ref<string | number>(props.formData?.current || parseInt(Object.keys(props.formData?.blueprint)[0]))  // if formData.current not exist, take first navigation
+const _buttonRefs = ref([])  // For click linked to Navigation
+const isMobile = ref(false)
+const tabActive: any = ref({})
+const fieldGroupAnimateSection = ref()
+const _fieldForm = ref()
 
 const updateViewportWidth = () => {
-    isMobile.value = window.innerWidth <= 768;
-};
+    isMobile.value = window.innerWidth <= 768
+}
 
 const handleIntersection = (element: Element, index: number) => (entries) => {
-    const [entry] = entries;
-    tabActive.value[`${index}`] = entry.isIntersecting;
-};
+    const [entry] = entries
+    tabActive.value[`${index}`] = entry.isIntersecting
+}
 
 onMounted(() => {
-    updateViewportWidth();
-    window.addEventListener("resize", updateViewportWidth);
+    updateViewportWidth()
+    window.addEventListener("resize", updateViewportWidth)
 
     // Animate the selected section
     route().v().query?.section ? (
         currentTab.value = getLodash(route().v().query, "section"),
             setTimeout(() => {
-                fieldGroupAnimateSection.value = ["bg-yellow-500/20"];
+                fieldGroupAnimateSection.value = ["bg-yellow-500/20"]
                 setTimeout(() => {
-                    fieldGroupAnimateSection.value = [];
-                }, 600);
+                    fieldGroupAnimateSection.value = []
+                }, 600)
             }, 100)
-    ) : "";
+    ) : ""
 
     // To indicate active state that on viewport
     _buttonRefs.value.forEach((element: any, index: number) => {
-        const observer = new IntersectionObserver(handleIntersection(element, index));
-        observer.observe(element);
+        const observer = new IntersectionObserver(handleIntersection(element, index))
+        observer.observe(element)
 
         // Clean up the observer when the component is unmounted
         element.cleanupObserver = () => {
-            observer.disconnect();
-        };
-    });
+            observer.disconnect()
+        }
+    })
 
     // Clean up all the observers when the component is unmounted
     return () => {
-        _buttonRefs.value.forEach((button: any) => button.cleanupObserver());
-    };
-});
+        _buttonRefs.value.forEach((button: any) => button.cleanupObserver())
+    }
+})
 
 onBeforeUnmount(() => {
-    window.removeEventListener("resize", updateViewportWidth);
-});
+    window.removeEventListener("resize", updateViewportWidth)
+})
 
 // Error
 // const errorInModels = usePage().props?.errors?.error_in_models
@@ -169,8 +169,8 @@ onBeforeUnmount(() => {
 function connectToPlatform(routeName, parameters) {
     axios.post(route(routeName, parameters))
         .then((response) => {
-            window.location.href = response.data;
-        });
+            window.location.href = response.data
+        })
 }
 
 </script>
