@@ -10,7 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faCube, faLink)
 
@@ -47,7 +47,6 @@ const migration_redirect = layout?.iris?.migration_redirect
 				<div class="mt-10 flex items-center justify-center gap-x-6">
 					<a :href="resolveMigrationLink(fieldValue?.button?.link?.href, migration_redirect)"
 						:target="fieldValue?.button?.link?.target" typeof="button"
-						:style="getStyles(fieldValue.button.container.properties, screenType)"
 						>
 					<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
 						:label="fieldValue?.button?.text"  />

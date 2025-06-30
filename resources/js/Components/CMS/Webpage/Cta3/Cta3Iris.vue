@@ -39,11 +39,12 @@ const migration_redirect = layout?.iris?.migration_redirect
 					<div v-html="resolveMigrationHrefInHTML(fieldValue.text, migration_redirect)" />
 				</div>
 
-				<a typeof="button" :style="getStyles(fieldValue.button.container.properties, screenType)"
-					:href="resolveMigrationLink(fieldValue?.button?.link?.href, migration_redirect)"
+				<a typeof="button" :href="resolveMigrationLink(fieldValue?.button?.link?.href, migration_redirect)"
 					:target="fieldValue?.button?.link?.target">
-					<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-						:label="fieldValue?.button?.text" />
+					<Button :injectStyle="{
+						...getStyles(fieldValue?.button?.container?.properties, screenType),
+						width: 'fit-content !important'
+					}" :label="fieldValue?.button?.text" />
 				</a>
 			</div>
 		</div>
