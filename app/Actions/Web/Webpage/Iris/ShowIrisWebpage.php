@@ -169,6 +169,7 @@ class ShowIrisWebpage
             /** @var Webpage $parentWebpage */
             $parentWebpage = $this->getPathWebpage($webpage, $parentPath);
 
+
             if ($parentWebpage && $parentWebpage->url) {
                 $breadcrumbs[] =
                     [
@@ -184,16 +185,21 @@ class ShowIrisWebpage
             }
         }
 
+        if ($webpage->url && $webpage->url != '/') {
+            $breadcrumbs[] = [
 
-        $breadcrumbs[] = [
+                'type'   => 'simple',
+                'simple' => [
+                    'label' => $webpage->breadcrumb_label,
+                    'url'   => $runningUrl.$webpage->url
+                ]
 
-            'type'   => 'simple',
-            'simple' => [
-                'label' => $webpage->breadcrumb_label,
-                'url'   => $runningUrl.$webpage->url
-            ]
+            ];
+        }
 
-        ];
+        if (count($breadcrumbs) == 1) {
+            return [];
+        }
 
 
         return $breadcrumbs;
