@@ -100,6 +100,7 @@ class EditSubDepartment extends OrgAction
                     'blueprint' => [
                         [
                             'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
                             'title'  => __('id'),
                             'fields' => [
                                 'code' => [
@@ -131,6 +132,7 @@ class EditSubDepartment extends OrgAction
                         ],
                         [
                             'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 "image"         => [
                                     "type"    => "image_crop_square",

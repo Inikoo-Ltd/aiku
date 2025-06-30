@@ -155,7 +155,8 @@ class EditFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Information'),
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'title'  => __('id'),
                             'fields' => [
                                 "image"         => [

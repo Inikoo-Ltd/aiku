@@ -127,6 +127,7 @@ class EditDepartment extends OrgAction
                         ],
                         [
                             'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'follow_master' => [
                                     'type'  => 'toggle',
