@@ -201,7 +201,7 @@ const onPublishTheme = () => {
       <!-- Fixed Bottom Button -->
       <div class="p-4 border-t bg-white">
         <Button
-          @click="() => onPublishTheme()"
+          @click="onPublishTheme"
           type="submit"
           :loading="isLoadingPublish"
           full

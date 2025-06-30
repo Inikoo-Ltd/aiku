@@ -6,6 +6,7 @@ import FilterProducts from "./FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
+import { getStyles } from "@/Composables/styles";
 
 const props = defineProps<{
   modelValue: any
@@ -38,13 +39,21 @@ const layout = {
 };
 
 const responsiveGridClass = computed(() => {
-  const count = props.screenType === "desktop" ? 4 : props.screenType === "tablet" ? 3 : 2;
-  return `grid-cols-${count}`;
+    const perRow = props.modelValue?.settings?.per_row ?? {};
+
+    const columnCount = {
+        desktop: perRow.desktop ?? 4,
+        tablet: perRow.tablet ?? 4,
+        mobile: perRow.mobile ?? 2
+    };
+
+    const count = columnCount[props.screenType] ?? 1;
+    return `grid-cols-${count}`;
 });
 </script>
 
 <template>
-  <div class="flex flex-col lg:flex-row">
+  <div class="flex flex-col lg:flex-row" :style="getStyles(modelValue?.container?.properties, screenType)">
     <transition name="slide-fade">
       <aside v-show="!isMobile && showAside" class="w-68 p-4">
         <FilterProducts v-model="filter" />
@@ -87,7 +96,9 @@ const responsiveGridClass = computed(() => {
       </div>
 
       <div :class="responsiveGridClass" class="grid gap-6 p-4">
-        <div v-for="product in dummyProducts" :key="product.id" class="border p-3 relative rounded shadow-sm bg-white">
+        <div v-for="product in dummyProducts" :key="product.id"
+          :style="getStyles(modelValue?.card_product?.properties, screenType)"
+          class="border p-3 relative rounded  bg-white">
           <ProductRender :product="product" />
         </div>
       </div>
