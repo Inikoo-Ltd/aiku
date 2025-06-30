@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue";
 import { getStyles } from "@/Composables/styles";
 import { sendMessageToParent } from "@/Composables/Workshop";
-import Blueprint from "@/Components/CMS/Webpage/CTA/Blueprint";
+import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint";
 import { onMounted, watch } from "vue";
 
 library.add(faCube, faLink, faImage, faVideo);

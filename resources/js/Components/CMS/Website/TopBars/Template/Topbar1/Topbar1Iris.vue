@@ -54,7 +54,16 @@ const model = defineModel<ModelTopbar1>();
 const isLoggedIn = inject("isPreviewLoggedIn", false);
 const layout = inject("layout", {});
 
-
+// Method: generate url for Login
+const urlLoginWithRedirect = () => {
+  if (route().current() !== "retina.login.show" && route().current() !== "retina.register") {
+    return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${
+      window?.location.search ? encodeURIComponent(window?.location.search) : ""
+    }`
+  } else {
+    return "/app/login"
+  }
+}
 </script>
 
 <template>
@@ -140,7 +149,7 @@ const layout = inject("layout", {});
       <!-- Section: Login -->
       <ButtonWithLink
         v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-        url="/app/login"
+        :url="urlLoginWithRedirect()"
         icon="fal fa-sign-in"
       >
         <template #label>

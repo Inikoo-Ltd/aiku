@@ -80,7 +80,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
             class="relative container flex  justify-between items-center gap-x-2 px-4">
 
             <!-- All categories -->
-            <div class="relative">
+            <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">
                 <div @click="() => isOpenMenuMobile = true" class="flex items-center gap-x-2 h-fit px-5 py-1.5 rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
                     <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" />
                     <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
@@ -122,11 +122,11 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
                         amouseleave="() => onMouseLeaveMenu()" :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
                         class="group w-full   p-4 flex items-center justify-center transition duration-200"
                         :class="
-                            navigation?.link?.href
-                                ? hoveredNavigation?.id === navigation.id && isCollapsedOpen
-                                    ? 'bg-gray-100 text-orange-500'
-                                    : 'cursor-pointer hover:bg-gray-100 hover:text-orange-500'
-                                : ''
+                            hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                                ? 'bg-gray-100 text-orange-500'
+                                : navigation?.link?.href
+                                    ? 'cursor-pointer hover:bg-gray-100 hover:text-orange-500'
+                                    : ''
                         "
                     >
                         <FontAwesomeIcon v-if="navigation.icon" :icon="navigation.icon" class="mr-2" />
@@ -152,6 +152,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
                         <div v-if="!subnav?.link?.href && subnav.title" :style="getStyles(fieldValue?.sub_navigation?.properties,screenType)" class="font-semibold text-gray-700">{{ subnav.title }}</div>
+                        <a v-if="subnav?.link?.href && subnav.title" :href="subnav?.link?.href" :target="subnav?.link?.target" :style="getStyles(fieldValue?.sub_navigation?.properties,screenType)" class="font-semibold text-gray-700">{{ subnav.title }}</a>
                         <!-- Sub-navigation Links -->
                         <div class="flex flex-col gap-y-3">
                             <div v-for="link in subnav.links" :key="link.url" class="flex items-center gap-x-3">

@@ -23,6 +23,10 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Web\WebpageResource;
+use App\Http\Resources\Web\WebpagesResource;
+
 
 class EditWebpage extends OrgAction
 {
@@ -50,11 +54,23 @@ class EditWebpage extends OrgAction
         return $this->handle($webpage);
     }
 
+    public function getFieldWebpageData(Webpage $webpage): array
+    {
+        $data = [
+                    'code'          => $webpage->code,
+                    'id'            => $webpage->id,
+                    'href'          => 'https://'.$webpage->website->domain.'/'.$webpage->url,
+                    "typeIcon"      => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
+        ];
+        return $data;
+    }
+
     /**
      * @throws Exception
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+
         return Inertia::render(
             'EditModel',
             [
@@ -96,14 +112,21 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                'state'       => [
-                                    'type'        => 'select',
+                                'state_data'       => [
+                                    'type'        => 'toggle_state_webpage',
                                     'label'       => __('State'),
                                     'placeholder' => __('Select webpage state'),
-                                    'value'       => $webpage->state,
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
-                                    'searchable'  => true
+                                    'searchable'  => true,
+                                    'default_storefront' =>$this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'init_options'  => $webpage->redirectWebpage ? [
+                                        $this->getFieldWebpageData($webpage->redirectWebpage)
+                                    ] : null,
+                                    'value'       => [
+                                        'state'                 => $webpage->state,
+                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    ],
                                 ],
                                 'allow_fetch' => [
                                     'type'  => 'toggle',

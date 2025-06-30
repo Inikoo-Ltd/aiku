@@ -317,6 +317,11 @@ class Webpage extends Model implements Auditable, HasMedia
         return $this->hasOne(Redirect::class, 'from_webpage_id');
     }
 
+    public function redirectWebpage(): BelongsTo
+    {
+        return $this->belongsTo(Webpage::class, 'redirect_webpage_id');
+    }
+
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);

@@ -210,6 +210,42 @@ class GetPalletReturnActions
                     ]
                 ];
 
+            $actions[] =
+                [
+                    'type'    => 'button',
+                    'style'   => '',
+                    'label'   => '',
+                    'tooltip' => __('PDF'),
+                    'label'   => __('PDF'),
+                    'key'     => 'pdf',
+                    'icon'    => 'fal fa-file-pdf',
+                    'route'   => [
+                        'method'     => 'get',
+                        'name'       => 'grp.models.pallet-return.pallet_picking.pdf',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ]
+                ];
+
+        } elseif ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
+            $actions[] =
+                [
+                    'type'    => 'button',
+                    'style'   => '',
+                    'label'   => '',
+                    'tooltip' => __('PDF'),
+                    'label'   => __('PDF'),
+                    'key'     => 'pdf',
+                    'icon'    => 'fal fa-file-pdf',
+                    'route'   => [
+                        'method'     => 'get',
+                        'name'       => 'grp.models.pallet-return.stored_item_picking.pdf',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ]
+                ];
         }
 
 

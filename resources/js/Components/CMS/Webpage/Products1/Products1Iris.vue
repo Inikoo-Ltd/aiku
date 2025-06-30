@@ -19,10 +19,12 @@ import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
 import { faExclamationTriangle, faLayerGroup } from "@far";
 import ConfirmDialog from "primevue/confirmdialog";
+import { trans } from "laravel-vue-i18n"
 
 
 const props = defineProps<{
     fieldValue: {
+        card_product : { properties : object }
         products_route: {
             iris: {
                 route_products: routeType,
@@ -200,7 +202,7 @@ const sortOptions = computed(() => {
         { label: "Product Code", value: "code" },
         { label: "Name", value: "name" }
     ];
-    if (layout.iris.is_logged_in) {
+    if (layout?.iris?.is_logged_in) {
         baseOptions.splice(1, 0, { label: "Price", value: "price" });
     }
     return baseOptions;
@@ -229,7 +231,7 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-");
     }
 
-    if (layout.iris.is_logged_in)
+    if (layout?.iris?.is_logged_in)
         fetchProductHasPortfolio();
 
 
@@ -359,7 +361,7 @@ const handleSetAllToPortfolio = () => {
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
         </template>
     </ConfirmDialog>
-    <div class="flex flex-col lg:flex-row" :style="getStyles(fieldValue.container?.properties, screenType)">
+    <div class="flex flex-col lg:flex-row" :style="getStyles(fieldValue?.container?.properties, screenType)">
 
         <!-- Sidebar Filters for Desktop -->
         <transition name="slide-fade">
@@ -419,7 +421,7 @@ const handleSetAllToPortfolio = () => {
                 </div>
                 <div>
                     <Button
-                        v-if="layout.iris.is_logged_in"
+                        v-if="layout?.iris?.is_logged_in"
                         :icon="faLayerGroup"
                         :label="settingPortfolio ? 'Processing...' : 'Set All Products to Portfolio'"
                         class="!p-3 !w-auto"
@@ -445,8 +447,9 @@ const handleSetAllToPortfolio = () => {
 
                 <template v-else-if="products.length">
                     <div v-for="(product, index) in products" :key="index"
-                         class="border p-3 relative rounded shadow-sm bg-white">
-                        <ProductRender :product="product" :key="index"
+                         :style="getStyles(fieldValue?.card_product?.properties, screenType)"
+                         class="border p-3 relative rounded bg-white">
+                        <ProductRender :product="product" :key="index" 
                                        :productHasPortfolio="productHasPortfolio.list[product.id]" />
                     </div>
                 </template>
@@ -464,7 +467,7 @@ const handleSetAllToPortfolio = () => {
                     <template v-if="loadingMore">
                         <LoadingText />
                     </template>
-                    <template v-else>Load More</template>
+                    <template v-else>{{ trans("Load More") }}</template>
                 </Button>
             </div>
         </main>

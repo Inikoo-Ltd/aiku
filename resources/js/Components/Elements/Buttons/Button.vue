@@ -34,6 +34,7 @@ const props = withDefaults(defineProps<{
   type?: string
   disabled?: boolean
   noHover?: boolean
+  injectStyle? : object|null
 }>(), {
   size: "m",
   capitalize: true,
@@ -152,13 +153,14 @@ const getActionIcon = (icon: any) => {
 </script>
 
 <template>
-  <button type="button"
+  <button type="button"  :style="injectStyle ?? {}"
           class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
           :class="[
             full ? 'w-full justify-center' : 'min-w-max',
             styleClass,
             sizeClass
         ]"
+        
           :disabled="loading || disabled || style == 'disabled' || type == 'disabled'"
           v-tooltip="tooltip ?? undefined"
   >
