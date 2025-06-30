@@ -34,63 +34,51 @@ class FamilyHydrateBestSellerProduct implements ShouldBeUnique
             return;
         }
 
+        // Reset all products top_seller flag first
+        Product::where('family_id', $family->id)
+            ->where('top_seller', '>', 0)
+            ->update(['top_seller' => null]);
 
-        // Get products associated with this family
-        $products = Product::query()
+        // Get the total count of main products for this family
+        $totalProducts = Product::where('family_id', $family->id)
+            ->where('is_main', true)
+            ->whereNull('exclusive_for_customer_id')
+            ->count();
+
+        // Determine how many top products to mark
+        $topCount = 0;
+        if ($totalProducts >= 7) {
+            $topCount = 3;
+        } elseif ($totalProducts >= 5) {
+            $topCount = 2;
+        } elseif ($totalProducts >= 4) {
+            $topCount = 1;
+        }
+
+        // If less than 4 products, don't update any
+        if ($topCount === 0) {
+            return;
+        }
+
+        // Get top selling products directly with a query
+        $topProducts = Product::query()
             ->where('family_id', $family->id)
             ->where('products.is_main', true)
             ->whereNull('products.exclusive_for_customer_id')
             ->join('assets', 'products.asset_id', '=', 'assets.id')
-            ->leftJoin('asset_stats', 'assets.id', '=', 'asset_stats.asset_id')
-            ->select('products.*')
-            ->with(['asset.salesIntervals'])
+            ->join('asset_sales_intervals', 'assets.id', '=', 'asset_sales_intervals.asset_id')
+            ->whereNotNull('asset_sales_intervals.sales_all')
+            ->where('asset_sales_intervals.sales_all', '>', 0)
+            ->orderBy('asset_sales_intervals.sales_all', 'desc')
+            ->select('products.id')
+            ->limit($topCount)
             ->get();
-        // Filter products with sales and sort by sales in descending order
-        $topProducts = $products->filter(function ($product) {
-            return $product->asset && $product->asset->salesIntervals &&
-                isset($product->asset->salesIntervals->sales_all) &&
-                $product->asset->salesIntervals->sales_all > 0;
-        })->sortByDesc(function ($product) {
-            return $product->asset->salesIntervals->sales_all;
-        });
 
-        // Determine how many top products to mark based on total count
-        $totalProducts = $products->count();
-        $topCount = 0;
-
-        if ($totalProducts >= 4) {
-            $topCount = 1;
-            if ($totalProducts >= 5) {
-                $topCount = 2;
-                if ($totalProducts >= 7) {
-                    $topCount = 3;
-                }
-            }
-            $topProducts = $topProducts->take($topCount);
-        } else {
-            // If less than 4 products, don't update any
-            $topProducts = collect();
+        // Update top products with their ranking
+        foreach ($topProducts as $index => $product) {
+            Product::where('id', $product->id)
+                ->update(['top_seller' => $index + 1]);
         }
-
-
-        // Reset all products top_seller flag first
-        foreach ($products as $product) {
-            if ($product->top_seller > 0) {
-                $product->update([
-                    'top_seller' => null
-                ]);
-            }
-        }
-
-        // Update top products
-        $index = 0;
-        foreach ($topProducts as $product) {
-            $product->update([
-                'top_seller' => $index + 1,
-            ]);
-            $index++;
-        }
-
     }
 
 }
