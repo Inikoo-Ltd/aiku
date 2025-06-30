@@ -402,5 +402,5 @@ test('store redirect', function (Webpage $webpage) {
 
 
 test('web sitemap creation', function () {
-    SaveWebsitesSitemap::run();
+    $this->artisan('sitemaps:create')->assertExitCode(0);
 });
