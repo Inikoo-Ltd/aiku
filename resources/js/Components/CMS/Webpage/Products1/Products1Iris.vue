@@ -446,8 +446,9 @@ const handleSetAllToPortfolio = () => {
 
                 <template v-else-if="products.length">
                     <div v-for="(product, index) in products" :key="index"
-                         class="border p-3 relative rounded shadow-sm bg-white">
-                        <ProductRender :product="product" :key="index" :style="fieldValue?.card_product?.properties"
+                         :style="getStyles(fieldValue?.card_product?.properties, screenType)"
+                         class="border p-3 relative rounded bg-white">
+                        <ProductRender :product="product" :key="index" 
                                        :productHasPortfolio="productHasPortfolio.list[product.id]" />
                     </div>
                 </template>
