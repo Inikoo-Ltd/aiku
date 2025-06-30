@@ -39,9 +39,7 @@ class RequestApiUploadProductEbay extends RetinaAction
             $images = [];
             if (app()->isProduction()) {
                 foreach ($product->images as $image) {
-                    $images[] = [
-                        GetImgProxyUrl::run($image->getImage()->extension('jpg'))
-                    ];
+                    $images[] = GetImgProxyUrl::run($image->getImage()->extension('jpg'));
                 }
             }
 
