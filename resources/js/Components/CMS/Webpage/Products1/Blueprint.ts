@@ -13,6 +13,23 @@ export default {
             ],
         },
         {
+            name: "Card Product",
+            key: ["card_product","properties"],
+            replaceForm: [
+                {
+					key: ["background"],
+					label: "Background",
+					type: "background",
+				},
+                {
+                    key: ["border"],
+                    label: "Border",
+                    type: "border",
+                },
+            ],
+        },
+
+        {
             name: "Layout",
             key: ["container", "properties"],
             replaceForm: [

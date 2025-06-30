@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, provide, shallowRef, watch, toRaw } from "vue"
+import { ref, onMounted, onBeforeUnmount, provide, shallowRef, watch, toRaw, inject } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSendBackward, faBringForward, faTrashAlt } from "@fas"
 import { trans } from "laravel-vue-i18n"
-import { useLayoutStore } from "@/Stores/layout"
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
 
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
@@ -19,17 +19,32 @@ defineOptions({ layout: WebPreview })
 
 const props = defineProps<{
   webpage?: RootWebpage
-  layout: {}
+  layout: {
+    color: string[]
+  }
 }>()
 
-const layout = useLayoutStore()
-
+const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
 
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const defaultCurrency = {
+  code: "GBP",
+  symbol: "£",
+  name: "British Pound"
+}
+
+// Update iris layout state
+const updateIrisLayout = () => {
+  const isLoggedIn = filterBlock.value === "logged-in"
+  layout.iris = {
+    currency: defaultCurrency,
+    is_logged_in: isLoggedIn,
+  }
+}
 
 const showWebpage = (item) => {
   const vis = item?.visibility
@@ -40,6 +55,12 @@ const showWebpage = (item) => {
   if (filterBlock.value === 'logged-in' && vis?.in) return true
   return false
 }
+
+onMounted(() => {
+  layout.app.theme = props.layout.color,
+  layout.app.webpage_layout = props.layout
+  updateIrisLayout()
+})
 
 const checkScreenType = () => {
   const width = window.innerWidth
@@ -90,11 +111,13 @@ watch(() => props.webpage, (val) => {
   data.value = val ? { ...val } : undefined
 })
 
-console.log(props)
+watch(filterBlock, () => {
+  updateIrisLayout()
+}, { immediate: true });
 </script>
 
 <template>
-  <div class="editor-class" :style="getStyles(props.layout.container?.properties, screenType)">
+  <div class="editor-class">
     <div class="shadow-xl px-1 py-1">
       <div>
         <div v-if="data?.layout?.web_blocks?.length">
@@ -128,7 +151,12 @@ console.log(props)
                 </div>
 
                 <!-- Dynamic Block -->
-                <component :is="getComponent(block.type)" class="w-full" :webpageData="data" :blockData="block"
+                <component 
+                  :is="getComponent(block.type)" 
+                  class="w-full" 
+                  :webpageData="data" 
+                  :blockData="block"
+                  :index-block="idx"
                   v-model="block.web_block.layout.data.fieldValue" :screenType="screenType"
                   @autoSave="() => updateData(block)" />
               </section>
