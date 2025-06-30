@@ -54,10 +54,10 @@ class EditWebpage extends OrgAction
     public function getFieldWebpageData(Webpage $webpage): array
     {
         return [
-                    'code'          => $webpage->code,
-                    'id'            => $webpage->id,
-                    'href'          => 'https://'.$webpage->website->domain.'/'.$webpage->url,
-                    "typeIcon"      => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
+            'code'     => $webpage->code,
+            'id'       => $webpage->id,
+            'href'     => 'https://'.$webpage->website->domain.'/'.$webpage->url,
+            "typeIcon" => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
         ];
     }
 
@@ -108,20 +108,20 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                'state_data'       => [
-                                    'type'        => 'toggle_state_webpage',
-                                    'label'       => __('State'),
-                                    'placeholder' => __('Select webpage state'),
-                                    'required'    => true,
-                                    'options'     => Options::forEnum(WebpageStateEnum::class),
-                                    'searchable'  => true,
+                                'state_data'  => [
+                                    'type'               => 'toggle_state_webpage',
+                                    'label'              => __('State'),
+                                    'placeholder'        => __('Select webpage state'),
+                                    'required'           => true,
+                                    'options'            => Options::forEnum(WebpageStateEnum::class),
+                                    'searchable'         => true,
                                     'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
-                                    'init_options'  => $webpage->redirectWebpage ? [
+                                    'init_options'       => $webpage->redirectWebpage ? [
                                         $this->getFieldWebpageData($webpage->redirectWebpage)
                                     ] : null,
-                                    'value'       => [
-                                        'state'                 => $webpage->state,
-                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    'value'              => [
+                                        'state'               => $webpage->state,
+                                        'redirect_webpage_id' => $webpage->redirect_webpage_id,
                                     ],
                                 ],
                                 'allow_fetch' => [
@@ -132,34 +132,33 @@ class EditWebpage extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('SEO'),
-                            'icon'   => 'fab fa-google',
+                            'label'  => __('Link Preview'),
+                            'icon'   => 'fal fa-image',
                             'fields' => [
-                                "seo_image" => [
+                                "seo_image"         => [
                                     "type"    => "image_crop_square",
-                                    "label"   => __("image"),
+                                    "label"   => __("Preview image"),
                                     "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
                                     'options' => [
                                         "minAspectRatio" => 1,
                                         "maxAspectRatio" => 12 / 4,
                                     ]
                                 ],
-                                'seo_data'  => [
-                                    'type'    => 'googleSearch',
-                                    'domain'  => $webpage->website->domain.'/',
-                                    'value'   => [
-                                        'image'            => [
-                                            'original' => Arr::get($webpage->seo_data, 'image.original') ?? '',
-                                        ],
-                                        'meta_title'       => Arr::get($webpage->seo_data, 'meta_title') ?? '',
-                                        'meta_description' => Arr::get($webpage->seo_data, 'meta_description') ?? '',
-                                        'llms_text'        => Arr::get($webpage->seo_data, 'llms_text') ?? '',
-                                        //                                        'url'                  => $webpage->url,
-                                        //                                        'is_use_canonical_url' => $webpage->is_use_canonical_url,
-                                        //                                        'canonical_url'        => $webpage->canonical_url,
-                                    ],
-                                    'noTitle' => true,
+                                'seo_title'         => [
+                                    'type'                => 'input',
+                                    'label'               => __('Preview Title'),
+                                    'label_no_capitalize' => true,
+                                    'value'               => $webpage->seo_title,
+                                    'required'            => false,
                                 ],
+                                'description_title' => [
+                                    'type'                => 'textarea',
+                                    'label'               => __('Preview Description'),
+                                    'label_no_capitalize' => true,
+                                    'value'               => $webpage->seo_description,
+                                    'required'            => false,
+                                ],
+
 
                             ],
                         ],
@@ -181,11 +180,11 @@ class EditWebpage extends OrgAction
                         ],
                         [
                             'label'  => __('Set as as online'),
-                            'icon'   => 'fal fa-trash-alt',
+                            'icon'   => 'fal fa-broadcast-tower',
                             'fields' => [
 
                                 'name' => [
-                                    'hidden' => true,
+                                //    'hidden' => $webpage->state != WebpageStateEnum::CLOSED,
                                     'type'   => 'action',
                                     'action' => [
                                         'type'  => 'button',
@@ -206,10 +205,10 @@ class EditWebpage extends OrgAction
                         [
                             'label' => __('Set as offline'),
 
-                            'icon'   => 'fal fa-trash-alt',
+                            'icon'   => 'fal fa-microphone-alt-slash',
                             'fields' => [
                                 'name' => [
-                                    'hidden' => true,
+                            //        'hidden' => $webpage->state != WebpageStateEnum::LIVE,
                                     'type'   => 'action',
                                     'action' => [
                                         'type'  => 'button',
@@ -232,6 +231,7 @@ class EditWebpage extends OrgAction
                             'icon'   => 'fal fa-trash-alt',
                             'fields' => [
                                 'name' => [
+                               //     'hidden' => $webpage->state == WebpageStateEnum::LIVE,
                                     'type'   => 'action',
                                     'action' => [
                                         'type'  => 'button',
@@ -239,9 +239,8 @@ class EditWebpage extends OrgAction
                                         'label' => __('delete webpage'),
                                         'route' => [
                                             'method'     => 'delete',
-                                            'name'       => 'grp.models.shop.webpage.delete',
+                                            'name'       => 'grp.models.webpage.delete',
                                             'parameters' => [
-                                                'shop'    => $webpage->shop->id,
                                                 'webpage' => $webpage->id,
                                             ]
                                         ],

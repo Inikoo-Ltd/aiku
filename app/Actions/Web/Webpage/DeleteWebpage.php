@@ -59,14 +59,7 @@ class DeleteWebpage extends OrgAction
         return $this->handle($webpage, $forceDelete);
     }
 
-    public function inShop(Shop $shop, Webpage $webpage, ActionRequest $request): Webpage
-    {
-        $this->initialisationFromShop($shop, $request);
 
-        $forceDelete = $request->boolean('force_delete');
-
-        return $this->handle($webpage, $forceDelete);
-    }
 
     public function htmlResponse(Webpage $webpage): RedirectResponse
     {
