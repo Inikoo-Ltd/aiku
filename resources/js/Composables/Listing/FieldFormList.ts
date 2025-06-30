@@ -50,6 +50,7 @@ const Interest = defineAsyncComponent(() => import('@/Components/Forms/Fields/In
 const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/Fields/EmployeePosition.vue'))
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
+import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -97,6 +98,7 @@ export const componentsList: {[key: string]: Component} = {
     'structure_data_website' : StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,
+    'delete_webpage': DeleteWebpage,
 
     'select_infinite': SelectInfiniteScroll
 }

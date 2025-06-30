@@ -37,7 +37,8 @@ export const aikuLocaleStructure = {
     currencyFormat: (currencyCode: string, amount: number):string => {
       return new Intl.NumberFormat(language.value.code, {
         style: "currency",
-        currency: currencyCode || "usd",
+        // currency: currencyCode || "usd",
+        currency: currencyCode,
       }).format(amount || 0)
     }
 }
