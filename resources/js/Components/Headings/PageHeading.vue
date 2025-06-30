@@ -25,6 +25,7 @@ import { useTruncate } from '@/Composables/useTruncate'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import ButtonWithLink from "../Elements/Buttons/ButtonWithLink.vue"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
+// import Icon from "../Icon.vue"
 
 library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave)
 
@@ -120,10 +121,11 @@ const isShowDummySlotName = false
                         <slot name="afterTitle">
                             <div v-if="data.iconRight || data.afterTitle" class="flex gap-x-2 items-center">
                                 <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
-                                    :icon="data.iconRight?.icon || data.iconRight" class="h-4" :class="data.iconRight.class"
+                                    :icon="data.iconRight?.icon || data.iconRight" class="h-4 align-top" :class="data.iconRight.class"
                                     aria-hidden="true"
                                     :rotation="data?.iconRight?.icon_rotation"
                                 />
+                                <!-- <Icon v-if="data.iconRight" :data="data.iconRight"class="h-4" /> -->
                                 <div v-if="data.afterTitle" class="text-gray-400 font-normal text-lg leading-none">
                                     {{ data.afterTitle.label }}
                                 </div>
