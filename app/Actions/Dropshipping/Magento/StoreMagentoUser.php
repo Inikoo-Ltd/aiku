@@ -17,6 +17,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\Platform;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -30,57 +31,59 @@ class StoreMagentoUser extends OrgAction
 
     public function handle(Customer $customer, array $modelData): MagentoUser
     {
-        $platform = Platform::where('type', PlatformTypeEnum::MAGENTO->value)->first();
-        $username = Arr::get($modelData, 'username');
-        $password = Arr::get($modelData, 'password');
-        $storeUrl = Arr::pull($modelData, 'url');
+        return DB::transaction(function () use ($customer, $modelData) {
+            $platform = Platform::where('type', PlatformTypeEnum::MAGENTO->value)->first();
+            $username = Arr::get($modelData, 'username');
+            $password = Arr::get($modelData, 'password');
+            $storeUrl = Arr::pull($modelData, 'url');
 
-        if ($customer->magentoUsers()->whereJsonContains('settings->credentials->base_url', $storeUrl)->exists()) {
-            throw ValidationException::withMessages(['username' => __('The store already exists.')]);
-        }
+            if ($customer->magentoUsers()->whereJsonContains('settings->credentials->base_url', $storeUrl)->exists()) {
+                throw ValidationException::withMessages(['username' => __('The store already exists.')]);
+            }
 
-        $validated = $this->validateMagentoAccount($username, $password, $storeUrl);
+            $validated = $this->validateMagentoAccount($username, $password, $storeUrl);
 
-        if (! $validated) {
-            throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
-        }
+            if (! $validated) {
+                throw ValidationException::withMessages(['username' => __('The credentials provided is invalid.')]);
+            }
 
-        data_set($modelData, 'group_id', $customer->group_id);
-        data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'name', Arr::get($modelData, 'username'));
-        data_set($modelData, 'platform_id', $platform->id);
-        data_set($modelData, 'settings.credentials.base_url', $storeUrl);
+            data_set($modelData, 'group_id', $customer->group_id);
+            data_set($modelData, 'organisation_id', $customer->organisation_id);
+            data_set($modelData, 'name', Arr::get($modelData, 'username'));
+            data_set($modelData, 'platform_id', $platform->id);
+            data_set($modelData, 'settings.credentials.base_url', $storeUrl);
 
-        /** @var MagentoUser $magentoUser */
-        $magentoUser = $customer->magentoUsers()->create($modelData);
+            /** @var MagentoUser $magentoUser */
+            $magentoUser = $customer->magentoUsers()->create($modelData);
 
-        $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
-            'platform_user_type' => class_basename($magentoUser),
-            'platform_user_id' => $magentoUser->id,
-            'reference' => $magentoUser->name,
-            'name' => $magentoUser->name
-        ]);
+            $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
+                'platform_user_type' => class_basename($magentoUser),
+                'platform_user_id' => $magentoUser->id,
+                'reference' => $magentoUser->name,
+                'name' => $magentoUser->name
+            ]);
 
-        $magentoUser->refresh();
-        $accessToken = $magentoUser->getMagentoToken();
-        $stores = $magentoUser->getStores();
+            $magentoUser->refresh();
+            $accessToken = $magentoUser->getMagentoToken();
+            $stores = $magentoUser->getStores();
 
-        $magentoUser->update([
-            'customer_sales_channel_id' => $customerSalesChannel->id,
-            'settings' => [
-                'credentials' => [
-                    ...Arr::get($magentoUser->settings, 'credentials'),
-                    'access_token' => $accessToken
-                ]
-            ],
-            'name' => Arr::get($stores, '0.name')
-        ]);
+            $magentoUser->update([
+                'customer_sales_channel_id' => $customerSalesChannel->id,
+                'settings' => [
+                    'credentials' => [
+                        ...Arr::get($magentoUser->settings, 'credentials'),
+                        'access_token' => $accessToken
+                    ]
+                ],
+                'name' => Arr::get($stores, '0.name')
+            ]);
 
-        UpdateCustomerSalesChannel::run($customerSalesChannel, [
-            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
-        ]);
+            UpdateCustomerSalesChannel::run($customerSalesChannel, [
+                'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+            ]);
 
-        return $magentoUser;
+            return $magentoUser;
+        });
     }
 
     public function jsonResponse(MagentoUser $magentoUser): array

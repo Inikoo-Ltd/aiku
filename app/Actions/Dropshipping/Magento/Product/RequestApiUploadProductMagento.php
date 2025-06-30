@@ -63,10 +63,22 @@ class RequestApiUploadProductMagento extends RetinaAction
                 'weight' => $product->gross_weight / 453.59237, // Change to lbs
                 'extension_attributes' => [
                     'stock_item' => [
-                        'is_in_stock' => true,
+                        'stock_id' => 1,
+                        'is_in_stock' => 1,
                         'qty' => $product->available_quantity,
-                        'manage_stock' => true,
-                        'use_config_manage_stock' => false
+                        'manage_stock' => 0,
+                        'use_config_manage_stock' => 0,
+                        'min_qty' => 0,
+                        'use_config_min_qty' => 1,
+                        'min_sale_qty' => 1,
+                        'use_config_min_sale_qty' => 1,
+                        'max_sale_qty' => 10000,
+                        'use_config_max_sale_qty' => 1,
+                        'is_qty_decimal' => 0,
+                        'backorders' => 0,
+                        'use_config_backorders' => 1,
+                        'notify_stock_qty' => 1,
+                        'use_config_notify_stock_qty' => 1
                     ]
                 ],
                 'media_gallery_entries' => $images
