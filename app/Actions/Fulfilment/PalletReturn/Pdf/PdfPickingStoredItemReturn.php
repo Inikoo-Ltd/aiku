@@ -27,6 +27,7 @@ class PdfPickingStoredItemReturn
      */
     public function handle(PalletReturn $palletReturn): Response
     {
+        // dd($palletReturn);
         // Retrieve delivery note details
         // $totalItemsNet = (float) $deliveryNote->total_amount;
         // $totalShipping = (float) $deliveryNote->order?->shipping_amount ?? 0;
@@ -34,7 +35,6 @@ class PdfPickingStoredItemReturn
 
         // Prepare data to pass to the Blade template
         $filename = 'stored-item-return-' . $palletReturn->reference . '-' . Carbon::now()->format('Y-m-d');
-
         // Generate PDF using Blade template and data array
         $pdf = PDF::loadView('pickings.templates.pdf.picking-stored-item', [
             'palletReturn' => $palletReturn,
