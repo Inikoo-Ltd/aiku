@@ -36,6 +36,7 @@ class UpdateRetinaCustomerClient extends RetinaAction
         'email'          => ['sometimes', 'nullable', 'email'],
         'phone'          => ['sometimes', 'nullable', new Phone()],
         'address'        => ['sometimes', new ValidAddress()],
+        'status'         => ['sometimes', 'boolean'],
         ];
     }
 

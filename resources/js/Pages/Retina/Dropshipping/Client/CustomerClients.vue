@@ -11,17 +11,39 @@ import TableCustomerClients from "@/Components/Tables/Grp/Org/CRM/TableCustomerC
 import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
-import { ref } from "vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { computed, ref } from "vue"
+import { useTabChange } from "@/Composables/tab-change"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {faUsersSlash } from "@fal"
+library.add(faUsersSlash)
 const props = defineProps<{
 	data: {}
+	tabs: {
+        current: string
+        navigation: {}
+    },
 	title: string
 	pageHead: {}
+	active?: {}
+    inactive?: {}
     upload_spreadsheet : object
 }>()
 
 const isModalUploadOpen = ref(false)
+
+const currentTab = ref<string>(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const component = computed(() => {
+    const components: any = {
+        active: TableCustomerClients,
+        inactive: TableCustomerClients
+    }
+
+    return components[currentTab.value]
+})
 </script>
 
 <template>
@@ -48,8 +70,9 @@ const isModalUploadOpen = ref(false)
 			</div>
 		</template>
 	</PageHeading>
-	<TableCustomerClients :data="data" />
-
+	<!-- <TableCustomerClients :data="data" /> -->
+ 	<Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+	<component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
 	<UploadExcel
 		v-if="upload_spreadsheet"
 		v-model="isModalUploadOpen"
