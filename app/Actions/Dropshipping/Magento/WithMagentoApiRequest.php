@@ -74,7 +74,7 @@ trait WithMagentoApiRequest
     /**
      * Make authenticated request to Magento API
      */
-    protected function magentoApiRequest(string $method, string $endpoint, array $data = []): array
+    protected function magentoApiRequest(string $method, string $endpoint, array $data = [], $queryParams = []): array
     {
         $config = $this->getMagentoConfig();
         $token = $this->getMagentoConfig()['token'];
@@ -85,7 +85,7 @@ trait WithMagentoApiRequest
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Content-Type' => 'application/json',
-            ])->$method($url, $data);
+            ])->withQueryParameters($queryParams)->$method($url, $data);
 
             if ($response->successful()) {
                 return $response->json() ?? [];
@@ -97,7 +97,7 @@ trait WithMagentoApiRequest
                 $response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . $token,
                     'Content-Type' => 'application/json',
-                ])->$method($url, $data);
+                ])->withQueryParameters($queryParams)->$method($url, $data);
 
                 if ($response->successful()) {
                     return $response->json() ?? [];
@@ -178,12 +178,7 @@ trait WithMagentoApiRequest
     {
         $endpoint = 'orders';
 
-        if (!empty($searchCriteria)) {
-            $params = http_build_query(['searchCriteria' => $searchCriteria]);
-            $endpoint .= '?' . $params;
-        }
-
-        return $this->magentoApiRequest('get', $endpoint);
+        return $this->magentoApiRequest('get', $endpoint, [], $searchCriteria);
     }
 
     /**
@@ -306,6 +301,38 @@ trait WithMagentoApiRequest
         ];
 
         return $this->magentoApiRequest('post', 'webhooks', $webhook);
+    }
+
+    public function createBulkWebhook(int $magentoUserId): array
+    {
+        $webhookTopics = [
+            [
+                'name' => 'Product Delete Webhook',
+                'topics' => ['catalog/product/delete_after'],
+                'endpoint' => route('webhooks.magento.products.delete', $magentoUserId)
+            ],
+            [
+                'name' => 'Order Create Webhook',
+                'topics' => ['sales/order/save_after'],
+                'endpoint' => route('webhooks.magento.orders.catch', $magentoUserId)
+            ]
+        ];
+
+        $results = [];
+        foreach ($webhookTopics as $webhook) {
+            try {
+                $results[] = $this->createWebhook(
+                    $webhook['name'],
+                    $webhook['endpoint'],
+                    $webhook['topics']
+                );
+            } catch (Exception $e) {
+                Log::error("Failed to create webhook {$webhook['name']}: " . $e->getMessage());
+                throw $e;
+            }
+        }
+
+        return $results;
     }
 
     /**
