@@ -8,40 +8,72 @@
 
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
+use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\WithCheckoutCom;
-use App\Actions\OrgAction;
+use App\Actions\IrisAction;
+use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
-use Checkout\CheckoutApiException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class CheckoutComOrderPaymentSuccess extends OrgAction
+class CheckoutComOrderPaymentSuccess extends IrisAction
 {
+    use AsAction;
     use WithCheckoutCom;
+    use WithRetinaOrderPlacedRedirection;
 
 
-    public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): void
+    /**
+     * @throws \Throwable
+     */
+    public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): array
     {
         $paymentAccountShopID = Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout');
         $paymentAccountShop = PaymentAccountShop::find($paymentAccountShopID);
-        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+
+        $checkoutComPayment = $this->getCheckOutPayment(
+            $paymentAccountShop,
+            $modelData['cko-payment-id']
+        );
 
 
-        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+        $amount = Arr::get($checkoutComPayment, 'amount', 0) / 100;
 
-        try {
-            $response = $checkoutApi->getPaymentsClient()->getPaymentDetails($modelData['cko-payment-id']);
-        } catch (CheckoutApiException $e) {
-            \Sentry\captureException($e);
-            $error_details = $e->error_details;
-            $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
-            print $http_status_code.' '.$error_details;
-        }
+        $paymentData = [
+            'reference'               => Arr::get($checkoutComPayment, 'id'),
+            'amount'                  => $amount,
+            'status'                  => PaymentStatusEnum::SUCCESS,
+            'state'                   => PaymentStateEnum::COMPLETED,
+            'type'                    => PaymentTypeEnum::PAYMENT,
+            'payment_account_shop_id' => $paymentAccountShop->id,
+            'api_point_type'          => class_basename($orderPaymentApiPoint),
+            'api_point_id'            => $orderPaymentApiPoint->id,
+        ];
 
-        dd($response);
+
+        $order = DB::transaction(function () use ($orderPaymentApiPoint, $paymentAccountShop, $paymentData) {
+
+            StorePayment::make()->action($orderPaymentApiPoint->order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+
+            $order = $orderPaymentApiPoint->order;
 
 
+
+            return SubmitOrder::run($order);
+        });
+
+        return [
+            'success' => true,
+            'reason'  => 'Order paid successfully',
+            'order'   => $order,
+        ];
 
 
     }
@@ -55,10 +87,10 @@ class CheckoutComOrderPaymentSuccess extends OrgAction
         ];
     }
 
-    public function asController(OrderPaymentApiPoint $orderPaymentApiPoint, ActionRequest $request)
+    public function asController(OrderPaymentApiPoint $orderPaymentApiPoint, ActionRequest $request): array
     {
-        $this->initialisation($orderPaymentApiPoint->organisation, $request);
-        $this->handle($orderPaymentApiPoint, $this->validatedData);
+        $this->initialisation($request);
+        return $this->handle($orderPaymentApiPoint, $this->validatedData);
     }
 
 }
