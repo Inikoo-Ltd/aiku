@@ -19,6 +19,7 @@ const props = defineProps<{
     form: any,
     fieldName: string,
     fieldData: {
+        current_state: string
         route_delete: routeType
         init_options?: {}[]
         default_storefront?: {}
@@ -36,7 +37,10 @@ const xxx = ref('')
 <template>
     <div class="mx-auto w-fit">
         <!-- Set redirected -->
-        <Transition name="slide-to-left">
+        <Transition
+            v-if="fieldData.current_state === 'closed' || fieldData.current_state === 'live'"
+            name="slide-to-left"
+        >
             <div class="mt-4 w-full max-w-sm">
                 <div class="text-xs xfont-semibold text-gray-500">
                     <FontAwesomeIcon icon="fas fa-asterisk" class="h-2 text-xs text-red-500 mt-0.5 align-top" fixed-width aria-hidden="true" />
@@ -91,12 +95,21 @@ const xxx = ref('')
         
         <div class="mt-4 w-fit max-w-sm">
             <ButtonWithLink
+                v-if="fieldData.current_state === 'closed' || fieldData.current_state === 'live'"
                 icon="far fa-trash-alt"
                 label="Delete Webpage"
                 type="negative"
-                xrouteTarget="fieldData.route_delete"
+                :routeTarget="fieldData.route_delete"
                 :disabled="!form[fieldName].redirect_webpage_id"
                 v-tooltip="form[fieldName].redirect_webpage_id ? trans('Select webpage to redirect before delete') : ''"
+            />
+
+            <ButtonWithLink
+                v-else
+                icon="far fa-trash-alt"
+                label="Delete Webpage"
+                type="negative"
+                :routeTarget="fieldData.route_delete"
             />
         </div>
     </div>

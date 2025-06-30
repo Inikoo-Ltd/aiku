@@ -193,6 +193,7 @@ class EditWebpage extends OrgAction
                                 'name' => [
                                     'type'                  => 'delete_webpage',
                                     'noSaveButton'          => true,
+                                    'current_state'         => $webpage->state,
                                     'default_storefront'    => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
                                     'init_options'  => $webpage->redirectWebpage ? [
                                         $this->getFieldWebpageData($webpage->redirectWebpage)
@@ -202,10 +203,10 @@ class EditWebpage extends OrgAction
                                         'redirect_webpage_id'   => $webpage->redirect_webpage_id,
                                     ],
                                     'route_delete' => [
-                                        'method'     => 'delete',
-                                        'name'       => 'grp.models.shop.webpage.delete',
+                                        'method'     => 'patch',
+                                        'name'       => 'grp.models.webpage.delete',
                                         'parameters' => [
-                                            'shop'    => $webpage->shop->id,
+                                            // 'shop'    => $webpage->shop->id,
                                             'webpage' => $webpage->id,
                                         ]
                                     ],
