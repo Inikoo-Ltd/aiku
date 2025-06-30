@@ -140,7 +140,35 @@ class EditSubDepartment extends OrgAction
                                     "value"   => $subDepartment->imageSources(720, 480),
                                 ],
                             ]
-                        ]
+                        ],
+                        [
+                            'label'  => __('Department'),
+                            'icon'   => 'fa-light fa-box',
+                            'fields' => [
+                                'department_id'  =>  [
+                                    'type'    => 'select_infinite',
+                                    'label'   => __('Department'),
+                                    'options'   => [
+                                        [
+                                            'id' => $subDepartment->department?->id,
+                                            'code' => $subDepartment->department?->code
+                                        ]
+                                    ],
+                                    'fetchRoute'    => [
+                                        'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                        'parameters' => [
+                                            'organisation' => $this->organisation->slug,
+                                            'shop' => $this->shop->slug
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required' => false,
+                                    'value'   => $subDepartment->department->id ?? null,
+                                ]
+                            ],
+
+                        ],
 
 
                     ],

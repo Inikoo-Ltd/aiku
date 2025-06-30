@@ -43,6 +43,10 @@ class UpdateProductCategory extends OrgAction
                 $productCategory = UpdateFamilyDepartment::make()->action($productCategory, [
                     'department_id' => $departmentId,
                 ]);
+            } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $productCategory = UpdateSubDepartmentDepartment::make()->action($productCategory, [
+                    'department_id' => $departmentId,
+                ]);
             }
         }
 
