@@ -225,7 +225,7 @@ const _popover = ref()
 
     <RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
-    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto">
+    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <AddPortfolios
             v-if="platform_data?.type === 'manual'"
             :step="step"

@@ -29,8 +29,11 @@ const props = defineProps<{
                 name: string
                 route: routeType
             }
-            pallet_delivery_id: {}
-            pallet_return_id: {}
+            pallet_delivery: {
+                reference: string
+                route: routeType
+            }
+            pallet_return: {}
             location: {
                 id: number
                 slug: string
@@ -51,9 +54,10 @@ const props = defineProps<{
     }[]
 }>()
 
+
+console.log('www', props.data.data)
+
 // Blueprint: data
-
-
 const blueprint = {
     note: {
         label: 'Note',
@@ -152,12 +156,14 @@ const generateRouteEditBarcode = () => {
         <!-- Section: field data -->
         <dl class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 sm:gap-y-8 lg:gap-x-8">
             <div :class="[blueprint.note.value && 'border-t border-gray-200', 'pt-4']">
-                <dt class="font-medium">{{ blueprint.reference.label }}</dt>
+                <dt class="font-medium">
+                    {{ trans("Pallet Reference") }}
+                </dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">{{ blueprint.reference.value }}</dd>
             </div>
 
             <div :class="[blueprint.note.value && 'border-t border-gray-200', 'pt-4']">
-                <dt class="font-medium">{{ blueprint.customer.label }}</dt>
+                <dt class="font-medium">{{ trans("Customer") }}</dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
                     <Link :href="route(blueprint.customer.value.route.name, blueprint.customer.value.route.parameters)"
                         class="primaryLink">
@@ -169,7 +175,10 @@ const generateRouteEditBarcode = () => {
 
             <!-- Field: Items -->
             <div class="border-t border-gray-200 pt-4" v-if="blueprint.items.value.length > 0">
-                <dt class="font-medium">{{ blueprint.items.label }}</dt>
+                <dt class="font-medium">
+                    {{ blueprint.items.label }}
+                    <FontAwesomeIcon icon="fal fa-narwhal" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
                     <div v-if="blueprint.items.value.length" class="flex flex-wrap gap-1">
                         <Tag
@@ -189,29 +198,35 @@ const generateRouteEditBarcode = () => {
                 </dd>
             </div>
 
+            <!-- Customer Reference -->
             <div class="border-t border-gray-200 pt-4">
                 <dt class="font-medium">{{ blueprint.customer_reference.label }}</dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">{{ blueprint.customer_reference.value }}</dd>
             </div>
 
+            <!-- Location -->
             <div class="border-t border-gray-200 pt-4">
-                <dt class="font-medium">{{ blueprint.location.label }}</dt>
+                <dt class="font-medium">
+                    {{ blueprint.location.label }}
+                    <FontAwesomeIcon icon="fal fa-inventory" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
                     <Link v-if="blueprint.location.value.route?.name"
                         :href="route(blueprint.location.value.route.name, blueprint.location.value.route.parameters)"
                         class="primaryLink">
-                    {{ blueprint.location.value.resource.code }}
+                        {{ blueprint.location.value.resource.code }}
                     </Link>
-                    <span v-else>{{ blueprint?.location?.value?.resource?.code }}</span>
+                    <span v-else>{{ blueprint?.location?.value?.resource?.code ?? '-' }}</span>
                 </dd>
             </div>
 
+            <!-- Info -->
             <div class="border-t border-gray-200 pt-4">
-                <dt class="font-medium">Info</dt>
-                <dd class="mt-2 text-sm text-gray-500 text-justify">State:
+                <dt class="font-medium">{{ trans("Info") }}</dt>
+                <dd class="mt-2 text-sm text-gray-500 text-justify">{{ trans("State") }}:
                     <Tag :class="'capitalize'" :label="data.data.state" ></Tag>
                 </dd>
-                <dd class="mt-2 text-sm text-gray-500 text-justify">Status :
+                <dd class="mt-2 text-sm text-gray-500 text-justify">{{ trans("Status") }} :
                     <Tag :label="data.data.status"
                         :xxstyle="{ backgroundColor: data.data.status_icon?.color }"
                         stringToColor
@@ -227,6 +242,45 @@ const generateRouteEditBarcode = () => {
                 </dd>
             </div>
 
+            
+
+            <!-- Pallet Delivery -->
+            <div class="border-t border-gray-200 pt-4">
+                <dt class="font-medium">
+                    {{ trans("Pallet Delivery") }}
+                    <FontAwesomeIcon icon="fal fa-truck-couch" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="mt-2 text-sm text-gray-500 text-justify">
+                    <Link v-if="data.data.pallet_delivery.reference"
+                        :href="data?.data?.pallet_delivery?.route?.name ? route(data?.data?.pallet_delivery?.route?.name, data?.data?.pallet_delivery?.route?.parameters) : ''"
+                        class="secondaryLink">
+                        {{ data?.data?.pallet_delivery?.reference }}
+                    </Link>
+                    <span v-else class="text-gray-400">
+                        -
+                    </span>
+                </dd>
+            </div>
+
+            <!-- Pallet Return -->
+            <div class="border-t border-gray-200 pt-4">
+                <dt class="font-medium">
+                    {{ trans("Pallet Return") }}
+                    <FontAwesomeIcon icon="fal fa-sign-out" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="mt-2 text-sm text-gray-500 text-justify">
+                    <Link v-if="data.data.pallet_return.reference"
+                        :href="data?.data?.pallet_return?.route?.name ? route(data?.data?.pallet_return?.route?.name, data?.data?.pallet_return?.route?.parameters) : ''"
+                        class="secondaryLink">
+                        {{ data?.data?.pallet_return?.reference }}
+                    </Link>
+                    <span v-else class="text-gray-400">
+                        -
+                    </span>
+                </dd>
+            </div>
+
+            <!-- Note -->
             <div class="col-span-2 ">
                 <dt class="font-medium">{{ blueprint.note.label }}</dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
@@ -244,7 +298,7 @@ const generateRouteEditBarcode = () => {
         <div class="flex flex-col items-center gap-6">
           <!-- Pallet Code -->
           <div class="relative w-full border rounded-lg p-4 shadow-sm bg-gray-50 group">
-            <div class="text-sm font-medium text-center mb-2">Barcode</div>
+            <div class="text-sm font-medium text-center mb-2">{{ trans("Barcode") }}</div>
             <div class="relative">
               <div v-if="props.data.data.slug" class="relative hover:bg-black/30 rounded-lg p-2">
                 <svg id="palletBarcode" class="mx-auto group-hover:fill-black"></svg>

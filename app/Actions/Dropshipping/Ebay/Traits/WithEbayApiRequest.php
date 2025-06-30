@@ -780,4 +780,47 @@ trait WithEbayApiRequest
             return ['error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Get user's eBay category suggestions
+     */
+    public function getUser($data = [], $queryParams = [])
+    {
+        try {
+            $token = $this->getEbayAccessToken();
+            $url = "https://apiz.ebay.com/commerce/identity/v1/user/";
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'Content-Language' => 'en-GB'
+            ])->withQueryParameters($queryParams)
+                ->get($url, $data);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            // If unauthorized, try to refresh token once
+            if ($response->status() === 401) {
+                $token = $this->refreshEbayToken()['access_token'];
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                    'Content-Language' => 'en-GB'
+                ])->get($url, $data);
+
+                if ($response->successful()) {
+                    return $response->json();
+                }
+            }
+
+            throw new Exception('eBay API request failed: ' . $response->body());
+        } catch (Exception $e) {
+            Log::error('eBay API Request Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 }
