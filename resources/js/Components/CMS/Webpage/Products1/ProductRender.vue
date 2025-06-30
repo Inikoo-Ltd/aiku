@@ -7,15 +7,12 @@ import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faHeart } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck } from '@far'
-import { faPlus, faVial } from '@fal'
 import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal} from '@fas'
 import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
-
+import { getStyles } from "@/Composables/styles";
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -51,10 +48,11 @@ interface ProductResource {
 const props = defineProps<{
     product: ProductResource
     productHasPortfolio : Array<Number>
+    style?: Object|null
 }>()
 
 
-const currency = layout?.iris?.currency
+const currency = layout?.iris?.currency 
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -129,7 +127,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 </script>
 
 <template>
-    <div class="relative flex flex-col justify-between h-full bg-white">
+    <div class="relative flex flex-col justify-between h-full" >
 
         <!-- Top Section -->
         <div>

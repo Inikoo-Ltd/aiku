@@ -7,9 +7,9 @@
 <script setup lang="ts">
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import { ref, onMounted, provide, onBeforeUnmount,inject } from 'vue'
+import { ref, onMounted, provide, onBeforeUnmount, inject, watch } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
-import { sendMessageToParent} from '@/Composables/Workshop'
+import { sendMessageToParent } from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
 import { router } from '@inertiajs/vue3'
 import "@/../css/Iris/editor.css"
@@ -40,6 +40,19 @@ const { mode } = route().params;
 const isPreviewMode = ref(mode != 'iris' ? false : true)
 const isInWorkshop = route().params.isInWorkshop || false
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const defaultCurrency = {
+  code: "GBP",
+  symbol: "£",
+  name: "British Pound"
+}
+
+// Update iris layout state
+const updateIrisLayout = (isLoggedIn: boolean) => {
+  layout.iris = {
+    currency: defaultCurrency,
+    is_logged_in: isLoggedIn,
+  }
+}
 
 const showWebpage = (activityItem) => {
     if (activityItem?.web_block?.layout && activityItem.show) {
@@ -56,11 +69,12 @@ const updateData = (newVal) => {
 onMounted(() => {
     layout.app.theme = props.layout.color,
     layout.app.webpage_layout = props.layout
+    updateIrisLayout(isPreviewLoggedIn.value)
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
         if (event.data.key === 'reload') {
-            console.log('haloo',event)
+            console.log('haloo', event)
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation'],
                 onSuccess: () => {
@@ -70,23 +84,28 @@ onMounted(() => {
         }
     });
     checkScreenType()
-	window.addEventListener('resize', checkScreenType)
+    window.addEventListener('resize', checkScreenType)
 });
 
 const checkScreenType = () => {
-  const width = window.innerWidth
-  if (width < 640) screenType.value = 'mobile'
-  else if (width >= 640 && width < 1024) screenType.value = 'tablet'
-  else screenType.value = 'desktop'
+    const width = window.innerWidth
+    if (width < 640) screenType.value = 'mobile'
+    else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+    else screenType.value = 'desktop'
 }
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkScreenType)
+    window.removeEventListener('resize', checkScreenType)
 })
 
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
+
+watch(isPreviewLoggedIn, (value) => {
+     updateIrisLayout(isPreviewLoggedIn.value)
+}, { immediate: true });
+
 
 </script>
 
@@ -109,24 +128,21 @@ provide('isPreviewMode', isPreviewMode)
                 />
             </div>
 
-            <div  class="bg-white" :style="getStyles(layout.container?.properties, screenType)">
+            <div class="bg-white" :style="getStyles(layout.container?.properties, screenType)">
                 <template v-if="webpage?.layout?.web_blocks?.length">
                     <div v-for="(activityItem, activityItemIdx) in webpage?.layout?.web_blocks"
                         :key="'block' + activityItem.id" class="w-full">
                         <component v-if="showWebpage(activityItem)" :is="getIrisComponent(activityItem.type)"
                             :key="activityItemIdx" :theme="layout"
-                            :fieldValue="activityItem.web_block?.layout?.data?.fieldValue" :screenType="screenType"/>
+                            :fieldValue="activityItem.web_block?.layout?.data?.fieldValue" :screenType="screenType" />
                     </div>
                 </template>
             </div>
 
             <!-- Footer -->
-            <component 
-                v-if="footer?.data?.data"
+            <component v-if="footer?.data?.data"
                 :is="isPreviewMode || route().current() == 'grp.websites.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
-                v-model="footer.data.data.fieldValue" 
-                @update:model-value="updateData(footer.data)" 
-            />
+                v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>
     </div>
 

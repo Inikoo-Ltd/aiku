@@ -15,6 +15,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: object
+	indexBlock : number
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
@@ -35,6 +36,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 		}">
 			<!-- 🖼️ Image Block -->
 			<div @click="() => {
+				sendMessageToParent('activeBlock', indexBlock)
 				sendMessageToParent('activeChildBlock', bKeys[0])
 				sendMessageToParent('activeChildBlock', bKeys[0])
 			}
@@ -53,11 +55,10 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 			<div class="flex flex-col justify-center"
 				:style="getStyles(modelValue?.text_block?.properties, screenType)">
 				<div class="max-w-xl mx-auto w-full" @click="() => {
-					sendMessageToParent('activeChildBlock', bKeys[0])
+					sendMessageToParent('activeBlock', indexBlock)
 					sendMessageToParent('activeChildBlock', bKeys[1])
 				}">
 					<Editor v-if="modelValue?.text" v-model="modelValue.text" @focus="() => {
-						sendMessageToParent('activeChildBlock', bKeys[0])
 						sendMessageToParent('activeChildBlock', bKeys[1])
 					}" @update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
 				name: webpageData.images_upload_route.name,
@@ -70,7 +71,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 					<div class="flex justify-center">
 						<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 							:label="modelValue?.button?.text" @click.stop="() => {
-								sendMessageToParent('activeChildBlock', bKeys[0])
+								sendMessageToParent('activeBlock', indexBlock)
 								sendMessageToParent('activeChildBlock', bKeys[2])
 							}" />
 					</div>

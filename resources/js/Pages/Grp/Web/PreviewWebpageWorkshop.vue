@@ -31,6 +31,20 @@ const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const defaultCurrency = {
+  code: "GBP",
+  symbol: "£",
+  name: "British Pound"
+}
+
+// Update iris layout state
+const updateIrisLayout = () => {
+  const isLoggedIn = filterBlock.value === "logged-in"
+  layout.iris = {
+    currency: defaultCurrency,
+    is_logged_in: isLoggedIn,
+  }
+}
 
 const showWebpage = (item) => {
   const vis = item?.visibility
@@ -45,6 +59,7 @@ const showWebpage = (item) => {
 onMounted(() => {
   layout.app.theme = props.layout.color,
   layout.app.webpage_layout = props.layout
+  updateIrisLayout()
 })
 
 const checkScreenType = () => {
@@ -96,6 +111,9 @@ watch(() => props.webpage, (val) => {
   data.value = val ? { ...val } : undefined
 })
 
+watch(filterBlock, () => {
+  updateIrisLayout()
+}, { immediate: true });
 </script>
 
 <template>
@@ -133,7 +151,12 @@ watch(() => props.webpage, (val) => {
                 </div>
 
                 <!-- Dynamic Block -->
-                <component :is="getComponent(block.type)" class="w-full" :webpageData="data" :blockData="block"
+                <component 
+                  :is="getComponent(block.type)" 
+                  class="w-full" 
+                  :webpageData="data" 
+                  :blockData="block"
+                  :index-block="idx"
                   v-model="block.web_block.layout.data.fieldValue" :screenType="screenType"
                   @autoSave="() => updateData(block)" />
               </section>

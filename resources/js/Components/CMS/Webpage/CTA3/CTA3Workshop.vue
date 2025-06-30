@@ -11,6 +11,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
+	indexBlock: number
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
@@ -29,7 +30,10 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 		...getStyles(modelValue.container?.properties, screenType)
 	}">
 		<div class="absolute inset-0 overflow-hidden z-0" :style="getStyles(modelValue.image.properties, screenType)"
-			@click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))">
+			@click="() => {
+				sendMessageToParent('activeBlock', indexBlock)
+				sendMessageToParent('activeChildBlock', bKeys[0])
+			}">
 			<Image :src="modelValue?.image?.source
 				? modelValue.image.source
 				: {
@@ -41,15 +45,17 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 		<div :style="getStyles(modelValue.container.properties?.block, screenType)" class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter
          sm:flex sm:flex-col sm:items-start
-         lg:w-96">
+         lg:w-96" @click="() => {
+				sendMessageToParent('activeBlock', indexBlock)
+				sendMessageToParent('activeChildBlock', bKeys[1])
+			}">
 
 			<div class="text-center lg:text-left text-gray-600 pr-3 mb-4 w-full">
 				<Editor v-if="modelValue?.text" v-model="modelValue.text" @update:modelValue="() => emits('autoSave')"
-					 @focus="() => {
-						sendMessageToParent('activeChildBlock', bKeys[0])
+					@focus="() => {
+						sendMessageToParent('activeBlock', indexBlock)
 						sendMessageToParent('activeChildBlock', bKeys[1])
-					}"
-					:uploadImageRoute="{
+					}" :uploadImageRoute="{
 						name: webpageData.images_upload_route.name,
 						parameters: {
 							...webpageData.images_upload_route.parameters,
@@ -61,7 +67,8 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 			<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 				:label="modelValue?.button?.text" @click.stop="() => {
-					sendMessageToParent('activeChildBlock', bKeys[0])
+					sendMessageToParent('activeBlock', indexBlock)
+
 					sendMessageToParent('activeChildBlock', bKeys[2])
 				}" />
 		</div>

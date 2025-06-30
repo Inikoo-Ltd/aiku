@@ -47,7 +47,7 @@ class UpdateWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
-        dd($modelData);
+       
 
         $currentSeoData = Arr::get($modelData, 'seo_data');
 
