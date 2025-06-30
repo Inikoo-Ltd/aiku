@@ -1,5 +1,10 @@
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Sat, 28 Jun 2025 18:32:51 British Summer Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2025, Raul A Perusquia Flores
+  -->
+
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faArrowUp,
 	faArrowDown,
@@ -12,17 +17,20 @@ import {
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Chart from "primevue/chart"
 import { onMounted, Ref, ref, watch } from "vue"
-import { useFormatTime } from "../../Composables/useFormatTime"
-import { router } from "@inertiajs/vue3"
-import SelectButton from "primevue/selectbutton"
-import MetricCard from "./MetricCard.vue"
-import OverviewCard from "./OverviewCard.vue"
-import HorizontalCard from "./HorizontalCard.vue"
+import { Head, router } from "@inertiajs/vue3";
+import OverviewCard from "../../../../Components/DataDisplay/OverviewCard.vue"
 import { computed } from "vue"
+import { capitalize } from "@/Composables/capitalize";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faArrowUp, faArrowDown, faHandSparkles, faEnvelope, faUser, faHdd, faCloudDownload)
 
 const props = defineProps<{
+    pageHead: PageHeadingTypes
+    title: string
+
+
 	data: {
 		rumAnalyticsTimeseries: {
 			data: {
@@ -543,6 +551,10 @@ watch(value, handleSelectChange)
 </script>
 
 <template>
+
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead" />
+
 	<div class="min-h-screen bg-gray-100 p-6">
 		<!-- Layout -->
 		<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">

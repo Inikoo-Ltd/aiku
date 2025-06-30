@@ -88,19 +88,19 @@ class EditWebsite extends OrgAction
             'label'  => __('ID/domain'),
             'icon'   => 'fa-light fa-id-card',
             'fields' => [
-                'code'          => [
+                'code'                  => [
                     'type'     => 'input',
                     'label'    => __('code'),
                     'value'    => $website->code,
                     'required' => true,
                 ],
-                'name'          => [
+                'name'                  => [
                     'type'     => 'input',
                     'label'    => __('name'),
                     'value'    => $website->name,
                     'required' => true,
                 ],
-                'domain'        => [
+                'domain'                => [
                     'type'      => 'inputWithAddOn',
                     'label'     => __('domain'),
                     'leftAddOn' => [
@@ -109,39 +109,39 @@ class EditWebsite extends OrgAction
                     'value'     => $website->domain,
                     'required'  => true,
                 ],
-                'google_tag_id' => [
-                    'type'          => 'input',
-                    'information'   => __('This only available for Google Tag Manager Container ID'),
-                    'label'         => __('GTM container ID'),
-                    'value'         => Arr::get($website->settings, "google_tag_id"),
-                    'placeholder'   => 'GTM-ABC456GH',
-                    'required'      => false,
+                'google_tag_id'         => [
+                    'type'        => 'input',
+                    'information' => __('This only available for Google Tag Manager Container ID'),
+                    'label'       => __('GTM container ID'),
+                    'value'       => Arr::get($website->settings, "google_tag_id"),
+                    'placeholder' => 'GTM-ABC456GH',
+                    'required'    => false,
                 ],
                 'luigisbox_private_key' => [
                     'information' => __('Private key for API Luigi search'),
-                    'type'     => 'purePassword',
-                    'label'    => __('Luigi Search Private Key'),
-                    'value'    => Arr::get($website->settings, "luigisbox.private_key"),
+                    'type'        => 'purePassword',
+                    'label'       => __('Luigi Search Private Key'),
+                    'value'       => Arr::get($website->settings, "luigisbox.private_key"),
                     'placeholder' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-                    'required' => false,
+                    'required'    => false,
                 ],
-                'luigisbox_tracker_id' => [
+                'luigisbox_tracker_id'  => [
                     'information' => __('For Luigi search in the header'),
-                    'type'     => 'input',
-                    'label'    => __('Luigi Search Tracker ID'),
-                    'value'    => Arr::get($website->settings, "luigisbox.tracker_id"),
+                    'type'        => 'input',
+                    'label'       => __('Luigi Search Tracker ID'),
+                    'value'       => Arr::get($website->settings, "luigisbox.tracker_id"),
                     'placeholder' => '123456-123456',
-                    'required' => false,
+                    'required'    => false,
                 ],
-                'luigisbox_script_lbx' => [
+                'luigisbox_script_lbx'  => [
                     'information' => __('Script for Luigi search in the header'),
-                    'type'     => 'input',
-                    'label'    => __('Script LBX Luigi Search'),
-                    'value'    => Arr::get($website->settings, "luigisbox.script_lbx"),
+                    'type'        => 'input',
+                    'label'       => __('Script LBX Luigi Search'),
+                    'value'       => Arr::get($website->settings, "luigisbox.script_lbx"),
                     'placeholder' => '<script async src="https://scripts.luigisbox.com/LBX-xxxxxx.js"></script>',
-                    'required' => false,
+                    'required'    => false,
                 ],
-                "image"         => [
+                "image"                 => [
                     "type"    => "image_crop_square",
                     "label"   => __("logo"),
                     "value"   => $website->imageSources(320, 320),
@@ -150,12 +150,12 @@ class EditWebsite extends OrgAction
                         "maxAspectRatio" => 12 / 4,
                     ]
                 ],
-                "favicon"       => [
-                    "information"   => __("Will show on browsers tab icon in size 18x18 pixels."),
-                    "type"    => "image_crop_square",
-                    "label"   => __("favicon"),
-                    "value"   => $website->faviconSources(160, 160),
-                    'options' => [
+                "favicon"               => [
+                    "information" => __("Will show on browsers tab icon in size 18x18 pixels."),
+                    "type"        => "image_crop_square",
+                    "label"       => __("favicon"),
+                    "value"       => $website->faviconSources(160, 160),
+                    'options'     => [
                         'aspectRatio' => 1
                     ]
                 ],
@@ -320,25 +320,13 @@ class EditWebsite extends OrgAction
             ];
         }
 
-        /* $blueprints[] = [
-               'label'  => __('Script'),
-               'icon'   => 'fa-light fa-code',
-               'fields' => [
-                   'script_website' => [
-                       'type'     => 'editor',
-                       'label'    => __('Script'),
-                       'value'    => Arr::get($website->settings, 'script_website.header'),
-                       'required' => false,
-                   ],
-               ]
-           ]; */
-
 
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __("Website's settings"),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $website,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -374,17 +362,17 @@ class EditWebsite extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => $blueprints,
-                    'args' => $args
+                    'args'      => $args
                 ],
 
             ]
         );
     }
 
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(Website $website, string $routeName, array $routeParameters): array
     {
         return ShowWebsite::make()->getBreadcrumbs(
+            $website,
             $routeName,
             $routeParameters,
             suffix: '('.__('Editing').')'

@@ -16,11 +16,11 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsController;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowIrisWebpage
 {
-    use AsController;
+    use AsAction;
     use WithIrisGetWebpageWebBlocks;
 
 
@@ -79,7 +79,7 @@ class ShowIrisWebpage
         } else {
             $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
 
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID,$parentPaths) {
+            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths) {
                 return $this->getWebpageData($webpageID, $parentPaths);
             });
         }
@@ -127,7 +127,7 @@ class ShowIrisWebpage
     }
 
 
-    private function getWebpageID(Website $website, ?string $path): ?int
+    public function getWebpageID(Website $website, ?string $path): ?int
     {
         if ($path === null) {
             $webpageID = $website->storefront_id;
@@ -139,27 +139,64 @@ class ShowIrisWebpage
         return $webpageID;
     }
 
+
+    public function getPathWebpage(Webpage $webpage, string $parentPath): ?Webpage
+    {
+        $parentPathWebpageId = $this->getWebpageID($webpage->website, $parentPath);
+        if ($parentPathWebpageId == $webpage->id) {
+            return null;
+        }
+        $parentWebpage = Webpage::find($parentPathWebpageId);
+        if ($parentWebpage) {
+            return $parentWebpage;
+        }
+
+        return null;
+    }
+
     public function getIrisBreadcrumbs(Webpage $webpage, array $parentPaths): array
     {
-
-        $webpageUrl = $webpage->url;
-
-        return [
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon' => 'fal fa-home',
-                    'url'  => ''
-                ]
-            ],
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'label' => $webpage->title,
-                    'url'   => $webpageUrl
-                ]
-            ],
+        $breadcrumbs[] = [
+            'type'   => 'simple',
+            'simple' => [
+                'icon' => 'fal fa-home',
+                'url'  => '/'
+            ]
         ];
+
+        $runningUrl = '/';
+        foreach ($parentPaths as $parentPath) {
+            /** @var Webpage $parentWebpage */
+            $parentWebpage = $this->getPathWebpage($webpage, $parentPath);
+
+            if ($parentWebpage && $parentWebpage->url) {
+                $breadcrumbs[] =
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'label' => $parentWebpage->breadcrumb_label,
+                            'url'   => $runningUrl.$parentWebpage->url
+                        ]
+
+                    ];
+
+                $runningUrl .= $parentWebpage->url.'/';
+            }
+        }
+
+
+        $breadcrumbs[] = [
+
+            'type'   => 'simple',
+            'simple' => [
+                'label' => $webpage->breadcrumb_label,
+                'url'   => $runningUrl.$webpage->url
+            ]
+
+        ];
+
+
+        return $breadcrumbs;
     }
 
 }

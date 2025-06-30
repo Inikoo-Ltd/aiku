@@ -113,10 +113,10 @@ class EditWebpage extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('SEO (Settings)'),
+                            'label'  => __('SEO'),
                             'icon'   => 'fab fa-google',
                             'fields' => [
-                                "seo_image"     => [
+                                "seo_image" => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("image"),
                                     "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
@@ -125,19 +125,19 @@ class EditWebpage extends OrgAction
                                         "maxAspectRatio" => 12 / 4,
                                     ]
                                 ],
-                                'google_search' => [
+                                'seo_data'  => [
                                     'type'    => 'googleSearch',
                                     'domain'  => $webpage->website->domain.'/',
                                     'value'   => [
-                                        'image'                => [
+                                        'image'            => [
                                             'original' => Arr::get($webpage->seo_data, 'image.original') ?? '',
                                         ],
-                                        'meta_title'           => Arr::get($webpage->seo_data, 'meta_title') ?? '',
-                                        'meta_description'     => Arr::get($webpage->seo_data, 'meta_description') ?? '',
-                                        'llms_text'            => Arr::get($webpage->seo_data, 'llms_text') ?? '',
-                                        'url'                  => $webpage->url,
-                                        'is_use_canonical_url' => $webpage->is_use_canonical_url,
-                                        'canonical_url'        => $webpage->canonical_url,
+                                        'meta_title'       => Arr::get($webpage->seo_data, 'meta_title') ?? '',
+                                        'meta_description' => Arr::get($webpage->seo_data, 'meta_description') ?? '',
+                                        'llms_text'        => Arr::get($webpage->seo_data, 'llms_text') ?? '',
+                                        //                                        'url'                  => $webpage->url,
+                                        //                                        'is_use_canonical_url' => $webpage->is_use_canonical_url,
+                                        //                                        'canonical_url'        => $webpage->canonical_url,
                                     ],
                                     'noTitle' => true,
                                 ],
@@ -166,7 +166,7 @@ class EditWebpage extends OrgAction
                             'fields' => [
 
                                 'name' => [
-                                    'hidden'=>true,
+                                    'hidden' => true,
                                     'type'   => 'action',
                                     'action' => [
                                         'type'  => 'button',
@@ -185,12 +185,12 @@ class EditWebpage extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Set as offline'),
+                            'label' => __('Set as offline'),
 
                             'icon'   => 'fal fa-trash-alt',
                             'fields' => [
                                 'name' => [
-                                    'hidden'=>true,
+                                    'hidden' => true,
                                     'type'   => 'action',
                                     'action' => [
                                         'type'  => 'button',

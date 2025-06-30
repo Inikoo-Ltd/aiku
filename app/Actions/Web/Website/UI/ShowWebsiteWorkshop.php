@@ -8,8 +8,6 @@
 
 namespace App\Actions\Web\Website\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopCollection;
@@ -32,6 +30,7 @@ class ShowWebsiteWorkshop extends OrgAction
     use WithWebAuthorisation;
 
     private Fulfilment|Shop $parent;
+    private Fulfilment|Shop $scope;
 
     public function handle(Website $website): Website
     {
@@ -61,7 +60,7 @@ class ShowWebsiteWorkshop extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        $product    = $website->shop->products()->first();
+        $product = $website->shop->products()->first();
 
 
         $navigation = WebsiteWorkshopTabsEnum::navigation();
@@ -84,48 +83,48 @@ class ShowWebsiteWorkshop extends OrgAction
 
         if ($product) {
             $tabs[WebsiteWorkshopTabsEnum::PRODUCT->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCT->value
-                    ?
+                ?
+                fn () => GetWebsiteWorkshopProduct::run($website, $product)
+                : Inertia::lazy(
                     fn () => GetWebsiteWorkshopProduct::run($website, $product)
-                    : Inertia::lazy(
-                        fn () => GetWebsiteWorkshopProduct::run($website, $product)
-                    );
+                );
         }
         $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
-                ?
+            ?
+            fn () => GetWebsiteWorkshopSubDepartment::run($website)
+            : Inertia::lazy(
                 fn () => GetWebsiteWorkshopSubDepartment::run($website)
-                : Inertia::lazy(
-                    fn () => GetWebsiteWorkshopSubDepartment::run($website)
-                );
+            );
 
         $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
-                ?
+            ?
+            fn () => GetWebsiteWorkshopFamily::run($website)
+            : Inertia::lazy(
                 fn () => GetWebsiteWorkshopFamily::run($website)
-                : Inertia::lazy(
-                    fn () => GetWebsiteWorkshopFamily::run($website)
-                );
+            );
 
         $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
-                ?
+            ?
+            fn () => GetWebsiteWorkshopDepartment::run($website)
+            : Inertia::lazy(
                 fn () => GetWebsiteWorkshopDepartment::run($website)
-                : Inertia::lazy(
-                    fn () => GetWebsiteWorkshopDepartment::run($website)
-                );
+            );
 
         $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
-                ?
+            ?
+            fn () => GetWebsiteWorkshopCollection::run($website)
+            : Inertia::lazy(
                 fn () => GetWebsiteWorkshopCollection::run($website)
-                : Inertia::lazy(
-                    fn () => GetWebsiteWorkshopCollection::run($website)
-                );
+            );
 
 
         $publishRoute = [
-                'method'     => 'patch',
-                'name'       => 'grp.models.website.update',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
+            'method'     => 'patch',
+            'name'       => 'grp.models.website.update',
+            'parameters' => [
+                'website' => $website->id
+            ]
+        ];
 
         if ($this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value) {
             $publishRoute = [
@@ -175,13 +174,14 @@ class ShowWebsiteWorkshop extends OrgAction
                 'title'       => __("Website's workshop"),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
-                    $request->route()->originalParameters()
+                    $request->route()->originalParameters(),
+                    '('.__('Workshop').')'
                 ),
                 'pageHead'    => [
 
-                    'title'     => __('Workshop'),
-                    'model'     => __('Website'),
-                    'icon'      =>
+                    'title' => __('Workshop'),
+                    'model' => __('Website'),
+                    'icon'  =>
                         [
                             'icon'  => ['fal', 'drafting-compass'],
                             'title' => __("Website's workshop")
@@ -207,47 +207,20 @@ class ShowWebsiteWorkshop extends OrgAction
                     ],
                 ],
 
-                'tabs'        => [
+                'tabs'     => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
                 'settings' => $website->settings,
-               ...$tabs
+                ...$tabs
             ]
         );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (string $type, Website $website, array $routeParameters, string $suffix) {
-            return [
-                [
-
-                    'type'           => $type,
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Websites')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $website->name,
-                        ],
-
-                    ],
-                    'simple'         => [
-                        'route' => $routeParameters['model'],
-                        'label' => $website->name
-                    ],
-
-
-                    'suffix' => $suffix
-
-                ],
-            ];
-        };
-
-        $website = Website::where('slug', $routeParameters['website'])->first();
+        /** @var Website $website */
+        $website = request()->route()->parameter('website');
 
         return match ($routeName) {
             'grp.org.shops.show.web.websites.workshop',
@@ -255,48 +228,18 @@ class ShowWebsiteWorkshop extends OrgAction
             'grp.org.shops.show.web.websites.workshop.menu',
             'grp.org.shops.show.web.websites.workshop.footer' =>
 
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    'modelWithIndex',
-                    $website,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.web.websites.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.web.websites.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
+
+            ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.shops.show.web.websites.show', $routeParameters, suffix:$suffix),
+
+
             'grp.org.fulfilments.show.web.websites.workshop' =>
-                array_merge(
-                    ShowFulfilment::make()->getBreadcrumbs($routeParameters),
-                    $headCrumb(
-                        'modelWithIndex',
-                        $website,
-                        [
-                            'index' => [
-                                'name'       => 'grp.org.fulfilments.show.web.websites.index',
-                                'parameters' => $routeParameters
-                            ],
-                            'model' => [
-                                'name'       => 'grp.org.fulfilments.show.web.websites.show',
-                                'parameters' => $routeParameters
-                            ]
-                        ],
-                        $suffix
-                    ),
-                ),
+
+            ShowWebsite::make()->getBreadcrumbs($website, 'grp.org.fulfilments.show.web.websites.show', $routeParameters, suffix:$suffix),
+
 
             default => []
         };
     }
-
 
 
 }

@@ -31,6 +31,7 @@ use App\Models\CRM\Appointment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
+use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferComponent;
@@ -213,6 +214,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Transaction> $transactions
  * @property-read UniversalSearch|null $universalSearch
  * @property-read LaravelCollection<int, Upload> $uploads
+ * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read Website|null $website
  * @method static \Database\Factories\Catalogue\ShopFactory factory($count = null, $state = [])
  * @method static Builder<static>|Shop newModelQuery()
@@ -666,6 +668,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function outboxPushIntervals(): HasOne
     {
         return $this->hasOne(ShopOutboxPushIntervals::class);
+    }
+
+    public function webUsers(): HasMany
+    {
+        return $this->hasMany(WebUser::class);
     }
 
 }

@@ -93,6 +93,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouseAreas;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouses;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebsites;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUserRequests;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
@@ -205,6 +206,7 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateFamiliesWithNoDepartment::run($group);
         GroupHydrateProductsWithNoFamily::run($group);
+        GroupHydrateWebUserRequests::run($group->id);
 
 
     }

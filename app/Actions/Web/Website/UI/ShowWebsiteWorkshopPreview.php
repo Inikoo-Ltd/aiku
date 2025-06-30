@@ -26,15 +26,14 @@ class ShowWebsiteWorkshopPreview extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
-        $this->scope = $shop;
         $this->initialisation($organisation, $request)->withTab(WebsiteWorkshopTabsEnum::values());
 
         return $website;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {
-        $this->scope = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $website;
@@ -47,7 +46,11 @@ class ShowWebsiteWorkshopPreview extends OrgAction
             'Web/PreviewWorkshop',
             [
                 'title'       => __("Website's preview"),
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $website,
+                    str_replace('preview', 'show', $request->route()->getName()),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
 
                     'title' => __('Preview'),
@@ -58,7 +61,7 @@ class ShowWebsiteWorkshopPreview extends OrgAction
                             'style' => 'exit',
                             'label' => __('Exit Preview'),
                             'route' => [
-                                'name'       => preg_replace('/preview$/', 'show', $request->route()->getName()),
+                                'name'       => str_replace('preview', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ],
@@ -69,7 +72,7 @@ class ShowWebsiteWorkshopPreview extends OrgAction
                             'label' => __('workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
                             'route' => [
-                                'name'       => preg_replace('/preview/', 'workshop', $request->route()->getName()),
+                                'name'       => str_replace('preview', 'workshop', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : [],
@@ -79,10 +82,11 @@ class ShowWebsiteWorkshopPreview extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(Website $website, string $routeName, array $routeParameters): array
     {
         return ShowWebsite::make()->getBreadcrumbs(
-            'Shop',
+            $website,
+            $routeName,
             $routeParameters,
             suffix: '('.__('preview').')'
         );

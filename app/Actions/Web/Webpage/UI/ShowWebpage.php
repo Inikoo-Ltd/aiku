@@ -168,7 +168,7 @@ class ShowWebpage extends OrgAction
                 'parameters' => [
                     'organisation' => $webpage->organisation->slug,
                     'shop'         => $webpage->shop->slug,
-                    'product'   => $product->slug
+                    'product'      => $product->slug
                 ]
             ]
         ];
@@ -339,7 +339,7 @@ class ShowWebpage extends OrgAction
                         'title' => __('webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
-                     'iconRight'          => $webpage->state->stateIcon()[$webpage->state->value],
+                    'iconRight'     => $webpage->state->stateIcon()[$webpage->state->value],
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
@@ -438,58 +438,53 @@ class ShowWebpage extends OrgAction
 
 
         $webpage = Webpage::where('slug', $routeParameters['webpage'])->first();
+        /** @var Website $website */
+        $website = request()->route()->parameter('website');
 
-        return
-            match ($routeName) {
-                'grp.org.shops.show.web.webpages.show',
-                'grp.org.shops.show.web.webpages.edit',
-                'grp.org.shops.show.web.webpages.workshop',
-                'grp.org.shops.show.web.webpages.redirect.create' =>
-                array_merge(
-                    ShowWebsite::make()->getBreadcrumbs(
-                        'Shop',
-                        Arr::only($routeParameters, ['organisation', 'shop', 'website'])
-                    ),
-                    $headCrumb(
-                        $webpage,
-                        [
-                            'index' => [
-                                'name'       => 'grp.org.shops.show.web.webpages.index',
-                                'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website'])
-                            ],
-                            'model' => [
-                                'name'       => 'grp.org.shops.show.web.webpages.show',
-                                'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage'])
-                            ]
-                        ],
-                        $suffix
-                    ),
+        return match ($routeName) {
+            'grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create' => array_merge(
+                ShowWebsite::make()->getBreadcrumbs(
+                    $website,
+                    'grp.org.shops.show.web.websites.show',
+                    Arr::only($routeParameters, ['organisation', 'shop', 'website'])
                 ),
-
-                'grp.org.fulfilments.show.web.webpages.show',
-                'grp.org.fulfilments.show.web.webpages.edit',
-                'grp.org.fulfilments.show.web.webpages.workshop',
-                'grp.org.fulfilments.show.web.webpages.redirect.create', =>
-                array_merge(
-                    ShowWebsite::make()->getBreadcrumbs(
-                        'Fulfilment',
-                        Arr::only($routeParameters, ['organisation', 'fulfilment', 'website'])
-                    ),
-                    $headCrumb(
-                        $webpage,
-                        [
-                            'index' => [
-                                'name'       => 'grp.org.fulfilments.show.web.webpages.index',
-                                'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website'])
-                            ],
-                            'model' => [
-                                'name'       => 'grp.org.fulfilments.show.web.webpages.show',
-                                'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website', 'webpage'])
-                            ]
+                $headCrumb(
+                    $webpage,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website'])
                         ],
-                        $suffix
-                    ),
-                )
-            };
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            'grp.org.fulfilments.show.web.webpages.show', 'grp.org.fulfilments.show.web.webpages.edit', 'grp.org.fulfilments.show.web.webpages.workshop', 'grp.org.fulfilments.show.web.webpages.redirect.create' => array_merge(
+                ShowWebsite::make()->getBreadcrumbs(
+                    $website,
+                    'grp.org.fulfilments.show.web.websites.show',
+                    Arr::only($routeParameters, ['organisation', 'fulfilment', 'website'])
+                ),
+                $headCrumb(
+                    $webpage,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.web.webpages.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.web.webpages.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'website', 'webpage'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            default => [],
+        };
     }
 }

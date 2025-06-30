@@ -39,14 +39,14 @@ trait WithCustomerSubNavigation
 
             [
                 'route' => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.web-users.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.web_users.index',
                     'parameters' => $request->route()->originalParameters()
 
                 ],
 
                 'label'    => $webUsersLabel,
                 'leftIcon' => [
-                    'icon'    => 'fal fa-terminal',
+                    'icon'    => 'fal fa-user-circle',
                     'tooltip' => $webUsersLabel,
                 ],
                 'number'   => $customer->stats->number_web_users
@@ -129,12 +129,12 @@ trait WithCustomerSubNavigation
         return array_merge($baseNavigation, [
             [
                 'route'    => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.web-users.index',
+                    'name'       => 'grp.org.shops.show.crm.customers.show.web_users.index',
                     'parameters' => $request->route()->originalParameters()
                 ],
                 'label'    => $webUsersLabel,
                 'leftIcon' => [
-                    'icon'    => 'fal fa-terminal',
+                    'icon'    => 'fal fa-user-circle',
                     'tooltip' => $webUsersLabel,
                 ],
                 'number'   => $customer->stats->number_web_users

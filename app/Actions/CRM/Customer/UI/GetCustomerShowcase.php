@@ -23,7 +23,7 @@ class GetCustomerShowcase
         $webUserRoute = null;
         if ($webUser) {
             $webUserRoute = [
-                'name'       => 'grp.org.shops.show.crm.customers.show.web-users.edit',
+                'name'       => 'grp.org.shops.show.crm.customers.show.web_users.edit',
                 'parameters' => [
                     'organisation' => $customer->organisation->slug,
                     'shop'         => $customer->shop->slug,

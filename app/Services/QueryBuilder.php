@@ -137,47 +137,26 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this;
     }
 
-    public function withIrisPaginator(int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withIrisPaginator(int $numberOfRecords = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-
-        $prefix = '';
-
-
-        $argumentName = ($prefix ? $prefix.'_' : '').$queryName;
-        if ($numberOfRecords === null && request()->has($argumentName)) {
-            $numberOfRecords = (int)request()->input($argumentName);
+        if ($numberOfRecords === null && request()->has('perPage')) {
+            $numberOfRecords = (int)request()->input('perPage');
         }
 
-        $userId      = auth()->user()->id ?? null;
-        $keyRppCache = $tableName ? "ui_state-user:$userId;rrp-table:".$prefix."$tableName" : null;
-
+        $perPage = 20;
         if ($numberOfRecords) {
+            if ($numberOfRecords > 200) {
+                $numberOfRecords = 200;
+            } elseif ($numberOfRecords < 10) {
+                $numberOfRecords = 10;
+            }
             $perPage = $numberOfRecords;
-        } elseif ($tableName) {
-            $perPage = Cache::get($keyRppCache) ?? config('ui.table.records_per_page');
-        } else {
-            $perPage = config('ui.table.records_per_page');
         }
 
-
-        if ($perPage > config('ui.table.max_records_per_page')) {
-            $perPage = config('ui.table.max_records_per_page');
-        }
-
-        if ($perPage < config('ui.table.min_records_per_page')) {
-            $perPage = config('ui.table.min_records_per_page');
-        }
-
-
-        if ($tableName && $userId) {
-            Cache::put($keyRppCache, $perPage, 60 * 60 * 24 * 180); // 6 months in seconds
-        }
-
-        return $this->paginate(
-            perPage: $perPage,
-            pageName: $prefix ? $prefix.'Page' : 'page'
-        );
+        return $this->paginate(perPage: $perPage);
     }
+
+
 
     public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {

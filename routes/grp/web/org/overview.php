@@ -10,15 +10,18 @@
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrganisation;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
+use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequestsInOrganisation;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInOrganisation;
 use App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInOrganisation;
 use App\Actions\Catalogue\Shop\UI\IndexShopsInOrganisation;
 use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
+use App\Actions\CRM\WebUser\IndexWebUsersInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInBasketInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInOrganisation;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
 use App\Actions\SysAdmin\Organisation\UI\IndexHistoryInOrganisation;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowOrganisationOverviewHub::class)->name('hub');
 
@@ -35,6 +38,10 @@ Route::get('/collections', IndexCollectionsInOrganisation::class)->name('collect
 
 
 Route::get('/customers', [IndexCustomersInOverview::class, 'inOrganisation'])->name('customers.index');
+
+Route::get('/web-users', IndexWebUsersInOrganisation::class)->name('web_users.index');
+Route::get('/web-user-requests', IndexWebUserRequestsInOrganisation::class)->name('web_user_requests.index');
+
 
 Route::name('changelog.')->prefix('changelog')->group(function () {
     Route::get('/', IndexHistoryInOrganisation::class)->name('index');

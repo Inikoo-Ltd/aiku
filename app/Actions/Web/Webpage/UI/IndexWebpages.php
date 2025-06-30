@@ -47,7 +47,6 @@ class IndexWebpages extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = group();
-        $this->scope  = $this->parent;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->parent);
@@ -55,7 +54,6 @@ class IndexWebpages extends OrgAction
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->scope  = $organisation;
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
@@ -68,7 +66,6 @@ class IndexWebpages extends OrgAction
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->scope  = $shop;
         $this->parent = $shop->website;
         $this->initialisationFromShop($shop, $request);
 
@@ -76,10 +73,10 @@ class IndexWebpages extends OrgAction
         return $this->handle($this->parent);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->scope  = $fulfilment;
         $this->parent = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -90,7 +87,6 @@ class IndexWebpages extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->scope  = $shop;
         $this->parent = $website;
         $this->initialisationFromShop($website->shop, $request);
 
@@ -102,7 +98,6 @@ class IndexWebpages extends OrgAction
     public function catalogue(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'catalogue';
-        $this->scope  = $shop;
         $this->parent = $website;
         $this->initialisationFromShop($website->shop, $request);
 
@@ -114,7 +109,6 @@ class IndexWebpages extends OrgAction
     public function content(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'content';
-        $this->scope  = $shop;
         $this->parent = $website;
         $this->initialisationFromShop($shop, $request);
 
@@ -126,7 +120,6 @@ class IndexWebpages extends OrgAction
     public function contentInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'content';
-        $this->scope  = $fulfilment;
         $this->parent = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -138,7 +131,6 @@ class IndexWebpages extends OrgAction
     public function info(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'info';
-        $this->scope  = $shop;
         $this->parent = $website;
         $this->initialisationFromShop($website->shop, $request);
 
@@ -150,7 +142,6 @@ class IndexWebpages extends OrgAction
     public function infoInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'info';
-        $this->scope  = $fulfilment;
         $this->parent = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -162,7 +153,6 @@ class IndexWebpages extends OrgAction
     public function blog(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'blog';
-        $this->scope  = $shop;
         $this->parent = $website;
         $this->initialisationFromShop($website->shop, $request);
 
@@ -174,7 +164,6 @@ class IndexWebpages extends OrgAction
     public function operations(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'operations';
-        $this->scope  = $shop;
         $this->parent = $website;
         $this->initialisationFromShop($website->shop, $request);
 
@@ -186,7 +175,6 @@ class IndexWebpages extends OrgAction
     public function operationsInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'operations';
-        $this->scope  = $fulfilment;
         $this->parent = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -217,7 +205,6 @@ class IndexWebpages extends OrgAction
 
     public function handle(Group|Organisation|Website|Webpage $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
-
         if ($bucket) {
             $this->bucket = $bucket;
         }
@@ -272,7 +259,8 @@ class IndexWebpages extends OrgAction
         }
 
         if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
-            $queryBuilder->orderByRaw("CASE 
+            $queryBuilder->orderByRaw(
+                "CASE
             WHEN webpages.sub_type = 'storefront' THEN 1
             WHEN webpages.sub_type = 'department' THEN 2
             WHEN webpages.sub_type = 'sub_department' THEN 3
@@ -280,7 +268,8 @@ class IndexWebpages extends OrgAction
             WHEN webpages.sub_type = 'catalogue' THEN 5
             WHEN webpages.sub_type = 'product' THEN 6
             ELSE 7
-            END, webpages.sub_type ASC");
+            END, webpages.sub_type ASC"
+            );
         }
 
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
@@ -376,19 +365,36 @@ class IndexWebpages extends OrgAction
             $subNavigation = $this->getWebpageNavigation($this->parent);
         }
 
-        $routeCreate = '';
 
-        if ($this->scope instanceof Fulfilment) {
+
+        $routeName = $request->route()->getName();
+
+        $routeCreate = null;
+        if (str_starts_with($routeName, 'grp.org.fulfilments.')) {
             $routeCreate = 'grp.org.fulfilments.show.web.webpages.create';
-        } elseif ($this->scope instanceof Shop) {
+        } elseif (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
             $routeCreate = 'grp.org.shops.show.web.webpages.create';
+        }
+
+        $actions = [];
+
+        if ($routeCreate) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('webpage'),
+                'route' => [
+                    'name'       => $routeCreate,
+                    'parameters' => array_values($request->route()->originalParameters())
+                ],
+            ];
         }
 
         return Inertia::render(
             'Org/Web/Webpages',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
+                    $routeName,
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('webpages'),
@@ -399,17 +405,7 @@ class IndexWebpages extends OrgAction
                         'title' => __('webpage')
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('webpage'),
-                            'route' => [
-                                'name'       => $routeCreate,
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                        ]
-                    ]
+                    'actions'       => $actions,
                 ],
                 'data'        => WebpagesResource::collection($webpages),
 
@@ -433,121 +429,144 @@ class IndexWebpages extends OrgAction
             ];
         };
 
-        return match ($routeName) {
-            'grp.web.webpages.index' =>
-            array_merge(
-                ShowGroupDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name' => 'grp.web.webpages.index',
-                        null
-                    ],
-                    $suffix
-                ),
-            ),
+        switch ($routeName) {
+            case 'grp.web.webpages.index':
+                return array_merge(
+                    ShowGroupDashboard::make()->getBreadcrumbs(),
+                    $headCrumb(
+                        [
+                            'name' => 'grp.web.webpages.index',
+                            null
+                        ],
+                        $suffix
+                    ),
+                );
 
+            case 'grp.org.shops.show.web.webpages.index':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
 
-            'grp.org.shops.show.web.webpages.index' =>
-            array_merge(
-                ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.web.webpages.index',
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.shops.show.web.webpages.index.type.catalogue' =>
-            array_merge(
-                ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.web.webpages.index.type.catalogue',
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Shop').') '.$suffix)
-                )
-            ),
-            'grp.org.shops.show.web.webpages.index.type.content' =>
-            array_merge(
-                ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.web.webpages.index.type.content',
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Content').') '.$suffix)
-                )
-            ),
-            'grp.org.shops.show.web.webpages.index.type.small-print' =>
-            array_merge(
-                ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.web.webpages.index.type.small-print',
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Small Print').') '.$suffix)
-                )
-            ),
-            'grp.org.shops.show.web.webpages.index.type.checkout' =>
-            array_merge(
-                ShowWebsite::make()->getBreadcrumbs(
-                    'Shop',
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.web.webpages.index.type.checkout',
-                        'parameters' => $routeParameters
-                    ],
-                    trim('('.__('Checkout').') '.$suffix)
-                )
-            ),
-            'grp.overview.web.webpages.index' =>
-            array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.fulfilments.show.web.webpages.index',
-            'grp.org.fulfilments.show.web.webpages.index.type.content',
-            'grp.org.fulfilments.show.web.webpages.index.type.info',
-            'grp.org.fulfilments.show.web.webpages.index.type.operations'
-            =>
-            array_merge(
-                ShowWebsite::make()->getBreadcrumbs(
-                    'Fulfilment',
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.fulfilments.show.web.webpages.index',
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => $routeParameters
+                        ],
+                        $suffix
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.catalogue':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
 
-            default => []
-        };
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.catalogue',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Shop').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.content':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.content',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Content').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.small-print':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.small-print',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Small Print').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.checkout':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.checkout',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Checkout').') '.$suffix)
+                    )
+                );
+            case 'grp.overview.web.webpages.index':
+                return array_merge(
+                    ShowGroupOverviewHub::make()->getBreadcrumbs(),
+                    $headCrumb(
+                        [
+                            'name'       => $routeName,
+                            'parameters' => $routeParameters
+                        ],
+                        $suffix
+                    )
+                );
+            case 'grp.org.fulfilments.show.web.webpages.index':
+            case 'grp.org.fulfilments.show.web.webpages.index.type.content':
+            case 'grp.org.fulfilments.show.web.webpages.index.type.info':
+            case 'grp.org.fulfilments.show.web.webpages.index.type.operations':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.fulfilments.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.fulfilments.show.web.webpages.index',
+                            'parameters' => $routeParameters
+                        ],
+                        $suffix
+                    )
+                );
+
+            default:
+                return [];
+        }
     }
 }

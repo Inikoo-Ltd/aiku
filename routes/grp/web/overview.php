@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 10 Apr 2024 14:12:41 Central Indonesia Time, Sanur , Indonesia
+ * Created: Wed, 10 Apr 2024 14:12:41 Central Indonesia Time, Sanur, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -13,6 +13,7 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccountsInGroup;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
+use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequestsInGroup;
 use App\Actions\Billables\Charge\UI\IndexCharges;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInGroup;
 use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
@@ -32,7 +33,8 @@ use App\Actions\Comms\PostRoom\UI\IndexPostRooms;
 use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
 use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
-use App\Actions\CRM\WebUser\IndexWebUsers;
+use App\Actions\CRM\WebUser\IndexWebUsersInCRM;
+use App\Actions\CRM\WebUser\IndexWebUsersInGroup;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInGroup;
@@ -107,11 +109,13 @@ Route::name('web.')->prefix('web')->group(function () {
     Route::get('/websites', [IndexWebsites::class, 'inGroup'])->name('websites.index');
     Route::get('/webpages', [IndexWebpages::class, 'inGroup'])->name('webpages.index');
     Route::get('/banners', [IndexBanners::class, 'inGroup'])->name('banners.index');
+    Route::get('/web-users', IndexWebUsersInGroup::class)->name('web_users.index');
+    Route::get('/web-user-requests', IndexWebUserRequestsInGroup::class)->name('web_user_requests.index');
 });
 
 Route::name('crm.')->prefix('crm')->group(function () {
     Route::get('/customers', [IndexCustomersInOverview::class, 'inGroup'])->name('customers.index');
-    Route::get('/web-users', [IndexWebUsers::class, 'inGroup'])->name('web-users.index');
+    Route::get('/web-users', [IndexWebUsersInCRM::class, 'inGroup'])->name('web-users.index');
     Route::get('/prospects', [IndexProspects::class, 'inGroup'])->name('prospects.index');
 });
 
@@ -151,7 +155,6 @@ Route::name('accounting.')->prefix('accounting')->group(function () {
     Route::get('/deleted-invoices', [IndexDeletedInvoices::class, 'inGroup'])->name('deleted_invoices.index');
     Route::get('/refunds', IndexRefundsInGroup::class)->name('refunds.index');
 });
-
 
 Route::name('hr.')->prefix('hr')->group(function () {
     Route::get('/workplaces', [IndexWorkplaces::class, 'inGroup'])->name('workplaces.index');

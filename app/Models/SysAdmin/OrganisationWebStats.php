@@ -74,6 +74,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_redirects_type_302
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_web_user_requests
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationWebStats newModelQuery()
  * @method static Builder<static>|OrganisationWebStats newQuery()

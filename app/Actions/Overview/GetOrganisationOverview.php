@@ -48,10 +48,10 @@ class GetOrganisationOverview extends OrgAction
             __('CRM')                         => $this->getCrmSections($organisation),
             __('Ordering')                    => $this->getOrderingSections($organisation),
             __('Accounting')                  => $this->getAccountingSections($organisation),
-            __('Inventory')       => $this->getInventorySections($organisation),
-            __('Fulfilment')      => $this->getFulfilmentSections($organisation),
-            __('Procurement')     => $this->getProcurementSections($organisation),
-            __('Human Resources') => $this->getHumanResourcesSections($organisation),
+            __('Inventory')                   => $this->getInventorySections($organisation),
+            __('Fulfilment')                  => $this->getFulfilmentSections($organisation),
+            __('Procurement')                 => $this->getProcurementSections($organisation),
+            __('Human Resources')             => $this->getHumanResourcesSections($organisation),
 
         ];
     }
@@ -227,6 +227,18 @@ class GetOrganisationOverview extends OrgAction
                 'icon'  => 'fal fa-sign',
                 'route' => '',
                 'count' => $organisation->webStats->number_banners ?? 0
+            ],
+            [
+                'name'  => __('Web Users'),
+                'icon'  => 'fal fa-user-circle',
+                'route' => route('grp.org.overview.web_users.index', $organisation),
+                'count' => $organisation->crmStats->number_web_users ?? 0
+            ],
+            [
+                'name'  => __('Web User Requests'),
+                'icon'  => 'fal fa-project-diagram',
+                'route' => route('grp.org.overview.web_user_requests.index', $organisation),
+                'count' => $organisation->webStats->number_web_user_requests ?? 0
             ],
         ];
     }

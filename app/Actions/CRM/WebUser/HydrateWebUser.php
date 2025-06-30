@@ -10,6 +10,7 @@ namespace App\Actions\CRM\WebUser;
 
 use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateApiTokens;
 use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateAudits;
+use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateWebUserRequests;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\CRM\WebUser;
 
@@ -28,6 +29,7 @@ class HydrateWebUser
     {
         WebUserHydrateApiTokens::run($webUser);
         WebUserHydrateAudits::run($webUser);
+        WebUserHydrateWebUserRequests::run($webUser->id);
     }
 
 }

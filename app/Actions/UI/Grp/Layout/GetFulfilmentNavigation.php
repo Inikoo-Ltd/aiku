@@ -239,6 +239,16 @@ class GetFulfilmentNavigation
                                     "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug, $fulfilment->shop->website->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("analytics"),
+                                "tooltip" => __("analytics"),
+                                "icon"    => ["fal", "fa-analytics"],
+                                'root'    => 'grp.org.fulfilments.show.web.analytics.',
+                                "route"   => [
+                                    "name"       => "grp.org.fulfilments.show.web.analytics.dashboard",
+                                    "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug, $fulfilment->shop->website->slug],
+                                ],
+                            ],
                         ]
                 ],
 

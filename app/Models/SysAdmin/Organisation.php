@@ -20,6 +20,7 @@ use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Accounting\TopUp;
 use App\Models\Analytics\AikuSection;
+use App\Models\Analytics\WebUserRequest;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
@@ -243,6 +244,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, WarehouseArea> $warehouseAreas
  * @property-read LaravelCollection<int, Warehouse> $warehouses
  * @property-read \App\Models\SysAdmin\OrganisationWebStats|null $webStats
+ * @property-read LaravelCollection<int, WebUserRequest> $webUserRequests
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @property-read LaravelCollection<int, Website> $websites
@@ -863,6 +865,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function dispatchedEmails(): HasMany
     {
         return $this->hasMany(DispatchedEmail::class);
+    }
+
+    public function webUserRequests(): HasMany
+    {
+        return $this->hasMany(WebUserRequest::class);
     }
 
 

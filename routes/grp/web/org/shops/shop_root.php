@@ -41,6 +41,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("customers")
                     ->name("customers.")
                     ->group(__DIR__."/customers.php");
+                Route::prefix("web-users")
+                    ->name("web_users.")
+                    ->group(__DIR__."/web_users.php");
                 Route::prefix("prospects")
                     ->name("prospects.")
                     ->group(__DIR__."/prospects.php");
