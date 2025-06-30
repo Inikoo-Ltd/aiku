@@ -23,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Web\WebpageResource;
 use App\Http\Resources\Web\WebpagesResource;
 
 
@@ -50,6 +52,17 @@ class EditWebpage extends OrgAction
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($webpage);
+    }
+
+    public function getFieldWebpageData(Webpage $webpage): array
+    {
+        $data = [
+                    'code'          => $webpage->code,
+                    'id'            => $webpage->id,
+                    'href'          => 'https://'.$webpage->website->domain.'/'.$webpage->url,
+                    "typeIcon"      => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
+        ];
+        return $data;
     }
 
     /**
@@ -106,14 +119,9 @@ class EditWebpage extends OrgAction
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'  => true,
-                                    'default_storefront' => [], // TODO: webpage Storefront resource
+                                    'default_storefront' =>$this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
                                     'init_options'  => $webpage->redirectWebpage ? [
-                                        [
-                                            'code'          => $webpage->redirectWebpage->code,
-                                            'id'            => $webpage->redirectWebpage->id,
-                                            'href'          => 'https://'.$webpage->redirectWebpage->website->domain.'/'.$webpage->redirectWebpage->url,
-                                            "typeIcon"      => $webpage->redirectWebpage->type->stateIcon()[$webpage->redirectWebpage->type->value] ?? ["fal", "fa-browser"],
-                                        ]
+                                        $this->getFieldWebpageData($webpage->redirectWebpage)
                                     ] : null,
                                     'value'       => [
                                         'state'                 => $webpage->state,
