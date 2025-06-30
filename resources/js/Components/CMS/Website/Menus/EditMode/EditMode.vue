@@ -79,7 +79,8 @@ const deleteNavCard = (index: number) => {
 
 const onNameClick = (data = null, index = -1) => {
   visibleNameDialog.value = true
-  nameValue.value = toRaw({ ...data, index: index })
+  parentIdx.value = index
+  nameValue.value = toRaw({ ...data, index: index, label : data.title })
 }
 
 const onChangeName = (data) => {
@@ -124,6 +125,20 @@ const onChangeNavigationLink = (data) => {
   // Close the dialog
   visibleNavigation.value = false;
 };
+
+
+const onChangeTitle = (data) => {
+  props.modelValue.subnavs[parentIdx.value] = {
+    ...props.modelValue.subnavs[parentIdx.value],
+    title: data.label,
+    link: data.link,
+  }
+
+  linkValue.value = null
+  parentIdx.value = -1
+  linkIdx.value = -1
+  visibleNameDialog.value = false
+}
 
 
 
@@ -294,7 +309,8 @@ watch(() => props.modelValue, (newValue) => {
 
     <!-- Dialogs -->
     <Dialog v-model:visible="visibleNameDialog" modal header="Edit Name" :style="{ width: '25rem' }"  :contentStyle="{ overflowY: 'visible'}">
-      <DialogEditName :data_form="nameValue" @on-save="onChangeName" />
+      <!-- <DialogEditName :data_form="nameValue" @on-save="onChangeName" /> -->
+       <DialogEditLink :modelValue="nameValue" @on-save="onChangeTitle" />
     </Dialog>
 
     <Dialog v-model:visible="visibleDialog" modal header="Edit Link" :style="{ width: '25rem' }"  :contentStyle="{ overflowY: 'visible'}">
