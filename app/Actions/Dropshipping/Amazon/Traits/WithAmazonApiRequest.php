@@ -28,7 +28,7 @@ trait WithAmazonApiRequest
             'client_secret' => config('services.amazon.client_secret'),
             'redirect_uri' => route('retina.dropshipping.platform.amazon.callback'),
             'region' => config('services.amazon.region'),
-            'sandbox' => true,
+            'sandbox' => false,
             'access_token' => Arr::get($this->settings, 'credentials.access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.refresh_token'),
             'expires_in' => Arr::get($this->settings, 'credentials.expires_in'),
@@ -684,6 +684,8 @@ trait WithAmazonApiRequest
         }
     }
 
+
+
     /**
      * Get account info
      */
@@ -694,6 +696,32 @@ trait WithAmazonApiRequest
             return $this->makeAmazonRequest('get', $endpoint);
         } catch (Exception $e) {
             Log::error('Get Amazon Account Info Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Confirm shipment for an order
+     */
+    public function confirmShipment($orderId, $shipmentData)
+    {
+        try {
+            $endpoint = "/orders/v0/orders/{$orderId}/shipmentConfirmation";
+            $data = [
+                'marketplaceId' => $this->getAmazonConfig()['marketplace_id'],
+                'packageDetail' => [
+                    'packageReferenceId' => Arr::get($shipmentData, 'id'),
+                    'carrierCode' => 'Other',
+                    'carrierName' => Arr::get($shipmentData, 'name'),
+                    'trackingNumber' => Arr::get($shipmentData, 'tracking'),
+                    'shipDate' => now(),
+                    'orderItems' => Arr::get($shipmentData, 'items')
+                ]
+            ];
+
+            return $this->makeAmazonRequest('post', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Confirm Amazon Shipment Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
