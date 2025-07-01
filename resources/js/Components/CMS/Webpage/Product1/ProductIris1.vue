@@ -145,7 +145,7 @@ const onUnselectFavourite = (product: ProductResource) => {
     )
 }
 
-console.log(props)
+
 </script>
 
 <template>
