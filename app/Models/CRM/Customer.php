@@ -58,7 +58,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -225,10 +224,10 @@ class Customer extends Model implements HasMedia, Auditable
 
 
     protected $attributes = [
-        'data'           => '{}',
-        'settings'       => '{}',
-        'location'       => '{}',
-        'migration_data' => '{}',
+        'data'                    => '{}',
+        'settings'                => '{}',
+        'location'                => '{}',
+        'migration_data'          => '{}',
         'contact_name_components' => '{}'
     ];
 
@@ -388,17 +387,10 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Portfolio::class);
     }
 
-    public function customerSalesChannelsXXX(): BelongsToMany
-    {
-        return $this->belongsToMany(Platform::class, 'customer_sales_channels')
-            ->withPivot('id', 'platform_id', 'group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
-    }
-
     public function customerSalesChannels(): HasMany
     {
         return $this->hasMany(CustomerSalesChannel::class);
     }
-
 
 
     public function transactions(): HasMany

@@ -175,7 +175,7 @@ class EditWebpage extends OrgAction
                                     'required'    => true,
                                     'options'     => Options::forEnum(WebpageStateEnum::class),
                                     'searchable'  => true,
-                                    'default_storefront' =>$this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
                                     'init_options'  => $webpage->redirectWebpage ? [
                                         $this->getFieldWebpageData($webpage->redirectWebpage)
                                     ] : null,

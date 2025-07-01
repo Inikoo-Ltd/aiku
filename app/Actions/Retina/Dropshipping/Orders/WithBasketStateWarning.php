@@ -14,7 +14,7 @@ use App\Models\Ordering\Order;
 
 trait WithBasketStateWarning
 {
-    public function getWarnings(Order $order)
+    public function getWarnings(Order $order): ?array
     {
         return match ($order->state) {
             OrderStateEnum::SUBMITTED => [
