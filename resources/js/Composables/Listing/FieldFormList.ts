@@ -18,7 +18,6 @@ import Toggle from '@/Components/Forms/Fields/Toggle.vue'
 // import Rental from '@/Components/Rental/Rental.vue'
 import Textarea from "@/Components/Forms/Fields/Textarea.vue"
 import TextEditor from "@/Components/Forms/Fields/TextEditor.vue"
-
 import ImageCropSquare from '@/Components/Forms/Fields/ImageCropSquare.vue'
 import Avatar from '@/Components/Forms/Fields/Avatar.vue'
 import Theme from '@/Components/Forms/Fields/Theme.vue'
@@ -36,6 +35,7 @@ import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll
 
 
 const GoogleSearch = defineAsyncComponent(() => import('@/Components/Forms/Fields/GoogleSearch.vue'))
+const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
 const PollTypeSelect = defineAsyncComponent(() => import('@/Components/Forms/Fields/PollTypeSelect.vue'))
 const EmployeeState = defineAsyncComponent(() => import('@/Components/Forms/Fields/Employee/EmployeeState.vue'))
 const Language = defineAsyncComponent(() => import("@/Components/Forms/Fields/Language.vue"))
@@ -48,6 +48,8 @@ const JobPosition = defineAsyncComponent(() => import('@/Components/Forms/Fields
 const Interest = defineAsyncComponent(() => import('@/Components/Forms/Fields/Interest.vue'))
 const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/Fields/EmployeePosition.vue'))
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
+import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
+import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -87,12 +89,15 @@ export const componentsList: {[key: string]: Component} = {
     'app_login': AppLogin,
     'app_theme': AppTheme,
     'googleSearch': GoogleSearch,
+    'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin' : Pin,
     'tax_number' : TaxNumber,
     'editor' : EditorHtml,
     'structure_data_website' : StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
+    'toggle_state_webpage': ToggleStateWebpage,
+    'delete_webpage': DeleteWebpage,
 
     'select_infinite': SelectInfiniteScroll
 }

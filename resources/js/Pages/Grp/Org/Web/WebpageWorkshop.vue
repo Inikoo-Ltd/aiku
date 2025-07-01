@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import {
   ref, onMounted, provide, watch, computed, inject,
-  IframeHTMLAttributes, toRaw
+  IframeHTMLAttributes
 } from "vue";
 import { Head, router } from "@inertiajs/vue3";
 import { capitalize } from "@/Composables/capitalize";
@@ -53,6 +53,7 @@ const props = defineProps<{
   pageHead: PageHeadingTypes,
   webpage: RootWebpage,
   webBlockTypes: Root
+  url : string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -68,7 +69,7 @@ const currentView = ref('desktop');
 const openedBlockSideEditor = ref<number | null>(null);
 const openedChildSideEditor = ref<number | null>(null);
 const isAddBlockLoading = ref<string | null>(null);
-const isLoadingblock = ref<string | null>(null);
+const isLoadingBlock = ref<string | null>(null);
 const isSavingBlock = ref(false);
 const _WebpageSideEditor = ref(null);
 const cancelTokens = ref<Record<string, Function>>({});
@@ -80,14 +81,14 @@ const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.leng
 const isLoadingDeleteBlock = ref<number | null>(null);
 const comment = ref("");
 const isLoadingPublish = ref(false);
-const fullScreeen = ref(false);
+const fullScreen = ref(false);
 const filterBlock = ref('all');
 
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
 provide('openedChildSideEditor', openedChildSideEditor);
 provide('isAddBlockLoading', isAddBlockLoading);
-provide('isLoadingblock', isLoadingblock);
+provide('isLoadingBlock', isLoadingBlock);
 provide('isLoadingDeleteBlock', isLoadingDeleteBlock);
 provide('filterBlock', filterBlock);
 
@@ -162,58 +163,70 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
 };
 
 
-const debounceSaveWorkshop = block => {
+const debounceSaveWorkshop = (block) => {
   if (debounceTimers.value[block.id]) clearTimeout(debounceTimers.value[block.id]);
 
-  debounceTimers.value[block.id] = setTimeout(() => {
-    router.patch(
-      route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id }),
-      {
-        layout: block.web_block.layout,
-        show_logged_in: block.visibility.in,
-        show_logged_out: block.visibility.out,
-        show: block.show
-      },
-      {
-        onStart: () => {
-          isLoadingblock.value = block.id;
-          isSavingBlock.value = true;
+  debounceTimers.value[block.id] = setTimeout(async () => {
+    const url = route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id });
+
+    isLoadingBlock.value = block.id;
+    isSavingBlock.value = true;
+
+    const source = axios.CancelToken.source();
+    cancelTokens.value[block.id] = source.cancel;
+
+    try {
+      const response = await axios.patch(
+        url,
+        {
+          layout: block.web_block.layout,
+          show_logged_in: block.visibility.in,
+          show_logged_out: block.visibility.out,
+          show: block.show,
         },
-        onCancelToken: token => cancelTokens.value[block.id] = token.cancel,
-        onFinish: () => {
-          isLoadingblock.value = null;
-          isSavingBlock.value = false;
-          delete cancelTokens.value[block.id];
-        },
-        onSuccess: e => {
-          data.value = e.props.webpage;
-          sendToIframe({ key: 'reload', value: {} });
-        },
-        onError: error => notify({
+        {
+          cancelToken: source.token,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        }
+      );
+      data.value = response.data.data
+      sendToIframe({ key: "reload", value: {} });
+    } catch (error) {
+      console.log(error)
+      if (!axios.isCancel(error)) {
+        notify({
           title: trans("Something went wrong"),
-          text: error.message,
-          type: "error"
-        }),
-        preserveScroll: true
+          text: error?.response?.data?.message || error.message,
+          type: "error",
+        });
       }
-    );
+    } finally {
+      isLoadingBlock.value = null;
+      isSavingBlock.value = false;
+      delete cancelTokens.value[block.id];
+    }
   }, 1500);
 };
+
 
 const debouncedSaveSiteSettings = debounce(block => {
   router.patch(
     route('grp.models.model_has_web_block.bulk.update'),
     { web_blocks: block },
     {
+      preserveScroll: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
-      onSuccess: () => sendToIframe({ key: 'reload', value: {} }),
+      onSuccess: () => {
+        sendToIframe({ key: 'reload', value: {} })
+      },
       onError: error => notify({
         title: trans("Something went wrong"),
         text: error.message,
         type: "error"
       }),
-      preserveScroll: true
     }
   );
 }, 1500);
@@ -254,7 +267,7 @@ const sendOrderBlock = async block => {
     { positions: block },
     {
       onFinish: () => {
-        isLoadingblock.value = null;
+        isLoadingBlock.value = null;
         orderBlockCancelToken.value = null;
       },
       onCancelToken: token => orderBlockCancelToken.value = token.cancel,
@@ -399,6 +412,7 @@ const SyncAurora = () => {
   );
 };
 
+
 onMounted(() => {
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
@@ -428,13 +442,12 @@ const compUsersEditThisPage = computed(() => {
 	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
-console.log(props)
-
+const openWebsite = () => {
+  window.open(props.url, '_blank')
+}
 </script>
 
 <template>
-
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
@@ -447,16 +460,17 @@ console.log(props)
     </template>
 
     <template #other>
-      <div class="px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite">
+      <div class="px-2 cursor-pointer"  v-tooltip="trans('Go to website')" @click="openWebsite">
         <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
       </div>
     </template>
   </PageHeading>
 
+
   <ConfirmDialog group="alert-publish" />
 
   <div class="flex">
-    <div v-if="!fullScreeen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
+    <div v-if="!fullScreen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
       <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
         :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock" @add="addNewBlock"
         @order="sendOrderBlock" @setVisible="setHideBlock" @onSaveSiteSettings="onSaveSiteSettings"
@@ -472,8 +486,8 @@ console.log(props)
             class="cursor-pointer hover:text-amber-600">
             <FontAwesomeIcon :icon="faEye" fixed-width />
           </div>
-          <div v-tooltip="'Full screen'" @click="fullScreeen = !fullScreeen" class="cursor-pointer">
-            <FontAwesomeIcon :icon="!fullScreeen ? faExpandWide : faCompressWide" fixed-width />
+          <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
+            <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
           </div>
         </div>
 

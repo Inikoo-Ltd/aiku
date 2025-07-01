@@ -10,13 +10,10 @@
 
 namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 
-use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Models\Catalogue\Product;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class DepartmentHydrateBestFamilySeller implements ShouldBeUnique
@@ -32,40 +29,54 @@ class DepartmentHydrateBestFamilySeller implements ShouldBeUnique
 
     public function handle(ProductCategory $department): void
     {
-        $families = $department->getFamilies();
-        // $stats = [
-        //     'number_products' => $department->getproducts()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
-        // ];
+        if ($department->type !== ProductCategoryTypeEnum::DEPARTMENT) {
+            return;
+        }
 
-        // $stats = array_merge(
-        //     $stats,
-        //     $this->getEnumStats(
-        //         model: 'products',
-        //         field: 'state',
-        //         enum: ProductStateEnum::class,
-        //         models: Product::class,
-        //         where: function ($q) use ($department) {
-        //             $q->where('is_main', true)->where('department_id', $department->id);
-        //         }
-        //     )
-        // );
+        // Reset all families top_seller flag first
+        ProductCategory::where('parent_id', $department->id)
+            ->where('department_id', $department->id)
+            ->where('type', ProductCategoryTypeEnum::FAMILY)
+            ->where('top_seller', '>', 0)
+            ->update(['top_seller' => null]);
 
-        // $stats['number_current_products'] = Arr::get($stats, 'number_products_state_active', 0) +
-        //     Arr::get($stats, 'number_products_state_discontinuing', 0);
+        // Get the total count of families for this department
+        $totalFamilies = ProductCategory::where('parent_id', $department->id)
+            ->where('type', ProductCategoryTypeEnum::FAMILY)
+            ->count();
 
-        // UpdateProductCategory::make()->action(
-        //     $department,
-        //     [
-        //         'state' => $this->getProductCategoryState($stats)
-        //     ]
-        // );
+        // Determine how many top families to mark
+        $topCount = 0;
+        if ($totalFamilies >= 7) {
+            $topCount = 3;
+        } elseif ($totalFamilies >= 5) {
+            $topCount = 2;
+        } elseif ($totalFamilies >= 4) {
+            $topCount = 1;
+        }
 
+        // If less than 4 families, don't update any
+        if ($topCount === 0) {
+            return;
+        }
 
+        // Get top selling families directly with a query
+        $topFamilies = ProductCategory::query()
+            ->where('department_id', $department->id)
+            ->where('type', ProductCategoryTypeEnum::FAMILY)
+            ->join('product_category_sales_intervals', 'product_categories.id', '=', 'product_category_sales_intervals.product_category_id')
+            ->whereNotNull('product_category_sales_intervals.sales_all')
+            ->where('product_category_sales_intervals.sales_all', '>', 0)
+            ->orderBy('product_category_sales_intervals.sales_all', 'desc')
+            ->select('product_categories.id')
+            ->limit($topCount)
+            ->get();
 
-
-
-        // $department->stats()->update($stats);
+        // Update top families with their ranking
+        foreach ($topFamilies as $index => $family) {
+            ProductCategory::where('id', $family->id)
+                ->update(['top_seller' => $index + 1]);
+        }
     }
-
 
 }

@@ -18,6 +18,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
+use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
@@ -62,6 +63,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             'order_stats.number_item_transactions as number_item_transactions',
             'orders.date',
             'orders.total_amount',
+            'orders.payment_amount',
             'currencies.code as currency_code',
             'customer_clients.name as client_name',
         );
@@ -115,6 +117,11 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
         } elseif ($this->customerSalesChannel->user instanceof AmazonUser) {
             $catchOrdersRoute = [
                 'name'       => 'retina.models.dropshipping.amazon.orders.catch',
+                'parameters' => [$this->customerSalesChannel->user->id]
+            ];
+        } elseif ($this->customerSalesChannel->user instanceof MagentoUser) {
+            $catchOrdersRoute = [
+                'name'       => 'retina.models.dropshipping.magento.orders.catch',
                 'parameters' => [$this->customerSalesChannel->user->id]
             ];
         }

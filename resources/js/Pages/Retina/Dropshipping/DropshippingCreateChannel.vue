@@ -16,12 +16,16 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
 
 
-import {faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
-import {library} from "@fortawesome/fontawesome-svg-core";
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import axios from "axios";
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg" 
+import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
+import PurePassword from "@/Components/Pure/PurePassword.vue";
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
 
@@ -61,6 +65,9 @@ const props = defineProps<{
     type_amazon: {
         connectRoute: routeType
     }
+    type_magento: {
+        connectRoute: routeType
+    }
     total_channels: {
         manual: number
         shopify: number
@@ -68,6 +75,7 @@ const props = defineProps<{
         tiktok: number
         ebay: number
         amazon: number
+        magento: number
     }
 }>();
 
@@ -130,7 +138,8 @@ const onSubmitWoocommerce = async () => {
             text: error.response?.data?.message,
             type: "error"
         });
-    };
+    }
+    ;
 }
 
 // Section: Manual
@@ -168,7 +177,8 @@ const onSubmitManual = async () => {
             text: error.response?.data?.message,
             type: "error"
         });
-    };
+    }
+    ;
     isLoading.value = false;
 }
 
@@ -188,6 +198,47 @@ const onSubmitAmazon = async () => {
     window.location.href = response.data;
 };
 
+// Section: Woocommerce
+const isModalMagento = ref<boolean>(false);
+const errMagento = ref('')
+const magentoInput = ref({
+    username: null as null | string,
+    password: null as null | string,
+    url: null as null | string
+});
+
+const onSubmitMagento = async () => {
+    try {
+        isLoading.value = true;
+        const response = await axios.post(
+            route(props.type_magento.connectRoute.name, props.type_magento.connectRoute.parameters), magentoInput.value);
+
+        isModalMagento.value = false;
+        magentoInput.value.name = null;
+
+        notify({
+            title: trans("Success!"),
+            text: trans("Your Magento store has been created."),
+            type: "success",
+        })
+
+        router.get(
+            route('retina.dropshipping.customer_sales_channels.show', {
+                customerSalesChannel: response.data.slug
+            })
+        )
+
+    } catch (error) {
+        errMagento.value = error.response?.data?.message
+        notify({
+            title: trans("Something went wrong"),
+            text: error.response?.data?.message,
+            type: "error"
+        });
+    }
+
+    isLoading.value = false;
+};
 </script>
 
 <template>
@@ -241,18 +292,24 @@ const onSubmitAmazon = async () => {
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <!-- <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12"> -->
-                    <div v-html="ChannelLogo('tiktok')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
+                    <div v-html="ChannelLogo('tiktok')" class="h-12"
+                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Tiktok</div>
-                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                             class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}
+                        </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
                     <a target="_blank" class="w-full" :href="tiktokAuth?.url">
                         <Button v-if="layout?.app?.environment === 'local'"
-                                :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')"
-                                type="primary" full/>
+                            :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')"
+                            type="primary"
+                            full
+                            iconRight="fal fa-external-link-alt"
+                        />
                         <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                     </a>
 
@@ -269,23 +326,22 @@ const onSubmitAmazon = async () => {
 
                     <div class="flex flex-col">
                         <div class="font-semibold text-lg">Woocommerce</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{
-                                trans("Channels")
-                            }}
+                        <div class="text-xs text-gray-500">
+                            {{ total_channels?.woocommerce }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'production'"
+                        v-if="layout?.app?.environment === 'production' && layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
 
-                    <Button v-else :label="trans('Only in Production')" type="tertiary" disabled full />
+                    <Button v-else :label="trans('Staging & Production')" type="tertiary" disabled full/>
 
                 </div>
             </div>
@@ -294,27 +350,24 @@ const onSubmitAmazon = async () => {
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
-                        alt="" class="h-12"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                         alt="" class="h-12"
                     >
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Ebay</div>
-                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}</div>
+                        <div
+                             class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}
+                        </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="onSubmitEbay"
                     />
-
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
-
                 </div>
             </div>
 
@@ -326,11 +379,14 @@ const onSubmitAmazon = async () => {
                         alt="" class="h-12 filter"
                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
                     > -->
-                    <div v-html="ChannelLogo('amazon_simple')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
+                    <div v-html="ChannelLogo('amazon_simple')" class="h-12"
+                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Amazon</div>
-                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'" class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div>
+                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                             class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
+                        </div>
                     </div>
                 </div>
 
@@ -343,7 +399,7 @@ const onSubmitAmazon = async () => {
                         @click="onSubmitAmazon"
                     />
 
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
                 </div>
             </div>
@@ -352,31 +408,26 @@ const onSubmitAmazon = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
+                     <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
                         alt="" class="h-12 filter"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
-                    > -->
-                    <div v-html="ChannelLogo('magento')" class="h-12" :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''">
-
-                    </div>
+                    >
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Magento</div>
-                        <!-- <div class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}</div> -->
+                        <div class="text-xs text-gray-500">{{ total_channels?.magento ?? 0 }} {{
+                                trans("Channels")
+                            }}
+                        </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <!-- <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                    <Button
                         :label="trans('Connect')"
                         type="primary"
                         full
-                        @click="onSubmitAmazon"
-                    /> -->
-
-                    <Button cv-else :label="trans('Coming soon')" type="tertiary" disabled full />
-
+                        @click="() => isModalMagento = true"
+                    />
                 </div>
             </div>
         </div>
@@ -422,11 +473,12 @@ const onSubmitAmazon = async () => {
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("WooCommerce store detail") }}
+                    {{ trans("Create manual platform") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Woocommerce store detail") }}
+                    {{ trans("Enter the name of manual platform") }}
+                    <FontAwesomeIcon v-tooltip="trans('You can change the name later in Edit section')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true" />
                 </div>
             </div>
 
@@ -434,12 +486,12 @@ const onSubmitAmazon = async () => {
                 <PureInput
                     v-model="manualInput.name"
                     @update:modelValue="() => errManual = ''"
-                    :placeholder="trans('Your store name')"
+                    :placeholder="trans('Enter new store name')"
                     :maxLength="28"
                     @onEnter="() => onSubmitManual()"></PureInput>
             </div>
-            
-            <div v-if="errManual" class="text-red-500 italic text-sm mt-2" >
+
+            <div v-if="errManual" class="text-red-500 italic text-sm mt-2">
                 *{{ errManual }}
             </div>
 
@@ -469,6 +521,32 @@ const onSubmitAmazon = async () => {
             </div>
 
             <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+        </div>
+    </Modal>
+
+    <!-- Modal: Magento -->
+    <Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">
+        <div class="">
+            <div class="mb-4">
+                <div class="text-center font-semibold text-xl">
+                    {{ trans("Magento store detail") }}
+                </div>
+
+                <div class="text-center text-xs text-gray-500">
+                    {{ trans("Enter your Magento store detail") }}
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-y-2">
+                <PureInput v-model="magentoInput.username" :placeholder="trans('Username')"></PureInput>
+                <PurePassword v-model="magentoInput.password" :placeholder="trans('Password')"></PurePassword>
+                <PureInputWithAddOn v-model="magentoInput.url" :leftAddOn="{
+                    icon: 'fal fa-globe'
+                }" :placeholder="trans('e.g https://storeurlexample.com')"
+                                    @keydown.enter="() => onSubmitMagento()"/>
+            </div>
+
+            <Button @click="() => onSubmitMagento()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
 </template>

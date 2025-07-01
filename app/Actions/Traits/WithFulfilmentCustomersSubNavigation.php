@@ -56,6 +56,20 @@ trait WithFulfilmentCustomersSubNavigation
             ]
         ];
 
+        $meta[] = [
+            'route'     => [
+                'name'       => 'grp.org.fulfilments.show.crm.web_users.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+            'align'    => 'right',
+            'number'   => $fulfilment->shop->crmStats->number_web_users,
+            'label'    => __('Web users'),
+            'leftIcon' => [
+                'icon'    => 'fal fa-user-circle',
+                'tooltip' => __('Website users')
+            ]
+        ];
+
         return $meta;
     }
 }

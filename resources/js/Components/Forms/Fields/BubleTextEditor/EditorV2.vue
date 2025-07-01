@@ -153,7 +153,7 @@ const editorInstance = useEditor({
         }),
         History,
         Placeholder.configure({
-            placeholder: props.placeholder || "Start typing...", // Fallback to default placeholder
+            placeholder: props.placeholder || "Start typing...",
         }),
         FontFamily.configure({
             types: ['textStyle'],
@@ -910,7 +910,7 @@ const convertRemToPx = (remString) => {
 
         <div class="flex flex-col">
             <slot name="editor-content" :editor="editorInstance">
-                <EditorContent @click.stop="onEditorClick" :editor="editorInstance" />
+                <EditorContent @click.stop="onEditorClick" :editor="editorInstance"  />
             </slot>
         </div>
 

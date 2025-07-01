@@ -39,6 +39,11 @@ class ProductHydrateForSale implements ShouldBeUnique
                 ProductStateEnum::DISCONTINUING
             ]);
 
+        // temporal hack to avoid products that are not main to be for sale, we are going to redo the variants so old variants from aurora will not be discontinued
+        if (!$product->is_main) {
+            $isForSale = false;
+        }
+
         $product->update(['is_for_sale' => $isForSale]);
         return $product;
     }

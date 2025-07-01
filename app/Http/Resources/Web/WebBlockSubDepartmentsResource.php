@@ -8,17 +8,16 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property string $slug
  * @property string $code
  * @property string $name
- * @property int $image_id
  * @property mixed $web_images
+ * @property mixed $parent_url
+ * @property mixed $url
  */
 class WebBlockSubDepartmentsResource extends JsonResource
 {
@@ -27,26 +26,20 @@ class WebBlockSubDepartmentsResource extends JsonResource
     public function toArray($request): array
     {
 
-
-        $imageSources = null;
-        $media        = Media::find($this->image_id);
-        if ($media) {
-            $width  = 0;
-            $height = 0;
-
-
-            $image        = $media->getImage()->resize($width, $height);
-            $imageSources = GetPictureSources::run($image);
+        $url = '';
+        if ($this->parent_url) {
+            $url = $this->parent_url.'/';
         }
+        $url = '/'.$url.$this->url;
+
 
         $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
 
         return [
-            'slug'  => $this->slug,
-            'code'  => $this->code,
-            'name'  => $this->name,
-            'image' => $imageSources,
-            'url'   => $this->url,
+            'slug'       => $this->slug,
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'url'        => $url,
             'web_images' => $webImages,
         ];
     }

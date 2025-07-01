@@ -37,7 +37,7 @@ class BreakProductInWebpagesCache
 
     public function breakCache(?Webpage $webpage): void
     {
-        if($webpage) {
+        if ($webpage) {
             $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
             Cache::forget($key);
             $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;

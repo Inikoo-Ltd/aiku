@@ -10,7 +10,7 @@ import Table from '@/Components/Table/Table.vue';
 import { Webpage } from "@/types/webpage";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
-    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam
+    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink
 } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '@/Components/Icon.vue';
@@ -24,7 +24,9 @@ const props = defineProps<{
     tab?: string
 }>()
 
-
+const openWebsite = (href: string) => {
+    window.open(href, '_blank')
+}
 function webpageRoute(webpage: Webpage) {
 
 //   console.log(route().current())
@@ -43,6 +45,15 @@ function webpageRoute(webpage: Webpage) {
                     webpage.slug
                 ]);
 
+        case "grp.org.shops.show.web.webpages.index.sub_type.sub_department.families":
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.products':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.family.products':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.family':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.product':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department':
         case 'grp.org.shops.show.web.webpages.index':
             return route(
                 'grp.org.shops.show.web.webpages.show',
@@ -101,6 +112,82 @@ function webpageRoute(webpage: Webpage) {
     }
 }
 
+function subDepartmentsRoute(webpage: Webpage) {
+    switch (route().current()) {
+
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+    }
+}
+
+function familiesRoute(webpage: Webpage) {
+    switch (route().current()) {
+
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.department.families',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+        case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+    }
+}
+
+function productsRoute(webpage: Webpage) {
+    switch (route().current()) {
+
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.department.products',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+        case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.sub_department.products',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+        case 'grp.org.shops.show.web.webpages.index.sub_type.family':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families':
+            return route(
+                'grp.org.shops.show.web.webpages.index.sub_type.family.products',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+    }
+}
+
 </script>
 
 
@@ -111,10 +198,36 @@ function webpageRoute(webpage: Webpage) {
             {{ webpage['code'] }}
             </Link>
         </template>
+        <template #cell(number_current_sub_departments)="{ item: webpage }">
+            <Link :href="subDepartmentsRoute(webpage)" class="primaryLink">
+                {{ webpage['number_current_sub_departments'] }}
+            </Link>
+        </template>
+        <template #cell(number_current_families)="{ item: webpage }">
+            <Link :href="familiesRoute(webpage)" class="primaryLink">
+                {{ webpage['number_current_families'] }}
+            </Link>
+        </template>
+        <template #cell(number_current_products)="{ item: webpage }">
+            <Link :href="productsRoute(webpage)" class="primaryLink">
+                {{ webpage['number_current_products'] }}
+            </Link>
+        </template>
 
         <template #cell(type)="{ item: webpage }">
             <!-- <FontAwesomeIcon :icon="webpage.typeIcon.icon" class="" /> -->
             <Icon :data="webpage.typeIcon" class="px-1" />
+        </template>
+        <template #cell(action)="{ item: webpage }">
+            <div
+                class="px-2 cursor-pointer"
+                v-tooltip="'Go to website'"
+                @click="openWebsite(webpage.href)"
+                role="button"
+                tabindex="0"
+            >
+                <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
+            </div>
         </template>
 
         <template #heading(level)="{ item: column }">

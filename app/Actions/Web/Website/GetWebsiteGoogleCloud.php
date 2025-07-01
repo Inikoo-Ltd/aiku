@@ -38,7 +38,7 @@ class GetWebsiteGoogleCloud extends OrgAction
         $settings = $website->group->settings;
         $oauthClientSecret = Arr::get($settings, 'gcp.oauthClientSecret');
         if (!$oauthClientSecret) {
-            $oauthClientSecret = env("GOOGLE_OAUTH_CLIENT_SECRET");
+            $oauthClientSecret = config('app.analytics.google.client_oauth_secret');
             if (!$oauthClientSecret) {
                 dd("secret is empty \n");
             }

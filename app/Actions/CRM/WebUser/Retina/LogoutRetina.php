@@ -29,7 +29,8 @@ class LogoutRetina
         Session::put('reloadLayout', '1');
 
         // return Redirect::route('retina.login.show');  // No refresh page
-        return Inertia::location(route('retina.login.show'));  // Refresh
+        // return Inertia::location(route('retina.login.show'));  // Refresh
+        return Redirect::back();
 
     }
 

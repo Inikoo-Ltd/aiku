@@ -8,9 +8,11 @@
 
 namespace App\Actions\CRM\WebUser;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
@@ -64,7 +66,9 @@ class StoreWebUser extends OrgAction
             return $webUser;
         });
 
-        GroupHydrateWebUsers::dispatch($webUser->group, $modelData);
+        GroupHydrateWebUsers::dispatch($webUser->group)->delay($this->hydratorsDelay);
+        OrganisationHydrateWebUsers::dispatch($webUser->organisation)->delay($this->hydratorsDelay);
+        ShopHydrateWebUsers::dispatch($webUser->shop)->delay($this->hydratorsDelay);
         CustomerHydrateWebUsers::dispatch($webUser->customer)->delay($this->hydratorsDelay);
 
         return $webUser;
@@ -91,9 +95,9 @@ class StoreWebUser extends OrgAction
     {
         $rules = [
             'contact_name' => ['sometimes', 'nullable', 'max:255'],
-            'type'      => ['sometimes', Rule::enum(WebUserTypeEnum::class)],
-            'auth_type' => ['sometimes', Rule::enum(WebUserAuthTypeEnum::class)],
-            'username'  => [
+            'type'         => ['sometimes', Rule::enum(WebUserTypeEnum::class)],
+            'auth_type'    => ['sometimes', Rule::enum(WebUserAuthTypeEnum::class)],
+            'username'     => [
                 'required',
                 'string',
                 'max:255',
@@ -104,15 +108,15 @@ class StoreWebUser extends OrgAction
                     ]
                 ),
             ],
-            'is_root'   => ['required', 'boolean'],
-            'data'      => ['sometimes', 'array'],
-            'password'  =>
+            'is_root'      => ['required', 'boolean'],
+            'data'         => ['sometimes', 'array'],
+            'password'     =>
                 [
                     'sometimes',
                     'required',
                     app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)
                 ],
-            'google_id' => [
+            'google_id'    => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -147,7 +151,6 @@ class StoreWebUser extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-
         if (!$this->shop->website) {
             abort(422, 'Website not set up');
         }
@@ -188,13 +191,11 @@ class StoreWebUser extends OrgAction
     }
 
 
-
     /**
      * @throws \Throwable
      */
     public function action(Customer $customer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Webuser
     {
-
         if (!$audit) {
             WebUser::disableAuditing();
         }
@@ -211,7 +212,7 @@ class StoreWebUser extends OrgAction
     public function htmlResponse(WebUser $webUser): Response
     {
         if ($this->parent instanceof FulfilmentCustomer) {
-            return Inertia::location(route('grp.org.fulfilments.show.crm.customers.show.web-users.show', [
+            return Inertia::location(route('grp.org.fulfilments.show.crm.customers.show.web_users.show', [
                 'organisation'       => $webUser->organisation->slug,
                 'fulfilment'         => $this->parent->fulfilment->slug,
                 'fulfilmentCustomer' => $this->parent->slug,
@@ -219,12 +220,12 @@ class StoreWebUser extends OrgAction
             ]));
         } elseif (request()->user() instanceof WebUser) {
             return Inertia::location(route('retina.sysadmin.web-users.show', [
-                'webUser'            => $webUser->slug
+                'webUser' => $webUser->slug
             ]));
         }
 
 
-        return Inertia::location(route('grp.org.shops.show.crm.customers.show.web-users.show', [
+        return Inertia::location(route('grp.org.shops.show.crm.customers.show.web_users.show', [
             'organisation' => $webUser->organisation->slug,
             'shop'         => $this->parent->shop->slug,
             'customer'     => $this->parent->slug,

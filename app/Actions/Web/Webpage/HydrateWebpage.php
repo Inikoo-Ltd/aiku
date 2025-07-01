@@ -13,6 +13,7 @@ use App\Actions\Web\Webpage\Hydrators\WebpageHydrateDeployments;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateSnapshots;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateWebUserRequests;
 use App\Models\Web\Webpage;
 
 class HydrateWebpage
@@ -32,6 +33,7 @@ class HydrateWebpage
         WebpageHydrateRedirects::run($webpage);
         WebpageHydrateSnapshots::run($webpage);
         WebpageHydrateDeployments::run($webpage);
+        WebpageHydrateWebUserRequests::run($webpage->id);
     }
 
 

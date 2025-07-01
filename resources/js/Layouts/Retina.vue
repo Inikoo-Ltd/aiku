@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle } from '@fal'
+import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink } from '@fal'
 import { faSearch, faBell } from '@far'
 import { provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
@@ -29,7 +29,7 @@ import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExcla
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
+library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
 
 
 provide('layout', useLayoutStore())
@@ -64,6 +64,10 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     selectedModal.value = modal
     isModalOpen.value = true
 })
+
+// Section: To open/close the mobile menu
+const isOpenMenuMobile = ref(false)
+provide('isOpenMenuMobile', isOpenMenuMobile)
 
 </script>
 

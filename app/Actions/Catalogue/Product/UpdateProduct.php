@@ -45,8 +45,14 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::has($modelData, 'org_stocks')) {
-            $orgStocks = Arr::pull($modelData, 'org_stocks', []);
+            $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
+            $orgStocks = [];
+            foreach ($orgStocksRaw as $item) {
+                $orgStocks[] = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+            }
+
             $product->orgStocks()->sync($orgStocks);
+
         }
 
         $assetData = [];
@@ -145,6 +151,8 @@ class UpdateProduct extends OrgAction
             'name'          => ['sometimes', 'required', 'max:250', 'string'],
             'price'         => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'   => ['sometimes', 'required', 'max:1500'],
+            'description_title' => ['sometimes', 'nullable', 'max:255'],
+            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'rrp'           => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'data'          => ['sometimes', 'array'],
             'settings'      => ['sometimes', 'array'],

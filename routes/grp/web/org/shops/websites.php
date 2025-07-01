@@ -6,12 +6,11 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequests;
 use App\Actions\Comms\Mailshot\UI\ShowMailshot;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
-use App\Actions\CRM\WebUser\IndexWebUsers;
-use App\Actions\CRM\WebUser\ShowWebUser;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
@@ -23,8 +22,11 @@ use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
+use App\Actions\Web\Webpage\UI\IndexDepartmentWebpages;
+use App\Actions\Web\Webpage\UI\IndexFamilyWebpages;
+use App\Actions\Web\Webpage\UI\IndexProductWebpages;
+use App\Actions\Web\Webpage\UI\IndexSubDepartmentWebpages;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
-use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
 use App\Actions\Web\Webpage\UI\ShowHeaderWorkshop;
 use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
@@ -32,10 +34,12 @@ use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
+use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
 use App\Actions\Web\Website\UI\ShowWebsite;
+use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshopPreview;
 use Illuminate\Support\Facades\Route;
@@ -87,6 +91,16 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/info', [IndexWebpages::class, 'info'])->name('index.type.info');
     Route::get('/type/blog', [IndexWebpages::class, 'blog'])->name('index.type.blog');
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');
+    Route::get('/sub-type/department', IndexDepartmentWebpages::class)->name('index.sub_type.department');
+    Route::get('/sub-type/department/{scope}/sub-departments', [IndexSubDepartmentWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.sub_departments');
+    Route::get('/sub-type/department/{scope}/families', [IndexFamilyWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.families');
+    Route::get('/sub-type/department/{scope}/products', [IndexProductWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.products');
+    Route::get('/sub-type/sub-department', IndexSubDepartmentWebpages::class)->name('index.sub_type.sub_department');
+    Route::get('/sub-type/sub-department/{scope}/families', [IndexFamilyWebpages::class, 'inSubDepartmentWebpages'])->name('index.sub_type.sub_department.families');
+    Route::get('/sub-type/sub-department/{scope}/products', [IndexProductWebpages::class, 'inSubDepartmentWebpages'])->name('index.sub_type.sub_department.products');
+    Route::get('/sub-type/family', IndexFamilyWebpages::class)->name('index.sub_type.family');
+    Route::get('/sub-type/family/{scope}/products', [IndexProductWebpages::class, 'inFamilyWebpages'])->name('index.sub_type.family.products');
+    Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
 
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')
@@ -99,17 +113,12 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
             Route::get('webpages', [IndexWebpages::class, 'inWebpage'])->name('show.webpages.index');
 
             Route::name('redirect')->prefix('redirect')
-            ->group(function () {
-                Route::get('create', [CreateRedirect::class, 'inWebpage'])->name('.create');
-                Route::get('{redirect}', [ShowRedirect::class, 'inWebpage'])->name('.show');
-                Route::get('{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
-            });
+                ->group(function () {
+                    Route::get('create', [CreateRedirect::class, 'inWebpage'])->name('.create');
+                    Route::get('{redirect}', [ShowRedirect::class, 'inWebpage'])->name('.show');
+                    Route::get('{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
+                });
         });
-});
-
-Route::prefix('{website}/web-users')->name('web_users.')->group(function () {
-    Route::get('', IndexWebUsers::class)->name('index');
-    Route::get('{webUser}', ShowWebUser::class)->name('show');
 });
 
 Route::prefix('{website}/banners')->name('banners.')->group(function () {
@@ -118,4 +127,9 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
     Route::get('/{banner}/workshop', ShowBannerWorkshop::class)->name('workshop');
     Route::get('/{banner}/edit', EditBanner::class)->name('edit');
     Route::get('/{banner}', ShowBanner::class)->name('show');
+});
+
+Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
+    Route::get('', ShowWebsiteAnalyticsDashboard::class)->name('dashboard');
+    Route::get('web-user-requests', IndexWebUserRequests::class)->name('web_user_requests.index');
 });

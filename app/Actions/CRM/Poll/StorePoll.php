@@ -93,7 +93,6 @@ class StorePoll extends OrgAction
             'in_registration_required' => ['required', 'boolean'],
             'in_iris'                  => ['required', 'boolean'],
             'in_iris_required'         => ['sometimes', 'required', 'boolean'],
-            // 'type'                     => ['required', Rule::enum(PollTypeEnum::class)],
             'type'                => [
                 'required',
                 'array',

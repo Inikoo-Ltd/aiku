@@ -7,11 +7,11 @@ import Topbar3Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar3/
 import Header1Blueprint from "@/Components/CMS/Website/Headers/Header1/Blueprint"
 import Header2Blueprint from "@/Components/CMS/Website/Headers/Header2/Blueprint"
 import BentoGridBlueprint from "@/Components/CMS/Webpage/BentoGrid/Blueprint"
-import CTA2Blueprint from "@/Components/CMS/Webpage/CTA2/Blueprint"
+import CTA2Blueprint from "@/Components/CMS/Webpage/Cta2/Blueprint"
 import CategoriesBlueprint from "@/Components/CMS/Webpage/Categories/Blueprint"
-import CTA3Blueprint from "@/Components/CMS/Webpage/CTA3/Blueprint"
-import { blueprint as CTAAurora1Blueprint } from "@/Components/CMS/Webpage/CTAAurora1/Blueprint"
-import CTABlueprint from "@/Components/CMS/Webpage/CTA/Blueprint"
+import CTA3Blueprint from "@/Components/CMS/Webpage/Cta3/Blueprint"
+import CTAAurora1Blueprint from "@/Components/CMS/Webpage/CtaAurora1/Blueprint"
+import CTABlueprint from "@/Components/CMS/Webpage/Cta1/Blueprint"
 import DepartmentBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import GalleryBlueprint from "@/Components/CMS/Webpage/Gallery/Blueprint"
 import IframeBlueprint from "@/Components/CMS/Webpage/Iframe/Blueprint"
@@ -40,13 +40,15 @@ import SubDepartement1Blueprint from "@/Components/CMS/Webpage/SubDepartement1/B
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
-import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CTAVideo1/Blueprint'
+import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
-import Cta4Blueprint from "@/Components/CMS/Webpage/CTAImageLeft/Blueprint"
+
+import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import SeeAlso1Blueprint from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
+
 import { data } from "autoprefixer"
-import CTAVideo1Workshop from "@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue"
+import CTAVideo1Workshop from "@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue"
 
 export const getBlueprint = (componentName: string) => {
 	const components: Component = {
@@ -99,7 +101,7 @@ export const getBlueprint = (componentName: string) => {
 		"product-1": Product1Blueprint.blueprint,
 		"script": ScriptBlueprint.blueprint,
 		"text": TextBlueprint.blueprint,
-		"cta_aurora_1": CTAAurora1Blueprint,
+		"cta_aurora_1": CTAAurora1Blueprint.blueprint,
 		"overview_2": Overview2Blueprint.blueprint,
 		"button": Button.blueprint,
 		"column-layout-2": ColumnLayout2Blueprint.blueprint,

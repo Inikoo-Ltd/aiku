@@ -64,20 +64,13 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
     private function getSuccessUrl(OrderPaymentApiPoint $orderPaymentApiPoint): string
     {
-        if (app()->environment('local')) {
-            return config('app.sandbox.local_share_url').'/webhooks/checkout-com/order-payment-success/'.$orderPaymentApiPoint->ulid;
-        } else {
-            return route('webhooks.checkout_com.order_payment_success', $orderPaymentApiPoint->ulid);
-        }
+        return route('retina.webhooks.checkout_com.order_payment_success', $orderPaymentApiPoint->ulid);
     }
 
     private function getFailureUrl(OrderPaymentApiPoint $orderPaymentApiPoint): string
     {
-        if (app()->environment('local')) {
-            return config('app.sandbox.local_share_url').'/webhooks/checkout-com/order-payment-failure/'.$orderPaymentApiPoint->ulid;
-        } else {
-            return route('webhooks.checkout_com.order_payment_failure', $orderPaymentApiPoint->ulid);
-        }
+        return route('retina.webhooks.checkout_com.order_payment_failure', $orderPaymentApiPoint->ulid);
+
     }
 
 }

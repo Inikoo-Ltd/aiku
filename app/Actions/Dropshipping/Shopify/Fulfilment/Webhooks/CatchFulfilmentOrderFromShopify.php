@@ -26,6 +26,9 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
         DB::transaction(function () use ($shopifyUser, $modelData) {
@@ -38,7 +41,7 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
                     'line_items' => $modelData['line_items']
                 ]);
 
-                $fulfilmentOrder = array_merge($fulfilmentOrder, Arr::only($modelData, ['customer', 'shipping_address']));
+                $fulfilmentOrder = array_merge($fulfilmentOrder, Arr::only($modelData, ['customer', 'shipping_address', 'billing_address']));
 
                 if ($shopifyUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
                     StoreFulfilmentFromShopify::run($shopifyUser, $fulfilmentOrder);
@@ -49,8 +52,15 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
         });
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
     {
+        if (!$shopifyUser->customer_id) {
+            abort(422);
+        }
+
         $this->initialisation($shopifyUser->organisation, $request);
 
         $this->handle($shopifyUser, $request->all());

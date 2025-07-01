@@ -26,9 +26,16 @@ class GetIrisProductsInCollection extends IrisAction
                 ->where('collection_has_models.model_type', '=', 'Product')
                 ->where('collection_has_models.collection_id', '=', $collection->id);
         });
+        $queryBuilder->select($this->getSelect());
+        $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
 
+        if ($collection->stats->number_products > 0) {
+            $prePage = 50;
+        } else {
+            $prePage = 20;
+        }
 
-        return $this->getData($queryBuilder);
+        return $this->getData($queryBuilder, $prePage);
     }
 
 

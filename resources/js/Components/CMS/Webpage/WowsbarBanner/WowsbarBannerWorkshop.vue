@@ -12,7 +12,6 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { faPresentation, faLink, faExternalLink } from "@fal"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
@@ -22,6 +21,7 @@ import Image from "@/Components/Image.vue"
 import Paginator from "primevue/paginator"
 import { faPencil } from "@far"
 
+
 library.add(faPresentation, faLink, faExternalLink, faSpinnerThird)
 
 const props = defineProps<{
@@ -29,7 +29,7 @@ const props = defineProps<{
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-const layout = inject("layout", layoutStructure)
+const layout = inject("layout")
 const bannersList = ref([])
 const isModalOpen = ref(false)
 const data = ref(null)
@@ -184,7 +184,8 @@ onMounted(() => {
 </script>
 
 <template>
-	<div v-if="isLoading" class="flex justify-center h-36 items-center">
+	<div id="banner">
+		<div v-if="isLoading" class="flex justify-center h-36 items-center">
 		<LoadingIcon class="text-4xl" />
 	</div>
 
@@ -217,7 +218,10 @@ onMounted(() => {
 		class="relative">
 		<div
 			v-if="data.state != 'switch_off'"
-			:style="getStyles(modelValue?.container?.properties,screenType)">
+			:style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			...getStyles(modelValue.container?.properties, screenType)
+		}">
 			<SliderLandscape
 				v-if="data.type == 'landscape'"
 				:data="data.compiled_layout"
@@ -317,4 +321,5 @@ onMounted(() => {
 			</div>
 		</div>
 	</Modal>
+	</div>
 </template>

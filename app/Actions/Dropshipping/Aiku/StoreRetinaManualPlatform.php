@@ -8,10 +8,12 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydratePlatforms;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -39,11 +41,12 @@ class StoreRetinaManualPlatform extends RetinaAction
             $platform,
             [
                 'reference' => (string) $customer->id,
-                'name' => Arr::get($modelData, 'name')
+                'name' => Arr::get($modelData, 'name'),
+                'state' => CustomerSalesChannelStateEnum::READY,
             ]
         );
 
-
+        CustomerHydratePlatforms::dispatch($customer);
         CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
 
         return $customerSalesChannel;

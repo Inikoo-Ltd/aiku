@@ -11,30 +11,24 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class PayRetinaOrderWithBalance extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithActionUpdate;
     use WithBasketStateWarning;
+    use WithRetinaOrderPlacedRedirection;
 
     /**
      * @throws \Throwable
@@ -87,6 +81,14 @@ class PayRetinaOrderWithBalance extends RetinaAction
         $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData) {
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
 
+            AttachPaymentToOrder::make()->action($order, $payment, [
+                'amount' => $payment->amount
+            ]);
+
+            $order = UpdateOrder::make()->action(order: $order, modelData:[
+                'payment_amount' => $payment->amount
+            ], strict: false);
+
             $creditTransactionData = [
                 'amount'     => -$order->total_amount,
                 'type'       => CreditTransactionTypeEnum::PAYMENT,
@@ -126,44 +128,5 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
     }
 
-    public function htmlResponse(array $arr): RedirectResponse
-    {
-        if ($arr['success']) {
-            $notification = [
-                'status'  => 'success',
-                'title'   => __('Success!'),
-                'description' => __('Your order bas been submitted.'),
-            ];
 
-            if ($arr['order']->shop->type == ShopTypeEnum::DROPSHIPPING) {
-                return Redirect::route(
-                    'retina.dropshipping.customer_sales_channels.orders.show',
-                    [
-                        'customerSalesChannel' => $arr['order']->customerSalesChannel->slug,
-                        'order'                => $arr['order']->slug
-                    ]
-                )
-                    ->with('notification', $notification);
-            } else {
-                return Redirect::route(
-                    'retina.ecom.orders.show',
-                    [
-                        'order' => $arr['order']->slug
-                    ]
-                )->with('notification', $notification);
-            }
-        } elseif ($arr['reason'] == 'Insufficient balance') {
-            return Redirect::back()->with('notification', [
-                'status'  => 'error',
-                'title'   => __('Error!'),
-                'description' => __('You do not have enough balance to pay for this order.'),
-            ]);
-        } else {
-            return Redirect::back()->with('notification', [
-                'status'  => 'error',
-                'title'   => __('Error!'),
-                'description' => __('An error occurred while processing your order: ').$arr['reason'],
-            ]);
-        }
-    }
 }

@@ -17,6 +17,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faFacebook, faWhatsapp)
 
@@ -82,8 +83,14 @@ const onSubmitSubscribe = async () => {
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-solid border-gray-700">
             <div class="overflow-hidden flex-1 flex items-center justify-center md:justify-start ">
-                <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true" :alt="modelValue?.logo?.alt"
-                    :imgAttributes="modelValue?.logo?.attributes" :style="getStyles(modelValue?.logo?.properties)" />
+                <Image v-if="modelValue?.logo?.source"
+                    :src="modelValue?.logo?.source"
+                    :imageCover="true"
+                    class="w-full md:w-fit h-full flex justify-center items-center"
+                    :alt="modelValue?.logo?.alt"
+                    :imgAttributes="modelValue?.logo?.attributes"
+                    :style="getStyles(modelValue?.logo?.properties)"
+                />
             </div>
 
             <div v-if="modelValue?.email"
@@ -321,7 +328,7 @@ const onSubmitSubscribe = async () => {
             
             <Transition>
                 <div v-if="currentState != 'success'" class="relative flex flex-col items-start">
-                    <form @submit.prevent="() => onSubmitSubscribe()" class="w-full max-w-md md:w-fit mt-6 sm:flex sm:max-w-md lg:mt-0 ">
+                    <form @submit.prevent="() => onSubmitSubscribe()" class="w-full max-w-md md:w-fit mt-6 sm:flex items-center sm:max-w-md lg:mt-0 ">
                         <label for="email-address" class="sr-only">Email address</label>
                         <!-- <input
                             v-model="hiddenField"
@@ -336,21 +343,29 @@ const onSubmitSubscribe = async () => {
                             id="email-address"
                             autocomplete="email"
                             required
-                            class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
+                            class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
                             :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
                             :class="[
                                 currentState === 'error' ? 'errorShake' : '',
                             ]"
                         />
+
                         <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
-                            <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+                            <!-- <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                                 <LoadingIcon v-if="isLoadingSubmit" class="mr-2" />
                                 Subscribe
-                            </button>
+                            </button> -->
+                            <Button
+                                @click.prevent="onSubmitSubscribe"
+                                xtype="submit"
+                                label="Subscribe"
+                                :loading="isLoadingSubmit"
+                                full
+                            />
                         </div>
                     </form>
 
-                    <div v-if="currentState === 'error'" class="absolute -bottom-7 text-red-300 mt-2 italic">
+                    <div v-if="currentState === 'error'" class="absolute top-full text-red-300 mt-2 text-sm italic">
                         *{{ errorMessage }}
                     </div>
                 </div>

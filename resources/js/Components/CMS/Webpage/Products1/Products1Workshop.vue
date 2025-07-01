@@ -1,313 +1,132 @@
 <script setup lang="ts">
-import { faHeart } from '@far';
-import { faCircle, faStar } from '@fas';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { getStyles } from "@/Composables/styles"
-import { computed } from "vue";
-
-const dummyProductImage = '/product/product_dummy.jpeg'
+import { faFilter, faSearch, faLayerGroup } from "@fas";
+import { ref, computed } from "vue";
+import ProductRender from "./ProductRender.vue";
+import FilterProducts from "./FilterProduct.vue";
+import Drawer from "primevue/drawer";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import PureInput from "@/Components/Pure/PureInput.vue";
+import { getStyles } from "@/Composables/styles";
 
 const props = defineProps<{
   modelValue: any
-  webpageData?: any
-  blockData?: Object
-  screenType: "mobile" | "tablet" | "desktop"
-}>()
+  screenType: "mobile" | "tablet" | "desktop";
+}>();
+const dummyProductImage = '/product/product_dummy.jpeg'
+const filter = ref({ data: null })
+const search = ref('')
+const showFilters = ref(false);
+const showAside = ref(false);
+const dummyProducts = ref(props.modelValue?.products?.data ? props.modelValue?.products?.data :
+  Array.from({ length: 8 }).map((_, i) => ({
+    id: i + 1,
+    name: `Product ${i + 1}`,
+    web_images: {
+      main: {
+        original: dummyProductImage
+      }
+    },
+    code: `PRD-${1000 + i}`,
+    price: 10000 * (i + 1),
+  }))
+);
 
-const products = [
-  {
-    title: 'Macrame Soft Chandelier - Natural',
-    sku: 'Macrame-C1',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 41,
-    inStock: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Soft Chandelier - Black',
-    sku: 'Macrame-C2',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 41,
-    inStock: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Natural',
-    sku: 'Macrame-C3',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 41,
-    inStock: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  {
-    title: 'Macrame Large Drop Chandelier - Black',
-    sku: 'Macrame-C4',
-    rrp: 3.95,
-    price: 9.6,
-    oldPrice: 9.6,
-    memberPrice: 8.0,
-    oldMemberPrice: 8.0,
-    stock: 0,
-    inStock: false,
-    bestseller: true,
-    memberOnly: true,
-    image: ''
-  },
-  
-]
+const isMobile = computed(() => props.screenType === "mobile");
+const layout = {
+  iris: {
+    is_logged_in: true
+  }
+};
 
 const responsiveGridClass = computed(() => {
-  const perRow = props.modelValue?.settings?.per_row ?? {}
+    const perRow = props.modelValue?.settings?.per_row ?? {};
 
-  const columnCount = {
-    desktop: perRow.desktop ?? 4,
-    tablet: perRow.tablet ?? 4,
-    mobile: perRow.mobile ?? 2,
-  }
+    const columnCount = {
+        desktop: perRow.desktop ?? 4,
+        tablet: perRow.tablet ?? 4,
+        mobile: perRow.mobile ?? 2
+    };
 
-  const count = columnCount[props.screenType] ?? 1
-  return `grid-cols-${count}`
-})
+    const count = columnCount[props.screenType] ?? 1;
+    return `grid-cols-${count}`;
+});
 </script>
 
 <template>
-  <div
-    class="grid gap-6 p-4"
-    :class="responsiveGridClass"
-    :style="getStyles(modelValue.container?.properties, screenType)"
-  >
-    <div
-      v-for="(product, index) in products"
-      :key="index"
-      class="border p-3 relative rounded shadow-sm bg-white"
-    >
-      <!-- Bestseller Badge -->
-      <div
-        v-if="product.bestseller"
-        class="absolute top-2 left-2 bg-white border border-black text-black text-xs font-bold px-2 py-0.5 rounded"
-      >
-        BESTSELLER
-      </div>
+  <div class="flex flex-col lg:flex-row" :style="getStyles(modelValue?.container?.properties, screenType)">
+    <transition name="slide-fade">
+      <aside v-show="!isMobile && showAside" class="w-68 p-4">
+        <FilterProducts v-model="filter" />
+      </aside>
+    </transition>
 
-      <!-- Favorite Icon -->
-      <FontAwesomeIcon
-        :icon="faHeart"
-        class="absolute top-2 right-2 text-gray-400 text-xl"
-      />
+    <main class="flex-1">
+      <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center w-full md:w-1/3 gap-2">
+          <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
+            aria-label="Open Filters" />
+          <div v-else class="py-4">
+            <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto" aria-label="Open Filters" />
+          </div>
 
-      <!-- Product Image -->
-      <img :src="dummyProductImage" class="w-full h-62 object-cover mb-3 rounded" />
-
-      <!-- Title -->
-      <div class="font-medium text-sm mb-1">{{ product.title }}</div>
-
-      <!-- SKU and RRP -->
-      <div class="flex justify-between text-xs text-gray-600 mb-1">
-        <span>{{ product.sku }}</span>
-        <span>RRP: £{{ product.rrp }}/Piece</span>
-      </div>
-
-      <!-- Rating and Stock -->
-      <div class="flex justify-between items-center text-xs mb-2">
-        <div class="flex items-center gap-1 text-green-600">
-          <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-          <span>({{ product.stock }})</span>
+          <PureInput v-model="search" type="text" placeholder="Search products..." :clear="true" :isLoading="false"
+            :prefix="{ icon: faSearch, label: '' }" />
         </div>
-        <div class="flex items-center space-x-[1px] text-gray-500">
-          <FontAwesomeIcon
-            v-for="i in 5"
-            :key="i"
-            :class="i <= product.rating ? 'fas' : 'far'"
-            :icon="faStar"
-            class="text-xs"
-          />
-          <span class="ml-1">{{ product.stock }}</span>
+
+        <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+          <button v-for="opt in ['Latest', 'Code', 'Name', 'Price']" :key="opt"
+            class="pb-2 text-sm font-medium whitespace-nowrap text-gray-600">
+            {{ opt }}
+          </button>
         </div>
       </div>
 
-      <!-- Prices -->
-      <div class="mb-3">
-        <div class="flex justify-between text-sm font-semibold">
-          <span>£{{ product.price.toFixed(2) }}
-            <span class="text-xs">({{ (product.price / 8).toFixed(2) }}/Piece)</span>
+      <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
+        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+          <span class="text-gray-700 font-medium">
+            Showing <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
+            of <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
+            products
           </span>
         </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div v-if="product.inStock" class="flex items-center gap-2">
-        <div class="flex items-center border px-2 rounded">
-          <button class="text-lg font-bold text-gray-600">-</button>
-          <span class="px-2 text-sm">1</span>
-          <button class="text-lg font-bold text-gray-600">+</button>
+        <div>
+          <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup" label="Set All Products to Portfolio"
+            class="!p-3 !w-auto" type="secondary" />
         </div>
-        <button class="bg-gray-800 text-white px-3 py-1 rounded text-sm w-full">
-          Order Now
-        </button>
       </div>
 
-      <div v-else>
-        <button class="w-full text-sm px-3 py-1 bg-gray-300 text-gray-600 rounded" disabled>
-          Out of Stock
-        </button>
+      <div :class="responsiveGridClass" class="grid gap-6 p-4">
+        <div v-for="product in dummyProducts" :key="product.id"
+          :style="getStyles(modelValue?.card_product?.properties, screenType)"
+          class="border p-3 relative rounded  bg-white">
+          <ProductRender :product="product" />
+        </div>
       </div>
-    </div>
+    </main>
+
+    <!-- Mobile Filters Drawer -->
+    <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true" :closeOnEscape="true"
+      :showCloseIcon="false" class="w-80">
+      <div class="p-4">
+        <FilterProducts v-model="filter" />
+      </div>
+    </Drawer>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+aside {
+  transition: all 0.3s ease;
+}
+</style>

@@ -75,7 +75,7 @@ class StorePortfolio extends OrgAction
         OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
         ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
         CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
-        CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel)->delay($this->hydratorsDelay);
+        CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
 
         return $portfolio;
     }

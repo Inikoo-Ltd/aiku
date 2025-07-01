@@ -9,7 +9,6 @@
 namespace App\Transfers\Aurora;
 
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
-use App\Actions\Transfers\Aurora\FetchAuroraCustomerClients;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
@@ -52,10 +51,8 @@ class FetchAuroraOrder extends FetchAurora
 
 
         if ($this->auroraModelData->{'Order Customer Client Key'} != "") {
-            $parent = FetchAuroraCustomerClients::run(
-                $this->organisationSource,
-                $this->auroraModelData->{'Order Customer Client Key'},
-            );
+
+            $parent = $this->parseCustomerClient($this->organisation->id.':'.$this->auroraModelData->{'Order Customer Client Key'});
 
             if ($parent == null and $this->auroraModelData->{'Order State'} == "Cancelled") {
                 return;
@@ -275,7 +272,7 @@ class FetchAuroraOrder extends FetchAurora
             $billingAddressData['country_id'] == $deliveryAddressData['country_id']
 
         ) {
-            // if billing address is empty , use delivery address, it may have some data
+            // if the billing address is empty, use the delivery address; it may have some data
             $billingAddressData = $deliveryAddressData;
         }
 

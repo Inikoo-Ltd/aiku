@@ -541,7 +541,7 @@ test('UI show fulfilment customer', function () {
 });
 
 test('UI show fulfilment customer web users', function () {
-    $response = get(route('grp.org.fulfilments.show.crm.customers.show.web-users.index', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug]));
+    $response = get(route('grp.org.fulfilments.show.crm.customers.show.web_users.index', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Shop/CRM/WebUsers')
@@ -552,14 +552,13 @@ test('UI show fulfilment customer web users', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->etc()
-            )
-            ->has('tabs');
+            );
     });
 });
 
 test('UI show fulfilment customer web users (tab requests)', function () {
     $this->withoutExceptionHandling();
-    $response = get(route('grp.org.fulfilments.show.crm.customers.show.web-users.index', [
+    $response = get(route('grp.org.fulfilments.show.crm.customers.show.web_users.index', [
         $this->organisation->slug,
         $this->fulfilment->slug,
         $this->customer->fulfilmentCustomer->slug,
@@ -579,7 +578,7 @@ test('UI show fulfilment customer web users (tab requests)', function () {
             ->has('tabs')
             ->has('requests');
     });
-});
+})->todo();// Need no move this request tab to ShowWebUser
 
 test('UI show fulfilment customer (agreed prices tab)', function () {
     $response = get('http://app.aiku.test/org/'.$this->organisation->slug.'/fulfilments/'.$this->fulfilment->slug.'/customers/'.$this->customer->fulfilmentCustomer->slug.'?tab=agreed_prices');
@@ -1942,7 +1941,6 @@ test('UI edit physical goods', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',

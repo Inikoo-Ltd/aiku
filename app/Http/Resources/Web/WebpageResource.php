@@ -38,7 +38,8 @@ class WebpageResource extends JsonResource
             'domain'              => $webpage->website->domain ?? null,
             'website_layout'      => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
             'code'                => $webpage->code,
-            'url'                 => $webpage->url,
+            // 'url'                 => $webpage->url,
+            'url'                 => $webpage->getUrl(),
             'type'                => $webpage->type,
             'typeIcon'            => match ($webpage->type) {
                 WebpageTypeEnum::STOREFRONT => ['fal', 'fa-home'],

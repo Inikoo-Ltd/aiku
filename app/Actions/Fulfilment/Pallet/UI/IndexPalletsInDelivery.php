@@ -74,7 +74,7 @@ class IndexPalletsInDelivery extends OrgAction
             $query->withTrashed();
         }
 
-        return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name', 'type'])
+        return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name', 'type','id'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -106,6 +106,10 @@ class IndexPalletsInDelivery extends OrgAction
 
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
+
+
+            $table->column(key: 'id', label: __('Id'), canBeHidden: false, sortable: true, searchable: true);
+
 
             if ($palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS) {
                 $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
@@ -162,7 +166,7 @@ class IndexPalletsInDelivery extends OrgAction
             }
 
 
-            $table->defaultSort('customer_reference');
+            $table->defaultSort('id');
         };
     }
 

@@ -24,8 +24,10 @@ library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
 const layout = useIrisLayoutStore()
-
+const isOpenMenuMobile = ref(false)
 provide('layout', layout)
+provide('isOpenMenuMobile', isOpenMenuMobile)
+
 
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
@@ -71,6 +73,7 @@ const checkScreenType = () => {
 
 onMounted(() => {
     checkScreenType()
+    layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 })
 
@@ -114,14 +117,14 @@ onBeforeUnmount(() => {
             <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation"
                 :screen-type="screenType" />
 
-            <Breadcrumbs v-if="usePage().props.breadcrumbs" id="iris_breadcrumbs"
-                class="md:py-4 px-2 w-full xborder-b-0 mx-auto transition-all xbg-gray-100 border-b border-gray-200"
+            <Breadcrumbs v-if="usePage().props.breadcrumbs?.length" id="iris_breadcrumbs"
+                class="md:py-4 px-2 w-full xborder-b-0 mx-auto transition-all xbg-gray-100 border-b-0 border-transparent"
                 :breadcrumbs="usePage().props.breadcrumbs ?? []"
                 :navigation="usePage().props.navigation ?? []"
                 :layout="layout" />
 
             <main>
-                <div :style="getStyles(theme.container?.properties, screenType)">
+                <div>
                     <slot />
                 </div>
             </main>

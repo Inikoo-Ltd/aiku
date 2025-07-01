@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Accounting\Payment\Json\GetRefundPayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
@@ -17,6 +18,7 @@ use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
+use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
@@ -46,6 +48,8 @@ use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallet
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
 use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Tag\Json\GetTags;
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -56,7 +60,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 
-Route::get('fulfilment/{fulfilment}/comms/outboxes/{outbox}/users', [GetOutboxUsers::class, 'inFulfilment'])->name('fulfilment.outbox.users.index');
+Route::get('comms/outboxes/{outbox}/users', GetOutboxUsers::class)->name('outbox.users.index');
 
 Route::get('fulfilment/{fulfilment}/supervisors', [GetSupervisorUsers::class, 'inFulfilment'])->name('fulfilment.supervisors.index');
 
@@ -113,6 +117,7 @@ Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransa
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
+Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 
 Route::get('trade-units/{tradeUnit}/tags', [GetTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
@@ -121,6 +126,7 @@ Route::get('workshop/department/{department}/sub-departments', GetSubDepartments
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/product-category/{productCategory:id}/top-products', GetTopProductsInProductCategory::class)->name('product_category.top_products.index');
 Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
 
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
@@ -131,3 +137,7 @@ Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollect
 Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsInCollection::class)->name('collection.parent.sub_departments.index');
 
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
+Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
+
+Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
+

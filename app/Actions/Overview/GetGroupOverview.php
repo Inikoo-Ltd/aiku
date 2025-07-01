@@ -252,6 +252,18 @@ class GetGroupOverview extends OrgAction
                 'route' => route('grp.overview.web.banners.index'),
                 'count' => $group->webStats->number_banners ?? 0
             ],
+            [
+                'name'  => __('Web Users'),
+                'icon'  => 'fal fa-user-circle',
+                'route' => route('grp.overview.web.web_users.index'),
+                'count' => $group->crmStats->number_web_users ?? 0
+            ],
+            [
+                'name'  => __('Web User Requests'),
+                'icon'  => 'fal fa-project-diagram',
+                'route' => route('grp.overview.web.web_user_requests.index'),
+                'count' => $group->webStats->number_web_user_requests ?? 0
+            ],
         ];
     }
 

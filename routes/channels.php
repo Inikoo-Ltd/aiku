@@ -31,6 +31,10 @@ Broadcast::channel('amazon.{amazonUserId}.upload-product.{portfolioId}', functio
     return true;
 });
 
+Broadcast::channel('magento.{amazonUserId}.upload-product.{portfolioId}', function (int|string $magentoUser, int|string $portfolioId) {
+    return true;
+});
+
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });

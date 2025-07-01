@@ -154,7 +154,7 @@ class ShowWebUser extends OrgAction
         $webUser = WebUser::where('slug', $routeParameters['webUser'])->first();
 
         return match ($routeName) {
-            'grp.org.fulfilments.show.crm.customers.show.web-users.show' =>
+            'grp.org.fulfilments.show.crm.customers.show.web_users.show' =>
             array_merge(
                 ShowFulfilmentCustomer::make()->getBreadcrumbs(
                     Arr::except($routeParameters, 'webUser')
@@ -163,11 +163,11 @@ class ShowWebUser extends OrgAction
                     $webUser,
                     [
                         'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.web-users.index',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.web_users.index',
                             'parameters' => Arr::except($routeParameters, 'webUser')
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.web-users.show',
+                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.web_users.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -175,7 +175,7 @@ class ShowWebUser extends OrgAction
                 ),
             ),
 
-            'grp.org.shops.show.crm.customers.show.web-users.show' =>
+            'grp.org.shops.show.crm.customers.show.web_users.show' =>
             array_merge(
                 ShowCustomer::make()->getBreadcrumbs(
                     'grp.org.shops.show.crm.customers.show',
@@ -185,11 +185,11 @@ class ShowWebUser extends OrgAction
                     $webUser,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.web-users.index',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.web_users.index',
                             'parameters' => Arr::except($routeParameters, 'webUser')
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.web-users.show',
+                            'name'       => 'grp.org.shops.show.crm.customers.show.web_users.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -228,7 +228,7 @@ class ShowWebUser extends OrgAction
         }
 
         return match ($routeName) {
-            'grp.org.fulfilments.show.crm.customers.show.web-users.show' => [
+            'grp.org.fulfilments.show.crm.customers.show.web_users.show' => [
                 'label' => $webUser->username,
                 'route' => [
                     'name'       => $routeName,
@@ -241,7 +241,7 @@ class ShowWebUser extends OrgAction
 
                 ]
             ],
-            'grp.org.shops.show.crm.customers.show.web-users.show' => [
+            'grp.org.shops.show.crm.customers.show.web_users.show' => [
                 'label' => $webUser->username,
                 'route' => [
                     'name'       => $routeName,

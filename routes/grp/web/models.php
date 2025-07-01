@@ -122,6 +122,8 @@ use App\Actions\Fulfilment\PalletReturn\DeletePalletReturnAddress;
 use App\Actions\Fulfilment\PalletReturn\DetachPalletFromReturn;
 use App\Actions\Fulfilment\PalletReturn\DispatchPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingStoredItemReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
 use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
@@ -244,9 +246,12 @@ use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\SetWebpageAsOffline;
+use App\Actions\Web\Webpage\SetWebpageAsOnline;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
+use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
@@ -415,14 +420,12 @@ Route::patch('recurring-bill-transaction/{recurringBillTransaction:id}', UpdateR
 Route::delete('recurring-bill-transaction/{recurringBillTransaction:id}', DeleteRecurringBillTransaction::class)->name('recurring_bill_transaction.delete');
 
 Route::name('product.')->prefix('product')->group(function () {
-
     Route::post('/product/', StoreProduct::class)->name('store');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
-
 });
 
 
@@ -478,6 +481,8 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     // This is wrong ImportPalletsInPalletDelivery is used when creating a pallet delivery
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
     Route::patch('/', UpdatePalletReturn::class)->name('update');
+    Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
+    Route::get('pallet-picking-pdf', PdfPickingPalletReturn::class)->name('pallet_picking.pdf');
     Route::get('pdf', PdfPalletReturn::class)->name('pdf');
 
 
@@ -536,10 +541,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('website', StoreWebsite::class)->name('website.store');
 
-    Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
-        Route::patch('', [UpdateWebpage::class, 'inShop'])->name('update')->withoutScopedBindings();
-        Route::delete('', [DeleteWebpage::class, 'inShop'])->name('delete')->withoutScopedBindings();
-    });
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {
         Route::post('verify', [SendIdentityEmailVerification::class, 'inShop'])->name('verify');
@@ -582,11 +583,10 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
     });
 });
 
-Route::name('fulfilment.')->prefix('fulfilment/{fulfilment}')->group(function () {
-    Route::name('outboxes.')->prefix('outboxes/{outbox}')->group(function () {
-        Route::post('subscriber', [StoreManyOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.store')->withoutScopedBindings();
-        Route::delete('subscriber/{outBoxHasSubscriber:id}', [DeleteOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.delete')->withoutScopedBindings();
-    });
+
+Route::name('outboxes.')->prefix('outboxes/{outbox}')->group(function () {
+    Route::post('subscriber', StoreManyOutboxHasSubscriber::class)->name('subscriber.store')->withoutScopedBindings();
+    Route::delete('subscriber/{outBoxHasSubscriber:id}', DeleteOutboxHasSubscriber::class)->name('subscriber.delete')->withoutScopedBindings();
 });
 
 Route::post('fulfilment-customer-note/{fulfilmentCustomer}', StoreFulfilmentCustomerNote::class)->name('fulfilment_customer_note.store');
@@ -640,6 +640,10 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
+    Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
+    Route::patch('delete', DeleteWebpage::class)->name('delete');
+    Route::patch('set-online', SetWebpageAsOnline::class)->name('set_online');
+    Route::patch('set-offline', SetWebpageAsOffline::class)->name('set_offline');
     Route::post('publish', PublishWebpage::class)->name('publish');
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
@@ -828,6 +832,8 @@ Route::name('poll.')->prefix('poll')->group(function () {
     Route::patch('{poll:id}/update', UpdatePoll::class)->name('update')->withoutScopedBindings();
     Route::delete('{poll:id}/delete', DeletePoll::class)->name('delete')->withoutScopedBindings();
 });
+
+Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 
 
 require __DIR__."/models/inventory/warehouse.php";

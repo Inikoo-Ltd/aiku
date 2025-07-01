@@ -11,16 +11,16 @@ import Menu1Workshop from "@/Components/CMS/Website/Menus/Menu1Workshop.vue"
 import WowsbarBannerIris from "@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerIris.vue"
 import BentoGridIris from "@/Components/CMS/Webpage/BentoGrid/BentoGridIris.vue"
 import GalleryIris from "@/Components/CMS/Webpage/Gallery/GalleryIris.vue"
-import CTAIris from "@/Components/CMS/Webpage/CTA/CTAIris.vue"
-import CTA2Iris from "@/Components/CMS/Webpage/CTA2/CTA2Iris.vue"
-import CTA3Iris from "@/Components/CMS/Webpage/CTA3/CTA3Iris.vue"
+import CTAIris from "@/Components/CMS/Webpage/Cta1/Cta1Iris.vue"
+import CTA2Iris from "@/Components/CMS/Webpage/Cta2/Cta2Iris.vue"
+import CTA3Iris from "@/Components/CMS/Webpage/Cta3/Cta3Iris.vue"
 import Department1Iris from "@/Components/CMS/Webpage/Department1/Department1Iris.vue"
 import IframeIris from "@/Components/CMS/Webpage/Iframe/IframeIris.vue"
 import ImageIris from "@/Components/CMS/Webpage/Image/ImageIris.vue"
 import OverviewIris from "@/Components/CMS/Webpage/Overview/OverviewIris.vue"
 import ScriptIris from "@/Components/CMS/Webpage/Script/ScriptIris.vue"
 import TextContentIris from "@/Components/CMS/Webpage/Text/TextContentIris.vue"
-import CtaAurora1Iris from "@/Components/CMS/Webpage/CTAAurora1/CtaAurora1Iris.vue"
+import CtaAurora1Iris from "@/Components/CMS/Webpage/CtaAurora1/CtaAurora1Iris.vue"
 import Overview2Iris from "@/Components/CMS/Webpage/Overview2/Overview2Iris.vue"
 import Pricing from "@/Components/CMS/Webpage/Pricing/PricingIris.vue"
 import Timeline from "@/Components/CMS/Webpage/Timeline/TimelineIris.vue"
@@ -39,11 +39,14 @@ import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
-import CTAVideo1Iris from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Iris.vue'
+import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
-import Cta4 from '@/Components/CMS/Webpage/CTAImageLeft/CTA4Iris.vue'
+
+import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
+
 import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue'
+
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 

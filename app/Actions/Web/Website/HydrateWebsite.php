@@ -14,6 +14,7 @@ use App\Actions\Web\Website\Hydrators\WebsiteHydrateCloudflareData;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateGoogleCloudSearch;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateRedirects;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebUserRequests;
 use App\Models\Web\Website;
 
 class HydrateWebsite extends HydrateModel
@@ -33,6 +34,7 @@ class HydrateWebsite extends HydrateModel
         WebsiteHydrateCloudflareData::run($website);
         WebsiteHydrateGoogleCloudSearch::run($website);
         WebsiteHydrateRedirects::run($website);
+        WebsiteHydrateWebUserRequests::run($website->id);
 
     }
 

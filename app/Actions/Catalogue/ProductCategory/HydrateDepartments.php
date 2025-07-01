@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateBestFamilySeller;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSales;
@@ -35,6 +36,7 @@ class HydrateDepartments
         ProductCategoryHydrateFamilies::run($productCategory);
         ProductCategoryHydrateSales::run($productCategory);
         ProductCategoryHydrateCollections::run($productCategory);
+        DepartmentHydrateBestFamilySeller::run($productCategory);
     }
 
 }

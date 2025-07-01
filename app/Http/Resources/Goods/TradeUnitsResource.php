@@ -13,7 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * @property string $code
  * @property string $slug
- * @property mix $net_weight
+ * @property float $net_weight
  * @property string $type
  * @property string $name
  */
@@ -27,7 +27,7 @@ class TradeUnitsResource extends JsonResource
             'slug'               => $this->slug,
             'code'               => $this->code,
             'name'               => $this->name,
-            'weight'             => $this->net_weight,
+            'weight'             => $this->net_weight !== null ? ($this->net_weight / 1000) . ' kg' : null,
             'type'               => $this->type,
         ];
     }

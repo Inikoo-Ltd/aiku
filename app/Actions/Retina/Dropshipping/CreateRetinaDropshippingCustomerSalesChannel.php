@@ -110,7 +110,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         'parameters' => [],
                         'method' => 'post'
                     ],
-                    'isConnected' => $customer->customerSalesChannelsXXX()->where('type', PlatformTypeEnum::WOOCOMMERCE->value)->exists()
+                    'isConnected' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->exists(),
                 ],
                 'type_ebay' => [
                     'connectRoute' => [
@@ -127,6 +127,16 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                         'name' => match ($customer->is_fulfilment) {
                             true   => 'retina.fulfilment.dropshipping.customer_sales_channels.amazon.authorize',
                             default => 'retina.dropshipping.platform.amazon.authorize',
+                        },
+                        'parameters' => [],
+                        'method' => 'post'
+                    ],
+                ],
+                'type_magento' => [
+                    'connectRoute' => [
+                        'name' => match ($customer->is_fulfilment) {
+                            true   => 'retina.fulfilment.dropshipping.platform.magento.store', // TODO: Create in fulfilment
+                            default => 'retina.dropshipping.platform.magento.store',
                         },
                         'parameters' => [],
                         'method' => 'post'

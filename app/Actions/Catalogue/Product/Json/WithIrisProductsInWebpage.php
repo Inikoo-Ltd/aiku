@@ -35,13 +35,58 @@ trait WithIrisProductsInWebpage
         });
     }
 
+    public function getNewArrivalsFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('new_arrivals', function ($query, $value) {
+            $days = is_numeric($value) ? (int) $value : 3;
+            $query->where('products.created_at', '>=', now()->subDays($days));
+        });
+    }
+
+    public function getBrandsFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('brands', function ($query, $value) {
+            $query->join('model_has_trade_units', function ($join) {
+                $join->on('products.id', '=', 'model_has_trade_units.model_id')
+                        ->where('model_has_trade_units.model_type', 'Product');
+            });
+            $query->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
+
+            $query->join('model_has_brands', function ($join) {
+                $join->on('trade_units.id', '=', 'model_has_brands.model_id')
+                        ->where('model_has_brands.model_type', 'TradeUnit');
+            });
+
+            $query->join('brands', 'brands.id', 'model_has_brands.brand_id');
+
+            $query->whereIn('brands.id', (array) $value);
+        });
+    }
+
+    public function getTagsFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('tags', function ($query, $value) {
+            $query->join('model_has_trade_units', function ($join) {
+                $join->on('products.id', '=', 'model_has_trade_units.model_id')
+                        ->where('model_has_trade_units.model_type', 'Product');
+            });
+            $query->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
+
+            $query->join('model_has_tags', function ($join) {
+                $join->on('trade_units.id', '=', 'model_has_tags.model_id')
+                        ->where('model_has_tags.model_type', 'TradeUnit');
+            });
+
+            $query->join('tags', 'tags.id', 'model_has_tags.tag_id');
+
+            $query->whereIn('tags.id', (array) $value);
+        });
+    }
+
     public function getBaseQuery(string $stockMode): QueryBuilder
     {
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->leftJoin('webpages', function ($join) {
-            $join->on('webpages.model_id', '=', 'products.id');
-        })->where('webpages.model_type', 'Product');
-
+        $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
         $queryBuilder->where('products.is_for_sale', true);
         if ($stockMode == 'in_stock') {
@@ -62,8 +107,11 @@ trait WithIrisProductsInWebpage
     {
         $globalSearch     = $this->getGlobalSearch();
         $priceRangeFilter = $this->getPriceRangeFilter();
+        $newArrivalsFilter = $this->getNewArrivalsFilter();
+        $brandsFilter = $this->getBrandsFilter();
+        $tagsFilter = $this->getTagsFilter();
 
-        return [$globalSearch, $priceRangeFilter];
+        return [$globalSearch, $priceRangeFilter, $newArrivalsFilter, $brandsFilter, $tagsFilter];
     }
 
     public function getSelect(): array
@@ -95,18 +143,18 @@ trait WithIrisProductsInWebpage
             'created_at',
             'available_quantity',
             'code',
-            'name'
+            'name',
+            'rrp'
         ];
     }
 
 
-    public function getData($queryBuilder)
+    public function getData($queryBuilder, ?int $numberOfRecords = null): LengthAwarePaginator
     {
         return $queryBuilder->defaultSort('name')
-            ->select($this->getSelect())
             ->allowedSorts($this->getAllowedSorts())
             ->allowedFilters($this->getAllowedFilters())
-            ->withIrisPaginator()
+            ->withIrisPaginator($numberOfRecords)
             ->withQueryString();
     }
 

@@ -64,6 +64,9 @@ class CallApiApcGbShipping extends OrgAction
         $parentResource = ShippingParentResource::make($parent)->getArray();
         $parcels        = $parent->parcels;
 
+        $shipTo = Arr::get($parentResource, 'to_address');
+        $address2 = Arr::get($shipTo, 'address_line_2');
+
         if (in_array(
             Arr::get($parentResource, 'to_address.country_code'),
             [
@@ -76,6 +79,7 @@ class CallApiApcGbShipping extends OrgAction
             $postalCode = Arr::get($parentResource, 'to_address.postal_code');
         } else {
             $postalCode = 'INT';
+            $address2   = trim($address2.' '.trim(Arr::get($shipTo, 'sorting_code').' '.Arr::get($shipTo, 'postal_code')));
         }
 
         $items = [];
@@ -110,7 +114,7 @@ class CallApiApcGbShipping extends OrgAction
             'Delivery'        => [
                 'CompanyName'  => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
                 'AddressLine1' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1'), 60),
-                'AddressLine2' => Str::limit(Arr::get($parentResource, 'to_address.address_line_2'), 60),
+                'AddressLine2' => Str::limit($address2, 60),
                 'PostalCode'   => Arr::get($parentResource, 'to_address.postal_code'),
                 'City'         => Str::limit(Arr::get($parentResource, 'to_address.locality'), 31, ''),
                 'County'       => Str::limit(Arr::get($parentResource, 'to_address.administrative_area'), 31, ''),

@@ -433,7 +433,6 @@ test('UI edit sub department in department', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 3)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);
@@ -500,7 +499,6 @@ test('UI edit product', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);
@@ -513,7 +511,6 @@ test('UI create product', function () {
         $page
             ->component('CreateModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 6)
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 5);

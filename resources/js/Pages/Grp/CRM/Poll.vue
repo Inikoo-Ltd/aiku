@@ -17,9 +17,18 @@ library.add(faTrashAlt);
 
 
 const props = defineProps<{
-    title: string,
+    title: string
     pageHead: TSPageHeading
-    data: {}
+    data: {
+        id: number
+        label: string
+        type: string
+        in_registration: boolean
+        in_registration_required: boolean
+        created_at: string
+        options?: { id: number, label: string }[]
+        poll_replies?: { answer?: string, idx?: number }[]
+    }
 
 
 }>();
@@ -58,10 +67,10 @@ const stats = [
         </template>
     </PageHeading>
 
-    <div class="w-full max-w-xl mx-auto my-8">
+    <div class="w-full max-w-xl mx-auto my-8" :class="data.in_registration ? 'opacity-60' : ''">
 
         <div class="block text-sm font-medium text-gray-700">
-            <FontAwesomeIcon v-if="data.in_registration_required" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data.in_registration_required" v-tooltip="trans('Required')" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ data.label }}
         </div>
 

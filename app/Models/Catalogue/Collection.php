@@ -52,7 +52,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $master_collection_id
+ * @property string|null $description_title
+ * @property string|null $description_extra
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
  * @property-read Group $group

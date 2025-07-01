@@ -40,7 +40,7 @@ beforeEach(function () {
             $this->organisation,
             $this->user,
             $this->shop
-        )                        = createShop();
+        ) = createShop();
         $web = createWebsite($this->shop);
     } else {
         $this->organisation = $web->organisation;
@@ -48,14 +48,14 @@ beforeEach(function () {
         $this->shop         = $web->shop;
     }
     $web->refresh();
-    $this->web               = $web;
-    $this->warehouse         = createWarehouse();
+    $this->web       = $web;
+    $this->warehouse = createWarehouse();
 
     if ($this->web->shop->fulfilment) {
-        $this->fulfilment = $this->web->shop->fulfilment;
+        $this->fulfilment        = $this->web->shop->fulfilment;
         $this->fulfilmentWebsite = $this->web;
     } else {
-        $this->fulfilment = createFulfilment($this->organisation);
+        $this->fulfilment        = createFulfilment($this->organisation);
         $this->fulfilmentWebsite = createWebsite($this->fulfilment->shop);
     }
 
@@ -92,7 +92,6 @@ beforeEach(function () {
 
 
 test('can show fulfilment website', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -114,7 +113,6 @@ test('can show fulfilment website', function () {
 });
 
 test('can show fulfilment website (tab showcase)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -142,7 +140,6 @@ test('can show fulfilment website (tab showcase)', function () {
 });
 
 test('can show fulfilment website (tab external links)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -169,64 +166,7 @@ test('can show fulfilment website (tab external links)', function () {
     });
 });
 
-test('can show fulfilment website (tab analytics)', function () {
-
-    $website = $this->fulfilmentWebsite;
-
-    $response = get(
-        route(
-            'grp.org.fulfilments.show.web.websites.show',
-            [
-                $this->organisation->slug,
-                $this->fulfilment->slug,
-                $website->slug,
-                'tab' => WebsiteTabsEnum::ANALYTICS->value
-            ]
-        )
-    );
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Web/Website')
-            ->has('title')
-            ->has(
-                "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::ANALYTICS->value)->etc()
-            )
-            ->has(WebsiteTabsEnum::ANALYTICS->value)
-            ->has('breadcrumbs', 2);
-    });
-})->todo();
-
-test('can show fulfilment website (tab web users)', function () {
-
-    $website = $this->fulfilmentWebsite;
-
-    $response = get(
-        route(
-            'grp.org.fulfilments.show.web.websites.show',
-            [
-                $this->organisation->slug,
-                $this->fulfilment->slug,
-                $website->slug,
-                'tab' => WebsiteTabsEnum::WEB_USERS->value
-            ]
-        )
-    );
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Web/Website')
-            ->has('title')
-            ->has(
-                "tabs",
-                fn (AssertableInertia $page) => $page->where("current", WebsiteTabsEnum::WEB_USERS->value)->etc()
-            )
-            ->has(WebsiteTabsEnum::WEB_USERS->value)
-            ->has('breadcrumbs', 2);
-    });
-});
-
 test('can show webpages list in fulfilment website', function () {
-
     $website  = $this->fulfilmentWebsite;
     $response = get(
         route(
@@ -248,7 +188,6 @@ test('can show webpages list in fulfilment website', function () {
 });
 
 test('can show fulfilments website workshop', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -269,13 +208,12 @@ test('can show fulfilments website workshop', function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", "Workshop")->etc()
             )
-            ->has('breadcrumbs', 3)
+            ->has('breadcrumbs', 2)
             ->has('tabs');
     });
 });
 
 test('can show fulfilments website workshop (header)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -306,7 +244,6 @@ test('can show fulfilments website workshop (header)', function () {
 });
 
 test('can show fulfilments website workshop (footer)', function () {
-
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -467,9 +404,9 @@ test('delete banner in shop', function () {
             'grp.org.shops.show.web.banners.index',
             [
                 'organisation' => $this->organisation->slug,
-                'shop' => $this->shop->slug,
-                'website' => $this->shop->website->slug,
-                'banner' => $banner->slug
+                'shop'         => $this->shop->slug,
+                'website'      => $this->shop->website->slug,
+                'banner'       => $banner->slug
             ]
         )
     );
@@ -640,8 +577,8 @@ test('can show workshop webpages in shop website', function () {
 test('UI get section route show shop website', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.web.websites.show', [
         'organisation' => $this->organisation->slug,
-        'shop' => $this->shop->slug,
-        'website' => $this->web->slug
+        'shop'         => $this->shop->slug,
+        'website'      => $this->web->slug
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_WEBSITE->value)
@@ -656,9 +593,9 @@ test('ui index redirects in website', function () {
             'grp.org.fulfilments.show.web.websites.show',
             [
                 'organisation' => $this->organisation->slug,
-                'fulfilment' => $this->fulfilment->slug,
-                'website' => $this->fulfilmentWebsite,
-                'tab' => WebsiteTabsEnum::REDIRECTS->value
+                'fulfilment'   => $this->fulfilment->slug,
+                'website'      => $this->fulfilmentWebsite,
+                'tab'          => WebsiteTabsEnum::REDIRECTS->value
             ]
         )
     );
@@ -681,10 +618,10 @@ test('ui index redirects in webpage', function () {
             'grp.org.shops.show.web.webpages.show',
             [
                 'organisation' => $this->organisation->slug,
-                'shop' => $this->shop->slug,
-                'website' => $this->web->slug,
-                'webpage' => $this->webpage->slug,
-                'tab' => WebsiteTabsEnum::REDIRECTS->value
+                'shop'         => $this->shop->slug,
+                'website'      => $this->web->slug,
+                'webpage'      => $this->webpage->slug,
+                'tab'          => WebsiteTabsEnum::REDIRECTS->value
             ]
         )
     );

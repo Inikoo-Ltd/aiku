@@ -13,6 +13,18 @@ namespace App\Http\Resources\CRM;
 use App\Actions\SysAdmin\WithLogRequest;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $location
+ * @property mixed $slug
+ * @property mixed $username
+ * @property mixed $ip_address
+ * @property mixed $device
+ * @property mixed $os
+ * @property mixed $browser
+ * @property mixed $route_name
+ * @property mixed $route_params
+ * @property mixed $date
+ */
 class WebUserRequestsResource extends JsonResource
 {
     use WithLogRequest;

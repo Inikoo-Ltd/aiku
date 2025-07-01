@@ -23,16 +23,19 @@ class GetIrisProductsInProductCategory extends IrisAction
     {
         $queryBuilder = $this->getBaseQuery($stockMode);
 
+        $queryBuilder->select($this->getSelect());
+        $perPage = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             $queryBuilder->where('family_id', $productCategory->id);
+            $perPage = 250;
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
 
-
-        return $this->getData($queryBuilder);
+        $queryBuilder->selectRaw('\''.$productCategory->url.'\' as parent_url');
+        return $this->getData($queryBuilder, $perPage);
     }
 
 

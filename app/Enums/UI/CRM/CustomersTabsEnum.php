@@ -27,7 +27,6 @@ enum CustomersTabsEnum: string
                 'title' => __('dashboard'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
-
             CustomersTabsEnum::CUSTOMERS => [
                 'title' => __('customers'),
                 'icon'  => 'fal fa-transporter',

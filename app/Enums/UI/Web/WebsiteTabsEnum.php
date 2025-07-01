@@ -16,10 +16,8 @@ enum WebsiteTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE  = 'showcase';
-    case EXTERNAL_LINKS  = 'external_links';
-    case ANALYTICS = 'analytics';
-    case WEB_USERS = 'web_users';
+    case SHOWCASE = 'showcase';
+    case EXTERNAL_LINKS = 'external_links';
     case REDIRECTS = 'redirects';
     case CHANGELOG = 'changelog';
 
@@ -27,21 +25,14 @@ enum WebsiteTabsEnum: string
     {
         return match ($this) {
             WebsiteTabsEnum::SHOWCASE => [
-                'title' => __('website'),
-                'icon'  => 'fas fa-info-circle',
+                'title' => __('overview'),
+                'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             WebsiteTabsEnum::EXTERNAL_LINKS => [
                 'title' => __('external links'),
                 'icon'  => 'fal fa-external-link',
             ],
-            WebsiteTabsEnum::ANALYTICS => [
-                'title' => __('analytics'),
-                'icon'  => 'fal fa-analytics',
-            ],
-            WebsiteTabsEnum::WEB_USERS => [
-                'title' => __('website users'),
-                'icon'  => 'fal fa-terminal',
-            ],
+
             WebsiteTabsEnum::REDIRECTS => [
                 'title' => __('redirects'),
                 'icon'  => 'fal fa-terminal',

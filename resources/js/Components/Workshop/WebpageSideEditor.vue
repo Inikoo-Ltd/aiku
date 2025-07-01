@@ -52,7 +52,7 @@ const openedBlockSideEditor = inject('openedBlockSideEditor', ref(null))
 const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
 const isAddBlockLoading = inject('isAddBlockLoading', ref(null))
 const isLoadingDeleteBlock = inject('isLoadingDeleteBlock', ref(null))
-const isLoadingblock = inject('isLoadingblock', ref(null))
+const isLoadingBlock = inject('isLoadingBlock', ref(null))
 const filterBlock = inject('filterBlock')
 const changeTab = (index: number) => (selectedTab.value = index)
 const sendNewBlock = (block: Daum) => {
@@ -224,7 +224,7 @@ defineExpose({
                         <span class="text-sm font-medium capitalize truncate">
                           {{ element.name || element.type }}
                         </span>
-                        <LoadingIcon v-if="isLoadingblock === element.id" />
+                        <LoadingIcon v-if="isLoadingBlock === element.id" />
                       </div>
 
                       <div class="flex items-center gap-1">

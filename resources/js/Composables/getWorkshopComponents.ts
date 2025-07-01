@@ -2,10 +2,11 @@ import type { Component } from 'vue'
 
 import WowsbarBanner from '@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerWorkshop.vue'
 import Text from '@/Components/CMS/Webpage/Text/TextContentWorkshop.vue'
-import CTA from '@/Components/CMS/Webpage/CTA/CTAWorkshop.vue'
+
+import CTA from '@/Components/CMS/Webpage/Cta1/Cta1Workshop.vue'
 import ImageWorkshop from '@/Components/CMS/Webpage/Image/ImageWorkshop.vue'
-import CTA2 from '@/Components/CMS/Webpage/CTA2/CTA2Workshop.vue'
-import CTA3 from '@/Components/CMS/Webpage/CTA3/CTA3Workshop.vue'
+import CTA2 from '@/Components/CMS/Webpage/Cta2/Cta2Workshop.vue'
+import CTA3 from '@/Components/CMS/Webpage/Cta3/Cta3Workshop.vue'
 import Gallery from '@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'
 import Pricing from '@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'
 import Timeline from '@/Components/CMS/Webpage/Timeline/TimelineWorkshop.vue'
@@ -13,7 +14,7 @@ import Iframe from '@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'
 import BentoGrid from '@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'
 import Overview from '@/Components/CMS/Webpage/Overview/OverviewWorkshop.vue'
 import Script from '@/Components/CMS/Webpage/Script/ScriptWorkShop.vue'
-import  CtaAurora1 from "@/Components/CMS/Webpage/CTAAurora1/CtaAurora1Workshop.vue"
+import  CtaAurora1 from "@/Components/CMS/Webpage/CtaAurora1/CtaAurora1Workshop.vue"
 import Overview2 from "@/Components/CMS/Webpage/Overview2/Overview2Workshop.vue"
 import Footer1 from '@/Components/CMS/Website/Footers/footerTheme1/Footer1Workshop.vue'
 import Topbar1 from '@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Workshop.vue'
@@ -39,11 +40,12 @@ import SubDepartments1Workshop from '@/Components/CMS/Webpage/SubDepartement1/Su
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
-import CTAVideo1Workshop from '@/Components/CMS/Webpage/CTAVideo1/CTAVideo1Workshop.vue'
+import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
 import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
-import Cta4 from '@/Components/CMS/Webpage/CTAImageLeft/CTA4Workshop.vue'
+import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Workshop.vue'
 import SeeAlso1Workshop from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'
+
 
 
 export const getComponent = (componentName: string) => {

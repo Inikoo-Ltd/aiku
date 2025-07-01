@@ -1,3 +1,5 @@
+import { parse } from 'node-html-parser'
+
 export const resolveMigrationLink = (
 	href?: string,
 	migration_redirect?: MigrationRedirect | null
@@ -27,16 +29,36 @@ export const resolveMigrationHrefInHTML = (
 ): string => {
 	if (!html || !migration_redirect?.need_changes_url || !migration_redirect.to_url) return html
 
-	const tempEl = document.createElement('div')
-	tempEl.innerHTML = html
+	// Check if we're in a browser environment
+	if (typeof document !== 'undefined') {
+		// Browser environment - use DOM APIs
+		const tempEl = document.createElement('div')
+		tempEl.innerHTML = html
 
-	const anchors = tempEl.querySelectorAll('a[href]')
-	anchors.forEach((a) => {
-		const originalHref = a.getAttribute('href') || ''
-		const updatedHref = resolveMigrationLink(originalHref, migration_redirect)
-		if (updatedHref) a.setAttribute('href', updatedHref)
-	})
+		const anchors = tempEl.querySelectorAll('a[href]')
+		anchors.forEach((a) => {
+			const originalHref = a.getAttribute('href') || ''
+			const updatedHref = resolveMigrationLink(originalHref, migration_redirect)
+			if (updatedHref) a.setAttribute('href', updatedHref)
+		})
 
-	return tempEl.innerHTML
+		return tempEl.innerHTML
+	} else {
+		// Server environment - use node-html-parser
+		try {
+			const root = parse(html)
+
+			const anchors = root.querySelectorAll('a[href]')
+			anchors.forEach((a) => {
+				const originalHref = a.getAttribute('href') || ''
+				const updatedHref = resolveMigrationLink(originalHref, migration_redirect)
+				if (updatedHref) a.setAttribute('href', updatedHref)
+			})
+
+			return root.toString()
+		} catch (error) {
+			console.error('Error parsing HTML in server environment:', error)
+			return html
+		}
+	}
 }
-

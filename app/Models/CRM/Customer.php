@@ -28,7 +28,7 @@ use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
@@ -57,7 +57,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -139,7 +138,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CreditTransaction> $creditTransactions
  * @property-read Collection<int, \App\Models\CRM\CustomerNote> $customerNotes
  * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
- * @property-read Collection<int, Platform> $customerSalesChannelsXXX
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read EbayUser|null $ebayUser
@@ -150,6 +148,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, MagentoUser> $magentoUsers
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, MitSavedCard> $mitSavedCard
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
@@ -223,10 +222,10 @@ class Customer extends Model implements HasMedia, Auditable
 
 
     protected $attributes = [
-        'data'           => '{}',
-        'settings'       => '{}',
-        'location'       => '{}',
-        'migration_data' => '{}',
+        'data'                    => '{}',
+        'settings'                => '{}',
+        'location'                => '{}',
+        'migration_data'          => '{}',
         'contact_name_components' => '{}'
     ];
 
@@ -386,17 +385,10 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Portfolio::class);
     }
 
-    public function customerSalesChannelsXXX(): BelongsToMany
-    {
-        return $this->belongsToMany(Platform::class, 'customer_sales_channels')
-            ->withPivot('id', 'platform_id', 'group_id', 'organisation_id', 'shop_id', 'reference')->withTimestamps();
-    }
-
     public function customerSalesChannels(): HasMany
     {
         return $this->hasMany(CustomerSalesChannel::class);
     }
-
 
 
     public function transactions(): HasMany
@@ -437,6 +429,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function amazonUsers(): HasMany
     {
         return $this->hasMany(AmazonUser::class);
+    }
+
+    public function magentoUsers(): HasMany
+    {
+        return $this->hasMany(MagentoUser::class);
     }
 
     public function deliveryNotes(): HasMany

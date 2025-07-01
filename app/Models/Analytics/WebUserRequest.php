@@ -29,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $browser
  * @property string $ip_address
  * @property string $location
+ * @property int|null $organisation_id
+ * @property int|null $webpage_id
  * @property-read WebUser $webUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest newQuery()

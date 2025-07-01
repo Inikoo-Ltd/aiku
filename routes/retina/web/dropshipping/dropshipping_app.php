@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Amazon\AuthorizeRetinaAmazonUser;
 use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
+use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
@@ -43,6 +44,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCus
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DownloadRetinaOrderTransactionsTemplate;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
+use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +68,8 @@ Route::prefix('platform')->as('platform.')->group(function () {
 
     Route::post('amazon-user/authorize', AuthorizeRetinaAmazonUser::class)->name('amazon.authorize');
     Route::get('amazon-user-callback', CallbackRetinaAmazonUser::class)->name('amazon.callback');
+
+    Route::post('magento/authorize', StoreMagentoUser::class)->name('magento.store');
 });
 
 Route::prefix('client')->as('client.')->group(function () {
@@ -91,6 +95,7 @@ Route::prefix('orders')->as('orders.')->group(function () {
 
 Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
     Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
+    Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');

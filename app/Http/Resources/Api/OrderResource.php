@@ -55,6 +55,7 @@ class OrderResource extends JsonResource
                 ],
                 'estimated_weight' => $estWeight
             ],
+            'is_fully_paid'            => $this->total_amount == $this->payment_amount,
             'transactions' => TransactionsResource::collection($order->transactions),
         ];
     }

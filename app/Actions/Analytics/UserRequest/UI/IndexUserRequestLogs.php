@@ -79,13 +79,14 @@ class IndexUserRequestLogs extends GrpAction
     public function htmlResponse(LengthAwarePaginator $requests, ActionRequest $request): Response
     {
         $subNavigation = $this->getUsersNavigation($this->group, $request);
+        $title = __('User Requests');
         return Inertia::render(
             'SysAdmin/UserRequests',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('User Requests'),
+                'title'       => $title,
                 'pageHead'    => [
-                    'title'   => __('User Requests'),
+                    'title'   => $title,
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => UserRequestLogsResource::collection($requests),

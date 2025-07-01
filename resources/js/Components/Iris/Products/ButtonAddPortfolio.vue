@@ -109,7 +109,7 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
                 isLoadingSpecificChannel.value.push(channelId)
             },
             onSuccess: () => {
-                if (!productHasPortfolioList.value.includes(channelId)) {
+                if (!productHasPortfolioList.value?.includes(channelId)) {
                     productHasPortfolioList.value = [...productHasPortfolioList.value, channelId]
                 }
 
@@ -142,12 +142,12 @@ const _popover = ref()
 
 const isInAllChannels = computed(() => {
   const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.some(id => productHasPortfolioList.value.includes(id))
+  return allChannelIds.some(id => productHasPortfolioList.value?.includes(id))
 })
 
 const CheckChannels = computed(() => {
   const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.every(id => productHasPortfolioList.value.includes(id))
+  return allChannelIds.every(id => productHasPortfolioList.value?.includes(id))
 })
 
 
@@ -163,12 +163,13 @@ watch(() => props.productHasPortfolio, (newVal) => {
         <div v-if="product.stock > 0" class="flex items-center gap-2 mt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
+         
                     <Button v-if="isInAllChannels"
                         :label="CheckChannels ? 'Exist on all channels' : 'Exist on some channels'" type="tertiary" disabled
                         class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
-                        :loading="isLoadingAllPortfolios" :icon="faPlus"
-                        class="border-none border-transparent rounded-r-none" full size="l" style="border: 0px" />
+                        :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
+                        class="border-none border-transparent" full size="l" style="border: 0px" />
 
                     <Button v-if="!CheckChannels"
                         @click="(e) => (_popover?.toggle(e), Object.keys(channelList).length ? null : emits('refreshChannels'))"
@@ -207,7 +208,7 @@ watch(() => props.productHasPortfolio, (newVal) => {
         </div>
     </div>
 
-    <Link v-else href="app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600">
+    <Link v-else href="app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
     {{ trans("Login to add to your portfolio") }}
     </Link>
 </template>

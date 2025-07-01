@@ -109,7 +109,11 @@ const onUploadToShopify = () => {
 
 const downloadUrl = (type: string) => {
     // return '';
-    return route(props.download_route[type].name, props.download_route[type].parameters);
+    if (props.download_route?.[type]?.name) {
+        return route(props.download_route[type].name, props.download_route[type].parameters);
+    } else {
+        return ''
+    }
 };
 
 const _popover = ref()
@@ -168,13 +172,16 @@ const _popover = ref()
                                     full
                                     :style="'tertiary'" />
                             </a>
-                            <a :href="downloadUrl('json')" target="_blank" rel="noopener">
+                            <!-- <a :href="downloadUrl('json')" target="_blank" rel="noopener"> -->
                                 <Button
                                     :icon="faBracketsCurly"
                                     label="JSON"
                                     full
-                                    :style="'tertiary'" />
-                            </a>
+                                    :style="'tertiary'"
+                                    disabled
+                                    v-tooltip="trans('This feature is not available yet')"
+                                />
+                            <!-- </a> -->
                             <a :href="downloadUrl('images')" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faImage"
@@ -221,7 +228,7 @@ const _popover = ref()
 
     <RetinaTablePortfolios v-else :data="props.products" :tab="'products'" :selectedData />
 
-    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[85vh] overflow-y-auto">
+    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <AddPortfolios
             v-if="platform_data?.type === 'manual'"
             :step="step"

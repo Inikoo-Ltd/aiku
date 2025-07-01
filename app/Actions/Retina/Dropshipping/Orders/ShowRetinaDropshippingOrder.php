@@ -93,12 +93,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'method'     => 'patch'
                     ]
                 ],
-
+                'fffff' => 'wwwwwwwwww',
 
                 'timelines' => $finalTimeline,
 
                 'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
-
 
                 'box_stats' => ShowOrder::make()->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
