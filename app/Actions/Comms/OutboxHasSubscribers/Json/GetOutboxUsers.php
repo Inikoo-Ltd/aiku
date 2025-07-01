@@ -69,9 +69,9 @@ class GetOutboxUsers extends OrgAction
     //     return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
     // }
 
-    public function inFulfilment(Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request): LengthAwarePaginator
+    public function asController(Outbox $outbox, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromShop($outbox->shop, $request);
 
         return $this->handle($outbox);
     }
