@@ -29,7 +29,6 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\MagentoUser;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
@@ -139,7 +138,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CreditTransaction> $creditTransactions
  * @property-read Collection<int, \App\Models\CRM\CustomerNote> $customerNotes
  * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
- * @property-read Collection<int, Platform> $customerSalesChannelsXXX
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read EbayUser|null $ebayUser
