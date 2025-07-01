@@ -70,109 +70,142 @@ const product = ref({
     images: props.data.product.data.images,
 })
 
-const OnUploadImages = (e) => {
-    product.value.images.push(...e.data)
-    openGallery.value = false
-}
+// const OnUploadImages = (e) => {
+//     product.value.images.push(...e.data)
+//     openGallery.value = false
+// }
 
-const OnPickImages = (e) => {
-    product.value.images.push(e)
-    openGallery.value = false
-}
+// const OnPickImages = (e) => {
+//     product.value.images.push(e)
+//     openGallery.value = false
+// }
 
-const deleteImage = async (data, index) => {
-    console.log(data)
+// const deleteImage = async (data, index) => {
+//     console.log(data)
 
-    try {
-        // router.delete(route(props.data.deleteImageRoute.name, {
-        //     ...props.data.deleteImageRoute.parameters, media: data.id
-        // }))
+//     try {
+//         // router.delete(route(props.data.deleteImageRoute.name, {
+//         //     ...props.data.deleteImageRoute.parameters, media: data.id
+//         // }))
 
-        if (selectedImage.value == index) selectedImage.value = 0
-        product.value.images.splice(index, 1)
-    } catch (error: any) {
-        console.log('error', error)
-        notify({
-            title: 'Failed',
-            text: 'cannot show stock images',
-            type: 'error'
-        })
-    }
-}
+//         if (selectedImage.value == index) selectedImage.value = 0
+//         product.value.images.splice(index, 1)
+//     } catch (error: any) {
+//         console.log('error', error)
+//         notify({
+//             title: 'Failed',
+//             text: 'cannot show stock images',
+//             type: 'error'
+//         })
+//     }
+// }
 
 
-function changeSelectedImage(index) {
-    selectedImage.value = index
-}
+// function changeSelectedImage(index) {
+//     selectedImage.value = index
+// }
 
 
 </script>
 
 
 <template>
-    <div class="grid grid-cols-4 gap-x-1 gap-y-4 p-4">
-        <div class="p-5 space-y-5 col-span-2">
-            <div class="relative">
-                <div class=" h-full aspect-square rounded-lg shadow">
-                    <TabGroup as="div" class="flex flex-col-reverse p-2.5" :selectedIndex="selectedImage"
-                        achange="changeSelectedImage">
-                        <div class="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
-                            <TabList class="grid grid-cols-3 gap-6">
-                                <Tab v-for="(image, index) in product.images" :key="image.id"
-                                    class="relative flex h-24 w-full cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4"
-                                    v-slot="{ selected }">
-                                    <span class="sr-only">{{ image.name }}</span>
-                                    <span class="absolute inset-0 overflow-hidden rounded-md ">
-                                        <Image :src="image.source" alt=""
-                                            class="h-full w-full object-cover object-center" />
-                                    </span>
-                                    <div :class="[selected ? 'ring-indigo-500' : 'ring-transparent', 'pointer-events-none absolute inset-0 rounded-md ring-2 ring-offset-2']"
-                                        aria-hidden="true">
+    <div class="flex flex-col md:grid md:grid-cols-4 gap-x-4 gap-y-4 p-4">
+        <div class="md:p-5 space-y-5 md:col-span-2">
+            <div class="h-auto w-full aspect-square rounded-lg shadow">
+                <TabGroup as="div" class="flex flex-col-reverse p-2.5" :selectedIndex="selectedImage"
+                    achange="changeSelectedImage">
+                    <div class="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
+                        <TabList class="grid grid-cols-3 gap-6">
+                            <Tab v-for="(image, index) in product.images" :key="image.id"
+                                class="relative flex h-20 w-full cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4"
+                                v-slot="{ selected }">
+                                <span class="sr-only">{{ image.name }}</span>
+                                <span class="absolute inset-0 overflow-hidden rounded-md ">
+                                    <Image :src="image.source" alt=""
+                                        class="h-full w-full object-cover object-center" />
+                                </span>
+                                <div :class="[selected ? 'ring-indigo-500' : 'ring-transparent', 'pointer-events-none absolute inset-0 rounded-md ring-2 ring-offset-2']"
+                                    aria-hidden="true">
 
-                                    </div>
-                                    <font-awesome-icon v-if="false" :icon="['fas', 'trash']"
-                                        class="absolute top-2 right-2 text-red-400 cursor-pointer"
-                                        @click.stop="deleteImage(image, index)" />
-                                </Tab>
-                            </TabList>
-                        </div>
+                                </div>
+                                <!-- <font-awesome-icon v-if="false" :icon="['fas', 'trash']"
+                                    class="absolute top-2 right-2 text-red-400 cursor-pointer"
+                                    @click.stop="deleteImage(image, index)" /> -->
+                            </Tab>
+                        </TabList>
+                    </div>
 
-                        <TabPanels class="overflow-hidden duration-300">
-                            <!-- Menggunakan v-if pada elemen utama untuk kondisi gambar ada -->
-                            <template v-if="product.images.length > 0">
-                                <TabPanel v-for="image in product.images" :key="image.id">
-                                    <div
-                                        class="border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow aspect-[1/1] w-full h-[300px] relative overflow-hidden">
-                                        <Image :src="image.source" :alt="image.name" aclick="openGallery = true"
-                                            class="w-full h-full object-cover object-center" />
-                                    </div>
-                                </TabPanel>
-                            </template>
+                    <TabPanels class="overflow-hidden duration-300">
+                        <!-- Menggunakan v-if pada elemen utama untuk kondisi gambar ada -->
+                        <template v-if="product.images.length > 0">
+                            <TabPanel v-for="image in product.images" :key="image.id">
+                                <div
+                                    class="border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow aspect-[1/1] w-full h-[300px] relative overflow-hidden">
+                                    <Image :src="image.source" :alt="image.name" aclick="openGallery = true"
+                                        class="w-full h-full object-cover object-center" />
+                                </div>
+                            </TabPanel>
+                        </template>
 
-                            <!-- Menggunakan template v-else untuk kondisi gambar tidak ada -->
-                            <template v-else>
-                                <TabPanel>
-                                    <EmptyState
-                                        :data="{ title: 'You don\'t have any images', description: 'Click to upload' }"
-                                        aclick="openGallery = true" xclass="cursor-pointer hover:bg-gray-50" />
-                                </TabPanel>
-                            </template>
-                        </TabPanels>
+                        <!-- Menggunakan template v-else untuk kondisi gambar tidak ada -->
+                        <template v-else>
+                            <TabPanel>
+                                <EmptyState
+                                    :data="{ title: 'You don\'t have any images', description: 'Click to upload' }"
+                                    aclick="openGallery = true" xclass="cursor-pointer hover:bg-gray-50" />
+                            </TabPanel>
+                        </template>
+                    </TabPanels>
+                </TabGroup>
 
-                    </TabGroup>
-                </div>
+
+
+
+
+
+
+
+                
+                <!-- Image gallery -->
+                <TabGroup v-if="false" as="div" class="flex flex-col-reverse">
+                    <!-- Image selector -->
+                    <div class="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
+                        <TabList class="grid grid-cols-4 gap-6">
+                            <Tab v-for="image in product.images" :key="image.id" class="relative flex h-8 cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-indigo-500/50 focus:ring-offset-4" v-slot="{ selected }">
+                                <span class="sr-only">{{ image.name }}</span>
+                                <span class="absolute inset-0 overflow-hidden rounded-md">
+                                    <Image 
+                                        :src="image.source"
+                                        class="size-full object-cover"
+                                    />
+                                </span>
+                                <span :class="[selected ? 'ring-indigo-500' : 'ring-transparent', 'pointer-events-none absolute inset-0 rounded-md ring-2 ring-offset-2']" aria-hidden="true" />
+                            </Tab>
+                        </TabList>
+                    </div>
+
+                    <TabPanels>
+                        <TabPanel v-for="image in product.images" :key="image.id">
+                            <Image 
+                                :src="image.thumbnail"
+                                class="aspect-square w-full object-cover sm:rounded-lg"
+                            />
+                        </TabPanel>
+                    </TabPanels>
+                </TabGroup>
             </div>
         </div>
 
-        <!-- Order summary -->
+        <!-- Product Detail -->
         <section aria-labelledby="summary-heading"
             class="col-span-2 xborder xborder-gray-200 rounded-lg px-4 py-6 sm:p-4 lg:mt-0 lg:p-5">
             <!-- <h2 id="summary-heading" class="text-lg font-medium">{{ trans("Product summary") }}</h2> -->
 
-            <dl class="mt-6 space-y-8">
+            <dl class="mt-2 space-y-6">
                 <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Name") }}</dt>
-                    <dd class="font-bold text-lg ">{{ data?.product?.data?.name ?? '-' }}</dd>
+                    <dd class="font-bold text-xl">{{ data?.product?.data?.name ?? '-' }}</dd>
                 </div>
 
                 <div class="flex flex-col">
@@ -187,7 +220,7 @@ function changeSelectedImage(index) {
 
                 <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
-                    <dd class="text-sm font-medium">{{ data?.product?.data?.description ?? '-' }}</dd>
+                    <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow" v-html="data?.product?.data?.description"></dd>
                 </div>
             </dl>
         </section>
@@ -223,8 +256,8 @@ function changeSelectedImage(index) {
     </div>
 
 
-    <Gallery :open="openGallery" @on-close="openGallery = false"
+    <!-- <Gallery :open="openGallery" @on-close="openGallery = false"
         :uploadRoutes="'route(data.uploadImageRoute.name, data.uploadImageRoute.parameters)'" @on-upload="OnUploadImages"
         @on-pick="OnPickImages">
-    </Gallery>
+    </Gallery> -->
 </template>
