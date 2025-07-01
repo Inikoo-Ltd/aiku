@@ -63,6 +63,7 @@ class IndexRetinaDropshippingOrdersInPlatform extends RetinaAction
             'order_stats.number_item_transactions as number_item_transactions',
             'orders.date',
             'orders.total_amount',
+            'orders.payment_amount',
             'currencies.code as currency_code',
             'customer_clients.name as client_name',
         );

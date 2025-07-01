@@ -11,6 +11,7 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
 import axios from 'axios'
+import ProductSpecDocumentation from './ProductSpec&Documentation.vue'
 
 const props = defineProps<{
     product: {
@@ -18,13 +19,20 @@ const props = defineProps<{
         name: string
         description: string
         images: { source: string }[]
+        specifications: {
+            gross_weight: Number,
+            net_weight: Number,
+            barcode: Number,
+            type: string,
+            volume: string
+        }
         contents: {
             data: Array<{ id: number; title: string; text: string; type: 'information' | 'faq' }>
         }
     }
-    setting : {
-        product_specs : boolean,
-        faqs : boolean
+    setting: {
+        product_specs: boolean,
+        faqs: boolean
     }
 }>()
 
@@ -92,7 +100,7 @@ const debouncedUpdate = debounce((id: number, payload) => {
 }, 800)
 
 const updateLocalContent = (id: number, value: string) => {
-    debouncedUpdate(id,  value )
+    debouncedUpdate(id, value)
 }
 
 const addInformation = () => {
@@ -148,47 +156,25 @@ const openDisclosureId = ref<number | null>(null)
 
 <template>
     <div class="w-full">
-        <div v-if="setting.product_specs" class="mb-6">
-            <div v-if="informationContents.length === 0 && !loadingAdd"
-                class="text-center text-gray-500 text-sm py-6 italic border border-dashed border-gray-300 rounded">
-                <div class="py-2">No product information yet. Click the add button to insert new content.</div>
-            </div>
-
-            <div v-else class="space-y-3">
-                <template v-for="content in informationContents" :key="content.id">
-                    <Skeleton v-if="loadingDeleteIds.includes(content.id)" height="3rem" class="rounded-md mb-3" />
-                    <div v-else class="relative">
-                        <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
-                            class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
-                            <EditorV2 :modelValue="content.title"
-                                @update:model-value="(value) => updateLocalContent(content.id, {...content,title : value })" />
-                            <FontAwesomeIcon :icon="faChevronDown"
-                                class="text-sm text-gray-500 transform transition-transform duration-200"
-                                :class="{ 'rotate-180': openDisclosureId === content.id }" />
-                        </div>
-                        <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
-                            <EditorV2 :modelValue="content.text"
-                                @update:model-value="(value) => updateLocalContent(content.id, {...content,text : value })" />
-                        </div>
+        <!-- Product Specification Section (Static, Read-Only, No Loop) -->
+        <div v-if="setting.product_specs" class="mb-6 relative">
+            <div class="space-y-2">
+                <!-- Spec Item #1 -->
+                <div class="relative hover:bg-gray-50 rounded transition">
+                    <div @click="openDisclosureId = openDisclosureId === 'spec-1' ? null : 'spec-1'"
+                        class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
+                        <div class="text-base font-semibold">Product Specifications & Documentations</div>
+                        <FontAwesomeIcon :icon="faChevronDown"
+                            class="text-sm text-gray-500 transform transition-transform duration-200"
+                            :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" />
                     </div>
-                </template>
-            </div>
-
-            <!-- Add Information Button (independent hover) -->
-            <div class="relative group/information w-full" v-if="informationContents.length === 0">
-                <!-- Tombol hanya muncul saat hover parent -->
-                <button @click="addInformation"
-                   class="absolute w-full top-0 right-0 opacity-0 group-hover/information:opacity-100 transition-opacity duration-300 text-sm flex items-center justify-center gap-2 text-indigo-600 hover:text-indigo-800 border border-indigo-600 hover:border-indigo-800 rounded px-3 py-2 bg-white z-10"
-                    title="Add Information">
-                    <FontAwesomeIcon :icon="faPlus" />
-                    <span>Add Info</span>
-                </button>
-
-                <!-- Konten yang di bawah tombol -->
-                <div class="">
+                    <div v-show="openDisclosureId === 'spec-1'" class="text-sm text-gray-600 whitespace-pre-line py-2">
+                       <ProductSpecDocumentation :product="product" ></ProductSpecDocumentation>
+                    </div>
                 </div>
             </div>
         </div>
+
 
         <!-- FAQ Section -->
         <div v-if="setting.faqs" class="mb-6 relative">
@@ -206,7 +192,7 @@ const openDisclosureId = ref<number | null>(null)
                         <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
                             class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
                             <EditorV2 :modelValue="content.title"
-                                @update:model-value="(value) => updateLocalContent(content.id, {...content,title : value })" />
+                                @update:model-value="(value) => updateLocalContent(content.id, { ...content, title: value })" />
                             <div class="flex items-center gap-4">
                                 <button @click.stop="confirmDelete(content.id)"
                                     class="text-red-500 hover:text-red-700 transition-opacity text-xs"
@@ -220,7 +206,7 @@ const openDisclosureId = ref<number | null>(null)
                         </div>
                         <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
                             <EditorV2 :modelValue="content.text"
-                                @update:model-value="(value) => updateLocalContent(content.id, {...content,text : value })" />
+                                @update:model-value="(value) => updateLocalContent(content.id, { ...content, text: value })" />
                         </div>
                     </div>
                 </template>
