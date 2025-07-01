@@ -44,7 +44,7 @@ class GetProductsInProductCategory extends OrgAction
             $queryBuilder->where('sub_department_id', $parent->id);
         }
 
-        if($seeAlso) {
+        if ($seeAlso) {
             $queryBuilder->take(4);
         }
 

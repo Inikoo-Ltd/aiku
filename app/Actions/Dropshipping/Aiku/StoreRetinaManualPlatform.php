@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
-use App\Actions\CRM\Customer\Hydrators\CustomerHydratePlatforms;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCustomerSalesChannels;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\RetinaAction;
@@ -46,7 +46,7 @@ class StoreRetinaManualPlatform extends RetinaAction
             ]
         );
 
-        CustomerHydratePlatforms::dispatch($customer);
+        CustomerHydrateCustomerSalesChannels::dispatch($customer->id);
         CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel);
 
         return $customerSalesChannel;

@@ -38,9 +38,9 @@ class UpdateRetinaTransaction extends RetinaAction
     public function prepareForValidation()
     {
         if ($this->order->state != OrderStateEnum::CREATING) {
-                throw ValidationException::withMessages([
-                    'messages' => __('This order has been submitted and cannot be updated'),
-                ]);
+            throw ValidationException::withMessages([
+                'messages' => __('This order has been submitted and cannot be updated'),
+            ]);
         }
     }
 

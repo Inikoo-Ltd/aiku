@@ -114,10 +114,10 @@ class IndexDropshippingCustomerSalesChannels extends RetinaAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'platform_name', label: __('Platform'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'platform_name', label: __('Platform'), canBeHidden: false)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Store Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_portfolios', label: __('Products in portfolio'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_portfolios', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'status', label: __('Status'), canBeHidden: false)

@@ -141,4 +141,3 @@ Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
 
 Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
-

@@ -95,7 +95,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             ? 'Dropshipping/Platform/PlatformManualDashboard'
             : 'Dropshipping/Platform/PlatformDashboard';
 
-  
+
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
 
         return Inertia::render($renderPage, [
@@ -200,10 +200,10 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         ];
 
         $stats['portfolios'] = [
-            'label'       => __('Portfolios'),
+            'label'       => __('Products'),
             'icon'        => 'fal fa-cube',
             'count'       => $customerSalesChannel->number_portfolios,
-            'description' => __('total portfolios'),
+            'description' => __('total products'),
             'route'       => [
                 'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index' : 'retina.dropshipping.customer_sales_channels.portfolios.index',
                 'parameters' => [

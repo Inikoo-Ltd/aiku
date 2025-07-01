@@ -26,7 +26,6 @@ interface Portfolio {
     image: string
     quantity_left: number
     price: number
-    price_inc_vat: number
     currency_code: string
     customer_price: number
     margin: number
@@ -295,7 +294,7 @@ const debounceUpdateName = debounce((description: string) => {
             </template>
         </Column> -->
 
-        <Column field="customer_price" header="RPP/Selling Price (Inc VAT)" style="max-width: 250px;">
+        <Column field="customer_price" header="RPP (Inc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber

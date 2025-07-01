@@ -56,8 +56,7 @@ class DropshippingPortfolioResource extends JsonResource
             $image = $this->item->imageSources(64, 64);
             $category = $department . $this->item->family?->name;
         }
-        $VAT = $price * 0.2;
-        $priceVAT = $price + $VAT;
+
 
         $shopifyUploadRoute = [];
         $wooUploadRoute = [];
@@ -145,8 +144,6 @@ class DropshippingPortfolioResource extends JsonResource
             'selling_price'             => $this->selling_price,
             'customer_price'            => $this->customer_price,
             'margin'                    => $this->margin,
-            'vat_rate'                  => $this->vat_rate,
-            'price_inc_vat'             => $this->price_inc_vat,
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,

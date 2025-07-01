@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 01-07-2025-18h-02m
@@ -9,13 +10,8 @@
 namespace App\Actions\Helpers\Brand\Json;
 
 use App\Actions\IrisAction;
-use App\Actions\OrgAction;
-use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\BrandResource;
-use App\Http\Resources\Catalogue\TagsResource;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
-use App\Models\Helpers\Tag;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
