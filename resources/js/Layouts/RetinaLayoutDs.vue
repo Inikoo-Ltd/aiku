@@ -115,7 +115,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<div class="flex justify-between absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
+					<div class="flex justify-between items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
 						<Breadcrumbs
 							class=""
 							:breadcrumbs="usePage().props.breadcrumbs ?? []"
@@ -124,18 +124,25 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 							style="max-width: calc(1280px - 200px)"
 						/>
 
-						<Link v-if="layout.iris?.is_logged_in" :href="route('retina.top_up.dashboard')" class="flex items-center gap-x-2 text-indigo-600">
+						<Link
+							v-if="layout.iris?.is_logged_in"
+							:href="route('retina.top_up.dashboard')"
+							class="bg-white border border-gray-300 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
+						>
 							<!-- <FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" /> -->
-							{{ trans("Your balance") }}:
+							{{ trans("My balance") }}:
 							<span class="font-semibold tabular-nums">
 								{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0)}}
 							</span>
 						</Link>
 					</div>
+					
 					<div
 						xstyle="max-width: calc(1280px - 200px)"
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
 						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
+
+						<!-- Main content of the page -->
 						<slot name="default" />
 					</div>
 				</div>
