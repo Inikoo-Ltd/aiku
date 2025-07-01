@@ -80,46 +80,47 @@ const debounceUpdateDescription = debounce((description: string) => {
 }, 1000)
 
 
+// Dont delete this
 // Section: Modal Shipping
-const isModalShipping = ref(false)
-const selectedShippingToShowInModal = ref(null)
-const dummyShipping = [
-    {
-        form: '0kg',
-        to: '15kg',
-        code: 'SPP01',
-        location: 'UK Mainland',
-        expedited_tracked: '4.79'
-    },
-    {
-        form: '0kg',
-        to: '15kg',
-        code: 'SPP02',
-        location: 'UK Mainland',
-        expedited_tracked: '4.79'
-    },
-    {
-        form: '0kg',
-        to: '15kg',
-        code: 'SPP03',
-        location: 'UK Mainland',
-        expedited_tracked: '4.79'
-    },
-    {
-        form: '0kg',
-        to: '15kg',
-        code: 'SPP04',
-        location: 'UK Mainland',
-        expedited_tracked: '4.79'
-    },
-    {
-        form: '0kg',
-        to: '15kg',
-        code: 'SPP05',
-        location: 'UK Mainland',
-        expedited_tracked: '4.79'
-    }
-]
+// const isModalShipping = ref(false)
+// const selectedShippingToShowInModal = ref(null)
+// const dummyShipping = [
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP01',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP02',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP03',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP04',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP05',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     }
+// ]
 </script>
 
 <template>
@@ -131,7 +132,7 @@ const dummyShipping = [
         <template #header>
             <div class="flex justify-between items-center">
                 <div class="text-xl">
-                    Total: <span class="font-bold">{{ portfolios.length }}</span>
+                    {{ trans("Total") }}: <span class="font-bold">{{ portfolios.length }}</span>
                 </div>
                 <IconField>
                     <InputIcon>
@@ -187,7 +188,7 @@ const dummyShipping = [
 
         <Column field="quantity_left" header="Stock" style="max-width: 200px;" sortable>
             <template #body="{ data }">
-                <div class="">
+                <div class="text-right">
                     {{ locale.number(data.quantity_left) }}
                 </div>
             </template>
@@ -214,7 +215,7 @@ const dummyShipping = [
             <template #header="{ column }">
                 <div v-tooltip="isIncludeVat ? trans('Include VAT') : trans('Exclude VAT')">
                     <div class="font-semibold">
-                        Cost Price
+                        {{ trans("Cost Price") }}
                     </div>
 
                     <div class="text-center flex items-center justify-center gap-x-1">
@@ -312,41 +313,24 @@ const dummyShipping = [
 
         <Column field="margin" header="Profit Margin (%)" style="max-width: 125px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
+                <div class="whitespace-nowrap relative pr-2 text-right">
                     {{ data.margin }}%
                 </div>
             </template>
         </Column>
 
-        <Column field="shipping" header="Shipping (Exc VAT)">
+        <!-- Dont delete this -->
+        <!-- <Column field="shipping" header="Shipping (Exc VAT)">
             <template #body="{ data }">
                 <div @click="isModalShipping = true, selectedShippingToShowInModal = data" class="text-gray-400 hover:text-gray-600 cursor-pointer hover:bg-gray-100 rounded flex justify-center py-1 items-center gap-x-1">
                     <FontAwesomeIcon class="text-blue-500" icon="fal fa-box" fixed-width aria-hidden="true" />
                     Show
                 </div>
             </template>
-        </Column>
+        </Column> -->
 
         <Column field="description" header="Description">
             <template #body="{ data }">
-                <!-- <FontAwesomeIcon
-                    @click="() => {
-                        isModalDescription = true
-                        selectedDataToEditDescription = data
-                    }"
-                    class="text-blue-500"
-                    icon="fal fa-bars"
-                    aria-hidden="true" /> -->
-<!--                <div class="whitespace-nowrap relative pr-2">
-                    <textarea
-                        v-model="data.description"
-                        class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                        :placeholder="trans('No description')"
-                        @blur="(e) => emits('updateSelectedProducts', data, {customer_description: data.description}, 'description')"
-                    >
-                    </textarea>
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], undefined)" />
-                </div>-->
                 <Button
                     type="tertiary"
                     icon="fal fa-text"
@@ -402,8 +386,9 @@ const dummyShipping = [
         </div>
     </Modal>
 
+    <!-- Dont delete this -->
     <!-- Modal: Shipping -->
-    <Modal :isOpen="isModalShipping" @onClose="isModalShipping = false" closeButton :isClosableInBackground="false" width="w-full max-w-4xl max-h-[500px]">
+    <!-- <Modal :isOpen="isModalShipping" @onClose="isModalShipping = false" closeButton :isClosableInBackground="false" width="w-full max-w-4xl max-h-[500px]">
         <div>
             <div class=" text-lg text-center mb-4">
                 Shipping detail for <span class="font-semibold">{{ selectedShippingToShowInModal?.code }}</span>
@@ -427,6 +412,6 @@ const dummyShipping = [
                 />
             </div>
         </div>
-    </Modal>
+    </Modal> -->
 
 </template>
