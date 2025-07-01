@@ -139,5 +139,5 @@ Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsIn
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
 
-Route::get('/{organisation:id}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
+Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
 
