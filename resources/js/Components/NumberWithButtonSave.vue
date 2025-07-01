@@ -216,7 +216,7 @@ const onClickPlusButton = () => {
 
 			<!-- Section: - and + -->
 			<div
-				class="transition-all relative inline-flex items-center justify-center"
+				class="w-fit transition-all relative inline-flex items-center justify-center"
 				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
 				<!-- Button: Minus -->
 				<div
