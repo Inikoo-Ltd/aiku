@@ -4,15 +4,14 @@ import { faPencil } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Autoplay, Pagination, Navigation } from 'swiper/modules'
+import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/autoplay'
 import { resolveResponsiveValue } from "@/Composables/Workshop"
 import { inject } from "vue"
-import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { resolveMigrationLink } from "@/Composables/SetUrl"
+
 
 library.add(faCube, faStar, faImage, faPencil)
 
@@ -48,7 +47,7 @@ const props = defineProps<{
 }>()
 
 
-const layout = inject('layout', layoutStructure)
+const layout = inject('layout', {})
 const migration_redirect = layout?.iris?.migration_redirect
 
 const getHref = (index: number) => {
@@ -104,141 +103,81 @@ const getColumnWidthClass = (layoutType: string, index: number) => {
 }
 
 
-/* const getImageSlots = (layoutType: string) => {
-  switch (layoutType) {
-    case "4": return 4
-    case "3":
-    case "211": return 3
-    case "2":
-    case "12":
-    case "21":
-    case "13":
-    case "31": return 2
-    default: return 1
-  }
-} */
-
-const getVal = (base: any, path?: string[]) =>{
-      return  resolveResponsiveValue(base, props.screenType, path);
+const getVal = (base: any, path?: string[]) => {
+  return resolveResponsiveValue(base, props.screenType, path);
 }
-
 </script>
 
 <template>
-  <section
-    :style="getStyles(fieldValue?.container?.properties, screenType)"
-    aria-label="Image Gallery Section"
-  >
-    <!-- Mobile Carousel -->
-    <Swiper
-      v-if="screenType === 'mobile' && fieldValue?.mobile?.type === 'carousel'"
-      :slides-per-view="1"
-      :loop="true"
-      :autoplay="false"
-      :pagination="{ clickable: true }"
-      :modules="[Autoplay, Pagination]"
-      class="w-full"
-      :style="getStyles(fieldValue?.value?.layout?.properties, screenType)"
-    >
-      <SwiperSlide
-        v-for="(image, index) in fieldValue?.value?.images"
-        :key="index"
-        class="w-full"
-      >
-        <a
-          v-if="getHref(index)"
-          :href="getHref(index)"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block w-full h-full"
-        >
-          <Image
-            :src="image?.source"
-            :alt="image?.properties?.alt || `image ${index + 1}`"
-            :imageCover="true"
-          
-            :style="{
+  <div id="cta1">
+    <section :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(fieldValue.container?.properties, screenType),
+      width: 'auto'
+    }" aria-label="Image Gallery Section">
+      <!-- Mobile Carousel -->
+      <Swiper v-if="screenType === 'mobile' && fieldValue?.mobile?.type === 'carousel'" :slides-per-view="1"
+        :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
+        class="w-full" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
+        <SwiperSlide v-for="(image, index) in fieldValue?.value?.images" :key="index" class="w-full">
+          <a v-if="getHref(index)" :href="getHref(index)" target="_blank" rel="noopener noreferrer"
+            class="block w-full h-full">
+            <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
               ...getStyles(fieldValue?.value?.layout?.properties, screenType),
               ...getStyles(image?.properties, screenType)
-            }"
-            :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
-          />
-        </a>
-        <div v-else class="block w-full h-full">
-          <Image
-            :src="image?.source"
-            :alt="image?.properties?.alt || `image ${index + 1}`"
-            :imageCover="true"
-        
-            :style="{
-              ...getStyles(fieldValue?.value?.layout?.properties, screenType),
-              ...getStyles(image?.properties, screenType)
-            }"
-            :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
-          />
-        </div>
-      </SwiperSlide>
-    </Swiper>
-
-    <!-- Desktop/Tablet Grid -->
-    <div
-      v-else
-      class="flex flex-wrap"
-    >
-      <div
-        v-for="index in fieldValue?.value?.images?.length"
-        :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
-        class="flex flex-col group relative  hover:bg-white/40 h-full"
-        :class="getColumnWidthClass(getVal(fieldValue?.value.layout_type), index - 1)"
-      >
-        <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
-          <a
-            v-if="getHref(index - 1)"
-            :href="getHref(index - 1)"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="block w-full h-full"
-          >
-            <Image
-              :src="fieldValue?.value?.images?.[index - 1]?.source"
-              :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`"
-              :imageCover="true"
-              class="w-full h-full aspect-square object-cover rounded-lg"
-              :style="{
-                ...getStyles(fieldValue?.value?.layout?.properties, screenType),
-                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType)
-              }"
-              :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
-            />
+            }" :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" />
           </a>
-
           <div v-else class="block w-full h-full">
-            <Image
-              :src="fieldValue?.value?.images?.[index - 1]?.source"
-              :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`"
-              :imageCover="true"
-              class="w-full h-full aspect-square object-cover rounded-lg"
-              :style="{
-                ...getStyles(fieldValue?.value?.layout?.properties, screenType),
-                ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType),
-              }"
-              :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }"
-            />
+            <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
+              ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+              ...getStyles(image?.properties, screenType)
+            }" :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" />
           </div>
+        </SwiperSlide>
+      </Swiper>
 
-          <div v-if="fieldValue?.value?.caption?.use_caption" class="flex justify-center">
-              <span v-if="fieldValue?.value?.images?.[index - 1]?.caption" :style="getStyles(fieldValue?.value?.caption?.properties, screenType)">{{fieldValue?.value?.images?.[index - 1]?.caption}}</span>
-              <span v-else class="text-gray-300 font-semibold">No caption</span>
-           
+      <!-- Desktop/Tablet Grid -->
+      <div v-else class="flex flex-wrap">
+        <div v-for="index in fieldValue?.value?.images?.length"
+          :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
+          class="flex flex-col group relative  hover:bg-white/40 h-full"
+          :class="getColumnWidthClass(getVal(fieldValue?.value.layout_type), index - 1)">
+          <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
+            <a v-if="getHref(index - 1)" :href="getHref(index - 1)" target="_blank" rel="noopener noreferrer"
+              class="block w-full h-full">
+              <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
+                :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
+                class="w-full h-full aspect-square object-cover rounded-lg" :style="{
+                  ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+                  ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType)
+                }" :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }" />
+            </a>
+
+            <div v-else class="block w-full h-full">
+              <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
+                :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
+                class="w-full h-full aspect-square object-cover rounded-lg" :style="{
+                  ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+                  ...getStyles(fieldValue?.value?.images?.[index - 1]?.properties, screenType),
+                }" :imgAttributes="{ ...fieldValue?.value?.images?.[index - 1]?.attributes, loading: 'lazy' }" />
             </div>
-        </template>
+
+            <div v-if="fieldValue?.value?.caption?.use_caption" class="flex justify-center">
+              <span v-if="fieldValue?.value?.images?.[index - 1]?.caption"
+                :style="getStyles(fieldValue?.value?.caption?.properties, screenType)">{{ fieldValue?.value?.images?.[index
+                  - 1]?.caption}}</span>
+              <span v-else class="text-gray-300 font-semibold">No caption</span>
+
+            </div>
+          </template>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>
 
 <style scoped lang="scss">
-:deep(.swiper-pagination-bullet){
+:deep(.swiper-pagination-bullet) {
   background-color: #d1d5db !important; // Tailwind's gray-300
   opacity: 1;
   transition: background-color 0.3s ease;
@@ -246,8 +185,6 @@ const getVal = (base: any, path?: string[]) =>{
 
 
 :deep(.swiper-pagination-bullet-active) {
-    background: #4b5563 !important;
+  background: #4b5563 !important;
 }
-
 </style>
-
