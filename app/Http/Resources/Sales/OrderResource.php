@@ -31,6 +31,7 @@ class OrderResource extends JsonResource
             'is_fully_paid' => $order->total_amount == $order->payment_amount,
             'unpaid_amount' => $order->total_amount - $order->payment_amount,
              'route_to_pay_unpaid' => [
+                 'method' => 'post',
                  'name' => 'retina.models.place-order-pay-by-bank',
                  'parameters' => [
                      'order' => $order->id,
