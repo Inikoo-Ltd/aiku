@@ -79,9 +79,10 @@ const selectImage = (code: string) => {
 const GetPayment = async () => {
     try {
         const response = await axios.get(
-            route('grp.org.accounting.org_payment_service_providers.index', { organisation: route().params['organisation'] })
+            route('grp.json.org_payment_service_providers.index', { organisation: route().params['organisation'] })
         );
         
+        console.log(response)
         if (response?.data?.data) {
             payments.value = response.data.data.map((item) => ({
                 name: item.name,

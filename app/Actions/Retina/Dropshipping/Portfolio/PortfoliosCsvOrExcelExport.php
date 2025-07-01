@@ -113,7 +113,7 @@ class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings
         $query = Portfolio::query();
 
         $query->where('customer_id', $this->customer->id);
-        $query->where('customer_sales_channel', $this->customerSalesChannel->id);
+        $query->where('customer_sales_channel_id', $this->customerSalesChannel->id);
 
         $query->with(['item']);
         $query->with(['item.image']);

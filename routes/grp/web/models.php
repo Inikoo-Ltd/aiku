@@ -583,11 +583,10 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
     });
 });
 
-Route::name('fulfilment.')->prefix('fulfilment/{fulfilment}')->group(function () {
-    Route::name('outboxes.')->prefix('outboxes/{outbox}')->group(function () {
-        Route::post('subscriber', [StoreManyOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.store')->withoutScopedBindings();
-        Route::delete('subscriber/{outBoxHasSubscriber:id}', [DeleteOutboxHasSubscriber::class, 'inFulfilment'])->name('subscriber.delete')->withoutScopedBindings();
-    });
+
+Route::name('outboxes.')->prefix('outboxes/{outbox}')->group(function () {
+    Route::post('subscriber', StoreManyOutboxHasSubscriber::class)->name('subscriber.store')->withoutScopedBindings();
+    Route::delete('subscriber/{outBoxHasSubscriber:id}', DeleteOutboxHasSubscriber::class)->name('subscriber.delete')->withoutScopedBindings();
 });
 
 Route::post('fulfilment-customer-note/{fulfilmentCustomer}', StoreFulfilmentCustomerNote::class)->name('fulfilment_customer_note.store');

@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Accounting\Payment\Json\GetRefundPayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
@@ -59,7 +60,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 
-Route::get('fulfilment/{fulfilment}/comms/outboxes/{outbox}/users', [GetOutboxUsers::class, 'inFulfilment'])->name('fulfilment.outbox.users.index');
+Route::get('comms/outboxes/{outbox}/users', GetOutboxUsers::class)->name('outbox.users.index');
 
 Route::get('fulfilment/{fulfilment}/supervisors', [GetSupervisorUsers::class, 'inFulfilment'])->name('fulfilment.supervisors.index');
 
@@ -137,3 +138,6 @@ Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsIn
 
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
+
+Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
+

@@ -24,7 +24,7 @@ class PortfoliosZipExport
 
 
         $imageItems = $customer->portfolios()
-            ->where('customer_sales_channel', $customerSalesChannel->id)
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->with(['item'])
             ->with(['item.images'])
             ->get()

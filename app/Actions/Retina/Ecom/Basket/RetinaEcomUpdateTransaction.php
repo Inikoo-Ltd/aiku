@@ -46,7 +46,7 @@ class RetinaEcomUpdateTransaction extends RetinaAction
     {
         if ($this->order->state != OrderStateEnum::CREATING) {
                 throw ValidationException::withMessages([
-                    'messages' => __('This order has been submitted and cannot be updated'),
+                    'message' => __('This order has been submitted and cannot be updated'),
                 ]);
         }
     }

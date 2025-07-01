@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Http\Resources\Mail\OutboxHasSubscribersResource;
 use App\Models\Comms\Outbox;
-use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
@@ -94,10 +93,10 @@ class StoreManyOutboxHasSubscriber extends OrgAction
         return $rules;
     }
 
-    public function inFulfilment(Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request)
+    public function asController(Outbox $outbox, ActionRequest $request)
     {
         $this->outbox = $outbox;
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromShop($outbox->shop, $request);
 
         $this->handle($outbox, $this->validatedData);
     }
