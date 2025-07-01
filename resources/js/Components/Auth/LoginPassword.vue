@@ -28,6 +28,8 @@ const props = withDefaults(defineProps<{
 const handleChange = (form) => {
     if (form.fieldType === 'edit') {
         form.clearErrors()
+    } else {
+        form.clearErrors(props.fieldName)
     }
 }
 
@@ -37,7 +39,7 @@ const showPassword = ref(true);
 
 <template>
     <div class="w-full relative rounded-md shadow-sm">
-        <div class="flex">
+        <div class="flex" :class="form.errors[fieldName] ? 'errorShake' : ''">
             <input v-bind="$attrs" @input="handleChange(form)" v-model="form[fieldName]" :type="showPassword ? 'password' : 'text'"  autocomplete="off"
                 :placeholder="(props.placeholder ? trans(props.placeholder) : '')" class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
             <button type="button" @click="showPassword = !showPassword" :id="'show-password-' +  fieldName"
@@ -53,7 +55,7 @@ const showPassword = ref(true);
             <FontAwesomeIcon v-if="form.processing && showProcessing" icon="fad fa-spinner-third" class="h-5 w-5 animate-spin"/>
         </div>
     </div>
-    <p v-if="form.errors[fieldName]" class="mt-2 text-sm text-red-600" id="email-error">{{ form.errors[fieldName] }}</p>
+    <p v-if="form.errors[fieldName]" class="mt-2 text-sm text-red-600" id="password-error">{{ form.errors[fieldName] }}</p>
 </template>
 
 
