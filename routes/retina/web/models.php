@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
 use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
+use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
@@ -40,6 +41,7 @@ use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnlinkRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
@@ -218,7 +220,8 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
-    Route::post('', StoreRetinaCustomerClient::class)->name('customer-client.store');
+    Route::post('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
+    Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('fulfilment', StoreRetinaFulfilmentCustomerClient::class)->name('fulfilment.customer-client.store');
     Route::post('fulfilment-client-with-order', StoreRetinaFulfilmentCustomerClientWithOrder::class)->name('fulfilment.customer-client-with-order.store');
     Route::post('sync-all-stored-items', SyncAllRetinaStoredItemsToPortfolios::class)->name('sync_all_stored_items');
@@ -265,6 +268,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CatchRetinaOrdersFromWooCommerce::class)->name('woocommerce.orders.catch')->withoutScopedBindings();
     Route::get('ebay/{ebayUser:id}/catch-orders', CatchRetinaOrdersFromEbay::class)->name('ebay.orders.catch')->withoutScopedBindings();
     Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings();
+    Route::get('magento/{magentoUser:id}/catch-orders', GetRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings();
 
 
 });

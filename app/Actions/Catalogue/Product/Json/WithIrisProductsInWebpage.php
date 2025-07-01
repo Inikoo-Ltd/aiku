@@ -35,6 +35,14 @@ trait WithIrisProductsInWebpage
         });
     }
 
+    public function getNewArrivalsFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('new_arrivals', function ($query, $value) {
+            $days = is_numeric($value) ? (int) $value : 3;
+            $query->where('products.created_at', '>=', now()->subDays($days));
+        });
+    }
+
     public function getBaseQuery(string $stockMode): QueryBuilder
     {
         $queryBuilder = QueryBuilder::for(Product::class);
@@ -59,8 +67,9 @@ trait WithIrisProductsInWebpage
     {
         $globalSearch     = $this->getGlobalSearch();
         $priceRangeFilter = $this->getPriceRangeFilter();
+        $newArrivalsFilter = $this->getNewArrivalsFilter();
 
-        return [$globalSearch, $priceRangeFilter];
+        return [$globalSearch, $priceRangeFilter, $newArrivalsFilter];
     }
 
     public function getSelect(): array
@@ -92,7 +101,8 @@ trait WithIrisProductsInWebpage
             'created_at',
             'available_quantity',
             'code',
-            'name'
+            'name',
+            'rrp'
         ];
     }
 

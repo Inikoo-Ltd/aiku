@@ -3,7 +3,7 @@ import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import { Checkbox, Column, ColumnGroup, DataTable, IconField, InputIcon, InputNumber, InputText, RadioButton, Row } from 'primevue'
-import { inject, onMounted, ref } from 'vue'
+import { inject, onMounted, ref, watch } from 'vue'
 
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
@@ -15,11 +15,29 @@ import Image from '@/Components/Image.vue'
 import { useTruncate } from '@/Composables/useTruncate'
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import PureInput from '@/Components/Pure/PureInput.vue'
 library.add(faSearch, faText)
 
+interface Portfolio {
+    id: string
+    code: string
+    name: string
+    category: string
+    image: string
+    quantity_left: number
+    price: number
+    price_inc_vat: number
+    currency_code: string
+    customer_price: number
+    margin: number
+    description: string
+    is_inc_exc?: 'inc' | 'exc'
+}
+
 const props = defineProps<{
-    portfolios: {}[]
+    portfolios: Portfolio[]
     listState: { [key: string]: { [key: string]: string } }
+    recentlyUpdatedProduct: Portfolio
 }>()
 
 const locale = inject('locale', {})
@@ -34,17 +52,83 @@ onMounted(() => {
     emits('mounted')
 })
 
+// Manipulate Portfolio after update (to get updated data)
+watch(() => props.recentlyUpdatedProduct, (newPorto) => {
+    if (newPorto) {
+
+        const index = props.portfolios.findIndex(
+            (item) => item.id === newPorto.id
+        );
+
+        if (index !== -1) {
+            console.log('33333', props.portfolios[index])
+            console.log('4444', newPorto)
+            props.portfolios[index] = newPorto;
+        }
+    }
+})
+
 
 const valueTableFilter = ref({})
 
 const isIncludeVat = ref(false)
 
+// Section: Modal and Update Description
 const isModalDescription = ref(false)
 const selectedDataToEditDescription = ref({})
-
 const debounceUpdateDescription = debounce((description: string) => {
     emits('updateSelectedProducts', selectedDataToEditDescription.value, {customer_description: selectedDataToEditDescription.value.description}, 'customer_description')
 }, 1000)
+
+// Section: Modal and Update Name
+const isModalName = ref(false)
+const selectedDataToEditName = ref({})
+const debounceUpdateName = debounce((description: string) => {
+    emits('updateSelectedProducts', selectedDataToEditName.value, {customer_product_name: selectedDataToEditName.value.name}, 'customer_product_name')
+}, 1000)
+
+
+// Dont delete this
+// Section: Modal Shipping
+// const isModalShipping = ref(false)
+// const selectedShippingToShowInModal = ref(null)
+// const dummyShipping = [
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP01',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP02',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP03',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP04',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     },
+//     {
+//         form: '0kg',
+//         to: '15kg',
+//         code: 'SPP05',
+//         location: 'UK Mainland',
+//         expedited_tracked: '4.79'
+//     }
+// ]
 </script>
 
 <template>
@@ -56,7 +140,7 @@ const debounceUpdateDescription = debounce((description: string) => {
         <template #header>
             <div class="flex justify-between items-center">
                 <div class="text-xl">
-                    Total: <span class="font-bold">{{ portfolios.length }}</span>
+                    {{ trans("Total") }}: <span class="font-bold">{{ portfolios.length }}</span>
                 </div>
                 <IconField>
                     <InputIcon>
@@ -89,57 +173,52 @@ const debounceUpdateDescription = debounce((description: string) => {
 
         <Column field="category" header="Category" style="max-width: 100px;">
             <template #body="{ data }">
-                <div v-tooltip="data.category" class="relative pr-2">
+                <div v-tooltip="data.category" class="relative pr-2 truncate">
                     {{ useTruncate(data.category, 15) }}
                 </div>
             </template>
         </Column>
 
-        <Column field="name" header="Name" sortable removeableSort>
+        <!-- Column: Name -->
+        <Column field="name" :header="trans('Name')" sortable removeableSort style="max-width: 200px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
-                    <textarea
-                        v-model="data.name"
-                        :placeholder="trans('Enter product name')"
-                        class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                        @blur="(e) => emits('updateSelectedProducts', data, {customer_product_name: data.name}, 'name')"
+                <div class="relative pr-2 ">
+                    <div
+                        class="relative truncate"
+                        style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal;"
                     >
-                    </textarea>
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'name'], undefined)" />
+                        {{ data.name }}
+                    </div>
+
+                    <Button
+                        type="tertiary"
+                        icon="fal fa-pencil"
+                        size="xs"
+                        :label="trans('Click to edit')"
+                        @click="() => {
+                            isModalName = true
+                            selectedDataToEditName = data
+                        }"
+                    />
                 </div>
             </template>
         </Column>
 
+        <!-- Column: Stock -->
         <Column field="quantity_left" header="Stock" style="max-width: 200px;" sortable>
             <template #body="{ data }">
-                <div class="">
+                <div class="text-right">
                     {{ locale.number(data.quantity_left) }}
                 </div>
             </template>
         </Column>
-
-        <!-- <ColumnGroup type="header">
-            <Row>
-                <Column header="Sale Rate" :colspan="4" />
-            </Row>
-            <Row>
-                <Column header="Sales" :colspan="2" />
-                <Column header="Profits" :colspan="2" />
-            </Row>
-            <Row>
-                <Column header="Last Year" sortable field="lastYearSale" />
-                <Column header="This Year" sortable field="thisYearSale" />
-                <Column header="Last Year" sortable field="lastYearProfit" />
-                <Column header="This Year" sortable field="thisYearProfit" />
-            </Row>
-        </ColumnGroup> -->
 
         <!-- Column: Exc VAT -->
         <Column field="price" xheader="Cost Price (Exc VAT)" style="max-width: 250px;">
             <template #header="{ column }">
                 <div v-tooltip="isIncludeVat ? trans('Include VAT') : trans('Exclude VAT')">
                     <div class="font-semibold">
-                        Cost Price
+                        {{ trans("Cost Price") }}
                     </div>
 
                     <div class="text-center flex items-center justify-center gap-x-1">
@@ -156,8 +235,8 @@ const debounceUpdateDescription = debounce((description: string) => {
                 <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
                     <InputNumber
                         v-if="isIncludeVat"
-                        v-model="data.price_inc_vat"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
+                        :modelValue="data.price_inc_vat"
+                        aupdate:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
                         mode="currency"
                         :placeholder="data.price_inc_vat"
                         :currency="data.currency_code"
@@ -165,12 +244,13 @@ const debounceUpdateDescription = debounce((description: string) => {
                         fluid
                         :inputStyle="{textAlign: 'right'}"
                         xdisabled="data.is_inc_exc !== 'inc'"
+                        disabled
                         class="min-w-12"
                     />
                     <InputNumber
                         v-else
-                        v-model="data.price"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
+                        :modelValue="data.price"
+                        aupdate:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
                         mode="currency"
                         :placeholder="data.price"
                         :currency="data.currency_code"
@@ -178,6 +258,7 @@ const debounceUpdateDescription = debounce((description: string) => {
                         fluid
                         :inputStyle="{textAlign: 'right'}"
                         xdisabled="data.is_inc_exc !== 'exc'"
+                        disabled
                         class="min-w-12"
                     />
                     <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'inc_exc_vat'], undefined)" />
@@ -214,7 +295,7 @@ const debounceUpdateDescription = debounce((description: string) => {
             </template>
         </Column> -->
 
-        <Column field="customer_price" header="Selling Price (Inc VAT)" style="max-width: 250px;">
+        <Column field="customer_price" header="RPP/Selling Price (Inc VAT)" style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -235,41 +316,25 @@ const debounceUpdateDescription = debounce((description: string) => {
 
         <Column field="margin" header="Profit Margin (%)" style="max-width: 125px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
+                <div class="whitespace-nowrap relative pr-2 text-right">
                     {{ data.margin }}%
                 </div>
             </template>
         </Column>
 
-        <Column field="shipping" header="Shipping (Exc VAT)">
+        <!-- Dont delete this -->
+        <!-- <Column field="shipping" header="Shipping (Exc VAT)">
             <template #body="{ data }">
-                <FontAwesomeIcon
-                    class="text-blue-500"
-                    icon="fal fa-box"
-                    aria-hidden="true" />
+                <div @click="isModalShipping = true, selectedShippingToShowInModal = data" class="text-gray-400 hover:text-gray-600 cursor-pointer hover:bg-gray-100 rounded flex justify-center py-1 items-center gap-x-1">
+                    <FontAwesomeIcon class="text-blue-500" icon="fal fa-box" fixed-width aria-hidden="true" />
+                    Show
+                </div>
             </template>
-        </Column>
+        </Column> -->
 
+        <!-- Column: Description -->
         <Column field="description" header="Description">
             <template #body="{ data }">
-                <!-- <FontAwesomeIcon
-                    @click="() => {
-                        isModalDescription = true
-                        selectedDataToEditDescription = data
-                    }"
-                    class="text-blue-500"
-                    icon="fal fa-bars"
-                    aria-hidden="true" /> -->
-<!--                <div class="whitespace-nowrap relative pr-2">
-                    <textarea
-                        v-model="data.description"
-                        class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                        :placeholder="trans('No description')"
-                        @blur="(e) => emits('updateSelectedProducts', data, {customer_description: data.description}, 'description')"
-                    >
-                    </textarea>
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'description'], undefined)" />
-                </div>-->
                 <Button
                     type="tertiary"
                     icon="fal fa-text"
@@ -284,7 +349,8 @@ const debounceUpdateDescription = debounce((description: string) => {
         </Column>
     </DataTable>
 
-    <Modal :isOpen="isModalDescription" aonClose="isModalDescription = false" width="w-full max-w-3xl max-h-[85vh]">
+    <!-- Modal: Description (edit) -->
+    <Modal :isOpen="isModalDescription" @onClose="isModalDescription = false" closeButton :isClosableInBackground="false" width="w-full max-w-3xl max-h-[85vh]">
         <div>
             <div class=" text-lg text-center mb-4">
                 Edit Description for <span class="font-semibold">{{ selectedDataToEditDescription.code }}</span>
@@ -323,5 +389,60 @@ const debounceUpdateDescription = debounce((description: string) => {
             </div>
         </div>
     </Modal>
+
+    <!-- Modal: Name (edit) -->
+    <Modal :isOpen="isModalName" @onClose="isModalName = false" closeButton :isClosableInBackground="false" width="w-full max-w-3xl max-h-[85vh]">
+        <div>
+            <div class=" text-lg text-center mb-4">
+                Edit Name for <span class="font-semibold">{{ selectedDataToEditName.code }}</span>
+            </div>            
+
+            <div class="relative">
+                <PureInput
+                    v-model="selectedDataToEditName.name"
+                    @update:modelValue="() => debounceUpdateName(selectedDataToEditName.name)"
+                />
+
+                <ConditionIcon class="absolute right-3 bottom-1" :state="get(listState, [selectedDataToEditName.id, 'customer_product_name'], undefined)" />
+            </div>
+
+            <div class="mt-4">
+                <Button
+                    @click="() => isModalName = false"
+                    type="tertiary"
+                    label="Done"
+                    full
+                />
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Dont delete this -->
+    <!-- Modal: Shipping -->
+    <!-- <Modal :isOpen="isModalShipping" @onClose="isModalShipping = false" closeButton :isClosableInBackground="false" width="w-full max-w-4xl max-h-[500px]">
+        <div>
+            <div class=" text-lg text-center mb-4">
+                Shipping detail for <span class="font-semibold">{{ selectedShippingToShowInModal?.code }}</span>
+            </div>
+
+            <DataTable :value="dummyShipping" tableStyle="min-width: 50rem">
+                <Column field="form" header="form"></Column>
+                <Column field="to" header="to"></Column>
+                <Column field="code" header="code"></Column>
+                <Column field="location" header="location"></Column>
+                <Column field="expedited_tracked" header="expedited_tracked"></Column>
+            </DataTable>
+
+            
+            <div class="mt-4">
+                <Button
+                    @click="() => isModalShipping = false"
+                    type="tertiary"
+                    label="Close"
+                    full
+                />
+            </div>
+        </div>
+    </Modal> -->
 
 </template>

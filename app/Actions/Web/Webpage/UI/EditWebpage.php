@@ -24,9 +24,6 @@ use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
-use App\Http\Resources\Web\WebpageResource;
-use App\Http\Resources\Web\WebpagesResource;
-
 
 class EditWebpage extends OrgAction
 {
@@ -56,13 +53,12 @@ class EditWebpage extends OrgAction
 
     public function getFieldWebpageData(Webpage $webpage): array
     {
-        $data = [
-                    'code'          => $webpage->code,
-                    'id'            => $webpage->id,
-                    'href'          => 'https://'.$webpage->website->domain.'/'.$webpage->url,
-                    "typeIcon"      => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
+        return [
+            'code'     => $webpage->code,
+            'id'       => $webpage->id,
+            'href'     => 'https://'.$webpage->website->domain.'/'.$webpage->url,
+            "typeIcon" => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
         ];
-        return $data;
     }
 
     /**
@@ -78,14 +74,16 @@ class EditWebpage extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
                 'pageHead' => [
-                    'title' => __('webpage settings'),
-
-
-                    'iconRight' =>
-                        [
-                            'icon'  => ['fal', 'sliders-h'],
-                            'title' => __("Webpage settings")
-                        ],
+                    'title' => __('Settings'),
+                    'icon' => [
+                        'icon'  => ['fal', 'sliders-h'],
+                        'title' => __("Webpage settings")
+                    ],
+                    'model' => __('Webpage'),
+                    'iconRight' => WebpageStateEnum::stateIcon()[$webpage->state->value],
+                    'afterTitle' => [
+                        'label' => $webpage->getUrl(),
+                    ],
 
                     'actions' => [
                         [
@@ -112,22 +110,6 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                'state_data'       => [
-                                    'type'        => 'toggle_state_webpage',
-                                    'label'       => __('State'),
-                                    'placeholder' => __('Select webpage state'),
-                                    'required'    => true,
-                                    'options'     => Options::forEnum(WebpageStateEnum::class),
-                                    'searchable'  => true,
-                                    'default_storefront' =>$this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
-                                    'init_options'  => $webpage->redirectWebpage ? [
-                                        $this->getFieldWebpageData($webpage->redirectWebpage)
-                                    ] : null,
-                                    'value'       => [
-                                        'state'                 => $webpage->state,
-                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
-                                    ],
-                                ],
                                 'allow_fetch' => [
                                     'type'  => 'toggle',
                                     'label' => __('Allow fetch'),
@@ -136,34 +118,33 @@ class EditWebpage extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('SEO'),
-                            'icon'   => 'fab fa-google',
+                            'label'  => __('Link Preview'),
+                            'icon'   => 'fal fa-image',
                             'fields' => [
-                                "seo_image" => [
+                                "seo_image"         => [
                                     "type"    => "image_crop_square",
-                                    "label"   => __("image"),
+                                    "label"   => __("Preview image"),
                                     "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
                                     'options' => [
                                         "minAspectRatio" => 1,
                                         "maxAspectRatio" => 12 / 4,
                                     ]
                                 ],
-                                'seo_data'  => [
-                                    'type'    => 'googleSearch',
-                                    'domain'  => $webpage->website->domain.'/',
-                                    'value'   => [
-                                        'image'            => [
-                                            'original' => Arr::get($webpage->seo_data, 'image.original') ?? '',
-                                        ],
-                                        'meta_title'       => Arr::get($webpage->seo_data, 'meta_title') ?? '',
-                                        'meta_description' => Arr::get($webpage->seo_data, 'meta_description') ?? '',
-                                        'llms_text'        => Arr::get($webpage->seo_data, 'llms_text') ?? '',
-                                        //                                        'url'                  => $webpage->url,
-                                        //                                        'is_use_canonical_url' => $webpage->is_use_canonical_url,
-                                        //                                        'canonical_url'        => $webpage->canonical_url,
-                                    ],
-                                    'noTitle' => true,
+                                'seo_title'         => [
+                                    'type'                => 'input',
+                                    'label'               => __('Preview Title'),
+                                    'label_no_capitalize' => true,
+                                    'value'               => $webpage->seo_title,
+                                    'required'            => false,
                                 ],
+                                'description_title' => [
+                                    'type'                => 'textarea',
+                                    'label'               => __('Preview Description'),
+                                    'label_no_capitalize' => true,
+                                    'value'               => $webpage->seo_description,
+                                    'required'            => false,
+                                ],
+
 
                             ],
                         ],
@@ -184,51 +165,25 @@ class EditWebpage extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Set as as online'),
-                            'icon'   => 'fal fa-trash-alt',
+                            'label'  => __('Set online/closed'),
+                            'icon'   => 'fal fa-broadcast-tower',
                             'fields' => [
-
-                                'name' => [
-                                    'hidden' => true,
-                                    'type'   => 'action',
-                                    'action' => [
-                                        'type'  => 'button',
-                                        'style' => 'delete',
-                                        'label' => __('set as online'),
-                                        'route' => [
-                                            'method'     => 'delete',
-                                            'name'       => 'grp.models.shop.webpage.delete',
-                                            'parameters' => [
-                                                'shop'    => $webpage->shop->id,
-                                                'webpage' => $webpage->id,
-                                            ]
-                                        ],
+                                'state_data'       => [
+                                    'type'        => 'toggle_state_webpage',
+                                    'label'       => __('State'),
+                                    'placeholder' => __('Select webpage state'),
+                                    'required'    => true,
+                                    'options'     => Options::forEnum(WebpageStateEnum::class),
+                                    'searchable'  => true,
+                                    'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'init_options'  => $webpage->redirectWebpage ? [
+                                        $this->getFieldWebpageData($webpage->redirectWebpage)
+                                    ] : null,
+                                    'value'       => [
+                                        'state'                 => $webpage->state,
+                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
                                     ],
-                                ]
-                            ]
-                        ],
-                        [
-                            'label' => __('Set as offline'),
-
-                            'icon'   => 'fal fa-trash-alt',
-                            'fields' => [
-                                'name' => [
-                                    'hidden' => true,
-                                    'type'   => 'action',
-                                    'action' => [
-                                        'type'  => 'button',
-                                        'style' => 'delete',
-                                        'label' => __('Set as offline'),
-                                        'route' => [
-                                            'method'     => 'delete',
-                                            'name'       => 'grp.models.shop.webpage.delete',
-                                            'parameters' => [
-                                                'shop'    => $webpage->shop->id,
-                                                'webpage' => $webpage->id,
-                                            ]
-                                        ],
-                                    ],
-                                ]
+                                ],
                             ]
                         ],
                         [
@@ -236,19 +191,24 @@ class EditWebpage extends OrgAction
                             'icon'   => 'fal fa-trash-alt',
                             'fields' => [
                                 'name' => [
-                                    'type'   => 'action',
-                                    'action' => [
-                                        'type'  => 'button',
-                                        'style' => 'delete',
-                                        'label' => __('delete webpage'),
-                                        'route' => [
-                                            'method'     => 'delete',
-                                            'name'       => 'grp.models.shop.webpage.delete',
-                                            'parameters' => [
-                                                'shop'    => $webpage->shop->id,
-                                                'webpage' => $webpage->id,
-                                            ]
-                                        ],
+                                    'type'                  => 'delete_webpage',
+                                    'noSaveButton'          => true,
+                                    'current_state'         => $webpage->state,
+                                    'default_storefront'    => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'init_options'  => $webpage->redirectWebpage ? [
+                                        $this->getFieldWebpageData($webpage->redirectWebpage)
+                                    ] : null,
+                                    'value'       => [
+                                        'state'                 => $webpage->state,
+                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    ],
+                                    'route_delete' => [
+                                        'method'     => 'patch',
+                                        'name'       => 'grp.models.webpage.delete',
+                                        'parameters' => [
+                                            // 'shop'    => $webpage->shop->id,
+                                            'webpage' => $webpage->id,
+                                        ]
                                     ],
                                 ]
                             ]

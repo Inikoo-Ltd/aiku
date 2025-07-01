@@ -246,6 +246,8 @@ use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\SetWebpageAsOffline;
+use App\Actions\Web\Webpage\SetWebpageAsOnline;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
@@ -418,14 +420,12 @@ Route::patch('recurring-bill-transaction/{recurringBillTransaction:id}', UpdateR
 Route::delete('recurring-bill-transaction/{recurringBillTransaction:id}', DeleteRecurringBillTransaction::class)->name('recurring_bill_transaction.delete');
 
 Route::name('product.')->prefix('product')->group(function () {
-
     Route::post('/product/', StoreProduct::class)->name('store');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
-
 });
 
 
@@ -541,9 +541,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('website', StoreWebsite::class)->name('website.store');
 
-    Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
-        Route::delete('', [DeleteWebpage::class, 'inShop'])->name('delete')->withoutScopedBindings();
-    });
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {
         Route::post('verify', [SendIdentityEmailVerification::class, 'inShop'])->name('verify');
@@ -645,7 +642,9 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
-
+    Route::patch('delete', DeleteWebpage::class)->name('delete');
+    Route::patch('set-online', SetWebpageAsOnline::class)->name('set_online');
+    Route::patch('set-offline', SetWebpageAsOffline::class)->name('set_offline');
     Route::post('publish', PublishWebpage::class)->name('publish');
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
@@ -836,7 +835,6 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
-
 
 
 require __DIR__."/models/inventory/warehouse.php";

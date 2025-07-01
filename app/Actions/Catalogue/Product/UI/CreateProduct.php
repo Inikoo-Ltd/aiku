@@ -16,6 +16,8 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Http\Resources\Inventory\OrgStocksResource;
 
 class CreateProduct extends OrgAction
 {
@@ -83,8 +85,19 @@ class CreateProduct extends OrgAction
                                         'required' => true,
                                     ],
                                     'org_stocks' => [
-                                        'value' => []
-                                    ]
+                                        'type'         => 'product_parts',
+                                        'label'        => __('Parts'),
+                                        // 'readonly' => true,
+                                        'full'         => true,
+                                        'fetch_route'  => [
+                                            'name'       => 'grp.json.org_stocks.index',
+                                            'parameters' => [
+                                                'organisation' => $parent->organisation_id,
+                                            ]
+                                        ],
+                                        // 'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+                                        'value'        => []
+                                    ],
                                 ]
                             ]
                         ],

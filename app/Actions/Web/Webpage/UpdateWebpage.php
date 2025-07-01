@@ -94,7 +94,7 @@ class UpdateWebpage extends OrgAction
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
             }
 
-            if(Arr::has($modelData, 'state_data.redirect_webpage_id')) {
+            if (Arr::has($modelData, 'state_data.redirect_webpage_id')) {
                 data_set($modelData, 'redirect_webpage_id', Arr::get($modelData, 'state_data.redirect_webpage_id'));
             }
 
@@ -211,7 +211,7 @@ class UpdateWebpage extends OrgAction
             'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
             'state_data'                     => ['sometimes', 'array'],
             'state_data.state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'state_data.redirect_webpage_id'       => ['sometimes', 'nullable', 'exists:webpages,id'],
+            'state_data.redirect_webpage_id'       => ['required_if:state_data.state,' . WebpageStateEnum::CLOSED->value, 'exists:webpages,id'],
             // 'state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
             'webpage_type'              => ['sometimes', 'array'],
             'ready_at'                  => ['sometimes', 'date'],
@@ -228,7 +228,7 @@ class UpdateWebpage extends OrgAction
 
         return $rules;
     }
-    
+
     public function action(Webpage $webpage, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Webpage
     {
         if (!$audit) {

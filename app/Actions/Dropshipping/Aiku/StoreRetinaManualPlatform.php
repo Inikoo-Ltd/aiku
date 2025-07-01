@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -40,7 +41,8 @@ class StoreRetinaManualPlatform extends RetinaAction
             $platform,
             [
                 'reference' => (string) $customer->id,
-                'name' => Arr::get($modelData, 'name')
+                'name' => Arr::get($modelData, 'name'),
+                'state' => CustomerSalesChannelStateEnum::READY,
             ]
         );
 

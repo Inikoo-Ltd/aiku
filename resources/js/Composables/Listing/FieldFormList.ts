@@ -18,7 +18,6 @@ import Toggle from '@/Components/Forms/Fields/Toggle.vue'
 // import Rental from '@/Components/Rental/Rental.vue'
 import Textarea from "@/Components/Forms/Fields/Textarea.vue"
 import TextEditor from "@/Components/Forms/Fields/TextEditor.vue"
-
 import ImageCropSquare from '@/Components/Forms/Fields/ImageCropSquare.vue'
 import Avatar from '@/Components/Forms/Fields/Avatar.vue'
 import Theme from '@/Components/Forms/Fields/Theme.vue'
@@ -50,6 +49,7 @@ const Interest = defineAsyncComponent(() => import('@/Components/Forms/Fields/In
 const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/Fields/EmployeePosition.vue'))
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
+import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -97,6 +97,7 @@ export const componentsList: {[key: string]: Component} = {
     'structure_data_website' : StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,
+    'delete_webpage': DeleteWebpage,
 
     'select_infinite': SelectInfiniteScroll
 }

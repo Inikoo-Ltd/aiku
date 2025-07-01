@@ -105,6 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, ModelHasWebBlocks> $modelHasWebBlocks
  * @property-read Organisation $organisation
  * @property-read Webpage|null $parent
+ * @property-read Webpage|null $redirectWebpage
  * @property-read \App\Models\Web\Redirect|null $redirectedTo
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop $shop
