@@ -65,8 +65,9 @@ const tabIconClass = function (isCurrent: boolean, type: string | undefined, ali
             <label for="tabs" class="sr-only">Select a tab</label>
 
             <!-- TODO: use Headless or component Dropdown so the icon is able to show (currrently not) -->
-            <select id="tabs" name="tabs" class="block w-full capitalize rounded-md border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+            <select id="tabs" name="tabs" class="block w-full disabled:bg-gray-200 capitalize rounded-md border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                 @input="(val: any) => onChangeTab(val.target.value)"
+                :disabled="Object.keys(navigation ?? {})?.length < 2"
             >
                 <option v-for="(tab, tabSlug) in navigation" :key="tabSlug" :selected="tabSlug == currentTab" :value="tabSlug" class="capitalize">
                     <FontAwesomeIcon v-if="tabLoading == tabSlug" icon="fad fa-spinner-third" class="animate-spin" :class="tabIconClass(tabSlug === currentTab, tab.type, tab.align, tab.iconClass || '')" aria-hidden="true"/>

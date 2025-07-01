@@ -163,43 +163,53 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
 };
 
 
-const debounceSaveWorkshop = block => {
+const debounceSaveWorkshop = (block) => {
   if (debounceTimers.value[block.id]) clearTimeout(debounceTimers.value[block.id]);
 
-  debounceTimers.value[block.id] = setTimeout(() => {
-    router.patch(
-      route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id }),
-      {
-        layout: block.web_block.layout,
-        show_logged_in: block.visibility.in,
-        show_logged_out: block.visibility.out,
-        show: block.show
-      },
-      {
-        onStart: () => {
-          isLoadingBlock.value = block.id;
-          isSavingBlock.value = true;
+  debounceTimers.value[block.id] = setTimeout(async () => {
+    const url = route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id });
+
+    isLoadingBlock.value = block.id;
+    isSavingBlock.value = true;
+
+    const source = axios.CancelToken.source();
+    cancelTokens.value[block.id] = source.cancel;
+
+    try {
+      const response = await axios.patch(
+        url,
+        {
+          layout: block.web_block.layout,
+          show_logged_in: block.visibility.in,
+          show_logged_out: block.visibility.out,
+          show: block.show,
         },
-        onCancelToken: token => cancelTokens.value[block.id] = token.cancel,
-        onFinish: () => {
-          isLoadingBlock.value = null;
-          isSavingBlock.value = false;
-          delete cancelTokens.value[block.id];
-        },
-        onSuccess: e => {
-          data.value = e.props.webpage;
-          sendToIframe({ key: 'reload', value: {} });
-        },
-        onError: error => notify({
+        {
+          cancelToken: source.token,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        }
+      );
+      data.value = response.data.data
+      sendToIframe({ key: "reload", value: {} });
+    } catch (error) {
+      console.log(error)
+      if (!axios.isCancel(error)) {
+        notify({
           title: trans("Something went wrong"),
-          text: error.message,
-          type: "error"
-        }),
-        preserveScroll: true
+          text: error?.response?.data?.message || error.message,
+          type: "error",
+        });
       }
-    );
+    } finally {
+      isLoadingBlock.value = null;
+      isSavingBlock.value = false;
+      delete cancelTokens.value[block.id];
+    }
   }, 1500);
 };
+
 
 const debouncedSaveSiteSettings = debounce(block => {
   router.patch(

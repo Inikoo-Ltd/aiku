@@ -15,7 +15,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\OutBoxHasSubscriber;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -40,9 +39,11 @@ class DeleteOutboxHasSubscriber extends OrgAction
     //     return $request->user()->authTo("locations.{$this->warehouse->id}.edit");
     // }
 
-    public function inFulfilment(Fulfilment $fulfilment, Outbox $outbox, OutBoxHasSubscriber $outBoxHasSubscriber, ActionRequest $request): void
+    public function asController(Outbox $outbox, OutBoxHasSubscriber $outBoxHasSubscriber, ActionRequest $request): void
     {
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->outbox = $outbox;
+        $this->initialisationFromShop($outbox->shop, $request);
+
         $this->handle($outBoxHasSubscriber);
     }
 
