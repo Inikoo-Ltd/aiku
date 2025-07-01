@@ -66,11 +66,19 @@ class ShowPoll extends OrgAction
                 'pageHead'    => [
                     'title'   => $poll->name,
                     'model'   => __('Poll'),
-                    'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-poll'],
-                            'title' => __('poll')
-                        ],
+                    'icon'    => [
+                        'icon'  => ['fal', 'fa-poll'],
+                        'title' => __('poll')
+                    ],
+                    'iconRight' => $poll->in_registration ? [
+                        'icon'  => ['fal', 'fa-eye'],
+                        'class' => 'text-green-500 animate-pulse',
+                        'tooltip' => __('Visible in registration form'),
+                    ] : [
+                        'icon'  => ['fal', 'fa-eye-slash'],
+                        'class' => 'text-gray-400',
+                        'tooltip' => __('Not visible in registration form'),
+                    ],
                     'actions' => $actions,
                 ],
                 'data'        => PollResource::make($poll)->toarray($request),
