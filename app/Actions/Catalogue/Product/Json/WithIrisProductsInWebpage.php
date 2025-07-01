@@ -101,7 +101,8 @@ trait WithIrisProductsInWebpage
             'created_at',
             'available_quantity',
             'code',
-            'name'
+            'name',
+            'rrp'
         ];
     }
 

@@ -403,14 +403,9 @@ const onSubmitMagento = async () => {
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
+                     <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
                         alt="" class="h-12 filter"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
-                    > -->
-                    <div v-html="ChannelLogo('magento')" class="h-12"
-                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''">
-
-                    </div>
+                    >
 
                     <div class="flex flex-col">
                         <div class="font-semibold">Magento</div>
@@ -423,14 +418,11 @@ const onSubmitMagento = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalMagento = true"
                     />
-
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
         </div>
