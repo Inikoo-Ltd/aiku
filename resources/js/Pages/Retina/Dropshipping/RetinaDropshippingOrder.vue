@@ -10,7 +10,7 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { Component } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
 import { debounce } from 'lodash-es'
@@ -42,6 +42,11 @@ import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.v
 import { faSpinnerThird } from '@far'
 import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
+import { Message } from 'primevue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
@@ -59,6 +64,7 @@ const props = defineProps<{
     timelines: {
 
     }
+    fffff: {}
 
 
     box_stats: {
@@ -99,7 +105,12 @@ const props = defineProps<{
     currency: Currency
     data?: {
         data: {
-
+            is_fully_paid: boolean
+            unpaid_amount: number
+            route_to_pay_unpaid?: routeType
+            state: string
+            state_label: string
+            state_icon: string
         }
     }
 
@@ -136,12 +147,15 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
+const locale = inject('locale', aikuLocaleStructure)
 console.log('DS Orders', props)
 
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
+
     <PageHeading :data="pageHead">
     </PageHeading>
 
@@ -149,20 +163,44 @@ console.log('DS Orders', props)
         <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
     </div>
 
-    <DSCheckoutSummary
-        :summary="box_stats"
-    />
+    <!-- Section: Alert if unpaid -->
+    <Message v-if="!data?.data?.is_fully_paid" severity="error" class="mx-4 mt-4 ">
+        <template #icon>
+            <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true" />
+        </template>
 
-    <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+        <div class="ml-2 font-normal flex justify-between w-full">
+            <div class="flex items-center gap-x-2">
+                You have unpaid amount of the order <span class="font-bold">{{ data?.data.unpaid_amount }}</span>
+            </div>
+
+            <ButtonWithLink
+                v-if="data?.data.route_to_pay_unpaid"
+                :routeTarget="data?.data.route_to_pay_unpaid"
+                :label="trans('Click to pay')"
+                type="positive"
+                class="bg-green-100"
+            />
+        </div>
+    </Message>
+
+    <DSCheckoutSummary :summary="box_stats" />
+
+    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
+        @update:tab="handleTabUpdate" />
 
     <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200">
-        <component :is="component"
-            :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-            :updateRoute="routes?.updateOrderRoute"
-            :state="data?.data?.state"
-			:modalOpen="isModalUploadOpen"
-			@update:tab="handleTabUpdate"/>
+        <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
+            :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state" :modalOpen="isModalUploadOpen"
+            @update:tab="handleTabUpdate" />
     </div>
 
 
 </template>
+
+<style scoped lang="scss">
+
+:deep(.p-message-text) {
+    width: 100%;
+}
+</style>

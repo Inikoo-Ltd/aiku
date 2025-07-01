@@ -38,7 +38,7 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
         $query = QueryBuilder::for(Product::class);
         $query->where('products.shop_id', $this->shop->id);
 
-        $query->leftJoin('portfolios', function ($join) use ($customerSalesChannel) {
+        $query->join('portfolios', function ($join) use ($customerSalesChannel) {
             $join->on('portfolios.item_id', '=', 'products.id')
                 ->where('portfolios.item_type', '=', 'Product')
                 ->where('portfolios.customer_sales_channel_id', '=', $customerSalesChannel->id);

@@ -220,7 +220,7 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
-    Route::post('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
+    Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('fulfilment', StoreRetinaFulfilmentCustomerClient::class)->name('fulfilment.customer-client.store');
     Route::post('fulfilment-client-with-order', StoreRetinaFulfilmentCustomerClientWithOrder::class)->name('fulfilment.customer-client-with-order.store');

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faBox, faPlus, faVial } from "@far"
+import { faBox } from "@far"
 import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -10,9 +10,6 @@ import { useLocaleStore } from '@/Stores/locale'
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
@@ -59,11 +56,9 @@ const expanded = ref(false)
 const showButton = ref(false)
 
 
-
 function formatNumber(value: Number) {
     return Number.parseFloat(value).toString()
 }
-
 
 
 // Section: Add to Favourites
@@ -127,7 +122,6 @@ const onUnselectFavourite = (product: ProductResource) => {
 }
 
 onMounted(() => {
-  // Tunggu render selesai
   requestAnimationFrame(() => {
     if (contentRef.value.scrollHeight > 100) {
       showButton.value = true
@@ -139,7 +133,7 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
-
+console.log(props)
 </script>
 
 <template>
@@ -216,8 +210,6 @@ const toggleExpanded = () => {
                     </div>
                 </div>
                 <div class="flex gap-2 mb-6">
-                    <!-- <pre>{{ fieldValue.product }}</pre> -->
-
                     <ButtonAddPortfolio :product="fieldValue.product"
                         :productHasPortfolio="fieldValue.productChannels" />
                 </div>

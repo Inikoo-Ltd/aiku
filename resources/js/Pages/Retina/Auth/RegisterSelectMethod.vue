@@ -49,7 +49,6 @@ interface RegisterAccount {
 }
 
 
-const isLoading = ref(false)
 
 const isLoadingGoogle = ref(false)
 const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
@@ -84,7 +83,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 </script>
 
 <template>
-	<div class="rounded-md flex items-center justify-center w-full px-4 py-4 lg:px-8">
+	<div class="rounded-md flex items-center justify-center w-full px-4 py-20 lg:px-8">
         <div class="relative w-full max-w-lg bg-white border border-gray-200 rounded-md shadow-lg px-8 py-10">
             <div v-if="isLoadingGoogle" class="absolute inset-0 bg-black/50 text-white z-10 flex justify-center items-center">
                 <LoadingIcon class="text-4xl" />
@@ -98,16 +97,28 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 						name: 'retina.register_standalone'
 					}"
 					full
-					:loading="isLoading"
-					:label="trans('Register')"
-				/>
+					xlabel="trans('Register')"
+				>
+                    <template #default="{ isLoadingVisit }">
+                        <button
+                            aclick.prevent="submit"
+                            class="w-full relative flex items-center justify-center gap-2 bg-[#0f172a] disabled:bg-[#393e49] text-white disabled:text-gray-300 hover:bg-black font-normal border border-[#0f172a] rounded-sm px-16 py-2 cursor-pointer transition duration-75 ease-in-out"
+                            :disabled="isLoadingVisit"
+                        >
+                            {{ trans("Register") }}
+                            <LoadingIcon v-if="isLoadingVisit" />
+                        </button>
+                    </template>
+                </ButtonWithLink>
+
+                
 
 				<div class="text-center text-sm">
 					{{trans('or use your google account to start registration process')}}
 				</div>
 
                 <!-- Google Login -->
-                <div class="mx-auto w-fit">
+                <div class="w-full">
 
                     <GoogleLogin
                         :clientId="google.client_id"
@@ -116,7 +127,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                         :error="(e: Error) => console.log('error', e)"
                     >
                         <template #default>
-                            <div class="relative flex items-center justify-center gap-2 bg-white hover:bg-[#0f172a] font-normal text-gray-800 hover:text-white border border-[#0f172a] rounded-sm px-16 py-2 cursor-pointer transition duration-150 ease-in-out">
+                            <div class="w-full relative flex items-center justify-center gap-2 bg-white hover:bg-[#0f172a] font-normal text-gray-800 hover:text-white border border-[#0f172a] rounded-sm px-16 py-2 cursor-pointer transition duration-150 ease-in-out">
                                 <div id="google_logo_svg" class="w-5 h-5 absolute left-4">
                                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="LgbsSe-Bz112c"><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g></svg>
                                 </div>
@@ -145,3 +156,9 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
 </template>
 
+
+<style scoped lang="scss">
+:deep(.g-btn-wrapper) {
+    width: 100%;
+}
+</style>
