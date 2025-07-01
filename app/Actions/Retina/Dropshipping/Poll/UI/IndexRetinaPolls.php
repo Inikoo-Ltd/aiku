@@ -33,7 +33,7 @@ class IndexRetinaPolls extends RetinaAction
     use WithCustomersSubNavigation;
     // use WithCRMAuthorisation;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -47,16 +47,23 @@ class IndexRetinaPolls extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Poll::class);
 
-        $queryBuilder->where('polls.customer_sales_channel', $customerSalesChannel->id);
+        $queryBuilder->where('shop_id', $shop->id);
+        // $queryBuilder->where('polls.customer_sales_channel', $customerSalesChannel->id);
 
         $queryBuilder->leftJoin('poll_stats', function ($join) {
             $join->on('polls.id', '=', 'poll_stats.poll_id');
         });
 
+        // if ($parent instanceof Shop) {
+        // }
+        $totalCustomer = DB::table('shop_crm_stats')
+            ->where('shop_id', $shop->id)
+            ->value('number_customers') ?? 0;
 
-        $totalClient = DB::table('customer_sales_channels')
-            ->where('customer_sales_channel_id', $customerSalesChannel->id)
-            ->value('number_customer_clients') ?? 0;
+
+        // $totalClient = DB::table('customer_sales_channels')
+        //     ->where('customer_sales_channel_id', $customerSalesChannel->id)
+        //     ->value('number_customer_clients') ?? 0;
 
         $queryBuilder
             ->defaultSort('polls.id')
@@ -69,7 +76,7 @@ class IndexRetinaPolls extends RetinaAction
                 'polls.type',
                 'polls.in_registration',
                 'poll_stats.*',
-                DB::raw("'$totalClient' AS total_clients"),
+                DB::raw("'$totalCustomer' AS total_customers"),
             ])
             ->groupBy('polls.id', 'poll_stats.id');
 
@@ -107,7 +114,7 @@ class IndexRetinaPolls extends RetinaAction
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'in_registration', label: __('In registration'), canBeHidden: false, sortable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customer_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'percentage', label: __('Response %'), canBeHidden: false);
         };
     }
@@ -137,18 +144,18 @@ class IndexRetinaPolls extends RetinaAction
         ];
 
         $action = [];
-        $action = [
-            [
-                'type'    => 'button',
-                'style'   => 'create',
-                'tooltip' => __('New Poll'),
-                'label'   => __('New Poll'),
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.crm.polls.create',
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ],
-        ];
+        // $action = [
+        //     [
+        //         'type'    => 'button',
+        //         'style'   => 'create',
+        //         'tooltip' => __('New Poll'),
+        //         'label'   => __('New Poll'),
+        //         'route'   => [
+        //             'name'       => 'grp.org.shops.show.crm.polls.create',
+        //             'parameters' => $request->route()->originalParameters()
+        //         ]
+        //     ],
+        // ];
 
         return Inertia::render(
             'Org/Shop/CRM/Polls',
@@ -172,11 +179,11 @@ class IndexRetinaPolls extends RetinaAction
         )->table($this->tableStructure($this->customer));
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->customerSalesChannel = $customerSalesChannel;
+        // $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
-        return $this->handle($customerSalesChannel);
+        return $this->handle($this->shop);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

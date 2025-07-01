@@ -86,6 +86,20 @@ class GetRetinaDropshippingNavigation
             'horizontal_navigations' => $platforms_navigation
         ];
 
+        $groupNavigation['polls'] = [
+            'label' => __('Polls'),
+            'icon'  => ['fal', 'fa-polls'],
+            'root'  => 'retina.dropshipping.polls.',
+            'route' => [
+                'name'       => 'retina.dropshipping.polls.index',
+                'parameters' => []
+            ],
+            // 'right_label' => [
+            //     'number'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
+            //     'class'        => 'text-white',
+            // ],
+        ];
+
 
         $groupNavigation['top_up'] = [
             'label'   => __('Top Up'),

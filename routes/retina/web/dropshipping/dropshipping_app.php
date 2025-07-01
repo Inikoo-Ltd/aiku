@@ -131,12 +131,6 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
     });
 
-    Route::prefix('polls')->name('polls.')->group(function () {
-        Route::get('/', IndexRetinaPolls::class)->name('index');
-        // Route::get('/{poll}/show', ShowPoll::class)->name('show');
-        // Route::get('/{poll}/edit', EditPoll::class)->name('edit');
-        // Route::get('/{poll}/create', CreatePoll::class)->name('create');
-    });
 });
 
 
@@ -151,4 +145,12 @@ Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function ()
 
 Route::prefix('checkout')->name('checkout.')->group(function () {
     Route::get('{order}', ShowRetinaDropshippingCheckout::class)->name('show');
+});
+
+
+Route::prefix('polls')->name('polls.')->group(function () {
+    Route::get('/', IndexRetinaPolls::class)->name('index');
+    // Route::get('/{poll}/show', ShowPoll::class)->name('show');
+    // Route::get('/{poll}/edit', EditPoll::class)->name('edit');
+    // Route::get('/{poll}/create', CreatePoll::class)->name('create');
 });
