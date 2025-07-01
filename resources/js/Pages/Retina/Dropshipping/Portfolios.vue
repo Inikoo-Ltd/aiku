@@ -172,13 +172,16 @@ const _popover = ref()
                                     full
                                     :style="'tertiary'" />
                             </a>
-                            <a :href="downloadUrl('json')" target="_blank" rel="noopener">
+                            <!-- <a :href="downloadUrl('json')" target="_blank" rel="noopener"> -->
                                 <Button
                                     :icon="faBracketsCurly"
                                     label="JSON"
                                     full
-                                    :style="'tertiary'" />
-                            </a>
+                                    :style="'tertiary'"
+                                    disabled
+                                    v-tooltip="trans('This feature is not available yet')"
+                                />
+                            <!-- </a> -->
                             <a :href="downloadUrl('images')" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faImage"
