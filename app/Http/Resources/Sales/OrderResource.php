@@ -26,6 +26,10 @@ class OrderResource extends JsonResource
             'state_label'   => $order->state->labels()[$order->state->value],
             'state_icon'    => $order->state->stateIcon()[$order->state->value],
             'public_notes'  => $order->public_notes,
+            'pay_route' => [
+                'name' => 'retina.models.place-order-pay-by-bank',
+                'parameters' => []
+            ]
         ];
     }
 }
