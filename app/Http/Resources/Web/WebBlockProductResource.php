@@ -55,6 +55,8 @@ class WebBlockProductResource extends JsonResource
             'code'        => $product->code,
             'name'        => $product->name,
             'description' => $product->description,
+            'description_title' => $product->description_title,
+            'description_extra' => $product->description_extra,
             'stock'       => $product->available_quantity,
             'specifications' => $tradeUnit ? TradeUnitResource::make($tradeUnit)->toArray($request) : null,
             'contents'    => ModelHasContentsResource::collection($product->contents)->toArray($request),
