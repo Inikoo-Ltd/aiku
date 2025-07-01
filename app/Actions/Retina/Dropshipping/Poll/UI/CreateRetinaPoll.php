@@ -13,6 +13,7 @@ namespace App\Actions\Retina\Dropshipping\Poll\UI;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\CRM\Poll\PollTypeEnum;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Spatie\LaravelOptions\Options;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,7 +25,7 @@ class CreateRetinaPoll extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(ActionRequest $request): \Inertia\Response
+    public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): \Inertia\Response
     {
         return Inertia::render(
             'CreateModel',
@@ -95,7 +96,7 @@ class CreateRetinaPoll extends RetinaAction
                     'route' => [
                         'name'       => 'grp.models.poll.store',
                         'parameters' => [
-                            'shop' => $this->shop->slug,
+                            'customerSalesChannel' => $customerSalesChannel->id,
                         ]
                     ]
                 ]
@@ -106,11 +107,11 @@ class CreateRetinaPoll extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function asController(ActionRequest $request): \Inertia\Response
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): \Inertia\Response
     {
         $this->initialisation($request);
 
-        return $this->handle($request);
+        return $this->handle($customerSalesChannel, $request);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

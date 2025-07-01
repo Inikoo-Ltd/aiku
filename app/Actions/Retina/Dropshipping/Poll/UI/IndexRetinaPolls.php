@@ -17,6 +17,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -32,7 +33,7 @@ class IndexRetinaPolls extends RetinaAction
     use WithCustomersSubNavigation;
     // use WithCRMAuthorisation;
 
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -46,15 +47,15 @@ class IndexRetinaPolls extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Poll::class);
 
-        $queryBuilder->where('polls.customer_id', $customer->id);
+        $queryBuilder->where('polls.customer_sales_channel', $customerSalesChannel->id);
 
         $queryBuilder->leftJoin('poll_stats', function ($join) {
             $join->on('polls.id', '=', 'poll_stats.poll_id');
         });
 
 
-        $totalClient = DB::table('customer_stats')
-            ->where('customer_id', $customer->id)
+        $totalClient = DB::table('customer_sales_channels')
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->value('number_customer_clients') ?? 0;
 
         $queryBuilder
@@ -136,20 +137,18 @@ class IndexRetinaPolls extends RetinaAction
         ];
 
         $action = [];
-        if ($this->canEdit) {
-            $action = [
-                [
-                    'type'    => 'button',
-                    'style'   => 'create',
-                    'tooltip' => __('New Poll'),
-                    'label'   => __('New Poll'),
-                    'route'   => [
-                        'name'       => 'grp.org.shops.show.crm.polls.create',
-                        'parameters' => $request->route()->originalParameters()
-                    ]
-                ],
-            ];
-        }
+        $action = [
+            [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('New Poll'),
+                'label'   => __('New Poll'),
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.crm.polls.create',
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ],
+        ];
 
         return Inertia::render(
             'Org/Shop/CRM/Polls',
@@ -173,10 +172,11 @@ class IndexRetinaPolls extends RetinaAction
         )->table($this->tableStructure($this->customer));
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
-        return $this->handle($this->customer);
+        return $this->handle($customerSalesChannel);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

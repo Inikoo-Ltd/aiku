@@ -50,6 +50,9 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
+use App\Actions\Retina\Dropshipping\Poll\DeleteRetinaPoll;
+use App\Actions\Retina\Dropshipping\Poll\StoreRetinaPoll;
+use App\Actions\Retina\Dropshipping\Poll\UpdateRetinaPoll;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
@@ -234,6 +237,12 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
     Route::post('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
     Route::post('access-token', StoreCustomerToken::class)->name('access_token.create');
+
+    Route::name('polls.')->prefix('polls')->group(function () {
+        Route::post('', StoreRetinaPoll::class)->name('store');
+        Route::patch('/{poll:id}', UpdateRetinaPoll::class)->name('update');
+        Route::delete('/{poll:id}', DeleteRetinaPoll::class)->name('delete');
+    });
 });
 
 

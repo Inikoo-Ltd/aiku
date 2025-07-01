@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Retina\Dropshipping\Poll\UI;
+namespace App\Actions\Retina\Dropshipping\Poll;
 
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\RetinaAction;
@@ -16,6 +16,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -30,21 +31,12 @@ class StoreRetinaPoll extends RetinaAction
 
     public function handle(Shop $shop, array $modelData): Poll
     {
-
-        // if ($request->get('in_registration', false)) {
-        //     $request->merge([
-        //         'in_iris' => true,
-        //     ]);
-        // } else {
-        //     $request->merge([
-        //         'in_iris' => false,
-        //     ]);
-        // }
-
         $inIris = Arr::pull($modelData, 'in_registration', false);
         $inIrisRequired = Arr::pull($modelData, 'in_registration_required', false);
-
-
+        data_set($modelData, 'in_registration', false);
+        data_set($modelData, 'in_registration_required', false);
+        data_set($modelData, 'in_iris', $inIris);
+        data_set($modelData, 'in_iris_required', $inIrisRequired);
 
         return StorePoll::make()->action(
             $shop,
@@ -98,16 +90,16 @@ class StoreRetinaPoll extends RetinaAction
         return $rules;
     }
 
-    public function asController(ActionRequest $request): Poll
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Poll
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
         return $this->handle($this->shop, $this->validatedData);
     }
     public function htmlResponse(Poll $poll): RedirectResponse
     {
-        return Redirect::route('grp.org.shops.show.crm.polls.index', [
-            'organisation' => $poll->organisation->slug,
-            'shop'         => $poll->shop->slug
+        return Redirect::route('retina.dropshipping.customer_sales_channels.polls.index', [
+            'customerSalesChannel' => $this->customerSalesChannel->slug,
         ]);
     }
 }
