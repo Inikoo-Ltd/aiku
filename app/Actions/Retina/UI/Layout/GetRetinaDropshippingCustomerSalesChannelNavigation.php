@@ -107,6 +107,20 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
             ],
         ];
 
+        $platformNavigation['polls'] = [
+            'label' => __('Polls'),
+            'icon'  => ['fal', 'fa-poll'],
+            'root'  => 'retina.dropshipping.customer_sales_channels.polls.',
+            'route' => [
+                'name'       => 'retina.dropshipping.customer_sales_channels.polls.index',
+                'parameters' => [$customerSalesChannel->slug]
+            ],
+            // 'right_label' => [
+            //     'number'        => $customerSalesChannel->number_orders - $customerSalesChannel->number_orders_state_creating - $customerSalesChannel->number_orders_state_cancelled,
+            //     'class'        => 'text-white',
+            // ],
+        ];
+
 
         $platformNavigation['api_token'] = [
             'label' => __('Api'),

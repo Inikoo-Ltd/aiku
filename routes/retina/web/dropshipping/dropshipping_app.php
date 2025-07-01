@@ -42,6 +42,7 @@ use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DownloadRetinaOrderTransactionsTemplate;
+use App\Actions\Retina\Dropshipping\Poll\UI\IndexRetinaPolls;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
@@ -128,6 +129,13 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('api')->as('api.')->group(function () {
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
+    });
+
+    Route::prefix('polls')->name('polls.')->group(function () {
+        Route::get('/', IndexRetinaPolls::class)->name('index');
+        // Route::get('/{poll}/show', ShowPoll::class)->name('show');
+        // Route::get('/{poll}/edit', EditPoll::class)->name('edit');
+        // Route::get('/{poll}/create', CreatePoll::class)->name('create');
     });
 });
 
