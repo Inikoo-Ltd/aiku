@@ -83,6 +83,9 @@ class GetRetinaDropshippingHomeData
                     $customerSalesChannel = Arr::get($params, 'customerSalesChannel');
                     if ($customerSalesChannel) {
                         if (Str::startsWith($customerSalesChannel, $platform)) {
+                            if (!\Route::has($latestWebRequest->route_name)) {
+                                continue;
+                            }
                             $latestChannel[$customerSalesChannel] = [
                                 'route' => route(
                                     $latestWebRequest->route_name,
