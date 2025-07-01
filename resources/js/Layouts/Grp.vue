@@ -41,7 +41,7 @@ import {
     faDraftingCompass,
     faCheck,
     faTimes,
-    faAsterisk,faPauseCircle, faSunset, faSkull, faSkullCow, faToggleOn, faBroadcastTower
+    faAsterisk,faPauseCircle, faSunset, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash
 } from "@fal";
 import { faSearch, faBell } from "@far";
 import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas";
@@ -52,7 +52,7 @@ import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 
-library.add(faPoll, faPauseCircle, faSunset, faSkull, faSkullCow, faToggleOn, faBroadcastTower, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faClock, faTransporter, faParking, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk);
+library.add(faPoll, faPauseCircle, faSunset, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faClock, faTransporter, faParking, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk);
 
 provide("layout", useLayoutStore());
 provide("locale", useLocaleStore());
