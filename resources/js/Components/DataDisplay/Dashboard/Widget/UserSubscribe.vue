@@ -42,8 +42,8 @@ const newExternalEmailInputs = ref<string[]>([])
 const dataUserList = ref([])
 const formAddUser = useForm({ user_id: [] })
 const routeIndexUser = {
-	name: "grp.json.fulfilment.outbox.users.index",
-	parameters: { fulfilment: route().params["fulfilment"], outbox: route().params["outbox"] },
+	name: "grp.json.outbox.users.index",
+	parameters: { outbox: route().params["outbox"] },
 }
 
 const hasSubscriptions = computed(() => {
@@ -83,8 +83,8 @@ const deleteWidgetItem = (item: any, index: number) => {
 	const subscriber_id = item.subscriber_id
 	console.log(item, index)
 	const routeToDelete = {
-		name: "grp.models.fulfilment.outboxes.subscriber.delete",
-		parameters: [route().params["fulfilment"], route().params["outbox"], subscriber_id],
+		name: "grp.models.outboxes.subscriber.delete",
+		parameters: [route().params["outbox"], subscriber_id],
 	}
 	router.delete(route(routeToDelete.name, routeToDelete.parameters), {
 		preserveScroll: true,
@@ -124,9 +124,10 @@ const saveChanges = () => {
 			: [formAddUser.user_id]
 	}
 	const routeToSubmit = {
-		name: "grp.models.fulfilment.outboxes.subscriber.store",
-		parameters: [route().params["fulfilment"], route().params["outbox"]],
+		name: "grp.models.outboxes.subscriber.store",
+		parameters: [route().params["outbox"]],
 	}
+    console.log("test->",route(routeToSubmit.name, routeToSubmit.parameters))
 	console.log(payload, "payload to submit")
 	router.post(route(routeToSubmit.name, routeToSubmit.parameters), payload, {
 		preserveScroll: true,

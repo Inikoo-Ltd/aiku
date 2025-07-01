@@ -13,6 +13,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Psr7\Request;
 
 trait WithAmazonApiRequest
 {
@@ -25,12 +26,12 @@ trait WithAmazonApiRequest
             'app_id' => config('services.amazon.app_id'),
             'client_id' => config('services.amazon.client_id'),
             'client_secret' => config('services.amazon.client_secret'),
-            'redirect_uri' => config('services.amazon.redirect_uri'),
-            'region' => config('services.amazon.region', 'eu'),
-            'sandbox' => config('services.amazon.sandbox'),
-            'access_token' => Arr::get($this->settings, 'credentials.amazon_access_token'),
-            'refresh_token' => Arr::get($this->settings, 'credentials.amazon_refresh_token'),
-            'expires_in' => Arr::get($this->settings, 'credentials.amazon_token_expires_at'),
+            'redirect_uri' => route('retina.dropshipping.platform.amazon.callback'),
+            'region' => config('services.amazon.region'),
+            'sandbox' => true,
+            'access_token' => Arr::get($this->settings, 'credentials.access_token'),
+            'refresh_token' => Arr::get($this->settings, 'credentials.refresh_token'),
+            'expires_in' => Arr::get($this->settings, 'credentials.expires_in'),
             'marketplace_id' => Arr::get($this->settings, 'credentials.marketplace_id'),
         ];
 
@@ -58,8 +59,8 @@ trait WithAmazonApiRequest
             }
             $config['refresh_token'] = config('services.amazon.refresh_token');
         } else {
-            $config['access_token'] = Arr::get($this->settings, 'credentials.amazon_access_token');
-            $config['refresh_token'] = Arr::get($this->settings, 'credentials.amazon_refresh_token');
+            $config['access_token'] = Arr::get($this->settings, 'credentials.access_token');
+            $config['refresh_token'] = Arr::get($this->settings, 'credentials.refresh_token');
         }*/
 
         return $config;
@@ -70,11 +71,10 @@ trait WithAmazonApiRequest
      */
     protected function getAmazonTokenUrl()
     {
-        // $config = $this->getAmazonConfig();
-        // return $config['sandbox']
-        //     ? 'https://api.sandbox.amazon.com/auth/o2/token'
-        //     : 'https://api.amazon.com/auth/o2/token';
-        return 'https://api.amazon.com/auth/o2/token';
+        $config = $this->getAmazonConfig();
+        return $config['sandbox']
+            ? 'https://api.sandbox.amazon.com/auth/o2/token'
+            : 'https://api.amazon.com/auth/o2/token';
     }
 
     /**
@@ -107,7 +107,7 @@ trait WithAmazonApiRequest
 
         $params = [
             'application_id' => $config['app_id'],
-            'amazon_callback_uri' => $config['redirect_uri'],
+            'redirect_uri' => $config['redirect_uri'],
             'state' => $state ?? md5(time()),
         ];
 
@@ -125,13 +125,25 @@ trait WithAmazonApiRequest
 
         $res = Http::withHeaders([
             'x-amz-access-token' => $token,
-        ])->get("{$this->getAmazonBaseUrl()}/sellers/v1/marketplaceParticipations");
+        ])->withToken($token)
+            ->get("{$this->getAmazonBaseUrl()}/sellers/v1/marketplaceParticipations");
 
         if ($res->successful()) {
             $data = $res->json();
 
             if (isset($data['payload']) && is_array($data['payload']) && count($data['payload']) > 0) {
-                return Arr::get($data, 'payload.0.marketplace.id');
+                $marketplaceId = Arr::get($data, 'payload.0.marketplace.id');
+
+                UpdateAmazonUser::run($this, [
+                    'settings' => [
+                        'credentials' => [
+                            ...Arr::get($this->settings, 'credentials', []),
+                            'marketplace_id' => $marketplaceId
+                        ]
+                    ]
+                ]);
+
+                return $marketplaceId;
             }
         }
         return $res;
@@ -157,15 +169,15 @@ trait WithAmazonApiRequest
                 $tokenData = $response->json();
 
                 // Update stored tokens
-                // UpdateAmazonUser::run($this, [
-                //     'settings' => [
-                //         'credentials' => [
-                //             'amazon_access_token' => $tokenData['access_token'],
-                //             'amazon_refresh_token' => $tokenData['refresh_token'],
-                //             'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
-                //         ]
-                //     ]
-                // ]);
+                UpdateAmazonUser::run($this, [
+                    'settings' => [
+                        'credentials' => [
+                            'access_token' => $tokenData['access_token'],
+                            'refresh_token' => $tokenData['refresh_token'],
+                            'expires_in' => now()->addSeconds($tokenData['expires_in'])
+                        ]
+                    ]
+                ]);
 
                 return $tokenData;
             }
@@ -203,9 +215,9 @@ trait WithAmazonApiRequest
                 UpdateAmazonUser::run($this, [
                     'settings' => [
                         'credentials' => [
-                            'amazon_access_token' => $tokenData['access_token'],
-                            'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in']),
-                            'amazon_refresh_token' => $config['refresh_token']
+                            'access_token' => $tokenData['access_token'],
+                            'expires_in' => now()->addSeconds($tokenData['expires_in']),
+                            'refresh_token' => $config['refresh_token']
                         ]
                     ]
                 ]);
@@ -226,12 +238,7 @@ trait WithAmazonApiRequest
     public function getAmazonAccessToken()
     {
         $config = $this->getAmazonConfig();
-        $expiresAt = Arr::get($this->settings, 'credentials.amazon_token_expires_at');
-
-        // Check if token exists and is not expired
-        if ($config['access_token'] && $expiresAt && now()->lt($expiresAt)) {
-            return $config['access_token'];
-        }
+        $expiresAt = Arr::get($this->settings, 'credentials.expires_in');
 
         // Try to refresh token if we have a refresh token
         if ($config['refresh_token']) {
@@ -241,8 +248,8 @@ trait WithAmazonApiRequest
                 'settings' => [
                     'credentials' => [
                         ...Arr::get($this->settings, 'credentials', []),
-                        'amazon_access_token' => $tokenData['access_token'],
-                        'amazon_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                        'access_token' => $tokenData['access_token'],
+                        'expires_in' => now()->addSeconds($tokenData['expires_in'])
                     ]
                 ]
             ]);
@@ -258,8 +265,8 @@ trait WithAmazonApiRequest
      */
     public function isAmazonAuthenticated()
     {
-        return !empty(Arr::get($this->settings, 'credentials.amazon_access_token')) &&
-            !empty(Arr::get($this->settings, 'credentials.amazon_refresh_token'));
+        return !empty(Arr::get($this->settings, 'credentials.access_token')) &&
+            !empty(Arr::get($this->settings, 'credentials.refresh_token'));
     }
 
     /**
@@ -285,7 +292,7 @@ trait WithAmazonApiRequest
     /**
      * Generate LWA (Login with Amazon) access token for restricted operations
      */
-    protected function getLWAAccessToken($config = null)
+    public function getLWAAccessToken($config = null)
     {
         if (!$config) {
             $config = $this->getAmazonConfig();
@@ -308,19 +315,6 @@ trait WithAmazonApiRequest
             Log::error('Amazon LWA Token Error: ' . $e->getMessage());
             throw $e;
         }
-    }
-
-    /**
-     * Generate signature for Amazon SP-API requests
-     */
-    protected function generateAmazonSignature($method, $endpoint, $queryParams = [])
-    {
-        // In a real implementation, this would generate the required AWS Signature V4
-        // This is a placeholder that would need to be implemented with a proper AWS signature library
-        // You might want to use a package like aws/aws-sdk-php for this
-
-        // Return a dummy signature for now - this needs to be properly implemented
-        return ['Authorization' => 'Bearer ' . $this->getAmazonAccessToken()];
     }
 
     /**
@@ -540,7 +534,7 @@ trait WithAmazonApiRequest
     {
         try {
             $queryParams = [
-                // 'OrderStatuses' => 'PendingAvailability,Unshipped,Pending,PartiallyShipped,Shipped,Canceled,Unfulfillable,InvoiceUnconfirmed'
+                'OrderStatuses' => 'PendingAvailability,Unshipped,Pending,PartiallyShipped,Shipped,Canceled,Unfulfillable,InvoiceUnconfirmed'
             ];
 
             if ($createdAfter) {
