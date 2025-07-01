@@ -22,7 +22,7 @@ function toggleDisclosure(index: number) {
   openDisclosureId.value = openDisclosureId.value === index ? null : index
 }
 
-console.log('sdsd',props)
+
 </script>
 
 <template>
