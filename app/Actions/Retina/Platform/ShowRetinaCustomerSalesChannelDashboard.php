@@ -18,6 +18,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 
 class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
@@ -43,7 +44,6 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
         $title = __('Channel Dashboard');
-
         $step = match ($customerSalesChannel->state) {
             CustomerSalesChannelStateEnum::CREATED => [
                 'label' => __('Great! You just complete first step.'),
@@ -91,14 +91,26 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             ],
         };
 
-        return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
+        $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
+            ? 'Dropshipping/Platform/PlatformManualDashboard'
+            : 'Dropshipping/Platform/PlatformDashboard';
+        
+        // dump($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL);
+        // dd($renderPage);
+            
+        return Inertia::render($renderPage, [
             'title'                  => $title,
             'breadcrumbs'            => $this->getBreadcrumbs($customerSalesChannel),
             'pageHead'               => [
 
-                'title' => $title,
+                'title' => $customerSalesChannel->name ?? $customerSalesChannel->reference,
+                'model' => $customerSalesChannel->platform->name,
+                // 'afterTitle' => [
+                //     'label' => $customerSalesChannel->name,
+                // ],
                 'icon'  => [
-                    'icon'  => ['fal', 'fa-tachometer-alt'],
+                    'icon'  => ['fal', 'fa-code-branch'],
+                    'icon_rotation'  => 90,
                     'title' => $title
                 ],
 
