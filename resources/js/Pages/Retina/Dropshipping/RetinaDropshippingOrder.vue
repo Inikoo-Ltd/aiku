@@ -163,6 +163,7 @@ console.log('DS Orders', props)
         <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
     </div>
 
+    <!-- Section: Alert if unpaid -->
     <Message v-if="!data?.data?.is_fully_paid" severity="error" class="mx-4 mt-4 ">
         <template #icon>
             <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true" />
@@ -176,7 +177,7 @@ console.log('DS Orders', props)
             <ButtonWithLink
                 v-if="data?.data.route_to_pay_unpaid"
                 :routeTarget="data?.data.route_to_pay_unpaid"
-                :label="trans('Paid unpaid amount')"
+                :label="trans('Click to pay')"
                 type="positive"
                 class="bg-green-100"
             />
