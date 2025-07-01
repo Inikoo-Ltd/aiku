@@ -13,6 +13,7 @@ import { trans } from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
 
@@ -42,6 +43,11 @@ const props = defineProps<{
         title: string
         description: string
     }
+    headline: {
+        title: string
+        section: string
+        description: string
+    }
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -63,7 +69,30 @@ const locale = inject('locale', aikuLocaleStructure)
         </template>
     </PageHeading>
 
-    <div class="relative isolate py-6 px-8 max-w-6xl">
+    <div v-if="headline" class="mt-4 md:mt-10 xpx-8 lg:col-start-2 mx-8 border-b border-gray-200 pb-12 ">
+        <div class="xmx-auto max-w-2xl xlg:mr-0 xlg:max-w-lg">
+            <h2 v-if="headline.section" class="text-base/8 font-semibold text-indigo-600">
+                {{ headline.section }}
+            </h2>
+            <p class="mt-2 text-pretty xtext-justify text-4xl font-semibold tracking-tight sm:text-5xl">
+                {{ headline.title }}
+            </p>
+            <p class="mt-6 text-justify text-gray-600" v-html="headline.description">
+            </p>
+
+            <div class="mt-10">
+                <Button
+                    :label="trans('View tutorial') + ` (0)`"
+                    disabled
+                    type="tertiary"
+                    v-tooltip="trans('This feature is on progress.')"
+                    iconRight="fal fa-external-link"
+                />
+            </div>
+        </div>
+    </div>
+
+    <div class="relative isolate pt-4 pb-6 mx-8 max-w-6xl">
         <div xv-else>
             <dl class="mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
                 <div v-for="platform in platformData" :key="platform.id" class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">

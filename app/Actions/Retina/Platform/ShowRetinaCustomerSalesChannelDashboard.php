@@ -140,6 +140,11 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     ]
                 ],
             ] : null,
+            'headline'  => [
+                'title' => __('Manual Order Placement'),
+                // 'section'   => __(''),
+                'description' => '<p><span >First, add desired products to your </span><strong >"Portfolio"</strong><span > using the </span><strong >"Add to Portfolio"</strong><span > button. When an order comes in, find the customer under the </span><strong >"Customers"</strong><span > tab (add them if new), then click </span><strong >"New Order."</strong><span > Finally, enter product codes and quantities to complete the order.</span></p>'
+            ],
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platform_logo'          => $this->getPlatformLogo($customerSalesChannel),
