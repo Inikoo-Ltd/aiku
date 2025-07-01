@@ -22,7 +22,7 @@ import ReviewsBlueprint from "@/Components/CMS/Webpage/Reviews/Blueprint"
 import TextBlueprint from "@/Components/CMS/Webpage/Text/Blueprint"
 import ScriptBlueprint from "@/Components/CMS/Webpage/Script/Blueprint"
 import WowsbarBannerBlueprint from "@/Components/CMS/Webpage/WowsbarBanner/Blueprint"
-import SeeAlsoBlueprint from "@/Components/CMS/Webpage/SeeAlso/Blueprint"
+import SeeAlsoBlueprint from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
 import PricingBlueprint from "@/Components/CMS/Webpage/Pricing/Blueprint"
 import TimelineBlueprint from "@/Components/CMS/Webpage/Timeline/Blueprint"
 import TextColumn from "@/Components/CMS/Webpage/TextColumn/Blueprint"
@@ -43,7 +43,9 @@ import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
+
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
+import SeeAlso1Blueprint from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
 
 import { data } from "autoprefixer"
 import CTAVideo1Workshop from "@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue"
@@ -80,6 +82,9 @@ export const getBlueprint = (componentName: string) => {
 
 		//products-list
 		'products-1' : ProductsList1Blueprint.blueprint,
+
+		//see also
+		'see-also-1' : SeeAlso1Blueprint.blueprint,
 
 
 		"banner": WowsbarBannerBlueprint.blueprint,

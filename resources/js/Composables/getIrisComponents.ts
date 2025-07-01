@@ -1,4 +1,4 @@
-import { Family } from './../types/family';
+
 import type { Component } from 'vue'
 
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
@@ -42,7 +42,11 @@ import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1
 import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
+
 import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
+
+import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue'
+
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 
@@ -86,6 +90,9 @@ const components: Record<string, Component> = {
 
     //product list
     'products-1' : Products1Iris,
+
+    //see-also
+    'see-also-1' : SeeAlso1WorkshopIris,
     
     
     'banner': WowsbarBannerIris,
