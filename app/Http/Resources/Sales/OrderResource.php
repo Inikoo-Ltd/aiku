@@ -26,6 +26,16 @@ class OrderResource extends JsonResource
             'state_label'   => $order->state->labels()[$order->state->value],
             'state_icon'    => $order->state->stateIcon()[$order->state->value],
             'public_notes'  => $order->public_notes,
+            'payment_amount'  => $order->payment_amount,
+            'total_amount'  => $order->total_amount,
+            'is_fully_paid' => $order->total_amount == $order->payment_amount,
+            'unpaid_amount' => $order->total_amount - $order->payment_amount,
+            // 'route_to_pay_unpaid' => {   // TODO and remove this
+            //     'name' => 'sales.orders.pay',
+            //     'params' => [
+            //         'order' => $order->id,
+            //     ],
+            // },
         ];
     }
 }
