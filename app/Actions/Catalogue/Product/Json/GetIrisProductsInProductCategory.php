@@ -34,7 +34,7 @@ class GetIrisProductsInProductCategory extends IrisAction
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
 
-        $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
+        $queryBuilder->selectRaw('\''.$productCategory->url.'\' as parent_url');
         return $this->getData($queryBuilder, $perPage);
     }
 

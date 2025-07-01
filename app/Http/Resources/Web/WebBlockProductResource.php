@@ -50,6 +50,8 @@ class WebBlockProductResource extends JsonResource
 
         $tradeUnit = $product->tradeUnits->first();
 
+        $ingredients = $tradeUnit->ingredients->pluck('name')->toArray();
+
         return [
             'slug'        => $product->slug,
             'code'        => $product->code,
@@ -58,7 +60,7 @@ class WebBlockProductResource extends JsonResource
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
             'stock'       => $product->available_quantity,
-            'specifications' => $tradeUnit ? TradeUnitResource::make($tradeUnit)->toArray($request) : null,
+            'specifications' => $tradeUnit ? array_merge(TradeUnitResource::make($tradeUnit)->toArray($request), ['ingredients' => $ingredients]) : null,
             'contents'    => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'              => $product->id,
             'slug'            => $product->slug,

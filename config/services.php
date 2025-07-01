@@ -50,7 +50,7 @@ return [
         'client_id' => env('AMAZON_CLIENT_ID'),
         'app_id' => env('AMAZON_APP_ID'),
         'client_secret' => env('AMAZON_CLIENT_SECRET'),
-        'region' => env('AMAZON_REGION', 'eu'),
+        'region' => env('AMAZON_REGION', 'na'),
         'sandbox' => env('AMAZON_SANDBOX', true)
     ],
     'apple_pay' => [

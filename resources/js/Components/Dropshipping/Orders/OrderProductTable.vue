@@ -7,6 +7,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
 import { Table as TableTS} from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
+import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
 import { inject, ref } from 'vue'
@@ -48,6 +49,13 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
             quantity_ordered: Number(value)
         },
         {
+            onError: (e: any) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: e.message,
+                    type: "error",
+                })
+            },
             onStart: () => isLoading.value = 'quantity' + idTransaction,
             onFinish: () => isLoading.value = false,
             only: ['transactions', 'box_stats', 'total_to_pay', 'balance'],
@@ -92,7 +100,7 @@ const debounceUpdateQuantity = debounce(
         <template #cell(quantity_ordered)="{ item }">
             <div class="flex items-center justify-end">
                 
-                <div v-if="state === 'creating' || state === 'submitted'" class="w-fit">
+                <div v-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
                     <NumberWithButtonSave
                         :modelValue="item.quantity_ordered"
                         :routeSubmit="item.updateRoute"
@@ -104,6 +112,14 @@ const debounceUpdateQuantity = debounce(
                         noUndoButton
                         noSaveButton
                     />
+                </div>
+
+                <div>
+                    {{
+                        Number.isInteger(Number(item.quantity_ordered)) && String(item.quantity_ordered).match(/^\d+(\.0+)?$/)
+                            ? parseInt(item.quantity_ordered)
+                            : parseFloat(item.quantity_ordered)
+                    }}
                 </div>
                 
                 <!-- <Transition name="spin-to-down">
@@ -129,9 +145,8 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Action -->
         <template #cell(actions)="{ item }">
             <div class="flex gap-2">
-                
                 <Link
-                    v-if="state === 'creating' || state === 'submitted'"
+                    v-if="state === 'creating' || state === 'xsubmitted'"
                     :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
                     as="button"
                     :method="item.deleteRoute.method"

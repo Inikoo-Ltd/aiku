@@ -94,9 +94,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
             ? 'Dropshipping/Platform/PlatformManualDashboard'
             : 'Dropshipping/Platform/PlatformDashboard';
-        
-        // dump($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL);
-        // dd($renderPage);
+
+  
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
 
         return Inertia::render($renderPage, [

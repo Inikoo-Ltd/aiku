@@ -11,10 +11,14 @@
 namespace App\Actions\Dropshipping\Amazon;
 
 use App\Actions\Dropshipping\Amazon\Traits\WithAmazonApiRequest;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\AmazonUser;
+use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,16 +32,31 @@ class CallbackRetinaAmazonUser extends OrgAction
     use WithActionUpdate;
     use WithAmazonApiRequest;
 
+    public string $commandSignature = 'amazon:auth {customer}';
 
-    public function handle(Customer $customer, array $modelData): ?AmazonUser
+    public function handle(Customer $customer, array $modelData): AmazonUser
     {
+        $spApiAuthCode = Arr::pull($modelData, 'spapi_oauth_code');
 
+        /** @var AmazonUser $amazonUser */
+        $amazonUser = StoreAmazonUser::run($customer, []);
+        $amazonUser->getAmazonTokens($spApiAuthCode);
 
-        dd($customer, $modelData);
+        $amazonUser->refresh();
+        $seller = $amazonUser->getSellerAccount();
+        $amazonUser->getAmazonMarketplaceId();
 
+        $this->update($amazonUser, [
+            'data' => [
+                'seller' => $seller
+            ]
+        ]);
 
+        UpdateCustomerSalesChannel::run($amazonUser->customerSalesChannel, [
+            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+        ]);
 
-        return null;
+        return $amazonUser;
     }
 
     public function htmlResponse(AmazonUser $amazonUser): Response
@@ -52,8 +71,16 @@ class CallbackRetinaAmazonUser extends OrgAction
         ]));
     }
 
-    public function asController(ActionRequest $request): ?AmazonUser
+    public function asController(ActionRequest $request): AmazonUser
     {
         return $this->handle($request->user()->customer, $request->all());
+    }
+
+    public function asCommand(Command $command): AmazonUser
+    {
+        $customer = $command->argument('customer');
+        $customer = Customer::where('slug', $customer)->first();
+
+        return $this->handle($customer, []);
     }
 }
