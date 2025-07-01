@@ -18,7 +18,6 @@ import Toggle from '@/Components/Forms/Fields/Toggle.vue'
 // import Rental from '@/Components/Rental/Rental.vue'
 import Textarea from "@/Components/Forms/Fields/Textarea.vue"
 import TextEditor from "@/Components/Forms/Fields/TextEditor.vue"
-
 import ImageCropSquare from '@/Components/Forms/Fields/ImageCropSquare.vue'
 import Avatar from '@/Components/Forms/Fields/Avatar.vue'
 import Theme from '@/Components/Forms/Fields/Theme.vue'

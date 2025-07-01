@@ -114,7 +114,7 @@ class EditSubDepartment extends OrgAction
                                     'value' => $subDepartment->name
                                 ],
                                 'description' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('description'),
                                     'value' => $subDepartment->description
                                 ],
@@ -124,7 +124,7 @@ class EditSubDepartment extends OrgAction
                                     'value' => $subDepartment->description_title
                                 ],
                                 'description_extra' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('description extra'),
                                     'value' => $subDepartment->description_extra
                                 ],

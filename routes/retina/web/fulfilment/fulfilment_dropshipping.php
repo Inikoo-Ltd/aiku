@@ -30,6 +30,7 @@ use App\Actions\Retina\Fulfilment\Dropshipping\Client\UI\ShowRetinaFulfilmentCus
 use App\Actions\Retina\Fulfilment\Order\UI\IndexRetinaFulfilmentOrders;
 use App\Actions\Retina\Fulfilment\PalletReturn\UI\ShowRetinaStoredItemReturn;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
+use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +62,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     Route::prefix('{customerSalesChannel}')->group(function () {
 
         Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
+        Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
 
         Route::prefix('basket')->as('basket.')->group(function () {
             Route::get('/', IndexRetinaFulfilmentBaskets::class)->name('index');

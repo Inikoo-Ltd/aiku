@@ -27,6 +27,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $department_code
  * @property mixed $department_name
  * @property int $number_current_products
+ * @property string $description_title
+ * @property string $description_extra
  *
  */
 class WorkshopFamiliesResource extends JsonResource
@@ -41,6 +43,8 @@ class WorkshopFamiliesResource extends JsonResource
             'code'                     => $this->code,
             'name'                     => $this->name,
             'description'              => $this->description,
+            'description_title'        => $this->description_title,
+            'description_extra'        => $this->description_extra,
             'created_at'               => $this->created_at,
             'updated_at'               => $this->updated_at,
         ];
