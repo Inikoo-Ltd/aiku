@@ -44,6 +44,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCus
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DownloadRetinaOrderTransactionsTemplate;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
+use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -94,6 +95,7 @@ Route::prefix('orders')->as('orders.')->group(function () {
 
 Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
     Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
+    Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');

@@ -88,10 +88,8 @@ class IndexRetinaBaskets extends RetinaAction
                 'title'       => $title,
                 'pageHead'    => [
                     'title' => $title,
-                    'icon'  => 'fal fa-shopping-basket',
-                    'afterTitle' => [
-                        'label' => '@'.$this->platform->name
-                    ],
+                    'model' => $platformName,
+                    'icon'  => 'fal fa-shopping-basket'
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
