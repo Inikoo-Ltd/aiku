@@ -4,7 +4,7 @@ import { faBox, faPlus, faVial } from "@far"
 import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject } from "vue"
+import { ref, inject, onMounted} from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import ProductContentsIris from "./ProductContentIris.vue"
@@ -50,39 +50,20 @@ const props = withDefaults(defineProps<{
     blockData?: object
 }>(), {
 })
-const layout = inject('layout', retinaLayoutStructure)
+const layout = inject('layout',{})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
 const isFavorite = ref(false)
-const toggleFavorite = () => {
-    isFavorite.value = !isFavorite.value
-}
+const contentRef = ref(null)
+const expanded = ref(false)
+const showButton = ref(false)
+
 
 
 function formatNumber(value: Number) {
     return Number.parseFloat(value).toString()
 }
 
-const channels = ref({
-    isLoading: false,
-    list: []
-})
-const fetchChannels = async () => {
-    channels.value.isLoading = true
-    try {
-        const response = await axios.get(route('iris.json.channels.index'))
-        console.log('Channels response:', response.data.data)
-        
-        channels.value.list = response.data.data || []
-
-        
-    } catch (error) {
-        console.log(error)
-        notify({ title: 'Error', text: 'Failed to load channels.', type: 'error' })
-    } finally {
-        channels.value.isLoading = false
-    }
-}
 
 
 // Section: Add to Favourites
@@ -145,49 +126,26 @@ const onUnselectFavourite = (product: ProductResource) => {
     )
 }
 
+onMounted(() => {
+  // Tunggu render selesai
+  requestAnimationFrame(() => {
+    if (contentRef.value.scrollHeight > 100) {
+      showButton.value = true
+    }
+  })
+})
+
+const toggleExpanded = () => {
+  expanded.value = !expanded.value
+}
+
 
 </script>
 
 <template>
-    <div id="app" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
+    <div id="product-1" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
-                <div class="flex justify-between mb-4 items-start">
-                    <div class="w-full">
-                        <h1 class="text-2xl font-bold text-gray-900">{{ fieldValue.product.name }}</h1>
-                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
-                            <div>Product code: {{ fieldValue.product.code }}</div>
-                            <div class="flex items-center gap-[1px]">
-                                <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
-                                    :key="n" />
-                                <span class="ml-1 text-xs text-gray-500">41</span> -->
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                            <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
-                            <span>
-                                {{
-                                    fieldValue.product.stock > 0
-                                    ? `In Stock (${fieldValue.product.stock})`
-                                    : 'Out Of Stock'
-                                }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="h-full flex items-start">
-                        <!-- Favorite Icon -->
-                        <template v-if="layout.iris?.is_logged_in">
-                            <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
-                                <LoadingIcon />
-                            </div>
-                            <div v-else @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" class="cursor-pointer xabsolute top-2 right-2 group text-2xl ">
-                                <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
-                                <FontAwesomeIcon v-else :icon="faHeart" fixed-width class="text-gray-400 group-hover:text-pink-400" />
-                            </div>
-                        </template>
-                    </div>
-                </div>
                 <div class="py-1 w-full">
                     <ImageProducts :images="fieldValue.product.images" />
                 </div>
@@ -204,35 +162,76 @@ const onUnselectFavourite = (product: ProductResource) => {
                 </div>
             </div>
             <div class="col-span-5 self-start">
-                <div class="flex items-end border-b pb-3 mb-3">
-                    <div class="text-gray-900 font-semibold text-5xl capitalize leading-none flex-grow min-w-0">
+                <div class="flex justify-between mb-4 items-start">
+                    <div class="w-full">
+                        <h1 class="text-2xl font-bold text-gray-900">{{ fieldValue.product.name }}</h1>
+                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                            <div>Product code: {{ fieldValue.product.code }}</div>
+                            <div class="flex items-center gap-[1px]">
+                                <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
+                                    :key="n" />
+                                <span class="ml-1 text-xs text-gray-500">41</span> -->
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                            <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                            <span>
+                                {{
+                                fieldValue.product.stock > 0
+                                ? `In Stock (${fieldValue.product.stock})`
+                                : 'Out Of Stock'
+                                }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="h-full flex items-start">
+                        <!-- Favorite Icon -->
+                        <template v-if="layout.iris?.is_logged_in">
+                            <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
+                                <LoadingIcon />
+                            </div>
+                            <div v-else
+                                @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
+                                class="cursor-pointer xabsolute top-2 right-2 group text-2xl ">
+                                <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
+                                    class="text-pink-500" />
+                                <FontAwesomeIcon v-else :icon="faHeart" fixed-width
+                                    class="text-gray-400 group-hover:text-pink-400" />
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="flex items-end pb-3 mb-3">
+                    <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                        <span class="text-sm text-gray-500 ml-2 whitespace-nowrap">({{
+                        <span class="text-sm text-gray-900 ml-2 whitespace-nowrap">({{
                             formatNumber(fieldValue.product.units) }}/{{
-                                fieldValue.product.unit }})</span>
+                            fieldValue.product.unit }})</span>
                     </div>
                     <div v-if="fieldValue.product.rrp"
-                        class="text-xs text-gray-400 font-semibold text-right whitespace-nowrap pl-4">
+                        class="text-sm text-gray-800 font-semibold text-right whitespace-nowrap pl-4">
                         <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
                         <span>/{{ fieldValue.product.unit }}</span>
                     </div>
                 </div>
                 <div class="flex gap-2 mb-6">
                     <!-- <pre>{{ fieldValue.product }}</pre> -->
-                    
-                    <ButtonAddPortfolio
-                        :product="fieldValue.product"
-                        :productHasPortfolio="fieldValue.productChannels"
-                    />
+
+                    <ButtonAddPortfolio :product="fieldValue.product"
+                        :productHasPortfolio="fieldValue.productChannels" />
                 </div>
                 <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
                     <span>{{ `Order ${formatNumber(fieldValue.product.units)} full carton` }}</span>
                 </div>
-                <div class="text-xs font-medium text-gray-800 py-3">
+                <div class="text-sm font-medium text-gray-800">
+                    <div>{{ fieldValue.product.description_title }}</div>
+                </div>
+                <div class="text-xs font-medium text-gray-800">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
-                <div v-if="fieldValue.setting.information" class="mb-4 space-y-2">
+                <div v-if="fieldValue.setting.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
                         :informations="fieldValue?.information" />
                     <div v-if="fieldValue?.paymentData?.length > 0"
@@ -247,6 +246,16 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
         </div>
 
+        <div class="text-xs font-normal text-gray-700 my-6">
+            <div ref="contentRef"
+                class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
+                :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
+
+            <button v-if="showButton" @click="toggleExpanded"
+                class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                {{ expanded ? 'Show Less' : 'Read More' }}
+            </button>
+        </div>
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />
     </div>
 
@@ -272,7 +281,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             <div class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
                     :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
-                    @click="toggleFavorite" />
+                    @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
             </div>
         </div>
 
@@ -282,33 +291,33 @@ const onUnselectFavourite = (product: ProductResource) => {
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                 <div v-else class="aspect-square w-full h-[15px]">
+                    
                     <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`" class="w-full h-full object-cover" />
                 </div>
                 <span>{{ tag.name }}</span>
             </div>
         </div>
         <div class="mt-6 flex flex-col gap-2">
-            <button
-                class="flex items-center justify-center gap-2 bg-gray-800 text-white rounded px-4 py-2 text-sm font-semibold transition w-full">
-                <FontAwesomeIcon :icon="faPlus" />
-                Add to Portfolio
-            </button>
-            <button
-                class="flex items-center justify-center border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded p-2 text-sm font-semibold transition w-full">
-                <FontAwesomeIcon :icon="faVial" />
-                Buy Sample
-            </button>
+            <ButtonAddPortfolio :product="fieldValue.product" :productHasPortfolio="fieldValue.productChannels" />
         </div>
         <div class="text-xs font-medium py-3">
             <div v-html="fieldValue.product.description"></div>
         </div>
+
+
         <div class="mt-4">
+            <InformationSideProduct v-if="fieldValue?.information?.length > 0"
+                :informations="fieldValue?.information" />
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />
             </div>
 
+        </div>
+
+        <div class="text-xs font-normal text-gray-700 my-6">
+            <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra"></div>
         </div>
 
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />

@@ -57,6 +57,8 @@ class WebBlockProductResource extends JsonResource
             'code'        => $product->code,
             'name'        => $product->name,
             'description' => $product->description,
+            'description_title' => $product->description_title,
+            'description_extra' => $product->description_extra,
             'stock'       => $product->available_quantity,
             'specifications' => $tradeUnit ? array_merge(TradeUnitResource::make($tradeUnit)->toArray($request), ['ingredients' => $ingredients]) : null,
             'contents'    => ModelHasContentsResource::collection($product->contents)->toArray($request),
