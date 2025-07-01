@@ -12,9 +12,7 @@ namespace App\Actions\Dropshipping\Amazon;
 use App\Actions\Dropshipping\Amazon\Traits\WithAmazonApiRequest;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
-use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -53,14 +51,5 @@ class AuthorizeRetinaAmazonUser extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle();
-    }
-
-    public function asCommand(Command $command): void
-    {
-        $modelData = [];
-
-        $customer = Customer::find($command->argument('customer'))->first();
-
-        $this->handle($customer, $modelData);
     }
 }

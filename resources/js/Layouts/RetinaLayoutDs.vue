@@ -102,14 +102,14 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 max-w-5xl lg:max-w-7xl w-full mx-auto my-10 px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 max-w-5xl lg:max-w-7xl w-full lg:mx-auto my-10 px-8 xl:px-0 transition-all">
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[
 						'fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform z-50 md:z-0 transition-all',
 						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
 						'md:relative md:translate-x-0 md:flex md:flex-col',
-						layout.leftSidebar.show ? 'min-w-56 w-56' : 'min-w-14 w-14 '
+						layout.leftSidebar.show ? 'min-w-56 w-56' : 'min-w-56 w-56 md:min-w-14 md:w-14 '
 					]"
 				/>
 
