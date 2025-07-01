@@ -61,9 +61,10 @@ class EditPoll extends OrgAction
                 ),
                 'pageHead'    => [
                     'title'   => $poll->name,
+                    'model'   => __('Edit Poll'),
                     'icon'    => [
                         'title' => __('polls'),
-                        'icon'  => 'fal fa-cube'
+                        'icon'  => 'fal fa-poll'
                     ],
                     'actions' => [
                         [
@@ -81,6 +82,7 @@ class EditPoll extends OrgAction
                     'blueprint' => [
                         [
                             'title'  => __('edit poll'),
+                            'label'  => __('Basic Information'),
                             'fields' => [
                                 'name'                     => [
                                     'type'  => 'input',
@@ -92,9 +94,10 @@ class EditPoll extends OrgAction
                                     'label' => __('label'),
                                     'value' => $poll->label
                                 ],
-                                'type'                     => [
+                                'type'                      => [
                                     'type'         => 'poll_type_select',
                                     'type_options' => $optionsPool,
+                                    'required'     => true,
                                     'label'        => __('type'),
                                     'options'      => Options::forEnum(PollTypeEnum::class),
                                     'value'        => [
@@ -102,15 +105,18 @@ class EditPoll extends OrgAction
                                         'poll_options' => $optionsPool
                                     ]
                                 ],
-                                'in_registration'          => [
-                                    'type'  => 'toggle',
-                                    'label' => __('in registration'),
-                                    'value' => $poll->in_registration
+                                'in_registration'           => [
+                                    'type'          => 'toggle',
+                                    'information'   => __('If active, the poll will be shown in the registration form of Retina app'),
+                                    'label'         => __('in registration'),
+                                    'value'         => $poll->in_registration
                                 ],
                                 'in_registration_required' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('registration required'),
-                                    'value' => $poll->in_registration_required
+                                    'type'          => 'toggle',
+                                    'information'   => __('If active, will show the icon asterisk (*) and user need to fill the poll before being able to register'),
+                                    'hidden'        => !$poll->in_registration,
+                                    'label'         => __('registration required'),
+                                    'value'         => $poll->in_registration_required
                                 ],
                             ],
                         ]
