@@ -35,7 +35,7 @@ class GetRetinaOrdersFromAmazon extends OrgAction
                 ->filter()
                 ->toArray();
 
-            $response = $amazonUser->getOrders();
+            $response = $amazonUser->getOrders(now()->subDay()->toISOString());
 
             foreach (Arr::get($response, 'payload.Orders') as $order) {
                 if (in_array($order['AmazonOrderId'], $existingOrderKeys, true)) {
