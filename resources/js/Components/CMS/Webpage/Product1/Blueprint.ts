@@ -53,7 +53,7 @@ export default {
 				},
 			},
 		},
-		{
+		/* {
 			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [
@@ -72,6 +72,6 @@ export default {
 					props_data: {},
 				},
 			],
-		},
+		}, */
 	],
 }

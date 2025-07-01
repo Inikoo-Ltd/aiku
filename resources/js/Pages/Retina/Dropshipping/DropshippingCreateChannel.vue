@@ -16,13 +16,16 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
 
 
-import {faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
-import {library} from "@fortawesome/fontawesome-svg-core";
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import axios from "axios";
 import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import PurePassword from "@/Components/Pure/PurePassword.vue";
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
 
@@ -302,8 +305,11 @@ const onSubmitMagento = async () => {
                 <div class="w-full flex justify-end">
                     <a target="_blank" class="w-full" :href="tiktokAuth?.url">
                         <Button v-if="layout?.app?.environment === 'local'"
-                                :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')"
-                                type="primary" full/>
+                            :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')"
+                            type="primary"
+                            full
+                            iconRight="fal fa-external-link-alt"
+                        />
                         <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                     </a>
 
@@ -320,23 +326,22 @@ const onSubmitMagento = async () => {
 
                     <div class="flex flex-col">
                         <div class="font-semibold text-lg">Woocommerce</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.woocommerce }} {{
-                                trans("Channels")
-                            }}
+                        <div class="text-xs text-gray-500">
+                            {{ total_channels?.woocommerce }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'production'"
+                        v-if="layout?.app?.environment === 'production' && layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
 
-                    <Button v-else :label="trans('Only in Production')" type="tertiary" disabled full/>
+                    <Button v-else :label="trans('Staging & Production')" type="tertiary" disabled full/>
 
                 </div>
             </div>
@@ -468,11 +473,12 @@ const onSubmitMagento = async () => {
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("WooCommerce store detail") }}
+                    {{ trans("Create manual platform") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Woocommerce store detail") }}
+                    {{ trans("Enter the name of manual platform") }}
+                    <FontAwesomeIcon v-tooltip="trans('You can change the name later in Edit section')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true" />
                 </div>
             </div>
 
@@ -480,7 +486,7 @@ const onSubmitMagento = async () => {
                 <PureInput
                     v-model="manualInput.name"
                     @update:modelValue="() => errManual = ''"
-                    :placeholder="trans('Your store name')"
+                    :placeholder="trans('Enter new store name')"
                     :maxLength="28"
                     @onEnter="() => onSubmitManual()"></PureInput>
             </div>

@@ -18,6 +18,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 
 class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
@@ -43,7 +44,6 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
         $title = __('Channel Dashboard');
-
         $step = match ($customerSalesChannel->state) {
             CustomerSalesChannelStateEnum::CREATED => [
                 'label' => __('Great! You just complete first step.'),
@@ -91,16 +91,42 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             ],
         };
 
-        return Inertia::render('Dropshipping/Platform/PlatformDashboard', [
+        $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
+            ? 'Dropshipping/Platform/PlatformManualDashboard'
+            : 'Dropshipping/Platform/PlatformDashboard';
+
+  
+        $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
+
+        return Inertia::render($renderPage, [
             'title'                  => $title,
             'breadcrumbs'            => $this->getBreadcrumbs($customerSalesChannel),
             'pageHead'               => [
 
-                'title' => $title,
+                'title' => $customerSalesChannel->name ?? $customerSalesChannel->reference,
+                'model' => $customerSalesChannel->platform->name,
+                // 'afterTitle' => [
+                //     'label' => $customerSalesChannel->name,
+                // ],
                 'icon'  => [
-                    'icon'  => ['fal', 'fa-tachometer-alt'],
+                    'icon'  => ['fal', 'fa-code-branch'],
+                    'icon_rotation'  => 90,
                     'title' => $title
                 ],
+                'actions'    => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
+                                'parameters' => [
+                                    'customerSalesChannel' => $customerSalesChannel->slug,
+                                ],
+                                'method'     => 'get'
+                            ]
+                        ]
+                ]
 
             ],
             'timeline' => $customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY ? [
@@ -128,6 +154,11 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     ]
                 ],
             ] : null,
+            'headline'  => [
+                'title' => __('Manual Order Placement'),
+                // 'section'   => __(''),
+                'description' => '<p><span >First, add desired products to your </span><strong >"Portfolio"</strong><span > using the </span><strong >"Add to Portfolio"</strong><span > button. When an order comes in, find the customer under the </span><strong >"Customers"</strong><span > tab (add them if new), then click </span><strong >"New Order."</strong><span > Finally, enter product codes and quantities to complete the order.</span></p>'
+            ],
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
             'platform_logo'          => $this->getPlatformLogo($customerSalesChannel),

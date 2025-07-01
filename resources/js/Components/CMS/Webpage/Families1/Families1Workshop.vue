@@ -41,6 +41,8 @@ const selectedSubDepartment = ref<null | {
   id: number
   name: string
   description: string
+  description_extra: string
+  description_title: string
   image?: string
 }>(null)
 
@@ -52,6 +54,8 @@ function openModal(subDept: any) {
       id: subDept.id,
       name: subDept.name,
       description: subDept.description,
+      description_extra: subDept.description_extra,
+      description_title: subDept.description_title,
       image: subDept.image,
     }
     showDialog.value = true

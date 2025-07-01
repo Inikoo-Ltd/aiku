@@ -158,9 +158,8 @@ const onUnselectFavourite = (product: ProductResource) => {
                         :icon="fasHeart" 
                         fixed-width 
                         class="text-pink-500 w-6 h-6 p-[1px]" 
-                        />
-                                        
-                        <svg 
+                    />                
+                    <svg 
                         v-else
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 512 512"
@@ -172,11 +171,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                         style="overflow: visible"
                         >
                         <path d="M462.3 62.7c-54.5-46.4-136-38.3-186.4 13.7L256 96.6l-19.9-20.2C186.1 24.4 104.6 16.3 50.1 62.7-16.6 128.6-10.6 230.8 43 284.6l175.4 178.7c10 10.2 23.2 15.9 37.6 15.9s27.6-5.7 37.6-15.9L469 284.6c53.6-53.8 59.6-156 6.7-221.9z"/>
-                        </svg>
-
-
-
-
+                    </svg>
                 </div>
             </template>
 
