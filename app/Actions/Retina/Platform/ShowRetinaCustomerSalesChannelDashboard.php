@@ -97,7 +97,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         
         // dump($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL);
         // dd($renderPage);
-            
+        $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
+
         return Inertia::render($renderPage, [
             'title'                  => $title,
             'breadcrumbs'            => $this->getBreadcrumbs($customerSalesChannel),
@@ -113,6 +114,20 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     'icon_rotation'  => 90,
                     'title' => $title
                 ],
+                'actions'    => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
+                                'parameters' => [
+                                    'customerSalesChannel' => $customerSalesChannel->slug,
+                                ],
+                                'method'     => 'get'
+                            ]
+                        ]
+                ]
 
             ],
             'timeline' => $customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY ? [

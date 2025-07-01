@@ -114,12 +114,12 @@ class EditDepartment extends OrgAction
                                     'value' => $department->description_title
                                 ],
                                 'description' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('description'),
                                     'value' => $department->description
                                 ],
                                 'description_extra' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('description extra'),
                                     'value' => $department->description_extra
                                 ],

@@ -143,12 +143,12 @@ class EditFamily extends OrgAction
                                     'value' => $family->description_title
                                 ],
                                 'description' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('description'),
                                     'value' => $family->description
                                 ],
                                 'description_extra' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('description extra'),
                                     'value' => $family->description_extra
                                 ],

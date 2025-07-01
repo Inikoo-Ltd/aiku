@@ -52,6 +52,8 @@ class GetFamiliesInWorkshop extends OrgAction
                 'product_categories.name',
                 'product_categories.state',
                 'product_categories.description',
+                'product_categories.description_extra',
+                'product_categories.description_title',
                 'product_categories.created_at',
                 'product_categories.updated_at',
             ])
