@@ -39,6 +39,8 @@ function openModal(subDept: any) {
       name: subDept.name,
       description: subDept.description,
       image: subDept.image,
+      description_extra: subDept.description_extra,
+      description_title: subDept.description_title,
     };
     showDialog.value = true;
   }

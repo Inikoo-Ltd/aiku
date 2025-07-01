@@ -183,12 +183,12 @@ class EditProduct extends OrgAction
                         'value' => $product->description_title
                     ],
                     'description' => [
-                        'type'  => 'textarea',
+                        'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
                     ],
                     'description_extra' => [
-                        'type'  => 'textarea',
+                        'type'  => 'textEditor',
                         'label' => __('description extra'),
                         'value' => $product->description_extra
                     ],

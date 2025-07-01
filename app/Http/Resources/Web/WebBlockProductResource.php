@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Http\Resources\Catalogue\TagResource;
+use App\Http\Resources\Goods\TradeUnitResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -47,12 +48,15 @@ class WebBlockProductResource extends JsonResource
             }
         }
 
+        $tradeUnit = $product->tradeUnits->first();
+
         return [
             'slug'        => $product->slug,
             'code'        => $product->code,
             'name'        => $product->name,
             'description' => $product->description,
             'stock'       => $product->available_quantity,
+            'specifications' => $tradeUnit ? TradeUnitResource::make($tradeUnit)->toArray($request) : null,
             'contents'    => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'              => $product->id,
             'slug'            => $product->slug,

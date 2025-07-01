@@ -20,6 +20,8 @@ use App\Models\Catalogue\ProductCategory;
  * @property string $code
  * @property string $name
  * @property string $description
+ * @property string $description_extra
+ * @property string $description_title
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property mixed $shop_code
@@ -40,6 +42,8 @@ class WorkshopSubDepartmentsResource extends JsonResource
             'image'              => $subDepartment->imageSources(720, 480),
             'code'              => $this->code,
             'description'       => $this->description,
+            'description_extra' => $this->description_extra,
+            'description_title' => $this->description_title,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
             'families_route'    => [
