@@ -8,12 +8,8 @@
 import {Link} from "@inertiajs/vue3"
 import Table from '@/Components/Table/Table.vue'
 import type {Table as TableTS} from "@/types/Table"
-import {RouteParams} from "@/types/route-params"
-import {Platform} from "@/types/platform"
-import Image from "@/Components/Image.vue"
 import {CustomerSalesChannel} from "@/types/customer-sales-channel";
 import {trans} from "laravel-vue-i18n";
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import Toggle from "primevue/toggleswitch"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -21,7 +17,6 @@ import { notify } from "@kyvg/vue3-notification"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUnlink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faUnlink)
@@ -86,9 +81,9 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
             </div>
         </template>
 
-        <template #cell(reference)="{ item: customerSalesChannel }">
+        <template #cell(name)="{ item: customerSalesChannel }">
             <Link :href="(platformRoute(customerSalesChannel) as string)" class="primaryLink">
-                {{ customerSalesChannel["reference"] }}
+                {{ customerSalesChannel["name"] }}
             </Link>
         </template>
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">

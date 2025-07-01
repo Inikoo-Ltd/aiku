@@ -41,7 +41,6 @@ class UpdatePortfolio extends OrgAction
         }
 
         if (Arr::exists($modelData, 'customer_price')) {
-
             $price = $portfolio->item->price ?? 0;
 
             data_set($modelData, 'selling_price', Arr::get($modelData, 'customer_price'));
@@ -74,7 +73,7 @@ class UpdatePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference'             => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -88,18 +87,18 @@ class UpdatePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'selling_price'   => ['sometimes', 'numeric', 'min:0'],
-            'status'          => ['sometimes','boolean'],
-            'last_added_at'   => 'sometimes|date',
-            'last_removed_at' => 'sometimes|date',
-            'item_id'         => 'sometimes|integer',
-            'item_type'       => 'sometimes|string',
-            'item_name'       => 'sometimes|string',
-            'item_code'       => 'sometimes|string',
-            'customer_product_name'       => 'sometimes|string',
-            'customer_price'       => ['sometimes', 'numeric', 'min:0'],
-            'customer_description'       => ['sometimes', 'string', 'nullable'],
-            'platform_product_id'       => 'sometimes|string',
+            'selling_price'         => ['sometimes', 'numeric', 'min:0'],
+            'status'                => ['sometimes', 'boolean'],
+            'last_added_at'         => 'sometimes|date',
+            'last_removed_at'       => 'sometimes|date',
+            'item_id'               => 'sometimes|integer',
+            'item_type'             => 'sometimes|string',
+            'item_name'             => 'sometimes|string',
+            'item_code'             => 'sometimes|string',
+            'customer_product_name' => 'sometimes|string',
+            'customer_price'        => ['sometimes', 'numeric', 'min:0'],
+            'customer_description'  => ['sometimes', 'string', 'nullable'],
+            'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
             'errors_response'       => 'sometimes|array'
         ];

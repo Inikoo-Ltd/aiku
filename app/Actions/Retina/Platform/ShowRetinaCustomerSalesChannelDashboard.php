@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Platform;
 
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -74,7 +74,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 'title' => __('Add products to your store'),
                 'description' => __('Add products to your store to start selling. Select items from our catalogue or upload your own products to showcase in your sales channel.'),
                 'button' => [
-                    'label' => __('Add portfolios'),
+                    'label' => __('Add Products'),
                     'route_target' => [
                         'name' => 'retina.dropshipping.customer_sales_channels.portfolios.index',
                         'parameters' => [
@@ -105,9 +105,6 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 
                 'title' => $customerSalesChannel->name ?? $customerSalesChannel->reference,
                 'model' => $customerSalesChannel->platform->name,
-                // 'afterTitle' => [
-                //     'label' => $customerSalesChannel->name,
-                // ],
                 'icon'  => [
                     'icon'  => ['fal', 'fa-code-branch'],
                     'icon_rotation'  => 90,
@@ -155,9 +152,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ],
             ] : null,
             'headline'  => [
-                'title' => __('Manual Order Placement'),
-                // 'section'   => __(''),
-                'description' => '<p><span >First, add desired products to your </span><strong >"Portfolio"</strong><span > using the </span><strong >"Add to Portfolio"</strong><span > button. When an order comes in, find the customer under the </span><strong >"Customers"</strong><span > tab (add them if new), then click </span><strong >"New Order."</strong><span > Finally, enter product codes and quantities to complete the order.</span></p>'
+                'title' => __('Web/API order management'),
+                'description' => '<p><span >First, add desired products to your </span><strong >Portfolio</strong><span > using the </span><strong >Add to Portfolio</strong><span > button. When an order comes in, find the customer under the </span><strong >Customers</strong><span > tab (add them if new), then click </span><strong >New Order.</strong><span > Finally, enter product codes and quantities to complete the order.</span></p>'
             ],
             'customer_sales_channel' => $customerSalesChannel,
             'platform'               => $customerSalesChannel->platform,
@@ -219,7 +215,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     {
         return
             array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                IndexRetinaDropshippingCustomerSalesChannels::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',
@@ -228,7 +224,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                                 'name'       => 'retina.dropshipping.customer_sales_channels.show',
                                 'parameters' => [$customerSalesChannel->slug]
                             ],
-                            'label' => __('Channel Dashboard'),
+                            'label' => $customerSalesChannel->name.' ('.$customerSalesChannel->platform->type->labels()[$customerSalesChannel->platform->type->value].')',
                         ]
                     ]
                 ]

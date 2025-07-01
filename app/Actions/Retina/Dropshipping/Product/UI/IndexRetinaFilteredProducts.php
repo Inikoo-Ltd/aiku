@@ -10,7 +10,6 @@
 namespace App\Actions\Retina\Dropshipping\Product\UI;
 
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\CRM\FilteredProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -80,7 +79,7 @@ class IndexRetinaFilteredProducts extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
 
-        $queryBuilder->where('products.status', ProductStatusEnum::FOR_SALE);
+        $queryBuilder->where('products.is_for_sale', true);
 
         $queryBuilder->where('products.shop_id', $this->shop->id)
         ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {

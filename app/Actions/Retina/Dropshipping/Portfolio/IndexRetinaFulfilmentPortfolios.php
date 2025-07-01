@@ -141,7 +141,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                         'description' => __("To get started, add products to your portfolios. You can sync from your inventory or create a new one."),
                         'separation' => __("or"),
                         'sync_button' => __("Sync from Inventory"),
-                        'add_button' => __("Add Portfolio"),
+                        'add_button' => __("Add Product"),
                     ]
                 ],
                 'tabs'        => [
@@ -192,7 +192,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                             'route' => [
                                 'name' => 'retina.dropshipping.portfolios.index'
                             ],
-                            'label' => __('My Portfolio'),
+                            'label' => __('My Products'),
                         ]
                     ]
                 ]

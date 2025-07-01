@@ -85,13 +85,13 @@ class IndexPupilPortfolios extends RetinaAction
             $manual = true;
         }
 
-        $title = __('My Portfolio');
+        $title = __('My Products');
 
 
         $platformName = $this->customerSalesChannel->name;
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $platformName = __('Manual');
+            $platformName = 'Web/API';
         }
 
         return Inertia::render(
@@ -143,7 +143,7 @@ class IndexPupilPortfolios extends RetinaAction
                         default => false
                     },
                     'itemRoute' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
+                        'name' => 'retina.dropshipping.customer_sales_channels.filtered_products.index',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug
                         ]
@@ -182,7 +182,7 @@ class IndexPupilPortfolios extends RetinaAction
                         'title' => __("You don't have any items in your portfolio"),
                         'description' => __("To get started, add products to your portfolios."),
                         'separation' => __("or"),
-                        'add_button' => __("Add Portfolio"),
+                        'add_button' => __("Add Product"),
                     ]
                 ],
                 'tabs'        => [
@@ -247,7 +247,7 @@ class IndexPupilPortfolios extends RetinaAction
                                     $customerSalesChannel->slug
                                 ]
                             ],
-                            'label' => __('My Portfolio'),
+                            'label' => __('My Products'),
                         ]
                     ]
                 ]

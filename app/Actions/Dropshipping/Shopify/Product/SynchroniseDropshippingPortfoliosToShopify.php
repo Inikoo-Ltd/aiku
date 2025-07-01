@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
+class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -49,6 +49,9 @@ class SyncroniseDropshippingPortfoliosToShopify extends RetinaAction
         ];
     }
 
+    /**
+     * @throws \Exception
+     */
     public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
     {
         $this->initialisation($request);
