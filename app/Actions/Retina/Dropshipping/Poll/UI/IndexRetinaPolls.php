@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Poll\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\PollsResource;
@@ -202,18 +202,13 @@ class IndexRetinaPolls extends RetinaAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.crm.polls.create',
-            'grp.org.shops.show.crm.polls.edit',
-            'grp.org.shops.show.crm.polls.show',
-            'grp.org.shops.show.crm.polls.index' =>
+            'retina.dropshipping.polls.index' =>
             array_merge(
-                ShowShop::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
+                ShowRetinaDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.crm.polls.index',
-                        'parameters' => $routeParameters
+                        'name'       => 'retina.dropshipping.polls.index',
+                        'parameters' => []
                     ]
                 )
             ),
