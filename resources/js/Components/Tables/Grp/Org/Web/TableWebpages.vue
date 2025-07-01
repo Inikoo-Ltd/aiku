@@ -45,6 +45,11 @@ function webpageRoute(webpage: Webpage) {
                     webpage.slug
                 ]);
 
+        case "grp.org.shops.show.web.webpages.index.sub_type.sub_department.families":
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.products':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.family.products':
         case 'grp.org.shops.show.web.webpages.index.sub_type.family':
         case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
         case 'grp.org.shops.show.web.webpages.index.sub_type.product':

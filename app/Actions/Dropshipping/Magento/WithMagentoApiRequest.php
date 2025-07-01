@@ -88,7 +88,7 @@ trait WithMagentoApiRequest
             ])->withQueryParameters($queryParams)->$method($url, $data);
 
             if ($response->successful()) {
-                return $response->json() ?? [];
+                return $response->json() ? is_array($response->json()) ? $response->json() : [$response->json()] : [];
             }
 
             if ($response->status() === 401) {
@@ -100,7 +100,7 @@ trait WithMagentoApiRequest
                 ])->withQueryParameters($queryParams)->$method($url, $data);
 
                 if ($response->successful()) {
-                    return $response->json() ?? [];
+                    return $response->json() ? is_array($response->json()) ? $response->json() : [$response->json()] : [];
                 }
             }
 
@@ -181,12 +181,45 @@ trait WithMagentoApiRequest
         return $this->magentoApiRequest('get', $endpoint, [], $searchCriteria);
     }
 
+
+
     /**
      * Get a single order by ID
      */
     public function getOrder(int $orderId): array
     {
         return $this->magentoApiRequest('get', "orders/{$orderId}");
+    }
+
+    /**
+     * Update order status and add tracking information
+     */
+    public function updateOrderStatus(int $orderId, string $status, array $trackingData): array
+    {
+        $orderData = [
+            'entity' => [
+                'entity_id' => $orderId,
+                'status' => $status
+            ]
+        ];
+
+        $result = $this->magentoApiRequest('post', "orders", $orderData);
+
+        if (! blank($trackingData) && $status === 'complete') {
+            $this->createShipment($orderId, $trackingData);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Create shipment for order
+     */
+    public function createShipment(int $orderId, array $shipmentData): array
+    {
+        return $this->magentoApiRequest('post', "order/{$orderId}/ship", [
+            'tracks' => $shipmentData
+        ]);
     }
 
     /**

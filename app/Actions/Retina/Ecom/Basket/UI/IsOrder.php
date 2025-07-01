@@ -40,10 +40,9 @@ trait IsOrder
             ];
         }
 
-
         return [
             'customer' => array_merge(
-                CustomerResource::make($order->customer)->getArray(),
+                $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
                         'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),

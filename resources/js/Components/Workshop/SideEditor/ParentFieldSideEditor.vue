@@ -9,7 +9,6 @@ import RenderFields from './RenderFields.vue'
 import ChildFieldSideEditor from '@/Components/Workshop/SideEditor/ChildFieldSideEditor.vue'
 import { getFormValue, setFormValue } from '@/Composables/SideEditorHelper'
 import { routeType } from '@/types/route'
-import { useLayoutStore } from '@/Stores/layout'
 
 // FontAwesome setup
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -36,7 +35,7 @@ const emits = defineEmits<{
     (e: 'update:modelValue', value: number): void
 }>()
 
-const layout = useLayoutStore()
+const layout: any = inject("layout", {})
 const modelValue = defineModel()
 
 
@@ -119,7 +118,7 @@ const isFutureDatePassed = (futureDate: string) => {
 <style scoped lang="scss">
 /* Override PrimeVue accordion active panel header */
 .p-accordionpanel.p-accordionpanel-active > .p-accordionheader {
-  background-color:  v-bind('layout?.app?.theme[0]') !important;
+  background-color:  v-bind('layout?.app?.theme[4]') !important;
   border-radius: 0 !important;
   color: white !important;
   font-weight: 600;
