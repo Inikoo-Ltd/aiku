@@ -7,7 +7,8 @@ const props = defineProps<{
             barcode?: number
             origin?: string
             dimensions?: [number, number]
-            materials?: string
+            ingredients?: Array<string>
+
         }
     }
 }>()
@@ -36,9 +37,9 @@ const props = defineProps<{
                 product.specifications.dimensions[1] }} cm</div>
         </div>
 
-        <div v-if="product?.specifications?.materials" class="grid grid-cols-2 border-b border-gray-300">
+        <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">Materials/Ingredients</div>
-            <div class="p-2 text-sm">{{ product.specifications.materials }}</div>
+            <div class="p-2 text-sm"> {{ product.specifications.ingredients.join(', ') }}</div>
         </div>
 
         <div v-if="product?.specifications?.barcode" class="grid grid-cols-2 border-b border-gray-300">
