@@ -15,6 +15,7 @@ import Image from '@/Components/Image.vue'
 import { useTruncate } from '@/Composables/useTruncate'
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import PureInput from '@/Components/Pure/PureInput.vue'
 library.add(faSearch, faText)
 
 interface Portfolio {
@@ -72,11 +73,18 @@ const valueTableFilter = ref({})
 
 const isIncludeVat = ref(false)
 
+// Section: Modal and Update Description
 const isModalDescription = ref(false)
 const selectedDataToEditDescription = ref({})
-
 const debounceUpdateDescription = debounce((description: string) => {
     emits('updateSelectedProducts', selectedDataToEditDescription.value, {customer_description: selectedDataToEditDescription.value.description}, 'customer_description')
+}, 1000)
+
+// Section: Modal and Update Name
+const isModalName = ref(false)
+const selectedDataToEditName = ref({})
+const debounceUpdateName = debounce((description: string) => {
+    emits('updateSelectedProducts', selectedDataToEditName.value, {customer_product_name: selectedDataToEditName.value.name}, 'customer_product_name')
 }, 1000)
 
 
@@ -165,27 +173,38 @@ const debounceUpdateDescription = debounce((description: string) => {
 
         <Column field="category" header="Category" style="max-width: 100px;">
             <template #body="{ data }">
-                <div v-tooltip="data.category" class="relative pr-2">
+                <div v-tooltip="data.category" class="relative pr-2 truncate">
                     {{ useTruncate(data.category, 15) }}
                 </div>
             </template>
         </Column>
 
-        <Column field="name" header="Name" sortable removeableSort>
+        <!-- Column: Name -->
+        <Column field="name" :header="trans('Name')" sortable removeableSort style="max-width: 200px;">
             <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
-                    <textarea
-                        v-model="data.name"
-                        :placeholder="trans('Enter product name')"
-                        class="w-full h-16 resize-none overflow-hidden text-sm text-gray-700 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                        @blur="(e) => emits('updateSelectedProducts', data, {customer_product_name: data.name}, 'name')"
+                <div class="relative pr-2 ">
+                    <div
+                        class="relative truncate"
+                        style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal;"
                     >
-                    </textarea>
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'name'], undefined)" />
+                        {{ data.name }}
+                    </div>
+
+                    <Button
+                        type="tertiary"
+                        icon="fal fa-pencil"
+                        size="xs"
+                        :label="trans('Click to edit')"
+                        @click="() => {
+                            isModalName = true
+                            selectedDataToEditName = data
+                        }"
+                    />
                 </div>
             </template>
         </Column>
 
+        <!-- Column: Stock -->
         <Column field="quantity_left" header="Stock" style="max-width: 200px;" sortable>
             <template #body="{ data }">
                 <div class="text-right">
@@ -193,22 +212,6 @@ const debounceUpdateDescription = debounce((description: string) => {
                 </div>
             </template>
         </Column>
-
-        <!-- <ColumnGroup type="header">
-            <Row>
-                <Column header="Sale Rate" :colspan="4" />
-            </Row>
-            <Row>
-                <Column header="Sales" :colspan="2" />
-                <Column header="Profits" :colspan="2" />
-            </Row>
-            <Row>
-                <Column header="Last Year" sortable field="lastYearSale" />
-                <Column header="This Year" sortable field="thisYearSale" />
-                <Column header="Last Year" sortable field="lastYearProfit" />
-                <Column header="This Year" sortable field="thisYearProfit" />
-            </Row>
-        </ColumnGroup> -->
 
         <!-- Column: Exc VAT -->
         <Column field="price" xheader="Cost Price (Exc VAT)" style="max-width: 250px;">
@@ -329,6 +332,7 @@ const debounceUpdateDescription = debounce((description: string) => {
             </template>
         </Column> -->
 
+        <!-- Column: Description -->
         <Column field="description" header="Description">
             <template #body="{ data }">
                 <Button
@@ -378,6 +382,33 @@ const debounceUpdateDescription = debounce((description: string) => {
             <div class="mt-4">
                 <Button
                     @click="() => isModalDescription = false"
+                    type="tertiary"
+                    label="Done"
+                    full
+                />
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Name (edit) -->
+    <Modal :isOpen="isModalName" @onClose="isModalName = false" closeButton :isClosableInBackground="false" width="w-full max-w-3xl max-h-[85vh]">
+        <div>
+            <div class=" text-lg text-center mb-4">
+                Edit Name for <span class="font-semibold">{{ selectedDataToEditName.code }}</span>
+            </div>            
+
+            <div class="relative">
+                <PureInput
+                    v-model="selectedDataToEditName.name"
+                    @update:modelValue="() => debounceUpdateName(selectedDataToEditName.name)"
+                />
+
+                <ConditionIcon class="absolute right-3 bottom-1" :state="get(listState, [selectedDataToEditName.id, 'customer_product_name'], undefined)" />
+            </div>
+
+            <div class="mt-4">
+                <Button
+                    @click="() => isModalName = false"
                     type="tertiary"
                     label="Done"
                     full
