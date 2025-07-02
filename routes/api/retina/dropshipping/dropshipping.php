@@ -22,6 +22,7 @@ use App\Actions\Api\Retina\Dropshipping\Portfolio\GetPortfolios;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\UpdateApiPortfolio;
+use App\Actions\Api\Retina\Dropshipping\Product\GetProducts;
 use App\Actions\Api\Retina\Dropshipping\Transaction\DeleteApiOrderTransaction;
 use App\Actions\Api\Retina\Dropshipping\Transaction\GetTransactions;
 use App\Actions\Api\Retina\Dropshipping\Transaction\StoreApiOrderTransaction;
@@ -50,6 +51,10 @@ Route::prefix('portfolios')->as('portfolios.')->group(function () {
     Route::get('{portfolio:id}', ShowApiPortfolio::class)->name('show');
     Route::patch('{portfolio:id}/update', UpdateApiPortfolio::class)->name('update');
     Route::delete('{portfolio:id}/delete', DeleteApiPortfolio::class)->name('delete');
+});
+
+Route::prefix('products')->as('products.')->group(function () {
+    Route::get('', GetProducts::class)->name('index');
 });
 
 Route::prefix('clients')->as('clients.')->group(function () {
