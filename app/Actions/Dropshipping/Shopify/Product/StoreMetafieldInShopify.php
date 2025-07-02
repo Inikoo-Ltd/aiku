@@ -70,7 +70,7 @@ class StoreMetafieldInShopify
 
             return true;
         } catch (\Exception $e) {
-            \Sentry::captureMessage('Error in CheckExistPortfolioInShopify: ' . $e->getMessage(), 'error');
+            \Sentry::captureMessage('Error in CheckExistPortfolioInShopify: ' . $e->getMessage());
 
             return false;
         }
