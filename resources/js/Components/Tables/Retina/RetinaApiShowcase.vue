@@ -14,6 +14,7 @@ import { capitalize, inject } from 'vue'
 import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 library.add(faArrowRight)
 
 const props = defineProps<{
@@ -158,10 +159,9 @@ const locale = inject('locale', aikuLocaleStructure)
                                 name: 'retina.dropshipping.customer_sales_channels.create'
                             }"
                             url="https://documenter.getpostman.com/view/28816137/2sB34Zrjrp"
-                            :label="'See documentation'"
+                            :label="trans('See documentation')"
                             iconRight="far fa-arrow-right"
                         >
-                            {{ trans('See documentation') }}
                         </Button>
                     </a>
                 </div>
