@@ -91,10 +91,18 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $order = Arr::get($checkoutData, 'order');
 
 
-        $toPay          = (float) ($order->total_amount > 0 ? $order->total_amount : 0.0);
-        $toPayByBalance = min((float) $this->customer->balance, $toPay);
-        $toPayByOther   = max($toPay - $toPayByBalance, 0.0);
+        $toPay = (float) max($order->total_amount, 0.0);
+        $balance = (float) $this->customer->balance;
 
+        $decimalPart = $toPay - floor($toPay);
+
+        $payFloatWithBalance = min($decimalPart, $balance);
+
+        $remainingBalance = $balance - $payFloatWithBalance;
+        $payIntWithBalance = min(floor($toPay), floor($remainingBalance));
+
+        $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
+        $toPayByOther = round($toPay - $toPayByBalance, 2);
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingCheckout',
