@@ -38,6 +38,7 @@ class RequestApiUploadProductAmazon extends RetinaAction
             $product = $portfolio->item;
 
             $productData = [
+                'id' => $portfolio->id,
                 'title' => $portfolio->customer_product_name,
                 'description' => $portfolio->customer_description,
                 'product_type' => $product->type ?? null,

@@ -25,7 +25,7 @@ class SyncronisePortfolioToAmazon extends RetinaAction
      */
     public function handle(AmazonUser $amazonUser, Portfolio $portfolio)
     {
-        RequestApiUploadProductAmazon::dispatch($amazonUser, $portfolio);
+        RequestApiUploadProductAmazon::run($amazonUser, $portfolio);
     }
 
     public function asController(AmazonUser $amazonUser, Portfolio $portfolio, ActionRequest $request)
