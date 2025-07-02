@@ -11,7 +11,7 @@ import { Product } from "@/types/product"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
-import { inject } from "vue"
+import { inject, onMounted, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { faStar } from "@fas"
 import { faCheck } from "@far"
@@ -19,8 +19,17 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
+import { get, set } from "lodash"
+import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
 library.add( faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck )
+
+interface PlatformData {
+	id: number
+	code: string
+	name: string
+	type: string
+}
 
 const props = defineProps<{
 	data: {}
@@ -28,6 +37,9 @@ const props = defineProps<{
 	selectedData: {
 		products: number[]
 	}
+	
+    platform_data: PlatformData
+	platform_user_id: number
 }>()
 
 function portfolioRoute(product: Product) {
@@ -47,6 +59,60 @@ const locale = inject('locale', aikuLocaleStructure)
 const onUnchecked = (itemId: number) => {
 	props.selectedData.products = props.selectedData.products.filter(product => product !== itemId)
 }
+
+const progressToUploadToShopify = ref({})
+const selectSocketiBasedPlatform = (porto: { id: number }) => {
+    if (props.platform_data.type === 'shopify') {
+        return {
+            event: `shopify.${props.platform_user_id}.upload-product.${porto.id}`,
+            action: '.shopify-upload-progress'
+        }
+    } else if (props.platform_data.type === 'woocommerce') {
+        return {
+            event: `woo.${props.platform_user_id}.upload-product.${porto.id}`,
+            action: '.woo-upload-progress'
+        }
+    } else if (props.platform_data.type === 'ebay') {
+        return {
+            event: `ebay.${props.platform_user_id}.upload-product.${porto.id}`,
+            action: '.ebay-upload-progress'
+        }
+    } else if (props.platform_data.type === 'amazon') {
+        return {
+            event: `amazon.${props.platform_user_id}.upload-product.${porto.id}`,
+            action: '.amazon-upload-progress'
+        }
+    } else if (props.platform_data.type === 'magento') {
+        return {
+            event: `magento.${props.platform_user_id}.upload-product.${porto.id}`,
+            action: '.magento-upload-progress'
+        }
+    }
+}
+onMounted(() => {
+    // emits('mounted')
+    props.data.data?.forEach(porto => {
+        console.log('porto', selectSocketiBasedPlatform(porto))
+        const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
+            selectSocketiBasedPlatform(porto)?.action,
+            (eventData) => {
+                console.log('socket in: ', porto.id, eventData)
+                if(eventData.errors_response) {
+                    set(progressToUploadToShopify.value, [porto.id], 'error')
+                    setTimeout(() => {
+                        set(progressToUploadToShopify.value, [porto.id], null)
+                    }, 3000);
+
+                } else {
+                    set(progressToUploadToShopify.value, [porto.id], 'success')
+                }
+            }
+        );
+
+        console.log('xxx', xxx)
+    });
+
+})
 </script>
 
 <template>
@@ -107,7 +173,21 @@ const onUnchecked = (itemId: number) => {
 
 		<!-- Column: Price -->
 		<template #cell(status)="{ item: product }">
-            <FontAwesomeIcon v-if="(product.platform_product_id) || (product.platform == 'manual')" v-tooltip="trans('Was uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+			<div class="flex justify-center">
+				
+				<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+				<ConditionIcon v-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
+				<div v-else>
+					<ButtonWithLink
+						:routeTarget="product.platform_upload_portfolio"
+						label="Upload"
+						icon="fal fa-upload"
+						type="positive"
+						size="xs"
+						@success="() => set(progressToUploadToShopify, [product.id], 'loading')"
+					/>
+				</div>
+			</div>
         </template>
 
 		<template #cell(actions)="{ item }">
