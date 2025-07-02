@@ -90,11 +90,10 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
     }
 }
 onMounted(() => {
-    // emits('mounted')
+
     props.data?.data?.forEach(porto => {
-        console.log('selectSocketiBasedPlatform', selectSocketiBasedPlatform(porto))
 		if (selectSocketiBasedPlatform(porto)) {
-			const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
+			window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
 				selectSocketiBasedPlatform(porto)?.action,
 				(eventData) => {
 					console.log('socket in: ', porto.id, eventData)
@@ -110,7 +109,6 @@ onMounted(() => {
 				}
 			);
 	
-			// console.log('xxx', xxx)
 		}
     });
 
@@ -198,7 +196,7 @@ onMounted(() => {
 		<template #cell(actions)="{ item }">
 			<div class="mx-auto">
 				<ButtonWithLink
-					v-tooltip="trans('Unselect portfolio')"
+					v-tooltip="trans('Delete product')"
 					type="negative"
 					icon="fal fa-trash-alt"
 					:routeTarget="item.delete_portfolio"

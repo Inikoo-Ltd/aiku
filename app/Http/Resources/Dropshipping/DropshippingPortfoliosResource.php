@@ -37,8 +37,7 @@ class DropshippingPortfoliosResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $quantity = 0;
-        $itemId   = null;
+
         $category = null;
         if ($this->item instanceof StoredItem) {
             $quantity = $this->item->total_quantity;
@@ -46,7 +45,7 @@ class DropshippingPortfoliosResource extends JsonResource
             $weight = 0;
             $price = 0;
             $image = null;
-        } elseif ($this->item instanceof Product) {
+        } else {
             if ($department = $this->item->department) {
                 $department =  $department->name . ', ';
             }
@@ -153,9 +152,8 @@ class DropshippingPortfoliosResource extends JsonResource
             'platform' => $this->platform->type,
             'delete_portfolio' => [
                 'method' => 'delete',
-                'name'       => 'retina.models.customer_sales_channel.product.delete',
+                'name'       => 'retina.models.portfolio.delete',
                 'parameters' => [
-                    'customerSalesChannel' => $this->customer_sales_channel_id,
                     'portfolio' => $this->id
                 ]
             ],
