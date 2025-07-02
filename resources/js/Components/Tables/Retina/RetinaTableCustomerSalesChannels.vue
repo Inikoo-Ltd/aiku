@@ -108,6 +108,9 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
                         size="xxs"
                         type="tertiary"
                         class="ml-2"
+                        :bindToLink="{
+                            preserveScroll: true,
+                        }"
                     />
                 </template>
 

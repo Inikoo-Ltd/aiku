@@ -176,7 +176,7 @@ onMounted(() => {
 			<div class="flex justify-center">
 				
 				<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-				<ConditionIcon v-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
+				<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
 				<div v-else>
 					<ButtonWithLink
 						:routeTarget="product.platform_upload_portfolio"
@@ -184,6 +184,9 @@ onMounted(() => {
 						icon="fal fa-upload"
 						type="positive"
 						size="xs"
+						:bindToLink="{
+							preserveScroll: true,
+						}"
 						@success="() => set(progressToUploadToShopify, [product.id], 'loading')"
 					/>
 				</div>
