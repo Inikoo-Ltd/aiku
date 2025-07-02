@@ -243,8 +243,7 @@ onMounted(() => {
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Add products to your products list') }}
-                <FontAwesomeIcon v-tooltip="trans(`Will added to My Products section`)" icon="fal fa-info-circle" class="text-lg text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                {{ trans('Add new products to your shop.') }}
             </div>
 <!--            <div class="relative text-right">-->
 <!--                <Button-->
