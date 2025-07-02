@@ -66,7 +66,7 @@ const onUnchecked = (itemId: number) => {
 		:isChecked="(item) => props.selectedData.products.includes(item.id)"
 	>
         <template #cell(image)="{ item: product }">
-            <div class="overflow-hidden w-16 h-16">
+            <div class="overflow-hidden w-10 h-10">
 				<Image :src="product.image" :alt="product.name" />
 			</div>
         </template>
