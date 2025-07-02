@@ -70,7 +70,6 @@ const fetchProductList = async (url?: string) => {
         optionsMeta.value = xxx?.data.meta || null
         optionsLinks.value = xxx?.data.links || null
 
-
         emits('optionsList', optionsList.value)
     } catch (error) {
         // console.log(error)
