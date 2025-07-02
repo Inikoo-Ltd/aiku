@@ -20,7 +20,6 @@ use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -45,13 +44,8 @@ class IndexRetinaBaskets extends RetinaAction
         $query = QueryBuilder::for(Order::class);
         $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
-        $query->leftJoin('transactions', 'orders.id', '=', 'transactions.order_id');
+        $query->leftJoin('order_stats', 'orders.id', '=', 'order_stats.order_id');
 
-
-        $query->where(function ($q) {
-            $q->whereIn('transactions.model_type', ['Product', 'Service'])
-                ->orWhereNull('transactions.model_type');
-        });
         $query->where('orders.platform_id', $customerSalesChannel->platform_id);
         $query->where('orders.state', OrderStateEnum::CREATING);
 
@@ -62,22 +56,13 @@ class IndexRetinaBaskets extends RetinaAction
                 'orders.slug',
                 'orders.customer_client_id',
                 'orders.total_amount',
-                'customer_clients.name as customer_client_name',
-                'customer_clients.ulid as customer_client_ulid',
+                'customer_clients.name as client_name',
+                'customer_clients.ulid as client_ulid',
                 'orders.created_at',
-                DB::raw('COUNT(transactions.id) as items'),
+                'order_stats.number_item_transactions as number_item_transactions',
             ])
-            ->groupBy(
-                'orders.id',
-                'orders.reference',
-                'orders.slug',
-                'orders.customer_client_id',
-                'orders.total_amount',
-                'customer_clients.name',
-                'customer_clients.ulid',
-                'orders.created_at'
-            )
-            ->allowedSorts(['reference', 'customer_client_name', 'total_amount', 'items', 'created_at'])
+
+            ->allowedSorts(['reference', 'client_name', 'total_amount', 'number_item_transactions', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -145,10 +130,10 @@ class IndexRetinaBaskets extends RetinaAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'customer_client_name', label: __('customer client'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'client_name', label: __('customer client'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, align: 'right', sortable: true);
-            $table->column(key: 'items', label: __('items'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
             $table->column(key: 'created_at', label: __('date'), canBeHidden: false, type: 'date', sortable: true);
         };
     }

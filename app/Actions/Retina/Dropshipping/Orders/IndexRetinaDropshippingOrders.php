@@ -68,6 +68,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
             'orders.payment_amount',
             'currencies.code as currency_code',
             'customer_clients.name as client_name',
+            'customer_clients.ulid as client_ulid',
         );
         return $query->defaultSort('id')
             ->allowedSorts(['id'])

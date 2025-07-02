@@ -47,10 +47,10 @@ class RetinaOrdersResource extends JsonResource
             'reference'              => $this->reference,
             'net_amount'             => $this->net_amount,
             'total_amount'           => $this->total_amount,
-            'customer_client_name' => $this->customer_client_name,
-            'customer_client_ulid' => $this->customer_client_ulid,
-            'created_at'                   => $this->created_at,
-            'items'           => $this->items ?? 0,
+            'client_name'            => $this->client_name,
+            'client_ulid'            => $this->client_ulid,
+            'created_at'             => $this->created_at,
+            'number_item_transactions'                  => $this->number_item_transactions ?? 0,
         ];
     }
 }
