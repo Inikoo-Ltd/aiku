@@ -145,9 +145,9 @@ class TradeUnit extends Model implements HasMedia, Auditable
         return $this->belongsTo(Group::class);
     }
 
-    public function stocks(): BelongsToMany
+    public function stocks(): MorphToMany
     {
-        return $this->belongsToMany(Stock::class);
+        return $this->morphedByMany(Stock::class, 'model', 'model_has_trade_units');
     }
 
     public function products(): MorphToMany
