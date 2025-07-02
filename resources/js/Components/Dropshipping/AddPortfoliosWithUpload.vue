@@ -110,6 +110,8 @@ const fetchIndexUnuploadedPortfolios = async () => {
 		)
 	)
 	portfoliosList.value = data.data.data
+	// Automatically select all portfolios for syncing
+	selectedPortfoliosToSync.value = [...portfoliosList.value]
 	stepLoading.value = false
 }
 
@@ -150,7 +152,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 // Step 3: bulk upload to Shopify
 const isLoadingBulkDeleteUpload = ref(false)
-const selectedPortfoliosToSync = ref()
+const selectedPortfoliosToSync = ref([])
 const bulkUpload = () => {
 	router[props.routes.bulk_upload.method || 'post'](
 		route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters),
@@ -297,7 +299,7 @@ onMounted(() => {
             <div class="relative space-x-2 space-y-1 text-right">
                 <!-- Button: bulk delete -->
                 <Button
-                    xv-if="selectedPortfoliosToSync?.length"
+                    v-if="portfoliosList?.length"
                     @click="() => bulkDelete()"
                     :label="trans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"
                     type="delete"
@@ -307,7 +309,7 @@ onMounted(() => {
 
                 <!-- Button: bulk upload -->
                 <Button
-                    xv-if="selectedPortfoliosToSync?.length"
+                    v-if="portfoliosList?.length"
                     @click="() => bulkUpload()"
                     :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
                     icon="fal fa-upload"
@@ -390,7 +392,7 @@ onMounted(() => {
                 </div>
             </div>
         </KeepAlive> -->
-        
+
         <!-- 2: Upload product to Shopify -->
         <KeepAlive>
             <div v-if="step.current === 1">
