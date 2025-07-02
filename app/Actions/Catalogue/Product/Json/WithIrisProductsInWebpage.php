@@ -46,12 +46,6 @@ trait WithIrisProductsInWebpage
     public function getBrandsFilter(): AllowedFilter
     {
         return AllowedFilter::callback('brands', function ($query, $value) {
-            $query->join('model_has_trade_units', function ($join) {
-                $join->on('products.id', '=', 'model_has_trade_units.model_id')
-                        ->where('model_has_trade_units.model_type', 'Product');
-            });
-            $query->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
-
             $query->join('model_has_brands', function ($join) {
                 $join->on('trade_units.id', '=', 'model_has_brands.model_id')
                         ->where('model_has_brands.model_type', 'TradeUnit');
@@ -66,12 +60,6 @@ trait WithIrisProductsInWebpage
     public function getTagsFilter(): AllowedFilter
     {
         return AllowedFilter::callback('tags', function ($query, $value) {
-            $query->join('model_has_trade_units', function ($join) {
-                $join->on('products.id', '=', 'model_has_trade_units.model_id')
-                        ->where('model_has_trade_units.model_type', 'Product');
-            });
-            $query->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
-
             $query->join('model_has_tags', function ($join) {
                 $join->on('trade_units.id', '=', 'model_has_tags.model_id')
                         ->where('model_has_tags.model_type', 'TradeUnit');
@@ -94,6 +82,13 @@ trait WithIrisProductsInWebpage
         } elseif ($stockMode == 'out_of_stock') {
             $queryBuilder->where('products.available_quantity', '<=', 0);
         }
+
+        $queryBuilder->join('model_has_trade_units', function ($join) {
+            $join->on('products.id', '=', 'model_has_trade_units.model_id')
+                ->where('model_has_trade_units.model_type', 'Product');
+        });
+        $queryBuilder->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
+
 
         return $queryBuilder;
     }
