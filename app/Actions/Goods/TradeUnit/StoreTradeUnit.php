@@ -55,7 +55,7 @@ class StoreTradeUnit extends OrgAction
             'gross_weight'     => ['sometimes', 'required', 'numeric'],
             'net_weight'       => ['sometimes', 'required', 'numeric'],
             'marketing_weight' => ['sometimes', 'required', 'numeric'],
-            'dimensions'       => ['sometimes', 'required'],
+            'marketing_dimensions' => ['sometimes', 'required'],
             'type'             => ['sometimes', 'required', 'string'],
             'data'             => ['sometimes', 'required', 'array'],
 

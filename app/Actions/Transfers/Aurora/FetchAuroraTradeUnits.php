@@ -40,9 +40,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         if ($tradeUnitData) {
             if ($metaTradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first()) {
                 if ($tradeUnit = TradeUnit::withTrashed()->where('source_id', $tradeUnitData['trade_unit']['source_id'])->first()) {
-
-
-
                     try {
                         $tradeUnit = UpdateTradeUnit::make()->action(
                             tradeUnit: $tradeUnit,
@@ -65,14 +62,13 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                         tradeUnit: $metaTradeUnit,
                         modelData: Arr::only(
                             $tradeUnitData['trade_unit'],
-                            ['gross_weight', 'net_weight']
+                            ['gross_weight', 'marketing_weight', 'marketing_dimensions']
                         ),
                         hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
                     );
                 }
-
             } else {
                 try {
                     $tradeUnit = StoreTradeUnit::make()->action(

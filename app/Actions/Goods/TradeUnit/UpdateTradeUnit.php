@@ -30,7 +30,7 @@ class UpdateTradeUnit extends GrpAction
 
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
-        $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'dimensions']);
+        $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
         if ($tradeUnit->wasChanged('gross_weight')) {
             foreach ($tradeUnit->stocks as $stock) {
                 StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
@@ -71,7 +71,7 @@ class UpdateTradeUnit extends GrpAction
             'gross_weight'     => ['sometimes', 'required', 'numeric'],
             'net_weight'       => ['sometimes', 'required', 'numeric'],
             'marketing_weight' => ['sometimes', 'required', 'numeric'],
-            'dimensions'       => ['sometimes', 'required'],
+            'marketing_dimensions' => ['sometimes', 'required'],
             'type'             => ['sometimes', 'required'],
             'image_id'         => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
             'data'             => ['sometimes', 'required']
