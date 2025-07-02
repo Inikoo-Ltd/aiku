@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\CustomerClient;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
 use App\Actions\Dropshipping\CustomerClient\Search\CustomerClientRecordSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
@@ -60,6 +61,11 @@ class UpdateCustomerClient extends OrgAction
             CustomerClientRecordSearch::dispatch($customerClient);
         }
 
+        if (Arr::has($addressChange, 'status')) {
+            CustomerHydrateClients::dispatch($customerClient);
+        }
+
+
         return $customerClient;
     }
 
@@ -103,13 +109,13 @@ class UpdateCustomerClient extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules['phone']       = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules['email']       = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules['reference']   = ['sometimes', 'nullable', 'string', 'max:255'];
-            $rules['platform_id'] = ['sometimes', 'integer'];
+            $rules['phone']                     = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['email']                     = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['reference']                 = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['platform_id']               = ['sometimes', 'integer'];
             $rules['customer_sales_channel_id'] = ['sometimes', 'integer'];
 
-            $rules                = $this->noStrictUpdateRules($rules);
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
