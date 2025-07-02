@@ -40,6 +40,8 @@ class WebBlockFamilyResource extends JsonResource
             'code'        => $family->code,
             'name'        => $family->name,
             'description' => $family->description,
+            'description_title' => $family->description_title,
+            'description_extra' => $family->description_extra,
             'id'          => $family->id,
             'image'       => $imageSources,
             'url'         => $family->webpage->url
