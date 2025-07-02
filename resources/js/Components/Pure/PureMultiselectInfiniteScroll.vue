@@ -16,6 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import Tag from "@/Components/Tag.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const model = defineModel()
@@ -69,7 +70,6 @@ const fetchProductList = async (url?: string) => {
         optionsMeta.value = xxx?.data.meta || null
         optionsLinks.value = xxx?.data.links || null
 
-        console.log('fetch', optionsList.value)
 
         emits('optionsList', optionsList.value)
     } catch (error) {
@@ -135,79 +135,75 @@ const onOpen = () => {
     }
     
 }
+
+
 </script>
 
 <template>
     <!-- <pre>{{ options }}</pre> -->
     <!-- <div class="relative w-full text-gray-600 rounded-sm"> -->
-        <Multiselect
-            ref="_multiselectRef"
-            v-model="model"
-            :options="optionsList.length ? optionsList : (initOptions || [])"
-            :classes="{
+    <Multiselect ref="_multiselectRef" v-model="model" :options="optionsList.length ? optionsList : (initOptions || [])"
+        :classes="{
                 placeholder: 'pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 select-none text-sm text-left w-full pl-4 font-light text-gray-400 opacity-1',
                 ...classes,
-            }"
-            :valueProp="valueProp ?? 'id'"
-            :filterResults="false"
-            :object
-            @change="(e) => _multiselectRef?.clearSearch()"
-            :canClear="!required"
-            :mode="mode || 'single'"
-            :closeOnSelect="mode == 'multiple' ? false : true"
-            :canDeselect="!required"
-            :hideSelected="false"
-            :clearOnSelect="props?.clearOnSelect ?? false"
-            searchable
-            :clearOnBlur="props?.clearOnBlur ?? false"
-            clearOnSearch
-            autofocus
-            :caret="isComponentLoading ? false : true"
-            :loading="isLoading || isComponentLoading === 'fetchProduct'"
-            :placeholder="placeholder || trans('Select option')"
-            :resolve-on-load="true"
-            :min-chars="1"
-            @open="() => onOpen()"
-            @search-change="(ee) => onSearchQuery(ee)"
-        >
+            }" :valueProp="valueProp ?? 'id'" :filterResults="false" :object
+        @change="(e) => _multiselectRef?.clearSearch()" :canClear="!required" :mode="mode || 'single'"
+        :closeOnSelect="mode == 'multiple' ? false : true" :canDeselect="!required" :hideSelected="false"
+        :clearOnSelect="props?.clearOnSelect ?? false" searchable :clearOnBlur="props?.clearOnBlur ?? false"
+        clearOnSearch autofocus :caret="isComponentLoading ? false : true"
+        :loading="isLoading || isComponentLoading === 'fetchProduct'"
+        :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
+        @open="() => onOpen()" @search-change="(ee) => onSearchQuery(ee)">
 
-            <template #singlelabel="{ value }">
+        <template #singlelabel="{ value }">
             <!-- {{ $attrs }} -->
-                <slot name="singlelabel" :value>
-                    <div class="w-full text-left pl-4">{{ value[labelProp || 'name'] }} <span class="text-sm text-gray-400">({{ value.code }})</span></div>
-                </slot>
-            </template>
+            <slot name="singlelabel" :value>
+                <div class="w-full text-left pl-4">{{ value[labelProp || 'name'] }} <span
+                        class="text-sm text-gray-400">({{ value.code }})</span></div>
+            </slot>
+        </template>
 
-            <template #option="{ option, isSelected, isPointed }">
-                <slot name="option" :option :isSelected :isPointed>
-                    <div class="">{{ option[labelProp || 'name'] }} <span class="text-sm" :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span></div>
-                </slot>
-            </template>
+        <template
+            #tag="{ option, handleTagRemove, disabled }: { option: tag, handleTagRemove: Function, disabled: boolean }">
+            <div class="px-0.5 py-[3px]">
+                <Tag :theme="option.id" :label="option.name" :closeButton="true" :stringToColor="true" size="sm"
+                    @onClose="(event) => handleTagRemove(option, event)" />
+            </div>
+        </template>
 
-            <template #spinner>
-                <LoadingIcon class="mr-3" />
-                <!-- <div /> -->
-            </template>
+        <template #option="{ option, isSelected, isPointed }">
+            <slot name="option" :option :isSelected :isPointed>
+                <div class="">{{ option[labelProp || 'name'] }} <span v-if="option.code" class="text-sm"
+                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span>
+                </div>
+            </slot>
+        </template>
 
-            <!-- <template #noresults>
+        <template #spinner>
+            <LoadingIcon class="mr-3" />
+            <!-- <div /> -->
+        </template>
+
+        <!-- <template #noresults>
                 xxxxxxxx
             </template> -->
 
-            <template #nooptions>
-                <div v-if="isComponentLoading !== 'fetchProduct'" class="py-2 px-3 text-gray-600 bg-white text-left rtl:text-right">
-                    {{ noOptionsText || trans('No options')}}
-                </div>
-                <div></div>
-            </template>
+        <template #nooptions>
+            <div v-if="isComponentLoading !== 'fetchProduct'"
+                class="py-2 px-3 text-gray-600 bg-white text-left rtl:text-right">
+                {{ noOptionsText || trans('No options')}}
+            </div>
+            <div></div>
+        </template>
 
-            <template #afterlist>
-                <div v-if="isComponentLoading === 'fetchProduct'" class="py-2 flex justify-center text-xl">
-                    <LoadingIcon />
-                </div>
-                <slot name="afterlist" />
-            </template>
-        </Multiselect>
-    <!-- </div> -->
+        <template #afterlist>
+            <div v-if="isComponentLoading === 'fetchProduct'" class="py-2 flex justify-center text-xl">
+                <LoadingIcon />
+            </div>
+            <slot name="afterlist" />
+        </template>
+    </Multiselect>
+
 </template>
 
 <style src="@vueform/multiselect/themes/default.css"></style>
