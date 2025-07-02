@@ -110,6 +110,16 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:customer_clients');
         $command->call('hydrate:portfolios');
 
+        /** @var Shop $shop */
+        foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
+            $command->call('hydrate:shops', [
+                '-s' => $shop->slug
+            ]);
+
+            $command->call('hydrate:customers', [
+                '-S' => $shop->slug
+            ]);
+        }
 
     }
 
