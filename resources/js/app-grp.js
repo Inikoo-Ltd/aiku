@@ -81,6 +81,16 @@ createInertiaApp(
     },
     setup({ el, App, props, plugin }) {
       const app = createApp({ render: () => h(App, props) });
+
+      // To see Vue filename in console (component.vue())
+      if (import.meta.env.VITE_APP_ENV === 'local') {
+        window.component = {
+          vue: () => {
+            return props.initialPage.component
+          }
+        }
+      }
+
       if (import.meta.env.VITE_SENTRY_DSN) {
         Sentry.init({
                       app,
