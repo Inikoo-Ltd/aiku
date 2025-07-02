@@ -90,7 +90,7 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('api')->as('api.')->group(function () {
             Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-            Route::get('/history', IndexRetinaApiDropshipping::class)->name('index');
+            // Route::get('/history', IndexRetinaApiDropshipping::class)->name('index');
 
         });
 

@@ -158,7 +158,7 @@ const locale = inject('locale', aikuLocaleStructure)
                                 name: 'retina.dropshipping.customer_sales_channels.create'
                             }"
                             url="https://documenter.getpostman.com/view/28816137/2sB34Zrjrp"
-                            :label=" "
+                            :label="'See documentation'"
                             iconRight="far fa-arrow-right"
                         >
                             {{ trans('See documentation') }}
