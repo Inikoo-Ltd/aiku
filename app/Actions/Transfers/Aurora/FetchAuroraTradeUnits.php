@@ -29,8 +29,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?TradeUnit
     {
-
-
         $this->organisationSource = $organisationSource;
 
 
@@ -88,58 +86,61 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             if ($tradeUnit) {
                 $this->updateTradeUnitSources($tradeUnit, $tradeUnitData['trade_unit']['source_id']);
 
-                $tradeUnit->barcodes()->sync(
-                    $tradeUnitData['barcodes']
-                );
-
-                $barcodeId     = null;
-                $barcodeNumber = null;
-
-                foreach ($tradeUnitData['barcodes'] as $barcodeKey => $barcodeData) {
-                    if ($barcodeData['status']) {
-                        /** @var Barcode $barcode */
-                        $barcode = Barcode::find($barcodeKey);
-
-                        $barcodeId     = $barcode->id;
-                        $barcodeNumber = $barcode->number;
-                        break;
-                    }
-                }
-
-                $tradeUnit->updateQuietly([
-                    'barcode_id' => $barcodeId,
-                    'barcode'    => $barcodeNumber,
-                ]);
-
-
-                $ingredientsToDelete = $tradeUnit->ingredients()->pluck('trade_unit_has_ingredients.ingredient_id')->toArray();
-
-                $dataSource  = explode(':', $tradeUnit->source_id);
-                $ingredients = [];
-                foreach (
-                    DB::connection('aurora')->table('Part Material Bridge')
-                        ->where('Part SKU', $dataSource[1])->get() as $auroraIngredients
-                ) {
-                    $ingredient = $this->parseIngredient(
-                        $organisation->id.
-                        ':'.$auroraIngredients->{'Material Key'}
+                if (isset($tradeUnitData['barcodes'])) {
+                    $tradeUnit->barcodes()->sync(
+                        $tradeUnitData['barcodes']
                     );
-                    if ($ingredient) {
-                        $ingredientsToDelete = array_diff($ingredientsToDelete, [$ingredient->id]);
 
-                        $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
+                    $barcodeId     = null;
+                    $barcodeNumber = null;
 
-                        $arguments = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
-                        $ingredients[$ingredient->id] = $arguments;
+                    foreach ($tradeUnitData['barcodes'] as $barcodeKey => $barcodeData) {
+                        if ($barcodeData['status']) {
+                            /** @var Barcode $barcode */
+                            $barcode = Barcode::find($barcodeKey);
+
+                            $barcodeId     = $barcode->id;
+                            $barcodeNumber = $barcode->number;
+                            break;
+                        }
+                    }
+
+                    $tradeUnit->updateQuietly([
+                        'barcode_id' => $barcodeId,
+                        'barcode'    => $barcodeNumber,
+                    ]);
+                }
+
+                // trust only organisation 2 for ingredients
+                if ($organisation->id == 2) {
+                    $ingredientsToDelete = $tradeUnit->ingredients()->pluck('trade_unit_has_ingredients.ingredient_id')->toArray();
+
+                    $dataSource  = explode(':', $tradeUnit->source_id);
+                    $ingredients = [];
+                    foreach (
+                        DB::connection('aurora')->table('Part Material Bridge')
+                            ->where('Part SKU', $dataSource[1])->get() as $auroraIngredients
+                    ) {
+                        $ingredient = $this->parseIngredient(
+                            $organisation->id.
+                            ':'.$auroraIngredients->{'Material Key'}
+                        );
+                        if ($ingredient) {
+                            $ingredientsToDelete = array_diff($ingredientsToDelete, [$ingredient->id]);
+
+                            $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
+
+                            $arguments                    = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
+                            $ingredients[$ingredient->id] = $arguments;
+                        }
+
+
+                        $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
                     }
 
 
-                    $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
+                    $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
                 }
-
-
-
-                $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
             }
 
 

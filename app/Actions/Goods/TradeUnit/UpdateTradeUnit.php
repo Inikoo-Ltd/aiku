@@ -88,7 +88,9 @@ class UpdateTradeUnit extends GrpAction
 
     public function action(TradeUnit $tradeUnit, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): TradeUnit
     {
+        $this->asAction = true;
         $this->strict = $strict;
+
         if (!$audit) {
             TradeUnit::disableAuditing();
         }

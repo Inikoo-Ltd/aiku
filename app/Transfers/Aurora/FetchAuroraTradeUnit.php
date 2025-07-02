@@ -29,27 +29,21 @@ class FetchAuroraTradeUnit extends FetchAurora
             $name = $reference;
         }
 
+
         $grossWeight = null;
         $netWeight   = null;
 
-        if ($this->auroraModelData->{'Part Package Weight'} > 0) {
-            $grossWeight = round(1000 * $this->auroraModelData->{'Part Package Weight'} / $this->auroraModelData->{'Part Units Per Package'});
-        }
 
-        if ($this->auroraModelData->{'Part Unit Weight'} > 0) {
-            $netWeight = round(1000 * $this->auroraModelData->{'Part Unit Weight'});
-        }
+        // we trust only organisation 2 for weights (SK)
+        if ($this->organisation->id == 2) {
+            if ($this->auroraModelData->{'Part Package Weight'} > 0) {
+                $grossWeight = round(1000 * $this->auroraModelData->{'Part Package Weight'} / $this->auroraModelData->{'Part Units Per Package'});
+            }
 
-        //        if($grossWeight && $netWeight){
-        //            print_r([
-        //                'name'         => $name,
-        //                'code'         => $reference,
-        //                'gross_weight' => $grossWeight,
-        //                'net_weight'   => $netWeight,
-        //            ]);
-        //            $ratio = $grossWeight / $netWeight;
-        //            dd($ratio);
-        //        }
+            if ($this->auroraModelData->{'Part Unit Weight'} > 0) {
+                $netWeight = round(1000 * $this->auroraModelData->{'Part Unit Weight'});
+            }
+        }
 
 
         $this->parsedData['trade_unit'] = [
@@ -57,46 +51,53 @@ class FetchAuroraTradeUnit extends FetchAurora
             'code'            => $reference,
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
             'source_slug'     => $sourceSlug,
-            'gross_weight'    => $grossWeight,
-            'net_weight'      => $netWeight,
             'fetched_at'      => now(),
             'last_fetched_at' => now(),
-
         ];
 
-
-        $barcodes = [];
-
-        $auroraBarcodes = DB::connection('aurora')
-            ->table('Barcode Asset Bridge')
-            ->where('Barcode Asset Type', 'Part')
-            ->where('Barcode Asset Key', $this->auroraModelData->{'Part SKU'})
-            ->get();
-
-        foreach ($auroraBarcodes as $auroraBarcode) {
-            $barcode = $this->parseBarcode($this->organisation->id.':'.$auroraBarcode->{'Barcode Asset Barcode Key'});
-
-            if (!$barcode) {
-                continue;
-            }
-
-
-            $barcodeData = [
-                'type'         => 'ean',
-                'status'       => $auroraBarcode->{'Barcode Asset Status'} === 'Assigned',
-                'withdrawn_at' => $this->parseDatetime($auroraBarcode->{'Barcode Asset Withdrawn Date'})
-            ];
-            $createdAt   = $this->parseDatetime($auroraBarcode->{'Barcode Asset Assigned Date'});
-
-            if ($createdAt) {
-                $barcodeData['created_at'] = $createdAt;
-            }
-
-            $barcodes[$barcode->id] = $barcodeData;
+        if ($grossWeight) {
+            $this->parsedData['trade_unit']['gross_weight'] = 'g';
         }
-        $this->parsedData['barcodes'] = $barcodes;
-        //dd($this->auroraModelData);
 
+        if ($netWeight) {
+            $this->parsedData['trade_unit']['net_weight'] = 'g';
+        }
+
+
+        // we trust only organisation 2 for barcodes (SK)
+        if ($this->organisation->id == 2) {
+            $barcodes = [];
+
+
+            $auroraBarcodes = DB::connection('aurora')
+                ->table('Barcode Asset Bridge')
+                ->where('Barcode Asset Type', 'Part')
+                ->where('Barcode Asset Key', $this->auroraModelData->{'Part SKU'})
+                ->get();
+
+            foreach ($auroraBarcodes as $auroraBarcode) {
+                $barcode = $this->parseBarcode($this->organisation->id.':'.$auroraBarcode->{'Barcode Asset Barcode Key'});
+
+                if (!$barcode) {
+                    continue;
+                }
+
+
+                $barcodeData = [
+                    'type'         => 'ean',
+                    'status'       => $auroraBarcode->{'Barcode Asset Status'} === 'Assigned',
+                    'withdrawn_at' => $this->parseDatetime($auroraBarcode->{'Barcode Asset Withdrawn Date'})
+                ];
+                $createdAt   = $this->parseDatetime($auroraBarcode->{'Barcode Asset Assigned Date'});
+
+                if ($createdAt) {
+                    $barcodeData['created_at'] = $createdAt;
+                }
+
+                $barcodes[$barcode->id] = $barcodeData;
+            }
+            $this->parsedData['barcodes'] = $barcodes;
+        }
     }
 
 
