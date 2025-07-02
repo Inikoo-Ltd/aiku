@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 
 // vika_luigi.js
@@ -16,6 +17,10 @@ const isLogin = computed(() => {
     return layout.is_logged_in
 })
 
+const layout = inject('layout', {})
+const locale = inject('locale', aikuLocaleStructure)
+
+// console.log('pp', locale)
 
 const LBInitAutocompleteNew = async () => {
     // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
@@ -34,13 +39,13 @@ const LBInitAutocompleteNew = async () => {
             Translations: {
                 en: {
                     showBuyTitle: 'Buy now', // Top Product: Button label
-                    // priceFilter: {
-                    //     minimumFractionDigits: 0,
-                    //     maximumFractionDigits: 2,
-                    //     locale: 'en',
-                    //     prefixed: true,
-                    //     symbol: '£'
-                    // }
+                    priceFilter: {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                        locale: 'en',
+                        prefixed: true,
+                        symbol: locale.currencySymbol(layout.iris?.currency?.code)
+                    }
                 }
             },
             // RemoveFields: fieldsRemoved,
@@ -117,8 +122,6 @@ const importStyleCSS = () => {
 }
 
 
-const layout = inject('layout', {})
-const locale = inject('locale', {})
 
 onBeforeMount(() => {
     const script = document.createElement('script');
