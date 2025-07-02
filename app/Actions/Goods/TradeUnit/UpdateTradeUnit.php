@@ -80,6 +80,7 @@ class UpdateTradeUnit extends GrpAction
         if (!$this->strict) {
             $rules['gross_weight'] = ['sometimes', 'nullable', 'numeric'];
             $rules['net_weight']   = ['sometimes', 'nullable', 'numeric'];
+            $rules['marketing_weight']   = ['sometimes', 'nullable', 'numeric'];
             $rules                 = $this->noStrictUpdateRules($rules);
         }
 

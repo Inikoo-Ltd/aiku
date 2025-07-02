@@ -31,7 +31,7 @@ class FetchAuroraTradeUnit extends FetchAurora
 
 
         $grossWeight = null;
-        $netWeight   = null;
+        $marketingWeight   = null;
 
 
         // we trust only organisation 2 for weights (SK)
@@ -41,7 +41,7 @@ class FetchAuroraTradeUnit extends FetchAurora
             }
 
             if ($this->auroraModelData->{'Part Unit Weight'} > 0) {
-                $netWeight = round(1000 * $this->auroraModelData->{'Part Unit Weight'});
+                $marketingWeight = round(1000 * $this->auroraModelData->{'Part Unit Weight'});
             }
         }
 
@@ -56,11 +56,11 @@ class FetchAuroraTradeUnit extends FetchAurora
         ];
 
         if ($grossWeight) {
-            $this->parsedData['trade_unit']['gross_weight'] = 'g';
+            $this->parsedData['trade_unit']['gross_weight'] = $grossWeight;
         }
 
-        if ($netWeight) {
-            $this->parsedData['trade_unit']['net_weight'] = 'g';
+        if ($marketingWeight) {
+            $this->parsedData['trade_unit']['marketing_weight'] = $marketingWeight;
         }
 
 
@@ -98,6 +98,7 @@ class FetchAuroraTradeUnit extends FetchAurora
             }
             $this->parsedData['barcodes'] = $barcodes;
         }
+
     }
 
 

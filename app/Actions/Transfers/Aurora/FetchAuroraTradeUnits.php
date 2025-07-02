@@ -38,8 +38,11 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
 
         if ($tradeUnitData) {
-            if (TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->exists()) {
+            if ($metaTradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first()) {
                 if ($tradeUnit = TradeUnit::withTrashed()->where('source_id', $tradeUnitData['trade_unit']['source_id'])->first()) {
+
+
+
                     try {
                         $tradeUnit = UpdateTradeUnit::make()->action(
                             tradeUnit: $tradeUnit,
@@ -55,6 +58,21 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                         return null;
                     }
                 }
+
+
+                if ($organisation->id == 2) {
+                    $tradeUnit = UpdateTradeUnit::make()->action(
+                        tradeUnit: $metaTradeUnit,
+                        modelData: Arr::only(
+                            $tradeUnitData['trade_unit'],
+                            ['gross_weight', 'net_weight']
+                        ),
+                        hydratorsDelay: $this->hydratorsDelay,
+                        strict: false,
+                        audit: false
+                    );
+                }
+
             } else {
                 try {
                     $tradeUnit = StoreTradeUnit::make()->action(
