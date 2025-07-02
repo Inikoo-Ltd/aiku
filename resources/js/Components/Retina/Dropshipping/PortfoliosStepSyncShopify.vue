@@ -146,7 +146,7 @@ const valueTableFilter = ref({})
             </div>
         </template>
 
-        <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
+        <!-- <Column selectionMode="multiple" headerStyle="width: 3rem"></Column> -->
 
         <Column field="code" header="Code" style="max-width: 125px;">
             <template #body="{ data }">
@@ -206,14 +206,14 @@ const valueTableFilter = ref({})
                             @success="() => emits('portfolioDeleted', data)"
                         />
 
-                        <ButtonWithLink
+                        <!-- <ButtonWithLink
                             :routeTarget="data.platform_upload_portfolio"
                             label="Upload"
                             icon="fal fa-upload"
                             type="positive"
                             size="xs"
                             @success="() => set(props.progressToUploadToShopify, [data.id], 'loading')"
-                        />
+                        /> -->
                     </template>
                 </div>
             </template>

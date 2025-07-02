@@ -12,6 +12,7 @@ import EmptyState from '../Utils/EmptyState.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import PortfoliosStepEdit from '../Retina/Dropshipping/PortfoliosStepEdit.vue'
 import ProductsSelector from './ProductsSelector.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{
     step: {
@@ -40,6 +41,7 @@ const recentlyUpdatedProduct = ref(null)
 
 // Section: Add portfolios
 const isLoadingSubmit = ref(false)
+const idxSubmitSuccess = ref(0)
 const onSubmitAddPortfolios = async (idProduct: number[]) => {
     router.post(route(props.routes.addPortfolioRoute.name, props.routes.addPortfolioRoute.parameters), {
         items: idProduct
@@ -61,6 +63,7 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
             })
 			props.step.current = 1
             // isOpenModalPortfolios.value = false
+            idxSubmitSuccess.value += 1
         },
         onFinish: () => isLoadingSubmit.value = false
     })
@@ -233,12 +236,13 @@ onMounted(() => {
 
 <template>
     <div>
-        <!-- Head: step 0 -->
+        <!-- Head: step 0 (Add to Portfolios) -->
         <div v-if="step.current === 0" class="grid grid-cols-4 mb-4">
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Add products to portfolios') }}
+                {{ trans('Add products to your products list') }}
+                <FontAwesomeIcon v-tooltip="trans(`Will added to My Products section`)" icon="fal fa-info-circle" class="text-lg text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>
             <div class="relative text-right">
                 <Button
@@ -251,8 +255,9 @@ onMounted(() => {
                 />
             </div>
         </div>
-        <!-- Head: step 1 -->
-        <div v-if="step.current == 1" class="grid grid-cols-4">
+
+        <!-- Head: step 1 (Edit portfolios) -->
+        <!-- <div v-if="step.current == 1" class="grid grid-cols-4">
             <div class="relative">
                 <Button
                     v-if="step.current == 1"
@@ -265,27 +270,19 @@ onMounted(() => {
             <div class="text-center col-span-2">
                 <div class="font-bold text-2xl">{{ trans("Edit portfolios") }}</div>
                 <div class="text-gray-500 text-sm italic tracking-wide">
-                    <!-- {{ trans("Edit the portfolios before syncing them to Shopify if needed") }} -->
                     {{ `Edit the portfolios before syncing them to ${platform_data.name} if needed` }}
                 </div>
             </div>
             <div class="relative text-right">
-                <!-- <Button
-                    v-if="step.current == 1"
-                    @click="step.current = 2"
-                    :label="trans('Sync to Shopify')"
-                    :iconRight="faArrowRight"
-                    type="tertiary"
-                /> -->
             </div>
-        </div>
-        <!-- Head: step 2 -->
-        <div v-if="step.current == 2" class="grid grid-cols-4">
+        </div> -->
+
+        <!-- Head: step 2 (Sync to Shopify) -->
+        <div v-if="step.current == 1" class="grid grid-cols-4">
             <div class="relative">
                 <Button
-                    v-if="step.current == 2"
-                    @click="step.current = 1"
-                    :label="trans('Edit products')"
+                    @click="step.current = 0"
+                    :label="trans('Back to add products')"
                     icon="fal fa-arrow-left"
                     type="tertiary"
                 />
@@ -293,25 +290,26 @@ onMounted(() => {
             <div class="text-center col-span-2">
                 <div class="font-bold text-2xl">{{ `Sync to ${platform_data.name}` }}</div>
                 <div class="text-gray-500 text-sm italic tracking-wide">
-                    {{ trans("You can select them via checkbox to bulk syncing or sync 1 by 1.") }}
+                    <!-- {{ trans("You can select them via checkbox to bulk syncing or sync 1 by 1.") }} -->
+                    {{ trans("All you see is unsynced products. You can remove or sync it all in one click.") }}
                 </div>
             </div>
             <div class="relative space-x-2 space-y-1 text-right">
-                <!-- Button: bulk upload -->
+                <!-- Button: bulk delete -->
                 <Button
-                    v-if="selectedPortfoliosToSync?.length"
+                    xv-if="selectedPortfoliosToSync?.length"
                     @click="() => bulkDelete()"
-                    :label="trans('Remove portfolios') + ' (' + selectedPortfoliosToSync?.length + ')'"
+                    :label="trans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"
                     type="delete"
                     size="s"
                     :loading="isLoadingBulkDeleteUpload"
                 />
+
                 <!-- Button: bulk upload -->
                 <Button
-                    v-if="selectedPortfoliosToSync?.length"
+                    xv-if="selectedPortfoliosToSync?.length"
                     @click="() => bulkUpload()"
-                    xlabel="trans('Sync to Shopify') + ' (' + selectedPortfoliosToSync?.length + ')'"
-                    :label="`Sync to ${platform_data.name} (${selectedPortfoliosToSync?.length})`"
+                    :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
                     icon="fal fa-upload"
                     size="s"
                     type="positive"
@@ -324,7 +322,7 @@ onMounted(() => {
         <KeepAlive>
             <ProductsSelector
                 v-if="step.current === 0"
-                :headLabel="trans('Add products to portfolios')"
+                xheadLabel="trans('Add products to portfolios')"
                 :route-fetch="{
                     name: props.routes.itemRoute.name,
                     parameters: {
@@ -335,6 +333,7 @@ onMounted(() => {
                 :valueToRefetch="selectedList.value"
                 :label_result="selectedList.label"
                 :isLoadingSubmit
+                :idxSubmitSuccess
                 @submit="(products: {}[]) => onSubmitAddPortfolios(products.map((product: any) => product.id))"
                 class="px-4"
             >
@@ -357,7 +356,7 @@ onMounted(() => {
         </KeepAlive>
 
         <!-- 1: Edit Product -->
-        <KeepAlive>
+        <!-- <KeepAlive>
             <div v-if="step.current === 1">
                 <div class="relative px-4 min-h-[200px] max-h-[600px] mt-4 overflow-y-auto mb-4">
                     <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
@@ -390,11 +389,11 @@ onMounted(() => {
                     />
                 </div>
             </div>
-        </KeepAlive>
+        </KeepAlive> -->
         
         <!-- 2: Upload product to Shopify -->
         <KeepAlive>
-            <div v-if="step.current === 2">
+            <div v-if="step.current === 1">
                 <div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
                     <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
                         <LoadingIcon />
