@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
@@ -10,6 +10,8 @@ import { getStyles } from "@/Composables/styles"
 import Dialog from 'primevue/dialog'
 import { routeType } from '@/types/route'
 import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue"
+import Blueprint from './Blueprint'
+import { sendMessageToParent } from "@/Composables/Workshop"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -34,6 +36,7 @@ const props = defineProps<{
   routeEditfamily?: routeType
   webpageData?: any
   blockData?: Object
+  indexBlock: Number
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
@@ -94,43 +97,37 @@ const responsiveGridClass = computed(() => {
   const count = columnCount[props.screenType] ?? 1
   return `grid-cols-${count}`
 })
+const layout: any = inject("layout", {})
+const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
-  <div
-    v-if="props.modelValue?.families && props.modelValue.families.length"
-    class="px-4 py-10 mx-[30px]"
-    :style="getStyles(modelValue.container?.properties, screenType)"
-  >
-    <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
-    <div :class="['grid gap-8', responsiveGridClass]">
-      <div
-        v-for="(item, index) in props.modelValue.families"
-        :key="index"
-        @click="openModal(item)"
-        class="cursor-pointer"
-      >
-        <Family1Render :data="item" />
+  <div id="families-1">
+    <div v-if="props.modelValue?.families && props.modelValue.families.length" class="px-4 py-10 mx-[30px]" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(modelValue.container?.properties, screenType)
+    }" @click="() => {
+				sendMessageToParent('activeBlock', indexBlock)
+				sendMessageToParent('activeChildBlock', bKeys[0])
+			}
+			">
+      <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
+      <div :class="['grid gap-8', responsiveGridClass]">
+        <div v-for="(item, index) in props.modelValue.families" :key="index" @click="openModal(item)"
+          class="cursor-pointer">
+          <Family1Render :data="item" />
+        </div>
       </div>
     </div>
+
+    <EmptyState v-else :data="{ title: 'Empty Families' }" />
+
+    <Dialog :header="`Edit ${selectedSubDepartment?.name}`" v-model:visible="showDialog" :modal="true"
+      :style="{ width: '500px' }" :closable="true" @hide="closeModal">
+      <FormEditProductCategory v-if="selectedSubDepartment" :key="selectedSubDepartment.id"
+        :data="selectedSubDepartment" :saveRoute="routeEditfamily" @saved="handleSaved" />
+    </Dialog>
+
   </div>
 
-  <EmptyState v-else :data="{ title: 'Empty Families' }" />
-
-  <Dialog
-    :header="`Edit ${selectedSubDepartment?.name}`"
-    v-model:visible="showDialog"
-    :modal="true"
-    :style="{ width: '500px' }"
-    :closable="true"
-    @hide="closeModal"
-  >
-    <FormEditProductCategory
-      v-if="selectedSubDepartment"
-      :key="selectedSubDepartment.id"
-      :data="selectedSubDepartment"
-      :saveRoute="routeEditfamily"
-      @saved="handleSaved"
-    />
-  </Dialog>
 </template>

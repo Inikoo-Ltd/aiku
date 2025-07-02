@@ -101,27 +101,34 @@ const getRoutes = () => {
 };
 
 function buildFilters(): Record<string, any> {
-    const filters: Record<string, any> = {};
-    const raw = filter.value.data || {};
+  const filters: Record<string, any> = {}
+  const raw = filter.value.data || {}
 
-    for (const [key, val] of Object.entries(raw)) {
-        if (val === null || val === undefined || val === "") continue;
-        if (typeof val === "object" && !Array.isArray(val)) {
-            for (const [subKey, subVal] of Object.entries(val)) {
-                if (subVal === null || subVal === undefined || subVal === "") continue;
-                filters[subKey] = subVal;
-            }
-        } else {
-            filters[key] = val;
-        }
+  for (const [key, val] of Object.entries(raw)) {
+    if (val === null || val === undefined || val === '') continue
+
+    if (typeof val === 'object' && !Array.isArray(val)) {
+      // Object biasa (misal: price: { min, max })
+      for (const [subKey, subVal] of Object.entries(val)) {
+        if (subVal === null || subVal === undefined || subVal === '') continue
+        filters[subKey] = subVal
+      }
+    } else if (Array.isArray(val)) {
+      // Array (misal: tags: [1,2,3])
+      filters[`filter[${key}]`] = val.join(',')
+    } else {
+      // String/number langsung
+      filters[`filter[${key}]`] = val
     }
+  }
 
-    if (isNewArrivals.value) {
-        filters[`filter[new_arrivals]`] = 3;
-    }
+  if (isNewArrivals.value) {
+    filters[`filter[new_arrivals]`] = 3
+  }
 
-    return filters;
+  return filters
 }
+
 
 
 const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
@@ -196,7 +203,7 @@ watch([q, orderBy], () => {
 watch(filter, () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
-    updateQueryParams();
+    /* updateQueryParams(); */
     debFetchProducts(false, true);
 }, { deep: true });
 
@@ -269,10 +276,10 @@ const updateQueryParams = () => {
     }
 
     // Update filters
-    const filters = buildFilters();
-    for (const [key, val] of Object.entries(filters)) {
+ /*    const filters = buildFilters(); */
+    /* for (const [key, val] of Object.entries(filters)) {
         url.searchParams.set(`filter[${key}]`, val);
-    }
+    } */
 
     window.history.replaceState({}, "", url.toString());
 };
@@ -399,125 +406,131 @@ const handleSetAllToPortfolio = () => {
 </script>
 
 <template>
-    <ConfirmDialog>
-        <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
-        </template>
-    </ConfirmDialog>
-    <div class="flex flex-col lg:flex-row" :style="getStyles(fieldValue?.container?.properties, screenType)">
+    <div id="products-1">
+        <ConfirmDialog>
+            <template #icon>
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            </template>
+        </ConfirmDialog>
+        <div class="flex flex-col lg:flex-row" :style="{
+            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+            ...getStyles(fieldValue.container?.properties, screenType)
+        }">
 
-        <!-- Sidebar Filters for Desktop -->
-        <transition name="slide-fade">
-            <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
-                <FilterProducts v-model="filter" />
-            </aside>
-        </transition>
+            <!-- Sidebar Filters for Desktop -->
+            <transition name="slide-fade">
+                <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
+                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
+                </aside>
+            </transition>
 
-        <!-- Main Content -->
-        <main class="flex-1">
-            <!-- Search & Sort -->
-            <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center w-full md:w-1/3 gap-2">
-                    <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
-                        aria-label="Open Filters" />
-
-                    <!-- Sidebar Toggle for Desktop -->
-                    <div v-else class="py-4">
-                        <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+            <!-- Main Content -->
+            <main class="flex-1">
+                <!-- Search & Sort -->
+                <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center w-full md:w-1/3 gap-2">
+                        <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
                             aria-label="Open Filters" />
-                    </div>
-                    <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
-                        :clear="true" :isLoading="loadingInitial" :prefix="{icon: faSearch, label :''}" />
-                </div>
 
-                <!-- Sort Tabs -->
-                <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
-                    <button @click="toggleNewArrivals"
-                        class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
+                        <!-- Sidebar Toggle for Desktop -->
+                        <div v-else class="py-4">
+                            <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+                                aria-label="Open Filters" />
+                        </div>
+                        <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
+                            :clear="true" :isLoading="loadingInitial" :prefix="{icon: faSearch, label :''}" />
+                    </div>
+
+                    <!-- Sort Tabs -->
+                    <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                        <button @click="toggleNewArrivals"
+                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
                                 ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                                 : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                         ]">
-                        New Arrivals
-                    </button>
+                            New Arrivals
+                        </button>
 
-                    <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                        class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
+                        <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
+                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                         'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
                         sortKey === option.value
                             ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                             : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                         ]" :disabled="loadingInitial || loadingMore">
-                        {{ option.label }} {{ getArrow(option.value) }}
-                    </button>
-                </div>
-            </div>
-            <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
-                <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-                    <span class="text-gray-700 font-medium">
-                        Showing
-                        <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                            products.length }}</span>
-                        of
-                        <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                            totalProducts }}</span>
-                        {{ products.length === 1 ? "product" : "products" }}
-                    </span>
-                </div>
-                <div>
-                    <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup"
-                        :label="settingPortfolio ? 'Processing...' : 'Set All Products to Portfolio'"
-                        class="!p-3 !w-auto" type="secondary" :disabled="settingPortfolio"
-                        @click="handleSetAllToPortfolio" aria-label="Set all products to portfolio" />
-                </div>
-            </div>
-
-            <!-- Product Grid -->
-            <div :class="responsiveGridClass" class="grid gap-6 p-4"
-                :style="getStyles(fieldValue?.container?.properties, screenType)">
-                <template v-if="loadingInitial">
-                    <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
-                        <Skeleton height="200px" class="mb-3" />
-                        <Skeleton width="80%" class="mb-2" />
-                        <Skeleton width="60%" class="mb-2" />
-                        <Skeleton width="100%" />
+                            {{ option.label }} {{ getArrow(option.value) }}
+                        </button>
                     </div>
-                </template>
-
-                <template v-else-if="products.length">
-                    <div v-for="(product, index) in products" :key="index"
-                        :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                        class="border p-3 relative rounded bg-white">
-                        <ProductRender :product="product" :key="index"
-                            :productHasPortfolio="productHasPortfolio.list[product.id]" />
+                </div>
+                <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
+                    <div
+                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+                        <span class="text-gray-700 font-medium">
+                            Showing
+                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
+                                products.length }}</span>
+                            of
+                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
+                                totalProducts }}</span>
+                            {{ products.length === 1 ? "product" : "products" }}
+                        </span>
                     </div>
-                </template>
-
-                <template v-else>
-                    <div class="col-span-full text-center py-10 text-gray-500">
+                    <div>
+                        <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup"
+                            :label="settingPortfolio ? 'Processing...' : 'Set All Products to Portfolio'"
+                            class="!p-3 !w-auto" type="secondary" :disabled="settingPortfolio"
+                            @click="handleSetAllToPortfolio" aria-label="Set all products to portfolio" />
                     </div>
-                </template>
-            </div>
+                </div>
 
-            <!-- Load More -->
-            <!--  {{ page   }}{{ lastPage }} -->
-            <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
-                <Button @click="loadMore" type="tertiary" :disabled="loadingMore">
-                    <template v-if="loadingMore">
-                        <LoadingText />
+                <!-- Product Grid -->
+                <div :class="responsiveGridClass" class="grid gap-6 p-4"
+                    :style="getStyles(fieldValue?.container?.properties, screenType)">
+                    <template v-if="loadingInitial">
+                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
+                            <Skeleton height="200px" class="mb-3" />
+                            <Skeleton width="80%" class="mb-2" />
+                            <Skeleton width="60%" class="mb-2" />
+                            <Skeleton width="100%" />
+                        </div>
                     </template>
-                    <template v-else>{{ trans("Load More") }}</template>
-                </Button>
-            </div>
-        </main>
 
-        <!-- Mobile Filters Drawer -->
-        <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true" :closeOnEscape="true"
-            :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
-            <div class="p-4">
-                <FilterProducts v-model="filter" />
-            </div>
-        </Drawer>
+                    <template v-else-if="products.length">
+                        <div v-for="(product, index) in products" :key="index"
+                            :style="getStyles(fieldValue?.card_product?.properties, screenType)"
+                            class="border p-3 relative rounded bg-white">
+                            <ProductRender :product="product" :key="index"
+                                :productHasPortfolio="productHasPortfolio.list[product.id]" />
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <div class="col-span-full text-center py-10 text-gray-500">
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Load More -->
+                <!--  {{ page   }}{{ lastPage }} -->
+                <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
+                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore">
+                        <template v-if="loadingMore">
+                            <LoadingText />
+                        </template>
+                        <template v-else>{{ trans("Load More") }}</template>
+                    </Button>
+                </div>
+            </main>
+
+            <!-- Mobile Filters Drawer -->
+            <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true"
+                :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
+                <div class="p-4">
+                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id"/>
+                </div>
+            </Drawer>
+        </div>
     </div>
 </template>
 
