@@ -257,7 +257,7 @@ onMounted(() => {
                 <Button
                     v-if="step.current == 1"
                     @click="step.current = 0"
-                    :label="trans('Add portfolios')"
+                    :label="trans('Add products')"
                     icon="fal fa-arrow-left"
                     type="tertiary"
                 />

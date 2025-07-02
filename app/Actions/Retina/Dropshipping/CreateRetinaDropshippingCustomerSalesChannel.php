@@ -11,7 +11,7 @@
 namespace App\Actions\Retina\Dropshipping;
 
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
-use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use Illuminate\Support\Facades\DB;
@@ -150,7 +150,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
     {
         return
             array_merge(
-                IndexDropshippingCustomerSalesChannels::make()->getBreadcrumbs(),
+                IndexRetinaDropshippingCustomerSalesChannels::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',

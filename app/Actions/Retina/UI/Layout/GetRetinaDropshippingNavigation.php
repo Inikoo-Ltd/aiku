@@ -46,14 +46,13 @@ class GetRetinaDropshippingNavigation
         ) {
 
 
-            $reference = $customerSalesChannels->reference ?? 'n/a';
+            $reference = $customerSalesChannels->name ?? 'n/a';
 
             $platforms_navigation[] = [
                 'id'            => $customerSalesChannels->id,
                 'type'          => $customerSalesChannels->platform->type,
                 'slug'          => $customerSalesChannels->slug,
                 'key'           => $customerSalesChannels->slug,
-                // 'label'         => $customerSalesChannels->platform->name.' ('.$reference.')',
                 'label'         => $reference,
                 'img'           => $this->getPlatformLogo($customerSalesChannels),
                 'img_tooltip'   => $customerSalesChannels->platform->name,

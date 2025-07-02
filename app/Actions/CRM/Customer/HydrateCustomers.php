@@ -11,11 +11,11 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCreditTransactions;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCustomerSalesChannels;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydratePlatforms;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\Fulfilment\FulfilmentCustomer\HydrateFulfilmentCustomer;
@@ -45,7 +45,7 @@ class HydrateCustomers
         CustomerHydrateCreditTransactions::run($customer);
         CustomerHydrateBasket::run($customer);
         CustomerHydrateExclusiveProducts::run($customer);
-        CustomerHydratePlatforms::run($customer);
+        CustomerHydrateCustomerSalesChannels::run($customer->id);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);

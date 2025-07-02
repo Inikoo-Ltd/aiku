@@ -67,6 +67,11 @@ export const initialiseRetinaApp = () => {
 
 
     watchEffect(() => {
+        // Set currency to used by global
+        if (usePage().props.retina?.currency) {       
+            locale.currencyInertia = usePage().props.retina?.currency
+        }
+
         // Set data of Navigation
         if (usePage().props.layout) {
             layout.navigation = usePage().props.layout.navigation || null

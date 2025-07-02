@@ -8,12 +8,8 @@
 import {Link} from "@inertiajs/vue3"
 import Table from '@/Components/Table/Table.vue'
 import type {Table as TableTS} from "@/types/Table"
-import {RouteParams} from "@/types/route-params"
-import {Platform} from "@/types/platform"
-import Image from "@/Components/Image.vue"
 import {CustomerSalesChannel} from "@/types/customer-sales-channel";
 import {trans} from "laravel-vue-i18n";
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import Toggle from "primevue/toggleswitch"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -21,9 +17,10 @@ import { notify } from "@kyvg/vue3-notification"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUnlink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 library.add(faUnlink)
 
 defineProps<{
@@ -79,18 +76,44 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
 <template>
     <Table :resource="data">
         <template #cell(platform_name)="{ item: customerSalesChannel }">
-            <div class="flex items-center gap-2">
-                <img :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name"
-                     class="w-6 h-6"/>
-                {{ customerSalesChannel.platform_name }}
+            <div class="flex items-center gap-2 w-7">
+                <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name"
+                    class="w-6 h-6"/>
             </div>
         </template>
 
-        <template #cell(reference)="{ item: customerSalesChannel }">
+        <template #cell(name)="{ item: customerSalesChannel }">
             <Link :href="(platformRoute(customerSalesChannel) as string)" class="primaryLink">
-                {{ customerSalesChannel["reference"] }}
+                {{ customerSalesChannel["name"] }}
             </Link>
+
+            <!-- Button: Reconnect -->
+            <template v-if="customerSalesChannel.platform_code !== 'manual'">
+                <FontAwesomeIcon
+                    v-if="customerSalesChannel.connection === 'connected'"
+                    v-tooltip="trans('Connected')"
+                    icon="fal fa-check"
+                    class="text-green-500"
+                    fixed-width
+                    aria-hidden="true"
+                />
+
+                <template v-else>
+                    <FontAwesomeIcon v-tooltip="trans('Not connected to the platform yet')" icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <ButtonWithLink
+                        v-if="customerSalesChannel.reconnect_route?.name"
+                        :routeTarget="customerSalesChannel.reconnect_route"
+                        icon=""
+                        :label="trans('Reconnect')"
+                        size="xxs"
+                        type="tertiary"
+                        class="ml-2"
+                    />
+                </template>
+
+            </template>
         </template>
+
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
             <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
                 {{ customerSalesChannel["number_portfolios"] }}
@@ -107,8 +130,11 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
             </Link>
         </template>
 
-        <template #cell(status)="{ proxyItem }">
+
+        <template #cell(action)="{ item: customerSalesChannel, proxyItem }">
+            <!-- <pre>{{ customerSalesChannel.platform_name }} ({{ customerSalesChannel.reference }})</pre> -->
             <Toggle
+                v-tooltip="trans('Change platform to open/closed')"
                 :routeTarget="proxyItem.toggle_route"
                 :modelValue="proxyItem.status"
                 @update:modelValue="(newVal: string) => {
@@ -122,10 +148,7 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
                 true-value="open"
                 false-value="closed"
             />
-        </template>
 
-        <template #cell(action)="{ item: customerSalesChannel }">
-            <!-- <pre>{{ customerSalesChannel.platform_name }} ({{ customerSalesChannel.reference }})</pre> -->
             <ModalConfirmationDelete
                 :routeDelete="customerSalesChannel.unlink_route"
                 :title="trans('Are you sure you want to unlink platform') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"

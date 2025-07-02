@@ -9,16 +9,22 @@ import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
+import { useLocaleStore } from "../Stores/locale"
 
 
 export const initialiseIrisApp = () => {
     const layout = useIrisLayoutStore()
-    // const locale = useLocaleStore()
+    const locale = useLocaleStore()
 
     console.log('init Iris props', usePage().props)
 
 
     watchEffect(() => {
+        // Set currency to used by global
+        if (usePage().props.iris?.currency) {       
+            locale.currencyInertia = usePage().props.iris?.currency
+        }
+
         // Set App theme
         if (usePage().props.layout?.app_theme) {       
             layout.app.theme = usePage().props.layout?.app_theme

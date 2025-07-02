@@ -41,9 +41,10 @@ class UpdatePortfolio extends OrgAction
         }
 
         if (Arr::exists($modelData, 'customer_price')) {
-            data_set($modelData, 'vat_rate', 0.2);
+            $price = $portfolio->item->price ?? 0;
+
             data_set($modelData, 'selling_price', Arr::get($modelData, 'customer_price'));
-            data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'selling_price'), $portfolio->item->price, Arr::get($modelData, 'vat_rate')));
+            data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'selling_price'), $price));
         }
 
         $portfolio = $this->update($portfolio, $modelData, ['data']);
@@ -72,7 +73,7 @@ class UpdatePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference'             => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -86,18 +87,18 @@ class UpdatePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'selling_price'   => ['sometimes', 'numeric', 'min:0'],
-            'status'          => ['sometimes','boolean'],
-            'last_added_at'   => 'sometimes|date',
-            'last_removed_at' => 'sometimes|date',
-            'item_id'         => 'sometimes|integer',
-            'item_type'       => 'sometimes|string',
-            'item_name'       => 'sometimes|string',
-            'item_code'       => 'sometimes|string',
-            'customer_product_name'       => 'sometimes|string',
-            'customer_price'       => ['sometimes', 'numeric', 'min:0'],
-            'customer_description'       => ['sometimes', 'string', 'nullable'],
-            'platform_product_id'       => 'sometimes|string',
+            'selling_price'         => ['sometimes', 'numeric', 'min:0'],
+            'status'                => ['sometimes', 'boolean'],
+            'last_added_at'         => 'sometimes|date',
+            'last_removed_at'       => 'sometimes|date',
+            'item_id'               => 'sometimes|integer',
+            'item_type'             => 'sometimes|string',
+            'item_name'             => 'sometimes|string',
+            'item_code'             => 'sometimes|string',
+            'customer_product_name' => 'sometimes|string',
+            'customer_price'        => ['sometimes', 'numeric', 'min:0'],
+            'customer_description'  => ['sometimes', 'string', 'nullable'],
+            'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
             'errors_response'       => 'sometimes|array'
         ];

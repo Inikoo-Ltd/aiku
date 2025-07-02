@@ -16,7 +16,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue";
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
-import { faBracketsCurly, faFileCsv, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
+import { faBracketsCurly, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
 import { Popover } from "primevue"
 
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -197,7 +197,7 @@ const _popover = ref()
 
             <Button
                 @click="() => (isOpenModalPortfolios = true)"
-                :label="trans('Add portfolio')"
+                :label="trans('Add products')"
                 :icon="'fas fa-plus'"
             />
         </template>
@@ -222,7 +222,7 @@ const _popover = ref()
                 size="xl"
             />
             <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">{{ content?.portfolio_empty?.separation || trans("or") }}</div>
-            <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true" :label="content?.portfolio_empty?.add_button || trans('Add portfolio')" icon="fas fa-plus" size="xl" />
+            <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true" :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus" size="xl" />
         </div>
     </div>
 
