@@ -171,7 +171,7 @@ console.log('DS Orders', props)
 
         <div class="ml-2 font-normal flex justify-between w-full">
             <div class="flex items-center gap-x-2">
-                You have unpaid amount of the order <span class="font-bold">{{ data?.data.unpaid_amount }}</span>
+                {{ trans("You have unpaid amount of the order") }}: <span class="font-bold">{{ locale.currencyFormat(locale.currencyInertia?.code, data?.data.unpaid_amount) }}</span>
             </div>
 
             <ButtonWithLink

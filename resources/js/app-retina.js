@@ -91,6 +91,15 @@ createInertiaApp(
                     });
       }
 
+      // To see Vue filename in console (component.vue())
+      if (import.meta.env.VITE_APP_ENV === 'local') {
+        window.component = {
+          vue: () => {
+            return props.initialPage.component
+          }
+        }
+      }
+
       app.use(plugin).
         use(createPinia()).
         use(ZiggyVue, Ziggy).

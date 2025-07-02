@@ -16,8 +16,8 @@ use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
-use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfoliosToShopify;
-use App\Actions\Dropshipping\Shopify\Product\SyncroniseDropshippingPortfolioToShopify;
+use App\Actions\Dropshipping\Shopify\Product\SynchroniseDropshippingPortfoliosToShopify;
+use App\Actions\Dropshipping\Shopify\Product\SynchroniseDropshippingPortfolioToShopify;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
@@ -246,8 +246,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
-    Route::post('{shopifyUser:id}/shopify-batch-upload', SyncroniseDropshippingPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
-    Route::post('{shopifyUser:id}/shopify-single-upload/{portfolio:id}', SyncroniseDropshippingPortfolioToShopify::class)->name('shopify.single_upload')->withoutScopedBindings();
+    Route::post('{shopifyUser:id}/shopify-batch-upload', SynchroniseDropshippingPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+    Route::post('{shopifyUser:id}/shopify-single-upload/{portfolio:id}', SynchroniseDropshippingPortfolioToShopify::class)->name('shopify.single_upload')->withoutScopedBindings();
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', SyncronisePortfoliosToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', SyncronisePortfolioToWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();

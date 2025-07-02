@@ -28,10 +28,10 @@ enum PlatformTypeEnum: string
         return [
             'shopify'     => 'Shopify',
             'tiktok'      => 'Tiktok',
-            'woocommerce' => 'Woo Commerce',
+            'woocommerce' => 'Woo',
             'ebay'        => 'Ebay',
             'amazon'      => 'Amazon',
-            'manual'      => __('Manual'),
+            'manual'      => 'Web/API',
             'magento'     => 'Magento',
             'wix'         => 'Wix',
         ];

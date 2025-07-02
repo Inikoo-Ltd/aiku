@@ -102,7 +102,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 max-w-5xl lg:max-w-7xl w-full lg:mx-auto my-10 px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 xmax-w-5xl lg:max-w-7xl w-full lg:mx-auto my-10 px-8 xl:px-0 transition-all">
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[
@@ -127,7 +127,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						<Link
 							v-if="layout.iris?.is_logged_in"
 							:href="route('retina.top_up.dashboard')"
-							class="bg-white border border-gray-300 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
+							class="bg-pink-100 border border-pink-300 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
 						>
 							<!-- <FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" /> -->
 							{{ trans("My balance") }}:

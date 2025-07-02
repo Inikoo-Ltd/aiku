@@ -17,7 +17,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Helpers\Brand\Json\GetIrisBrands;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
-use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -37,5 +37,5 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('collection/{collection:id}/out-of-stock-products', GetIrisOutOfStockProductsInCollection::class)->name('collection.out_of_stock_products.index');
 
 
-    Route::get('channels', IndexDropshippingCustomerSalesChannels::class)->name('channels.index');
+    Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');
 });

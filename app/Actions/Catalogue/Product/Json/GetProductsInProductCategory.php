@@ -22,7 +22,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetProductsInProductCategory extends OrgAction
 {
-    public function handle(ProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $parent, $prefix = null, $seeAlso = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -44,6 +44,10 @@ class GetProductsInProductCategory extends OrgAction
             $queryBuilder->where('sub_department_id', $parent->id);
         }
 
+        if ($seeAlso) {
+            $queryBuilder->take(4);
+        }
+
         return $queryBuilder->defaultSort('-id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
@@ -60,6 +64,13 @@ class GetProductsInProductCategory extends OrgAction
         $this->initialisationFromShop($productCategory->shop, $request);
 
         return $this->handle(parent: $productCategory);
+    }
+
+    public function seeAlso(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromShop($productCategory->shop, $request);
+
+        return $this->handle(parent: $productCategory, seeAlso: true);
     }
 
 }

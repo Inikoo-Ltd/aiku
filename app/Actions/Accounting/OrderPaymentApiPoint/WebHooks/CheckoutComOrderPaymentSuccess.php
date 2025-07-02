@@ -8,11 +8,15 @@
 
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\IrisAction;
+use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -60,11 +64,17 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
         $order = DB::transaction(function () use ($orderPaymentApiPoint, $paymentAccountShop, $paymentData) {
 
-            StorePayment::make()->action($orderPaymentApiPoint->order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+            $payment = StorePayment::make()->action($orderPaymentApiPoint->order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             $order = $orderPaymentApiPoint->order;
 
+            AttachPaymentToOrder::make()->action($order, $payment, [
+                'amount' => $payment->amount
+            ]);
 
+            $order = UpdateOrder::make()->action(order: $order, modelData:[
+                'payment_amount' => $payment->amount
+            ], strict: false);
 
             return SubmitOrder::run($order);
         });

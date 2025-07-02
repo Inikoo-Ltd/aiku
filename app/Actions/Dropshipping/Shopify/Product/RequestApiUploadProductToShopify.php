@@ -14,14 +14,13 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeUnique
+class RequestApiUploadProductToShopify extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -32,13 +31,14 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
 
     /**
      * @throws \Exception
+     * @throws \Throwable
      */
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body = []): void
     {
         DB::transaction(function () use ($shopifyUser, $portfolio, $body) {
             try {
                 $images = [];
-                $count = 0;
+                $count  = 0;
                 foreach ($portfolio->item->images as $image) {
                     if ($count >= 3) {
                         break;
@@ -56,28 +56,28 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
 
             $body = [
                 "product" => [
-                    "id" => $portfolio->item->id,
-                    "title" => $portfolio->customer_product_name,
-                    "handle" => $portfolio->platform_handle,
-                    "body_html" => $portfolio->customer_description,
-                    "vendor" => $portfolio->item->shop->name,
+                    "id"           => $portfolio->item->id,
+                    "title"        => $portfolio->customer_product_name,
+                    "handle"       => $portfolio->platform_handle,
+                    "body_html"    => $portfolio->customer_description,
+                    "vendor"       => $portfolio->item->shop->name,
                     "product_type" => $portfolio->item->family?->name,
-                    "images" => $images,
-                    "variants" => [
+                    "images"       => $images,
+                    "variants"     => [
                         [
-                            "price" => number_format($portfolio->customer_price, 2, '.', ''),
-                            "sku" => $portfolio->id,
+                            "price"                => number_format($portfolio->customer_price, 2, '.', ''),
+                            "sku"                  => $portfolio->id,
                             "inventory_management" => "shopify",
-                            "inventory_policy" => "deny",
-                            "weight" => $portfolio->item->gross_weight,
-                            "weight_unit" => "g"
+                            "inventory_policy"     => "deny",
+                            "weight"               => $portfolio->item->gross_weight,
+                            "weight_unit"          => "g"
                         ]
                     ]
                 ]
             ];
 
-            $productShopify = [];
-            $client = $shopifyUser->getShopifyClient();
+            $productShopify    = [];
+            $client            = $shopifyUser->getShopifyClient();
             $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
 
             if (count($availableProducts) <= 0) {
@@ -88,7 +88,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
                             'errors_response' => Arr::get($response, 'body.errors')
                         ]);
 
-                        \Sentry::captureMessage("Product upload failed: " . json_encode(Arr::get($response, 'body')));
+                        \Sentry::captureMessage("Product upload failed: ".json_encode(Arr::get($response, 'body')));
                     } else {
                         $productShopify = Arr::get($response, 'body.product');
                     }
@@ -96,7 +96,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
                     \Sentry::captureMessage($e->getMessage());
 
                     $availableProducts = CheckDropshippingExistPortfolioInShopify::run($shopifyUser, $portfolio);
-                    $productShopify = Arr::get($availableProducts, '0');
+                    $productShopify    = Arr::get($availableProducts, '0');
                 }
             } else {
                 $productShopify = Arr::get($availableProducts, '0');
@@ -105,7 +105,7 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
             $inventoryVariants = [];
             foreach (Arr::get($productShopify, 'variants') as $variant) {
                 $variant['available_quantity'] = $portfolio->item->available_quantity;
-                $inventoryVariants[] = $variant;
+                $inventoryVariants[]           = $variant;
             }
 
             HandleApiInventoryProductShopify::dispatch($shopifyUser, $inventoryVariants);
@@ -118,8 +118,5 @@ class RequestApiUploadProductToShopify extends RetinaAction implements ShouldBeU
         });
     }
 
-    public function getJobUniqueId(ShopifyUser $shopifyUser, Portfolio $portfolio): string|int
-    {
-        return $portfolio->id . rand();
-    }
+
 }

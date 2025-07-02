@@ -91,7 +91,7 @@ class IndexPupilFulfilmentDropshippingOrdersInPlatform extends RetinaAction
         $platformName = $this->customerSalesChannel->name;
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $platformName = __('Manual');
+            $platformName = 'Web/API';
         }
 
         return Inertia::render(
@@ -108,7 +108,7 @@ class IndexPupilFulfilmentDropshippingOrdersInPlatform extends RetinaAction
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
                 'orders'   => RetinaDropshippingOrdersInPlatformResources::collection($orders)
             ]
-        )->table(IndexRetinaDropshippingOrders::make()->tableStructure($this->customerSalesChannel->platform, 'orders'));
+        )->table(IndexRetinaDropshippingOrders::make()->tableStructure($this->customerSalesChannel, 'orders'));
     }
 
 

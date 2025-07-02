@@ -11,13 +11,13 @@
 namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\SysAdmin\ApiTokenRetinaTabsEnum;
 use App\Http\Resources\Api\ApiTokensRetinaResource;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -84,22 +84,10 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     'title'     => 'API Token',
                     'icon'      => 'fal fa-key',
                     'noCapitalise'  => true,
-                    // 'actions'   => [
-                    //     [
-                    //         'type'  => 'button',
-                    //         'style' => 'edit',
-                    //         'route' => [
-                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    //             'parameters' => $request->route()->originalParameters()
-                    //         ]
-                    //     ],
 
-                    // ],
 
                 ],
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    __('Api Token')
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
                 'tabs'                        => [
                     'current'    => $this->tab,
                     'navigation' => ApiTokenRetinaTabsEnum::navigation()
@@ -113,22 +101,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     ],
                 ],
                 'is_need_to_add_card' => ($hasNonManualChannels || $hasApiTokens) && ! $hasCreditCards,
-                // 'data'       => [
-                //     // 'route_generate' => [
-                //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',
-                //     //     'parameters' => [
-                //     //         'customerSalesChannel' => $customerSalesChannel->slug,
-                //     //     ],
-                //     // ],
-                //     // 'route_documentation' => '#',
-                //     // 'route_show' => [
-                //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show',
-                //     //     'parameters' => [
-                //     //         'customerSalesChannel' => $customerSalesChannel->slug,
-                //     //     ],
-                //     // ],
 
-                // ],
                 ApiTokenRetinaTabsEnum::API_TOKENS->value => $this->tab == ApiTokenRetinaTabsEnum::API_TOKENS->value ?
                     fn () => ApiTokensRetinaResource::collection($apiTokens)
                     : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
@@ -148,20 +121,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         return $this->handle($customerSalesChannel, ApiTokenRetinaTabsEnum::API_TOKENS->value);
     }
 
-    public function getBreadcrumbs($label = null): array
-    {
-        return [
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-home',
-                    'route' => [
-                        'name' => 'retina.dashboard.show'
-                    ]
-                ]
-            ],
-        ];
-    }
+
 
     public function tableStructure($prefix = null, array $modelOperations = []): Closure
     {
@@ -181,5 +141,27 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 ->column(key: 'actions', label: __('Actions'))
                 ->defaultSort('-created_at');
         };
+    }
+
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
+    {
+        return
+            array_merge(
+                ShowRetinaCustomerSalesChannelDashboard::make()->getBreadcrumbs($customerSalesChannel),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'retina.dropshipping.customer_sales_channels.api.dashboard',
+                                'parameters' => [
+                                    $customerSalesChannel->slug
+                                ]
+                            ],
+                            'label' => __('API'),
+                        ]
+                    ]
+                ]
+            );
     }
 }

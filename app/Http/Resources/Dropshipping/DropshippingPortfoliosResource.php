@@ -30,9 +30,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $family_code
  * @property mixed $family_name
  * @property StoredItem|Product $item
+ * @property mixed $margin
  *
  */
-class DropshippingPortfolioResource extends JsonResource
+class DropshippingPortfoliosResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -56,8 +57,7 @@ class DropshippingPortfolioResource extends JsonResource
             $image = $this->item->imageSources(64, 64);
             $category = $department . $this->item->family?->name;
         }
-        $VAT = $price * 0.2;
-        $priceVAT = $price + $VAT;
+
 
         $shopifyUploadRoute = [];
         $wooUploadRoute = [];
@@ -133,7 +133,6 @@ class DropshippingPortfolioResource extends JsonResource
         return [
             'id'                        => $this->id,
             'item_id'                   => $itemId,
-            'slug'                      => $this->item?->slug,
             'code'                      => $this->item?->code ?? $this->item_code,
             'currency_code'             => $this->item?->currency?->code,
             'handle'                    => $this->platform_handle,
@@ -144,9 +143,7 @@ class DropshippingPortfolioResource extends JsonResource
             'price'                     => $price,
             'selling_price'             => $this->selling_price,
             'customer_price'            => $this->customer_price,
-            'margin'                    => $this->margin,
-            'vat_rate'                  => $this->vat_rate,
-            'price_inc_vat'             => $this->price_inc_vat,
+            'margin'                    => percentage($this->margin,1),
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,

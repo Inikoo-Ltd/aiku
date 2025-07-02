@@ -5,7 +5,7 @@ import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Family1Render from './Families1Render.vue'
 import { getStyles } from "@/Composables/styles"
-import { computed } from "vue"
+import { computed, inject} from "vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -40,20 +40,24 @@ const responsiveGridClass = computed(() => {
   return `grid-cols-${count}`
 })
 
+const layout: any = inject("layout", {})
 </script>
 
 <template>
-  <div v-if="props.fieldValue?.families && props.fieldValue.families.length" class="px-4 py-10 mx-[30px]"
-    :style="getStyles(fieldValue.container?.properties, screenType)">
-    <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
-    <div :class="['grid gap-8', responsiveGridClass]">
-      <a v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`">
-        <Family1Render :data="item" />
-      </a>
-      <a v-for="(item, index) in props?.fieldValue?.collections || []" :key="index" :href="`${item.url}`">
-        <Family1Render :data="item" />
-      </a>
+  <div id="families-1">
+    <div v-if="props.fieldValue?.families && props.fieldValue.families.length" class="px-4 py-10 mx-[30px]" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(fieldValue.container?.properties, screenType)
+    }">
+      <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
+      <div :class="['grid gap-8', responsiveGridClass]">
+        <a v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`">
+          <Family1Render :data="item" />
+        </a>
+        <a v-for="(item, index) in props?.fieldValue?.collections || []" :key="index" :href="`${item.url}`">
+          <Family1Render :data="item" />
+        </a>
+      </div>
     </div>
   </div>
-
 </template>

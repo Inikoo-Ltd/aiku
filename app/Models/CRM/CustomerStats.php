@@ -131,12 +131,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $unpaid_invoices_amount_grp_currency
  * @property int $number_deleted_invoices
  * @property int $number_platforms
- * @property int $number_platforms_type_shopify
- * @property int $number_platforms_type_tiktok
- * @property int $number_platforms_type_woocommerce
- * @property int $number_platforms_type_ebay
- * @property int $number_platforms_type_manual
- * @property int $number_platforms_type_amazon
+ * @property int $number_customer_sales_channels
+ * @property int $number_customer_sales_channels_platform_type_shopify
+ * @property int $number_customer_sales_channels_platform_type_tiktok
+ * @property int $number_customer_sales_channels_platform_type_woocommerce
+ * @property int $number_customer_sales_channels_platform_type_ebay
+ * @property int $number_customer_sales_channels_platform_type_manual
+ * @property int $number_customer_sales_channels_platform_type_amazon
+ * @property int $number_customer_sales_channels_platform_type_magento
+ * @property int $number_customer_sales_channels_platform_type_wix
  * @property-read \App\Models\CRM\Customer $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()

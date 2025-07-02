@@ -94,7 +94,7 @@ console.log(layout)
 
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-80">
-					<LuigiSearch v-if="layout?.app?.environment === 'local'"></LuigiSearch>
+					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id"></LuigiSearch>
                     <!--
                     <FontAwesomeIcon icon="fas fa-search"
                         class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500" fixed-width /> -->

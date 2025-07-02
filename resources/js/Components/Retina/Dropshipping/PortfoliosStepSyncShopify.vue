@@ -146,9 +146,9 @@ const valueTableFilter = ref({})
             </div>
         </template>
 
-        <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
+        <!-- <Column selectionMode="multiple" headerStyle="width: 3rem"></Column> -->
 
-        <Column field="code" header="Code" style="max-width: 90px;">
+        <Column field="code" header="Code" style="max-width: 125px;">
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="whitespace-nowrap truncate">
                     {{ data.code }}
@@ -157,9 +157,9 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="category" header="Category" style="max-width: 200px;">
+<!--        <Column field="category" header="Category" style="max-width: 200px;">-->
 
-        </Column>
+<!--        </Column>-->
 
         <Column field="name" header="Name">
         </Column>
@@ -172,18 +172,18 @@ const valueTableFilter = ref({})
             </template>
         </Column>
 
-        <Column field="description" header="Description">
-            <template #body="{ data }">
-                <div v-if="data.description" v-html="data.description" class="h-fit max-h-32 overflow-y-auto shadow border border-gray-300 px-1 rounded">
+<!--        <Column field="description" header="Description">-->
+<!--            <template #body="{ data }">-->
+<!--                <div v-if="data.description" v-html="data.description" class="h-fit max-h-32 overflow-y-auto shadow border border-gray-300 px-1 rounded">-->
 
-                </div>
-                <div v-else class="text-gray-400 italic text-sm">
-                    (No description)
-                </div>
-            </template>
-        </Column>
+<!--                </div>-->
+<!--                <div v-else class="text-gray-400 italic text-sm">-->
+<!--                    (No description)-->
+<!--                </div>-->
+<!--            </template>-->
+<!--        </Column>-->
 
-        <Column field="customer_price" header="Selling Price" style="max-width: 125px;">
+        <Column field="customer_price" header="RRP" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap">
                     {{ locale.currencyFormat(data.currency_code, data.customer_price) }}
@@ -206,14 +206,14 @@ const valueTableFilter = ref({})
                             @success="() => emits('portfolioDeleted', data)"
                         />
 
-                        <ButtonWithLink
+                        <!-- <ButtonWithLink
                             :routeTarget="data.platform_upload_portfolio"
                             label="Upload"
                             icon="fal fa-upload"
                             type="positive"
                             size="xs"
                             @success="() => set(props.progressToUploadToShopify, [data.id], 'loading')"
-                        />
+                        /> -->
                     </template>
                 </div>
             </template>

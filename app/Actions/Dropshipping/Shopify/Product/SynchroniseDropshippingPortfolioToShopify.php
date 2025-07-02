@@ -16,7 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SyncroniseDropshippingPortfolioToShopify extends RetinaAction
+class SynchroniseDropshippingPortfolioToShopify extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -30,6 +30,9 @@ class SyncroniseDropshippingPortfolioToShopify extends RetinaAction
         RequestApiUploadProductToShopify::dispatch($shopifyUser, $portfolio);
     }
 
+    /**
+     * @throws \Exception
+     */
     public function asController(ShopifyUser $shopifyUser, Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisation($request);

@@ -37,9 +37,7 @@ class StorePortfolio extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
-        // TODO: Change with corret vat rate
-        $vatRate = 0.2;
-        $priceIncVat = $item->price + ($item->price * $vatRate);
+        $rrp = $item->rrp ?? 0;
         data_set($modelData, 'last_added_at', now(), overwrite: false);
 
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
@@ -54,12 +52,11 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'item_name', $item->name);
         data_set($modelData, 'customer_product_name', $item->name);
         data_set($modelData, 'customer_description', $item->description);
-        data_set($modelData, 'selling_price', $priceIncVat);
-        data_set($modelData, 'customer_price', $priceIncVat);
-        data_set($modelData, 'price_inc_vat', $priceIncVat);
+        data_set($modelData, 'selling_price', $rrp);
+        data_set($modelData, 'customer_price', $rrp);
 
         if ($item instanceof Product) {
-            data_set($modelData, 'margin', CalculationsProfitMargin::run($priceIncVat, $item->price, $vatRate));
+            data_set($modelData, 'margin', CalculationsProfitMargin::run($rrp, $item->price));
         }
 
         $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
@@ -92,7 +89,7 @@ class StorePortfolio extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'     => [
+            'reference'       => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -105,9 +102,9 @@ class StorePortfolio extends OrgAction
                     ]
                 ),
             ],
-            'status'        => 'sometimes|boolean',
-            'platform_handle'        => 'sometimes|string',
-            'last_added_at' => 'sometimes|date'
+            'status'          => 'sometimes|boolean',
+            'platform_handle' => 'sometimes|string',
+            'last_added_at'   => 'sometimes|date'
         ];
 
         if (!$this->strict) {

@@ -136,8 +136,9 @@ class IndexCustomers extends OrgAction
             'sales_all',
             'invoiced_org_net_amount',
             'invoiced_grp_net_amount',
-            'platform_name',
+            'number_customer_sales_channels',
         ];
+
 
         if (class_basename($parent) == 'Shop') {
             $queryBuilder->where('customers.shop_id', $parent->id);
@@ -179,13 +180,9 @@ class IndexCustomers extends OrgAction
                 'customer_stats.sales_org_currency_all',
                 'customer_stats.sales_grp_currency_all',
                 'shops.currency_id',
-                'platforms.name as platform_name',
+                'number_customer_sales_channels',
                 'currencies.code as currency_code',
             ])
-            ->leftJoin('customer_sales_channels', function ($join) {
-                $join->on('customers.id', '=', 'customer_sales_channels.customer_id');
-            })
-            ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
             ->leftJoin('customer_stats', 'customers.id', 'customer_stats.customer_id')
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
@@ -262,7 +259,7 @@ class IndexCustomers extends OrgAction
             if ($isDropshipping) {
                 $table->column(key: 'number_current_customer_clients', label: '', icon: 'fal fa-users', tooltip: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'number_current_portfolios', label: '', icon: 'fal fa-chess-board', tooltip: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'platform_name', label: __('channels'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'number_customer_sales_channels', label: __('Channels'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')

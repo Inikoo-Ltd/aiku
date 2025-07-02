@@ -47,6 +47,8 @@ use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
 use App\Actions\Helpers\Brand\Json\GetBrands;
+use App\Actions\Helpers\Brand\Json\GetGrpBrands;
+use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
@@ -126,6 +128,7 @@ Route::get('workshop/department/{department}/sub-departments', GetSubDepartments
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/product-category/{productCategory:id}/see-also-products', GetProductsInProductCategory::class)->name('product_category.see_also_products.index');
 Route::get('workshop/product-category/{productCategory:id}/top-products', GetTopProductsInProductCategory::class)->name('product_category.top_products.index');
 Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
 
@@ -141,3 +144,5 @@ Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->na
 
 Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
 
+Route::get('tags', GetGrpTags::class)->name('tags.index');
+Route::get('brands', GetGrpBrands::class)->name('brands.index');

@@ -17,6 +17,7 @@ export const useLocaleStore = defineStore("locale", () => {
 		name: "English",
 	})
 	const languageOptions = ref<Language[]>([language.value])
+	const currencyInertia = ref({})
 
 	const number = (number: number) => {
 		return new Intl.NumberFormat(language.value.code).format(number)
@@ -24,11 +25,19 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	const currencyFormat = (currencyCode: string, amount: number):string => {
 		if (!currencyCode) {
+			if (currencyInertia.value?.code) {
+				return new Intl.NumberFormat(language.value.code, {
+					style: "currency",
+					currency: currencyInertia.value?.code,
+				}).format(amount || 0)
+			}
+
 			return new Intl.NumberFormat(language.value.code).format(amount || 0)
 		}
+
 		return new Intl.NumberFormat(language.value.code, {
 			style: "currency",
-			currency: currencyCode,
+			currency: currencyInertia.value?.code || currencyCode,
 		}).format(amount || 0)
 	}
 

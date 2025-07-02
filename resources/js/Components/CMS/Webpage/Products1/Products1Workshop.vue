@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faFilter, faSearch, faLayerGroup } from "@fas";
-import { ref, computed } from "vue";
+import { ref, computed, inject } from "vue";
 import ProductRender from "./ProductRender.vue";
 import FilterProducts from "./FilterProduct.vue";
 import Drawer from "primevue/drawer";
@@ -12,105 +12,111 @@ const props = defineProps<{
   modelValue: any
   screenType: "mobile" | "tablet" | "desktop";
 }>();
-const dummyProductImage = '/product/product_dummy.jpeg'
-const filter = ref({ data: null })
-const search = ref('')
+
+const layout: any = inject("layout", {});
+
+const dummyProductImage = '/product/product_dummy.jpeg';
+
+const filter = ref({ data: null });
+const search = ref('');
 const showFilters = ref(false);
 const showAside = ref(false);
-const dummyProducts = ref(props.modelValue?.products?.data ? props.modelValue?.products?.data :
-  Array.from({ length: 8 }).map((_, i) => ({
-    id: i + 1,
-    name: `Product ${i + 1}`,
-    web_images: {
-      main: {
-        original: dummyProductImage
-      }
-    },
-    code: `PRD-${1000 + i}`,
-    price: 10000 * (i + 1),
-  }))
-);
+
+const dummyProducts = computed(() => {
+  return props.modelValue?.products?.data?.length
+    ? props.modelValue.products.data
+    : Array.from({ length: 8 }).map((_, i) => ({
+      id: i + 1,
+      name: `Product ${i + 1}`,
+      web_images: {
+        main: {
+          original: dummyProductImage,
+        },
+      },
+      code: `PRD-${1000 + i}`,
+      price: 10000 * (i + 1),
+    }));
+});
 
 const isMobile = computed(() => props.screenType === "mobile");
-const layout = {
-  iris: {
-    is_logged_in: true
-  }
-};
 
 const responsiveGridClass = computed(() => {
-    const perRow = props.modelValue?.settings?.per_row ?? {};
-
-    const columnCount = {
-        desktop: perRow.desktop ?? 4,
-        tablet: perRow.tablet ?? 4,
-        mobile: perRow.mobile ?? 2
-    };
-
-    const count = columnCount[props.screenType] ?? 1;
-    return `grid-cols-${count}`;
+  const perRow = props.modelValue?.settings?.per_row ?? {};
+  const columnCount = {
+    desktop: perRow.desktop ?? 4,
+    tablet: perRow.tablet ?? 4,
+    mobile: perRow.mobile ?? 2,
+  };
+  const count = columnCount[props.screenType] ?? 1;
+  return `grid-cols-${count}`;
 });
 </script>
 
-<template>
-  <div class="flex flex-col lg:flex-row" :style="getStyles(modelValue?.container?.properties, screenType)">
-    <transition name="slide-fade">
-      <aside v-show="!isMobile && showAside" class="w-68 p-4">
-        <FilterProducts v-model="filter" />
-      </aside>
-    </transition>
 
-    <main class="flex-1">
-      <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div class="flex items-center w-full md:w-1/3 gap-2">
-          <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
-            aria-label="Open Filters" />
-          <div v-else class="py-4">
-            <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto" aria-label="Open Filters" />
+<template>
+  <div id="products-1">
+    <div class="flex flex-col lg:flex-row" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(modelValue.container?.properties, screenType)
+    }">
+      <transition name="slide-fade">
+        <aside v-show="!isMobile && showAside" class="w-68 p-4">
+          <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id"/>
+        </aside>
+      </transition>
+
+      <main class="flex-1">
+        <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div class="flex items-center w-full md:w-1/3 gap-2">
+            <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
+              aria-label="Open Filters" />
+            <div v-else class="py-4">
+              <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto" aria-label="Open Filters" />
+            </div>
+
+            <PureInput v-model="search" type="text" placeholder="Search products..." :clear="true" :isLoading="false"
+              :prefix="{ icon: faSearch, label: '' }" />
           </div>
 
-          <PureInput v-model="search" type="text" placeholder="Search products..." :clear="true" :isLoading="false"
-            :prefix="{ icon: faSearch, label: '' }" />
+          <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+            <button v-for="opt in ['Latest', 'Code', 'Name', 'Price']" :key="opt"
+              class="pb-2 text-sm font-medium whitespace-nowrap text-gray-600">
+              {{ opt }}
+            </button>
+          </div>
         </div>
 
-        <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
-          <button v-for="opt in ['Latest', 'Code', 'Name', 'Price']" :key="opt"
-            class="pb-2 text-sm font-medium whitespace-nowrap text-gray-600">
-            {{ opt }}
-          </button>
+        <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
+          <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+            <span class="text-gray-700 font-medium">
+              Showing <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
+              of <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
+              products
+            </span>
+          </div>
+          <div>
+            <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup" label="Set All Products to Portfolio"
+              class="!p-3 !w-auto" type="secondary" />
+          </div>
         </div>
-      </div>
 
-      <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
-        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-          <span class="text-gray-700 font-medium">
-            Showing <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
-            of <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
-            products
-          </span>
+        <div :class="responsiveGridClass" class="grid gap-6 p-4">
+          <div v-for="product in dummyProducts" :key="product.id"
+            :style="getStyles(modelValue?.card_product?.properties, screenType)"
+            class="border p-3 relative rounded  bg-white">
+            <ProductRender :product="product" />
+          </div>
         </div>
-        <div>
-          <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup" label="Set All Products to Portfolio"
-            class="!p-3 !w-auto" type="secondary" />
-        </div>
-      </div>
+      </main>
 
-      <div :class="responsiveGridClass" class="grid gap-6 p-4">
-        <div v-for="product in dummyProducts" :key="product.id"
-          :style="getStyles(modelValue?.card_product?.properties, screenType)"
-          class="border p-3 relative rounded  bg-white">
-          <ProductRender :product="product" />
+      <!-- Mobile Filters Drawer -->
+      <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true" :closeOnEscape="true"
+        :showCloseIcon="false" class="w-80">
+        <div class="p-4">
+          <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id"/>
         </div>
-      </div>
-    </main>
-
-    <!-- Mobile Filters Drawer -->
-    <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true" :closeOnEscape="true"
-      :showCloseIcon="false" class="w-80">
-      <div class="p-4">
-        <FilterProducts v-model="filter" />
-      </div>
-    </Drawer>
+      </Drawer>
+    </div>
   </div>
 </template>
 

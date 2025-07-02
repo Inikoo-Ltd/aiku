@@ -12,10 +12,13 @@ use App\Actions\OrgAction;
 
 class CalculationsProfitMargin extends OrgAction
 {
-    public function handle(float $retailPrice, float $costPriceExVat, $vatRate = 0.20): float
+    public function handle(float $revenue, float $cost): float
     {
-        $retailPriceIncVat = $retailPrice / (1 + $vatRate);
 
-        return (($retailPriceIncVat - $costPriceExVat) / $retailPriceIncVat) * 100;
+        if ($revenue == 0) {
+            return 1;
+        }
+
+        return ($revenue - $cost) / $revenue;
     }
 }

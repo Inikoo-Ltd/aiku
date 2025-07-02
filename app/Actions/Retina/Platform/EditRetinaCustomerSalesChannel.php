@@ -21,13 +21,13 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
+        $request->route()->getName();
+
         return Inertia::render(
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerSalesChannel,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
+                    $customerSalesChannel
                 ),
                 'title'       => __('edit sales channel'),
                 'pageHead'    => [
@@ -40,11 +40,9 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Exit edit'),
                             'route' => [
-                                'name'       => match ($request->route()->getName()) {
-                                    default                       => preg_replace('/edit$/', 'show', $request->route()->getName())
-                                },
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -57,11 +55,6 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                 "label"  => __("Properties"),
                                 'title'  => __('properties'),
                                 'fields' => [
-                                    'reference' => [
-                                        'type'  => 'input',
-                                        'label' => __('reference'),
-                                        'value' => $customerSalesChannel->reference
-                                    ],
                                     'name' => [
                                         'type'  => 'input',
                                         'label' => __('store name'),
@@ -99,13 +92,11 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
         return $this->handle($customerSalesChannel, $request);
     }
 
-    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, $routeName, $routeParameters): array
+    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array
     {
         return array_merge(
             ShowRetinaCustomerSalesChannelDashboard::make()->getBreadcrumbs(
                 $customerSalesChannel,
-                $routeName,
-                $routeParameters
             ),
             [
                 [

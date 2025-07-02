@@ -30,6 +30,7 @@ const props = defineProps<{
     withQuantity?: boolean
     label_result?: string
     valueToRefetch?: string
+    idxSubmitSuccess?: number
 }>()
 
 
@@ -136,6 +137,14 @@ onUnmounted(() => {
 watch(() => props.valueToRefetch, (newVal, oldVal) => {
     console.log('xxx', oldVal, newVal)
     getPortfoliosList()
+})
+
+// To refresh the selected if success submit
+watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+        selectedProduct.value = []
+        getPortfoliosList()
+    }
 })
 </script>
 

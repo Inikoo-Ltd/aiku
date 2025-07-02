@@ -48,14 +48,6 @@ class GetRetinaDropshippingHomeData
                 ],
                 'logo_icon' => $platformType->value,
                 'count'   => $platform->count(),
-                // 'route' => [
-                //     'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                //     'parameters' => [
-                //         'organisation' => $shop->organisation->slug,
-                //         'shop'         => $shop->slug,
-                //         'index_elements[state]' => $platformTypeName
-                //     ]
-                // ],
             ];
 
         }

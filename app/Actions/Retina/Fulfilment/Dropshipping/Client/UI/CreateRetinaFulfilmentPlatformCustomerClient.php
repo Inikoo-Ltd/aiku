@@ -9,7 +9,6 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Client\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -114,18 +113,5 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
         return $this->handle($customerSalesChannel, $request);
     }
 
-    public function getBreadcrumbs(): array
-    {
-        return array_merge(
-            IndexRetinaCustomerClients::make()->getBreadcrumbs(),
-            [
-                [
-                    'type'          => 'creatingModel',
-                    'creatingModel' => [
-                        'label' => __('Creating Client'),
-                    ]
-                ]
-            ]
-        );
-    }
+
 }

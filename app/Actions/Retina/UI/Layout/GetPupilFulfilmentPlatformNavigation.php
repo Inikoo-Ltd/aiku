@@ -49,7 +49,7 @@ class GetPupilFulfilmentPlatformNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label' => __('My Portfolio'),
+                            'label' => __('My Products'),
                             'icon' => ['fal', 'fa-cube'],
                             'root' => 'pupil.dropshipping.platforms.portfolios.index',
                             'route' => [

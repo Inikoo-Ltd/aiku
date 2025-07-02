@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 01-07-2025-16h-14m
@@ -8,22 +9,15 @@
 
 namespace App\Actions\Accounting\OrgPaymentServiceProvider\Json;
 
-use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Http\Resources\Accounting\OrgPaymentServiceProvidersResource;
-use App\Http\Resources\Accounting\SelectOrgPaymentServiceProvidersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class GetOrgPaymentServiceProviders extends OrgAction

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 01-07-2025-16h-22m
@@ -9,9 +10,7 @@
 namespace App\Http\Resources\Accounting;
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
-use App\Actions\UI\Accounting\Traits\HasPaymentServiceProviderFields;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $number_payments
@@ -31,7 +30,6 @@ use Illuminate\Support\Arr;
  */
 class OrgPaymentServiceProvidersResource extends JsonResource
 {
-
     public function toArray($request): array
     {
         if ($this->media && $this->media->isNotEmpty()) {

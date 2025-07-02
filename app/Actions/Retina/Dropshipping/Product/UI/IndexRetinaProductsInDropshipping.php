@@ -63,7 +63,7 @@ class IndexRetinaProductsInDropshipping extends RetinaAction
                  'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('All Products'),
                 'pageHead'    => [
-                    'model' => $this->platformUser->name ?? __('Manual'),
+                    'model' => $this->platformUser->name ?? 'Web/API',
                     'title' => __('All Products'),
                     'icon'  => 'fal fa-cube'
                 ],
