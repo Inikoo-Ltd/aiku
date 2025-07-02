@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { computed, inject, onBeforeMount, ref } from "vue"
-
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faTools } from '@fas'
 const layout = inject('layout', layoutStructure)
 const isLogin = computed(() => {
     return layout.is_logged_in
@@ -69,6 +70,20 @@ const inputValue = ref('')
             </div>
         </template>
     </div>
+    
+     <div class="flex items-center justify-center min-h-[60vh] text-center px-4">
+    <div class="max-w-xl">
+      <div class="text-6xl mb-6" :style="{ color: layout?.app?.theme[4] }">
+        <FontAwesomeIcon :icon="faTools" />
+        </div>
+     <h1 class="text-3xl font-bold text-gray-800 mb-4">
+        Work in Progress
+      </h1>
+      <p class="text-lg text-gray-600">
+        This feature will be ready by tomorrow. Thank you for your patience 🙏
+      </p>
+    </div>
+  </div>
 </template>
 
 <style>
