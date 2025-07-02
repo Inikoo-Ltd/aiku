@@ -139,7 +139,14 @@ onMounted(() => {
 </script>
 
 <template>
-    <input v-model="inputValue" class="w-full" id="inputLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 35px;padding-left: 10px;" placeholder="Search"/>
+    <input
+        v-model="inputValue"
+        xdisabled
+        class="disabled:bg-gray-200 disabled:cursor-not-allowed w-full"
+        id="inputLuigi"
+        style="border: 1px solid #d1d5db; border-radius: 7px;height: 35px;padding-left: 10px;"
+        placeholder="Search"
+    />
 </template>
 
 <style>
