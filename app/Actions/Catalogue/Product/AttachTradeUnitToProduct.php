@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
@@ -27,6 +28,7 @@ class AttachTradeUnitToProduct
         );
 
         ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
+        ProductHydrateBarcodeFromTradeUnit::dispatch($product);
 
         if ($product->exclusive_for_customer_id) {
             TradeUnitsHydrateCustomerExclusiveProducts::dispatch($tradeUnit);

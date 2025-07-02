@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavouritedInCategories;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
@@ -40,6 +41,7 @@ class HydrateProducts
         ProductHydrateCustomersWhoReminded::run($product);
         ProductHydrateCustomersWhoRemindedInCategories::run($product);
         ProductHydrateGrossWeightFromTradeUnits::run($product);
+        ProductHydrateBarcodeFromTradeUnit::run($product);
     }
 
 }
