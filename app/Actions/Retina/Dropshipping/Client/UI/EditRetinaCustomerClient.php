@@ -22,12 +22,13 @@ class EditRetinaCustomerClient extends RetinaAction
 {
     public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
+        $request->route()->getName();
+
         return Inertia::render(
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $customerClient,
-                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('edit client'),
@@ -43,9 +44,7 @@ class EditRetinaCustomerClient extends RetinaAction
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => match ($request->route()->getName()) {
-                                    default                       => preg_replace('/edit$/', 'show', $request->route()->getName())
-                                },
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -117,22 +116,17 @@ class EditRetinaCustomerClient extends RetinaAction
         );
     }
 
-    public function asController(
-        CustomerSalesChannel $customerSalesChannel,
-        CustomerClient $customerClient,
-        ActionRequest $request
-    ): Response {
+    public function asController(CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): Response {
         $this->initialisation($request);
 
         return $this->handle($customerClient, $request);
     }
 
-    public function getBreadcrumbs(CustomerClient $customerClient, $routeName, $routeParameters): array
+    public function getBreadcrumbs(CustomerClient $customerClient, $routeParameters): array
     {
         return array_merge(
             ShowRetinaCustomerClient::make()->getBreadcrumbs(
                 $customerClient,
-                $routeName,
                 $routeParameters
             ),
             [

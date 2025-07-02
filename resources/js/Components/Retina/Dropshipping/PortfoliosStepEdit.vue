@@ -26,7 +26,6 @@ interface Portfolio {
     image: string
     quantity_left: number
     price: number
-    price_inc_vat: number
     currency_code: string
     customer_price: number
     margin: number
@@ -163,7 +162,7 @@ const debounceUpdateName = debounce((description: string) => {
             </template>
         </Column>
 
-        <Column field="code" header="Code" style="max-width: 90px;" sortable>
+        <Column field="code" header="Code" style="max-width: 120px;" sortable>
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="truncate relative pr-2">
                     {{ data.code }}
@@ -171,16 +170,9 @@ const debounceUpdateName = debounce((description: string) => {
             </template>
         </Column>
 
-        <Column field="category" header="Category" style="max-width: 100px;">
-            <template #body="{ data }">
-                <div v-tooltip="data.category" class="relative pr-2 truncate">
-                    {{ useTruncate(data.category, 15) }}
-                </div>
-            </template>
-        </Column>
 
-        <!-- Column: Name -->
-        <Column field="name" :header="trans('Name')" sortable removeableSort style="max-width: 200px;">
+
+        <Column field="name" :header="trans('Name')" sortable removeableSort style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="relative pr-2 ">
                     <div
@@ -190,16 +182,16 @@ const debounceUpdateName = debounce((description: string) => {
                         {{ data.name }}
                     </div>
 
-                    <Button
-                        type="tertiary"
-                        icon="fal fa-pencil"
-                        size="xs"
-                        :label="trans('Click to edit')"
-                        @click="() => {
-                            isModalName = true
-                            selectedDataToEditName = data
-                        }"
-                    />
+<!--                    <Button-->
+<!--                        type="tertiary"-->
+<!--                        icon="fal fa-pencil"-->
+<!--                        size="xs"-->
+<!--                        :label="trans('Click to edit')"-->
+<!--                        @click="() => {-->
+<!--                            isModalName = true-->
+<!--                            selectedDataToEditName = data-->
+<!--                        }"-->
+<!--                    />-->
                 </div>
             </template>
         </Column>
@@ -214,88 +206,23 @@ const debounceUpdateName = debounce((description: string) => {
         </Column>
 
         <!-- Column: Exc VAT -->
-        <Column field="price" xheader="Cost Price (Exc VAT)" style="max-width: 250px;">
+        <Column field="price"  style="max-width: 120px;">
             <template #header="{ column }">
-                <div v-tooltip="isIncludeVat ? trans('Include VAT') : trans('Exclude VAT')">
+                <div>
                     <div class="font-semibold">
-                        {{ trans("Cost Price") }}
-                    </div>
-
-                    <div class="text-center flex items-center justify-center gap-x-1">
-                        <span :class="isIncludeVat ? 'text-gray-600' : 'text-gray-400'">VAT</span>
-                        <Checkbox
-                            v-model="isIncludeVat"
-                            binary
-                        />
+                        {{ trans("Price") }}
                     </div>
                 </div>
             </template>
 
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
-                    <InputNumber
-                        v-if="isIncludeVat"
-                        :modelValue="data.price_inc_vat"
-                        aupdate:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
-                        mode="currency"
-                        :placeholder="data.price_inc_vat"
-                        :currency="data.currency_code"
-                        locale="en-GB"
-                        fluid
-                        :inputStyle="{textAlign: 'right'}"
-                        xdisabled="data.is_inc_exc !== 'inc'"
-                        disabled
-                        class="min-w-12"
-                    />
-                    <InputNumber
-                        v-else
-                        :modelValue="data.price"
-                        aupdate:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_exc_vat')"
-                        mode="currency"
-                        :placeholder="data.price"
-                        :currency="data.currency_code"
-                        locale="en-GB"
-                        fluid
-                        :inputStyle="{textAlign: 'right'}"
-                        xdisabled="data.is_inc_exc !== 'exc'"
-                        disabled
-                        class="min-w-12"
-                    />
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'inc_exc_vat'], undefined)" />
+                 {{ locale.currencyFormat(data.currency_code, data.price) }}
                 </div>
             </template>
         </Column>
 
-        <!-- Column: Inc VAT -->
-        <!-- <Column field="price" header="Cost Price (Inc VAT)" style="max-width: 250px;">
-            <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">                    
-                    <InputNumber
-                        v-model="data.price_inc_vat"
-                        @update:model-value="() => emits('updateSelectedProducts', data, {customer_price: data.price}, 'inc_vat')"
-                        mode="currency"
-                        :placeholder="data.price_inc_vat"
-                        :currency="data.currency_code"
-                        locale="en-GB"
-                        fluid
-                        :inputStyle="{textAlign: 'right'}"
-                        :disabled="data.is_inc_exc !== 'inc'"
-                        class="min-w-12"
-                    />
-                    <ConditionIcon class="absolute -right-3 top-1" :state="get(listState, [data.id, 'inc_vat'], undefined)" />
-                </div>
-            </template>
-        </Column> -->
-
-        <!-- <Column field="platform_handle" header="Handled" style="max-width: 100px;">
-            <template #body="{ data }">
-                <div class="whitespace-nowrap relative pr-2">
-                    {{ data.platform_handle ?? '-' }}
-                </div>
-            </template>
-        </Column> -->
-
-        <Column field="customer_price" header="RPP/Selling Price (Inc VAT)" style="max-width: 250px;">
+        <Column field="customer_price" header="RPP" style="max-width: 90px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2">
                     <InputNumber
@@ -313,40 +240,14 @@ const debounceUpdateName = debounce((description: string) => {
                 </div>
             </template>
         </Column>
-
-        <Column field="margin" header="Profit Margin (%)" style="max-width: 125px;">
+        <Column field="margin" header="Margin" style="max-width: 125px;">
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2 text-right">
-                    {{ data.margin }}%
+                    {{ data.margin }}
                 </div>
             </template>
         </Column>
 
-        <!-- Dont delete this -->
-        <!-- <Column field="shipping" header="Shipping (Exc VAT)">
-            <template #body="{ data }">
-                <div @click="isModalShipping = true, selectedShippingToShowInModal = data" class="text-gray-400 hover:text-gray-600 cursor-pointer hover:bg-gray-100 rounded flex justify-center py-1 items-center gap-x-1">
-                    <FontAwesomeIcon class="text-blue-500" icon="fal fa-box" fixed-width aria-hidden="true" />
-                    Show
-                </div>
-            </template>
-        </Column> -->
-
-        <!-- Column: Description -->
-        <Column field="description" header="Description">
-            <template #body="{ data }">
-                <Button
-                    type="tertiary"
-                    icon="fal fa-text"
-                    size="xs"
-                    label="Edit description"
-                    @click="() => {
-                        isModalDescription = true
-                        selectedDataToEditDescription = data
-                    }"
-                />
-            </template>
-        </Column>
     </DataTable>
 
     <!-- Modal: Description (edit) -->

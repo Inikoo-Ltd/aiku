@@ -55,7 +55,7 @@ class RetinaDropshippingOrdersInPlatformResources extends JsonResource
             'payment_amount'           => $this->payment_amount,
             'is_fully_paid'            => $this->total_amount == $this->payment_amount,
             'number_item_transactions' => $this->number_item_transactions,
-            'client_name'              => $this->client_name,
+            'client_ulid'              => $this->client_ulid,
             ...$stateIcons
         ];
     }

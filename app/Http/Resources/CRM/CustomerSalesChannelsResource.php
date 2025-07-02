@@ -64,6 +64,18 @@ class CustomerSalesChannelsResource extends JsonResource
             'platform_image'    => $this->getPlatformLogo($customerSalesChannels),
             'name'              => $this->name ?? $this->reference,
             'connection'        => $status,
+            'update_customer_sales_channel_route' => [
+                'method' => 'patch',
+                'name' => 'retina.models.customer_sales_channel.update',
+                'parameters' => [
+                    'customerSalesChannel' => $customerSalesChannels->id
+                ]
+            ],
+            // 'reconnect_route'   => [  // TODO: Route to reconnect if connection is 'not-connected' (Artha)
+            //     'name'  => 'xxxxx',
+            //     'parameters' => 'yyyyy',
+            //     'method' => 'ddddd',
+            // ],
             'unlink_route' => [
                 'method' => 'delete',
                 'name' => 'retina.models.customer_sales_channel.unlink',

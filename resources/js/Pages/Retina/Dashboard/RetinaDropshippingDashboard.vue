@@ -73,7 +73,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
                         <div v-if="data.last_visited_channels?.length" class="overflow-hidden border border-gray-300 rounded-md mt-5 relative">
                             <div class="sticky top-0 z-10 border-y border-b-gray-200 border-t-gray-100 bg-gray-50 px-3 py-1.5 text-sm/6 font-semibold text-gray-900">
-                                <h3>{{ trans("Your last visited channels") }}</h3>
+                                <h3>{{ trans("Last visited Channels") }}</h3>
                             </div>
 
                             <ul role="list" class="divide-y divide-gray-100">
@@ -82,7 +82,7 @@ const locale = inject('locale', aikuLocaleStructure)
                                     <div class="w-full xflex-shrink-0 justify-between flex items-center">
                                         <div class="min-w-0">
                                             <p class="text-sm/6 font-semibold">
-                                                {{ channel.slug }}
+                                                {{ channel.name }}
                                             </p>
                                             <p v-if="channel.baskets_count" class="xmt-1 truncate text-xs/5 text-gray-500">
                                                 {{ channel.baskets_count ?? 0 }} in Baskets

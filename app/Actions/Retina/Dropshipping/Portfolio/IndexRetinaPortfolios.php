@@ -8,11 +8,11 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
+use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Dropshipping\DropshippingPortfolioResource;
+use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -44,7 +44,6 @@ class IndexRetinaPortfolios extends RetinaAction
         }
         $query->with(['item']);
 
-
         $query->where('item_type', class_basename(Product::class));
 
 
@@ -75,37 +74,33 @@ class IndexRetinaPortfolios extends RetinaAction
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
     {
-        return DropshippingPortfolioResource::collection($portfolios);
+        return DropshippingPortfoliosResource::collection($portfolios);
     }
 
-    public function htmlResponse(LengthAwarePaginator $portfolios): Response
+    public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
         $manual = false;
         if (isset($this->platform) && $this->platform->type == PlatformTypeEnum::MANUAL) {
             $manual = true;
         }
 
-        $title = __('My Portfolio');
+        $title = __('My Products');
 
-
-        $platformName = $this->customerSalesChannel->name;
-
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $platformName = __('Manual');
-        }
 
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($this->customerSalesChannel),
-                'title'       => $title,
-                'is_manual'   => $manual,
-                'pageHead'    => [
-                    'title' => $title,
-                    'model' => $platformName,
-                    'icon'  => 'fal fa-cube'
+                'breadcrumbs'    => $this->getBreadcrumbs($this->customerSalesChannel),
+                'title'          => $title,
+                'is_manual'      => $manual,
+                'pageHead'       => [
+                    'title'      => $title,
+                    'afterTitle' => [
+                        'label' => '@'.$this->customerSalesChannel->name,
+                    ],
+                    'icon'       => 'fal fa-cube'
                 ],
-                'routes'      => [
+                'routes'         => [
                     'bulk_upload'               => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::SHOPIFY => [
                             'name'       => 'retina.models.dropshipping.shopify.batch_upload',
@@ -140,7 +135,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         default => false
                     },
                     'itemRoute'                 => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.filtered_products.index',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.filtered_products.index',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug
                         ]
@@ -168,51 +163,51 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                 ],
                 'download_route' => [
-                    'xlsx' => [
+                    'xlsx'   => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug,
-                            'type'     => 'portfolio_xlsx'
+                            'type'                 => 'portfolio_xlsx'
                         ]
                     ],
-                    'csv' => [
+                    'csv'    => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug,
-                            'type'     => 'portfolio_csv'
+                            'type'                 => 'portfolio_csv'
                         ]
                     ],
-                    'json' => [
+                    'json'   => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug,
-                            'type'     => 'portfolio_json'
+                            'type'                 => 'portfolio_json'
                         ]
                     ],
                     'images' => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug,
-                            'type'     => 'portfolio_images'
+                            'type'                 => 'portfolio_images'
                         ]
                     ]
                 ],
-                'order_route' => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
+                'order_route'    => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [
                         'customer' => $this->customer->id,
                         'platform' => $this->platform->id
                     ]
                 ] : [],
-                'content'     => [
+                'content'        => [
                     'portfolio_empty' => [
                         'title'       => __("You don't have any items in your portfolio"),
                         'description' => __("To get started, add products to your portfolios."),
                         'separation'  => __("or"),
-                        'add_button'  => __("Add Portfolio"),
+                        'add_button'  => __("Add Product"),
                     ]
                 ],
-                'tabs'        => [
+                'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
                 ],
@@ -225,7 +220,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 'platform_user_id' => $this->customerSalesChannel->user?->id,
                 'platform_data'    => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
-                'products'         => DropshippingPortfolioResource::collection($portfolios)
+                'products'         => DropshippingPortfoliosResource::collection($portfolios)
             ]
         )->table($this->tableStructure(prefix: 'products'));
     }
@@ -267,18 +262,18 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         return
             array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                ShowRetinaCustomerSalesChannelDashboard::make()->getBreadcrumbs($customerSalesChannel),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'retina.dropshipping.customer_sales_channels.basket.index',
+                                'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.index',
                                 'parameters' => [
                                     $customerSalesChannel->slug
                                 ]
                             ],
-                            'label' => __('My Portfolio'),
+                            'label' => __('My Products'),
                         ]
                     ]
                 ]
