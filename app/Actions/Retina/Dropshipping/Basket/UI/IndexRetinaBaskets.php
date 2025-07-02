@@ -14,13 +14,14 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
-use App\Http\Resources\Ordering\OrdersResource;
+use App\Http\Resources\Ordering\RetinaOrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,7 +35,7 @@ class IndexRetinaBaskets extends RetinaAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('orders.reference', $value)
-                    ->orWhereWith('orders.customer_reference', $value);
+                    ->orWhereWith('customer_clients.name', $value);
             });
         });
 
@@ -44,11 +45,40 @@ class IndexRetinaBaskets extends RetinaAction
 
         $query = QueryBuilder::for(Order::class);
         $query->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
+        $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
+        $query->leftJoin('transactions', 'orders.id', '=', 'transactions.order_id');
+
+
+        $query->where(function ($q) {
+            $q->whereIn('transactions.model_type', ['Product', 'Service'])
+                ->orWhereNull('transactions.model_type');
+        });
         $query->where('orders.platform_id', $customerSalesChannel->platform_id);
         $query->where('orders.state', OrderStateEnum::CREATING);
 
-        return $query->defaultSort('id')
-            ->allowedSorts(['id'])
+        return $query->defaultSort('orders.id')
+            ->select([
+                'orders.id',
+                'orders.reference',
+                'orders.slug',
+                'orders.customer_client_id',
+                'orders.total_amount',
+                'customer_clients.name as customer_client_name',
+                'customer_clients.ulid as customer_client_ulid',
+                'orders.created_at',
+                DB::raw('COUNT(transactions.id) as items'),
+            ])
+            ->groupBy(
+                'orders.id',
+                'orders.reference',
+                'orders.slug',
+                'orders.customer_client_id',
+                'orders.total_amount',
+                'customer_clients.name',
+                'customer_clients.ulid',
+                'orders.created_at'
+            )
+            ->allowedSorts(['reference', 'customer_client_name', 'total_amount', 'items', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -68,7 +98,7 @@ class IndexRetinaBaskets extends RetinaAction
         $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, 'orders');
     }
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
@@ -98,7 +128,7 @@ class IndexRetinaBaskets extends RetinaAction
 
                 'currency' => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
 
-                'orders' => OrdersResource::collection($orders)
+                'orders' => RetinaOrdersResource::collection($orders)
             ]
         )->table($this->tableStructure('orders'));
     }
@@ -112,18 +142,16 @@ class IndexRetinaBaskets extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
-            $emptyStateData = [
-                'title' => __("You dont have any baskets open"),
-                'count' => 0
-            ];
             $table->withLabelRecord([__('basket'), __('baskets')]);
             $table->withGlobalSearch()
-                ->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'customer_client_name', label: __('customer client'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, searchable: true);
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, align: 'right', sortable: true);
+            $table->column(key: 'items', label: __('items'), canBeHidden: false, sortable: true);
+            $table->column(key: 'created_at', label: __('date'), canBeHidden: false, type: 'date', sortable: true);
         };
     }
 

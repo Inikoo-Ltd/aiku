@@ -57,6 +57,32 @@ function orderRoute(order) {
   }
 }
 
+function clientRoute(order) {
+  console.log(route().current());
+  switch (route().current()) {
+    // case "retina.dropshipping.orders.index":
+    //   return route(
+    //     "retina.dropshipping.orders.show",
+    //     {
+    //       order: order.slug
+    //     });
+    // case "retina.dropshipping.customer_sales_channels.orders.index":
+    //   return route(
+    //     "retina.dropshipping.customer_sales_channels.orders.show",
+    //     {
+    //       customerSalesChannel: (route().params as RouteParams).customerSalesChannel,
+    //       order: order.slug
+    //     });
+    case "retina.dropshipping.customer_sales_channels.basket.index":
+      return route(
+        "retina.dropshipping.customer_sales_channels.client.show",
+        {
+          customerSalesChannel: (route().params as RouteParams).customerSalesChannel,
+          customerClient: order.customer_client_ulid
+        });
+
+  }
+}
 </script>
 
 <template>
@@ -67,6 +93,12 @@ function orderRoute(order) {
       <template #cell(reference)="{ item }">
         <Link :href="orderRoute(item) as string" class="primaryLink">
           {{ item["reference"] }}
+        </Link>
+      </template>
+
+      <template #cell(customer_client_name)="{ item }">
+        <Link :href="clientRoute(item) as string" class="primaryLink">
+          {{ item["customer_client_name"] }}
         </Link>
       </template>
 
