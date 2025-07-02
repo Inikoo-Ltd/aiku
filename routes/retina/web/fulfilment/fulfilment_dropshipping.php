@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
+use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaFulfilmentPortfolios;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
@@ -89,6 +90,8 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
         Route::prefix('api')->as('api.')->group(function () {
             Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
+            Route::get('/history', IndexRetinaApiDropshipping::class)->name('index');
+
         });
 
 
