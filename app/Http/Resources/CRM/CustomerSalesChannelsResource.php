@@ -71,11 +71,13 @@ class CustomerSalesChannelsResource extends JsonResource
                     'customerSalesChannel' => $customerSalesChannels->id
                 ]
             ],
-            // 'reconnect_route'   => [  // TODO: Route to reconnect if connection is 'not-connected' (Artha)
-            //     'name'  => 'xxxxx',
-            //     'parameters' => 'yyyyy',
-            //     'method' => 'ddddd',
-            // ],
+             'reconnect_route'   => [
+                 'name'  => 'retina.dropshipping.customer_sales_channels.reconnect',
+                 'parameters' => [
+                     'customerSalesChannel' => $this->slug
+                 ],
+                 'method' => 'get',
+             ],
             'unlink_route' => [
                 'method' => 'delete',
                 'name' => 'retina.models.customer_sales_channel.unlink',
