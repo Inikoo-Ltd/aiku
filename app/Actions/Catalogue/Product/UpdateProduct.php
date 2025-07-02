@@ -161,6 +161,14 @@ class UpdateProduct extends OrgAction
             'trade_config'  => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master' => ['sometimes', 'boolean'],
             'family_id'     => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
+            'barcode' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                Rule::exists('barcodes', 'number')
+                    ->whereNull('deleted_at')
+            ],
 
             'webpage_id' => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'        => ['sometimes', 'nullable', 'string', 'max:250'],

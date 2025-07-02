@@ -293,7 +293,7 @@ return [
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
         ],
         'luigisbox' => [
-            'tracking_id'      => env('LS_TRACKING_ID'),
+            'tracker_id'      => env('LS_TRACKER_ID'),
             'private_key'      => env('LS_PRIVATE_KEY'),
         ],
     ]

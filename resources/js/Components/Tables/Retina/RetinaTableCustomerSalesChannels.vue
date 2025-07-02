@@ -72,6 +72,30 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
         proxyItem.status = oldValue
     }
 }
+
+
+const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
+    try {
+        const response = await axios[customerSalesChannel.reconnect_route.method || 'get'](
+            route(
+                customerSalesChannel.reconnect_route.name,
+                customerSalesChannel.reconnect_route.parameters
+            )
+        )
+        console.log('1111 response', response)
+        if (response.status !== 200) {
+            throw new Error('Something went wrong. Try again later.')
+        } else {
+            window.open(response.data, '_blank');
+        }
+    } catch (error: any) {
+        notify({
+            title: 'Something went wrong',
+            text: error.message || 'Please try again later.',
+            type: 'error'
+        })
+    }
+}
 </script>
 <template>
     <Table :resource="data">
@@ -100,10 +124,11 @@ const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string
 
                 <template v-else>
                     <FontAwesomeIcon v-tooltip="trans('Not connected to the platform yet')" icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                    <ButtonWithLink
+                    <Button
                         v-if="customerSalesChannel.reconnect_route?.name"
-                        :routeTarget="customerSalesChannel.reconnect_route"
-                        icon=""
+                        @click="() => onClickReconnect(customerSalesChannel)"
+                        xrouteTarget="customerSalesChannel.reconnect_route"
+                        iconRight="fal fa-external-link"
                         :label="trans('Reconnect')"
                         size="xxs"
                         type="tertiary"

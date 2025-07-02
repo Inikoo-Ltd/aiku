@@ -334,7 +334,7 @@ const onSubmitMagento = async () => {
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'production' && layout?.app?.environment === 'staging'"
+                        v-if="layout?.app?.environment === 'production' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
