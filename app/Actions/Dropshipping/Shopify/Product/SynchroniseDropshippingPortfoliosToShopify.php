@@ -28,6 +28,9 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
      */
     public function handle(ShopifyUser $shopifyUser, array $attributes): void
     {
+
+
+
         $portfolios = $shopifyUser
             ->customerSalesChannel
             ->portfolios()
@@ -45,7 +48,7 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
     {
         return [
             'portfolios' => ['required', 'array'],
-            'portfolios.*' => ['required', 'integer', Rule::exists('portfolios', 'id')],
+            'portfolios.*' => ['required', 'integer'],
         ];
     }
 

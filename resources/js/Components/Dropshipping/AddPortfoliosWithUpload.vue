@@ -298,14 +298,14 @@ onMounted(() => {
             </div>
             <div class="relative space-x-2 space-y-1 text-right">
                 <!-- Button: bulk delete -->
-                <Button
-                    v-if="portfoliosList?.length"
-                    @click="() => bulkDelete()"
-                    :label="trans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"
-                    type="delete"
-                    size="s"
-                    :loading="isLoadingBulkDeleteUpload"
-                />
+<!--                <Button-->
+<!--                    v-if="portfoliosList?.length"-->
+<!--                    @click="() => bulkDelete()"-->
+<!--                    :label="trans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"-->
+<!--                    type="delete"-->
+<!--                    size="s"-->
+<!--                    :loading="isLoadingBulkDeleteUpload"-->
+<!--                />-->
 
                 <!-- Button: bulk upload -->
                 <Button
