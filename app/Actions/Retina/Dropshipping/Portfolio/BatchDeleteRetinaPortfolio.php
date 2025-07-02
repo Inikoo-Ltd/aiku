@@ -15,7 +15,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class BatchDeleteRetinaPortfolio extends RetinaAction
@@ -45,7 +44,7 @@ class BatchDeleteRetinaPortfolio extends RetinaAction
     {
         return [
             'portfolios' => ['required', 'array'],
-            'portfolios.*' => ['required', 'integer', Rule::exists('portfolios', 'id')],
+            'portfolios.*' => ['required', 'integer'],
         ];
     }
 

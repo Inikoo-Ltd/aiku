@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\Magento\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\MagentoUser;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -42,7 +41,7 @@ class SyncronisePortfoliosToMagento extends RetinaAction
     {
         return [
             'portfolios' => ['required', 'array'],
-            'portfolios.*' => ['required', 'integer', Rule::exists('portfolios', 'id')],
+            'portfolios.*' => ['required', 'integer'],
         ];
     }
 
