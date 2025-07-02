@@ -89,6 +89,7 @@ class GetRetinaDropshippingHomeData
                                 'slug' => $customerSalesChannel,
                                 'date' => $latestWebRequest->date,
                                 'platform' => $platformType->value,
+                                'name' => $customerSalesChannel,  // TODO: this is slug, please change to name
                             ];
                             break;
                         }

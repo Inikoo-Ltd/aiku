@@ -91,25 +91,27 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
 }
 onMounted(() => {
     // emits('mounted')
-    props.data.data?.forEach(porto => {
-        console.log('porto', selectSocketiBasedPlatform(porto))
-        const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
-            selectSocketiBasedPlatform(porto)?.action,
-            (eventData) => {
-                console.log('socket in: ', porto.id, eventData)
-                if(eventData.errors_response) {
-                    set(progressToUploadToShopify.value, [porto.id], 'error')
-                    setTimeout(() => {
-                        set(progressToUploadToShopify.value, [porto.id], null)
-                    }, 3000);
-
-                } else {
-                    set(progressToUploadToShopify.value, [porto.id], 'success')
-                }
-            }
-        );
-
-        console.log('xxx', xxx)
+    props.data?.data?.forEach(porto => {
+        console.log('selectSocketiBasedPlatform', selectSocketiBasedPlatform(porto))
+		if (selectSocketiBasedPlatform(porto)) {
+			const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
+				selectSocketiBasedPlatform(porto)?.action,
+				(eventData) => {
+					console.log('socket in: ', porto.id, eventData)
+					if(eventData.errors_response) {
+						set(progressToUploadToShopify.value, [porto.id], 'error')
+						setTimeout(() => {
+							set(progressToUploadToShopify.value, [porto.id], null)
+						}, 3000);
+	
+					} else {
+						set(progressToUploadToShopify.value, [porto.id], 'success')
+					}
+				}
+			);
+	
+			// console.log('xxx', xxx)
+		}
     });
 
 })
