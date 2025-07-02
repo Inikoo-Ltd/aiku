@@ -1,5 +1,7 @@
-export default {
-    blueprint: [
+export const blueprint = (data: object) => {
+    console.log('sdsdsd',data)
+	return {
+		blueprint: [
         {
             name: "Settings",
             key: ["settings"],
@@ -14,6 +16,9 @@ export default {
                     key: ["products_data"],
                     label: "Show Products",
                     type: "select_product",
+                    props_data : {
+                       
+                    }
                 },
             ],
         },
@@ -48,3 +53,6 @@ export default {
         },
     ],
 }
+}
+
+export default blueprint

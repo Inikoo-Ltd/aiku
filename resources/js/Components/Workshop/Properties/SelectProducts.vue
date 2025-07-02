@@ -54,48 +54,31 @@ function removeProduct(index: number) {
 </script>
 
 <template>
-  <!-- Type Selector -->
   <label class="block mb-2 font-medium text-gray-700">Type</label>
-  <select
-    v-model="localType"
-    class="border border-gray-300 px-3 py-1 rounded mb-6 w-full"
-  >
+  <select v-model="localType" class="border border-gray-300 px-3 py-1 rounded mb-6 w-full">
     <option value="">Select type</option>
     <option value="custom">Custom</option>
     <!-- Future: <option value="best-seller">Best Seller</option> -->
   </select>
 
-  <!-- Product Inputs -->
-  <div
-    v-for="(product, index) in localProducts"
-    :key="index"
-    class="mb-6 border border-gray-200 p-4 rounded relative bg-white shadow-sm"
-  >
+
+  <div v-for="(product, index) in localProducts" :key="index"
+    class="mb-6 border border-gray-200 p-4 rounded relative bg-white shadow-sm">
     <div class="flex justify-between items-center mb-2">
       <label class="font-semibold text-gray-700">Product {{ index + 1 }}</label>
-      <button
-        type="button"
-        class="text-red-600 hover:text-red-800 text-sm"
-        @click="removeProduct(index)"
-      >
+      <button type="button" class="text-red-600 hover:text-red-800 text-sm" @click="removeProduct(index)">
         Remove
       </button>
     </div>
 
     <!-- Multiselect Product Field -->
-    <PureMultiselectInfiniteScroll
-      :modelValue="product"
-      :object="true"
-      @update:modelValue="(val) => updateProductAt(index, val)"
-      :fetchRoute="{
+    <PureMultiselectInfiniteScroll :modelValue="product" :object="true"
+      @update:modelValue="(val) => updateProductAt(index, val)" :fetchRoute="{
         name: 'grp.json.product_category.products.index',
         parameters: {
           productCategory: '8265'
         }
-      }"
-      placeholder="Select product"
-      valueProp="slug"
-    >
+      }" placeholder="Select product" valueProp="slug" :required="true">
       <template #singlelabel="{ value }">
         <div v-if="value">
           {{ value.code }} - {{ value.name }}

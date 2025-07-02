@@ -45,12 +45,12 @@ import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
-import SeeAlso1Blueprint from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
+import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
 
 import { data } from "autoprefixer"
 import CTAVideo1Workshop from "@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue"
 
-export const getBlueprint = (componentName: string) => {
+export const getBlueprint = (componentName: string, data : object ) => {
 	const components: Component = {
 		// topbar
 		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
@@ -84,7 +84,7 @@ export const getBlueprint = (componentName: string) => {
 		'products-1' : ProductsList1Blueprint.blueprint,
 
 		//see also
-		'see-also-1' : SeeAlso1Blueprint.blueprint,
+		'see-also-1' : SeeAlso1Blueprint(data).blueprint,
 
 
 		"banner": WowsbarBannerBlueprint.blueprint,

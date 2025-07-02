@@ -248,7 +248,7 @@ defineExpose({
                       <div class="p-2 space-y-2">
                         <VisibleCheckmark v-model="element.visibility" @update:modelValue="sendBlockUpdate(element)" />
                         <SideEditor v-model="element.web_block.layout.data.fieldValue"
-                          :panelOpen="openedChildSideEditor" :blueprint="getBlueprint(element.type)" :block="element"
+                          :panelOpen="openedChildSideEditor" :blueprint="getBlueprint(element.type,webpage)" :block="element"
                           @update:modelValue="() => sendBlockUpdate(element)"
                           :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: element.id } }" />
                       </div>
