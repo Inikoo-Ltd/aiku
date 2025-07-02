@@ -84,13 +84,18 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('description'),
                                     'value' => $tradeUnit->description
                                 ],
+                                'gross_weight' => [
+                                    'type'  => 'input',
+                                    'label' => __('gross weight'),
+                                    'value' => $tradeUnit->gross_weight
+                                ],
                             ],
                         ]
                     ],
 
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.stock.update',
+                            'name'       => 'grp.models.trade-unit.update',
                             'parameters' => $tradeUnit->id
 
                         ],
