@@ -107,6 +107,8 @@ class UpdateCustomerClient extends OrgAction
             $rules['email']       = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['reference']   = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['platform_id'] = ['sometimes', 'integer'];
+            $rules['customer_sales_channel_id'] = ['sometimes', 'integer'];
+
             $rules                = $this->noStrictUpdateRules($rules);
         }
 
