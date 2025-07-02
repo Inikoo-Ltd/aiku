@@ -15,6 +15,7 @@ use App\Actions\IrisAction;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -76,6 +77,11 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
                 'payment_amount' => $payment->amount
             ], strict: false);
 
+            if($order->total_amount > $order->payment_amount && $order->customer->balance > 0) {
+                SettleRetinaOrderWithBalance::run($order);
+            }
+
+            $order->refresh();
             return SubmitOrder::run($order);
         });
 
