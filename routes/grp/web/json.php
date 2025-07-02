@@ -47,6 +47,8 @@ use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
 use App\Actions\Helpers\Brand\Json\GetBrands;
+use App\Actions\Helpers\Brand\Json\GetGrpBrands;
+use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
@@ -141,3 +143,6 @@ Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
 
 Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
+
+Route::get('tags', GetGrpTags::class)->name('tags.index');
+Route::get('brands', GetGrpBrands::class)->name('brands.index');
