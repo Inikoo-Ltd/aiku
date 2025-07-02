@@ -127,7 +127,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						<Link
 							v-if="layout.iris?.is_logged_in"
 							:href="route('retina.top_up.dashboard')"
-							class="bg-white border border-gray-300 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
+							class="bg-pink-100 border border-pink-300 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
 						>
 							<!-- <FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" /> -->
 							{{ trans("My balance") }}:
