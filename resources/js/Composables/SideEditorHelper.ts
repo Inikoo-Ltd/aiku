@@ -45,6 +45,8 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
+
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -89,6 +91,7 @@ export const getComponent = (componentName: string) => {
         'min_max_price' : MinMaxPrice, 
         'video-settings' : VideoSettings,
         'selectquery' : PureMultiselectInfiniteScroll,
+        'select_product' : SelectProducts
     }
     return components[componentName] ?? NotFoundComponents
 }
