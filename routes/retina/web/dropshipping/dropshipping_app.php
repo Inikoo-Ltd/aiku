@@ -19,7 +19,6 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
-use App\Actions\Helpers\Upload\UI\IndexRecentUploads;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
@@ -29,21 +28,18 @@ use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\EditRetinaCustomerClient;
-use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClientsInCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
+use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
-use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrdersInPlatform;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
-use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrderInCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
-use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
-use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexDropshippingCustomerSalesChannels;
-use App\Actions\Retina\Dropshipping\Orders\Transaction\DownloadRetinaOrderTransactionsTemplate;
+use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
-use App\Actions\Retina\Dropshipping\ShowRetinaProduct;
+use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
@@ -52,7 +48,7 @@ Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProdu
 
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
-    Route::get('/', IndexDropshippingCustomerSalesChannels::class)->name('index');
+    Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
 });
 
@@ -72,30 +68,13 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('magento/authorize', StoreMagentoUser::class)->name('magento.store');
 });
 
-Route::prefix('client')->as('client.')->group(function () {
-    Route::get('/', IndexRetinaCustomerClientsInCustomerSalesChannel::class)->name('index');
-    Route::get('create', CreateRetinaCustomerClient::class)->name('create');
 
-    Route::get('{customerClient}/show', ShowRetinaCustomerClient::class)->name('show');
-    Route::get('{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
-});
-
-Route::prefix('portfolios')->as('portfolios.')->group(function () {
-    Route::get('my-portfolio', IndexRetinaPortfolios::class)->name('index');
-    Route::get('my-portfolio/{product}', ShowRetinaProduct::class)->name('show');
-});
-
-Route::prefix('orders')->as('orders.')->group(function () {
-    Route::get('/', IndexRetinaDropshippingOrders::class)->name('index');
-    Route::get('/{order}', ShowRetinaDropshippingOrder::class)->name('show');
-
-    Route::get('/{order}/recent-uploads', [IndexRecentUploads::class, 'inOrderRetina'])->name('recent_uploads');
-    Route::get('/{order}/upload-templates', DownloadRetinaOrderTransactionsTemplate::class)->name('upload_templates');
-});
 
 Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')->group(function () {
     Route::get('/', ShowRetinaCustomerSalesChannelDashboard::class)->name('show');
     Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
+    Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
+
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
@@ -106,26 +85,22 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
         Route::get('create', CreateRetinaCustomerClient::class)->name('create');
         Route::get('fetch', FetchRetinaCustomerClientFromShopify::class)->name('fetch');
         Route::get('wc-fetch', GetRetinaCustomerClientFromWooCommerce::class)->name('wc-fetch');
-
-        Route::get('/', IndexRetinaCustomerClientsInCustomerSalesChannel::class)->name('index');
+        Route::get('/', IndexRetinaCustomerClients::class)->name('index');
         Route::get('/client-upload-templates', DownloadDropshippingClientTemplate::class)->name('upload_templates');
-        Route::get('create', CreateRetinaCustomerClient::class)->name('create');
         Route::get('/{customerClient}/edit', EditRetinaCustomerClient::class)->name('edit');
         Route::get('{customerClient}', ShowRetinaCustomerClient::class)->name('show');
     });
 
-    Route::prefix('portfolios')->as('portfolios.')->group(function () {
-        Route::get('my-portfolio', IndexRetinaPortfolios::class)->name('index');
-        Route::get('my-portfolio/download', DownloadPortfolios::class)->name('download');
-
-        Route::get('my-portfolio/{product}', [ShowRetinaProduct::class, 'inPlatform'])->name('show');
-        Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
+    Route::prefix('my-products')->as('portfolios.')->group(function () {
+        Route::get('', IndexRetinaPortfolios::class)->name('index');
+        Route::get('download', DownloadPortfolios::class)->name('download');
+        Route::get('{portfolio}', ShowRetinaDropshippingPortfolio::class)->name('show');
         Route::get('products', IndexRetinaProductsInDropshipping::class)->name('products.index');
     });
 
     Route::prefix('orders')->as('orders.')->group(function () {
-        Route::get('/', IndexRetinaDropshippingOrdersInPlatform::class)->name('index');
-        Route::get('/{order}', ShowRetinaDropshippingOrderInCustomerSalesChannel::class)->name('show');
+        Route::get('/', IndexRetinaDropshippingOrders::class)->name('index');
+        Route::get('/{order}', ShowRetinaDropshippingOrder::class)->name('show');
     });
 
     Route::prefix('api')->as('api.')->group(function () {

@@ -11,7 +11,7 @@ import { Product } from "@/types/product"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
-import { ref, inject } from "vue"
+import { inject } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { faStar } from "@fas"
 import { faCheck } from "@far"
@@ -30,27 +30,15 @@ const props = defineProps<{
 	}
 }>()
 
-function productRoute(product: Product) {
-	switch (route().current()) {
-		case "retina.dropshipping.products.index":
-			return route("retina.dropshipping.products.show", [product.slug])
-		case "retina.dropshipping.portfolios.index":
-		case "retina.dropshipping.customer_sales_channels.portfolios.index":
-			if (product.type == "StoredItem") {
-				return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
-			}
+function portfolioRoute(product: Product) {
+    if (product.type == "StoredItem") {
+        return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
+    }
 
-			return route("retina.dropshipping.customer_sales_channels.portfolios.show", [route().params['customerSalesChannel'], product.slug])
+    return route("retina.dropshipping.customer_sales_channels.portfolios.show",
+        [
+        route().params['customerSalesChannel'], product.id])
 
-		case "grp.overview.catalogue.products.index":
-			return route("grp.org.shops.show.catalogue.products.current_products.show", [
-				product.organisation_slug,
-				product.shop_slug,
-				product.slug,
-			])
-		default:
-			return '#'
-	}
 }
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -84,7 +72,7 @@ const onUnchecked = (itemId: number) => {
         </template>
 
 		<template #cell(code)="{ item: product }">
-			<Link :href="productRoute(product)" class="primaryLink whitespace-nowrap">
+			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
 				{{ product["code"] }}
 			</Link>
         </template>

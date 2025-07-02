@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Accounting\Payment\Json\GetRefundPayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
@@ -125,6 +126,7 @@ Route::get('workshop/department/{department}/sub-departments', GetSubDepartments
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
+Route::get('workshop/product-category/{productCategory:id}/see-also-products', GetProductsInProductCategory::class)->name('product_category.see_also_products.index');
 Route::get('workshop/product-category/{productCategory:id}/top-products', GetTopProductsInProductCategory::class)->name('product_category.top_products.index');
 Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
 
@@ -137,3 +139,5 @@ Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsIn
 
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
+
+Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');

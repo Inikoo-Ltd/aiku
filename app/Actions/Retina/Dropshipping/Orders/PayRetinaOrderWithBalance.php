@@ -11,7 +11,9 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -78,6 +80,14 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
         $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData) {
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
+
+            AttachPaymentToOrder::make()->action($order, $payment, [
+                'amount' => $payment->amount
+            ]);
+
+            $order = UpdateOrder::make()->action(order: $order, modelData:[
+                'payment_amount' => $payment->amount
+            ], strict: false);
 
             $creditTransactionData = [
                 'amount'     => -$order->total_amount,

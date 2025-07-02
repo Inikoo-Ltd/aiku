@@ -118,13 +118,6 @@ export default {
 			key: ["container", "properties"],
 			replaceForm: [
 				{
-					key: ["dimension"],
-					useIn : ["desktop", "tablet", "mobile"],
-					label: "Dimension",
-					type: "dimension",
-					props_data: {},
-				},
-				{
 					key: ["padding"],
 					useIn : ["desktop", "tablet", "mobile"],
 					label: "Padding",

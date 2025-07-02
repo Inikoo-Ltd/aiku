@@ -86,7 +86,7 @@ const attrs = useAttrs()
 onMounted(() => {
   // Tunggu render selesai
   requestAnimationFrame(() => {
-    if (contentRef.value.scrollHeight > 100) {
+    if (contentRef?.value?.scrollHeight > 100) {
       showButton.value = true
     }
   })
@@ -95,7 +95,7 @@ onMounted(() => {
 const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
-
+console.log(props)
 
 </script>
 

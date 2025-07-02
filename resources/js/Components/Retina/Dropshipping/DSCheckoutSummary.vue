@@ -57,18 +57,18 @@ const isModalShippingAddress = ref(false)
 
             <!-- Field: Reference Number -->
             <!-- <pre>{{ summary.customer_channel }}</pre> -->
-            <Link v-if="summary?.customer_client.ulid" as="a" v-tooltip="trans('Reference')"
+            <Link v-if="summary?.customer_client.ulid" as="a" v-tooltip="trans('Client')"
                 :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
-                <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference }}</dd>
+                <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference ?? summary?.customer_client?.name }}</dd>
             </Link>
 
             <!-- Field: Contact name -->
             <div v-if="summary?.customer_client.contact_name" v-tooltip="trans('Contact name')"
-                class="pl-1 flex items-center w-full flex-none gap-x-2">
+                class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
@@ -124,7 +124,7 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <div class="col-span-3">
-            <div v-if="balance !== undefined" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 text-amber-600">
+            <div v-if="balance" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 xtext-amber-600">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div class="">
                     {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}

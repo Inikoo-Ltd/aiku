@@ -51,16 +51,7 @@ class RetinaAction
     protected array $validatedData;
 
 
-    public function registerDropshippingInitialisation(Shop $shop, ActionRequest $request): static
-    {
-        $this->shop = $shop;
-        $this->organisation = $this->shop->organisation;
-        $this->website = $request->get('website');
-        $this->fillFromRequest($request);
-        $this->validatedData = $this->validateAttributes();
 
-        return $this;
-    }
 
     public function registerFulfilmentInitialisation(Fulfilment $fulfilment, ActionRequest $request): static
     {

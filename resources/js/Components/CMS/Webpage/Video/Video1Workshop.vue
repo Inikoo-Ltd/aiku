@@ -2,11 +2,11 @@
 import { faCube, faLink, faImage, faVideo } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue";
 import { getStyles } from "@/Composables/styles";
 import { sendMessageToParent } from "@/Composables/Workshop";
-import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint";
+import Blueprint from "./Blueprint";
 import { onMounted, watch } from "vue";
+import { inject } from "vue";
 
 library.add(faCube, faLink, faImage, faVideo);
 
@@ -30,6 +30,7 @@ const props = defineProps<{
 			};
 		};
 	};
+	indexBlock: number
 	webpageData?: any;
 	blockData?: Object;
 	screenType: "mobile" | "tablet" | "desktop";
@@ -58,42 +59,49 @@ onMounted(() => {
 		{ immediate: true }
 	);
 });
+
+
+const layout: any = inject("layout", {})
+const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
-		<div class="grid grid-cols-1 md:grid-cols-1 relative"
-		:style="getStyles(modelValue.container?.properties, screenType)">
-		
-		<!-- 🎥 Video Column -->
-		<div @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))">
-			<div class="w-full flex justify-center items-center min-h-[200px]"
-				:style="getStyles(modelValue?.video?.video_setup?.container?.properties, screenType)">
-				
-				<!-- 🎬 Direct Video URL -->
-				<template v-if="modelValue?.video?.video_setup?.by_url && modelValue?.video?.video_setup?.source">
-					<video
-						class="w-full h-auto"
-						controls
-						:src="modelValue?.video?.video_setup?.source"
-						v-bind="modelValue.video.video_setup.attributes"
-						:style="getStyles(modelValue.video.video_setup?.properties, screenType)"
-					></video>
-				</template>
+	<div id="video-1">
+		<div class="grid grid-cols-1 md:grid-cols-1 relative" :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			...getStyles(modelValue.container?.properties, screenType)
+		}">
 
-				<!-- 🌐 Embed HTML -->
-				<template v-else-if="!modelValue?.video?.video_setup?.by_url && modelValue?.video?.video_setup?.embed_code">
-					<div
-						class="w-full h-auto"
-						v-html="modelValue?.video?.video_setup?.embed_code"
-						:style="getStyles(modelValue.video.video_setup?.properties, screenType)"
-					></div>
-				</template>
+			<!-- 🎥 Video Column -->
+			<div @click="() => {
+				sendMessageToParent('activeBlock', indexBlock)
+				sendMessageToParent('activeChildBlock', bKeys[0])
+			}
+			">
+				<div class="w-full flex justify-center items-center min-h-[200px]"
+					:style="getStyles(modelValue?.video?.video_setup?.container?.properties, screenType)">
 
-				<!-- ❌ Fallback Icon if empty -->
-				<template v-else>
-					<FontAwesomeIcon :icon="['fas', 'video']" class="text-gray-400 text-6xl" />
-				</template>
+					<!-- 🎬 Direct Video URL -->
+					<template v-if="modelValue?.video?.video_setup?.by_url && modelValue?.video?.video_setup?.source">
+						<video class="w-full h-auto" controls :src="modelValue?.video?.video_setup?.source"
+							v-bind="modelValue.video.video_setup.attributes"
+							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"></video>
+					</template>
+
+					<!-- 🌐 Embed HTML -->
+					<template
+						v-else-if="!modelValue?.video?.video_setup?.by_url && modelValue?.video?.video_setup?.embed_code">
+						<div class="w-full h-auto" v-html="modelValue?.video?.video_setup?.embed_code"
+							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"></div>
+					</template>
+
+					<!-- ❌ Fallback Icon if empty -->
+					<template v-else>
+						<FontAwesomeIcon :icon="['fas', 'video']" class="text-gray-400 text-6xl" />
+					</template>
+				</div>
 			</div>
 		</div>
 	</div>
+
 </template>

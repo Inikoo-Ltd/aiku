@@ -21,17 +21,19 @@ enum PlatformTypeEnum: string
     case MANUAL = 'manual';
     case AMAZON = 'amazon';
     case MAGENTO = 'magento';
+    case WIX = 'wix';
 
     public function labels(): array
     {
         return [
             'shopify'     => 'Shopify',
             'tiktok'      => 'Tiktok',
-            'woocommerce' => 'Woo Commerce',
+            'woocommerce' => 'Woo',
             'ebay'        => 'Ebay',
-            'amazon'        => 'Amazon',
-            'manual'        => __('Manual'),
-            'magento'        => 'Magento'
+            'amazon'      => 'Amazon',
+            'manual'      => 'Web/API',
+            'magento'     => 'Magento',
+            'wix'         => 'Wix',
         ];
     }
 }
