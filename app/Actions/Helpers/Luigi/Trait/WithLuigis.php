@@ -35,9 +35,9 @@ trait WithLuigis
     {
         $website = $parent instanceof Website ? $parent : $parent->website;
         if (app()->environment('production')) {
-            return array_filter([Arr::get($website->settings, 'luigisbox.tracking_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
+            return array_filter([Arr::get($website->settings, 'luigisbox.tracker_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
         } else {
-            return [config('app.sandbox.luigisbox.tracking_id'), config('app.sandbox.luigisbox.private_key')];
+            return [config('app.sandbox.luigisbox.tracker_id'), config('app.sandbox.luigisbox.private_key')];
         }
     }
 
@@ -138,6 +138,7 @@ trait WithLuigis
                         ],
                         ] : []),
                     ];
+                    print "Reindexing {$webpage->title} ({$webpage->id})\n";
                 }
 
                 $body = [
