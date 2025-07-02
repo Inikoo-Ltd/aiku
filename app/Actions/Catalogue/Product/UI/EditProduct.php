@@ -161,6 +161,7 @@ class EditProduct extends OrgAction
             ];
         }
 
+        $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
 
         return [
             [
@@ -208,6 +209,15 @@ class EditProduct extends OrgAction
                         'type'  => 'input',
                         'label' => __('units'),
                         'value' => $product->units,
+                    ],
+                    'barcode'       => [
+                        'type'  => 'select',
+                        'label' => __('barcode'),
+                        'value' => $product->barcode,
+                        'readonly' => $product->tradeUnits->count() == 1,
+                        'options' => $barcodes->mapWithKeys(function ($barcode) {
+                            return [$barcode => $barcode];
+                        })->toArray()
                     ],
                     'price'       => [
                         'type'     => 'input',
