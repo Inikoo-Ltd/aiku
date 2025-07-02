@@ -152,7 +152,11 @@ const CheckChannels = computed(() => {
 
 
 watch(() => props.productHasPortfolio, (newVal) => {
-  productHasPortfolioList.value = [...newVal]
+  if (Array.isArray(newVal)) {
+    productHasPortfolioList.value = [...newVal]
+  } else {
+    productHasPortfolioList.value = []
+  } 
 })
 
 </script>
