@@ -38,6 +38,7 @@ class WebpageResource extends JsonResource
             'domain'              => $webpage->website->domain ?? null,
             'website_layout'      => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
             'code'                => $webpage->code,
+            'model_id'            => $webpage->model_id,
             // 'url'                 => $webpage->url,
             'url'                 => $webpage->getUrl(),
             'type'                => $webpage->type,

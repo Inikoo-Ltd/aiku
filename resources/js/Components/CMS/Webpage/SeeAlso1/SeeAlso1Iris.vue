@@ -52,7 +52,7 @@ const nextEl = ref(null)
 </script>
 
 <template>
-  <div id="see-also-carousel" class="w-full" :style="{
+  <div id="see-also-carousel" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'

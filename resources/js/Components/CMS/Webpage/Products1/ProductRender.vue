@@ -217,10 +217,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
         </div>
 
-        <!-- Button: add to portfolios -->
-        <div class="mt-auto pt-2">
+
             <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
-        </div>
     </div>
 </template>
 

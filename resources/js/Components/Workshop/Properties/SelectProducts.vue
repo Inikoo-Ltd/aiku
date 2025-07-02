@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import Icon from '@/Components/Icon.vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 const props = defineProps<{
@@ -9,6 +8,7 @@ const props = defineProps<{
     type?: string
     products?: any[]
   } | null
+  productCategory : number
 }>()
 
 const emits = defineEmits<{
@@ -51,6 +51,7 @@ function removeProduct(index: number) {
   updated.splice(index, 1)
   localProducts.value = updated
 }
+console.log('select_product',props)
 </script>
 
 <template>
@@ -76,7 +77,7 @@ function removeProduct(index: number) {
       @update:modelValue="(val) => updateProductAt(index, val)" :fetchRoute="{
         name: 'grp.json.product_category.products.index',
         parameters: {
-          productCategory: '8265'
+          productCategory: productCategory
         }
       }" placeholder="Select product" valueProp="slug" :required="true">
       <template #singlelabel="{ value }">
