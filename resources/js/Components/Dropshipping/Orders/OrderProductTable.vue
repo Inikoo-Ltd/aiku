@@ -114,7 +114,7 @@ const debounceUpdateQuantity = debounce(
                     />
                 </div>
 
-                <div>
+                <div v-else>
                     {{
                         Number.isInteger(Number(item.quantity_ordered)) && String(item.quantity_ordered).match(/^\d+(\.0+)?$/)
                             ? parseInt(item.quantity_ordered)
