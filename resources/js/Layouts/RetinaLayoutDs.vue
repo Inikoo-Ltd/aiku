@@ -102,7 +102,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 max-w-5xl lg:max-w-7xl w-full lg:mx-auto my-10 px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 xmax-w-5xl lg:max-w-7xl w-full lg:mx-auto my-10 px-8 xl:px-0 transition-all">
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[
