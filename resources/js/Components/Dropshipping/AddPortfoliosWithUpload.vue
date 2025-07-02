@@ -246,16 +246,16 @@ onMounted(() => {
                 {{ trans('Add products to your products list') }}
                 <FontAwesomeIcon v-tooltip="trans(`Will added to My Products section`)" icon="fal fa-info-circle" class="text-lg text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>
-            <div class="relative text-right">
-                <Button
-                    v-if="step.current == 0"
-                    @click="step.current = 1"
-                    :disabled="isLoadingSubmit"
-                    :label="trans('Skip to edit products')"
-                    iconRight="fal fa-arrow-right"
-                    type="tertiary"
-                />
-            </div>
+<!--            <div class="relative text-right">-->
+<!--                <Button-->
+<!--                    v-if="step.current == 0"-->
+<!--                    @click="step.current = 1"-->
+<!--                    :disabled="isLoadingSubmit"-->
+<!--                    :label="trans('Skip to edit products')"-->
+<!--                    iconRight="fal fa-arrow-right"-->
+<!--                    type="tertiary"-->
+<!--                />-->
+<!--            </div>-->
         </div>
 
         <!-- Head: step 1 (Edit portfolios) -->
