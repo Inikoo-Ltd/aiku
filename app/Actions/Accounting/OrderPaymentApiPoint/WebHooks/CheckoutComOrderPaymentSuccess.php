@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
-use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\IrisAction;
@@ -17,7 +16,6 @@ use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
-use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -77,7 +75,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
                 'payment_amount' => $payment->amount
             ], strict: false);
 
-            if($order->total_amount > $order->payment_amount && $order->customer->balance > 0) {
+            if ($order->total_amount > $order->payment_amount && $order->customer->balance > 0) {
                 SettleRetinaOrderWithBalance::run($order);
             }
 
