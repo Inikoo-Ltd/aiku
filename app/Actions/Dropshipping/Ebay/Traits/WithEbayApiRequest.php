@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Ebay\Traits;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use App\Exceptions\Dropshipping\Ebay\EbayApiException;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -132,7 +133,7 @@ trait WithEbayApiRequest
         ];
 
         if (!$config['refresh_token']) {
-            throw new Exception('No refresh token available');
+            throw new EbayApiException('No refresh token available');
         }
 
         try {
@@ -162,7 +163,7 @@ trait WithEbayApiRequest
                 return $tokenData;
             }
 
-            throw new Exception('Failed to refresh token: ' . $response->body());
+            throw new EbayApiException('Failed to refresh token: ' . $response->body());
         } catch (Exception $e) {
             Log::error('eBay Token Refresh Error: ' . $e->getMessage());
             throw $e;
@@ -189,7 +190,7 @@ trait WithEbayApiRequest
             return $tokenData['access_token'];
         }
 
-        throw new Exception('No valid access token available. Please re-authenticate with eBay.');
+        throw new EbayApiException('No valid access token available. Please re-authenticate with eBay.');
     }
 
     /**
@@ -268,7 +269,7 @@ trait WithEbayApiRequest
                 }
             }
 
-            throw new Exception('eBay API request failed: ' . $response->body());
+            throw new EbayApiException('eBay API request failed: ' . $response->body());
         } catch (Exception $e) {
             Log::error('eBay API Request Error: ' . $e->getMessage());
             throw $e;
@@ -789,7 +790,6 @@ trait WithEbayApiRequest
     /**
      * Get user's eBay category suggestions
      *
-     * @throws \Illuminate\Http\Client\ConnectionException
      */
     public function getUser($data = [], $queryParams = [])
     {
@@ -824,7 +824,7 @@ trait WithEbayApiRequest
                 }
             }
 
-            throw new Exception('eBay API request failed: ' . $response->body());
+            throw new EbayApiException('eBay API request failed: ' . $response->body());
         } catch (Exception $e) {
             Log::error('eBay API Request Error: ' . $e->getMessage());
             throw $e;
