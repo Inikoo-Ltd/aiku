@@ -9,15 +9,20 @@
 
 namespace App\Actions\Dropshipping\Ebay;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,7 +39,7 @@ class CallbackRetinaEbayUser extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(Customer $customer, array $modelData): EbayUser
+    public function handle(Customer $customer, array $modelData): string
     {
         $config = $this->getEbayConfig();
 
@@ -62,10 +67,34 @@ class CallbackRetinaEbayUser extends OrgAction
                 ]);
 
                 $ebayUser->refresh();
+                $userData = $ebayUser->getUser();
+
+                if (CustomerSalesChannel::where('name',  Arr::get($userData, 'username'))->exists()) {
+                    $ebayUser->customerSalesChannel->delete();
+                    $ebayUser->delete();
+                    return route('retina.dropshipping.customer_sales_channels.create');
+                }
+                
+                $ebayUser = UpdateEbayUser::run($ebayUser, [
+                    'name' => Arr::get($userData, 'username'),
+                ]);
+
+                UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
+                    'reference' => Arr::get($userData, 'username'),
+                    'name' => Arr::get($userData, 'username'),
+                    'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+                ]);
 
                 UpdateEbayUserData::dispatch($ebayUser);
 
-                return $ebayUser;
+                $routeName = match ($ebayUser->customer->is_fulfilment) {
+                    true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
+                    default => 'retina.dropshipping.customer_sales_channels.show'
+                };
+
+                return route($routeName, [
+                    'customerSalesChannel' => $ebayUser->customerSalesChannel->slug
+                ]);
             }
 
             throw new Exception('Failed to exchange code for token: ' . $response->body());
@@ -75,19 +104,22 @@ class CallbackRetinaEbayUser extends OrgAction
         }
     }
 
-    public function htmlResponse(EbayUser $ebayUser): Response
+    public function htmlResponse(string $url): Response
     {
-        $routeName = match ($ebayUser->customer->is_fulfilment) {
-            true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
-            default => 'retina.dropshipping.customer_sales_channels.show'
+        $route = match ($url) {
+            route('retina.dropshipping.customer_sales_channels.create') =>
+            redirect($url)->with('modal', [
+                        'status'  => 'error',
+                        'title'   => __('Error!'),
+                        'description' => __('This eBay account already connected.'),
+            ]),
+            default => redirect($url),
         };
-
-        return Inertia::location(route($routeName, [
-            'customerSalesChannel' => $ebayUser->customerSalesChannel->slug
-        ]));
+        
+        return $route;
     }
 
-    public function asController(ActionRequest $request): EbayUser
+    public function asController(ActionRequest $request): string
     {
         return $this->handle($request->user()->customer, $request->all());
     }

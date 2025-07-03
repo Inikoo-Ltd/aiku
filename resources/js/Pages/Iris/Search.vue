@@ -3,45 +3,44 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { computed, inject, onBeforeMount, ref } from "vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTools } from '@fas'
-const layout = inject('layout', layoutStructure)
-const isLogin = computed(() => {
-    return layout.is_logged_in
-})
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+
+
+const layout = inject('layout')
+const locale = inject('locale', aikuLocaleStructure)
 
 // Init: Search result
 const LBInitSearchResult = async () => {
-    // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
 
     if (!layout.iris?.luigisbox_tracker_id) {
         console.error("Luigi tracker id didn't provided")
         return
     }
-
-    await Luigis.Search(
+    const xxx = await Luigis.Search(
         {
             TrackerId: layout.iris?.luigisbox_tracker_id,
             Locale: 'en',
             PriceFilter: {
                 decimals: 2,
                 prefixed: true,
-                symbol: '£',
+                symbol: locale.currencySymbol(layout.iris?.currency?.code),
             },
             Theme: "boo",
             Size: 12,
             Facets: ['brand', 'category', 'color'],
-            DefaultFilters: {
-                type: 'item'
-            },
+            // DefaultFilters: {
+            //     type: 'item'
+            // },
             UrlParamName: {
                 QUERY: "q",
             },
-            RemoveFields: isLogin.value ? ['price', 'price_amount'] : ['price', 'formatted_price', 'price_amount'],
+            RemoveFields: layout.iris.is_logged_in ? null : ['price', 'formatted_price', 'price_amount'],
         },
         "#inputXxxLuigi",
         "#luigi_result_search"
     )
 
-    console.log("Init Search")
+    // console.log("Init Search", xxx)
 }
 
 onBeforeMount(() => {
@@ -59,6 +58,7 @@ onBeforeMount(() => {
 })
 
 const inputValue = ref('')
+console.log("layout", layout)
 </script>
 
 <template>
@@ -66,12 +66,20 @@ const inputValue = ref('')
         <template v-if="layout?.app?.environment === 'local'">
             <input v-model="inputValue" class="block w-full max-w-lg mx-auto" id="inputXxxLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 45px;padding-left: 10px;" placeholder="Search"/>
             
-            <div id="luigi_result_search" class="">
+            <div id="luigi_result_search" class="mt-16 h-40">
+                <div class="flex gap-x-4 h-full">
+                    <div class="w-96 skeleton">
+                    </div>
+
+                    <div class="w-full skeleton">
+
+                    </div>
+                </div>
             </div>
         </template>
     </div>
     
-     <div class="flex items-center justify-center min-h-[60vh] text-center px-4">
+     <!-- <div class="flex items-center justify-center min-h-[60vh] text-center px-4">
     <div class="max-w-xl">
       <div class="text-6xl mb-6" :style="{ color: layout?.app?.theme[4] }">
         <FontAwesomeIcon :icon="faTools" />
@@ -83,7 +91,7 @@ const inputValue = ref('')
         This feature will be ready by tomorrow. Thank you for your patience 🙏
       </p>
     </div>
-  </div>
+  </div> -->
 </template>
 
 <style>
@@ -157,7 +165,7 @@ const inputValue = ref('')
 }
 
 .lb-search-text-color-primary-clickable {
-    color: var(--luigiColor2) !important;
+    color: var(--luigiColor1) !important;
 }
 
 .lb-search-bg-color-primary-clickable {

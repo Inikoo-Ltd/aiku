@@ -15,6 +15,7 @@ use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamily;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\GetWebBlockSubDepartments;
 use Illuminate\Support\Arr;
 
@@ -23,7 +24,6 @@ trait WithFillIrisWebBlocks
     public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn)
     {
         $webBlockType = Arr::get($webBlock, 'type');
-
 
         if ($webBlockType === 'banner') {
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
@@ -41,6 +41,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['collections-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['see-also-1'])) {
+            $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

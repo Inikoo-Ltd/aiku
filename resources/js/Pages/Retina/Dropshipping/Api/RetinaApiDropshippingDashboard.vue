@@ -8,7 +8,7 @@ import { Head, Link, router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
-import { capitalize } from "lodash"
+import { capitalize } from "lodash-es"
 import { computed, ref } from "vue"
 import type { Component } from "vue";
 

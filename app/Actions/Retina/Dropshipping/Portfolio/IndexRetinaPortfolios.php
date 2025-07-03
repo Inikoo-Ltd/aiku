@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
@@ -24,9 +25,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
+    use WithPlatformStatusCheck;
     private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
@@ -218,9 +221,11 @@ class IndexRetinaPortfolios extends RetinaAction
                         default => 0
                     }
                 ],
-                'platform_user_id' => $this->customerSalesChannel->user?->id,
-                'platform_data'    => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
-                'products'         => DropshippingPortfoliosResource::collection($portfolios)
+                'platform_user_id'          => $this->customerSalesChannel->user?->id,
+                'platform_data'             => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
+                'products'                  => DropshippingPortfoliosResource::collection($portfolios),
+                'is_platform_connected'     => $this->checkStatus($this->customerSalesChannel) === 'connected',
+                'customer_sales_channel'    => CustomerSalesChannelsResource::make($this->customerSalesChannel)->toArray(request()),
             ]
         )->table($this->tableStructure(prefix: 'products'));
     }

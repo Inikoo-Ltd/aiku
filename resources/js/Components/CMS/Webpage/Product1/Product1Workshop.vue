@@ -15,6 +15,7 @@ import ProductContents from "./ProductContents.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
+import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink)
 
@@ -25,6 +26,8 @@ const props = withDefaults(defineProps<{
   webpageData?: any
   blockData?: object
   templateEdit?: TemplateType
+  indexBlock : number
+  screenType: "mobile" | "tablet" | "desktop"
 }>(), {
   templateEdit: 'webpage'
 })
@@ -95,12 +98,15 @@ onMounted(() => {
 const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
-console.log(props)
+
 
 </script>
 
 <template>
-    <div id="product-1" v-bind="attrs"
+    <div id="product-1" v-bind="attrs" :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+             marginLeft : 'auto', marginRight : 'auto'
+		}"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">

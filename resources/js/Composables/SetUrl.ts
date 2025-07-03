@@ -23,7 +23,7 @@ export const resolveMigrationLink = (
 
 	return href
 }
-export const resolveMigrationHrefInHTML = (
+export const c = (
 	html?: string,
 	migration_redirect?: MigrationRedirect | null
 ): string => {

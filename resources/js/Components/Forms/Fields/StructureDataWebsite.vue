@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
-import { Codemirror } from "vue-codemirror"
+import codemirrorPkg from 'vue-codemirror';
 import { ref, watch } from "vue"
 import { json } from "@codemirror/lang-json"
 
@@ -9,7 +9,7 @@ const props = defineProps<{
     fieldName: string
     options: string[] | {}
 }>()
-
+const { Codemirror } = codemirrorPkg;
 const extensions = [json()]
 
 // Contoh default JSON-LD untuk SEO

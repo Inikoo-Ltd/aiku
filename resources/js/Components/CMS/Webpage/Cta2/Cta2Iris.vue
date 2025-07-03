@@ -9,7 +9,6 @@ import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject } from "vue"
 import { getStyles } from "@/Composables/styles"
-import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faCube, faLink)
@@ -31,7 +30,7 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
-const migration_redirect = layout?.iris?.migration_redirect
+
 
 </script>
 
@@ -42,14 +41,14 @@ const migration_redirect = layout?.iris?.migration_redirect
 			...getStyles(fieldValue.container?.properties, screenType)
 		}">
 			<div class="relative  px-6 py-24 text-center sm:px-16">
-				<section v-html="resolveMigrationHrefInHTML(fieldValue.headline, migration_redirect)" />
+				<section v-html="fieldValue.headline" />
 
 				<div class="mt-10 flex items-center justify-center gap-x-6">
-					<a :href="resolveMigrationLink(fieldValue?.button?.link?.href, migration_redirect)"
+					<a :href="fieldValue?.button?.link?.href"
 						:target="fieldValue?.button?.link?.target" typeof="button"
 						>
 					<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-						:label="fieldValue?.button?.text"  />
+						:label="fieldValue?.button?.text" />
 					</a>
 				</div>
 			</div>

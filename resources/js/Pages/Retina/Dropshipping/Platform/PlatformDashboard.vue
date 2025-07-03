@@ -11,6 +11,7 @@ import Timeline from '@/Components/Utils/Timeline.vue'
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
 
@@ -112,13 +113,18 @@ const locale = inject('locale', aikuLocaleStructure)
 
         <div v-else>
             <div class="flex justify-between">
-                <h3 class="text-2xl font-semibold">{{ platform.name }} <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span></h3>
-                <img
+                <h3 class="text-2xl font-semibold">{{ customer_sales_channel.name || 'n/a' }} <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span></h3>
+                <!-- <img
                     v-tooltip="platform.name"
                     :src="platform_logo"
                     class="h-8 w-8 mt-2"
                     :alt="platform.name"
-                />
+                /> -->
+                <div v-html="ChannelLogo(platform.code)"
+                    class="h-8 w-8 mt-2"
+                    v-tooltip="platform.name">
+
+                </div>
             </div>
             <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
                 <div v-for="platform in platformData" :key="platform.id" class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">

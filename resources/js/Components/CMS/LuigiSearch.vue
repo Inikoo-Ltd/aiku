@@ -12,11 +12,6 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 const inputValue = ref('')
 
 
-
-const isLogin = computed(() => {
-    return layout.is_logged_in
-})
-
 const layout = inject('layout', {})
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -35,17 +30,25 @@ const LBInitAutocompleteNew = async () => {
             Layout: "heromobile",
             // TrackerId: '483878-588294',
             TrackerId: layout.iris?.luigisbox_tracker_id,
-            Locale: 'en',
+            //Locale: 'en',
+            PriceFilter: {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+                locale: locale.language.code,
+                prefixed: true,
+                symbol: locale.currencySymbol(layout.iris?.currency?.code)
+            },
+            ShowBuyTitle: 'Buy now', // Top Product: Button label
             Translations: {
                 en: {
-                    showBuyTitle: 'Buy now', // Top Product: Button label
-                    priceFilter: {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                        locale: 'en',
-                        prefixed: true,
-                        symbol: locale.currencySymbol(layout.iris?.currency?.code)
-                    }
+                    // showBuyTitle: 'Burrrry now', // Top Product: Button label
+                    // priceFilter: {
+                    //     minimumFractionDigits: 0,
+                    //     maximumFractionDigits: 2,
+                    //     locale: locale.language.code,
+                    //     prefixed: true,
+                    //     symbol: locale.currencySymbol(layout.iris?.currency?.code)
+                    // }
                 }
             },
             // RemoveFields: fieldsRemoved,
@@ -54,7 +57,7 @@ const LBInitAutocompleteNew = async () => {
                     name: "Item",
                     type: "item",
                     size: 7,
-                    attributes: isLogin ? ['product_code', 'formatted_price'] : ['product_code'],
+                    attributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
                 },
                 {
                     name: "Query",
@@ -64,10 +67,26 @@ const LBInitAutocompleteNew = async () => {
                     name: "Category",
                     type: "category",
                 },
+                {
+                    name: "Articles",
+                    type: "news",
+                },
+                {
+                    name: "Department",
+                    type: "department",
+                },
+                {
+                    name: "Sub Department",
+                    type: "sub-department",
+                },
                 // {
-                //     name: "Articles",
-                //     type: "articles",
+                //     name: "Collection",
+                //     type: "collection",
                 // },
+                {
+                    name: "Brand",
+                    type: "brand",
+                },
             ],
             ShowAllCallback: () => {  // Called when 'Show All Product' clicked
                 if (inputValue.value) {
@@ -116,7 +135,7 @@ const importStyleCSS = () => {
     link.href = "https://cdn.luigisbox.com/autocomplete.css"
     document.head.appendChild(link)
     document.documentElement.style.setProperty('--luigiColor1', layout.iris?.theme?.color?.[0]);
-    document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[1]);
+    document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[0]);
     document.documentElement.style.setProperty('--luigiColor3', layout.iris?.theme?.color?.[2]);
     document.documentElement.style.setProperty('--luigiColor4', layout.iris?.theme?.color?.[3]);
 }

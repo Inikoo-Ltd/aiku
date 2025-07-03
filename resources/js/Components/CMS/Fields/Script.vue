@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, shallowRef, watch } from "vue"
-import { Codemirror } from "vue-codemirror"
+import codemirrorPkg from 'vue-codemirror';
 import { javascript } from "@codemirror/lang-javascript"
 import { css } from "@codemirror/lang-css"
 import { html } from "@codemirror/lang-html"
@@ -13,7 +13,7 @@ const props = defineProps<{
 }>()
 
 const model = defineModel<string>()
-
+const { Codemirror } = codemirrorPkg;
 
 const extensions = [javascript(), css(), html()]
 

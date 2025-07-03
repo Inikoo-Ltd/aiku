@@ -5,7 +5,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import { onMounted, ref, watch } from 'vue'
 import { routeType } from '@/types/route'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 import axios from 'axios'
 import PortfoliosStepSyncShopify from '../Retina/Dropshipping/PortfoliosStepSyncShopify.vue'
 import EmptyState from '../Utils/EmptyState.vue'
@@ -13,6 +13,7 @@ import LoadingIcon from '../Utils/LoadingIcon.vue'
 import PortfoliosStepEdit from '../Retina/Dropshipping/PortfoliosStepEdit.vue'
 import ProductsSelector from './ProductsSelector.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { Message } from 'primevue'
 
 const props = defineProps<{
     step: {
@@ -33,6 +34,11 @@ const props = defineProps<{
 		type: string
 	}
     platform_user_id: number
+    is_platform_connected: boolean
+    customerSalesChannel: {
+        
+    }
+    onClickReconnect: Function
 }>()
 
 const emits = defineEmits<(e: "onDone") => void>()
@@ -56,11 +62,11 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
         },
         onSuccess: () => {
             router.reload({only: ['pageHead', 'products']})
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
-                type: "success"
-            })
+            // notify({
+            //     title: trans("Success!"),
+            //     text: trans("Successfully added portfolios"),
+            //     type: "success"
+            // })
 			props.step.current = 1
             // isOpenModalPortfolios.value = false
             idxSubmitSuccess.value += 1
@@ -170,11 +176,11 @@ const bulkUpload = () => {
 					set(progressToUploadToShopify.value, [product.id], 'loading')
 				})
 				selectedPortfoliosToSync.value = []
-				notify({
-					title: trans("Success!"),
-					text: trans("Successfully uploaded portfolios"),
-					type: "success",
-				})
+				// notify({
+				// 	title: trans("Success!"),
+				// 	text: trans("Successfully uploaded portfolios"),
+				// 	type: "success",
+				// })
 			},
 			onFinish: () => {
 				isLoadingBulkDeleteUpload.value = false
@@ -243,7 +249,7 @@ onMounted(() => {
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Add new products to your shop.') }}
+                {{ trans('Add new products to your shop') }}
             </div>
 <!--            <div class="relative text-right">-->
 <!--                <Button-->
@@ -279,7 +285,7 @@ onMounted(() => {
         </div> -->
 
         <!-- Head: step 2 (Sync to Shopify) -->
-        <div v-if="step.current == 1" class="grid grid-cols-4">
+        <div v-if="step.current == 1" class="grid grid-cols-2 md:grid-cols-4 gap-2">
             <div class="relative">
                 <Button
                     @click="step.current = 0"
@@ -288,6 +294,7 @@ onMounted(() => {
                     type="tertiary"
                 />
             </div>
+            
             <div class="text-center col-span-2">
                 <div class="font-bold text-2xl">{{ `Sync to ${platform_data.name}` }}</div>
                 <div class="text-gray-500 text-sm italic tracking-wide">
@@ -295,7 +302,8 @@ onMounted(() => {
                     {{ trans("All you see is unsynced products. You can remove or sync it all in one click.") }}
                 </div>
             </div>
-            <div class="relative space-x-2 space-y-1 text-right">
+
+            <div class="xcol-start-2 xmd:col-start-auto relative space-x-2 space-y-1 text-right">
                 <!-- Button: bulk delete -->
 <!--                <Button-->
 <!--                    v-if="portfoliosList?.length"-->
@@ -306,16 +314,6 @@ onMounted(() => {
 <!--                    :loading="isLoadingBulkDeleteUpload"-->
 <!--                />-->
 
-                <!-- Button: bulk upload -->
-                <Button
-                    v-if="portfoliosList?.length"
-                    @click="() => bulkUpload()"
-                    :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
-                    icon="fal fa-upload"
-                    size="s"
-                    type="positive"
-                    :loading="isLoadingBulkDeleteUpload"
-                />
             </div>
         </div>
 
@@ -396,9 +394,38 @@ onMounted(() => {
         <KeepAlive>
             <div v-if="step.current === 1">
                 <div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
+                    <!-- Section: Alert if Platform not connected yet -->
+                    <Message v-if="!is_platform_connected" severity="error" class="my-4 ">
+                        <!-- <template #icon>
+                        </template> -->
+                        
+                        <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
+                            <div>
+                                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                                <div class="inline items-center gap-x-2">
+                                    {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                                </div>
+                            </div>
+
+                            <div class="w-full sm:w-fit h-fit">
+                                <Button
+                                    v-if="customerSalesChannel?.reconnect_route?.name"
+                                    @click="() => onClickReconnect(customerSalesChannel)"
+                                    iconRight="fal fa-external-link"
+                                    :label="trans('Reconnect')"
+                                    zsize="xxs"
+                                    type="secondary"
+                                    class="xml-2"
+                                    full
+                                />
+                            </div>
+                        </div>
+                    </Message>
+
                     <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
                         <LoadingIcon />
                     </div>
+                    
                     <PortfoliosStepSyncShopify
                         v-else-if="portfoliosList?.length"
                         :portfolios="portfoliosList"
@@ -418,14 +445,30 @@ onMounted(() => {
                         }"
                     />
                 </div>
-                <div class="border-t border-gray-300 pt-4 w-full">
-                    <Button
-                        @click="emits('onDone')"
-                        :label="trans('Done & close')"
-                        full
-                        xxiconRight="faArrowRight"
-                        type="tertiary"
-                    />
+                
+                <div class="px-4">
+                    <!-- Button: bulk upload -->
+                    <div class="border-t border-gray-300 pt-4 w-full space-y-2">
+                        <Button
+                            v-if="portfoliosList?.length"
+                            @click="() => bulkUpload()"
+                            :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
+                            icon="fal fa-upload"
+                            xsize="s"
+                            v-tooltip="is_platform_connected ? null : trans('Platform is not connected yet')"
+                            :disabled="!is_platform_connected"
+                            full
+                            :type="is_platform_connected ? 'positive' : 'secondary'"
+                            :loading="isLoadingBulkDeleteUpload"
+                        />
+                        <Button
+                            @click="emits('onDone')"
+                            :label="trans('Close')"
+                            full
+                            xxiconRight="faArrowRight"
+                            type="tertiary"
+                        />
+                    </div>
                 </div>
             </div>
         </KeepAlive>
