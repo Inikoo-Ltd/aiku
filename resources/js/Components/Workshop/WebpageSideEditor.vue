@@ -14,7 +14,7 @@ import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import SiteSettings from '@/Components/Workshop/SiteSettings.vue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useLayoutStore } from '@/Stores/layout'
-import { getBlueprint, getBluprintPermissions, getEditPermissions, getDeletePermissions, getHiddenPermissions } from '@/Composables/getBlueprintWorkshop'
+import { getBlueprint, getEditPermissions, getDeletePermissions, getHiddenPermissions } from '@/Composables/getBlueprintWorkshop'
 import { Root, Daum } from '@/types/webBlockTypes'
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
@@ -243,7 +243,7 @@ defineExpose({
                       </div>
                     </div>
 
-                    <Collapse v-if="element?.web_block?.layout && getBluprintPermissions(element.type)"
+                    <Collapse v-if="element?.web_block?.layout"
                       :when="openedBlockSideEditor === index">
                       <div class="p-2 space-y-2">
                         <VisibleCheckmark v-model="element.visibility" @update:modelValue="sendBlockUpdate(element)" />

@@ -118,7 +118,7 @@ export const getBlueprint = (componentName: string, data : object ) => {
 	return components[componentName] ?? []
 }
 
-export const getBluprintPermissions = (componentName: string) => {
+/* export const getBluprintPermissions = (componentName: string) => {
 	const components: Component = {
 		"departments": false,
 		"family-1": false,
@@ -132,7 +132,7 @@ export const getBluprintPermissions = (componentName: string) => {
 		"products-1": false,
 	}
 	return components[componentName] ?? true
-}
+} */
 
 
 type PermissionData = {

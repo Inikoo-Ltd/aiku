@@ -445,6 +445,7 @@ const compUsersEditThisPage = computed(() => {
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
+console.log('props',props)
 </script>
 
 <template>
