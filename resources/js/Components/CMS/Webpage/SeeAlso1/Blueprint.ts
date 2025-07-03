@@ -16,7 +16,7 @@ export const blueprint = (data: object) => {
                     label: "Show Products",
                     type: "select_product",
                     props_data : {
-                        productCategory : data.model_id
+                        productCategory : data.product_category_id
                     }
                 },
             ],

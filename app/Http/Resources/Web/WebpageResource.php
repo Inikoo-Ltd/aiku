@@ -30,6 +30,12 @@ class WebpageResource extends JsonResource
 
         $webPageLayout = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
+        $modelId = null;
+        if($webpage->model_type == 'Product') {
+            $modelId = $webpage->model->family_id;
+        } else {
+            $modelId = $webpage->model_id;
+        }
 
         return [
             'id'                  => $webpage->id,
@@ -38,7 +44,8 @@ class WebpageResource extends JsonResource
             'domain'              => $webpage->website->domain ?? null,
             'website_layout'      => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
             'code'                => $webpage->code,
-            'model_id'            => $webpage->model_id,
+            'model_id'                               => $webpage->model_id,
+            'product_category_id'                    => $modelId,
             // 'url'                 => $webpage->url,
             'url'                 => $webpage->getUrl(),
             'type'                => $webpage->type,

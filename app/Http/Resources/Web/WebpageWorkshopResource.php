@@ -64,7 +64,8 @@ class WebpageWorkshopResource extends JsonResource
             'created_at'                             => $webpage->created_at,
             'updated_at'                             => $webpage->updated_at,
             'state'                                  => $webpage->state,
-            'model_id'                               => $modelId,
+            'model_id'                               => $webpage->model_id,
+            'product_category_id'                    => $modelId,
             'add_web_block_route'                    => [
                 'name'       => 'grp.models.webpage.web_block.store',
                 'parameters' => $webpage->id

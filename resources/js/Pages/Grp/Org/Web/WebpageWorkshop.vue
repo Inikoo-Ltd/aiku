@@ -191,7 +191,7 @@ const debounceSaveWorkshop = (block) => {
           },
         }
       );
-      data.value = response.data.data
+   /*    data.value = response.data.data */
       sendToIframe({ key: "reload", value: {} });
     } catch (error) {
       console.log(error)
