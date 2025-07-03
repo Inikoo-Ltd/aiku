@@ -41,7 +41,6 @@ class ScheduleGetRetinaOrders extends RetinaAction
             ->chunk(100, function ($channels) {
                 foreach ($channels as $channel) {
                     if ($user = $channel->user) {
-                        echo $user->id;
                         match ($channel->platform->type) {
                             PlatformTypeEnum::WOOCOMMERCE => CatchRetinaOrdersFromWooCommerce::dispatch($user),
                             PlatformTypeEnum::EBAY => CatchRetinaOrdersFromEbay::dispatch($user),
