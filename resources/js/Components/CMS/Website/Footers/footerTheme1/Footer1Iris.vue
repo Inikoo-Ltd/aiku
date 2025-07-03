@@ -13,10 +13,7 @@ import { inject ,ref} from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
-import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faFacebook, faWhatsapp)
@@ -27,7 +24,7 @@ defineProps<{
 }>();
 
 const layout = inject('layout', retinaLayoutStructure)
-const migration_redirect = layout?.iris?.migration_redirect
+
 const isLoadingSubmit = ref(false)
 const currentState = ref("")
 const inputEmail = ref("")
@@ -128,14 +125,14 @@ const onSubmitSubscribe = async () => {
                             <div
                                 class="hidden md:block grid grid-cols-1 md:cursor-default space-y-1 border-b pb-2 md:border-none">
                                 <div class="flex text-xl font-semibold w-fit leading-6">
-                                    <div v-html="resolveMigrationHrefInHTML(item.name,migration_redirect)" />
+                                    <div v-html="item.name" />
                                 </div>
 
                                 <div>
                                     <ul class="hidden md:block space-y-3">
                                         <li v-for="link in item.data" class="flex w-full items-center gap-2">
                                             <div class="text-sm block">
-                                                <div  v-html="resolveMigrationHrefInHTML(link.name,migration_redirect)" />
+                                                <div v-html="link.name" />
                                             </div>
                                         </li>
                                     </ul>
@@ -164,7 +161,7 @@ const onSubmitSubscribe = async () => {
                                                 style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
-                                                    <div v-html="resolveMigrationHrefInHTML(menu.name,migration_redirect)"></div>
+                                                    <div v-html="menu.name"></div>
                                                 </li>
                                             </ul>
                                         </DisclosurePanel>
@@ -193,7 +190,7 @@ const onSubmitSubscribe = async () => {
                                     <ul class="hidden md:block space-y-3">
                                         <li v-for="link in item.data" class="flex w-full items-center gap-2">
                                             <div class="text-sm block">
-                                                <div v-html="resolveMigrationHrefInHTML(link.name,migration_redirect)" />
+                                                <div v-html="link.name" />
                                             </div>
                                         </li>
                                     </ul>
@@ -222,7 +219,7 @@ const onSubmitSubscribe = async () => {
                                                 style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
-                                                    <div v-html="resolveMigrationHrefInHTML(menu.name,migration_redirect)"></div>
+                                                    <div v-html="menu.name"></div>
                                                 </li>
                                             </ul>
                                         </DisclosurePanel>
@@ -251,7 +248,7 @@ const onSubmitSubscribe = async () => {
                                     <ul class="hidden md:block space-y-3">
                                         <li v-for="link in item.data" class="flex w-full items-center gap-2">
                                             <div class="text-sm block">
-                                                <div v-html="resolveMigrationHrefInHTML(link.name,migration_redirect)" />
+                                                <div v-html="link.name" />
                                             </div>
                                         </li>
                                     </ul>
@@ -265,7 +262,7 @@ const onSubmitSubscribe = async () => {
                                             class="p-3 pb-0 md:p-0 transition-all flex justify-between cursor-default  w-full">
                                             <div class="flex justify-between w-full">
                                                 <span class="mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
-                                                    <div v-html="resolveMigrationHrefInHTML(item.name,migration_redirect)"></div>
+                                                    <div v-html="item.name"></div>
                                                 </span>
                                                 <div>
                                                     <FontAwesomeIcon :icon="faTriangle"
@@ -279,7 +276,7 @@ const onSubmitSubscribe = async () => {
                                                 style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
-                                                    <div v-html="resolveMigrationHrefInHTML(menu.name,migration_redirect)"></div>
+                                                    <div v-html="menu.name"></div>
                                                 </li>
                                             </ul>
                                         </DisclosurePanel>
@@ -395,7 +392,7 @@ const onSubmitSubscribe = async () => {
 
             <div id="footer_copyright"
                 class="text-[13px] leading-5 md:text-[12px] text-center md:w-fit mx-auto md:mx-0">
-                <div v-html="resolveMigrationHrefInHTML(modelValue?.copyright,migration_redirect) "></div>
+                <div v-html="modelValue?.copyright"></div>
             </div>
         </div>
     </div>

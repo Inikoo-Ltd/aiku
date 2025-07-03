@@ -8,7 +8,6 @@ import { faBars, faChevronLeft, faChevronRight as falChevronRight } from "@fal";
 import { ref, inject, nextTick, onMounted } from "vue";
 import { getStyles } from "@/Composables/styles";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
-import { resolveMigrationLink } from "@/Composables/SetUrl";
 import { debounce } from "lodash-es";
 import { trans } from "laravel-vue-i18n";
 
@@ -20,7 +19,7 @@ const props = withDefaults(defineProps<{
 }>(), {});
 
 const layout = inject("layout", layoutStructure);
-const migration_redirect = layout?.iris?.migration_redirect;
+;
 
 const isCollapsedOpen = ref(false);
 const debSetCollapsedTrue = debounce(() => {
@@ -116,7 +115,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
                     <a
-                        :href="resolveMigrationLink(navigation?.link?.href,migration_redirect)"
+                        :href="navigation?.link?.href"
                         :target="navigation?.link?.target"
                         @mouseenter="() => (onMouseEnterMenu(navigation, idxNavigation))"
                         amouseleave="() => onMouseLeaveMenu()" :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
@@ -158,7 +157,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
                             <div v-for="link in subnav.links" :key="link.url" class="flex items-center gap-x-3">
                                 <FontAwesomeIcon :icon="link.icon || faChevronRight"
                                                  class="text-[10px] text-gray-400" />
-                                <a :href="resolveMigrationLink(link?.link?.href,migration_redirect)" :target="link?.link?.target" :style="getStyles(fieldValue?.sub_navigation_link?.properties,screenType)"
+                                <a :href="link?.link?.href" :target="link?.link?.target" :style="getStyles(fieldValue?.sub_navigation_link?.properties,screenType)"
                                    class="text-gray-500 hover:text-orange-500 hover:underline transition duration-200">
                                     {{ link.label }}
                                 </a>

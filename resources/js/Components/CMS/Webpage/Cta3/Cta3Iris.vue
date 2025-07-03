@@ -2,7 +2,6 @@
 import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { inject } from "vue"
-import { resolveMigrationLink, resolveMigrationHrefInHTML } from "@/Composables/SetUrl"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 
@@ -14,7 +13,7 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
-const migration_redirect = layout?.iris?.migration_redirect
+
 </script>
 
 <template>
@@ -36,10 +35,10 @@ const migration_redirect = layout?.iris?.migration_redirect
 			<div :style="getStyles(fieldValue.container.properties?.block, screenType)"
 				class="relative z-10 w-full bg-white bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:flex-col sm:items-start lg:w-96">
 				<div class="text-center lg:text-left text-gray-600 pr-3 mb-4 w-full">
-					<div v-html="resolveMigrationHrefInHTML(fieldValue.text, migration_redirect)" />
+					<div v-html="fieldValue.text" />
 				</div>
 
-				<a typeof="button" :href="resolveMigrationLink(fieldValue?.button?.link?.href, migration_redirect)"
+				<a typeof="button" :href="fieldValue?.button?.link?.href"
 					:target="fieldValue?.button?.link?.target">
 					<Button :injectStyle="{
 						...getStyles(fieldValue?.button?.container?.properties, screenType),

@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles"
-import { checkVisible } from "@/Composables/Workshop"
 import { inject } from "vue"
 import Image from "@/Components/Image.vue"
 import MobileHeader from "../MobileHeader.vue";
-import { resolveMigrationLink } from "@/Composables/SetUrl"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 
@@ -36,7 +34,7 @@ const props = defineProps<{
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject('layout', layoutStructure)
-const migration_redirect = layout?.iris?.migration_redirect
+
 console.log('la', layout)
 </script>
 
@@ -49,7 +47,7 @@ console.log('la', layout)
 					<component
 						v-if="fieldValue?.logo?.image?.source"
 						:is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
-						:href="resolveMigrationLink(props.fieldValue?.logo?.link?.href,migration_redirect)"
+						:href="props.fieldValue?.logo?.link?.href"
 						:target="fieldValue?.logo?.link?.target || '_self'"
 						rel="noopener noreferrer"
 						class="block w-fit h-auto">

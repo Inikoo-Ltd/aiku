@@ -7,7 +7,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import { json } from "@codemirror/lang-json"
 import { basicSetup } from "codemirror"
-import { Codemirror } from "vue-codemirror"
+import codemirrorPkg from 'vue-codemirror';
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
@@ -23,7 +23,7 @@ const props = defineProps<{
     maxLength?: number
   }
 }>()
-
+const { Codemirror } = codemirrorPkg;
 const type = ref(null)
 const optionsType = [
   { label: 'Organisation', value: 'organisation' }
