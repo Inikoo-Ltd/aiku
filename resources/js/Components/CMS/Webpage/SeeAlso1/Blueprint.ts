@@ -1,5 +1,4 @@
 export const blueprint = (data: object) => {
-    console.log('haloo',data)
 	return {
 		blueprint: [
         {
