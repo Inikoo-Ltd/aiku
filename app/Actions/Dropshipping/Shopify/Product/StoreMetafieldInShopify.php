@@ -57,7 +57,7 @@ class StoreMetafieldInShopify
                 ]
             ];
 
-            $response = $shopifyUser->getShopifyClient()->request('POST', '/admin/api/2024-04/graphql.json', [
+            $response = $shopifyUser->getShopifyClient()->request('POST', '/admin/api/2024-07/graphql.json', [
                 'json' => [
                     'query' => $mutation,
                     'variables' => $variables

@@ -10,10 +10,9 @@
 namespace App\Http\Resources\CRM;
 
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -29,25 +28,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class CustomerSalesChannelsResource extends JsonResource
 {
     use GetPlatformLogo;
+    use WithPlatformStatusCheck;
+
     public function toArray($request): array
     {
         /** @var Platform $platform */
         $platform = Platform::find($this->platform_id);
 
         $customerSalesChannels = CustomerSalesChannel::find($this->id);
-        $status = 'connected';
-        if ($customerSalesChannels->user instanceof ShopifyUser) {
-            $settings = $customerSalesChannels->user->settings ?? [];
-            if (empty($settings) && empty($settings['webhook'])) {
-                $status = 'not-connected';
-            }
-        } elseif ($customerSalesChannels->user instanceof WooCommerceUser) {
-            $settings = $customerSalesChannels->user->settings ?? [];
-
-            if (empty($settings['credentials']) or empty($settings['webhooks'])) {
-                $status = 'not-connected';
-            }
-        }
+        $status = $this->checkStatus($customerSalesChannels);
 
         return [
             'slug'              => $this->slug,

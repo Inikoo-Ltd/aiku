@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 02-07-2025-18h-07m
@@ -40,7 +41,7 @@ class RepairSellingPriceInProductPortfolios
         if ($command->argument('portfolio')) {
             $portfolio = Portfolio::find($command->argument('portfolio'));
             $this->handle($portfolio);
-            
+
         } else {
             $count = Portfolio::where('item_type', 'Product')->count();
 

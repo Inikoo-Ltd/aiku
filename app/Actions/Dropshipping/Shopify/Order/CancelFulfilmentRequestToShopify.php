@@ -30,7 +30,7 @@ class CancelFulfilmentRequestToShopify extends OrgAction
         $fulfilmentShopify = $palletReturn->shopifyFulfilment;
 
         $client = $shopifyUser->api()->getRestClient();
-        $response = $client->request('POST', "/admin/api/2024-04/fulfillment_orders/$fulfilmentShopify->shopify_fulfilment_id/cancellation_request.json", [
+        $response = $client->request('POST', "/admin/api/2024-07/fulfillment_orders/$fulfilmentShopify->shopify_fulfilment_id/cancellation_request.json", [
             'cancellation_request' => [
                 'message' => $palletReturn->deleted_note
             ]

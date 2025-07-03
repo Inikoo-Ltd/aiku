@@ -55,17 +55,18 @@ class StoreTradeUnit extends OrgAction
             'gross_weight'     => ['sometimes', 'required', 'numeric'],
             'net_weight'       => ['sometimes', 'required', 'numeric'],
             'marketing_weight' => ['sometimes', 'required', 'numeric'],
-            'dimensions'       => ['sometimes', 'required'],
+            'marketing_dimensions' => ['sometimes', 'required'],
             'type'             => ['sometimes', 'required', 'string'],
             'data'             => ['sometimes', 'required', 'array'],
 
         ];
 
         if (!$this->strict) {
-            $rules['gross_weight'] = ['sometimes', 'nullable', 'numeric'];
-            $rules['net_weight']   = ['sometimes', 'nullable', 'numeric'];
-            $rules['source_slug']  = ['sometimes', 'nullable', 'string'];
-            $rules                 = $this->noStrictStoreRules($rules);
+            $rules['gross_weight']     = ['sometimes', 'nullable', 'numeric'];
+            $rules['net_weight']       = ['sometimes', 'nullable', 'numeric'];
+            $rules['marketing_weight'] = ['sometimes', 'nullable', 'numeric'];
+            $rules['source_slug']      = ['sometimes', 'nullable', 'string'];
+            $rules                     = $this->noStrictStoreRules($rules);
         }
 
         return $rules;

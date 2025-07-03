@@ -24,7 +24,7 @@ class HandleApiDeleteProductFromShopify extends OrgAction
     public function handle(ShopifyUser $shopifyUser, ShopifyUserHasProduct $product): void
     {
         $client   = $shopifyUser->api()->getRestClient();
-        $response =  $client->request('DELETE', '/admin/api/2024-04/products/'.$product->shopify_product_id.'.json');
+        $response =  $client->request('DELETE', '/admin/api/2024-07/products/'.$product->shopify_product_id.'.json');
 
         if ($response['status'] == 422) {
             abort($response['status'], $response['body']);

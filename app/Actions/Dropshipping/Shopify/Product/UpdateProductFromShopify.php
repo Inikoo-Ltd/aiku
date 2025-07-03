@@ -33,7 +33,7 @@ class UpdateProductFromShopify extends OrgAction
             ]
         ];
 
-        return $shopifyUser->api()->getRestClient()->request('PUT', '/admin/api/2024-04/products/'.$productId.'.json', $body);
+        return $shopifyUser->api()->getRestClient()->request('PUT', '/admin/api/2024-07/products/'.$productId.'.json', $body);
     }
 
     public function asController(Customer $customer, ShopifyUser $shopifyUser): \GuzzleHttp\Promise\PromiseInterface

@@ -34,7 +34,7 @@ class DeleteProductWebhooksWooCommerce extends OrgAction
             ->first();
 
         if ($portfolio) {
-            DeletePortfolio::run($wooCommerceUser->customerSalesChannel, $portfolio, true);
+            DeletePortfolio::run($portfolio, true);
         }
     }
 

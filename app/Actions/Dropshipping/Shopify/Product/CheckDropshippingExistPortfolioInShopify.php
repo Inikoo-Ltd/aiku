@@ -41,7 +41,7 @@ class CheckDropshippingExistPortfolioInShopify
         } catch (\Exception $e) {
             \Sentry::captureMessage('Error in CheckExistPortfolioInShopify: ' . $e->getMessage());
 
-            return null;
+            return [];
         }
     }
 }

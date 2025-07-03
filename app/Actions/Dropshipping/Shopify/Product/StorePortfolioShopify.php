@@ -34,7 +34,7 @@ class StorePortfolioShopify extends OrgAction
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
         DB::transaction(function () use ($shopifyUser, $modelData) {
-            $response = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-04/products.json');
+            $response = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-07/products.json');
 
             $products = collect(Arr::get($response, 'body.products', []));
             $productCodes = $products->flatMap(function ($product) {

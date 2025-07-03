@@ -44,7 +44,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
         $toPayByOther = round($toPay - $toPayByBalance, 2);
 
-        if($toPayByOther == 0) {
+        if ($toPayByOther == 0) {
             abort(404);
         }
 

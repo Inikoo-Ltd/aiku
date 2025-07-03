@@ -31,7 +31,7 @@ class DispatchFulfilmentOrderShopify extends OrgAction
         $shopifyUser = $shopifyUserHasFulfilment->shopifyUser;
         $client = $shopifyUser->api()->getRestClient();
 
-        $response = $client->request('POST', "/admin/api/2024-04/fulfillments", [
+        $response = $client->request('POST', "/admin/api/2024-07/fulfillments", [
             'fulfillment' => [
                 'line_items_by_fulfillment_order' => [
                     [
