@@ -238,24 +238,25 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 
     <!-- Section: Alert if Platform not connected yet -->
     <Message v-if="!is_platform_connected" severity="error" class="m-4 ">
-        <template #icon>
-            <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true" />
-        </template>
-
-        <div class="ml-2 font-normal flex justify-between w-full">
-            <div class="flex items-center gap-x-2">
-                {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+        <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
+            <div>
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <div class="inline items-center gap-x-2">
+                    {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                </div>
             </div>
 
-            <Button
-                v-if="customer_sales_channel?.reconnect_route?.name"
-                @click="() => onClickReconnect(customer_sales_channel)"
-                iconRight="fal fa-external-link"
-                :label="trans('Reconnect')"
-                zsize="xxs"
-                type="secondary"
-                class="ml-2"
-            />
+            <div class="w-full sm:w-fit h-fit">
+                <Button
+                    v-if="customer_sales_channel?.reconnect_route?.name"
+                    @click="() => onClickReconnect(customer_sales_channel)"
+                    iconRight="fal fa-external-link"
+                    :label="trans('Reconnect')"
+                    zsize="xxs"
+                    type="secondary"
+                    full
+                />
+            </div>
         </div>
     </Message>
 
