@@ -96,7 +96,7 @@ const responsiveGridClass = computed(() => {
           </div>
           <div>
             <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup" label="Set All Products to Portfolio"
-              class="!p-3 !w-auto" type="secondary" />
+              class="!p-3 !w-auto py-[16px] px-[65px]" type="secondary" />
           </div>
         </div>
 

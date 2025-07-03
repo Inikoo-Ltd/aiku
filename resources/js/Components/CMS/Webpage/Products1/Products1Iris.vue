@@ -513,8 +513,8 @@ const handleSetAllToPortfolio = () => {
 
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
-                <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4">
-                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore">
+                <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
+                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore" class="py-[14px] px-65px">
                         <template v-if="loadingMore">
                             <LoadingText />
                         </template>
