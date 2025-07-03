@@ -104,6 +104,8 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
         $toPayByOther = round($toPay - $toPayByBalance, 2);
 
+
+
         return Inertia::render(
             'Dropshipping/RetinaDropshippingCheckout',
             [
@@ -112,25 +114,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                 'pageHead'    => [
                     'title'      => $order->reference,
                     'model'      => __('Checkout'),
-                    // 'icon'       => [
-                    //     'icon'  => 'fal fa-shopping-basket',
-                    //     'title' => __('customer client')
-                    // ],
-                    // 'afterTitle' => [
-                    //     'label' => ' @'.$this->platform->name
-                    // ],
-                    // 'actions'   => [
-                    //     [
-                    //         'type'   => 'buttonGroup',
-                    //         'button' => [
-                    //             [
-                    //                 'type'    => 'button',
-                    //                 'key'     => 'upload-add',
-                    //                 'icon'      => 'fal fa-upload',
-                    //             ],
-                    //         ],
-                    //     ],
-                    // ]
+
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
                 'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
