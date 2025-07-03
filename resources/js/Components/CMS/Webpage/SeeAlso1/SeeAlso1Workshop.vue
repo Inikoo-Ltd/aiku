@@ -59,8 +59,8 @@ const nextEl = ref(null)
     width: 'auto'
   }">
     <!-- Title -->
-    <div class="px-4 pt-6 pb-2">
-      <div class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+    <div class="px-4 py-6 pb-2">
+      <div class="text-3xl font-semibold text-gray-800">
         <EditorV2 v-model="modelValue.title" @focus="() => {
           sendMessageToParent('activeBlock', indexBlock)
         }" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
@@ -71,8 +71,9 @@ const nextEl = ref(null)
       </div>
     </div>
 
+
     <!-- Carousel with custom navigation -->
-    <div class="relative px-4 pb-6" @click="() => {
+    <div class="relative px-4 py-6" @click="() => {
       sendMessageToParent('activeBlock', indexBlock)
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
@@ -85,9 +86,10 @@ const nextEl = ref(null)
       </button>
 
       <!-- Swiper -->
+      
       <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
         :navigation="{ prevEl, nextEl }" pagination>
-        <SwiperSlide v-for="(product, index) in modelValue?.settings?.products_data?.products" :key="index"
+        <SwiperSlide v-for="(product, index) in  modelValue?.settings.products_data.type== 'custom' ? modelValue?.settings?.products_data?.products : modelValue?.settings?.products_data?.top_sellers" :key="index"
           class="h-full">
           <div class="h-full">
             <div v-if="product" class="h-full flex flex-col">

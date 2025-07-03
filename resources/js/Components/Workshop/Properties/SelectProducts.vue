@@ -4,14 +4,14 @@ import draggable from 'vuedraggable'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faTimes } from '@fas'
-import { ulid } from 'ulid'
+import { faTimes, faGripVertical } from '@fas'
 
 // Props
 const props = defineProps<{
   modelValue: {
     type?: string
     products?: any[]
+    top_sellers: any[]
   } | null
   productCategory: number | null
 }>()
@@ -20,49 +20,47 @@ const emits = defineEmits<{
   (e: 'update:modelValue', value: { type?: string; products?: any[] }): void
 }>()
 
-// Ensure safe fallback structure if modelValue is null
+// Normalized model
 const normalizedModelValue = computed(() => {
   return props.modelValue ?? {
     type: '',
-    products: []
+    products: [],
+    top_sellers: []
   }
 })
 
-// Local binding for product type
 const localType = computed({
   get: () => normalizedModelValue.value.type ?? '',
   set: (val: string) => {
     emits('update:modelValue', {
       type: val,
-      products: normalizedModelValue.value.products ?? []
+      products: normalizedModelValue.value.products ?? [],
+      top_sellers: normalizedModelValue.value.top_sellers ?? []
     })
   }
 })
 
-// Local binding for product list
 const localProducts = computed({
   get: () => normalizedModelValue.value.products ?? [],
   set: (val: any[]) => {
     emits('update:modelValue', {
       type: normalizedModelValue.value.type ?? 'custom',
-      products: val
+      products: val,
+      top_sellers: normalizedModelValue.value.top_sellers ?? []
     })
   }
 })
 
-// Update a single product at a given index
 function updateProductAt(index: number, newProduct: any) {
   const updated = [...localProducts.value]
   updated[index] = newProduct
   localProducts.value = updated
 }
 
-// Add a new placeholder product
 function addEmptyProduct() {
   localProducts.value = [...localProducts.value, { id: `new ${localProducts.value.length}` }]
 }
 
-// Remove product by index
 function removeProduct(index: number) {
   const updated = [...localProducts.value]
   updated.splice(index, 1)
@@ -81,12 +79,13 @@ function removeProduct(index: number) {
       >
         <option value="">Select type</option>
         <option value="custom">Custom</option>
-        <!-- Future Option: <option value="best-seller">Best Seller</option> -->
+        <option value="best-seller">Best Seller</option>
       </select>
     </div>
 
-    <!-- Product List (Draggable) -->
+    <!-- Draggable Custom Products -->
     <draggable
+      v-if="localType === 'custom'"
       v-model="localProducts"
       item-key="id"
       handle=".drag-handle"
@@ -107,9 +106,7 @@ function removeProduct(index: number) {
 
           <!-- Drag Handle -->
           <div class="cursor-move drag-handle text-gray-400 hover:text-gray-600 text-sm mb-2 flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M7 4a1 1 0 112 0 1 1 0 01-2 0zM7 10a1 1 0 112 0 1 1 0 01-2 0zM7 16a1 1 0 112 0 1 1 0 01-2 0zM11 4a1 1 0 112 0 1 1 0 01-2 0zM11 10a1 1 0 112 0 1 1 0 01-2 0zM11 16a1 1 0 112 0 1 1 0 01-2 0z" />
-            </svg>
+            <FontAwesomeIcon :icon="faGripVertical" />
             <span>Drag to reorder</span>
           </div>
 
@@ -141,9 +138,30 @@ function removeProduct(index: number) {
       </template>
     </draggable>
 
-    <!-- Add Product -->
-    <div class="pt-2">
+    <!-- Add Product Button -->
+    <div v-if="localType === 'custom'" class="pt-2">
       <Button type="create" label="Add Product" full @click="addEmptyProduct" />
+    </div>
+
+    <!-- Best Seller Read-Only List -->
+    <div v-else-if="localType === 'best-seller'" class="space-y-4">
+      <div
+        v-for="(product, index) in normalizedModelValue.top_sellers"
+        :key="product.id || index"
+        class="border border-gray-300 rounded p-4 bg-gray-50 shadow-sm relative"
+      >
+        <!-- Static Icon -->
+        <div class="text-gray-300 text-sm mb-2 flex items-center gap-1">
+          <FontAwesomeIcon :icon="faGripVertical" />
+          <span>Best Seller Product {{ index + 1 }}</span>
+        </div>
+
+        <!-- Read-only Product Info -->
+        <div class="text-gray-700">
+          <div class="font-semibold">{{ product.code }} - {{ product.name }}</div>
+          <div class="text-sm text-gray-500">Slug: {{ product.slug }}</div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

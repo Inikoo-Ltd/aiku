@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from "vue"
+import { ref, computed, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Components/CMS/Webpage/Products1/ProductRender.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -19,7 +19,6 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 library.add(faChevronLeft, faChevronRight)
 
-const dummyProductImage = '/product/product_dummy.jpeg'
 
 const props = defineProps<{
 	fieldValue: FieldValue
@@ -52,20 +51,24 @@ const nextEl = ref(null)
 </script>
 
 <template>
-  <div id="see-also-carousel" class="w-full pb-6" :style="{
+ <div id="see-also-carousel" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'
   }">
     <!-- Title -->
-    <div class="px-4 pt-6 pb-2">
-      <div class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+    <div class="px-4 py-6 pb-2">
+      <div class="text-3xl font-semibold text-gray-800">
         <div v-html="fieldValue.title"></div>
       </div>
     </div>
 
+
     <!-- Carousel with custom navigation -->
-    <div class="relative px-4 pb-6" >
+    <div class="relative px-4 py-6" @click="() => {
+      sendMessageToParent('activeBlock', indexBlock)
+      sendMessageToParent('activeChildBlock', bKeys[0])
+    }">
       <!-- Tombol Navigasi Custom -->
       <button ref="prevEl" class="swiper-nav-button left-0">
         <FontAwesomeIcon :icon="['fas', 'chevron-left']" />
@@ -75,17 +78,20 @@ const nextEl = ref(null)
       </button>
 
       <!-- Swiper -->
+      
       <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
         :navigation="{ prevEl, nextEl }" pagination>
-        <SwiperSlide v-for="(product, index) in fieldValue?.settings?.products_data?.products" :key="index">
-          <div v-if="product">
-            <ProductRender :product="product" :productHasPortfolio="[]" />
-          </div>
-          <div v-else
-            class="h-full text-gray-400 text-sm text-center py-6 p-3 relative rounded-lg shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            No Product
+        <SwiperSlide v-for="(product, index) in  fieldValue?.settings.products_data.type== 'custom' ? fieldValue?.settings?.products_data?.products : fieldValue?.settings?.products_data?.top_sellers" :key="index"
+          class="h-full">
+          <div class="h-full">
+            <div v-if="product" class="h-full flex flex-col">
+              <ProductRender :product="product" :productHasPortfolio="[]" />
+            </div>
+            <div v-else>
+            </div>
           </div>
         </SwiperSlide>
+
       </Swiper>
     </div>
   </div>
