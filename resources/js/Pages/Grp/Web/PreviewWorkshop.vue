@@ -74,7 +74,6 @@ onMounted(() => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
         if (event.data.key === 'reload') {
-            console.log('haloo', event)
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation'],
                 onSuccess: () => {

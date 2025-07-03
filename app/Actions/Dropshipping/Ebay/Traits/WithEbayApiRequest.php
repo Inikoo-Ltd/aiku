@@ -21,6 +21,7 @@ trait WithEbayApiRequest
      */
     protected function getEbayConfig()
     {
+
         return [
             'client_id' => config('services.ebay.client_id'),
             'client_secret' => config('services.ebay.client_secret'),
@@ -69,6 +70,7 @@ trait WithEbayApiRequest
      */
     public function getEbayAuthUrl($state = null)
     {
+
         $config = $this->getEbayConfig();
 
         $scopes = [
@@ -99,6 +101,7 @@ trait WithEbayApiRequest
         }
 
         $queryString = http_build_query($params);
+
 
         return $this->getEbayOAuthUrl() . "/oauth2/authorize?{$queryString}";
     }
@@ -165,13 +168,13 @@ trait WithEbayApiRequest
     }
 
     /**
-     * Get valid eBay access token (refresh if needed)
+     * Get a valid eBay access token (refresh if needed)
      */
     public function getEbayAccessToken()
     {
         $config = $this->getEbayConfig();
 
-        // Check if token exists and is not expired
+        // Check if a token exists and is not expired
         if ($config['access_token'] && Arr::get($this->settings, 'credentials.ebay_token_expires_at')) {
             return $config['access_token'];
         }

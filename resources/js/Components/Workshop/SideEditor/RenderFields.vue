@@ -100,7 +100,6 @@ const keyRender = ref(1)
     </div>
   </div>
 
-  
   <component
     :key="keyRender"
     :is="getComponent(blueprint.type)"

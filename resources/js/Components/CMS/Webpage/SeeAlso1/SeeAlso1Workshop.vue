@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import { faHeart } from '@far';
-import { faCircle, faStar } from '@fas';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
-import { computed } from "vue";
-import ProductRender from '@/Components/CMS/Webpage/Products1/ProductRender.vue';
+import ProductRender from '@/Components/CMS/Webpage/Products1/ProductRender.vue'
+import { sendMessageToParent } from "@/Composables/Workshop"
+import Blueprint from './Blueprint'
+
+// Swiper
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
+import { Navigation, Pagination } from 'swiper/modules'
+
+// Font Awesome
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+library.add(faChevronLeft, faChevronRight)
 
 const dummyProductImage = '/product/product_dummy.jpeg'
 
@@ -12,34 +25,94 @@ const props = defineProps<{
   modelValue: any
   webpageData?: any
   blockData?: Object
+  indexBlock?: Number
   screenType: "mobile" | "tablet" | "desktop"
 }>()
 
+const emits = defineEmits<{
+  (e: "update:modelValue", value: string): void
+  (e: "autoSave"): void
+}>()
 
 
-const responsiveGridClass = computed(() => {
+const layout: any = inject("layout", {})
+const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+
+const slidesPerView = computed(() => {
   const perRow = props.modelValue?.settings?.per_row ?? {}
-
-  const columnCount = {
+  return {
     desktop: perRow.desktop ?? 4,
     tablet: perRow.tablet ?? 4,
     mobile: perRow.mobile ?? 2,
-  }
-
-  const count = columnCount[props.screenType] ?? 1
-  return `grid-cols-${count}`
+  }[props.screenType] ?? 1
 })
+
+// Refs untuk custom navigation
+const prevEl = ref(null)
+const nextEl = ref(null)
 </script>
 
 <template>
-  <pre>{{  modelValue?.settings }}</pre>
-  <div class="grid gap-6 p-4" :class="responsiveGridClass"
-    :style="getStyles(modelValue.container?.properties, screenType)">
-    <div v-for="(product, index) in modelValue?.settings?.products_data?.products" :key="index" class="border p-3 relative rounded shadow-sm bg-white">
-    <!--   <ProductRender :product="product" :key="index" :productHasPortfolio="[]" /> -->
-       sdfsdf
+  <div id="see-also-carousel" class="w-full pb-6" :style="{
+    ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+    ...getStyles(modelValue.container?.properties, screenType),
+    width: 'auto'
+  }">
+    <!-- Title -->
+    <div class="px-4 py-6 pb-2">
+      <div class="text-3xl font-semibold text-gray-800">
+        <EditorV2 v-model="modelValue.title" @focus="() => {
+          sendMessageToParent('activeBlock', indexBlock)
+        }" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
+          name: webpageData.images_upload_route.name,
+          parameters: { modelHasWebBlocks: blockData.id }
+        }" />
+
+      </div>
+    </div>
+
+
+    <!-- Carousel with custom navigation -->
+    <div class="relative px-4 py-6" @click="() => {
+      sendMessageToParent('activeBlock', indexBlock)
+      sendMessageToParent('activeChildBlock', bKeys[0])
+    }">
+      <!-- Tombol Navigasi Custom -->
+      <button ref="prevEl" class="swiper-nav-button left-0">
+        <FontAwesomeIcon :icon="['fas', 'chevron-left']" />
+      </button>
+      <button ref="nextEl" class="swiper-nav-button right-0">
+        <FontAwesomeIcon :icon="['fas', 'chevron-right']" />
+      </button>
+
+      <!-- Swiper -->
+      
+      <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
+        :navigation="{ prevEl, nextEl }" pagination>
+        <SwiperSlide v-for="(product, index) in  modelValue?.settings.products_data.type== 'custom' ? modelValue?.settings?.products_data?.products : modelValue?.settings?.products_data?.top_sellers" :key="index"
+          class="h-full">
+          <div class="h-full">
+            <div v-if="product" class="h-full flex flex-col">
+              <ProductRender :product="product" :productHasPortfolio="[]" />
+            </div>
+            <div v-else
+              class="h-full text-gray-400 text-sm text-center py-6 p-3 relative rounded-lg shadow-sm bg-white hover:shadow-md transition-all duration-200">
+              No Product
+            </div>
+          </div>
+        </SwiperSlide>
+
+      </Swiper>
     </div>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.swiper-nav-button {
+  @apply absolute top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full shadow-md p-2 hover:bg-gray-100 transition-all duration-300;
+}
+
+.swiper-nav-button svg {
+  @apply text-gray-700 w-4 h-4;
+}
+</style>

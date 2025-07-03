@@ -131,9 +131,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
         <!-- Top Section -->
         <div>
-
-
-            <div v-if="product.top_seller"
+            <div v-if="product?.top_seller"
                 class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
 
                 <!-- Medal Icon -->
@@ -157,6 +155,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                 </div>
                 <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
                     class="cursor-pointer absolute top-2 right-2 group text-xl ">
+
                     <FontAwesomeIcon 
                         v-if="product.is_favourite" 
                         :icon="fasHeart" 
@@ -175,6 +174,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                             fixed-width
                         />
                     </div>
+
                 </div>
             </template>
 
@@ -233,8 +233,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
         </div>
 
-        <!-- Button: add to portfolios -->
-        <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
+
+            <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
     </div>
 </template>
 
