@@ -10,20 +10,13 @@
 namespace App\Actions\Dropshipping\Ebay;
 
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
-use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
+use App\Actions\RetinaAction;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class AuthorizeRetinaEbayUser extends OrgAction
+class AuthorizeRetinaEbayUser extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithActionUpdate;
     use WithEbayApiRequest;
 
     public $commandSignature = 'retina:ds:authorize-ebay {customer} {name} {url}';
@@ -38,29 +31,18 @@ class AuthorizeRetinaEbayUser extends OrgAction
         return $url;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction || $request->user() instanceof WebUser) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
-    }
 
     public function asController(ActionRequest $request): string
     {
-        $customer = $request->user()->customer;
-        $this->initialisationFromShop($customer->shop, $request);
-
+        $this->initialisation($request);
         return $this->handle();
     }
 
     public function asCommand(Command $command): void
     {
-        $modelData = [];
 
-        $customer = Customer::find($command->argument('customer'))->first();
+        $this->customer = Customer::find($command->argument('customer'))->first();
 
-        $this->handle($customer, $modelData);
+        $this->handle();
     }
 }
