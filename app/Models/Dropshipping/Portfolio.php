@@ -49,10 +49,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $platform_product_id
  * @property string|null $errors_response
  * @property string|null $platform_handle
- * @property string $selling_price
- * @property string $margin
- * @property string $vat_rate
- * @property string $price_inc_vat
+ * @property string|null $selling_price
+ * @property string|null $margin
+ * @property string|null $vat_rate
+ * @property string|null $price_inc_vat
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
@@ -80,6 +80,7 @@ class Portfolio extends Model implements Auditable
         'type'       => PortfolioTypeEnum::class,
         'data'       => 'array',
         'settings'   => 'array',
+        'errors_response'   => 'array',
         'status'     => 'boolean',
         'added_at'   => 'datetime',
         'removed_at' => 'datetime',
@@ -88,6 +89,7 @@ class Portfolio extends Model implements Auditable
     protected $attributes = [
         'data'     => '{}',
         'settings' => '{}',
+        'errors_response' => '{}',
     ];
 
     protected $guarded = [];

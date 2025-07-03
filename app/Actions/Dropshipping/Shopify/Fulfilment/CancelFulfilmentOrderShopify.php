@@ -29,7 +29,7 @@ class CancelFulfilmentOrderShopify extends OrgAction
     public function handle(ShopifyUserHasFulfilment $shopifyUserHasFulfilment, ShopifyUser $shopifyUser): void
     {
         $client = $shopifyUser->api()->getRestClient();
-        $response = $client->request('POST', "/admin/api/2024-04/orders/$shopifyUserHasFulfilment->shopify_order_id/cancel.json", [
+        $response = $client->request('POST', "/admin/api/2024-07/orders/$shopifyUserHasFulfilment->shopify_order_id/cancel.json", [
             'email' => true,
             'reason' => 'inventory'
         ]);

@@ -10,19 +10,20 @@ import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
 import { inject, onMounted, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
-import { faStar } from "@fas"
-import { faCheck } from "@far"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import { get, set } from "lodash"
+import { get, set } from "lodash-es"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
-library.add( faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck )
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
+import { faStar } from "@fas"
+import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
+import { faCheck } from "@far"
+library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck )
 
 interface PlatformData {
 	id: number
@@ -40,6 +41,12 @@ const props = defineProps<{
 	
     platform_data: PlatformData
 	platform_user_id: number
+	is_platform_connected: boolean
+	customerSalesChannel: {
+		id: number
+		slug: string
+		name: string
+	}
 }>()
 
 function portfolioRoute(product: Product) {
@@ -89,30 +96,33 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
         }
     }
 }
+
 onMounted(() => {
-    // emits('mounted')
-    props.data.data?.forEach(porto => {
-        console.log('porto', selectSocketiBasedPlatform(porto))
-        const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
-            selectSocketiBasedPlatform(porto)?.action,
-            (eventData) => {
-                console.log('socket in: ', porto.id, eventData)
-                if(eventData.errors_response) {
-                    set(progressToUploadToShopify.value, [porto.id], 'error')
-                    setTimeout(() => {
-                        set(progressToUploadToShopify.value, [porto.id], null)
-                    }, 3000);
+    props.data?.data?.forEach(porto => {
+		if (selectSocketiBasedPlatform(porto)) {
+			const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
+				selectSocketiBasedPlatform(porto)?.action,
+				(eventData) => {
+					console.log('socket in: ', porto.id, eventData)
+					if(eventData.errors_response) {
+						set(progressToUploadToShopify.value, [porto.id], 'error')
+						setTimeout(() => {
+							set(progressToUploadToShopify.value, [porto.id], null)
+						}, 3000);
+	
+					} else {
+						set(progressToUploadToShopify.value, [porto.id], 'success')
+					}
+				}
+			);
 
-                } else {
-                    set(progressToUploadToShopify.value, [porto.id], 'success')
-                }
-            }
-        );
-
-        console.log('xxx', xxx)
+			console.log(`Subscription porto id: ${porto.id}`, xxx)
+	
+		}
     });
 
 })
+
 </script>
 
 <template>
@@ -171,32 +181,38 @@ onMounted(() => {
 			</div>
 		</template>
 
-		<!-- Column: Price -->
+		<!-- Column: Status -->
 		<template #cell(status)="{ item: product }">
 			<div class="flex justify-center">
-				
-				<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-				<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
-				<div v-else>
-					<ButtonWithLink
-						:routeTarget="product.platform_upload_portfolio"
-						label="Upload"
-						icon="fal fa-upload"
-						type="positive"
-						size="xs"
-						:bindToLink="{
-							preserveScroll: true,
-						}"
-						@success="() => set(progressToUploadToShopify, [product.id], 'loading')"
-					/>
-				</div>
+				<template v-if="is_platform_connected">
+					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
+					<div v-else>
+						<ButtonWithLink
+							:routeTarget="product.platform_upload_portfolio"
+							label="Upload"
+							icon="fal fa-upload"
+							type="positive"
+							size="xs"
+							:bindToLink="{
+								preserveScroll: true,
+							}"
+							@success="() => set(progressToUploadToShopify, [product.id], 'loading')"
+						/>
+					</div>
+				</template>
+
+				<div v-else v-tooltip="trans('Your channel is not connected to the platform yet.')" class="text-center text-lg">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
+                </div>
 			</div>
         </template>
 
+		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }">
 			<div class="mx-auto">
 				<ButtonWithLink
-					v-tooltip="trans('Unselect portfolio')"
+					v-tooltip="trans('Delete product')"
 					type="negative"
 					icon="fal fa-trash-alt"
 					:routeTarget="item.delete_portfolio"

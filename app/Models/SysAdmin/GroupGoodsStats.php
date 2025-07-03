@@ -45,7 +45,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units_with_net_weight
  * @property int $number_trade_units_with_gross_weight
  * @property int $number_trade_units_with_marketing_weight
- * @property int $number_trade_units_with_dimensions
+ * @property int $number_trade_units_with_marketing_dimensions
  * @property int $number_trade_units_with_images
  * @property int $number_stock_families
  * @property int $number_current_stock_families active + discontinuing

@@ -90,13 +90,13 @@ function clientRoute(order) {
     <Table :resource="data" :name="tab" class="mt-5">
       <!-- Column: Reference -->
       <template #cell(reference)="{ item }">
-        <Link :href="orderRoute(item) as string" class="primaryLink">
+        <Link :href="(orderRoute(item) as string)" class="primaryLink">
           {{ item["reference"] }}
         </Link>
       </template>
 
       <template #cell(client_name)="{ item }">
-        <Link :href="clientRoute(item) as string" class="primaryLink">
+        <Link :href="(clientRoute(item) as string)" class="secondaryLink">
           {{ item["client_name"] }}
         </Link>
       </template>
@@ -128,7 +128,8 @@ function clientRoute(order) {
 
 
       <template #cell(total_amount)="{ item }">
-        {{ locale?.currencyFormat(currency?.code || "usd", item.total_amount || 0) }}
+        {{ currency?.code }}
+        {{ locale?.currencyFormat(currency?.code, item.total_amount || 0) }}
       </template>
 
       <template #cell(date)="{ item: order }">

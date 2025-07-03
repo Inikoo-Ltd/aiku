@@ -8,12 +8,13 @@
  *
 */
 
-namespace App\Actions\Helpers\Luigi\Trait;
+namespace App\Actions\Web;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,7 +27,7 @@ trait WithLuigis
 
     public function digest($key, $content_type, $method, $endpoint, $date): string
     {
-        $data = "{$method}\n{$content_type}\n{$date}\n{$endpoint}";
+        $data = "$method\n$content_type\n$date\n$endpoint";
 
         return trim(base64_encode(hash_hmac('sha256', $data, $key, true)));
     }
@@ -35,17 +36,20 @@ trait WithLuigis
     {
         $website = $parent instanceof Website ? $parent : $parent->website;
         if (app()->environment('production')) {
-            return array_filter([Arr::get($website->settings, 'luigisbox.tracking_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
+            return array_filter([Arr::get($website->settings, 'luigisbox.tracker_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
         } else {
-            return [config('app.sandbox.luigisbox.tracking_id'), config('app.sandbox.luigisbox.private_key')];
+            return [config('app.sandbox.luigisbox.tracker_id'), config('app.sandbox.luigisbox.private_key')];
         }
     }
 
-    private function request(Website|Webpage $parent, string $endPoint, string $method = 'post', array $body, $compressed = false)
+    /**
+     * @throws \Exception
+     */
+    private function request(Website|Webpage $parent, string $endPoint,  array $body,string $method = 'post', $compressed = false)
     {
         $content_type = 'application/json; charset=utf-8';
 
-        $offsetSeconds = 6;
+        $offsetSeconds = 0;
         $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
         [$publicKey, $privateKey] = $this->getAccessToken($parent);
@@ -78,7 +82,7 @@ trait WithLuigis
 
 
         if ($response->failed()) {
-            throw new \Exception('Failed to send request to Luigi\'s Box API: '.$response->body());
+            throw new Exception('Failed to send request to Luigi\'s Box API: '.$response->body());
         }
 
         if ($response->successful()) {
@@ -87,7 +91,10 @@ trait WithLuigis
 
     }
 
-    public function reindex(Website|Webpage $parent)
+    /**
+     * @throws \Exception
+     */
+    public function reindex(Website|Webpage $parent): void
     {
         if ($parent instanceof Website) {
             $website = $parent;
@@ -144,10 +151,10 @@ trait WithLuigis
                     'objects' => $objects
                 ];
                 $compressed = count($objects) >= 1000;
-                $this->request($website, '/v1/content', 'post', $body, $compressed);
+                $this->request($website, '/v1/content',  $body, 'post',$compressed);
             });
 
-            return;
+
         } else {
             $webpage = $parent;
             $product = $webpage->model;
@@ -187,13 +194,13 @@ trait WithLuigis
             ];
 
             if (count($objects) > 1000) {
-                throw new \Exception('Too many objects to reindex');
+                throw new Exception('Too many objects to reindex');
             }
 
             $body = [
                 'objects' => $objects
             ];
-            return $this->request($parent, '/v1/content', 'post', $body, true);
+            $this->request($parent, '/v1/content',  $body, 'post',true);
         }
     }
 

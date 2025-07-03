@@ -10,15 +10,18 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { faSyncAlt } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue";
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
-import { faBracketsCurly, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
-import { Popover } from "primevue"
+import { Message, Popover } from "primevue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
+import { faSyncAlt } from "@fas";
+import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
+import { faBracketsCurly, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
+import axios from "axios"
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
@@ -55,10 +58,15 @@ const props = defineProps<{
         name: string
         type: string
     }
+    is_platform_connected: boolean
+    customer_sales_channel: {
+        id: number
+        slug: string
+        name: string
+    }
 }>();
 
 
-console.log("platform", props.platform_data);
 const step = ref(props.step);
 
 const isOpenModalPortfolios = ref(false);
@@ -118,6 +126,31 @@ const downloadUrl = (type: string) => {
 
 const _popover = ref()
 
+
+
+const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
+	console.log('customerSalesChannel', customerSalesChannel)
+    try {
+        const response = await axios[customerSalesChannel.reconnect_route.method || 'get'](
+            route(
+                customerSalesChannel.reconnect_route.name,
+                customerSalesChannel.reconnect_route.parameters
+            )
+        )
+        console.log('1111 response', response)
+        if (response.status !== 200) {
+            throw new Error('Something went wrong. Try again later.')
+        } else {
+            window.open(response.data, '_blank');
+        }
+    } catch (error: any) {
+        notify({
+            title: 'Something went wrong',
+            text: error.message || 'Please try again later.',
+            type: 'error'
+        })
+    }
+}
 </script>
 
 <template>
@@ -203,6 +236,29 @@ const _popover = ref()
         </template>
     </PageHeading>
 
+    <!-- Section: Alert if Platform not connected yet -->
+    <Message v-if="!is_platform_connected" severity="error" class="m-4 ">
+        <template #icon>
+            <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true" />
+        </template>
+
+        <div class="ml-2 font-normal flex justify-between w-full">
+            <div class="flex items-center gap-x-2">
+                {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+            </div>
+
+            <Button
+                v-if="customer_sales_channel?.reconnect_route?.name"
+                @click="() => onClickReconnect(customer_sales_channel)"
+                iconRight="fal fa-external-link"
+                :label="trans('Reconnect')"
+                zsize="xxs"
+                type="secondary"
+                class="ml-2"
+            />
+        </div>
+    </Message>
+
 
     <div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
@@ -233,6 +289,8 @@ const _popover = ref()
         :selectedData
         :platform_data
         :platform_user_id
+        :is_platform_connected
+        :customerSalesChannel="customer_sales_channel"
     />
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
@@ -252,6 +310,9 @@ const _popover = ref()
             :platform_data
             @onDone="isOpenModalPortfolios = false"
             :platform_user_id
+            :is_platform_connected
+            :customerSalesChannel="customer_sales_channel"
+            :onClickReconnect
         />
     </Modal>
 </template>

@@ -32,63 +32,65 @@ class FetchAuroraCustomerClients extends FetchAuroraAction
         if ($customerClientData) {
             if ($customerClient = CustomerClient::withTrashed()->where('source_id', $customerClientData['customer_client']['source_id'])
                 ->first()) {
-                try {
-                    $customerClient = UpdateCustomerClient::make()->action(
-                        customerClient: $customerClient,
-                        modelData: $customerClientData['customer_client'],
-                        hydratorsDelay: $this->hydratorsDelay,
-                        strict: false,
-                        audit: false
-                    );
-                    $this->recordChange($organisationSource, $customerClient->wasChanged());
-                } catch (Exception $e) {
-                    $this->recordError($organisationSource, $e, $customerClientData['customer_client'], 'CustomerClient', 'update');
+                // try {
+                $customerClient = UpdateCustomerClient::make()->action(
+                    customerClient: $customerClient,
+                    modelData: $customerClientData['customer_client'],
+                    hydratorsDelay: $this->hydratorsDelay,
+                    strict: false,
+                    audit: false
+                );
 
-                    return null;
-                }
+                $this->recordChange($organisationSource, $customerClient->wasChanged());
+                //                } catch (Exception $e) {
+                //                    $this->recordError($organisationSource, $e, $customerClientData['customer_client'], 'CustomerClient', 'update');
+                //
+                //                    return null;
+                //                }
             } else {
-                try {
+                //try {
 
-                    $customer = $customerClientData['customer'];
-                    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
-                    $customerSalesChannel = $customer->customerSalesChannels()
-                        ->where('platform_id', $platform->id)
-                        ->first();
-                    if (!$customerSalesChannel) {
-                        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
-                            customer: $customer,
-                            platform: $platform,
-                            modelData: [
-                                'reference' => (string) $customer->id,
-                            ],
-                            hydratorsDelay: $this->hydratorsDelay
-                        );
-                    }
-
-                    $customerClient = StoreCustomerClient::make()->action(
-                        customerSalesChannel: $customerSalesChannel,
-                        modelData: $customerClientData['customer_client'],
-                        hydratorsDelay: $this->hydratorsDelay,
-                        strict: false,
-                        audit: false
+                $customer             = $customerClientData['customer'];
+                $platform             = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+                $customerSalesChannel = $customer->customerSalesChannels()
+                    ->where('platform_id', $platform->id)
+                    ->first();
+                if (!$customerSalesChannel) {
+                    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+                        customer: $customer,
+                        platform: $platform,
+                        modelData: [
+                            'reference' => (string)$customer->id,
+                            'name'      => (string)$customer->name,
+                        ],
+                        hydratorsDelay: $this->hydratorsDelay
                     );
-
-                    CustomerClient::enableAuditing();
-                    $this->saveMigrationHistory(
-                        $customerClient,
-                        Arr::except($customerClientData['customer_client'], ['fetched_at', 'last_fetched_at', 'source_id'])
-                    );
-
-                    $this->recordNew($organisationSource);
-
-                    $sourceData = explode(':', $customerClient->source_id);
-                    DB::connection('aurora')->table('Customer Client Dimension')
-                        ->where('Customer Client Key', $sourceData[1])
-                        ->update(['aiku_id' => $customerClient->id]);
-                } catch (Exception|Throwable $e) {
-                    $this->recordError($organisationSource, $e, $customerClientData['customer_client'], 'CustomerClient', 'store');
-                    return null;
                 }
+
+                $customerClient = StoreCustomerClient::make()->action(
+                    customerSalesChannel: $customerSalesChannel,
+                    modelData: $customerClientData['customer_client'],
+                    hydratorsDelay: $this->hydratorsDelay,
+                    strict: false,
+                    audit: false
+                );
+
+                CustomerClient::enableAuditing();
+                $this->saveMigrationHistory(
+                    $customerClient,
+                    Arr::except($customerClientData['customer_client'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                );
+
+                $this->recordNew($organisationSource);
+
+                $sourceData = explode(':', $customerClient->source_id);
+                DB::connection('aurora')->table('Customer Client Dimension')
+                    ->where('Customer Client Key', $sourceData[1])
+                    ->update(['aiku_id' => $customerClient->id]);
+                //                } catch (Exception|Throwable $e) {
+                //                    $this->recordError($organisationSource, $e, $customerClientData['customer_client'], 'CustomerClient', 'store');
+                //                    return null;
+                //                }
             }
 
 

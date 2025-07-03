@@ -12,6 +12,7 @@ import { faPlus } from '@fal'
 import { faEllipsisV } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 
 
 interface ProductResource {
@@ -190,11 +191,19 @@ watch(() => props.productHasPortfolio, (newVal) => {
                                 <Button v-for="[key, channel] in Object.entries(channelList)"
                                     :key="channel.customer_sales_channel_id"
                                     @click="() => onAddPortfoliosSpecificChannel(product, { ...channel, id: Number(key) })" type="tertiary"
-                                    :label="channel.platform_name" full
+                                    xlabel="channel.customer_sales_channel_name + `${channel.platform_name}`"
+                                    full
                                     :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
                                     <template #icon>
                                         <FontAwesomeIcon v-if="productHasPortfolioList.includes(Number(key))" :icon="faCheck"
                                             class="text-green-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                    <template #label>
+                                        <div class="flex items-center gap-2">
+                                            <div v-tooltip="channel.platform_name" v-html="ChannelLogo(channel.platform_code)" class="h-4 w-4"></div>
+                                            {{ channel.customer_sales_channel_name || '-' }}
+                                            <span class="text-gray-500 text-xs">({{ channel.platform_name }})</span>
+                                        </div>
                                     </template>
                                 </Button>
                             </div>

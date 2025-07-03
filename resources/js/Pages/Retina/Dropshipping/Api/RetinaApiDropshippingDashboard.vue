@@ -8,7 +8,7 @@ import { Head, Link, router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
-import { capitalize } from "lodash"
+import { capitalize } from "lodash-es"
 import { computed, ref } from "vue"
 import type { Component } from "vue";
 
@@ -23,6 +23,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 // import { Message } from "primevue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import RetinaApiShowcase from "@/Components/Tables/Retina/RetinaApiShowcase.vue"
 library.add()
 
 const props = defineProps<{
@@ -100,12 +101,13 @@ const onClickCopyButton = async (text: string) => {
 
 const component = computed(() => {
     const components: Component = {
+        showcase: RetinaApiShowcase,
+        // api_tokens: RetinaApiShowcase,
         api_tokens: RetinaTableApiKey,
         history: TableHistories,
     };
     return components[currentTab.value];
-
-});
+})
 
 </script>
 

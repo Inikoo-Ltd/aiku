@@ -44,7 +44,7 @@ class DeleteApiPortfolio extends RetinaApiAction
                 'status' => $portfolio->status
             ]);
         } else {
-            DeletePortfolio::make()->action($this->customerSalesChannel, $portfolio, []);
+            DeletePortfolio::make()->action($portfolio);
             return response()->json([
                 'message' => 'Portfolio has been deleted.',
                 'portfolio_id' => $portfolio->id

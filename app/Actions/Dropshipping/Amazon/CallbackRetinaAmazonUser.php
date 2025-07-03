@@ -37,18 +37,20 @@ class CallbackRetinaAmazonUser extends OrgAction
     public function handle(Customer $customer, array $modelData): AmazonUser
     {
         $spApiAuthCode = Arr::pull($modelData, 'spapi_oauth_code');
+        $sellerId = Arr::pull($modelData, 'selling_partner_id');
 
         /** @var AmazonUser $amazonUser */
         $amazonUser = StoreAmazonUser::run($customer, []);
         $amazonUser->getAmazonTokens($spApiAuthCode);
 
         $amazonUser->refresh();
-        $seller = $amazonUser->getSellerAccount();
         $amazonUser->getAmazonMarketplaceId();
 
         $this->update($amazonUser, [
             'data' => [
-                'seller' => $seller
+                'seller' => [
+                    'id' => $sellerId
+                ]
             ]
         ]);
 

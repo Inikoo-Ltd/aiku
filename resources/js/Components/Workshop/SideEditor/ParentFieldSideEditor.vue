@@ -104,7 +104,7 @@ const isFutureDatePassed = (futureDate: string) => {
     </AccordionPanel>
 
     <!-- Non-accordion mode -->
-    <div v-else class="bg-white mt-0 mb-2 pb-3">
+    <div v-else class="mt-0 mb-2 pb-3">
         <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)"
             :blueprint="blueprint" :uploadImageRoute="uploadImageRoute"  @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 

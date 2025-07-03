@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Web;
 
 use App\Http\Resources\Catalogue\TagResource;
-use App\Http\Resources\Goods\TradeUnitResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -48,9 +47,23 @@ class WebBlockProductResource extends JsonResource
             }
         }
 
-        $tradeUnit = $product->tradeUnits->first();
+        $tradeUnits = $product->tradeUnits;
 
-        $ingredients = $tradeUnit->ingredients->pluck('name')->toArray();
+
+        $tradeUnits->loadMissing(['ingredients']);
+
+        $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
+            return $tradeUnit->ingredients->pluck('name');
+        })->unique()->values()->all();
+
+
+        $specifications = [
+            'ingredients'        => $ingredients,
+            'gross_weight'       => $product->gross_weight,
+            'marketing_weights'  => $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all(),
+            'barcode'            => $product->barcode,
+            'dimensions'         => $tradeUnits->pluck('dimensions')->flatten()->filter()->values()->all(),
+        ];
 
         return [
             'slug'        => $product->slug,
@@ -60,7 +73,7 @@ class WebBlockProductResource extends JsonResource
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
             'stock'       => $product->available_quantity,
-            'specifications' => $tradeUnit ? array_merge(TradeUnitResource::make($tradeUnit)->toArray($request), ['ingredients' => $ingredients]) : null,
+            'specifications' => $tradeUnits->count() > 0 ? $specifications : null,
             'contents'    => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'              => $product->id,
             'slug'            => $product->slug,

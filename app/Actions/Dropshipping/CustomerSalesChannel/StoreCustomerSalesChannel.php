@@ -24,8 +24,8 @@ class StoreCustomerSalesChannel extends OrgAction
         $modelData['group_id']        = $customer->group_id;
         $modelData['organisation_id'] = $customer->organisation_id;
         $modelData['shop_id']         = $customer->shop_id;
-        $modelData['platform_id']         = $platform->id;
-        $customerSalesChannel = $customer->customerSalesChannels()->create($modelData);
+        $modelData['platform_id']     = $platform->id;
+        $customerSalesChannel         = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
 
@@ -35,11 +35,11 @@ class StoreCustomerSalesChannel extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => 'nullable|string|max:255',
-            'reference' => 'nullable|string|max:255',
-            'platform_user_type' => ['sometimes','nullable','string','max:255'],
-            'platform_user_id'   => ['sometimes','nullable','integer'],
-            'state'   => ['sometimes','nullable', Rule::enum(CustomerSalesChannelStateEnum::class)],
+            'name'               => 'nullable|string|max:255',
+            'reference'          => 'nullable|string|max:255',
+            'platform_user_type' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'platform_user_id'   => ['sometimes', 'nullable', 'integer'],
+            'state'              => ['sometimes', 'nullable', Rule::enum(CustomerSalesChannelStateEnum::class)],
         ];
     }
 

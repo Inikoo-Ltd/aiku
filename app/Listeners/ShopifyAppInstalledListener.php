@@ -32,7 +32,7 @@ class ShopifyAppInstalledListener
 
         StoreWebhooksToShopify::run($shopifyUser);
 
-        $shopApi = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-04/shop.json');
+        $shopApi = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-07/shop.json');
         $store = Arr::get($shopApi, 'body.shop');
 
         $shopifyUser = $this->update($shopifyUser, [

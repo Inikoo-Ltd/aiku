@@ -12,7 +12,6 @@ namespace App\Actions\Dropshipping\Ebay\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -43,7 +42,7 @@ class SyncronisePortfoliosToEbay extends RetinaAction
     {
         return [
             'portfolios' => ['required', 'array'],
-            'portfolios.*' => ['required', 'integer', Rule::exists('portfolios', 'id')],
+            'portfolios.*' => ['required', 'integer'],
         ];
     }
 

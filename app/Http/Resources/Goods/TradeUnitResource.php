@@ -13,28 +13,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * @property string $code
  * @property string $slug
- * @property mix $net_weight
  * @property string $type
  * @property string $name
+ * @property mixed $description
+ * @property mixed $barcode
+ * @property mixed $dimensions
+ * @property mixed $gross_weight
+ * @property mixed $volume
+ * @property mixed $image_id
+ * @property mixed $marketing_weight
+ * @property mixed $marketing_dimensions
  */
 class TradeUnitResource extends JsonResource
 {
     public function toArray($request): array
     {
-
-
-        return [
-            'slug'               => $this->slug,
-            'code'               => $this->code,
-            'name'               => $this->name,
-            'description'        => $this->description,
-            'barcode'            => $this->barcode,
-            'gross_weight'       => $this->gross_weight,
-            'net_weight'         => $this->net_weight,
-            'dimensions'         => $this->dimensions,
-            'volume'             => $this->volume,
-            'type'               => $this->type,
-            'image_id'           => $this->image_id
-        ];
+        return array(
+            'slug'                 => $this->slug,
+            'code'                 => $this->code,
+            'name'                 => $this->name,
+            'description'          => $this->description,
+            'barcode'              => $this->barcode,
+            'gross_weight'         => $this->gross_weight,
+            'marketing_weight'     => $this->marketing_weight,
+            'marketing_dimensions' => $this->marketing_dimensions,
+            'dimensions'           => $this->dimensions,
+            'volume'               => $this->volume,
+            'type'                 => $this->type,
+            'image_id'             => $this->image_id
+        );
     }
 }

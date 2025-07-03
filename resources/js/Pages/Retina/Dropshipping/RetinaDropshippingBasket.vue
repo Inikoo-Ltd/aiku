@@ -212,11 +212,11 @@ const onAddProducts = async (product: {historic_asset_id: number}) => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
-                notify({
-                    title: trans("Success!"),
-                    text: trans("Successfully added portfolios"),
-                    type: "success"
-                })
+                // notify({
+                //     title: trans("Success!"),
+                //     text: trans("Successfully added portfolios"),
+                //     type: "success"
+                // })
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
             },
             onFinish: () => {

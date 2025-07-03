@@ -29,7 +29,7 @@ class HoldFulfilmentOrderShopify extends OrgAction
     public function handle(ShopifyUserHasFulfilment $shopifyUserHasFulfilment, ShopifyUser $shopifyUser): void
     {
         $client = $shopifyUser->api()->getRestClient();
-        $response = $client->request('POST', "/admin/api/2024-04/fulfillment_orders/$shopifyUserHasFulfilment->shopify_fulfilment_id/hold.json", [
+        $response = $client->request('POST', "/admin/api/2024-07/fulfillment_orders/$shopifyUserHasFulfilment->shopify_fulfilment_id/hold.json", [
             'fulfillment_hold' => [
                 'reason' => ShopifyFulfilmentReasonEnum::INVENTORY_OUT_OF_STOCK->value,
                 'reason_notes' => ShopifyFulfilmentReasonEnum::INVENTORY_OUT_OF_STOCK->notes()[ShopifyFulfilmentReasonEnum::INVENTORY_OUT_OF_STOCK->value]

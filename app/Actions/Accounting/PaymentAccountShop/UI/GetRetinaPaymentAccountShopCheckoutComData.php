@@ -31,9 +31,25 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
+        $toPay = (float) max($order->total_amount, 0.0);
+        $balance = (float) $order->customer->balance;
+
+        $decimalPart = $toPay - floor($toPay);
+
+        $payFloatWithBalance = min($decimalPart, $balance);
+
+        $remainingBalance = $balance - $payFloatWithBalance;
+        $payIntWithBalance = min(floor($toPay), floor($remainingBalance));
+
+        $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
+        $toPayByOther = round($toPay - $toPayByBalance, 2);
+
+        if ($toPayByOther == 0) {
+            abort(404);
+        }
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
-        $paymentSessionRequest->amount    = (int)$order->total_amount * 100;
+        $paymentSessionRequest->amount    = (int)$toPayByOther * 100;
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
 

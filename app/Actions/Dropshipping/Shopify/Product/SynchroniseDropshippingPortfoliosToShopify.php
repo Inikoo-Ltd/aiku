@@ -12,7 +12,6 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -28,6 +27,9 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
      */
     public function handle(ShopifyUser $shopifyUser, array $attributes): void
     {
+
+
+
         $portfolios = $shopifyUser
             ->customerSalesChannel
             ->portfolios()
@@ -45,7 +47,7 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
     {
         return [
             'portfolios' => ['required', 'array'],
-            'portfolios.*' => ['required', 'integer', Rule::exists('portfolios', 'id')],
+            'portfolios.*' => ['required', 'integer'],
         ];
     }
 

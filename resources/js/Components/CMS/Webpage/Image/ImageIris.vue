@@ -10,7 +10,6 @@ import 'swiper/css'
 import 'swiper/css/autoplay'
 import { resolveResponsiveValue } from "@/Composables/Workshop"
 import { inject } from "vue"
-import { resolveMigrationLink } from "@/Composables/SetUrl"
 
 
 library.add(faCube, faStar, faImage, faPencil)
@@ -48,11 +47,11 @@ const props = defineProps<{
 
 
 const layout = inject('layout', {})
-const migration_redirect = layout?.iris?.migration_redirect
+
 
 const getHref = (index: number) => {
   const image = props.fieldValue?.value?.images?.[index]
-  return resolveMigrationLink(image?.link_data?.url) || image?.link_data?.workshop_url || ''
+  return image?.link_data?.url || image?.link_data?.workshop_url || ''
 }
 
 const getColumnWidthClass = (layoutType: string, index: number) => {

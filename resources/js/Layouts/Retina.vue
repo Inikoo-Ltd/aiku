@@ -20,7 +20,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
-import { isArray } from "lodash"
+import { isArray } from "lodash-es"
 library.add(faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell)
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -237,5 +237,9 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
     }
 
     @apply border-indigo-300 border-2 rounded-md cursor-pointer focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0em] motion-safe:transition-all motion-safe:duration-100 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;
+}
+
+.p-message-text {
+    width: 100%;
 }
 </style>

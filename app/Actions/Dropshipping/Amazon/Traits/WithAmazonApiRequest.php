@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Psr7\Request;
+use Illuminate\Support\Str;
 
 trait WithAmazonApiRequest
 {
@@ -327,9 +328,10 @@ trait WithAmazonApiRequest
             $config = $this->getAmazonConfig();
             $token = $this->getAmazonAccessToken();
 
-            // Add marketplace_id to query parameters if not present
-            if (!isset($queryParams['MarketplaceIds']) && !isset($queryParams['MarketplaceId'])) {
-                $queryParams['MarketplaceIds'] = $config['marketplace_id'];
+            if (! isset($queryParams['marketplaceIds'])) {
+                if (!isset($queryParams['MarketplaceIds']) && !isset($queryParams['MarketplaceId'])) {
+                    $queryParams['MarketplaceIds'] = $config['marketplace_id'];
+                }
             }
 
             if ($config['sandbox']) {
@@ -436,7 +438,8 @@ trait WithAmazonApiRequest
     {
         try {
             $config = $this->getAmazonConfig();
-            $endpoint = "/listings/2021-08-01/items/{$this->id}/{$sku}";
+            $sellerId = Arr::get($this->data, 'seller.id');
+            $endpoint = "/listings/2021-08-01/items/{$sellerId}/{$sku}";
             $queryParams = [
                 'marketplaceIds' => [$config['marketplace_id']],
                 'includedData' => 'summaries'
@@ -455,10 +458,13 @@ trait WithAmazonApiRequest
     public function upsertProduct($sku, $productData)
     {
         try {
-            $sellerId = $this->id;
+            $config = $this->getAmazonConfig();
+            $sellerId = Arr::get($this->data, 'seller.id');
             $endpoint = "/listings/2021-08-01/items/{$sellerId}/{$sku}";
 
-            return $this->makeAmazonRequest('put', $endpoint, $productData);
+            return $this->makeAmazonRequest('put', $endpoint, $productData, [
+                'marketplaceIds' => $config['marketplace_id']
+            ]);
         } catch (Exception $e) {
             Log::error('Upsert Amazon Product Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -471,7 +477,8 @@ trait WithAmazonApiRequest
     public function deleteProduct($sku)
     {
         try {
-            $endpoint = "/listings/2021-08-01/items/{$this->id}/{$sku}";
+            $sellerId = Arr::get($this->data, 'seller.id');
+            $endpoint = "/listings/2021-08-01/items/{$sellerId}/{$sku}";
             $queryParams = [];
 
             return $this->makeAmazonRequest('delete', $endpoint, [], $queryParams);
@@ -621,61 +628,191 @@ trait WithAmazonApiRequest
     public function createFullProduct($sku, $productData)
     {
         try {
+            $config = $this->getAmazonConfig();
+            $marketplaceId = $config['marketplace_id'];
             $formattedData = [
-                'attributes' => [
-                    'title' => Arr::get($productData, 'title'),
-                    'product_type' => Arr::get($productData, 'product_type'),
-                    'brand' => Arr::get($productData, 'brand'),
-                    'description' => Arr::get($productData, 'description'),
-                    'bullet_points' => Arr::get($productData, 'bullet_points', []),
-                    'item_package_dimensions' => [
-                        'length' => [
-                            'value' => Arr::get($productData, 'dimensions.length', 1),
-                            'unit' => 'inches'
-                        ],
-                        'width' => [
-                            'value' => Arr::get($productData, 'dimensions.width', 1),
-                            'unit' => 'inches'
-                        ],
-                        'height' => [
-                            'value' => Arr::get($productData, 'dimensions.height', 1),
-                            'unit' => 'inches'
-                        ],
-                        'weight' => [
-                            'value' => Arr::get($productData, 'dimensions.weight', 1),
-                            'unit' => 'pounds'
-                        ]
-                    ],
-                    'fulfillment_availability' => [
+                "productType" => "ACCESSORY",
+                "requirements" => "LISTING",
+                "attributes" => [
+                    "condition_type" => [
                         [
-                            'quantity' => Arr::get($productData, 'quantity', 0),
-                            'fulfillment_channel_code' => 'DEFAULT'
+                            "value" => "new_new",
+                            "marketplace_id" => $marketplaceId
                         ]
                     ],
-                    'price' => [
-                        'value' => Arr::get($productData, 'price', 0),
-                        'currency' => Arr::get($productData, 'currency', 'USD')
+                    "item_name" => [
+                        [
+                            "value" => Arr::get($productData, 'title'),
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "brand" => [
+                        [
+                            "value" => Arr::get($productData, 'brand', 'AIKU'),
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "recommended_browse_nodes" => [
+                        [
+                            "value" => "281407",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "merchant_suggested_asin" => [
+                        [
+                            "value" => Str::substr('ASIN-'.Arr::get($productData, 'id'), 0, 10)
+                        ]
+                    ],
+                    "product_description" => [
+                        [
+                            "value" => Arr::get($productData, 'description'),
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+//                    "item_type_keyword" => [
+//                        [
+//                            "value" => "accessory",
+//                            "marketplace_id" => $marketplaceId
+//                        ]
+//                    ],
+                    "bullet_point" => [
+                        [
+                            "value" => "High quality material",
+                            "marketplace_id" => $marketplaceId
+                        ],
+                        [
+                            "value" => "Sleek and durable design",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "generic_keyword" => [
+                        [
+                            "value" => "accessory, durable, daily use",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "care_instructions" => [
+                        [
+                            "value" => "Machine wash cold, tumble dry low",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "item_package_weight" => [
+                        [
+                            "value" => 0.5,
+                            "unit" => "pounds",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "fabric_type" => [
+                        [
+                            "value" => "100% Cotton",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "target_gender" => [
+                        [
+                            "value" => "unisex",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "department" => [
+                        [
+                            "value" => "unisex-adult",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "size" => [
+                        [
+                            "value" => "Medium",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+//                    "import_designation" => [
+//                        [
+//                            "value" => "imported",
+//                            "marketplace_id" => $marketplaceId
+//                        ]
+//                    ],
+                    "age_range_description" => [
+                        [
+                            "value" => "Adult",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "batteries_required" => [
+                        [
+                            "value" => false,
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "model_name" => [
+                        [
+                            "value" => "Model ABC123",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "list_price" => [
+                        [
+                            "value" => 19.99,
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "supplier_declared_dg_hz_regulation" => [
+                        [
+                            "value" => "not_applicable",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "item_package_dimensions" => [
+                        [
+                            "length" => [
+                                "value" => 10,
+                                "unit" => "inches"
+                            ],
+                            "width" => [
+                                "value" => 6,
+                                "unit" => "inches"
+                            ],
+                            "height" => [
+                                "value" => 2,
+                                "unit" => "inches"
+                            ]
+                        ]
+                    ],
+                    "color" => [
+                        [
+                            "value" => "Black",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
+                    "country_of_origin" => [
+                        [
+                            "value" => "US",
+                            "marketplace_id" => $marketplaceId
+                        ]
                     ]
                 ]
             ];
 
+
             // Add images if present
             $images = Arr::get($productData, 'images', []);
 
-            if (is_array($images)) {
-                $formattedData['attributes']['images'] = [];
-
-                foreach ($images as $index => $imageUrl) {
-                    $imageType = $index === 0 ? 'MAIN' : 'PT' . $index;
-
-                    $formattedData['attributes']['images'][] = [
-                        'link' => $imageUrl,
-                        'height' => 500,
-                        'width' => 500,
-                        'variant' => $imageType
-                    ];
-                }
-            }
+            //            if (is_array($images)) {
+            //                $formattedData['attributes']['images'] = [];
+            //
+            //                foreach ($images as $index => $imageUrl) {
+            //                    $imageType = $index === 0 ? 'MAIN' : 'PT' . $index;
+            //
+            //                    $formattedData['attributes']['images'][] = [
+            //                        'link' => $imageUrl,
+            //                        'height' => 500,
+            //                        'width' => 500,
+            //                        'variant' => $imageType
+            //                    ];
+            //                }
+            //            }
 
             return $this->upsertProduct($sku, $formattedData);
         } catch (Exception $e) {

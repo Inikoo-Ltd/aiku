@@ -2,12 +2,13 @@
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
-import { Codemirror } from "vue-codemirror"
+import codemirrorPkg from 'vue-codemirror';
 import { javascript } from "@codemirror/lang-javascript"
 import { css } from "@codemirror/lang-css"
 import { html } from "@codemirror/lang-html"
 import { EditorView } from "@codemirror/view"
 import { library } from "@fortawesome/fontawesome-svg-core"
+
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -20,6 +21,7 @@ const props = defineProps<{
     }
 }>()
 
+const { Codemirror } = codemirrorPkg;
 const emits = defineEmits()
 
 

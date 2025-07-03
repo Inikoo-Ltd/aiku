@@ -155,10 +155,26 @@ const onUnselectFavourite = (product: ProductResource) => {
                 </div>
                 <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
                     class="cursor-pointer absolute top-2 right-2 group text-xl ">
-                    <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
-                        class="text-pink-500 w-6 h-6 p-[1px]" />
-                    <FontAwesomeIcon v-else :icon="fasHeart" class="text-white group-hover:text-pink-400 w-6 h-6"
-                        style="stroke: black; stroke-width: 4" />
+
+                    <FontAwesomeIcon 
+                        v-if="product.is_favourite" 
+                        :icon="fasHeart" 
+                        fixed-width 
+                        class="text-pink-500" 
+                    />
+                    <div v-else class="relative">
+                        <FontAwesomeIcon
+                            :icon="fasHeart"
+                            class="hidden group-hover:inline text-pink-400"
+                            fixed-width
+                        />
+                        <FontAwesomeIcon
+                            :icon="faHeart"
+                            class="inline group-hover:hidden text-pink-300"
+                            fixed-width
+                        />
+                    </div>
+
                 </div>
             </template>
 

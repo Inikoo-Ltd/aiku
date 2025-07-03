@@ -21,7 +21,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -33,14 +32,15 @@ class DeletePortfolio extends OrgAction
 
     private Portfolio $portfolio;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio, $fromWebhook = false): void
+    public function handle(Portfolio $portfolio, $fromWebhook = false): void
     {
+        $customerSalesChannel = $portfolio->customerSalesChannel;
         match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::SHOPIFY => DeleteShopifyUserHasProduct::run($portfolio, true, $fromWebhook),
+            PlatformTypeEnum::SHOPIFY => DeleteShopifyUserHasProduct::run($portfolio, $fromWebhook),
             PlatformTypeEnum::WOOCOMMERCE => DeleteProductFromWooCommerce::run($portfolio, true, $fromWebhook),
             PlatformTypeEnum::MAGENTO => DeleteProductFromMagento::run($portfolio, true, $fromWebhook),
             PlatformTypeEnum::AMAZON => DeleteAmazonProduct::run($portfolio),
-            default   => null
+            default => null
         };
 
         $portfolio->stats()->delete();
@@ -62,14 +62,14 @@ class DeletePortfolio extends OrgAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio, ActionRequest $request): void
+    public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisationFromShop($portfolio->shop, $request);
 
-        $this->handle($customerSalesChannel, $portfolio);
+        $this->handle($portfolio);
     }
 
-    public function action(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): void
+    public function action(Portfolio $portfolio, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): void
     {
         $this->strict = $strict;
         if (!$audit) {
@@ -78,8 +78,8 @@ class DeletePortfolio extends OrgAction
         $this->asAction       = true;
         $this->portfolio      = $portfolio;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromShop($portfolio->shop, $modelData);
+        $this->initialisationFromShop($portfolio->shop, []);
 
-        $this->handle($customerSalesChannel, $portfolio);
+        $this->handle($portfolio);
     }
 }

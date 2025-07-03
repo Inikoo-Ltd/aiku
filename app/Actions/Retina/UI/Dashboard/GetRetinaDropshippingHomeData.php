@@ -16,6 +16,7 @@ use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -27,10 +28,11 @@ class GetRetinaDropshippingHomeData
 
     public function handle(Customer $customer): array
     {
+        $latestChannel = [];
+        $metas = [];
+
         $customerChannels = $customer->customerSalesChannels()->with('platform:id,type')->get();
         $totalPlatforms = $customerChannels->count();
-
-        $metas = [];
 
         foreach (PlatformTypeEnum::cases() as $platformType) {
             $platformTypeName = $platformType->value;
@@ -61,7 +63,6 @@ class GetRetinaDropshippingHomeData
             $queryBuilder->where('route_name', 'like', 'retina.dropshipping.customer_sales_channels.%');
 
             $latestWebRequests = $queryBuilder->orderBy('date', 'desc')->take(5)->get();
-            $latestChannel = [];
             foreach ($latestWebRequests as $latestWebRequest) {
                 if (!$latestWebRequest->route_params) {
                     continue;
@@ -78,17 +79,18 @@ class GetRetinaDropshippingHomeData
                             if (!\Route::has($latestWebRequest->route_name)) {
                                 continue;
                             }
+                            $dataCustomerSalesChannel = CustomerSalesChannel::where('slug', $customerSalesChannel)->first();
                             $latestChannel[$customerSalesChannel] = [
                                 'route' => route(
-                                    $latestWebRequest->route_name,
+                                    'retina.dropshipping.customer_sales_channels.show',
                                     array_merge(
-                                        $params,
                                         ['customerSalesChannel' => $customerSalesChannel]
                                     )
                                 ),
                                 'slug' => $customerSalesChannel,
                                 'date' => $latestWebRequest->date,
                                 'platform' => $platformType->value,
+                                'name' => $dataCustomerSalesChannel->name
                             ];
                             break;
                         }
