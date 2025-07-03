@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import Popover from 'primevue/popover';
 import { cloneDeep } from 'lodash-es';
-import axios from 'axios';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faShieldAlt, faTimes, faTrash } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -38,91 +37,48 @@ const props = withDefaults(defineProps<{
 
 const emits = defineEmits<{ (e: 'update:modelValue', value: any[]): void }>();
 
-const payments = ref<any[]>([]);
+const payments = ref<PaymentItem[]>([
+  { name: 'Braintree', value: 'Braintree', image: btree },
+  { name: 'Cash', value: 'Cash', image: cash },
+  { name: 'Checkout', value: 'Checkout', image: checkout },
+  { name: 'Hokodo', value: 'Hokodo', image: hokodo },
+  { name: 'Accounts', value: 'Accounts', image: accounts },
+  { name: 'Conditional Payment', value: 'Conditional Payment', image: cond },
+  { name: 'Bank Transfer', value: 'Bank Transfer', image: bank },
+  { name: 'PastPay', value: 'PastPay', image: pastpay },
+  { name: 'PayPal', value: 'PayPal', image: paypal },
+  { name: 'Sofort', value: 'Sofort', image: sofort },
+  { name: 'Worldpay', value: 'Worldpay', image: worldpay },
+  { name: 'Xendit', value: 'Xendit', image: xendit },
+]);
+
 const _addop = ref<any>(null);
 const _editop = ref<any[]>([]);
 
-const selectImage = (code: string) => {
-    if (!code) return null
-
-    switch (code) {
-        case 'btree':
-            return btree
-        case 'cash':
-            return cash
-        case 'checkout':
-            return checkout
-        case 'hokodo':
-            return hokodo
-        case 'accounts':
-            return accounts
-        case 'cond':
-            return cond
-        case 'bank':
-            return bank
-        case 'pastpay':
-            return pastpay
-        case 'paypal':
-            return paypal
-        case 'sofort':
-            return sofort
-        case 'worldpay':
-            return worldpay
-        case 'xendit':
-            return xendit
-        default:
-            return null
-    }
-}
-
-
-const GetPayment = async () => {
-    try {
-        const response = await axios.get(
-            route('grp.json.org_payment_service_providers.index', { organisation: route().params['organisation'] })
-        );
-        
-        console.log(response)
-        if (response?.data?.data) {
-            payments.value = response.data.data.map((item) => ({
-                name: item.name,
-                value: item.name,
-                image: selectImage(item.code)
-            }));
-        } else {
-            console.error('Invalid response format', response);
-        }
-    } catch (error) {
-        console.error('Error fetching payments', error);
-    }
-};
-
 const addPayment = (value: { name: string, image: string }) => {
-    const data = cloneDeep(props.modelValue);
-    data.push({ ...value, value: value.name });
-    emits('update:modelValue', data);
-    _addop.value?.hide();
+  const data = cloneDeep(props.modelValue);
+  data.push({ ...value, value: value.name });
+  emits('update:modelValue', data);
+  _addop.value?.hide();
 };
 
 const updatePayment = (index: number, value: { name: string, image: string }) => {
-    const data = cloneDeep(props.modelValue);
-    data[index] = { ...value, value: value.name };
-    emits('update:modelValue', data);
-    _editop.value[index]?.hide();
+  const data = cloneDeep(props.modelValue);
+  data[index] = { ...value, value: value.name };
+  emits('update:modelValue', data);
+  _editop.value[index]?.hide();
 };
 
 const deletePayment = (event: Event, index: number) => {
-    event.stopPropagation();
-    const data = cloneDeep(props.modelValue);
-    data.splice(index, 1);
-    emits('update:modelValue', data);
+  event.stopPropagation();
+  const data = cloneDeep(props.modelValue);
+  data.splice(index, 1);
+  emits('update:modelValue', data);
 };
 
 const togglePopover = (event: Event, popoverRef: any) => {
-    popoverRef?.toggle(event);
+  popoverRef?.toggle(event);
 };
-
-onMounted(GetPayment);
 </script>
 
 <template>

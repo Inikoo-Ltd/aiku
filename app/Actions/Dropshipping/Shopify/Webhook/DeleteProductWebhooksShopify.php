@@ -33,7 +33,7 @@ class DeleteProductWebhooksShopify extends OrgAction
             ->first();
 
         if ($portfolio) {
-            DeletePortfolio::run($shopifyUser->customerSalesChannel, $portfolio, true);
+            DeletePortfolio::run($portfolio, true);
         }
     }
 

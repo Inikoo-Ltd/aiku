@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 02-07-2025-15h-20m
@@ -11,7 +12,6 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
-use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
@@ -22,7 +22,6 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 
 class SettleRetinaOrderWithBalance extends RetinaAction
 {
@@ -48,7 +47,7 @@ class SettleRetinaOrderWithBalance extends RetinaAction
 
         $amountToPay = $order->total_amount - $order->payment_amount;
         $amount = 0;
-        if($customer->balance < $amountToPay) {
+        if ($customer->balance < $amountToPay) {
             $amount = $customer->balance;
         } else {
             $amount = $amountToPay;

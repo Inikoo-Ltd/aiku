@@ -148,11 +148,15 @@ const valueTableFilter = ref({})
 
         <!-- <Column selectionMode="multiple" headerStyle="width: 3rem"></Column> -->
 
-        <Column field="code" header="Code" style="max-width: 125px;">
+        <Column field="code"  style="max-width: 125px;">
+             <template #header>
+                <div v-tooltip="'Code'" class="whitespace-nowrap truncate font-semibold">
+                Code
+                </div>
+            </template>
             <template #body="{ data }">
                 <div v-tooltip="data.code" class="whitespace-nowrap truncate">
                     {{ data.code }}
-
                 </div>
             </template>
         </Column>
@@ -161,12 +165,23 @@ const valueTableFilter = ref({})
 
 <!--        </Column>-->
 
-        <Column field="name" header="Name">
+        <Column field="name" >
+             <template #header>
+                <div v-tooltip="'Name'" class="whitespace-nowrap truncate font-semibold">
+                Name
+                </div>
+            </template>
         </Column>
 
-        <Column field="price" header="Price" style="max-width: 125px;">
+        <Column field="price"  style="max-width: 125px; text-align: right;">
+              <template #header>
+                <div v-tooltip="'Price'" class="whitespace-nowrap truncate font-semibold text-right w-full">
+                Price
+                </div>
+            </template>
+            
             <template #body="{ data }">
-                <div class="whitespace-nowrap">
+                <div  class="whitespace-nowrap text-right w-full">
                     {{ locale.currencyFormat(data.currency_code, data.price) }}
                 </div>
             </template>
@@ -183,15 +198,26 @@ const valueTableFilter = ref({})
 <!--            </template>-->
 <!--        </Column>-->
 
-        <Column field="customer_price" header="RRP" style="max-width: 125px;">
-            <template #body="{ data }">
-                <div class="whitespace-nowrap">
-                    {{ locale.currencyFormat(data.currency_code, data.customer_price) }}
-                </div>
-            </template>
-        </Column>
+            <Column field="customer_price" style="max-width: 125px; text-align: right;">
+                <template #header>
+                    <div
+                    v-tooltip="'Recommended retail price'"
+                    class="whitespace-nowrap truncate font-semibold text-right w-full"
+                    >
+                    RRP
+                    </div>
+                </template>
 
-        <Column field="action" header="Action" style="text-align: right;">
+                <template #body="{ data }">
+                    <div class="whitespace-nowrap text-right w-full">
+                    {{ locale.currencyFormat(data.currency_code, data.customer_price) }}
+                    </div>
+                </template>
+            </Column>
+
+
+
+        <Column field="action" style="text-align: right;">
             <template #body="{ data }">
                 <div class="flex gap-x-2 gap-y-1 flex-wrap justify-end">
                     <ConditionIcon v-if="get(props.progressToUploadToShopify, [data.id], null)" :state="get(props.progressToUploadToShopify, [data.id], undefined)" class="text-xl mx-auto" />
