@@ -143,7 +143,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
         /** @var ShopifyUser|WooCommerceUser|EbayUser|AmazonUser|MagentoUser $platformmUser */
         $platformUser = $this->customerSalesChannel->user;
 
-        if ($platformUser instanceof WooCommerceUser) {
+        /*if ($platformUser instanceof WooCommerceUser) {
             $catchOrdersRoute = [
                 'name'       => 'retina.models.dropshipping.woocommerce.orders.catch',
                 'parameters' => [$platformUser->id]
@@ -163,18 +163,8 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                 'name'       => 'retina.models.dropshipping.magento.orders.catch',
                 'parameters' => [$platformUser->id]
             ];
-        }
+        }*/
 
-        if ($this->customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL) {
-            $actions =   [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('catch'),
-                            'route' => $catchOrdersRoute,
-                        ]
-                        ];
-        }
         return Inertia::render(
             'Dropshipping/RetinaOrders',
             [
