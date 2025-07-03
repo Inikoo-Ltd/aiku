@@ -253,6 +253,9 @@ const onSubmitMagento = async () => {
 
     isLoading.value = false;
 };
+
+// Section: Ebay
+const isModalEbay = ref(false)
 </script>
 
 <template>
@@ -378,9 +381,11 @@ const onSubmitMagento = async () => {
                 <div class="w-full flex justify-end">
                     <Button
                         :label="trans('Connect')"
-                        type="primary"
+                        xtype="primary"
+                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"
                         full
-                        @click="onSubmitEbay"
+                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
+                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
                     />
                 </div>
             </div>
@@ -535,6 +540,31 @@ const onSubmitMagento = async () => {
             </div>
 
             <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+        </div>
+    </Modal>
+
+    <!-- Modal: Ebay -->
+    <Modal :isOpen="isModalEbay" @onClose="isModalEbay = false" width="w-full max-w-lg">
+        <div class="">
+            <div>
+                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100 border border-amber-300 text-xl">
+                    <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-amber-600" fixed-width aria-hidden="true" />
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <DialogTitle as="h3" class="text-base font-semibold text-amber-600">Payment successful</DialogTitle>
+                    <div class="mt-2 text-amber-600">
+                        <p class="text-sm">Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequatur amet labore.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-6">
+                <Button
+                    @click="() => onSubmitEbay()"
+                    :label="trans('Connect')"
+                    full
+                    iconRight="fas fa-arrow-right"
+                />
+            </div>
         </div>
     </Modal>
 
