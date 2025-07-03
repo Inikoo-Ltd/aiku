@@ -45,7 +45,7 @@ trait WithLuigis
     /**
      * @throws \Exception
      */
-    private function request(Website|Webpage $parent, string $endPoint,  array $body,string $method = 'post', $compressed = false)
+    private function request(Website|Webpage $parent, string $endPoint, array $body, string $method = 'post', $compressed = false)
     {
         $content_type = 'application/json; charset=utf-8';
 
@@ -54,7 +54,7 @@ trait WithLuigis
 
         [$publicKey, $privateKey] = $this->getAccessToken($parent);
 
-        $signature  = $this->digest(
+        $signature = $this->digest(
             $privateKey,
             $content_type,
             strtoupper($method),
@@ -66,19 +66,21 @@ trait WithLuigis
             'Accept-Encoding' => 'gzip',
             'Content-Type'    => $content_type,
             'Date'            => $date,
-            'Authorization'  => "Hello {$publicKey}:{$signature}",
+            'Authorization'   => "Hello {$publicKey}:{$signature}",
         ];
 
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
-            $body = gzencode(json_encode($body), 9);
+            $body                       = gzencode(json_encode($body), 9);
         } else {
             $body = json_encode($body);
         }
 
         $response = Http::withHeaders($header)
             ->withBody($body, $content_type)
-            ->{strtolower($method)}('https://live.luigisbox.com/'.$endPoint);
+            ->{strtolower($method)}(
+                'https://live.luigisbox.com/'.$endPoint
+            );
 
 
         if ($response->failed()) {
@@ -88,7 +90,6 @@ trait WithLuigis
         if ($response->successful()) {
             return $response->json();
         }
-
     }
 
     /**
@@ -99,93 +100,91 @@ trait WithLuigis
         if ($parent instanceof Website) {
             $website = $parent;
             $website->webpages()
-            ->with('model')
-            ->with('model.family.webpage')
-            ->where('state', 'live')
-            ->where('type', WebpageTypeEnum::CATALOGUE)
-            ->where('model_type', 'Product')
-            ->chunk(1000, function ($webpages) use ($website) {
-                $objects = [];
-                foreach ($webpages as $webpage) {
-                    $product = $webpage->model;
-                    $family = $product?->family;
+                ->with('model')
+                ->with('model.family.webpage')
+                ->where('state', 'live')
+                ->where('type', WebpageTypeEnum::CATALOGUE)
+                ->where('model_type', 'Product')
+                ->chunk(1000, function ($webpages) use ($website) {
+                    $objects = [];
+                    foreach ($webpages as $webpage) {
+                        $product = $webpage->model;
+                        $family  = $product?->family;
 
-                    $objects[] = [
-                        "identity" => "$website->group_id:$website->organisation_id:$website->shop_id:$website->id:$webpage->id",
-                        "type" => "item",
-                        "fields" => array_filter([
-                        "title" => $webpage->title,
-                        "web_url" => $webpage->getUrl(),
-                        "availability" => intval($product->state == ProductStateEnum::ACTIVE),
-                        "stock_qty" => $product->available_quantity ?? 0,
-                        "price" => $product->price ?? 0,
-                        "formatted_price" => $product->currency->symbol . $product->price . '/' . $product->unit,
-                        "image_link" => Arr::get($product->imageSources(200, 200), 'original'),
-                        "product_code" => $product->code,
-                        "ean" => $product->tradeUnits->map(
-                            function ($tradeUnit) {
-                                return $tradeUnit->barcode;
-                            }
-                        )->toArray(),
-                        "introduced_at" => $product?->created_at ? $product->created_at->format('c') : null,
-                        "description" => $product->description,
-                        ]),
-                        ...($family && $family?->webpage ? [
-                        "nested" => [
-                            [
-                                "type" => "category",
-                                "identity" => $family?->webpage?->url,
-                                "fields" => array_filter([
-                                    "title" => $family?->webpage?->title,
-                                    "web_url" => $family?->webpage?->getUrl(),
-                                    "description" => $family?->webpage?->description,
-                                    "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
-                                ]),
-                            ],
-                        ],
-                        ] : []),
+                        $objects[] = [
+                            "identity" => "$website->group_id:$website->organisation_id:$website->shop_id:$website->id:$webpage->id",
+                            "type"     => "item",
+                            "fields"   => array_filter([
+                                "title"           => $webpage->title,
+                                "web_url"         => $webpage->getUrl(),
+                                "availability"    => intval($product->state == ProductStateEnum::ACTIVE),
+                                "stock_qty"       => $product->available_quantity ?? 0,
+                                "price"           => $product->price ?? 0,
+                                "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
+                                "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
+                                "product_code"    => $product->code,
+                                "ean"             => $product->tradeUnits->map(
+                                    function ($tradeUnit) {
+                                        return $tradeUnit->barcode;
+                                    }
+                                )->toArray(),
+                                "introduced_at"   => $product?->created_at ? $product->created_at->format('c') : null,
+                                "description"     => $product->description,
+                            ]),
+                            ...($family && $family?->webpage ? [
+                                "nested" => [
+                                    [
+                                        "type"     => "category",
+                                        "identity" => $family?->webpage?->url,
+                                        "fields"   => array_filter([
+                                            "title"       => $family?->webpage?->title,
+                                            "web_url"     => $family?->webpage?->getUrl(),
+                                            "description" => $family?->webpage?->description,
+                                            "image_link"  => Arr::get($family?->imageSources(200, 200), 'original'),
+                                        ]),
+                                    ],
+                                ],
+                            ] : []),
+                        ];
+                    }
+
+                    $body       = [
+                        'objects' => $objects
                     ];
-                }
-
-                $body = [
-                    'objects' => $objects
-                ];
-                $compressed = count($objects) >= 1000;
-                $this->request($website, '/v1/content',  $body, 'post',$compressed);
-            });
-
-
+                    $compressed = count($objects) >= 1000;
+                    $this->request($website, '/v1/content', $body, 'post', $compressed);
+                });
         } else {
             $webpage = $parent;
             $product = $webpage->model;
-            $family = $product?->family;
+            $family  = $product?->family;
 
             $objects = [
                 [
                     "identity" => "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:$webpage->id:$webpage->id",
-                    "type" => "item",
-                    "fields" => array_filter([
-                        "title" => $webpage->title,
-                        "web_url" => $webpage->getUrl(),
-                        "availability" => intval($product->state == ProductStateEnum::ACTIVE),
-                        "stock_qty" => $product->available_quantity ?? 0,
-                        "price" => $product->price ?? 0,
-                        "formatted_price" => $product->currency->symbol . $product->price . '/' . $product->unit,
-                        "image_link" => Arr::get($product->imageSources(200, 200), 'original'),
-                        "product_code" => $product->code,
-                        "introduced_at" => $product?->created_at ? $product->created_at->format('c') : null,
-                        "description" => $product->description,
+                    "type"     => "item",
+                    "fields"   => array_filter([
+                        "title"           => $webpage->title,
+                        "web_url"         => $webpage->getUrl(),
+                        "availability"    => intval($product->state == ProductStateEnum::ACTIVE),
+                        "stock_qty"       => $product->available_quantity ?? 0,
+                        "price"           => $product->price ?? 0,
+                        "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
+                        "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
+                        "product_code"    => $product->code,
+                        "introduced_at"   => $product?->created_at ? $product->created_at->format('c') : null,
+                        "description"     => $product->description,
                     ]),
                     ...($family && $family?->webpage ? [
                         "nested" => [
                             [
-                                "type" => "category",
+                                "type"     => "category",
                                 "identity" => $family?->webpage?->url,
-                                "fields" => array_filter([
-                                    "title" => $family?->webpage?->title,
-                                    "web_url" => $family?->webpage?->getUrl(),
+                                "fields"   => array_filter([
+                                    "title"       => $family?->webpage?->title,
+                                    "web_url"     => $family?->webpage?->getUrl(),
                                     "description" => $family?->webpage?->description,
-                                    "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
+                                    "image_link"  => Arr::get($family?->imageSources(200, 200), 'original'),
                                 ]),
                             ],
                         ],
@@ -200,7 +199,7 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            $this->request($parent, '/v1/content',  $body, 'post',true);
+            $this->request($parent, '/v1/content', $body, 'post', true);
         }
     }
 
