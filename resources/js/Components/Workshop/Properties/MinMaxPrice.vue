@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, toRefs } from 'vue'
+import { computed, toRefs, inject } from 'vue'
 import Slider from 'primevue/slider'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 const props = withDefaults(defineProps<{
   modelValue: Record<string, any> | null,
@@ -11,7 +12,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   name: 'price'
 })
-
+const layout = inject('layout', layoutStructure)
 const emits = defineEmits<{
   (e: 'update:modelValue', value: Record<string, any>): void
 }>()
@@ -44,39 +45,36 @@ function updateSingleField(field: string, value: number) {
     [field]: value
   })
 }
-
+console.log(layout)
 </script>
 
 
 <template>
 
-    <!-- Range Slider -->
-    <Slider
-      v-model="rangeValue"
-      :min="minVal"
-      :max="maxVal"
-      :range="true"
-      class="w-full my-5"
-    />
-
-    <!-- Number Inputs -->
-    <div class="grid grid-cols-1 gap-3">
-      <PureInputNumber
-        :model-value="modelValue?.[minKey]"
-        :min="minVal"
-        class="w-full"
-        placeholder="Min Price"
-        suffix="€"
-        @update:modelValue="val => updateSingleField(minKey, val)"
-      />
-      <PureInputNumber
-        :model-value="modelValue?.[maxKey]"
-        :max="maxVal"
-        class="w-full"
-        placeholder="Max Price"
-        suffix="€"
-        @update:modelValue="val => updateSingleField(maxKey, val)"
-      />
+  <!-- Range Slider -->
+  <div class="space-y-4">
+    <!-- Label Min-Max di atas Slider -->
+    <div class="flex justify-between text-sm text-gray-600 font-medium">
+      <span>Min</span>
+      <span>Max</span>
     </div>
-</template>
 
+    <!-- Slider -->
+    <Slider v-model="rangeValue" :min="minVal" :max="maxVal" :range="true" class="w-full my-2" />
+
+    <!-- Input Angka -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block mb-1 text-sm text-gray-600">Min Price</label>
+        <PureInputNumber :model-value="modelValue?.[minKey]" :min="minVal" class="w-full" placeholder="Min" :suffix="layout?.iris?.currency?.symbol || '€'"
+          @update:modelValue="val => updateSingleField(minKey, val)" />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm text-gray-600">Max Price</label>
+        <PureInputNumber :model-value="modelValue?.[maxKey]" :max="maxVal" class="w-full" placeholder="Max" :suffix="layout?.iris?.currency?.symbol || '€'"
+          @update:modelValue="val => updateSingleField(maxKey, val)" />
+      </div>
+    </div>
+  </div>
+
+</template>
