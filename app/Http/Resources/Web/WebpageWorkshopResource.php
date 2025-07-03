@@ -26,11 +26,16 @@ class WebpageWorkshopResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Webpage $webpage */
-        $webpage = Webpage::find($this->id);
+        $webpage = $this;
 
         $webPageLayout               = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
-
+        $modelId = null;
+        if($webpage->model_type == 'Product') {
+            $modelId = $webpage->model->family_id;
+        } else {
+            $modelId = $webpage->model_id;
+        }
         return [
             'id'                                     => $webpage->id,
             'slug'                                   => $webpage->slug,
@@ -59,7 +64,7 @@ class WebpageWorkshopResource extends JsonResource
             'created_at'                             => $webpage->created_at,
             'updated_at'                             => $webpage->updated_at,
             'state'                                  => $webpage->state,
-            'model_id'                               => $webpage->model_id,
+            'model_id'                               => $modelId,
             'add_web_block_route'                    => [
                 'name'       => 'grp.models.webpage.web_block.store',
                 'parameters' => $webpage->id
