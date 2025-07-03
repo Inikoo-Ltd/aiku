@@ -28,11 +28,11 @@ const layout: any = inject("layout", {})
     <div id="button">
         <div class="flex m-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            ...getStyles(fieldValue.container?.properties, screenType)
+            ...getStyles(fieldValue.container?.properties, screenType),
+            
         }">
-            <a typeof="button" :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
-                :style="getStyles(fieldValue?.button?.container?.properties, screenType)">
-                <Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+            <a typeof="button" :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target">
+                <Button :injectStyle="{...getStyles(fieldValue?.button?.container?.properties, screenType), width : 'auto'}"
                     :label="fieldValue?.button?.text" />
             </a>
         </div>
