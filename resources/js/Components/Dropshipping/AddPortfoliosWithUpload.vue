@@ -56,11 +56,11 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
         },
         onSuccess: () => {
             router.reload({only: ['pageHead', 'products']})
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
-                type: "success"
-            })
+            // notify({
+            //     title: trans("Success!"),
+            //     text: trans("Successfully added portfolios"),
+            //     type: "success"
+            // })
 			props.step.current = 1
             // isOpenModalPortfolios.value = false
             idxSubmitSuccess.value += 1
@@ -421,7 +421,7 @@ onMounted(() => {
                 <div class="border-t border-gray-300 pt-4 w-full">
                     <Button
                         @click="emits('onDone')"
-                        :label="trans('Done & close')"
+                        :label="trans('Close')"
                         full
                         xxiconRight="faArrowRight"
                         type="tertiary"
