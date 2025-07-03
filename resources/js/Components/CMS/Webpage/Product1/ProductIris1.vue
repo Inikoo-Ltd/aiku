@@ -190,8 +190,18 @@ console.log(props)
                                 class="cursor-pointer xabsolute top-2 right-2 group text-2xl ">
                                 <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
                                     class="text-pink-500" />
-                                <FontAwesomeIcon v-else :icon="faHeart" fixed-width
-                                    class="text-gray-400 group-hover:text-pink-400" />
+                                <span v-else class="">
+                                    <FontAwesomeIcon
+                                        :icon="fasHeart"
+                                        fixed-width
+                                        class="hidden group-hover:inline text-pink-400"
+                                    />
+                                    <FontAwesomeIcon
+                                        :icon="faHeart"
+                                        fixed-width
+                                        class="inline group-hover:hidden text-pink-300"
+                                    />
+                                </span>
                             </div>
                         </template>
                     </div>

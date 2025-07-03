@@ -93,7 +93,7 @@ onMounted(() => {
 
     props.data?.data?.forEach(porto => {
 		if (selectSocketiBasedPlatform(porto)) {
-			window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
+			const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
 				selectSocketiBasedPlatform(porto)?.action,
 				(eventData) => {
 					console.log('socket in: ', porto.id, eventData)
@@ -108,6 +108,8 @@ onMounted(() => {
 					}
 				}
 			);
+
+			console.log(`Subscription porto id: ${porto.id}`, xxx)
 	
 		}
     });
