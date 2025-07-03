@@ -80,6 +80,7 @@ class Portfolio extends Model implements Auditable
         'type'       => PortfolioTypeEnum::class,
         'data'       => 'array',
         'settings'   => 'array',
+        'errors_response'   => 'array',
         'status'     => 'boolean',
         'added_at'   => 'datetime',
         'removed_at' => 'datetime',
@@ -88,6 +89,7 @@ class Portfolio extends Model implements Auditable
     protected $attributes = [
         'data'     => '{}',
         'settings' => '{}',
+        'errors_response' => '{}',
     ];
 
     protected $guarded = [];

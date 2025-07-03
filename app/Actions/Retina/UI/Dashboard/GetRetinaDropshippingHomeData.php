@@ -28,10 +28,11 @@ class GetRetinaDropshippingHomeData
 
     public function handle(Customer $customer): array
     {
+        $latestChannel = [];
+        $metas = [];
+
         $customerChannels = $customer->customerSalesChannels()->with('platform:id,type')->get();
         $totalPlatforms = $customerChannels->count();
-
-        $metas = [];
 
         foreach (PlatformTypeEnum::cases() as $platformType) {
             $platformTypeName = $platformType->value;
@@ -62,7 +63,6 @@ class GetRetinaDropshippingHomeData
             $queryBuilder->where('route_name', 'like', 'retina.dropshipping.customer_sales_channels.%');
 
             $latestWebRequests = $queryBuilder->orderBy('date', 'desc')->take(5)->get();
-            $latestChannel = [];
             foreach ($latestWebRequests as $latestWebRequest) {
                 if (!$latestWebRequest->route_params) {
                     continue;

@@ -83,13 +83,13 @@ class RequestApiUploadProductToShopify extends RetinaAction
 
                 if (count($availableProducts) <= 0) {
                     try {
-                        $response = $client->request('POST', '/admin/api/2024-04/products.json', $body);
+                        $response = $client->request('POST', '/admin/api/2024-07/products.json', $body);
                         if ($response['errors']) {
-                            UpdatePortfolio::run($portfolio, [
-                                'errors_response' => Arr::get($response, 'body.errors')
+                            $portfolio = UpdatePortfolio::run($portfolio, [
+                                'errors_response' => [Arr::get($response, 'body')]
                             ]);
 
-                            \Sentry::captureMessage("Product upload failed: ".json_encode(Arr::get($response, 'body')));
+                            \Sentry::captureMessage("Product upload failed: ".$portfolio->errors_response);
                         } else {
                             $productShopify = Arr::get($response, 'body.product');
                         }
@@ -104,7 +104,7 @@ class RequestApiUploadProductToShopify extends RetinaAction
                 }
 
                 $inventoryVariants = [];
-                foreach (Arr::get($productShopify, 'variants') as $variant) {
+                foreach (Arr::get($productShopify, 'variants', []) as $variant) {
                     $variant['available_quantity'] = $portfolio->item->available_quantity;
                     $inventoryVariants[]           = $variant;
                 }
@@ -120,7 +120,7 @@ class RequestApiUploadProductToShopify extends RetinaAction
                 \Sentry::captureMessage($e->getMessage());
 
                 UpdatePortfolio::run($portfolio, [
-                    'error_response' => [$e->getMessage()]
+                    'errors_response' => [$e->getMessage()]
                 ]);
 
                 $portfolio->refresh();
