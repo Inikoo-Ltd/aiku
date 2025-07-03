@@ -310,6 +310,9 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
             :platform_data
             @onDone="isOpenModalPortfolios = false"
             :platform_user_id
+            :is_platform_connected
+            :customerSalesChannel="customer_sales_channel"
+            :onClickReconnect
         />
     </Modal>
 </template>

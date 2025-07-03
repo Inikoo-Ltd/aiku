@@ -13,6 +13,7 @@ import LoadingIcon from '../Utils/LoadingIcon.vue'
 import PortfoliosStepEdit from '../Retina/Dropshipping/PortfoliosStepEdit.vue'
 import ProductsSelector from './ProductsSelector.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { Message } from 'primevue'
 
 const props = defineProps<{
     step: {
@@ -33,6 +34,11 @@ const props = defineProps<{
 		type: string
 	}
     platform_user_id: number
+    is_platform_connected: boolean
+    customerSalesChannel: {
+        
+    }
+    onClickReconnect: Function
 }>()
 
 const emits = defineEmits<(e: "onDone") => void>()
@@ -306,16 +312,6 @@ onMounted(() => {
 <!--                    :loading="isLoadingBulkDeleteUpload"-->
 <!--                />-->
 
-                <!-- Button: bulk upload -->
-                <Button
-                    v-if="portfoliosList?.length"
-                    @click="() => bulkUpload()"
-                    :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
-                    icon="fal fa-upload"
-                    size="s"
-                    type="positive"
-                    :loading="isLoadingBulkDeleteUpload"
-                />
             </div>
         </div>
 
@@ -396,9 +392,35 @@ onMounted(() => {
         <KeepAlive>
             <div v-if="step.current === 1">
                 <div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
+                    <!-- Section: Alert if Platform not connected yet -->
+                    <Message v-if="!is_platform_connected" severity="error" class="m-4 ">
+                        <template #icon>
+                            <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                        </template>
+
+                        <div class="ml-2 font-normal flex justify-between w-full">
+                            <div class="flex items-center gap-x-2">
+                                {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                            </div>
+
+                            <Button
+                                v-if="customerSalesChannel?.reconnect_route?.name"
+                                @click="() => onClickReconnect(customerSalesChannel)"
+                                iconRight="fal fa-external-link"
+                                :label="trans('Reconnect')"
+                                zsize="xxs"
+                                type="secondary"
+                                class="ml-2"
+                            />
+                        </div>
+                    </Message>
+
+
                     <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
                         <LoadingIcon />
                     </div>
+                    
+                    
                     <PortfoliosStepSyncShopify
                         v-else-if="portfoliosList?.length"
                         :portfolios="portfoliosList"
@@ -418,14 +440,30 @@ onMounted(() => {
                         }"
                     />
                 </div>
-                <div class="border-t border-gray-300 pt-4 w-full">
-                    <Button
-                        @click="emits('onDone')"
-                        :label="trans('Close')"
-                        full
-                        xxiconRight="faArrowRight"
-                        type="tertiary"
-                    />
+                
+                <div class="px-4">
+                    <!-- Button: bulk upload -->
+                    <div class="border-t border-gray-300 pt-4 w-full space-y-2">
+                        <Button
+                            v-if="portfoliosList?.length"
+                            @click="() => bulkUpload()"
+                            :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
+                            icon="fal fa-upload"
+                            xsize="s"
+                            v-tooltip="is_platform_connected ? null : trans('Platform is not connected yet')"
+                            :disabled="!is_platform_connected"
+                            full
+                            :type="is_platform_connected ? 'positive' : 'secondary'"
+                            :loading="isLoadingBulkDeleteUpload"
+                        />
+                        <Button
+                            @click="emits('onDone')"
+                            :label="trans('Close')"
+                            full
+                            xxiconRight="faArrowRight"
+                            type="tertiary"
+                        />
+                    </div>
                 </div>
             </div>
         </KeepAlive>
