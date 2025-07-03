@@ -138,7 +138,6 @@ trait WithLuigis
                         ],
                         ] : []),
                     ];
-                    print "Reindexing {$webpage->title} ({$webpage->id})\n";
                 }
 
                 $body = [
@@ -146,6 +145,7 @@ trait WithLuigis
                 ];
                 $compressed = count($objects) >= 1000;
                 $this->request($website, '/v1/content', 'post', $body, $compressed);
+                print "Reindexing website {$website->id} ({$website->name}) completed with " . count($objects) . " objects.\n";
             });
 
             return;
@@ -194,7 +194,9 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            return $this->request($parent, '/v1/content', 'post', $body, true);
+            $this->request($parent, '/v1/content', 'post', $body, true);
+            print "Reindexing webpage {$webpage->id} ({$webpage->title}) completed.\n";
+            return;
         }
     }
 
