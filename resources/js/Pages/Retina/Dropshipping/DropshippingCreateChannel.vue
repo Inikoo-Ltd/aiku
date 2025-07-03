@@ -23,7 +23,7 @@ import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import PurePassword from "@/Components/Pure/PurePassword.vue";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
+import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers, faWindow} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faInfoCircle)
 
@@ -256,6 +256,11 @@ const onSubmitMagento = async () => {
 
 // Section: Ebay
 const isModalEbay = ref(false)
+
+const closeModalEbayDuplicate = () => {
+    router.get(window.location.origin + window.location.pathname)
+    isModalEbayDuplicate.value = false
+}
 
 const isModalEbayDuplicate = ref(false)
     // console.log('window', window.location)
@@ -607,7 +612,7 @@ const isModalEbayDuplicate = ref(false)
         </div>
     </Modal>
 
-    <Modal :isOpen="isModalEbayDuplicate" @onClose="isModalEbayDuplicate = false" width="w-full max-w-lg">
+    <Modal :isOpen="isModalEbayDuplicate" @onClose="() => {isModalEbayDuplicate = false}" width="w-full max-w-lg">
         <div>
         <div class="mb-4">
             <div class="text-center font-semibold text-xl">
@@ -619,7 +624,7 @@ const isModalEbayDuplicate = ref(false)
         </div>
 
         <div class="text-center">
-            <Button @click="() =>isModalEbayDuplicate = false" label="OK" class="mt-4 px-6" />
+            <Button @click="closeModalEbayDuplicate" label="OK" class="mt-4 px-6" />
         </div>
         </div>
     </Modal>

@@ -39,7 +39,7 @@ const props = defineProps<{
   }
 }>()
 
-const ukTheme = [
+/* const ukTheme = [
   '#957A65',
   '#FFFFFF',
   '#4B5058',
@@ -48,8 +48,8 @@ const ukTheme = [
   '#FFFFFF',
   '#cccccc',
   '#4B5058'
-]
-const listColorTheme = [...useColorTheme, ukTheme]
+] */
+const listColorTheme = [...useColorTheme]
 const onClickColor = (colorTheme: string[], index: number) => {
   set(props.data, 'theme.color', colorTheme)
 }
