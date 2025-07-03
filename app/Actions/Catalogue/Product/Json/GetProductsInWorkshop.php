@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Http\Resources\Catalogue\ProductsWebpageResource;
 use App\Http\Resources\Catalogue\WorkshopProductsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -37,27 +38,10 @@ class GetProductsInWorkshop extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.shop_id', $parent->id);
+        $queryBuilder->where('products.is_for_sale', true);
+        $queryBuilder->where('products.available_quantity', '>', 0);
 
-        $queryBuilder
-            ->defaultSort('products.code')
-            ->select([
-                'products.id',
-                'products.current_historic_asset_id',
-                'products.asset_id',
-                'products.code',
-                'products.slug',
-                'products.description',
-                'products.name',
-                'products.state',
-                'products.image_id',
-                'products.created_at',
-                'products.updated_at',
-                'products.available_quantity'
-            ])
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
-
-
-        return $queryBuilder->allowedSorts(['code', 'name'])
+        return $queryBuilder->defaultSort('-id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
             ->withQueryString();
@@ -65,7 +49,7 @@ class GetProductsInWorkshop extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
-        return WorkshopProductsResource::collection($products);
+        return ProductsWebpageResource::collection($products);
     }
 
     public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator
