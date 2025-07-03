@@ -170,11 +170,11 @@ const bulkUpload = () => {
 					set(progressToUploadToShopify.value, [product.id], 'loading')
 				})
 				selectedPortfoliosToSync.value = []
-				notify({
-					title: trans("Success!"),
-					text: trans("Successfully uploaded portfolios"),
-					type: "success",
-				})
+				// notify({
+				// 	title: trans("Success!"),
+				// 	text: trans("Successfully uploaded portfolios"),
+				// 	type: "success",
+				// })
 			},
 			onFinish: () => {
 				isLoadingBulkDeleteUpload.value = false
@@ -243,7 +243,7 @@ onMounted(() => {
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Add new products to your shop.') }}
+                {{ trans('Add new products to your shop') }}
             </div>
 <!--            <div class="relative text-right">-->
 <!--                <Button-->

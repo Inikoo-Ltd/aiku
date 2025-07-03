@@ -238,4 +238,8 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 
     @apply border-indigo-300 border-2 rounded-md cursor-pointer focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0em] motion-safe:transition-all motion-safe:duration-100 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;
 }
+
+.p-message-text {
+    width: 100%;
+}
 </style>

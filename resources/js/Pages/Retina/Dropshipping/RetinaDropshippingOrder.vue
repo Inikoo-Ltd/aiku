@@ -197,10 +197,3 @@ console.log('DS Orders', props)
 
 
 </template>
-
-<style scoped lang="scss">
-
-:deep(.p-message-text) {
-    width: 100%;
-}
-</style>

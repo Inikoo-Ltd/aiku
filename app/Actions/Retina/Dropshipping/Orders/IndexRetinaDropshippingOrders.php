@@ -182,7 +182,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                     'actions' => $actions
                 ],
 
-                'platform_status' => $this->checkStatus($this->customerSalesChannel),
+                'is_platform_connected' => $this->checkStatus($this->customerSalesChannel) === 'connected',
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
                 'orders'   => RetinaDropshippingOrdersInPlatformResources::collection($orders)
             ]
