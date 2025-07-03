@@ -569,9 +569,9 @@ const isModalEbayDuplicate = ref(false)
                     <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-amber-600" fixed-width aria-hidden="true" />
                 </div>
                 <div class="mt-3 text-center sm:mt-5">
-                    <DialogTitle as="h3" class="text-base font-semibold text-amber-600">Payment successful</DialogTitle>
+                    <DialogTitle as="h3" class="text-base font-semibold text-amber-600">Warning</DialogTitle>
                     <div class="mt-2 text-amber-600">
-                        <p class="text-sm">Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequatur amet labore.</p>
+                        <p class="text-sm">You already have a shop connected to our platform. To connect a different eBay shop, please log out from your current eBay account, use a separate browser profile, or switch to another browser.</p>
                     </div>
                 </div>
             </div>
@@ -618,8 +618,13 @@ const isModalEbayDuplicate = ref(false)
             <div class="text-center font-semibold text-xl">
             {{ trans('eBay Account Already Connected') }}
             </div>
-            <div class="text-center text-xs text-gray-500">
-            {{ trans('This eBay account is already connected.') }}
+            <div class="text-center text-xs text-gray-500 mt-2">
+            {{ trans('To resolve this, try one of the following:') }}
+            <ul class="list-disc list-inside mt-2 text-left text-gray-500">
+                <li>{{ trans('Log out from your current eBay account.') }}</li>
+                <li>{{ trans('Switch to another browser.') }}</li>
+                <li>{{ trans('Use a separate browser profile.') }}</li>
+            </ul>
             </div>
         </div>
 
