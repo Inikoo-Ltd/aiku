@@ -42,7 +42,7 @@ trait WithFillIrisWebBlocks
         } elseif (in_array($webBlockType, ['collections-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['see-also-1'])) {
-            $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webBlock);
+            $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }
