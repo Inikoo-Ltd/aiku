@@ -123,6 +123,8 @@ class RequestApiUploadProductToShopify extends RetinaAction
                     'error_response' => [$e->getMessage()]
                 ]);
 
+                $portfolio->refresh();
+
                 UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $portfolio);
             }
         });
