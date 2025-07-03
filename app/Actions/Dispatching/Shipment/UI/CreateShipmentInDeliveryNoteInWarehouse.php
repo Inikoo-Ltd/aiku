@@ -34,7 +34,7 @@ class CreateShipmentInDeliveryNoteInWarehouse extends OrgAction
         ];
     }
 
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request)
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
     {
         $this->initialisationFromWarehouse($deliveryNote->warehouse, $request);
 
