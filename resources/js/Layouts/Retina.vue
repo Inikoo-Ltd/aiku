@@ -163,9 +163,9 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
     <notifications
         dangerously-set-inner-html
         :max="3"
-        width="500"
+        xwidth="500"
         classes="custom-style-notification"
-        :pauseOnHover="true"    
+        :pauseOnHover="true"
     >
         <template #body="props">
             <Notification :notification="props" />
@@ -237,6 +237,14 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
     }
 
     @apply border-indigo-300 border-2 rounded-md cursor-pointer focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0em] motion-safe:transition-all motion-safe:duration-100 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;
+}
+
+.vue-notification-group {
+    width: 300px !important;
+
+    @media (min-width: 640px) {
+        width: 500px !important;;
+    }
 }
 
 .p-message-text {

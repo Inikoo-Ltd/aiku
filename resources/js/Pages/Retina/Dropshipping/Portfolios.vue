@@ -282,16 +282,18 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
         </div>
     </div>
 
-    <RetinaTablePortfolios
-        v-else
-        :data="props.products"
-        :tab="'products'"
-        :selectedData
-        :platform_data
-        :platform_user_id
-        :is_platform_connected
-        :customerSalesChannel="customer_sales_channel"
-    />
+    <div v-else class="overflow-x-auto">
+        <RetinaTablePortfolios
+            
+            :data="props.products"
+            :tab="'products'"
+            :selectedData
+            :platform_data
+            :platform_user_id
+            :is_platform_connected
+            :customerSalesChannel="customer_sales_channel"
+        />
+    </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <AddPortfolios
