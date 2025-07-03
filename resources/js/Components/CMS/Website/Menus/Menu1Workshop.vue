@@ -119,7 +119,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
                         :target="navigation?.link?.target"
                         @mouseenter="() => (onMouseEnterMenu(navigation, idxNavigation))"
                         amouseleave="() => onMouseLeaveMenu()" :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
-                        class="group w-full   p-4 flex items-center justify-center transition duration-200"
+                        class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200"
                         :class="
                             hoveredNavigation?.id === navigation.id && isCollapsedOpen
                                 ? 'bg-gray-100 text-orange-500'
