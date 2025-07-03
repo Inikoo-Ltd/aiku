@@ -20,6 +20,7 @@ import { faSearch } from "@fal";
 import { faExclamationTriangle, faLayerGroup } from "@far";
 import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
+import FontSize from "tiptap-extension-font-size";
 
 
 const props = defineProps<{
@@ -514,7 +515,7 @@ const handleSetAllToPortfolio = () => {
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
                 <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
-                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore" :style="{padding: '14px 65px !important'}">
+                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore" :injectStyle="{ padding: '14px 65px', fontSize : '1.2rem'  }">
                         <template v-if="loadingMore">
                             <LoadingText />
                         </template>
