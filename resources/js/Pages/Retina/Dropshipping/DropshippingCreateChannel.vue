@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {inject, ref} from "vue";
+import {inject, ref, watch} from "vue";
 
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
@@ -14,7 +14,7 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
-
+import { usePage } from "@inertiajs/vue3"
 
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -206,6 +206,20 @@ const magentoInput = ref({
     password: null as null | string,
     url: null as null | string
 });
+
+interface Modal {
+    title: string
+    description: string
+    type: 'success' | 'error' | 'info' | 'warning'
+}
+
+watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
+    console.log('modal ret', modal)
+    if (!modal) return
+    
+    // selectedModal.value = modal
+    // isModalOpen.value = true
+})
 
 const onSubmitMagento = async () => {
     try {

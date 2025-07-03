@@ -170,12 +170,12 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                 <slot name="afterInput">
                 </slot>
             </div>
-            <div class="h-[500px] text-base font-normal">
+            <div class="h-full md:h-[500px] text-base font-normal">
                 <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
                     <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
                 </div> -->
-                <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
+                <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
                         <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                         <div class="flex gap-2">
@@ -187,16 +187,16 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                         </div>
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
-                    <div class="h-[400px] overflow-auto py-2 relative">
+                    <div class="h-full md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
-                        <div class="grid grid-cols-3 gap-3 pb-2">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
                             <template v-if="!isLoadingFetch">
                                 <template v-if="portfoliosList.length > 0">
                                     <div
                                         v-for="(item, index) in portfoliosList"
                                         :key="index"
                                         @click="() => selectProduct(item)"
-                                        class="relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
+                                        class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                         :class="compSelectedProduct.includes(item.id)
                                             ? 'bg-indigo-100 border-indigo-300'
                                             : 'bg-white hover:bg-gray-200 border-gray-300'"
@@ -205,7 +205,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                             <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)" icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500" fixed-width aria-hidden="true" />
                                         </Transition>
                                         <slot name="product" :item="item">
-                                            <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
+                                            <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover :alt="item.name" />
                                             <div class="flex flex-col justify-between">
                                                 <div class="w-fit" xclick="() => selectProduct(item)">
                                                     <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
