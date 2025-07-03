@@ -8,20 +8,23 @@
  *
 */
 
-namespace App\Actions\Helpers\Luigi;
+namespace App\Actions\Web\Website;
 
-use App\Actions\Helpers\Luigi\Trait\WithLuigis;
+use App\Actions\Web\WithLuigis;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexLuigisCatalogueFromWebsite
+class ReindexWebsiteLuigiData
 {
     use AsAction;
     use WithLuigis;
 
     public string $commandSignature = 'luigis:reindex_catalogue {website?}';
 
-    public function handle(Website $website)
+    /**
+     * @throws \Exception
+     */
+    public function handle(Website $website): void
     {
         $this->reindex($website);
     }
@@ -29,8 +32,9 @@ class ReindexLuigisCatalogueFromWebsite
     /**
      * @throws \Laravel\Octane\Exceptions\DdException
      * @throws \Illuminate\Http\Client\ConnectionException
+     * @throws \Exception
      */
-    public function asCommand($command)
+    public function asCommand($command): int
     {
         if ($command->argument('website')) {
             $website = Website::find($command->argument('website'));
@@ -38,5 +42,6 @@ class ReindexLuigisCatalogueFromWebsite
             $website = Website::first();
         }
         $this->handle($website);
+        return 0;
     }
 }

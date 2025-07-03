@@ -3,7 +3,6 @@ import { getStyles } from "@/Composables/styles"
 import { checkVisible } from "@/Composables/Workshop"
 import { inject } from "vue"
 import Image from "@/Components/Image.vue"
-import { resolveMigrationLink } from "@/Composables/SetUrl"
 
 import { faPresentation, faCube, faText, faPaperclip } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -69,7 +68,7 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
-const migration_redirect = layout?.iris?.migration_redirect
+
 const isLoggedIn = inject("isPreviewLoggedIn", false)
  
 
@@ -83,7 +82,7 @@ console.log('lala', layout)
 				<!-- Logo -->
 				<div>
 					<component v-if="fieldValue?.logo?.image?.source" :is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
-						:href="resolveMigrationLink(props.fieldValue?.logo?.link?.href,migration_redirect)" :target="fieldValue?.logo?.link?.target || '_self'"
+						:href="props.fieldValue?.logo?.link?.href" :target="fieldValue?.logo?.link?.target || '_self'"
 						rel="noopener noreferrer" class="block w-full h-full">
 						<Image :style="getStyles(fieldValue.logo.properties)"
 							:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
@@ -99,7 +98,7 @@ console.log('lala', layout)
 
 				<!-- Gold Member Button -->
 				<div class="justify-self-end w-fit">
-					<a :href="resolveMigrationLink(fieldValue?.button_1?.link?.href,migration_redirect)" :target="fieldValue?.button_1?.link?.target">
+					<a :href="fieldValue?.button_1?.link?.href" :target="fieldValue?.button_1?.link?.target">
 						<div v-if="checkVisible(fieldValue.button_1.visible, isLoggedIn)"
 							class="space-x-1.5 cursor-pointer whitespace-nowrap"
 							:style="getStyles(fieldValue.button_1.container.properties)">
