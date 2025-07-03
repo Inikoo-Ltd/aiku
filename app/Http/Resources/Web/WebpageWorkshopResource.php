@@ -26,7 +26,7 @@ class WebpageWorkshopResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Webpage $webpage */
-        $webpage = $this;
+        $webpage = Webpage::find($this->id);
 
         $webPageLayout               = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
