@@ -98,24 +98,25 @@ onMounted(async () => {
     <!-- Modal Swiper -->
     <div v-if="showModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
       @click.self="closeImageModal">
-      <div class="relative w-full max-w-5xl p-4">
+      <div class="relative w-full max-w-5xl px-4 py-6">
         <!-- Close Button -->
-        <button class="absolute top-4 right-4 text-white text-3xl z-50" @click="closeImageModal">
+        <button class="absolute top-4 right-4 text-white text-3xl z-50" @click="closeImageModal"
+          aria-label="Close image viewer">
           <FontAwesomeIcon :icon="faTimesCircle" />
         </button>
 
-        <!-- Swiper in Modal -->
+        <!-- Swiper Modal -->
         <Swiper :initial-slide="selectedIndex" :slides-per-view="1" :loop="true" :navigation="navigation"
           :modules="[Navigation]" class="w-full">
           <SwiperSlide v-for="(image, index) in props.images" :key="index" class="flex items-center justify-center">
-           <div
-            class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer h-[80vh]">
-            <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
-          </div>
+            <div class="w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+              <Image :src="image.source" :alt="`Image ${index + 1}`" class="max-w-full max-h-full object-contain" />
+            </div>
           </SwiperSlide>
         </Swiper>
       </div>
     </div>
+
   </div>
 </template>
 

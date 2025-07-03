@@ -1,5 +1,4 @@
 export const blueprint = (productCategory: number) => {
-	console.log()
 	return {
 		blueprint: [
 			{
