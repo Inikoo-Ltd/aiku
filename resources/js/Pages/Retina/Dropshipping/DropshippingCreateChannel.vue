@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {inject, ref, watch} from "vue";
+import {inject, ref, watch, onMounted } from "vue";
 
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
@@ -14,7 +14,7 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
-import { usePage } from "@inertiajs/vue3"
+import { usePage  } from "@inertiajs/vue3"
 
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -256,6 +256,19 @@ const onSubmitMagento = async () => {
 
 // Section: Ebay
 const isModalEbay = ref(false)
+
+const isModalEbayDuplicate = ref(false)
+    // console.log('window', window.location)
+    onMounted(() => {
+    const query = new URLSearchParams(window.location.search)
+    const status = query.get('status')
+    const reason = query.get('reason')
+
+        if (status === 'error' && reason === 'duplicate-ebay') {
+            isModalEbayDuplicate.value = true
+            // router.get(window.location.origin + window.location.pathname)
+        }
+    })
 </script>
 
 <template>
@@ -593,4 +606,22 @@ const isModalEbay = ref(false)
             <Button @click="() => onSubmitMagento()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
+
+    <Modal :isOpen="isModalEbayDuplicate" @onClose="isModalEbayDuplicate = false" width="w-full max-w-lg">
+        <div>
+        <div class="mb-4">
+            <div class="text-center font-semibold text-xl">
+            {{ trans('eBay Account Already Connected') }}
+            </div>
+            <div class="text-center text-xs text-gray-500">
+            {{ trans('This eBay account is already connected.') }}
+            </div>
+        </div>
+
+        <div class="text-center">
+            <Button @click="() =>isModalEbayDuplicate = false" label="OK" class="mt-4 px-6" />
+        </div>
+        </div>
+    </Modal>
+    
 </template>

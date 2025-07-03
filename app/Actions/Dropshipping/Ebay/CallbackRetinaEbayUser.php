@@ -23,6 +23,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -72,7 +73,10 @@ class CallbackRetinaEbayUser extends OrgAction
                 if (CustomerSalesChannel::where('name',  Arr::get($userData, 'username'))->exists()) {
                     $ebayUser->customerSalesChannel->delete();
                     $ebayUser->delete();
-                    return route('retina.dropshipping.customer_sales_channels.create');
+                    return route('retina.dropshipping.customer_sales_channels.create', [
+                        'status' => 'error',
+                        'reason' => 'duplicate-ebay'
+                    ]);
                 }
                 
                 $ebayUser = UpdateEbayUser::run($ebayUser, [
@@ -106,17 +110,7 @@ class CallbackRetinaEbayUser extends OrgAction
 
     public function htmlResponse(string $url): Response
     {
-        $route = match ($url) {
-            route('retina.dropshipping.customer_sales_channels.create') =>
-            redirect($url)->with('modal', [
-                        'status'  => 'error',
-                        'title'   => __('Error!'),
-                        'description' => __('This eBay account already connected.'),
-            ]),
-            default => redirect($url),
-        };
-        
-        return $route;
+        return redirect($url);
     }
 
     public function asController(ActionRequest $request): string
