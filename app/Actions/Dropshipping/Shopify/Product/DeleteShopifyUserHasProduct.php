@@ -22,7 +22,10 @@ class DeleteShopifyUserHasProduct extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(?Portfolio $portfolio, bool $forceDelete = false, bool $fromWebhook = false): ShopifyUserHasProduct|null|int
+    /**
+     * @throws \Exception
+     */
+    public function handle(?Portfolio $portfolio, bool $fromWebhook = false): ShopifyUserHasProduct|null|int
     {
         if (!$portfolio) {
             return null;

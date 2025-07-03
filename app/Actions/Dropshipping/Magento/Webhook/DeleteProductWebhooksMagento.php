@@ -34,7 +34,7 @@ class DeleteProductWebhooksMagento extends OrgAction
             ->first();
 
         if ($portfolio) {
-            DeletePortfolio::run($magentoUser->customerSalesChannel, $portfolio, true);
+            DeletePortfolio::run($portfolio, true);
         }
     }
 

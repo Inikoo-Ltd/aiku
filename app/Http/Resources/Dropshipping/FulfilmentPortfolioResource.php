@@ -56,8 +56,8 @@ class FulfilmentPortfolioResource extends JsonResource
             $image = $this->item->imageSources(64, 64);
             $category = $department . $this->item->family?->name;
         }
-        $VAT = $price * 0.2;
-        $priceVAT = $price + $VAT;
+
+
 
         $shopifyUploadRoute = [];
         $wooUploadRoute = [];
@@ -124,9 +124,8 @@ class FulfilmentPortfolioResource extends JsonResource
             'platform' => $this->platform->type,
             'delete_portfolio' => [
                 'method' => 'delete',
-                'name'       => 'retina.models.customer_sales_channel.product.delete',
+                'name'       => 'retina.models.portfolio.delete',
                 'parameters' => [
-                    'customerSalesChannel' => $this->customer_sales_channel_id,
                     'portfolio' => $this->id
                 ]
             ],

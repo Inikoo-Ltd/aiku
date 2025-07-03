@@ -116,7 +116,8 @@ class EditRetinaCustomerClient extends RetinaAction
         );
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): Response {
+    public function asController(CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): Response
+    {
         $this->initialisation($request);
 
         return $this->handle($customerClient, $request);

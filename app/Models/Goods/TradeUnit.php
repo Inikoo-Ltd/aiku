@@ -48,7 +48,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $net_weight (grams)
  * @property int|null $gross_weight incl packing (grams)
  * @property int|null $marketing_weight to be shown in website (grams)
- * @property array<array-key, mixed>|null $dimensions
+ * @property array<array-key, mixed>|null $marketing_dimensions
  * @property float|null $volume in cubic meters
  * @property string|null $type unit type
  * @property int|null $image_id
@@ -98,17 +98,17 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
 
     protected $casts = [
-        'data'            => 'array',
-        'dimensions'      => 'array',
-        'sources'         => 'array',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
+        'data'                => 'array',
+        'marketing_dimensions' => 'array',
+        'sources'             => 'array',
+        'fetched_at'          => 'datetime',
+        'last_fetched_at'     => 'datetime',
     ];
 
     protected $attributes = [
-        'data'       => '{}',
-        'dimensions' => '{}',
-        'sources'    => '{}',
+        'data'                => '{}',
+        'marketing_dimensions' => '{}',
+        'sources'             => '{}',
     ];
 
     protected $guarded = [];
@@ -127,7 +127,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'barcode',
         'gross_weight',
         'net_weight',
-        'dimensions',
+        'marketing_dimensions',
         'volume',
         'type',
     ];

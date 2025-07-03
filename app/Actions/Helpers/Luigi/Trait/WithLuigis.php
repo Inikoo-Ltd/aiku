@@ -45,7 +45,7 @@ trait WithLuigis
     {
         $content_type = 'application/json; charset=utf-8';
 
-        $offsetSeconds = 6;
+        $offsetSeconds = 0;
         $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
         [$publicKey, $privateKey] = $this->getAccessToken($parent);

@@ -38,7 +38,7 @@ class DeleteIrisPortfolioFromMultiChannels extends RetinaAction
                     continue;
                 }
 
-                DeletePortfolio::make()->action($salesChannel, $item, []);
+                DeletePortfolio::make()->action($item);
             }
         }
     }

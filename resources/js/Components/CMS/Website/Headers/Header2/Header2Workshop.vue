@@ -165,32 +165,43 @@ const editable = ref(true)
 		<div class="flex flex-col justify-between items-center py-4 px-6 ">
 			<div class="w-full grid grid-cols-3 items-start gap-6">
 				<!-- Logo -->
-				<component
-					v-if="modelValue?.logo?.image?.source"
-					:is="modelValue?.logo?.image?.source ? 'a' : 'div'"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="block w-fit h-auto"
-					@click="() => emits('setPanelActive', 'logo')">
-					<Image
-						:style="getStyles(modelValue.logo.properties, screenType)"
-						:alt="modelValue?.logo?.image?.alt || modelValue?.logo?.alt"
-						:imageCover="true"
-						:src="modelValue?.logo?.image?.source"
-						:imgAttributes="modelValue?.logo.image?.attributes" />
-				</component>
-				<div
-					v-else
-					@click="() => emits('setPanelActive', 'logo')"
-					class="flex items-center justify-center w-[100px] h-[100px] bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
-					<font-awesome-icon
-						:icon="['fas', 'image']"
-						class="text-gray-500 text-4xl transition-colors duration-300 group-hover:text-gray-700" />
+				<div>
+					<component
+						v-if="modelValue?.logo?.image?.source"
+						:is="modelValue?.logo?.image?.source ? 'a' : 'div'"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="block w-fit h-auto"
+						@click="() => emits('setPanelActive', 'logo')">
+						<Image
+							:style="getStyles(modelValue.logo.properties, screenType)"
+							:alt="modelValue?.logo?.image?.alt || modelValue?.logo?.alt"
+							:imageCover="true"
+							:src="modelValue?.logo?.image?.source"
+							:imgAttributes="modelValue?.logo.image?.attributes" />
+					</component>
+					<div
+						v-else
+						@click="() => emits('setPanelActive', 'logo')"
+						class="flex items-center justify-center w-[100px] h-[100px] bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
+						<font-awesome-icon
+							:icon="['fas', 'image']"
+							class="text-gray-500 text-4xl transition-colors duration-300 group-hover:text-gray-700" />
+					</div>
 				</div>
+				
+				<!-- Search Bar -->
+                <div class="relative justify-self-center w-full max-w-md">
+                    <!-- <input type="text" placeholder="Search Products"
+                        class="border border-gray-300 py-2 px-4 rounded-md text-sm w-full shadow-inner focus:outline-none focus:border-gray-500"> -->
+                    <!--
+                    <FontAwesomeIcon icon="fas fa-search"
+                        class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500" fixed-width /> -->
+                </div>
 
 				<div
 					ref="_textRef"
-					class="col-span-2 relative w-full h-full">
+					class="xcol-span-2 relative w-full h-full">
 					<Editor
 						v-model="modelValue.text.text"
 						:editable="editable"

@@ -110,6 +110,8 @@ const fetchIndexUnuploadedPortfolios = async () => {
 		)
 	)
 	portfoliosList.value = data.data.data
+	// Automatically select all portfolios for syncing
+	selectedPortfoliosToSync.value = [...portfoliosList.value]
 	stepLoading.value = false
 }
 
@@ -150,7 +152,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
 
 // Step 3: bulk upload to Shopify
 const isLoadingBulkDeleteUpload = ref(false)
-const selectedPortfoliosToSync = ref()
+const selectedPortfoliosToSync = ref([])
 const bulkUpload = () => {
 	router[props.routes.bulk_upload.method || 'post'](
 		route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters),
@@ -241,19 +243,18 @@ onMounted(() => {
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Add products to your products list') }}
-                <FontAwesomeIcon v-tooltip="trans(`Will added to My Products section`)" icon="fal fa-info-circle" class="text-lg text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                {{ trans('Add new products to your shop.') }}
             </div>
-            <div class="relative text-right">
-                <Button
-                    v-if="step.current == 0"
-                    @click="step.current = 1"
-                    :disabled="isLoadingSubmit"
-                    :label="trans('Skip to edit products')"
-                    iconRight="fal fa-arrow-right"
-                    type="tertiary"
-                />
-            </div>
+<!--            <div class="relative text-right">-->
+<!--                <Button-->
+<!--                    v-if="step.current == 0"-->
+<!--                    @click="step.current = 1"-->
+<!--                    :disabled="isLoadingSubmit"-->
+<!--                    :label="trans('Skip to edit products')"-->
+<!--                    iconRight="fal fa-arrow-right"-->
+<!--                    type="tertiary"-->
+<!--                />-->
+<!--            </div>-->
         </div>
 
         <!-- Head: step 1 (Edit portfolios) -->
@@ -296,18 +297,18 @@ onMounted(() => {
             </div>
             <div class="relative space-x-2 space-y-1 text-right">
                 <!-- Button: bulk delete -->
-                <Button
-                    xv-if="selectedPortfoliosToSync?.length"
-                    @click="() => bulkDelete()"
-                    :label="trans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"
-                    type="delete"
-                    size="s"
-                    :loading="isLoadingBulkDeleteUpload"
-                />
+<!--                <Button-->
+<!--                    v-if="portfoliosList?.length"-->
+<!--                    @click="() => bulkDelete()"-->
+<!--                    :label="trans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"-->
+<!--                    type="delete"-->
+<!--                    size="s"-->
+<!--                    :loading="isLoadingBulkDeleteUpload"-->
+<!--                />-->
 
                 <!-- Button: bulk upload -->
                 <Button
-                    xv-if="selectedPortfoliosToSync?.length"
+                    v-if="portfoliosList?.length"
                     @click="() => bulkUpload()"
                     :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
                     icon="fal fa-upload"
@@ -390,7 +391,7 @@ onMounted(() => {
                 </div>
             </div>
         </KeepAlive> -->
-        
+
         <!-- 2: Upload product to Shopify -->
         <KeepAlive>
             <div v-if="step.current === 1">

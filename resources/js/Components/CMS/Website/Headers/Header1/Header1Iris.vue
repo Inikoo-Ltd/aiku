@@ -73,11 +73,11 @@ const migration_redirect = layout?.iris?.migration_redirect
 const isLoggedIn = inject("isPreviewLoggedIn", false)
  
 
-console.log(layout)
+console.log('lala', layout)
 </script>
 
 <template>
-	<div class="shadow-sm" :style="getStyles(fieldValue.container.properties)">
+	<div id="header_1_iris" class="shadow-sm" :style="getStyles(fieldValue.container.properties)">
 		<div class="flex flex-col justify-between items-center py-4 px-6">
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
@@ -95,9 +95,6 @@ console.log(layout)
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-80">
 					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id"></LuigiSearch>
-                    <!--
-                    <FontAwesomeIcon icon="fas fa-search"
-                        class="absolute top-1/2 -translate-y-1/2 right-4 text-gray-500" fixed-width /> -->
                 </div>
 
 				<!-- Gold Member Button -->

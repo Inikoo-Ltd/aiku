@@ -48,7 +48,7 @@ class IndexTradeUnitsInProduct extends OrgAction
                 'trade_units.description',
                 'trade_units.gross_weight',
                 'trade_units.net_weight',
-                'trade_units.dimensions',
+                'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type'
             ]);
