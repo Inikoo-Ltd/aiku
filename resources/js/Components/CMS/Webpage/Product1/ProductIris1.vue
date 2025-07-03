@@ -17,6 +17,7 @@ import { router } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set } from "lodash-es"
+import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink)
 
@@ -137,7 +138,10 @@ console.log(props)
 </script>
 
 <template>
-    <div id="product-1" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
+    <div id="product-1"  :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+            marginLeft : 'auto', marginRight : 'auto'
+		}" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">

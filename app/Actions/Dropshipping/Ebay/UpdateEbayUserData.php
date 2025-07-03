@@ -43,7 +43,7 @@ class UpdateEbayUserData extends OrgAction
         $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();
         $paymentPolicies = $ebayUser->getPaymentPolicies();
         $returnPolicies = $ebayUser->getReturnPolicies();
-        $userData = $ebayUser->getUser();
+        // $userData = $ebayUser->getUser();
 
         $updatedSettings = [
             ...$ebayUser->settings,
@@ -57,15 +57,14 @@ class UpdateEbayUserData extends OrgAction
 
 
         $ebayUser = UpdateEbayUser::run($ebayUser, [
-            'name' => Arr::get($userData, 'username'),
             'settings' => $updatedSettings
         ]);
 
-        UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
-            'reference' => Arr::get($userData, 'username'),
-            'name' => Arr::get($userData, 'username'),
-            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
-        ]);
+        // UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
+        //     'reference' => Arr::get($userData, 'username'),
+        //     'name' => Arr::get($userData, 'username'),
+        //     'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+        // ]);
 
         $ebayUser->refresh();
 

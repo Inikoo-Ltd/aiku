@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
         </div>
     </div>
 
-    <notifications dangerously-set-inner-html :max="3" width="500" classes="custom-style-notification"
+    <notifications dangerously-set-inner-html :max="3" xwidth="500" classes="custom-style-notification"
         :pauseOnHover="true">
         <template #body="props">
             <Notification :notification="props" />
@@ -159,5 +159,13 @@ onBeforeUnmount(() => {
     margin-top: 0;
     padding-left: 0;
     padding-top: 0;
+}
+
+.vue-notification-group {
+    width: 300px !important;
+
+    @media (min-width: 640px) {
+        width: 500px !important;;
+    }
 }
 </style>

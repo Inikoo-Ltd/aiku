@@ -132,7 +132,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                 <slot name="afterInput">
                 </slot>
             </div>
-            <div class="h-[500px] text-base font-normal">
+            <div class="h-full md:h-[500px] text-base font-normal">
                 <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
                     <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
@@ -142,9 +142,9 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                         <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
-                    <div class="h-[400px] overflow-auto py-2 relative">
+                    <div class="md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
-                        <div class="grid grid-cols-3 gap-3 pb-2">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
                             <template v-if="!isLoadingFetch">
                                 <template v-if="portfoliosList.length > 0">
                                     <div

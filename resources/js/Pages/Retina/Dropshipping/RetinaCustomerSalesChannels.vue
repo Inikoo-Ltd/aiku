@@ -24,5 +24,7 @@ defineProps<{
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 	</PageHeading>
-	<RetinaTableCustomerSalesChannels :data="data" />
+	<div class="overflow-x-auto">
+		<RetinaTableCustomerSalesChannels :data="data" />
+	</div>
 </template>

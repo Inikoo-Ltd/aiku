@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {inject, ref} from "vue";
+import {inject, ref, watch, onMounted } from "vue";
 
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
@@ -14,7 +14,7 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
-
+import { usePage  } from "@inertiajs/vue3"
 
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -23,7 +23,7 @@ import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import PurePassword from "@/Components/Pure/PurePassword.vue";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
+import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers, faWindow} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faInfoCircle)
 
@@ -207,6 +207,20 @@ const magentoInput = ref({
     url: null as null | string
 });
 
+interface Modal {
+    title: string
+    description: string
+    type: 'success' | 'error' | 'info' | 'warning'
+}
+
+watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
+    console.log('modal ret', modal)
+    if (!modal) return
+    
+    // selectedModal.value = modal
+    // isModalOpen.value = true
+})
+
 const onSubmitMagento = async () => {
     try {
         isLoading.value = true;
@@ -239,6 +253,27 @@ const onSubmitMagento = async () => {
 
     isLoading.value = false;
 };
+
+// Section: Ebay
+const isModalEbay = ref(false)
+
+const closeModalEbayDuplicate = () => {
+    router.get(window.location.origin + window.location.pathname)
+    isModalEbayDuplicate.value = false
+}
+
+const isModalEbayDuplicate = ref(false)
+    // console.log('window', window.location)
+    onMounted(() => {
+    const query = new URLSearchParams(window.location.search)
+    const status = query.get('status')
+    const reason = query.get('reason')
+
+        if (status === 'error' && reason === 'duplicate-ebay') {
+            isModalEbayDuplicate.value = true
+            // router.get(window.location.origin + window.location.pathname)
+        }
+    })
 </script>
 
 <template>
@@ -364,9 +399,11 @@ const onSubmitMagento = async () => {
                 <div class="w-full flex justify-end">
                     <Button
                         :label="trans('Connect')"
-                        type="primary"
+                        xtype="primary"
+                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"
                         full
-                        @click="onSubmitEbay"
+                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
+                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
                     />
                 </div>
             </div>
@@ -524,6 +561,31 @@ const onSubmitMagento = async () => {
         </div>
     </Modal>
 
+    <!-- Modal: Ebay -->
+    <Modal :isOpen="isModalEbay" @onClose="isModalEbay = false" width="w-full max-w-lg">
+        <div class="">
+            <div>
+                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100 border border-amber-300 text-xl">
+                    <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-amber-600" fixed-width aria-hidden="true" />
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <DialogTitle as="h3" class="text-base font-semibold text-amber-600">Warning</DialogTitle>
+                    <div class="mt-2 text-amber-600">
+                        <p class="text-sm">You already have a shop connected to our platform. To connect a different eBay shop, please log out from your current eBay account, use a separate browser profile, or switch to another browser.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-6">
+                <Button
+                    @click="() => onSubmitEbay()"
+                    :label="trans('Connect')"
+                    full
+                    iconRight="fas fa-arrow-right"
+                />
+            </div>
+        </div>
+    </Modal>
+
     <!-- Modal: Magento -->
     <Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">
         <div class="">
@@ -549,4 +611,27 @@ const onSubmitMagento = async () => {
             <Button @click="() => onSubmitMagento()" full label="Create" :loading="!!isLoading" class="mt-6"/>
         </div>
     </Modal>
+
+    <Modal :isOpen="isModalEbayDuplicate" @onClose="() => {isModalEbayDuplicate = false}" width="w-full max-w-lg">
+        <div>
+        <div class="mb-4">
+            <div class="text-center font-semibold text-xl">
+            {{ trans('eBay Account Already Connected') }}
+            </div>
+            <div class="text-center text-xs text-gray-500 mt-2">
+            {{ trans('To resolve this, try one of the following:') }}
+            <ul class="list-disc list-inside mt-2 text-left text-gray-500">
+                <li>{{ trans('Log out from your current eBay account.') }}</li>
+                <li>{{ trans('Switch to another browser.') }}</li>
+                <li>{{ trans('Use a separate browser profile.') }}</li>
+            </ul>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <Button @click="closeModalEbayDuplicate" label="OK" class="mt-4 px-6" />
+        </div>
+        </div>
+    </Modal>
+    
 </template>

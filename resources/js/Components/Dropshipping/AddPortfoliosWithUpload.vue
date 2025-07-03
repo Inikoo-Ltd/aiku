@@ -285,7 +285,7 @@ onMounted(() => {
         </div> -->
 
         <!-- Head: step 2 (Sync to Shopify) -->
-        <div v-if="step.current == 1" class="grid grid-cols-4">
+        <div v-if="step.current == 1" class="grid grid-cols-2 md:grid-cols-4 gap-2">
             <div class="relative">
                 <Button
                     @click="step.current = 0"
@@ -294,6 +294,7 @@ onMounted(() => {
                     type="tertiary"
                 />
             </div>
+            
             <div class="text-center col-span-2">
                 <div class="font-bold text-2xl">{{ `Sync to ${platform_data.name}` }}</div>
                 <div class="text-gray-500 text-sm italic tracking-wide">
@@ -301,7 +302,8 @@ onMounted(() => {
                     {{ trans("All you see is unsynced products. You can remove or sync it all in one click.") }}
                 </div>
             </div>
-            <div class="relative space-x-2 space-y-1 text-right">
+
+            <div class="xcol-start-2 xmd:col-start-auto relative space-x-2 space-y-1 text-right">
                 <!-- Button: bulk delete -->
 <!--                <Button-->
 <!--                    v-if="portfoliosList?.length"-->
@@ -393,33 +395,36 @@ onMounted(() => {
             <div v-if="step.current === 1">
                 <div class="px-4 h-[600px] mt-4 overflow-y-auto mb-4">
                     <!-- Section: Alert if Platform not connected yet -->
-                    <Message v-if="!is_platform_connected" severity="error" class="m-4 ">
-                        <template #icon>
-                            <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
-                        </template>
-
-                        <div class="ml-2 font-normal flex justify-between w-full">
-                            <div class="flex items-center gap-x-2">
-                                {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                    <Message v-if="!is_platform_connected" severity="error" class="my-4 ">
+                        <!-- <template #icon>
+                        </template> -->
+                        
+                        <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
+                            <div>
+                                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                                <div class="inline items-center gap-x-2">
+                                    {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                                </div>
                             </div>
 
-                            <Button
-                                v-if="customerSalesChannel?.reconnect_route?.name"
-                                @click="() => onClickReconnect(customerSalesChannel)"
-                                iconRight="fal fa-external-link"
-                                :label="trans('Reconnect')"
-                                zsize="xxs"
-                                type="secondary"
-                                class="ml-2"
-                            />
+                            <div class="w-full sm:w-fit h-fit">
+                                <Button
+                                    v-if="customerSalesChannel?.reconnect_route?.name"
+                                    @click="() => onClickReconnect(customerSalesChannel)"
+                                    iconRight="fal fa-external-link"
+                                    :label="trans('Reconnect')"
+                                    zsize="xxs"
+                                    type="secondary"
+                                    class="xml-2"
+                                    full
+                                />
+                            </div>
                         </div>
                     </Message>
-
 
                     <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
                         <LoadingIcon />
                     </div>
-                    
                     
                     <PortfoliosStepSyncShopify
                         v-else-if="portfoliosList?.length"
