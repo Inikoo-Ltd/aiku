@@ -463,7 +463,9 @@ trait WithAmazonApiRequest
             $endpoint = "/listings/2021-08-01/items/{$sellerId}/{$sku}";
 
             return $this->makeAmazonRequest('put', $endpoint, $productData, [
-                'marketplaceIds' => $config['marketplace_id']
+                'marketplaceIds' => $config['marketplace_id'],
+                'includedData' => 'identifiers,issues',
+                'mode' => 'VALIDATION_PREVIEW'
             ]);
         } catch (Exception $e) {
             Log::error('Upsert Amazon Product Error: ' . $e->getMessage());
@@ -630,6 +632,7 @@ trait WithAmazonApiRequest
         try {
             $config = $this->getAmazonConfig();
             $marketplaceId = $config['marketplace_id'];
+
             $formattedData = [
                 "productType" => "ACCESSORY",
                 "requirements" => "LISTING",
@@ -648,16 +651,16 @@ trait WithAmazonApiRequest
                     ],
                     "brand" => [
                         [
-                            "value" => Arr::get($productData, 'brand', 'AIKU'),
+                            "value" => 'Generic',
                             "marketplace_id" => $marketplaceId
                         ]
                     ],
-                    "recommended_browse_nodes" => [
+/*                    "recommended_browse_nodes" => [
                         [
                             "value" => "281407",
                             "marketplace_id" => $marketplaceId
                         ]
-                    ],
+                    ],*/
                     "merchant_suggested_asin" => [
                         [
                             "value" => Str::substr('ASIN-'.Arr::get($productData, 'id'), 0, 10)
@@ -669,12 +672,12 @@ trait WithAmazonApiRequest
                             "marketplace_id" => $marketplaceId
                         ]
                     ],
-//                    "item_type_keyword" => [
-//                        [
-//                            "value" => "accessory",
-//                            "marketplace_id" => $marketplaceId
-//                        ]
-//                    ],
+                    "item_type_keyword" => [
+                        [
+                            "value" => "accessory",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
                     "bullet_point" => [
                         [
                             "value" => "High quality material",
@@ -706,7 +709,7 @@ trait WithAmazonApiRequest
                     ],
                     "fabric_type" => [
                         [
-                            "value" => "100% Cotton",
+                            "value" => "100% Original",
                             "marketplace_id" => $marketplaceId
                         ]
                     ],
@@ -728,12 +731,12 @@ trait WithAmazonApiRequest
                             "marketplace_id" => $marketplaceId
                         ]
                     ],
-//                    "import_designation" => [
-//                        [
-//                            "value" => "imported",
-//                            "marketplace_id" => $marketplaceId
-//                        ]
-//                    ],
+                    "import_designation" => [
+                        [
+                            "value" => "imported",
+                            "marketplace_id" => $marketplaceId
+                        ]
+                    ],
                     "age_range_description" => [
                         [
                             "value" => "Adult",
@@ -748,16 +751,33 @@ trait WithAmazonApiRequest
                     ],
                     "model_name" => [
                         [
-                            "value" => "Model ABC123",
+                            "value" => 'Accessory Original',
                             "marketplace_id" => $marketplaceId
                         ]
                     ],
                     "list_price" => [
                         [
-                            "value" => 19.99,
+                            "value" => Arr::get($productData, 'price'),
                             "marketplace_id" => $marketplaceId
                         ]
                     ],
+                    'purchasable_offer' => [
+                        [
+                            'marketplace_id' => $marketplaceId,
+                            'currency' => 'USD',
+                            'our_price' => [
+                                [
+                                    'schedule' => [
+                                        [
+                                            'value_with_tax' => Arr::get($productData, 'price')
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            'quantity' => Arr::get($productData, 'quantity')
+                        ]
+                    ],
+
                     "supplier_declared_dg_hz_regulation" => [
                         [
                             "value" => "not_applicable",
@@ -791,7 +811,14 @@ trait WithAmazonApiRequest
                             "value" => "US",
                             "marketplace_id" => $marketplaceId
                         ]
-                    ]
+                    ],
+                    'fulfillment_availability' => [
+                        [
+                            "quantity" => Arr::get($productData, 'quantity'),
+                            'fulfillment_channel_code' => 'DEFAULT', // or 'AMAZON' for FBA
+                            'marketplace_id' => $marketplaceId
+                        ]
+                    ],
                 ]
             ];
 
