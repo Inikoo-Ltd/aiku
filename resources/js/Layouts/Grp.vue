@@ -183,7 +183,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     <notifications
         dangerously-set-inner-html
         :max="3"
-        width="500"
+        xwidth="500"
         classes="custom-style-notification"
         :pauseOnHover="true"
     >
@@ -307,5 +307,13 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     motion-safe:transition-all motion-safe:duration-100
     hover:[background-size:100%_100%]
     focus:[background-size:100%_100%] px-1;
+}
+
+.vue-notification-group {
+    width: 300px !important;
+
+    @media (min-width: 640px) {
+        width: 500px !important;;
+    }
 }
 </style>

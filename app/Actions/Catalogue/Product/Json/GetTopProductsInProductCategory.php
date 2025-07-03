@@ -37,11 +37,12 @@ class GetTopProductsInProductCategory extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.is_for_sale', true);
+        $queryBuilder->whereNotNull('products.top_seller');
         $queryBuilder->where('products.family_id', $productCategory->id)
-                    ->orderBy('products.top_seller', 'desc');
+                    ->orderBy('products.top_seller', 'asc');
 
         $queryBuilder
-            ->defaultSort('products.top_seller', 'desc')
+            ->defaultSort('products.top_seller')
             ->select([
                 'products.id',
                 'products.image_id',
@@ -59,6 +60,7 @@ class GetTopProductsInProductCategory extends OrgAction
                 'products.top_seller',
                 'products.web_images',
             ]);
+
         return $queryBuilder->allowedSorts(['code', 'name', 'top_seller'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

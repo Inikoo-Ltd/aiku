@@ -191,7 +191,7 @@ const debounceSaveWorkshop = (block) => {
           },
         }
       );
-      data.value = response.data.data
+   /*    data.value = response.data.data */
       sendToIframe({ key: "reload", value: {} });
     } catch (error) {
       console.log(error)
@@ -445,6 +445,7 @@ const compUsersEditThisPage = computed(() => {
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
+console.log('props',props)
 </script>
 
 <template>

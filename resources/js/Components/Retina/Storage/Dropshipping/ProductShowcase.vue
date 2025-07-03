@@ -220,7 +220,7 @@ const product = ref({
 
                 <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
-                    <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow" v-html="data?.product?.data?.description"></dd>
+                    <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow" v-html="data?.product?.data?.description ?? '-'"></dd>
                 </div>
             </dl>
         </section>

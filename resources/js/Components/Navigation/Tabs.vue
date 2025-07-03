@@ -61,7 +61,7 @@ const tabIconClass = function (isCurrent: boolean, type: string | undefined, ali
 <template>
     <div>
         <!-- Tabs: Mobile view -->
-        <div class="sm:hidden px-3 pt-2">
+        <div v-if="Object.keys(navigation ?? {})?.length > 1" class="sm:hidden px-3 pt-2">
             <label for="tabs" class="sr-only">Select a tab</label>
 
             <!-- TODO: use Headless or component Dropdown so the icon is able to show (currrently not) -->

@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\WebpageWorkshopResource;
 use App\Models\Catalogue\Shop;
@@ -48,7 +49,16 @@ class ShowWebpageWorkshop extends OrgAction
         } else {
             $url = 'https://'.$url;
         }
-
+        $webBlockTypes = $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get();
+        if (!in_array($webpage->sub_type, [WebpageSubTypeEnum::PRODUCT, WebpageSubTypeEnum::FAMILY])) {
+            $webBlockTypes = $this->organisation->group
+            ->webBlockTypes()
+            ->where('fixed', false)
+            ->where('scope', 'webpage')
+            ->where('name', 'not like', '%see-also%')
+            ->get();
+        }
+        // dd($webBlockTypes);
         return Inertia::render(
             'Org/Web/WebpageWorkshop',
             [
@@ -93,9 +103,7 @@ class ShowWebpageWorkshop extends OrgAction
                 ],
                 'url'           => $url,
                 'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
-                'webBlockTypes' => WebBlockTypesResource::collection(
-                    $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get()
-                )
+                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes)
 
             ]
         );
