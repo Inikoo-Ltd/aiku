@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
@@ -32,6 +33,8 @@ use Closure;
 
 class IndexRetinaDropshippingOrders extends RetinaAction
 {
+    use WithPlatformStatusCheck;
+
     private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
@@ -179,6 +182,7 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                     'actions' => $actions
                 ],
 
+                'platform_status' => $this->checkStatus($this->customerSalesChannel),
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
                 'orders'   => RetinaDropshippingOrdersInPlatformResources::collection($orders)
             ]
