@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\Product;
@@ -42,6 +43,7 @@ class HydrateProducts
         ProductHydrateCustomersWhoRemindedInCategories::run($product);
         ProductHydrateGrossWeightFromTradeUnits::run($product);
         ProductHydrateBarcodeFromTradeUnit::run($product);
+        ProductHydrateImages::run($product);
     }
 
 }

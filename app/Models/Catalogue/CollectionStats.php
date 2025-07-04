@@ -68,6 +68,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_sub_departments_state_discontinuing
  * @property int $number_sub_departments_state_discontinued
  * @property int $number_parents
+ * @property int $number_images
+ * @property int $number_public_images
+ * @property float $images_size
+ * @property float $public_images_size
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats query()

@@ -24,6 +24,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_parent_webpages
+ * @property int $number_images
+ * @property int $number_public_images
+ * @property float $images_size
+ * @property float $public_images_size
  * @property-read \App\Models\Catalogue\Product $product
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductStats newQuery()
