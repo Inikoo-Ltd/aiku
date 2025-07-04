@@ -12,6 +12,9 @@ use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
 use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
+use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
+use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfoliosToEbay;
+use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfolioToEbay;
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
@@ -21,9 +24,6 @@ use App\Actions\Dropshipping\Shopify\Product\SynchroniseDropshippingPortfolioToS
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
-use App\Actions\Dropshipping\Ebay\Orders\Webhooks\CatchRetinaOrdersFromEbay;
-use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfoliosToEbay;
-use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfolioToEbay;
 use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfoliosToWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfolioToWooCommerce;
@@ -266,7 +266,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
 
     Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CatchRetinaOrdersFromWooCommerce::class)->name('woocommerce.orders.catch')->withoutScopedBindings();
-    Route::get('ebay/{ebayUser:id}/catch-orders', CatchRetinaOrdersFromEbay::class)->name('ebay.orders.catch')->withoutScopedBindings();
+    Route::get('ebay/{ebayUser:id}/catch-orders', FetchEbayUserOrders::class)->name('ebay.orders.catch')->withoutScopedBindings();
     Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings();
     Route::get('magento/{magentoUser:id}/catch-orders', GetRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings();
 
