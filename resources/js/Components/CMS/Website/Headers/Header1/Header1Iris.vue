@@ -72,11 +72,15 @@ const layout = inject('layout', layoutStructure)
 const isLoggedIn = inject("isPreviewLoggedIn", false)
  
 
-console.log('lala', layout)
 </script>
 
 <template>
-	<div id="header_1_iris" class="shadow-sm" :style="getStyles(fieldValue.container.properties)">
+	<div id="header_1_iris" class="shadow-sm" :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+            margin : 0, padding : 0,
+			...getStyles(fieldValue.container?.properties, screenType)
+            
+		}">
 		<div class="flex flex-col justify-between items-center py-4 px-6">
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->

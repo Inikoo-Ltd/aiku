@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Drawer from 'primevue/drawer';
-import { ref, inject } from 'vue';
+import { ref, inject, onMounted, onUnmounted } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faSignIn, faSignOut, faTimesCircle } from '@fas';
@@ -41,12 +41,28 @@ library.add(
 
 const props = defineProps<{
     header: { logo?: { image: { source: string } } },
+    screenType : String
     menu?: { data: Array<{ type: string, label: string, subnavs?: Array<{ title: string, link: { href: string, target: string }, links: Array<{ label: string, link: { href: string, target: string } }> }>, link?: { href: string, target: string } }> }
 }>();
-
+const layout = inject("layout", {});
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout')
 const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
+
+const isMobile = ref(false)
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+onMounted(() => {
+
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 
 </script>
 
@@ -54,13 +70,12 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
     <div>
         <button @click="isOpenMenuMobile = true">
             <FontAwesomeIcon :icon="header?.mobile?.menu?.icon || faBars"
-                :style="getStyles(header?.mobile?.menu?.container?.properties)" />
+                :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),...getStyles(header?.mobile?.menu?.container?.properties)}" />
         </button>
 
-        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :style="getStyles(props.menu?.container?.properties)">
-            <template #closeicon>
-                <FontAwesomeIcon :icon="faTimesCircle" @click="isOpenMenuMobile = false" class="text-sm" />
-            </template>
+        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :showCloseIcon="false"
+            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),margin : 0, padding : 0,...getStyles(props.menu?.container?.properties)}">
+       
 
             <template #header>
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />
@@ -73,7 +88,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                         <Disclosure v-if="item.type === 'multiple'" v-slot="{ open }">
                             <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
                                 <div class="flex justify-between items-center text-lg"
-                                    :style="getStyles(props.menu?.navigation_container?.properties)">
+                                    :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),margin : 0, padding : 0,...getStyles(props.menu?.navigation_container?.properties)}">
                                     <div>
                                         <a v-if="item.link && item.link.href" :href="item.link.href"
                                             :target="item.link.target">
@@ -92,14 +107,14 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                                 <div v-for="(submenu, subIndex) in item.subnavs" :key="subIndex" class="mb-6">
                                     <a v-if="submenu.title" :href="submenu.link?.href" :target="submenu.link?.target"
                                         class="block text-base font-bold text-gray-700 mb-2"
-                                        :style="getStyles(props.menu?.sub_navigation?.properties)">
+                                        :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0,...getStyles(props.menu?.sub_navigation?.properties)}">
                                         {{ submenu.title }}
                                     </a>
 
                                     <div v-if="submenu.links" class="space-y-2 mt-2 ml-4 pl-4  border-gray-200">
                                         <a v-for="(menu, menuIndex) in submenu.links" :key="menuIndex"
                                             :href="menu.link?.href" :target="menu.link?.target"
-                                            :style="getStyles(props.menu?.sub_navigation_link?.properties)"
+                                            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0,...getStyles(props.menu?.sub_navigation_link?.properties)}"
                                             class="block text-sm text-gray-700 relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ menu.label }}
@@ -113,7 +128,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                         <!-- SINGLE LINK -->
                         <div v-else class="py-4 px-5 border-b">
                             <a :href="item.link?.href" :target="item.link?.target"
-                                :style="getStyles(props.menu?.navigation_container?.properties)"
+                                :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),margin : 0, padding : 0,...getStyles(props.menu?.navigation_container?.properties)}"
                                 class="font-bold text-gray-600 text-lg">
                                 {{ item.label }}
                             </a>
@@ -121,7 +136,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                     </div>
                 </div>
 
-                <div class="login-section">
+                <div v-if="isMobile" class="login-section">
                     <a v-if="!isLoggedIn" href="/app" class="font-bold text-gray-500">
                         <FontAwesomeIcon :icon="faSignIn" class="mr-3" /> Login
                     </a>
@@ -129,6 +144,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                         <FontAwesomeIcon :icon="faSignOut" class="mr-3" /> Log Out
                     </div>
                 </div>
+
             </div>
         </Drawer>
     </div>

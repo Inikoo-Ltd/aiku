@@ -27,7 +27,29 @@ const LBInitSearchResult = async () => {
             },
             Theme: "boo",
             Size: 12,
-            Facets: ['brand', 'category', 'color'],
+            Facets: [
+                'category',
+                'color',
+                'news',
+                'department',
+                'sub_department',
+                'brand',
+                'collection',
+                'tag',
+            ],
+            Translations: {
+                "en": {
+                    "facet": {
+                        "name": {
+                            "category": "Categories",
+                            "brand": "Brands",
+                            "sub_department": "Sub Departments",
+                            "tag": "Tags",
+                            "department": "Departments",
+                        }
+                    }
+                }
+            },
             // DefaultFilters: {
             //     type: 'item'
             // },
@@ -48,11 +70,11 @@ onBeforeMount(() => {
     script.src = "https://cdn.luigisbox.com/search.js";
     script.async = true;
     script.onload = () => {
-        console.log('Luigi autocomplete script loaded');
+        console.log('Luigi Search script loaded');
         LBInitSearchResult();
     };
     script.onerror = () => {
-        console.error('Failed to load Luigi autocomplete script');
+        console.error('Failed to load Luigi Search script');
     }
     document.head.appendChild(script);
 })
@@ -63,20 +85,18 @@ console.log("layout", layout)
 
 <template>
     <div class="py-16 w-full max-w-6xl mx-auto">
-        <template v-if="layout?.app?.environment === 'local'">
-            <input v-model="inputValue" class="block w-full max-w-lg mx-auto" id="inputXxxLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 45px;padding-left: 10px;" placeholder="Search"/>
-            
-            <div id="luigi_result_search" class="mt-16 h-40">
-                <div class="flex gap-x-4 h-full">
-                    <div class="w-96 skeleton">
-                    </div>
+        <input v-model="inputValue" class="block w-full max-w-lg mx-auto" id="inputXxxLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 45px;padding-left: 10px;" placeholder="Search"/>
+        
+        <div id="luigi_result_search" class="mt-16 h-40">
+            <div class="flex gap-x-4 h-full">
+                <div class="w-96 skeleton">
+                </div>
 
-                    <div class="w-full skeleton">
+                <div class="w-full skeleton">
 
-                    </div>
                 </div>
             </div>
-        </template>
+        </div>
     </div>
     
      <!-- <div class="flex items-center justify-center min-h-[60vh] text-center px-4">

@@ -50,7 +50,11 @@ const emits = defineEmits<{
 
 <template>
     <div id="top_bar" class="py-2 px-4 flex justify-between"
-        :style="getStyles(model?.container.properties)"
+       :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			  margin : 0,
+			...getStyles(model.container?.properties, screenType)
+		}"
     >
 
         <div class="flex gap-x-2">

@@ -77,7 +77,11 @@ const emits = defineEmits<{
 
 <template>
     <div id="top_bar_2_iris" class="py-2 px-4 md:grid md:grid-cols-5"
-        :style="getStyles(model?.container?.properties)"
+         :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			  margin : 0,
+			...getStyles(model.container?.properties, screenType)
+		}"
     >
 
         <!-- Section: Greeting -->

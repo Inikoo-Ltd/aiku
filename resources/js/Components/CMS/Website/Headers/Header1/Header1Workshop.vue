@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { getStyles } from "@/Composables/styles";
 import MobileHeader from '@/Components/CMS/Website/Headers/MobileHeader.vue';
 
@@ -47,12 +47,17 @@ const _menu = ref();
 const toggle = (event) => {
     _menu.value.toggle(event)
 };
-
+const layout = inject('layout', {})
 
 </script>
 
 <template>
-    <div class="shadow-sm" :style="getStyles(modelValue.container.properties, screenType)">
+    <div class="shadow-sm" :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+            margin : 0, padding : 0,
+			...getStyles(modelValue.container?.properties, screenType)
+            
+		}">
         <div class="flex flex-col justify-between items-center py-4 px-6 ">
             <div class="w-full grid grid-cols-3 items-center gap-6">
                 <!-- Logo -->

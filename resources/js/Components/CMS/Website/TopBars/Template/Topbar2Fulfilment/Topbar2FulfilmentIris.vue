@@ -60,7 +60,11 @@ const emits = defineEmits<{
 	<div
 		id="top_bar"
 		class="hidden md:grid py-2 px-4 md:grid-cols-5"
-		:style="getStyles(model?.container?.properties)">
+		 :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			  margin : 0,
+			...getStyles(model.container?.properties, screenType)
+		}">
 
 		<div class="col-span-2 action_buttons flex justify-center md:justify-start gap-x-2">
 			<!-- Section: Main title -->
