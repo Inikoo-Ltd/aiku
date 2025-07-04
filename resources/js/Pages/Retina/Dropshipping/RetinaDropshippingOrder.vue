@@ -164,7 +164,7 @@ console.log('DS Orders', props)
     </div>
 
     <!-- Section: Alert if unpaid -->
-    <Message v-if="!data?.data?.is_fully_paid" severity="error" class="mx-4 mt-4 ">
+    <!-- <Message v-if="!data?.data?.is_fully_paid" severity="error" class="mx-4 mt-4 ">
         <template #icon>
             <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true" />
         </template>
@@ -182,7 +182,7 @@ console.log('DS Orders', props)
                 class="bg-green-100"
             />
         </div>
-    </Message>
+    </Message> -->
 
     <DSCheckoutSummary :summary="box_stats" />
 
