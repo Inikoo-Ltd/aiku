@@ -185,7 +185,7 @@ class ShopHydrateOrderHandling implements ShouldBeUnique
 
 
 
-        $stats= [
+        $stats = [
             'number_orders_state_creating'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::CREATING)->count(),
             'orders_state_creating_amount'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::CREATING)->sum('net_amount'),
             'orders_state_creating_amount_org_currency' => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::CREATING)->sum('org_net_amount'),
@@ -201,10 +201,10 @@ class ShopHydrateOrderHandling implements ShouldBeUnique
             'orders_state_submitted_paid_amount_org_currency' => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::PAID)->sum('org_net_amount'),
             'orders_state_submitted_paid_amount_grp_currency' => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', OrderPayStatusEnum::PAID)->sum('grp_net_amount'),
 
-            'number_orders_state_submitted_not_paid'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=',OrderPayStatusEnum::PAID)->count(),
-            'orders_state_submitted_not_paid_amount'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=',OrderPayStatusEnum::PAID)->sum('net_amount'),
-            'orders_state_submitted_not_paid_amount_org_currency' => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=',OrderPayStatusEnum::PAID)->sum('org_net_amount'),
-            'orders_state_submitted_not_paid_amount_grp_currency' => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=',OrderPayStatusEnum::PAID)->sum('grp_net_amount'),
+            'number_orders_state_submitted_not_paid'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=', OrderPayStatusEnum::PAID)->count(),
+            'orders_state_submitted_not_paid_amount'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=', OrderPayStatusEnum::PAID)->sum('net_amount'),
+            'orders_state_submitted_not_paid_amount_org_currency' => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=', OrderPayStatusEnum::PAID)->sum('org_net_amount'),
+            'orders_state_submitted_not_paid_amount_grp_currency' => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::SUBMITTED)->where('pay_status', '!=', OrderPayStatusEnum::PAID)->sum('grp_net_amount'),
 
             'number_orders_state_in_warehouse'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::IN_WAREHOUSE)->count(),
             'orders_state_in_warehouse_amount'              => $shop->orders()->whereNull('source_id')->where('state', OrderStateEnum::IN_WAREHOUSE)->sum('net_amount'),

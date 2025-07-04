@@ -47,7 +47,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $customer_price
  * @property string|null $customer_description
  * @property string|null $platform_product_id
- * @property string|null $errors_response
+ * @property array<array-key, mixed>|null $errors_response
  * @property string|null $platform_handle
  * @property string|null $selling_price
  * @property string|null $margin
