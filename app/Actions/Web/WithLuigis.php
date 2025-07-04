@@ -107,7 +107,7 @@ trait WithLuigis
             $website->webpages()
             ->with('model')
             ->where('state', 'live')
-            ->where('type', WebpageTypeEnum::CATALOGUE)
+            ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
             ->chunk(1000, function ($webpages) use ($website, &$tags) {
                 $objects = [];
@@ -257,6 +257,31 @@ trait WithLuigis
         }
     }
 
+    public function deleteContentFromWebsite(Website $website): void
+    {
+        $website->webpages()
+        ->where('state', 'live')
+        ->whereIn('type', [WebpageTypeEnum::CATALOGUE])
+        ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
+        ->chunk(1000, function ($webpages) use ($website) {
+            $batch = [];
+            foreach ($webpages as $webpage) {
+                $object = $this->getObjectFromWebpage($webpage);
+                if ($object) {
+                    $batch[] = $object;
+                }
+            }
+            if ($batch) {
+                $compressed = count($batch) >= 1000;
+                $body = [
+                    'objects' => $batch
+                ];
+                $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
+                print "Deleted count " . count($batch) . " from website: {$website->name}\n";
+            }
+        });
+    }
+
     public function deleteContentFromWebpage(Webpage $webpage): void
     {
         $website = $webpage->website;
@@ -309,7 +334,7 @@ trait WithLuigis
             $family = $model->family;
             $department = $family?->department;
             $subDepartment = $model->subDepartment;
-            $identity = $this->getWebpageUrl($webpage);
+            $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
             $brand = $model->getBrand();
             $brandObject = null;
             if ($brand) {
