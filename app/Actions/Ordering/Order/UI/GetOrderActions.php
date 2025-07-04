@@ -152,7 +152,39 @@ class GetOrderActions
                                 'order' => $order->id
                             ]
                         ]
-                    ]
+                    ],
+                    $order->invoices->count() == 0 ?
+                    [
+                                            'type'    => 'button',
+                                            'style'   => '',
+                                            'tooltip' => __('Generate Invoice'),
+                                            'label'   => __('Generate Invoice'),
+                                            'key'     => 'action',
+                                            'route'   => [
+                                                'method'     => 'patch',
+                                                'name'       => 'grp.models.order.generate_invoice',
+                                                'parameters' => [
+                                                    'order' => $order->id
+                                                ]
+                                            ]
+                    ] : []
+                ],
+                OrderStateEnum::DISPATCHED => [
+                    $order->invoices->count() == 0 ?
+                    [
+                                            'type'    => 'button',
+                                            'style'   => '',
+                                            'tooltip' => __('Generate Invoice'),
+                                            'label'   => __('Generate Invoice'),
+                                            'key'     => 'action',
+                                            'route'   => [
+                                                'method'     => 'patch',
+                                                'name'       => 'grp.models.order.generate_invoice',
+                                                'parameters' => [
+                                                    'order' => $order->id
+                                                ]
+                                            ]
+                    ] : []
                 ],
                 default => []
             };

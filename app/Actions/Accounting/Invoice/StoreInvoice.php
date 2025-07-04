@@ -19,6 +19,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Accounting\Invoice;
@@ -260,6 +261,8 @@ class StoreInvoice extends OrgAction
             $rules['tax_number_valid']         = ['sometimes', 'nullable', 'boolean'];
             $rules['identity_document_type']   = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
+            $rules['payment_amount']           = ['sometimes', 'numeric'];
+            $rules['pay_status']               = ['sometimes', Rule::enum(InvoicePayStatusEnum::class)];
 
 
             $rules['invoice_category_id'] = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];

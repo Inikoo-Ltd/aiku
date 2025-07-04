@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
 use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -42,7 +43,7 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
 
             $deliveryNote->refresh();
             foreach ($deliveryNote->orders as $order) {
-                UpdateStateToDispatchedOrder::make()->action($order);
+                DispatchOrderFromDeliveryNote::make()->action($order);
             }
             return $deliveryNote;
         });
