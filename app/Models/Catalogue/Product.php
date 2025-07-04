@@ -17,6 +17,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Group;
@@ -293,6 +294,13 @@ class Product extends Model implements Auditable, HasMedia
         return Tag::whereHas('tradeUnits', function ($query) {
             $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
         })->get();
+    }
+
+    public function getBrand(): ?Brand
+    {
+        return Brand::whereHas('tradeUnits', function ($query) {
+            $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
+        })->first();
     }
 
     public function exclusiveForCustomer(): BelongsTo

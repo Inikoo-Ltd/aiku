@@ -98,6 +98,7 @@ class PublishWebpage extends OrgAction
         $webpage->update($updateData);
 
         BreakWebpageCache::run($webpage);
+        ReindexWebpageLuigiData::dispatch($webpage);
 
         return $webpage;
     }
