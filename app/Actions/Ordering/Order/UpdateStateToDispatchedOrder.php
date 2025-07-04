@@ -48,14 +48,17 @@ class UpdateStateToDispatchedOrder extends OrgAction
             $this->update($order, $data);
             $this->orderHydrators($order);
             $order->refresh();
-            match ($order->customerSalesChannel->platform->type) {
-                PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
-                PlatformTypeEnum::EBAY        => FulfillOrderToEbay::run($order),
-                PlatformTypeEnum::MAGENTO        => FulfillOrderToMagento::run($order),
-                //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
-                PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
-                default => null,
-            };
+
+            if($order->customerSalesChannel){
+                match ($order->customerSalesChannel->platform->type) {
+                    PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
+                    PlatformTypeEnum::EBAY        => FulfillOrderToEbay::run($order),
+                    PlatformTypeEnum::MAGENTO        => FulfillOrderToMagento::run($order),
+                    //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
+                    PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
+                    default => null,
+                };
+            }
         });
 
         return $order;

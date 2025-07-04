@@ -8,10 +8,13 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
+use App\Actions\Ordering\Order\InvoiceOrderFromDeliveryNoteFinalisation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseDeliveryNote extends OrgAction
@@ -20,10 +23,22 @@ class FinaliseDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        data_set($modelData, 'finalised_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
-
-        return $this->update($deliveryNote, $modelData);
+        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
+            data_set($modelData, 'finalised_at', now());
+            data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
+    
+    
+            $deliveryNote->refresh();
+            foreach ($deliveryNote->orders as $order) {
+                InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
+            }
+    
+            $deliveryNote = $this->update($deliveryNote, $modelData);
+    
+            return $deliveryNote;
+        });
+        
+        return $deliveryNote;   
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
