@@ -73,6 +73,7 @@ const props = defineProps<{
             code: string
             symbol: string
         }
+        type_options: {}
     },
     tab: string
 }>()
@@ -311,6 +312,7 @@ const isModalBalanceIncrease = ref(false)
             :routeSubmit="data.balance.route_store"
             :options="data.balance.increaase_reasons_options"
             :currency="data.currency"
+            :types="data.balance.type_options"
         />
     </Modal>
     
@@ -318,9 +320,10 @@ const isModalBalanceIncrease = ref(false)
     <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceDecrease
             v-model="isModalBalanceDecrease"
-            :routeSubmit="data.balance.route_update"
+            :routeSubmit="data.balance.route_store"
             :options="data.balance.decrease_reasons_options"
             :currency="data.currency"
+            :types="data.balance.type_options"
         />
     </Modal>
 

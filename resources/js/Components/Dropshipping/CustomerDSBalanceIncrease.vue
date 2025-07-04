@@ -4,7 +4,7 @@ import { routeType } from "@/types/route"
 import Select from "primevue/select"
 import { router } from '@inertiajs/vue3'
 import { trans } from "laravel-vue-i18n"
-import Button from "../Elements/Buttons/Button.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 
 const model = defineModel()
@@ -15,12 +15,14 @@ const props = defineProps<{
 
     }
     options: {}[]
+    types: {}[]
 }>()
 
 
 const amount = ref<number | null>(null)
 const privateNote = ref<string>("")
-const increaseBalance = ref(null)
+const increaseReason = ref(null)
+const increaseType = ref(null)
 
 // const increase = ref([
 // 	{ name: "Pay for the shipping of a return", type: "pay_return" },
@@ -32,7 +34,8 @@ const increaseBalance = ref(null)
 const resetForm = () => {
 	amount.value = null
 	privateNote.value = ""
-	increaseBalance.value = null
+	increaseReason.value = null
+	increaseType.value = null
 }
 
 const closeModal = () => {
@@ -42,34 +45,31 @@ const closeModal = () => {
 
 const isLoading = ref(false)
 const onSubmitIncrease = () => {
-    // console.log(amount.value, privateNote.value, increaseBalance.value, )
-    if (props.routeSubmit.name) {
-        router[props.routeSubmit.method || 'patch'](
-            route(props.routeSubmit.name, props.routeSubmit.parameters),
-            {
-                amount: amount.value,
-                notes: privateNote.value,
-                type: 'increase',
+    console.log(amount.value, privateNote.value, increaseReason.value, )
+    router[props.routeSubmit.method || 'patch'](
+        route(props.routeSubmit.name, props.routeSubmit.parameters),
+        {
+            amount: amount.value,
+            notes: privateNote.value,
+            reason: increaseReason.value,
+            type: increaseType.value,
+        },
+        {
+            onStart: () => {
+                isLoading.value = true
             },
-            {
-                onStart: () => {
-                    isLoading.value = true
-                },
-                onFinish: () => {
-                    isLoading.value = false
-                },
-                preserveScroll: true,
-                onSuccess: () => {
-                    model.value = false
-                },
-                onError: (errors) => {
-                    console.error("Error updating balance:", errors)
-                },
-            }
-        )
-    } else {
-        console.error("No route defined for balance increase")
-    }
+            onFinish: () => {
+                isLoading.value = false
+            },
+            preserveScroll: true,
+            onSuccess: () => {
+                model.value = false
+            },
+            onError: (errors) => {
+                console.error("Error updating balance:", errors)
+            },
+        }
+    )
 }
 </script>
 
@@ -84,11 +84,26 @@ const onSubmitIncrease = () => {
                     {{ trans("Reason to deposit") }}
                 </label>
                 <Select
-                    v-model="increaseBalance"
+                    v-model="increaseReason"
                     :options="options ?? []"
                     optionLabel="label"
                     optionValue="value"
                     :placeholder="trans('Select your reason')"
+                    class="w-full"
+                />
+            </div>
+
+            <!-- Type -->
+            <div>
+                <label for="type" class="block text-gray-700 font-medium mb-2">
+                    {{ trans("Select type of the decrease:") }}
+                </label>
+                <Select
+                    v-model="increaseType"
+                    :options="types ?? []"
+                    optionLabel="label"
+                    optionValue="value"
+                    :placeholder="trans('Select your type')"
                     class="w-full"
                 />
             </div>
@@ -134,6 +149,7 @@ const onSubmitIncrease = () => {
                 type="primary"
                 @click="() => onSubmitIncrease()"
                 full
+                :loading="isLoading"
             >
             </Button>
         </div>

@@ -6,6 +6,7 @@ import { router } from '@inertiajs/vue3'
 import { trans } from "laravel-vue-i18n"
 import Button from "../Elements/Buttons/Button.vue"
 import { InputNumber } from "primevue"
+import { notify } from "@kyvg/vue3-notification"
 
 
 const model = defineModel()
@@ -16,17 +17,20 @@ const props = defineProps<{
 
     }
     options: {}[]
+    types: {}[]
 }>()
 
 
 const amount = ref<number>(0)
 const privateNote = ref<string>("")
 const reasonToDecrease = ref(null)
+const decreaseType = ref(null)
 
 const resetForm = () => {
 	amount.value = 0
 	privateNote.value = ""
 	reasonToDecrease.value = null
+	decreaseType.value = null
 }
 
 const closeModal = () => {
@@ -43,7 +47,8 @@ const onSubmitDecrease = () => {
             {
                 amount: -amount.value,
                 notes: privateNote.value,
-                type: reasonToDecrease.value,
+                type: decreaseType.value,
+                reason: reasonToDecrease.value,
             },
             {
                 onStart: () => {
@@ -58,6 +63,11 @@ const onSubmitDecrease = () => {
                 },
                 onError: (errors) => {
                     console.error("Error updating balance:", errors)
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: "Contact administrator.",
+                        type: "error",
+                    })
                 },
             }
         )
@@ -73,6 +83,7 @@ const onSubmitDecrease = () => {
         <p class="text-base text-gray-500 italic mb-6 text-center">{{ trans("Enter the details to decrease balance") }}</p>
 
         <div class="space-y-6">
+            <!-- Reason -->
             <div>
                 <label for="amount" class="block text-gray-700 font-medium mb-2">
                     {{ trans("Reason to decrease") }}
@@ -87,6 +98,22 @@ const onSubmitDecrease = () => {
                 />
             </div>
 
+            <!-- Type -->
+            <div>
+                <label for="type" class="block text-gray-700 font-medium mb-2">
+                    {{ trans("Select type of the decrease:") }}
+                </label>
+                <Select
+                    v-model="decreaseType"
+                    :options="types ?? []"
+                    optionLabel="label"
+                    optionValue="value"
+                    :placeholder="trans('Select your type')"
+                    class="w-full"
+                />
+            </div>
+
+            <!-- Amount -->
             <div>
                 <label for="amount" class="block text-gray-700 font-medium mb-2">
                     {{ trans("Amount to decrease") }}
@@ -112,6 +139,7 @@ const onSubmitDecrease = () => {
                 />
             </div>
 
+            <!-- Note -->
             <div>
                 <label for="privateNote" class="block text-gray-700 font-medium mb-2">
                     {{ trans("Private Note") }}
@@ -139,6 +167,7 @@ const onSubmitDecrease = () => {
                 type="primary"
                 @click="() => onSubmitDecrease()"
                 full
+                :loading="isLoading"
             >
             </Button>
         </div>
