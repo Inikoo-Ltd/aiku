@@ -72,23 +72,17 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
 <template>
     <!-- Main Navigation -->
-    <div class="bg-white   border-gray-300" :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        margin: 0, padding: 0,
-        ...getStyles(fieldValue.container?.properties, screenType)
-
-    }">
-        <div @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
-            :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
+    <div class="bg-white py-1 border-b border-0.5 border-gray-300" :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.container?.properties,screenType)}">
+        <div
+            @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
+            :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
             class="relative container flex  justify-between items-center gap-x-2 px-4">
 
             <!-- All categories -->
             <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">
-                <div @click="() => isOpenMenuMobile = true"
-                    class="flex items-center gap-x-2 h-fit px-5 py-1 rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
-                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true"
-                        :class="'text-[10px]'" />
-                    <span class="font-medium text-gray-600 text-xs">{{ trans("All Categories") }}</span>
+                <div @click="() => isOpenMenuMobile = true" class="flex items-center gap-x-2 h-fit px-5 py-1  text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
+                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" :class="'text-[10px]'" />
+                    <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
                 </div>
 
                 <Transition>
@@ -98,8 +92,9 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
                 <Transition>
                     <div v-if="isAbleScrollToLeft" @click="() => scrollLeft()"
-                        class="w-4 h-4 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-10 top-1/2 -translate-y-1/2 cursor-pointer text-inherit">
-                        <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" class="text-[8px]" />
+                         class="w-6 h-6 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-10 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
+                    >
+                        <FontAwesomeIcon icon="fal fa-chevron-left"  fixed-width aria-hidden="true" class="text-[8px]"/>
                     </div>
                 </Transition>
             </div>
@@ -111,9 +106,9 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
             <Transition>
                 <div v-if="isAbleScrollToRight" @click="() => scrollRight()"
-                    class="w-4 h-4 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-inherit">
-                    <FontAwesomeIcon icon="fal fa-chevron-left" rotation="180" fixed-width aria-hidden="true"
-                        class="text-[8px]" />
+                     class="w-6 h-6 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
+                >
+                    <FontAwesomeIcon icon="fal fa-chevron-left" rotation="180"  fixed-width aria-hidden="true" class="text-[8px]" />
                 </div>
             </Transition>
 

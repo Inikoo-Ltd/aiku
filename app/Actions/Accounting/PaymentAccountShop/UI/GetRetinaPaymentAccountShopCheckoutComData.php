@@ -31,25 +31,29 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-        $toPay = (float) max($order->total_amount, 0.0);
-        $balance = (float) $order->customer->balance;
+        $toPay   = (float)max($order->total_amount, 0.0);
+        $balance = (float)$order->customer->balance;
 
         $decimalPart = $toPay - floor($toPay);
 
         $payFloatWithBalance = min($decimalPart, $balance);
 
-        $remainingBalance = $balance - $payFloatWithBalance;
+        $remainingBalance  = $balance - $payFloatWithBalance;
         $payIntWithBalance = min(floor($toPay), floor($remainingBalance));
 
         $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
-        $toPayByOther = round($toPay - $toPayByBalance, 2);
+        $toPayByOther   = round($toPay - $toPayByBalance, 2);
+
+
+        $toPayByOther = intval($toPayByOther * 100);
+
 
         if ($toPayByOther == 0) {
             abort(404);
         }
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
-        $paymentSessionRequest->amount    = (int)$toPayByOther * 100;
+        $paymentSessionRequest->amount    = $toPayByOther;
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
 
@@ -61,7 +65,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
 
-        $billingAddress         = $order->billingAddress;
+        $billingAddress = $order->billingAddress;
 
         $paymentSessionRequest = $this->setBillingInformation($paymentSessionRequest, $billingAddress);
 
@@ -86,7 +90,6 @@ class GetRetinaPaymentAccountShopCheckoutComData
     private function getFailureUrl(OrderPaymentApiPoint $orderPaymentApiPoint): string
     {
         return route('retina.webhooks.checkout_com.order_payment_failure', $orderPaymentApiPoint->ulid);
-
     }
 
 }
