@@ -47,22 +47,18 @@ class GetCustomerShowcase
             ],
             'currency'  => CurrencyResource::make($customer->shop->currency)->toArray(request()),
             'balance'  => [
-                // 'route_increase'    => [  // TODO
-                //     'name'       => 'grp.org.shops.show.crm.customers.show.balance.increase',
-                //     'parameters' => [
-                //         'organisation' => $customer->organisation->slug,
-                //         'shop'         => $customer->shop->slug,
-                //         'customer'     => $customer->slug
-                //     ]
-                // ],
-                // 'route_decrease'    => [   // TODO
-                //     'name'       => 'grp.org.shops.show.crm.customers.show.balance.decrease',
-                //     'parameters' => [
-                //         'organisation' => $customer->organisation->slug,
-                //         'shop'         => $customer->shop->slug,
-                //         'customer'     => $customer->slug
-                //     ]
-                // ],
+                'route_store'    => [
+                    'name'       => 'grp.models.customer.credit-transaction.store',
+                    'parameters' => [
+                        'customer'     => $customer->id
+                    ]
+                ],
+                'route_update'    => [
+                    'name'       => 'grp.models.customer_balance.update',
+                    'parameters' => [
+                        'customer'     => $customer->id
+                    ]
+                ],
             ],
             'editWebUser' => $webUserRoute
         ];

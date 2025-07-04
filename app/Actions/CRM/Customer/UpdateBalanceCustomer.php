@@ -14,6 +14,7 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
@@ -74,6 +75,7 @@ class UpdateBalanceCustomer extends OrgAction
                 CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER->value,
             ])],
             'notes' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'reason' => ['sometimes', Rule::enum(CreditTransactionReasonEnum::class)],
         ];
 
     }
