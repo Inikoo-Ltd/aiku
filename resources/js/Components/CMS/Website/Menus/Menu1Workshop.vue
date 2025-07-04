@@ -141,7 +141,8 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
             <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
                 class="absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
-                :style="getStyles(fieldValue?.container?.properties, screenType)" :class="true ? 'z-50' : 'z-50'">
+                :class="isCollapsedOpen ? 'z-50' : 'border-t-0 z-50'"
+                :style="getStyles(fieldValue?.container?.properties, screenType)" >
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
                         <div v-if="!subnav?.link?.href && subnav.title"
