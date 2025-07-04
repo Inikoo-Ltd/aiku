@@ -223,7 +223,10 @@ class StoreInvoice extends OrgAction
             'gross_amount'    => ['required', 'numeric'],
             'rental_amount'   => ['sometimes', 'required', 'numeric'],
             'goods_amount'    => ['sometimes', 'required', 'numeric'],
+            'insurance_amount'    => ['sometimes', 'required', 'numeric'],
+            'shipping_amount'    => ['sometimes', 'required', 'numeric'],
             'services_amount' => ['sometimes', 'required', 'numeric'],
+            'charges_amount' => ['sometimes', 'required', 'numeric'],
             'tax_amount'      => ['required', 'numeric'],
             'footer'          => ['sometimes', 'string'],
             'in_process'      => ['sometimes', 'boolean'],
@@ -232,6 +235,14 @@ class StoreInvoice extends OrgAction
             'tax_liability_at' => ['sometimes', 'date'],
             'data'             => ['sometimes', 'array'],
 
+
+            'customer_sales_channel_id' => [
+                'sometimes',
+                'required',
+                Rule::exists('customer_sales_channel_id', 'id')->where(function ($query) {
+                    $query->where('group_id', $this->shop->group_id);
+                })
+            ],
 
             'sales_channel_id' => [
                 'sometimes',
@@ -261,9 +272,6 @@ class StoreInvoice extends OrgAction
             $rules['tax_number_valid']         = ['sometimes', 'nullable', 'boolean'];
             $rules['identity_document_type']   = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
-            $rules['payment_amount']           = ['sometimes', 'numeric'];
-            $rules['pay_status']               = ['sometimes', Rule::enum(InvoicePayStatusEnum::class)];
-
 
             $rules['invoice_category_id'] = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
             $rules['tax_category_id']     = ['sometimes', 'required', 'exists:tax_categories,id'];

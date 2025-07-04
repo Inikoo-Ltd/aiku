@@ -20,7 +20,7 @@ class InvoiceOrderFromDeliveryNoteFinalisation extends OrgAction
     public function handle(Order $order): Order
     {
 
-       return FinaliseOrder::make()->action($order);
+        return FinaliseOrder::make()->action($order, true);
 
 
     }

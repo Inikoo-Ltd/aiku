@@ -9,6 +9,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromAdjustment;
@@ -48,7 +49,7 @@ class GenerateOrderInvoice extends OrgAction
             }
 
             $invoiceData = [
-                'in_process'=> false,
+                'in_process'                => false,
                 'reference'                 => $order->reference,// Todo in SK,ES generate reference with SK rules
                 'currency_id'               => $order->currency_id,
                 'billing_address'           => new Address($billingAddress->getFields()),
@@ -63,17 +64,11 @@ class GenerateOrderInvoice extends OrgAction
                 'shipping_amount'           => $order->shipping_amount,
                 'insurance_amount'          => $order->insurance_amount,
                 'tax_amount'                => $order->tax_amount,
-                'pay_status'                => $payStatus,
-                'payment_amount'            => $order->payment_amount,
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
                 //'footer'=>$order->shop->settings['footer'] ?? null, todo make footer UI in shop setting
-
             ];
 
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
-
-            //todo here we need foreach all payments in a order abd attach them to the invocie
-
 
             $transactions = $order->transactions;
 
@@ -100,6 +95,10 @@ class GenerateOrderInvoice extends OrgAction
                 } else {
                     StoreInvoiceTransaction::make()->action($invoice, $transaction->historicAsset, $data);
                 }
+            }
+
+            foreach($order->payments as $payment){
+                AttachPaymentToInvoice::make()->action($invoice, $payment, []);
             }
 
             return $invoice;

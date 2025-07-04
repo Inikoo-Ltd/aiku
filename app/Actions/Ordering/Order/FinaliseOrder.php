@@ -33,7 +33,7 @@ class FinaliseOrder extends OrgAction
      * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, $fromDeliveryNote = false): Order
     {
 
         GenerateOrderInvoice::make()->action($order);
@@ -42,7 +42,7 @@ class FinaliseOrder extends OrgAction
             'state' => OrderStateEnum::FINALISED
         ];
 
-        if (in_array($order->state, [OrderStateEnum::HANDLING, OrderStateEnum::PACKED])) {
+        if (in_array($order->state, [OrderStateEnum::HANDLING, OrderStateEnum::PACKED]) || $fromDeliveryNote) {
             $order->transactions()->update([
                 'state' => TransactionStateEnum::FINALISED
             ]);
@@ -62,9 +62,9 @@ class FinaliseOrder extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(Order $order): Order
+    public function action(Order $order, $fromDeliveryNote = false): Order
     {
-        return $this->handle($order);
+        return $this->handle($order, $fromDeliveryNote);
     }
 
     public function asController(Order $order, ActionRequest $request) // Candidate for removal we will only folow DN finalisation
