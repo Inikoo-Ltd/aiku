@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from "vue"
-import MobileMenu from "@/Components/MobileMenu.vue"
-import Menu from "primevue/menu"
+import { ref, nextTick, onMounted, inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { faPresentation, faCube, faText, faPaperclip } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -22,9 +20,7 @@ import {
 } from "@fas"
 import { faHeart } from "@far"
 import Image from "@/Components/Image.vue"
-import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import Moveable from "vue3-moveable"
 
 library.add(
 	faPresentation,
@@ -156,12 +152,18 @@ const toggle = (event) => {
 
 // Make editor editable
 const editable = ref(true)
+const layout = inject('layout', {})
 </script>
 
 <template>
 	<div
 		class="relative shadow-sm"
-		:style="getStyles(modelValue.container.properties, screenType)">
+		:style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+            margin : 0, padding : 0,
+			...getStyles(modelValue.container?.properties, screenType)
+            
+		}">
 		<div class="flex flex-col justify-between items-center py-4 px-6 ">
 			<div class="w-full grid grid-cols-3 items-start gap-6">
 				<!-- Logo -->

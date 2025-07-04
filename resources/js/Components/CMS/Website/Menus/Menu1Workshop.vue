@@ -72,93 +72,98 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
 <template>
     <!-- Main Navigation -->
-    <div class="bg-white  border-b border-1 border-gray-300" :style="getStyles(fieldValue?.container?.properties,screenType)">
-        <div
-            @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
-            :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
+    <div class="bg-white   border-gray-300" :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        margin: 0, padding: 0,
+        ...getStyles(fieldValue.container?.properties, screenType)
+
+    }">
+        <div @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
+            :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
             class="relative container flex  justify-between items-center gap-x-2 px-4">
 
             <!-- All categories -->
             <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">
-                <div @click="() => isOpenMenuMobile = true" class="flex items-center gap-x-2 h-fit px-5 py-1 rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
-                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" :class="'text-[10px]'" />
+                <div @click="() => isOpenMenuMobile = true"
+                    class="flex items-center gap-x-2 h-fit px-5 py-1 rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
+                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true"
+                        :class="'text-[10px]'" />
                     <span class="font-medium text-gray-600 text-xs">{{ trans("All Categories") }}</span>
                 </div>
 
                 <Transition>
-                    <div v-if="isAbleScrollToLeft" class="bg-gradient-to-r from-white via-white to-transparent absolute -right-20 z-10 top-0 h-full w-16 pointer-events-none" />
+                    <div v-if="isAbleScrollToLeft"
+                        class="bg-gradient-to-r from-white via-white to-transparent absolute -right-20 z-10 top-0 h-full w-16 pointer-events-none" />
                 </Transition>
 
                 <Transition>
                     <div v-if="isAbleScrollToLeft" @click="() => scrollLeft()"
-                         class="w-4 h-4 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-10 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
-                    >
-                        <FontAwesomeIcon icon="fal fa-chevron-left"  fixed-width aria-hidden="true" class="text-[8px]"/>
+                        class="w-4 h-4 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-10 top-1/2 -translate-y-1/2 cursor-pointer text-inherit">
+                        <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" class="text-[8px]" />
                     </div>
                 </Transition>
             </div>
 
             <Transition>
-                <div v-if="isAbleScrollToRight" class="bg-gradient-to-l from-white via-white to-transparent absolute right-8 z-10 top-0 h-full w-16 pointer-events-none" />
+                <div v-if="isAbleScrollToRight"
+                    class="bg-gradient-to-l from-white via-white to-transparent absolute right-8 z-10 top-0 h-full w-16 pointer-events-none" />
             </Transition>
 
             <Transition>
                 <div v-if="isAbleScrollToRight" @click="() => scrollRight()"
-                     class="w-4 h-4 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
-                >
-                    <FontAwesomeIcon icon="fal fa-chevron-left" rotation="180"  fixed-width aria-hidden="true" class="text-[8px]" />
+                    class="w-4 h-4 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-inherit">
+                    <FontAwesomeIcon icon="fal fa-chevron-left" rotation="180" fixed-width aria-hidden="true"
+                        class="text-[8px]" />
                 </div>
             </Transition>
 
 
-            <nav ref="_scrollContainer" @scroll="() => checkScroll()" class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide">
+            <nav ref="_scrollContainer" @scroll="() => checkScroll()"
+                class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide">
 
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
-                    <a
-                        :href="navigation?.link?.href"
-                        :target="navigation?.link?.target"
+                    <a :href="navigation?.link?.href" :target="navigation?.link?.target"
                         @mouseenter="() => (onMouseEnterMenu(navigation, idxNavigation))"
-                        amouseleave="() => onMouseLeaveMenu()" :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
-                        class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200"
-                        :class="
-                            hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                        amouseleave="() => onMouseLeaveMenu()"
+                        :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                                 ? 'bg-gray-100 text-orange-500'
                                 : navigation?.link?.href
                                     ? 'cursor-pointer hover:bg-gray-100 hover:text-orange-500'
                                     : ''
-                        "
-                    >
+                            ">
                         <FontAwesomeIcon v-if="navigation.icon" :icon="navigation.icon" class="mr-2" />
 
-                        <span xv-if="!navigation?.link?.href" class="text-center whitespace-nowrap">{{ navigation.label }}</span>
+                        <span xv-if="!navigation?.link?.href" class="text-center whitespace-nowrap">{{ navigation.label
+                            }}</span>
 
                         <FontAwesomeIcon v-if="navigation.type == 'multiple'" :icon="faChevronDown"
-                                         class="ml-2 text-[8px]" fixed-width />
+                            class="ml-2 text-[8px]" fixed-width />
 
                     </a>
                 </template>
             </nav>
 
-            <Collapse
-                v-if="hoveredNavigation?.subnavs"
-                :when="isCollapsedOpen"
-                as="div"
+            <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
                 class="absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
-                :style="getStyles(fieldValue?.container?.properties,screenType)"
-                :class="true ? 'z-50' : 'z-50'"
-
-            >
+                :style="getStyles(fieldValue?.container?.properties, screenType)" :class="true ? 'z-50' : 'z-50'">
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
-                        <div v-if="!subnav?.link?.href && subnav.title" :style="getStyles(fieldValue?.sub_navigation?.properties,screenType)" class="font-semibold text-gray-700">{{ subnav.title }}</div>
-                        <a v-if="subnav?.link?.href && subnav.title" :href="subnav?.link?.href" :target="subnav?.link?.target" :style="getStyles(fieldValue?.sub_navigation?.properties,screenType)" class="font-semibold text-gray-700">{{ subnav.title }}</a>
+                        <div v-if="!subnav?.link?.href && subnav.title"
+                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.sub_navigation?.properties, screenType) }"
+                            class="font-semibold text-gray-700">{{ subnav.title }}</div>
+                        <a v-if="subnav?.link?.href && subnav.title" :href="subnav?.link?.href"
+                            :target="subnav?.link?.target"
+                            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.sub_navigation?.properties, screenType)}"
+                            class="font-semibold text-gray-700">{{ subnav.title }}</a>
                         <!-- Sub-navigation Links -->
                         <div class="flex flex-col gap-y-3">
                             <div v-for="link in subnav.links" :key="link.url" class="flex items-center gap-x-3">
                                 <FontAwesomeIcon :icon="link.icon || faChevronRight"
-                                                 class="text-[10px] text-gray-400" />
-                                <a :href="link?.link?.href" :target="link?.link?.target" :style="getStyles(fieldValue?.sub_navigation_link?.properties,screenType)"
-                                   class="text-gray-500 hover:text-orange-500 hover:underline transition duration-200">
+                                    class="text-[10px] text-gray-400" />
+                                <a :href="link?.link?.href" :target="link?.link?.target"
+                                    :style="getStyles(fieldValue?.sub_navigation_link?.properties, screenType)"
+                                    class="text-gray-500 hover:text-orange-500 hover:underline transition duration-200">
                                     {{ link.label }}
                                 </a>
                             </div>

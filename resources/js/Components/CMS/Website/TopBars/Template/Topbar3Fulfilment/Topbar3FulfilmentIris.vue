@@ -48,7 +48,11 @@ const emits = defineEmits<{
 	<div
 		id="top_bar"
 		class="py-2 px-4 flex justify-between hidden md:flex"
-		:style="getStyles(model?.container.properties)">
+		 :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			  margin : 0,
+			...getStyles(model.container?.properties, screenType)
+		}">
 		<div class="flex gap-x-2">
 			<!-- Section: Profile -->
 			<!--     <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"

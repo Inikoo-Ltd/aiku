@@ -25,7 +25,11 @@ const layout = inject("layout", {})
 	<div
 		id="top_bar"
 		class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 hidden md:flex"
-		:style="getStyles(model?.container.properties)">
+		 :style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			  margin : 0,
+			...getStyles(model.container?.properties, screenType)
+		}">
 		<div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full">
 			<!-- Section: Main title -->
 			<div
