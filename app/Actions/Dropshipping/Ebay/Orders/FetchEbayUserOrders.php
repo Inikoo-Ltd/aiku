@@ -28,40 +28,37 @@ class FetchEbayUserOrders extends OrgAction
      */
     public function handle(EbayUser $ebayUser): void
     {
-        $existingOrderKeys = $ebayUser
-            ->customerSalesChannel
-            ->orders()
-            ->pluck('data')
-            ->map(fn($data) => Arr::get($data, 'orderId'))
-            ->filter()
-            ->toArray();
+
+        $filter   = 'fulfillmentStatus:{NOT_STARTED,IN_PROGRESS},lastmodifieddate:['.now()->subDays(7)->toISOString().'..]';
+        $response = $ebayUser->getOrders(limit: 150, filter: $filter);
+
+        $ebayOrders = Arr::get($response, 'orders', []);
+        foreach ($ebayOrders as $ebayOrder) {
+            if (Arr::get($ebayOrder, 'cancelStatus.cancelState') == 'CANCELED') {
+                continue;
+            }
+
+            if (DB::table('orders')->where('customer_id', $ebayUser->customer_id)
+                ->where('platform_order_id', Arr::get($ebayOrder, 'orderId'))
+                ->exists()) {
+                continue;
+            }
 
 
-        print_r($existingOrderKeys);
+            $lineItems = collect(Arr::get($ebayOrder, 'lineItems', []))->pluck('legacyItemId')->filter()->toArray();
 
-        $response = $ebayUser->getOrders();
+            $hasOutProducts = DB::table('portfolios')->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
+                ->whereIn('platform_product_id', $lineItems)->exists();
 
-        print_r($response);
-
-        print "=====";
-
-
-        //        DB::transaction(function () use ($ebayUser) {
-        //
-        //            foreach ($response['orders'] as $order) {
-        //                if (in_array(Arr::get($order, 'orderId'), $existingOrderKeys, true)) {
-        //                    continue;
-        //                }
-        //
-        //                if (!empty(array_filter(Arr::get($order, 'buyer'))) && !empty(array_filter(Arr::get($order, 'buyer.buyerRegistrationAddress')))) {
-        //                    StoreOrderFromEbay::run($ebayUser, $order);
-        //                } else {
-        //                    \Sentry::captureMessage('The order doesnt have shipping, order: id ' . Arr::get($order, 'orderId'));
-        //                }
-        //            }
-        //        });
+            if ($hasOutProducts) {
+                StoreOrderFromEbay::run($ebayUser, $ebayOrder);
+            }
+        }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(EbayUser $ebayUser, ActionRequest $request): void
     {
         $this->initialisation($ebayUser->organisation, $request);

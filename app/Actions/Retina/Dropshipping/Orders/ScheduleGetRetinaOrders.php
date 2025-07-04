@@ -9,7 +9,8 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
+use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
+use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -43,9 +44,8 @@ class ScheduleGetRetinaOrders extends RetinaAction
 
 
                         match ($channel->platform->type) {
-                          //  PlatformTypeEnum::WOOCOMMERCE => CatchRetinaOrdersFromWooCommerce::dispatch($user),
-                            PlatformTypeEnum::EBAY => FetchEbayUserOrders::dispatch($user),
-                          //  PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::dispatch($user),
+                            PlatformTypeEnum::WOOCOMMERCE => CatchRetinaOrdersFromWooCommerce::dispatch($user),
+                            PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::dispatch($user),
                             default => null
                         };
                     }

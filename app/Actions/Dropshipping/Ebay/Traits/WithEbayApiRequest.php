@@ -407,7 +407,7 @@ trait WithEbayApiRequest
     /**
      * Get user's eBay orders
      */
-    public function getOrders($limit = 50, $offset = 0, $orderIds = null)
+    public function getOrders($limit = 50, $offset = 0, $orderIds = null, $filter = null)
     {
         try {
             $params = [
@@ -418,6 +418,12 @@ trait WithEbayApiRequest
             if ($orderIds) {
                 $params['orderIds'] = is_array($orderIds) ? implode(',', $orderIds) : $orderIds;
             }
+
+            if ($filter) {
+                $params['filter'] = $filter;
+
+            }
+
 
             $queryString = http_build_query($params);
             $endpoint = "/sell/fulfillment/v1/order?$queryString";

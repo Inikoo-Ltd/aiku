@@ -4,6 +4,7 @@ namespace App\Console;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopSellers;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -77,6 +78,10 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'FetchOrdersInBasket',
             );
 
+
+        $schedule->job(FetchEbayOrders::makeJob())->everyTenMinutes()->sentryMonitor(
+            monitorSlug: 'FetchEbayOrders',
+        );
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');

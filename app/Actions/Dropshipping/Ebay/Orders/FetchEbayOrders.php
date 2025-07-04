@@ -26,12 +26,9 @@ class FetchEbayOrders extends RetinaAction
 
     public function handle(): void
     {
-
-        $ebayUsers=EbayUser::whereNotNull('customer_sales_channel_id')->get();
+        $ebayUsers = EbayUser::whereNotNull('customer_sales_channel_id')->get();
         foreach ($ebayUsers as $ebayUser) {
-            FetchEbayUserOrders::dispatch($ebayUser);
+            FetchEbayUserOrders::run($ebayUser);
         }
-
-
     }
 }
