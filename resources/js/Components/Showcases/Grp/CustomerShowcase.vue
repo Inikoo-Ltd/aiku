@@ -317,6 +317,9 @@ const isModalBalanceIncrease = ref(false)
     <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceDecrease
             v-model="isModalBalanceDecrease"
+            :routeSubmit="data.balance.route_decrease"
+            xoptions=""
+            :currency="data.currency"
         />
     </Modal>
 
