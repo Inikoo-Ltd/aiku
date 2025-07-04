@@ -103,24 +103,14 @@ trait WithLuigis
     {
         if ($parent instanceof Website) {
             $website = $parent;
-            $tags = LaravelCollection::make();
             $website->webpages()
             ->with('model')
             ->where('state', 'live')
-            ->where('type', WebpageTypeEnum::CATALOGUE)
+            ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-            ->chunk(1000, function ($webpages) use ($website, &$tags) {
+            ->chunk(1000, function ($webpages) use ($website) {
                 $objects = [];
                 foreach ($webpages as $webpage) {
-                    $model = $webpage->model;
-                    if ($model instanceof Product) {
-                        // reindex tags not in nested item because nested get limit 10
-                        $tagModel = $model->tradeUnitTagsViaTradeUnits();
-                        if ($tagModel->isNotEmpty()) {
-                            $tags = $tags->merge($tagModel);
-                        }
-                    }
-
                     $object = $this->getObjectFromWebpage($webpage);
                     if ($object) {
                         $objects[] = $object;
@@ -133,12 +123,8 @@ trait WithLuigis
                 ];
                 $compressed = count($objects) >= 1000;
                 $this->request($website, '/v1/content', $body, 'post', $compressed);
+                print "Reindexed count " . count($objects) . " from website: {$website->name}\n";
             });
-
-            if ($tags->isNotEmpty()) {
-                $this->reindexTags($website, $tags->unique('slug'));
-                print "Reindexed " . $tags->count() . " tags for website: {$website->name}\n";
-            }
 
         } else {
             $webpage = $parent;
@@ -153,16 +139,6 @@ trait WithLuigis
             ];
             $this->request($parent, '/v1/content', $body, 'post');
             print "Reindexed webpage: {$webpage->title} ({$webpage->url})\n";
-
-            // reindex tags not in nested item because nested get limit 10
-            $model = $webpage->model;
-            if ($model instanceof Product) {
-                $tags = $model->tradeUnitTagsViaTradeUnits();
-                if ($tags->isNotEmpty()) {
-                    $this->reindexTags($webpage, $tags->unique('slug'));
-                    print "Reindexed " . $tags->count() . " tags for webpage: {$webpage->title} ({$webpage->url})\n";
-                }
-            }
 
         }
     }
@@ -257,6 +233,31 @@ trait WithLuigis
         }
     }
 
+    public function deleteContentFromWebsite(Website $website): void
+    {
+        $website->webpages()
+        ->where('state', 'live')
+        ->whereIn('type', [WebpageTypeEnum::CATALOGUE])
+        ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
+        ->chunk(1000, function ($webpages) use ($website) {
+            $batch = [];
+            foreach ($webpages as $webpage) {
+                $object = $this->getObjectFromWebpage($webpage);
+                if ($object) {
+                    $batch[] = $object;
+                }
+            }
+            if ($batch) {
+                $compressed = count($batch) >= 1000;
+                $body = [
+                    'objects' => $batch
+                ];
+                $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
+                print "Deleted count " . count($batch) . " from website: {$website->name}\n";
+            }
+        });
+    }
+
     public function deleteContentFromWebpage(Webpage $webpage): void
     {
         $website = $webpage->website;
@@ -309,7 +310,7 @@ trait WithLuigis
             $family = $model->family;
             $department = $family?->department;
             $subDepartment = $model->subDepartment;
-            $identity = $this->getWebpageUrl($webpage);
+            $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
             $brand = $model->getBrand();
             $brandObject = null;
             if ($brand) {
@@ -324,6 +325,25 @@ trait WithLuigis
                     ]),
                 ];
             }
+
+            $tags = $model->tradeUnitTagsViaTradeUnits();
+            $tagsObject = null;
+            if ($tags->isNotEmpty()) {
+                $tagsObject = [];
+                foreach ($tags as $tag) {
+                    $url = '/search?lb.t[]=tag:' . $tag->name . '&q=' . $tag->name;
+                    $tagsObject[] = [
+                        "identity" => $url,
+                        "type" => "tag",
+                        "fields" => array_filter([
+                            "title" => $tag->name,
+                            "web_url" => $url,
+                            "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
+                        ]),
+                    ];
+                }
+            }
+
             $object =  [
                 "identity" => $identity,
                 "type" => "item",
@@ -339,8 +359,9 @@ trait WithLuigis
                     "introduced_at" => $model?->created_at ? $model->created_at->format('c') : null,
                     "description" => $model->description,
                 ]),
-                ...($family || $department || $subDepartment || $brandObject ? [
+                ...($family || $department || $subDepartment || $brandObject || $tagsObject ? [
                     "nested" => array_values(array_filter([
+                        ...($tagsObject ? $tagsObject : []),
                         ($brandObject ? $brandObject : []),
                         (
                             $family && $family?->webpage ?

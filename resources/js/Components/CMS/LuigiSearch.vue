@@ -60,11 +60,11 @@ const LBInitAutocompleteNew = async () => {
                     xattributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
                 },
                 {
-                    name: "Query",
+                    name: "Queries",
                     type: "query",
                 },
                 {
-                    name: "Category",
+                    name: "Categories",
                     type: "category",
                 },
                 {
@@ -72,23 +72,23 @@ const LBInitAutocompleteNew = async () => {
                     type: "news",
                 },
                 {
-                    name: "Department",
+                    name: "Departments",
                     type: "department",
                 },
                 {
-                    name: "Sub Department",
+                    name: "Sub Departments",
                     type: "sub_department",
                 },
                 {
-                    name: "Brand",
+                    name: "Brands",
                     type: "brand",
                 },
                 {
-                    name: "Collection",
+                    name: "Collections",
                     type: "collection",
                 },
                 {
-                    name: "Tag",
+                    name: "Tags",
                     type: "tag",
                 },
             ],
