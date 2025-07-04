@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 
 class GetCustomerShowcase
 {
@@ -34,7 +35,6 @@ class GetCustomerShowcase
                 ]
             ];
         }
-
 
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
@@ -62,6 +62,8 @@ class GetCustomerShowcase
                 ],
                 'increaase_reasons_options' => CreditTransactionReasonEnum::getIncreaseReasons(),
                 'decrease_reasons_options' => CreditTransactionReasonEnum::getDecreaseReasons(),
+
+                'type_options' => CreditTransactionTypeEnum::getOptions()
             ],
             'editWebUser' => $webUserRoute
         ];
