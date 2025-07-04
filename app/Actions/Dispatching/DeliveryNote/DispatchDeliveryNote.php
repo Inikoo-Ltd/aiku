@@ -8,9 +8,11 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
-use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -18,7 +20,7 @@ use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateDeliveryNoteStateToDispatched extends OrgAction
+class DispatchDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
@@ -33,8 +35,8 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
 
             foreach ($deliveryNote->deliveryNoteItems as $item) {
                 $this->update($item, [
-                    'state' => DeliveryNoteItemStateEnum::DISPATCHED,
-                    'dispatched_at' => now(),
+                    'state'               => DeliveryNoteItemStateEnum::DISPATCHED,
+                    'dispatched_at'       => now(),
                     'quantity_dispatched' => $item->quantity_packed
                 ]);
             }
@@ -45,8 +47,13 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
             foreach ($deliveryNote->orders as $order) {
                 DispatchOrderFromDeliveryNote::make()->action($order);
             }
+
             return $deliveryNote;
         });
+
+        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
+        OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
+        ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
 
         return $deliveryNote;
     }
