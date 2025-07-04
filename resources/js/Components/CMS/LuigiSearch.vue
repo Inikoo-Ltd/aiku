@@ -77,15 +77,19 @@ const LBInitAutocompleteNew = async () => {
                 },
                 {
                     name: "Sub Department",
-                    type: "sub-department",
+                    type: "sub_department",
                 },
-                // {
-                //     name: "Collection",
-                //     type: "collection",
-                // },
                 {
                     name: "Brand",
                     type: "brand",
+                },
+                {
+                    name: "Collection",
+                    type: "collection",
+                },
+                {
+                    name: "Tag",
+                    type: "tag",
                 },
             ],
             ShowAllCallback: () => {  // Called when 'Show All Product' clicked
