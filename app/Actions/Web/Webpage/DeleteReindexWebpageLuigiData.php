@@ -14,7 +14,7 @@ use App\Actions\Web\WithLuigis;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWebpageLuigiData
+class DeleteReindexWebpageLuigiData
 {
     use AsAction;
     use WithLuigis;

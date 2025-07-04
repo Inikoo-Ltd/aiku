@@ -12,7 +12,7 @@ import Notification from '@/Components/Utils/Notification.vue'
 import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink } from '@fal'
 import { faSearch, faBell } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { provide, ref, watch } from 'vue'
+import { onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
@@ -70,6 +70,32 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 const isOpenMenuMobile = ref(false)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
+
+// Method: Hide the superchat widget
+const hideSuperchatWidget = () => {
+    const time = ref(0)
+    const xxInterval = setInterval(() => {
+        time.value += 150
+        const _superchatWidget = document.querySelector('#superchat-widget')
+        if (_superchatWidget) {
+            _superchatWidget.style.display = 'none'
+            clearInterval(xxInterval)
+            console.log('Cleared interval')
+        }
+
+        // To safety if GTM exist but don't have superchat
+        if (time.value > 10000) {
+            clearInterval(xxInterval)
+            console.log('Cleared interval due to timeout')
+        }
+    }, 150)
+}
+
+onMounted(() => {
+    if (layout.iris?.is_have_gtm) {
+        hideSuperchatWidget()
+    }
+})
 </script>
 
 <template>
