@@ -86,6 +86,8 @@ onMounted(() => {
     window.addEventListener('resize', checkScreenType)
 });
 
+
+
 const checkScreenType = () => {
     const width = window.innerWidth
     if (width < 640) screenType.value = 'mobile'

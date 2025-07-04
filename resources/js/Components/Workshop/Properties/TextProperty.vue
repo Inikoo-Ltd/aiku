@@ -68,7 +68,7 @@ const fontFamilies = [...useFontFamilyList];
                 <div class="col-span-4">
                     <PureMultiselect v-model="localModel.fontFamily"
                         @update:modelValue="(e) => (set(localModel, 'fontFamily', e), emits('update:modelValue', localModel))"
-                        required :options="fontFamilies">
+                        :options="fontFamilies">
                         <template #option="{ option, isSelected, isPointed, search }">
                             <span :style="{
                                 fontFamily: option.value

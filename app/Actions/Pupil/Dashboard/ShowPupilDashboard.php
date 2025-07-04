@@ -106,7 +106,7 @@ class ShowPupilDashboard
         }
 
         return match (app()->environment()) {
-            'production' => 'https://'.$shop->website?->domain . '/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password),
+            'production' => 'https://v2.'.$shop->website?->domain . '/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password),
             'staging' => 'https://canary.'.$shop->website?->domain . '/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password),
             default => 'https://fulfilment.test/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password)
         };
