@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  * App\Models\Dispatching\Computer
@@ -42,11 +44,19 @@ class Computer extends Model
 {
     use HasFactory;
     use InShop;
+    use HasSlug;
 
     protected $table = 'computers';
 
     protected $guarded = [];
 
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('name')
+            ->saveSlugsTo('slug')
+            ->doNotGenerateSlugsOnUpdate();
+    }
     public function shipment(): BelongsTo
     {
         return $this->belongsTo(Shipment::class, 'shipment_id');

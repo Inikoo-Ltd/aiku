@@ -10,6 +10,7 @@ return new class () extends Migration {
         Schema::create('printers', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name');
+            $table->string('slug')->unique()->collation('und_ns');
             $table->text('description')->nullable();
             $table->jsonb('capabilities')->nullable();
             $table->jsonb('trays')->nullable();
