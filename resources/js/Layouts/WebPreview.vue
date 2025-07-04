@@ -15,7 +15,6 @@ provide('layout', layout)
 
 
 
-console.log('web_preview',layout)
 </script>
 
 <template>

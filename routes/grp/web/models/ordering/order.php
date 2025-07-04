@@ -22,7 +22,7 @@ use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
-use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
+use App\Actions\Ordering\Order\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
 use App\Actions\Ordering\Order\UpdateStateToPackedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
@@ -61,7 +61,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateStateToHandlingOrder::class)->name('handling');
         Route::patch('packed', UpdateStateToPackedOrder::class)->name('packed');
-        Route::patch('finalized', UpdateStateToFinalizedOrder::class)->name('finalized');
+        Route::patch('finalized', FinaliseOrder::class)->name('finalized');// todo candidate to remove
         Route::patch('dispatched', UpdateStateToDispatchedOrder::class)->name('dispatched');
     });
 });

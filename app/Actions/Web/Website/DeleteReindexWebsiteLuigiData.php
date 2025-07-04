@@ -2,7 +2,7 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 22-05-2025, Bali, Indonesia
+ * Created on: 04-07-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
  *
@@ -14,19 +14,19 @@ use App\Actions\Web\WithLuigis;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWebsiteLuigiData
+class DeleteReindexWebsiteLuigiData
 {
     use AsAction;
     use WithLuigis;
 
-    public string $commandSignature = 'luigis:reindex_website {website?}';
+    public string $commandSignature = 'luigis:remove_reindex_website {website?}';
 
     /**
      * @throws \Exception
      */
     public function handle(Website $website): void
     {
-        $this->reindex($website);
+        $this->deleteContentFromWebsite($website);
     }
 
     /**

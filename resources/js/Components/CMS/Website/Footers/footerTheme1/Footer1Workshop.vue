@@ -152,15 +152,16 @@ provide('onSaveWorkshopFromId', onSaveWorkshopFromId)
 provide('onSaveWorkshop', onSaveWorkshop)
 
 const layout = inject('layout', {})
+
 </script>
+
 
 
 <template>
     <div id="app" class="-mx-2 md:mx-0 pb-24 pt-4 md:pt-8 md:px-16 text-white"
        :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(modelValue.container?.properties, screenType)
-            
+			...getStyles(modelValue.container?.properties, screenType) 
 		}">
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-gray-700">

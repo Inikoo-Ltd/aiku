@@ -12,14 +12,23 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
 
-class DispatchOrderFromDeliveryNote extends OrgAction
+class InvoiceOrderFromDeliveryNoteFinalisation extends OrgAction
 {
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order): Order
     {
-        return UpdateStateToDispatchedOrder::make()->action($order);
+
+       return FinaliseOrder::make()->action($order);
+
+
     }
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function action(Order $order): Order
     {
         return $this->handle($order);

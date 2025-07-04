@@ -2,31 +2,31 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 22-05-2025, Bali, Indonesia
+ * Created on: 04-07-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
-namespace App\Actions\Web\Website;
+namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WithLuigis;
-use App\Models\Web\Website;
+use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWebsiteLuigiData
+class ReindexWebpageLuigiData
 {
     use AsAction;
     use WithLuigis;
 
-    public string $commandSignature = 'luigis:reindex_website {website?}';
+    public string $commandSignature = 'luigis:remove_reindex_webpage {webpage?}';
 
     /**
      * @throws \Exception
      */
-    public function handle(Website $website): void
+    public function handle(Webpage $webpage): void
     {
-        $this->reindex($website);
+        $this->deleteContentFromWebpage($webpage);
     }
 
     /**
@@ -36,12 +36,12 @@ class ReindexWebsiteLuigiData
      */
     public function asCommand($command): int
     {
-        if ($command->argument('website')) {
-            $website = Website::find($command->argument('website'));
+        if ($command->argument('webpage')) {
+            $webpage = Webpage::find($command->argument('webpage'));
         } else {
-            $website = Website::first();
+            $webpage = Webpage::first();
         }
-        $this->handle($website);
+        $this->handle($webpage);
         return 0;
     }
 }

@@ -52,11 +52,11 @@ onMounted(async () => {
     <!-- Shared Navigation Buttons -->
     <div class="absolute inset-0 pointer-events-none z-50">
       <div ref="prevEl"
-        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-white cursor-pointer pointer-events-auto">
+        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-gray-800 cursor-pointer pointer-events-auto">
         <FontAwesomeIcon :icon="faChevronCircleLeft" />
       </div>
       <div ref="nextEl"
-        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl text-white cursor-pointer pointer-events-auto">
+        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl text-gray-800 cursor-pointer pointer-events-auto">
         <FontAwesomeIcon :icon="faChevronCircleRight" />
       </div>
     </div>
@@ -101,17 +101,17 @@ onMounted(async () => {
       @click.self="closeImageModal">
       <div class="relative w-full max-w-5xl px-4 py-6">
         <!-- Close Button -->
-        <button class="absolute top-4 right-4 text-white text-3xl z-50" @click="closeImageModal"
+        <button class="absolute top-4 right-4 text-red-500 text-3xl z-50" @click="closeImageModal"
           aria-label="Close image viewer">
           <FontAwesomeIcon :icon="faTimesCircle" />
         </button>
 
         <!-- Manual Navigation Buttons -->
-        <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
+        <button class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-800 text-4xl z-40"
           @click="selectedIndex = (selectedIndex - 1 + props.images.length) % props.images.length">
           <FontAwesomeIcon :icon="faChevronCircleLeft" />
         </button>
-        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
+        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-800 text-4xl z-40"
           @click="selectedIndex = (selectedIndex + 1) % props.images.length">
           <FontAwesomeIcon :icon="faChevronCircleRight" />
         </button>

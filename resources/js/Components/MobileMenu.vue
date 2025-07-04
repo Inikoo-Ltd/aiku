@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Drawer from 'primevue/drawer';
-import { ref, inject } from 'vue';
+import { ref, inject, onMounted, onUnmounted } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faSignIn, faSignOut, faTimesCircle } from '@fas';
@@ -49,6 +49,21 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout')
 const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
 
+const isMobile = ref(false)
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+onMounted(() => {
+
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
+
 </script>
 
 <template>
@@ -58,10 +73,9 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                 :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),...getStyles(header?.mobile?.menu?.container?.properties)}" />
         </button>
 
-        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),margin : 0, padding : 0,...getStyles(props.menu?.container?.properties)}">
-            <template #closeicon>
-                <FontAwesomeIcon :icon="faTimesCircle" @click="isOpenMenuMobile = false" class="text-sm" />
-            </template>
+        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :showCloseIcon="false"
+            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),margin : 0, padding : 0,...getStyles(props.menu?.container?.properties)}">
+       
 
             <template #header>
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />
@@ -122,7 +136,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                     </div>
                 </div>
 
-                <div class="login-section">
+                <div v-if="isMobile" class="login-section">
                     <a v-if="!isLoggedIn" href="/app" class="font-bold text-gray-500">
                         <FontAwesomeIcon :icon="faSignIn" class="mr-3" /> Login
                     </a>
@@ -130,6 +144,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
                         <FontAwesomeIcon :icon="faSignOut" class="mr-3" /> Log Out
                     </div>
                 </div>
+
             </div>
         </Drawer>
     </div>

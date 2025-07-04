@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
+use App\Actions\Ordering\Order\InvoiceOrderFromDeliveryNoteFinalisation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -22,6 +24,13 @@ class FinaliseDeliveryNote extends OrgAction
     {
         data_set($modelData, 'finalised_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
+
+
+        $deliveryNote->refresh();
+        foreach ($deliveryNote->orders as $order) {
+            InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
+        }
+
 
         return $this->update($deliveryNote, $modelData);
     }

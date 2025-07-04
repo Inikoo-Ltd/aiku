@@ -133,17 +133,14 @@ const onUnselectFavourite = (product: ProductResource) => {
         <div>
             <div v-if="product?.top_seller"
                 class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
-
-                <!-- Medal Icon -->
-                <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-2" :class="{
+                <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-0 md:mr-2" :class="{
 
                         'text-[#FFD700]': product.top_seller === 1, // Gold
                         'text-[#C0C0C0]': product.top_seller === 2, // Silver
                         'text-[#CD7F32]': product.top_seller === 3  // Bronze
                     }" />
 
-                <!-- Bestseller Text -->
-                <span>BESTSELLER</span>
+                <span class="hidden md:inline">BESTSELLER</span>
             </div>
 
             <!-- Favorite Icon -->
@@ -181,8 +178,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Product Image -->
 
-            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-68 mb-3 rounded">
-
+            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full h-[250px] mb-1 rounded">
                 <Image :src="product?.web_images?.main?.gallery" alt="product image" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
             </component>

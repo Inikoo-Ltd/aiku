@@ -27,6 +27,8 @@ import whiteMastercard from '@/../art/payment_service_providers/white_mastercard
 import whiteGooglePay from '@/../art/payment_service_providers/white_google_pay.png'
 import whiteCheckout from '@/../art/payment_service_providers/white_checkout.png'
 import whiteApplePay from '@/../art/payment_service_providers/white_apple_pay.png'
+import applepay_googlepay from '@/../art/payment_service_providers/googlepayapplepay.png'
+import mastercard_visa from '@/../art/payment_service_providers/mastercardvisa.png'
 
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faTimes, faTrash);
@@ -65,6 +67,8 @@ const payments = ref<PaymentItem[]>([
   { name: 'White Google Pay', value: 'White Google Pay', image: whiteGooglePay },
   { name: 'White Checkout', value: 'White Checkout', image: whiteCheckout },
   { name: 'White Apple Pay', value: 'White Apple Pay', image: whiteApplePay },
+  { name: 'Apple Pay & Google Pay', value: 'Apple Pay & Google Pay', image: applepay_googlepay },
+  { name: 'Mastercard & Visa', value: 'Mastercard & Visa', image: mastercard_visa },
 ]);
 
 

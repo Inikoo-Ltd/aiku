@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 04-07-2025-12h-40m
@@ -13,18 +14,12 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromAdjustment;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
-use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
-use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
-use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
-use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
@@ -43,38 +38,45 @@ class GenerateOrderInvoice extends OrgAction
      */
     public function handle(Order $order): Invoice
     {
-
-        $invoice = DB::transaction(function () use ($order) { 
+        $invoice = DB::transaction(function () use ($order) {
             $billingAddress = $order->billingAddress;
+
             $payStatus = InvoicePayStatusEnum::PAID;
 
-            if($order->payment_amount < $order->total_amount){
+            if ($order->payment_amount < $order->total_amount) {
                 $payStatus = InvoicePayStatusEnum::UNPAID;
             }
 
-            $invoiceData    = [
-                'reference'        => $order->reference,
-                'currency_id'      => $order->currency_id,
-                'billing_address'  => Arr::except($billingAddress, 'id'),
-                'type'             => InvoiceTypeEnum::INVOICE,
-                'net_amount'       => $order->net_amount,
-                'total_amount'     => $order->total_amount,
-                'gross_amount'     => $order->gross_amount,
-                'rental_amount'    => 0,
-                'goods_amount'     => $order->goods_amount,
-                'services_amount'  => $order->services_amount,
-                'charges_amount'   => $order->charges_amount,
-                'shipping_amount'  => $order->shipping_amount,
-                'insurance_amount' => $order->insurance_amount,
-                'tax_amount'       => $order->tax_amount,
-                'pay_status'       => $payStatus,
-                'payment_amount'   => $order->payment_amount
+            $invoiceData = [
+                'in_process'=> false,
+                'reference'                 => $order->reference,// Todo in SK,ES generate reference with SK rules
+                'currency_id'               => $order->currency_id,
+                'billing_address'           => new Address($billingAddress->getFields()),
+                'type'                      => InvoiceTypeEnum::INVOICE,
+                'net_amount'                => $order->net_amount,
+                'total_amount'              => $order->total_amount,
+                'gross_amount'              => $order->gross_amount,
+                'rental_amount'             => 0,
+                'goods_amount'              => $order->goods_amount,
+                'services_amount'           => $order->services_amount,
+                'charges_amount'            => $order->charges_amount,
+                'shipping_amount'           => $order->shipping_amount,
+                'insurance_amount'          => $order->insurance_amount,
+                'tax_amount'                => $order->tax_amount,
+                'pay_status'                => $payStatus,
+                'payment_amount'            => $order->payment_amount,
+                'customer_sales_channel_id' => $order->customer_sales_channel_id,
+                //'footer'=>$order->shop->settings['footer'] ?? null, todo make footer UI in shop setting
+
             ];
-    
-            $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData, strict: false);
-    
+
+            $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
+
+            //todo here we need foreach all payments in a order abd attach them to the invocie
+
+
             $transactions = $order->transactions;
-    
+
             foreach ($transactions as $transaction) {
                 $data = [
                     'tax_category_id' => $transaction->order->tax_category_id,
@@ -82,7 +84,7 @@ class GenerateOrderInvoice extends OrgAction
                     'gross_amount'    => $transaction->gross_amount,
                     'net_amount'      => $transaction->net_amount,
                 ];
-    
+
                 if ($transaction->model_type == 'Adjustment') {
                     /** @var Adjustment $adjustment */
                     $adjustment = Adjustment::find($transaction->model_id);
@@ -99,7 +101,7 @@ class GenerateOrderInvoice extends OrgAction
                     StoreInvoiceTransaction::make()->action($invoice, $transaction->historicAsset, $data);
                 }
             }
-            
+
             return $invoice;
         });
 
@@ -120,6 +122,7 @@ class GenerateOrderInvoice extends OrgAction
     public function action(Order $order): Invoice
     {
         $this->initialisationFromShop($order->shop, []);
+
         return $this->handle($order);
     }
 
@@ -129,6 +132,7 @@ class GenerateOrderInvoice extends OrgAction
     public function asController(Order $order, ActionRequest $request): Invoice
     {
         $this->initialisationFromShop($order->shop, $request);
+
         return $this->handle($order);
     }
 }
