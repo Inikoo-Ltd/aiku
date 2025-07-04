@@ -30,13 +30,7 @@ class OrderResource extends JsonResource
             'total_amount'        => $order->total_amount,
             'is_fully_paid'       => $order->total_amount == $order->payment_amount,
             'unpaid_amount'       => $order->total_amount - $order->payment_amount,
-            'route_to_pay_unpaid' => [
-                'method'     => 'patch',
-                'name'       => 'retina.json.get_checkout_com_token_to_pay_order',
-                'parameters' => [
-                    'order' => $order->id,
-                ],
-            ],
+
         ];
     }
 }

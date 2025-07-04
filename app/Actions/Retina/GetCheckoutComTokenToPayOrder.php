@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 04 Jul 2025 10:39:07 British Summer Time, Sheffield, UK
@@ -8,7 +9,7 @@
 namespace App\Actions\Retina;
 
 use App\Actions\RetinaAction;
-use App\Models\CRM\Customer;
+use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -17,7 +18,7 @@ class GetCheckoutComTokenToPayOrder extends RetinaAction
     use AsAction;
 
 
-    public function handle()
+    public function handle(Order $order)
     {
 
 
@@ -30,11 +31,11 @@ class GetCheckoutComTokenToPayOrder extends RetinaAction
         ];
     }
 
-    public function asController(ActionRequest $request): Customer
+    public function asController(Order $order, ActionRequest $request): array
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer, $this->validatedData);
+        return $this->handle($order);
     }
 
 }
