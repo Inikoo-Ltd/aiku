@@ -13,6 +13,7 @@ use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 
 class GetCustomerShowcase
 {
@@ -59,6 +60,8 @@ class GetCustomerShowcase
                         'customer'     => $customer->id
                     ]
                 ],
+                'increaase_reasons_options' => CreditTransactionReasonEnum::getIncreaseReasons(),
+                'decrease_reasons_options' => CreditTransactionReasonEnum::getDecreaseReasons(),
             ],
             'editWebUser' => $webUserRoute
         ];

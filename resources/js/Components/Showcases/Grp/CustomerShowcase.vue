@@ -64,8 +64,10 @@ const props = defineProps<{
         approveRoute: routeType
         editWebUser: routeType
         balance: {
-            route_increase: routeType
-            route_decrease: routeType
+            route_store: routeType
+            route_update: routeType
+            increaase_reasons_options: {}[]
+            decrease_reasons_options: {}[]
         }
         currency: {
             code: string
@@ -306,19 +308,18 @@ const isModalBalanceIncrease = ref(false)
     <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceIncrease
             v-model="isModalBalanceIncrease"
-            :routeSubmit="data.balance.route_increase"
-            xoptions=""
+            :routeSubmit="data.balance.route_store"
+            :options="data.balance.increaase_reasons_options"
             :currency="data.currency"
         />
     </Modal>
-
-
+    
     <!-- Modal: Decrease balance -->
     <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceDecrease
             v-model="isModalBalanceDecrease"
-            :routeSubmit="data.balance.route_decrease"
-            xoptions=""
+            :routeSubmit="data.balance.route_update"
+            :options="data.balance.decrease_reasons_options"
             :currency="data.currency"
         />
     </Modal>

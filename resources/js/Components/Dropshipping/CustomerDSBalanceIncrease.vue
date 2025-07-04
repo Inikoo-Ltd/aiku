@@ -14,6 +14,7 @@ const props = defineProps<{
     currency: {
 
     }
+    options: {}[]
 }>()
 
 
@@ -21,12 +22,12 @@ const amount = ref<number | null>(null)
 const privateNote = ref<string>("")
 const increaseBalance = ref(null)
 
-const increase = ref([
-	{ name: "Pay for the shipping of a return", type: "pay_return" },
-	{ name: "Compensate Customer", type: "compensation" },
-	{ name: "Transfer from other customer account", type: "transfer_out" },
-	{ name: "Other Reason", type: "remove_funds_other" },
-])
+// const increase = ref([
+// 	{ name: "Pay for the shipping of a return", type: "pay_return" },
+// 	{ name: "Compensate Customer", type: "compensation" },
+// 	{ name: "Transfer from other customer account", type: "transfer_out" },
+// 	{ name: "Other Reason", type: "remove_funds_other" },
+// ])
 
 const resetForm = () => {
 	amount.value = null
@@ -84,9 +85,9 @@ const onSubmitIncrease = () => {
                 </label>
                 <Select
                     v-model="increaseBalance"
-                    :options="increase"
-                    optionLabel="name"
-                    optionValue="type"
+                    :options="options ?? []"
+                    optionLabel="label"
+                    optionValue="value"
                     :placeholder="trans('Select your reason')"
                     class="w-full"
                 />

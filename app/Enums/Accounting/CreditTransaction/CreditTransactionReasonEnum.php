@@ -34,19 +34,40 @@ enum CreditTransactionReasonEnum: string
     public static function getDecreaseReasons(): array
     {
         return [
-            self::TRANSFER,
-            self::MONEY_BACK,
-            self::OTHER,
+            [
+                'value' => self::TRANSFER->value,
+                'label' => self::TRANSFER->label(),
+            ],
+            [
+                'value' => self::MONEY_BACK->value,
+                'label' => self::MONEY_BACK->label(),
+            ],
+            [
+                'value' => self::OTHER->value,
+                'label' => self::OTHER->label(),
+            ],
         ];
     }
 
     public static function getIncreaseReasons(): array
     {
         return [
-            self::PAY_FOR_SHIPPING,
-            self::COMPENSATE_CUSTOMER,
-            self::TRANSFER,
-            self::OTHER,
+            [
+                'value' => self::PAY_FOR_SHIPPING->value,
+                'label' => self::PAY_FOR_SHIPPING->label(),
+            ],
+            [
+                'value' => self::COMPENSATE_CUSTOMER->value,
+                'label' => self::COMPENSATE_CUSTOMER->label(),
+            ],
+            [
+                'value' => self::TRANSFER->value,
+                'label' => self::TRANSFER->label(),
+            ],
+            [
+                'value' => self::OTHER->value,
+                'label' => self::OTHER->label(),
+            ],
         ];
     }
 
