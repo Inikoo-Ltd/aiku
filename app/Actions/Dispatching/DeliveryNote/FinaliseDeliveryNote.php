@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -23,7 +24,11 @@ class FinaliseDeliveryNote extends OrgAction
         data_set($modelData, 'finalised_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
 
-        return $this->update($deliveryNote, $modelData);
+        $deliveryNote = $this->update($deliveryNote, $modelData);
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
+
+        return $deliveryNote;
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote

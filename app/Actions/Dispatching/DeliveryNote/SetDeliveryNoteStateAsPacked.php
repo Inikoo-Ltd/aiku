@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -34,7 +35,8 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         }
         $deliveryNote = $this->update($deliveryNote, $modelData);
 
-        $deliveryNote->refresh();
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
 
         return $deliveryNote;
     }
