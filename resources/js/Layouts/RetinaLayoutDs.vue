@@ -86,11 +86,15 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 			<!-- Floating menu button (mobile only) -->
 			<button
 				@click="sidebarOpen = !sidebarOpen"
-				class="fixed bottom-4 right-4 z-50 md:hidden bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg focus:outline-none"
+				class="shadow-white/50 shadow-md fixed justify-center items-center h-16 w-16 bottom-8 left-8 z-[51] md:hidden p-4 rounded-full focus:outline-none"
+				:style="{
+					backgroundColor: layout?.app?.theme[5],
+					color: layout?.app?.theme[4],
+				}"
 				aria-label="Toggle menu">
 				<FontAwesomeIcon
 					:icon="faListUl"
-					class="text-white"
+					class="text-2xl"
 					fixed-width
 					aria-hidden="true" />
 			</button>
