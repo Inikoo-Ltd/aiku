@@ -12,6 +12,7 @@ use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Http\Resources\Helpers\CurrencyResource;
 
 class GetCustomerShowcase
 {
@@ -43,6 +44,25 @@ class GetCustomerShowcase
                 'parameters' => [
                     'customer' => $customer->id
                 ]
+            ],
+            'currency'  => CurrencyResource::make($customer->shop->currency)->toArray(request()),
+            'balance'  => [
+                // 'route_increase'    => [  // TODO
+                //     'name'       => 'grp.org.shops.show.crm.customers.show.balance.increase',
+                //     'parameters' => [
+                //         'organisation' => $customer->organisation->slug,
+                //         'shop'         => $customer->shop->slug,
+                //         'customer'     => $customer->slug
+                //     ]
+                // ],
+                // 'route_decrease'    => [   // TODO
+                //     'name'       => 'grp.org.shops.show.crm.customers.show.balance.decrease',
+                //     'parameters' => [
+                //         'organisation' => $customer->organisation->slug,
+                //         'shop'         => $customer->shop->slug,
+                //         'customer'     => $customer->slug
+                //     ]
+                // ],
             ],
             'editWebUser' => $webUserRoute
         ];
