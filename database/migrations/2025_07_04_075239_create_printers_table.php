@@ -11,11 +11,12 @@ return new class () extends Migration {
             $table->increments('id');
             $table->string('name');
             $table->string('slug')->unique()->collation('und_ns');
+            $table->string('printnode_id')->unique();
             $table->text('description')->nullable();
-            $table->jsonb('capabilities')->nullable();
-            $table->jsonb('trays')->nullable();
+            $table->boolean('default')->default(false);
+            $table->string('model')->nullable();
             $table->string('status')->default('offline');
-            $table->boolean('is_online')->default(false);
+            $table->jsonb('capabilities')->nullable();
             $table->unsignedInteger('computer_id')->index()->nullable();
             $table->foreign('computer_id')->references('id')->on('computers');
             $table->timestampsTz();

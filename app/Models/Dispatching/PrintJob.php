@@ -13,8 +13,6 @@ namespace App\Models\Dispatching;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
 
 /**
  * App\Models\Dispatching\Printer
@@ -35,29 +33,20 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder|Printer query()
  * @mixin \Eloquent
  */
-class Printer extends Model
+class PrintJob extends Model
 {
     use HasFactory;
-    use HasSlug;
 
-    protected $table = 'printers';
+    protected $table = 'print_jobs';
 
     protected $casts = [
-        'capabilities' => 'array',
-        'default'      => 'boolean',
+        'options' => 'array',
     ];
 
     protected $guarded = [];
 
-    public function getSlugOptions(): SlugOptions
+    public function printer(): BelongsTo
     {
-        return SlugOptions::create()
-            ->generateSlugsFrom('name')
-            ->saveSlugsTo('slug')
-            ->doNotGenerateSlugsOnUpdate();
-    }
-    public function computer(): BelongsTo
-    {
-        return $this->belongsTo(Computer::class, 'computer_id');
+        return $this->belongsTo(Printer::class, 'printer_id');
     }
 }
