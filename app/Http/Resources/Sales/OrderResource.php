@@ -16,27 +16,27 @@ class OrderResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Order $order */
-        $order          = $this;
+        $order = $this;
 
         return [
-            'id'            => $order->id,
-            'reference'     => $order->reference,
-            'slug'          => $order->slug,
-            'state'         => $order->state->value,
-            'state_label'   => $order->state->labels()[$order->state->value],
-            'state_icon'    => $order->state->stateIcon()[$order->state->value],
-            'public_notes'  => $order->public_notes,
-            'payment_amount'  => $order->payment_amount,
-            'total_amount'  => $order->total_amount,
-            'is_fully_paid' => $order->total_amount == $order->payment_amount,
-            'unpaid_amount' => $order->total_amount - $order->payment_amount,
-             'route_to_pay_unpaid' => [
-                 'method' => 'patch',
-                 'name' => 'retina.models.order.pay_with_balance',
-                 'parameters' => [
-                     'order' => $order->id,
-                 ],
-             ],
+            'id'                  => $order->id,
+            'reference'           => $order->reference,
+            'slug'                => $order->slug,
+            'state'               => $order->state->value,
+            'state_label'         => $order->state->labels()[$order->state->value],
+            'state_icon'          => $order->state->stateIcon()[$order->state->value],
+            'public_notes'        => $order->public_notes,
+            'payment_amount'      => $order->payment_amount,
+            'total_amount'        => $order->total_amount,
+            'is_fully_paid'       => $order->total_amount == $order->payment_amount,
+            'unpaid_amount'       => $order->total_amount - $order->payment_amount,
+            'route_to_pay_unpaid' => [
+                'method'     => 'patch',
+                'name'       => 'retina.json.get_checkout_com_token_to_pay_order',
+                'parameters' => [
+                    'order' => $order->id,
+                ],
+            ],
         ];
     }
 }
