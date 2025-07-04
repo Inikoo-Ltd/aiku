@@ -17,6 +17,7 @@ enum CreditTransactionReasonEnum: string
     case PAY_FOR_SHIPPING      = 'pay_for_shipping';
     case COMPENSATE_CUSTOMER   = 'compensate_customer';
     case TRANSFER              = 'transfer';
+    case MONEY_BACK              = 'money_back';
     case OTHER                 = 'other';
 
     public function label(): string
@@ -25,8 +26,28 @@ enum CreditTransactionReasonEnum: string
             CreditTransactionReasonEnum::PAY_FOR_SHIPPING => 'Pay for the shipping of a return',
             CreditTransactionReasonEnum::COMPENSATE_CUSTOMER => 'Compensate customer',
             CreditTransactionReasonEnum::TRANSFER => 'Transfer from other customer account',
+            CreditTransactionReasonEnum::MONEY_BACK => 'Customer want money back',
             CreditTransactionReasonEnum::OTHER => 'Othe reason',
         };
+    }
+
+    public static function getDecreaseReasons(): array
+    {
+        return [
+            self::TRANSFER,
+            self::MONEY_BACK,
+            self::OTHER,
+        ];
+    }
+
+    public static function getIncreaseReasons(): array
+    {
+        return [
+            self::PAY_FOR_SHIPPING,
+            self::COMPENSATE_CUSTOMER,
+            self::TRANSFER,
+            self::OTHER,
+        ];
     }
 
 
