@@ -58,7 +58,7 @@ class UpdateBalanceCustomer extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+        return $request->user()->authTo("crm.{$this->shop->id}.edit"); //TODO
     }
 
     public function rules(): array
