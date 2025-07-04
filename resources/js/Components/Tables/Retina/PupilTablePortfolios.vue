@@ -169,10 +169,10 @@
                   />
               </Link>
               <Link
-                  :v-else="item?.delete_product?.name"
+                  :v-else="item?.delete_portfolio?.name"
                   as="button"
-                  :href="route(item.delete_product.name, item.delete_product.parameters)"
-                  :method="item.delete_product.method"
+                  :href="route(item.delete_portfolio.name, item.delete_portfolio.parameters)"
+                  :method="item.delete_portfolio.method"
                   :data="{
                       product: item.id
                   }"

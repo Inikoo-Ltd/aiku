@@ -181,7 +181,7 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
                         'icon'  => ['fal', 'fa-user-friends'],
                         'title' => __('customer client')
                     ],
-                    'actions' => $actions
+                    // 'actions' => $actions
 
                 ],
                 'data'               => CustomerClientResource::collection($customerClients),

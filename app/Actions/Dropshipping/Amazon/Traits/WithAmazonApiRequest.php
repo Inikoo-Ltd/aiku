@@ -464,8 +464,7 @@ trait WithAmazonApiRequest
 
             return $this->makeAmazonRequest('put', $endpoint, $productData, [
                 'marketplaceIds' => $config['marketplace_id'],
-                'includedData' => 'identifiers,issues',
-                'mode' => 'VALIDATION_PREVIEW'
+                'includedData' => 'issues'
             ]);
         } catch (Exception $e) {
             Log::error('Upsert Amazon Product Error: ' . $e->getMessage());
