@@ -38,7 +38,7 @@ const LBInitAutocompleteNew = async () => {
                 prefixed: true,
                 symbol: locale.currencySymbol(layout.iris?.currency?.code)
             },
-            ShowBuyTitle: 'Buy now', // Top Product: Button label
+            // ShowBuyTitle: 'Buy now', // Top Product: Button label
             Translations: {
                 en: {
                     // showBuyTitle: 'Burrrry now', // Top Product: Button label
@@ -51,13 +51,13 @@ const LBInitAutocompleteNew = async () => {
                     // }
                 }
             },
-            // RemoveFields: fieldsRemoved,
+            RemoveFields: layout.iris.is_logged_in ? [] : ['formatted_price', 'price_amount', 'price'],
             Types: [
                 {
-                    name: "Item",
+                    name: "Product",
                     type: "item",
                     size: 7,
-                    attributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
+                    xattributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
                 },
                 {
                     name: "Query",
@@ -103,19 +103,13 @@ const LBInitAutocompleteNew = async () => {
             Actions: [  // Action for Top Product 'Add To Basket'
                 {
                     forRow: function(row) {
-                        // console.log('row:', row)
-                        // if (deviceType === 'desktop') {
-                            return row['data-autocomplete-id'] == 1 && row.type === 'item'  // Top product
-                        // } else {
-                            // return false
-                        // }                        
+                        console.log('row:', row)
+                        return layout.retina.type !== 'b2b' && row['data-autocomplete-id'] == 1 && row.type === 'item'  // Top product
                     },
                     // iconUrl: 'https://cdn-icons-png.freepik.com/256/275/275790.png',
                     title: "Visit product's page",
                     action: function(e, result) {
                         console.log('zzzzzzzzz', e, result)
-                        // e.preventDefault();
-                        // alert("Product added to cart");
                     }
                 }
             ]
@@ -135,7 +129,7 @@ const importStyleCSS = () => {
     link.href = "https://cdn.luigisbox.com/autocomplete.css"
     document.head.appendChild(link)
     document.documentElement.style.setProperty('--luigiColor1', layout.iris?.theme?.color?.[0]);
-    document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[0]);
+    document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[1]);
     document.documentElement.style.setProperty('--luigiColor3', layout.iris?.theme?.color?.[2]);
     document.documentElement.style.setProperty('--luigiColor4', layout.iris?.theme?.color?.[3]);
 }

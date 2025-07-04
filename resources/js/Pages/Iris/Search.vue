@@ -28,6 +28,15 @@ const LBInitSearchResult = async () => {
             Theme: "boo",
             Size: 12,
             Facets: ['brand', 'category', 'color'],
+            Translations: {
+                "en": {
+                    "facet": {
+                        "name": {
+                            "brand": "Brands"
+                        }
+                    }
+                }
+            },
             // DefaultFilters: {
             //     type: 'item'
             // },
