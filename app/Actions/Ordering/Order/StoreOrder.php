@@ -30,6 +30,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
@@ -82,6 +83,7 @@ class StoreOrder extends OrgAction
 
 
         if ($this->strict) {
+            $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
                 $billingAddress  = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
@@ -268,7 +270,7 @@ class StoreOrder extends OrgAction
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
-            'data' => ['sometimes', 'array'],
+            'data'                      => ['sometimes', 'array'],
             'sales_channel_id'          => [
                 'sometimes',
                 'required',

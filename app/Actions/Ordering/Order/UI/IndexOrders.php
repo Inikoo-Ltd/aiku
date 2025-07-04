@@ -16,6 +16,7 @@ use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrdersTabsEnum;
@@ -91,10 +92,13 @@ class IndexOrders extends OrgAction
 
         if (class_basename($parent) == 'Shop') {
             $query->where('orders.shop_id', $parent->id);
+            $shop= $parent;
         } elseif (class_basename($parent) == 'Customer') {
             $query->where('orders.customer_id', $parent->id);
-        } elseif (class_basename($parent) == 'CustomerClient') {
+            $shop= $parent->shop;
+        } else{
             $query->where('orders.customer_client_id', $parent->id);
+            $shop= $parent->shop;
         }
 
         $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
@@ -111,40 +115,96 @@ class IndexOrders extends OrgAction
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
 
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::CREATING);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
+
+
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-                ->whereColumn('orders.payment_amount', '>=', 'orders.total_amount');
+               ->where('orders.pay_status', OrderPayStatusEnum::PAID);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
+
+
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-                ->where('orders.payment_amount', 0);
+                ->where('orders.pay_status','!=' ,OrderPayStatusEnum::PAID);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::PICKING->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::HANDLING);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::BLOCKED->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::PACKED);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED_DONE->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::FINALISED);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value) {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->whereDate('dispatched_at', Carbon::today());
         } elseif ($this->bucket == 'submitted') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::SUBMITTED);
         } elseif ($this->bucket == 'in_warehouse') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::IN_WAREHOUSE);
         } elseif ($this->bucket == 'handling') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
+
             $query->where('orders.state', OrderStateEnum::HANDLING);
         } elseif ($this->bucket == 'handling_blocked') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
         } elseif ($this->bucket == 'packed') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::PACKED);
         } elseif ($this->bucket == 'finalised') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::FINALISED);
         } elseif ($this->bucket == 'dispatched') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::DISPATCHED);
         } elseif ($this->bucket == 'cancelled') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::CANCELLED);
         } elseif ($this->bucket == 'dispatched_today') {
+            if($shop->type==ShopTypeEnum::DROPSHIPPING){ // tmp stuff until we migrate from aurora
+                $query->whereNull('orders.source_id');
+            }
             $query->where('orders.state', OrderStateEnum::DISPATCHED)
                 ->where('dispatched_at', Carbon::today());
         } elseif ($this->bucket == 'all') {

@@ -105,6 +105,14 @@ class HydrateModels extends HydrateModel
     protected function hydrateDropshipping(Command $command): void
     {
         $command->info('Dropshipping ✊🏼');
+
+        foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
+            $command->call('hydrate:shops', [
+                '-s' => $shop->slug
+            ]);
+        }
+
+
         $command->call('hydrate:platforms');
         $command->call('hydrate:customer_sales_channels');
         $command->call('hydrate:customer_clients');
@@ -112,9 +120,7 @@ class HydrateModels extends HydrateModel
 
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
-            $command->call('hydrate:shops', [
-                '-s' => $shop->slug
-            ]);
+
 
             $command->call('hydrate:customers', [
                 '-S' => $shop->slug
