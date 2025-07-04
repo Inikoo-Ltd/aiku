@@ -13,13 +13,13 @@ use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
+use Google\Service\Playdeveloperreporting\Resource\Anomalies;
 use Illuminate\Support\Arr;
 
 class AttachPaymentToInvoice extends OrgAction
 {
     public function handle(Invoice $invoice, Payment $payment, array $modelData): void
     {
-        SetInvoicePaymentState::run($invoice);
         $paymentAmount = Arr::get($modelData, 'amount', $payment->amount);
         $toPay = $invoice->total_amount - $invoice->payment_amount;
 
@@ -48,6 +48,8 @@ class AttachPaymentToInvoice extends OrgAction
                 'date' => now()
             ]);
         }
+
+        $invoice->refresh();
 
         SetInvoicePaymentState::run($invoice);
     }

@@ -239,9 +239,7 @@ class StoreInvoice extends OrgAction
             'customer_sales_channel_id' => [
                 'sometimes',
                 'required',
-                Rule::exists('customer_sales_channel_id', 'id')->where(function ($query) {
-                    $query->where('group_id', $this->shop->group_id);
-                })
+                'exists:customer_sales_channels,id',
             ],
 
             'sales_channel_id' => [
