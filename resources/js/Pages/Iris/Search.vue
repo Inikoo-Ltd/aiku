@@ -41,7 +41,11 @@ const LBInitSearchResult = async () => {
                 "en": {
                     "facet": {
                         "name": {
-                            "brand": "Brands"
+                            "category": "Categories",
+                            "brand": "Brands",
+                            "sub_department": "Sub Departments",
+                            "tag": "Tags",
+                            "department": "Departments",
                         }
                     }
                 }
