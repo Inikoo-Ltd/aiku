@@ -44,7 +44,6 @@ class ScheduleGetRetinaOrders extends RetinaAction
 
 
                         match ($channel->platform->type) {
-                            PlatformTypeEnum::WOOCOMMERCE => CatchRetinaOrdersFromWooCommerce::dispatch($user),
                             PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::dispatch($user),
                             default => null
                         };

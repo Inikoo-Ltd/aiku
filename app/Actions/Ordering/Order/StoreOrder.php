@@ -87,9 +87,12 @@ class StoreOrder extends OrgAction
             if ($parent instanceof Customer) {
                 $billingAddress  = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
-            } else {
+            } elseif ($parent instanceof CustomerClient) {
                 $billingAddress  = $parent->customer->address;
-                $deliveryAddress = $parent->address;
+                $deliveryAddress = Arr::pull($modelData, 'delivery_address');
+            } else {
+                $billingAddress  = Arr::pull($modelData, 'billing_address');
+                $deliveryAddress = Arr::pull($modelData, 'delivery_address');
             }
         } else {
             $billingAddress  = Arr::pull($modelData, 'billing_address');
@@ -279,6 +282,9 @@ class StoreOrder extends OrgAction
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
+            'billing_address' => ['sometimes', 'required',  new ValidAddress()], // only need when parent is Shop
+            'delivery_address' => ['sometimes', 'required',  new ValidAddress()],  // only need when parent is Shop|CustomerClient
+
 
         ];
 

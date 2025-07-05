@@ -57,7 +57,7 @@ class StoreOrderFromEbay extends OrgAction
                 order: $order,
                 historicAsset: $orderedProduct['historicAsset'],
                 modelData: [
-                    'quantity_ordered'        => $orderedProduct['quantity'],
+                    'quantity_ordered'        => $orderedProduct['quantity_ordered'],
                     'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
 
                 ]
@@ -84,15 +84,18 @@ class StoreOrderFromEbay extends OrgAction
         }
 
 
-        $lineItems = collect(Arr::get($ebayOrderData, 'lineItems', []))->pluck('legacyItemId')->filter()->toArray();
 
 
         $orderedProducts = [];
-        foreach ($lineItems as $lineItem) {
+
+
+        foreach (Arr::get($ebayOrderData, 'lineItems', []) as $lineItem) {
+
+
             $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
-                ->where('platform_product_id', $lineItem)->first();
+                ->where('platform_product_id', $lineItem['legacyItemId'])->first();
             if ($portfolioData && $portfolioData->item_id) {
-                $product = Product::find($lineItem);
+                $product = Product::find($portfolioData->item_id);
                 if ($product) {
                     $orderedProducts[] = [
                         'historicAsset'           => $product->currentHistoricProduct,
