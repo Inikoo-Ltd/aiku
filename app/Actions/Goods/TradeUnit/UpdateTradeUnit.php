@@ -36,7 +36,7 @@ class UpdateTradeUnit extends GrpAction
                 StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
             }
             foreach ($tradeUnit->products as $product) {
-                ProductHydrateGrossWeightFromTradeUnits::run($product);
+                ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
             }
         }
 

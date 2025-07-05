@@ -58,12 +58,25 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
 
                 if ($organisation->id == 2) {
+                    $dataToUpdate = Arr::only(
+                        $tradeUnitData['trade_unit'],
+                        ['gross_weight', 'marketing_weight', 'marketing_dimensions']
+                    );
+
+                    if (!Arr::get($tradeUnitData, 'trade_unit.gross_weight')) {
+                        data_forget($tradeUnitData, 'trade_unit.gross_weight');
+                    }
+                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_weight')) {
+                        data_forget($tradeUnitData, 'trade_unit.marketing_weight');
+                    }
+                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_dimensions')) {
+                        data_forget($tradeUnitData, 'trade_unit.marketing_dimensions');
+                    }
+
+
                     $tradeUnit = UpdateTradeUnit::make()->action(
                         tradeUnit: $metaTradeUnit,
-                        modelData: Arr::only(
-                            $tradeUnitData['trade_unit'],
-                            ['gross_weight', 'marketing_weight', 'marketing_dimensions']
-                        ),
+                        modelData: $dataToUpdate,
                         hydratorsDelay: $this->hydratorsDelay,
                         strict: false,
                         audit: false
@@ -100,7 +113,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             if ($tradeUnit) {
                 $this->updateTradeUnitSources($tradeUnit, $tradeUnitData['trade_unit']['source_id']);
 
-                if (isset($tradeUnitData['barcodes'])) {
+                if (isset($tradeUnitData['barcodes']) && count($tradeUnitData['barcodes']) > 0) {
                     $tradeUnit->barcodes()->sync(
                         $tradeUnitData['barcodes']
                     );
