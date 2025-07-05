@@ -68,6 +68,7 @@
     "propaganistas/laravel-phone": "^5.0",
     "pusher/pusher-php-server": "^7.2",
     "ralouphie/mimey": "^1.0",
+    "rawilk/laravel-printing": "^4.1",
     "ryangjchandler/blade-cache-directive": "^1.0",
     "sentry/sentry-laravel": "^4.4",
     "shopify/shopify-api": "^5.6",
