@@ -10,7 +10,6 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
-use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
