@@ -14,8 +14,8 @@ use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
-use Tightenco\Ziggy\Ziggy;
 use App\Http\Resources\Helpers\CurrencyResource;
+use Tighten\Ziggy\Ziggy;
 
 class HandleRetinaInertiaRequests extends Middleware
 {
