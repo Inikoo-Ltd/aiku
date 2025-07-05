@@ -2,7 +2,6 @@
 
 namespace App\Console;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopSellers;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
@@ -29,9 +28,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('domain:check-cloudflare-status')->hourly();
 
 
-        $schedule->job(ShopHydrateTopSellers::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ShopHydrateTopSellers',
-        );
 
         $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'FulfilmentCustomersHydrateStatus',
