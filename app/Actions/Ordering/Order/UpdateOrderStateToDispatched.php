@@ -18,10 +18,11 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateStateToDispatchedOrder extends OrgAction
+class UpdateOrderStateToDispatched extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -37,6 +38,7 @@ class UpdateStateToDispatchedOrder extends OrgAction
         ];
 
         DB::transaction(function () use ($order, $data) {
+            /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $dispatchedQuantity = $transaction->deliveryNoteItem->quantity_dispatched;
                 $transaction->update([

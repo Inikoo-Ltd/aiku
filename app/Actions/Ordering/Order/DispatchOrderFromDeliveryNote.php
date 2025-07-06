@@ -16,7 +16,7 @@ class DispatchOrderFromDeliveryNote extends OrgAction
 {
     public function handle(Order $order): Order
     {
-        return UpdateStateToDispatchedOrder::make()->action($order);
+        return UpdateOrderStateToDispatched::make()->action($order);
     }
 
 

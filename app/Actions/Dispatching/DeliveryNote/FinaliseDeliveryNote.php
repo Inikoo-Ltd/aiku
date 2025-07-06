@@ -21,6 +21,9 @@ class FinaliseDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         $deliveryNote = DB::transaction(function () use ($deliveryNote) {
@@ -33,9 +36,8 @@ class FinaliseDeliveryNote extends OrgAction
                 InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
             }
 
-            $deliveryNote = $this->update($deliveryNote, $modelData);
+            return $this->update($deliveryNote, $modelData);
 
-            return $deliveryNote;
         });
 
         OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
@@ -44,6 +46,9 @@ class FinaliseDeliveryNote extends OrgAction
         return $deliveryNote;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
@@ -51,6 +56,9 @@ class FinaliseDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);

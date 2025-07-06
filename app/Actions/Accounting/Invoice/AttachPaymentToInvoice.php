@@ -20,18 +20,14 @@ class AttachPaymentToInvoice extends OrgAction
     public function handle(Invoice $invoice, Payment $payment, array $modelData): void
     {
         $paymentAmount = Arr::get($modelData, 'amount', $payment->amount);
-        $toPay = $invoice->total_amount - $invoice->payment_amount;
+        $toPay         = $invoice->total_amount - $invoice->payment_amount;
 
         $amountToCredit = 0;
-        $amount = $paymentAmount;
+        $amount         = $paymentAmount;
 
-        if (!$invoice->original_invoice_id) {
-            if ($paymentAmount > $toPay) {
-                $amount = $toPay;
-                $amountToCredit = $paymentAmount - $toPay;
-            } else {
-                $amount = $paymentAmount;
-            }
+        if (!$invoice->original_invoice_id && $paymentAmount > $toPay) { // this invoice is not a refund
+            $amount         = $toPay;
+            $amountToCredit = $paymentAmount - $toPay;
         }
 
         $invoice->payments()->attach($payment, [
@@ -39,12 +35,11 @@ class AttachPaymentToInvoice extends OrgAction
         ]);
 
         if ($amountToCredit != 0) {
-
             StoreCreditTransaction::make()->action($invoice->customer, [
-                'amount' => $amountToCredit,
-                'type' => CreditTransactionTypeEnum::FROM_EXCESS,
+                'amount'     => $amountToCredit,
+                'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
                 'payment_id' => $payment->id,
-                'date' => now()
+                'date'       => now()
             ]);
         }
 
@@ -56,7 +51,7 @@ class AttachPaymentToInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'amount'    => ['sometimes', 'numeric'],
+            'amount' => ['sometimes', 'numeric'],
         ];
     }
 

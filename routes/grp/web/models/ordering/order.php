@@ -21,10 +21,10 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
-use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
+use App\Actions\Ordering\Order\UpdateOrderStateToDispatched;
 use App\Actions\Ordering\Order\FinaliseOrder;
-use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
-use App\Actions\Ordering\Order\UpdateStateToPackedOrder;
+use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
@@ -59,10 +59,9 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', UpdateOrderStateToCancelled::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
-        Route::patch('handling', UpdateStateToHandlingOrder::class)->name('handling');
-        Route::patch('packed', UpdateStateToPackedOrder::class)->name('packed');
-        Route::patch('finalized', FinaliseOrder::class)->name('finalized');// todo candidate to remove
-        Route::patch('dispatched', UpdateStateToDispatchedOrder::class)->name('dispatched');
+        Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
+        Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
+        Route::patch('dispatched', UpdateOrderStateToDispatched::class)->name('dispatched');
     });
 });
 

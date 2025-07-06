@@ -14,30 +14,28 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\ActionRequest;
 
-class FinaliseOrder extends OrgAction
+class UpdateOrderStateToHandling extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
-     * @throws \Throwable
      */
-    public function handle(Order $order, $fromDeliveryNote = false): Order
+    public function handle(Order $order): Order
     {
-        GenerateOrderInvoice::make()->action($order);
-
         $data = [
-            'state' => OrderStateEnum::FINALISED
+            'state' => OrderStateEnum::HANDLING
         ];
 
-        if (in_array($order->state, [OrderStateEnum::HANDLING, OrderStateEnum::PACKED]) || $fromDeliveryNote) {
+        if (in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
             $order->transactions()->update([
-                'state' => TransactionStateEnum::FINALISED
+                'state' => TransactionStateEnum::HANDLING
             ]);
 
-            $data['finalised_at'] = now();
+            $data['handling_at']                = now();
 
             $this->update($order, $data);
 
@@ -46,21 +44,25 @@ class FinaliseOrder extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'You can not change the status to finalized']);
+        throw ValidationException::withMessages(['status' => 'You can not change the status to handling']);
     }
-
 
     /**
-     * @throws \Throwable
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(Order $order, $fromDeliveryNote = false): Order
+    public function action(Order $order): Order
     {
-        $this->asAction = true;
+        $this->asAction=true;
         $this->initialisationFromShop($order->shop, []);
-
-        return $this->handle($order, $fromDeliveryNote);
+        return $this->handle($order);
     }
 
-
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function asController(Order $order, ActionRequest $request): Order
+    {
+        $this->initialisationFromShop($order->shop, $request);
+        return $this->handle($order);
+    }
 }
