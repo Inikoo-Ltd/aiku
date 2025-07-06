@@ -42,6 +42,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stocks_state_in_process
  * @property int $number_stocks_state_active
  * @property int $number_stocks_state_discontinuing
+ * @property int $number_stocks_state_discontinued
+ * @property int $number_stocks_state_suspended
  * @property-read \App\Models\Goods\TradeUnit $tradeUnit
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitStats newQuery()
