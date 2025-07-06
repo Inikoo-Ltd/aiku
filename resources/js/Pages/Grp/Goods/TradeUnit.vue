@@ -22,6 +22,7 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
+import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 
 library.add(faInventory, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign)
 
@@ -47,6 +48,7 @@ const props = defineProps<{
     }
     products?: {}
     stocks?: {}
+    images?: {}
 
 }>()
 
@@ -60,7 +62,8 @@ const component = computed(() => {
         history: ModelChangelog,
         attachments: TableAttachments,
         products: TableProducts,
-        stocks: TableStocks
+        stocks: TableStocks,
+        images: TableImages
     }
     return components[currentTab.value]
 

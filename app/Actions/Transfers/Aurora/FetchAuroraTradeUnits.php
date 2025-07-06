@@ -8,10 +8,15 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateImages;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
+use App\Actions\Helpers\Media\SaveModelImages;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
+use App\Models\SysAdmin\Organisation;
+use App\Transfers\Aurora\WithAuroraImages;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -23,8 +28,10 @@ use Throwable;
 class FetchAuroraTradeUnits extends FetchAuroraAction
 {
     use WithAuroraParsers;
+    use WithAuroraImages;
 
     public string $commandSignature = 'fetch:trade_units {organisations?*} {--s|source_id=} {--d|db_suffix=}';
+    private Organisation $organisation;
 
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?TradeUnit
@@ -32,7 +39,8 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         $this->organisationSource = $organisationSource;
 
 
-        $organisation = $organisationSource->getOrganisation();
+        $organisation       = $organisationSource->getOrganisation();
+        $this->organisation = $organisation;
 
         $tradeUnitData = $organisationSource->fetchTradeUnit($organisationSourceId);
 
@@ -168,6 +176,12 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                     $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
                 }
+
+
+                // now let process the product images
+                $this->fetchTradeUnitImages(
+                    $tradeUnit,
+                );
             }
 
 
@@ -190,6 +204,66 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 'parts' => $sources,
             ]
         ]);
+    }
+
+    public function fetchTradeUnitImages(TradeUnit $tradeUnit): void
+    {
+        $images = [];
+        //print "Fetching images for trade unit: {$tradeUnit->slug} {$tradeUnit->code}  {$tradeUnit->name} ({$tradeUnit->source_id})=================\n";
+        foreach ($tradeUnit->products()->where('products.organisation_id', $this->organisation->id)->get() as $product) {
+            //print "Fetching images for product: {$product->slug} {$product->code}  {$product->name} ({$product->source_id})\n";
+            $productImages = $this->fetchAuroraProductImages($product);
+            foreach ($productImages as $productImage) {
+                if (!isset($productImage['checksum']) || !$productImage['checksum']) {
+                    continue;
+                }
+                //print_r($productImage);
+                $images[$productImage['checksum']] = $productImage;
+            }
+        }
+
+        foreach ($images as $imageData) {
+            SaveModelImages::run(
+                model: $tradeUnit,
+                mediaData: [
+                    'path'         => $imageData['image_path'],
+                    'originalName' => $imageData['filename'],
+
+                ],
+                mediaScope: 'product_images',
+                modelHasMediaData: [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'fetched_at' => now(),
+                    'source_id'  => $imageData['source_id'],
+                    'scope'      => 'photo',
+                    'is_public'  => $imageData['is_public'],
+                    'caption'    => $imageData['caption'] ?? '',
+                    'position'   => $this->organisation->id * 1000 + $imageData['position'],
+
+                ]
+            );
+        }
+
+        TradeUnitHydrateImages::run($tradeUnit);
+    }
+
+    private function fetchAuroraProductImages(Product $product): array
+    {
+        $sourceData = $product->source_id;
+        if (!$sourceData) {
+            return [];
+        }
+        $sourceData = explode(':', $sourceData);
+
+        $images = $this->getModelImagesCollection(
+            'Product',
+            $sourceData[1]
+        )->map(function ($auroraImage) {
+            return $this->fetchImage($auroraImage);
+        });
+
+        return $images->toArray();
     }
 
     public function getModelsQuery(): Builder

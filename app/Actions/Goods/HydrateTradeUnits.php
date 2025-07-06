@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods;
 
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateImages;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatus;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
@@ -35,6 +36,7 @@ class HydrateTradeUnits
         TradeUnitsHydrateOrgStocks::run($tradeUnit);
         TradeUnitsHydrateStocks::run($tradeUnit);
         TradeUnitHydrateStatus::run($tradeUnit);
+        TradeUnitHydrateImages::run($tradeUnit);
     }
 
 }

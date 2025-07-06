@@ -72,6 +72,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_public_images
  * @property float $images_size
  * @property float $public_images_size
+ * @property float $average_image_size
+ * @property float|null $max_image_size
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionStats query()

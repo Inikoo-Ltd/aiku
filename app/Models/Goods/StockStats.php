@@ -96,6 +96,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_images
+ * @property float $total_image_size
+ * @property float $average_image_size
+ * @property float|null $max_image_size
  * @property-read \App\Models\Goods\Stock $stock
  * @method static Builder<static>|StockStats newModelQuery()
  * @method static Builder<static>|StockStats newQuery()
