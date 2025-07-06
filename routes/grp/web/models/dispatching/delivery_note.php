@@ -13,7 +13,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToUnassigned;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToDispatched;
+use App\Actions\Dispatching\DeliveryNote\DispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
@@ -35,6 +35,6 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
         Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
-        Route::patch('dispatched', UpdateDeliveryNoteStateToDispatched::class)->name('dispatched');
+        Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
     });
 });

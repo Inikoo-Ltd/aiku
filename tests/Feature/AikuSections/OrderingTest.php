@@ -31,9 +31,9 @@ use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
-use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
-use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
-use App\Actions\Ordering\Order\UpdateStateToPackedOrder;
+use App\Actions\Ordering\Order\FinaliseOrder;
+use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Purge\HydratePurges;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
@@ -412,7 +412,7 @@ test('update order state to in warehouse', function (Order $order) {
 })->depends('update order state to submitted');
 
 test('update order state to Handling', function (Order $order) {
-    $order = UpdateStateToHandlingOrder::make()->action($order);
+    $order = UpdateOrderStateToHandling::make()->action($order);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::HANDLING);
@@ -421,7 +421,7 @@ test('update order state to Handling', function (Order $order) {
 })->depends('update order state to in warehouse');
 
 test('update order state to Packed ', function (Order $order) {
-    $order = UpdateStateToPackedOrder::make()->action($order);
+    $order = UpdateOrderStateToPacked::make()->action($order);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::PACKED);
@@ -430,7 +430,7 @@ test('update order state to Packed ', function (Order $order) {
 })->depends('update order state to Handling');
 
 test('update order state to Finalised ', function (Order $order) {
-    $order = UpdateStateToFinalizedOrder::make()->action($order);
+    $order = FinaliseOrder::make()->action($order);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::FINALISED);

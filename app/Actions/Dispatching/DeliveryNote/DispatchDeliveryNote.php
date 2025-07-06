@@ -8,9 +8,12 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -18,7 +21,7 @@ use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateDeliveryNoteStateToDispatched extends OrgAction
+class DispatchDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
@@ -43,8 +46,9 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
 
             $deliveryNote->refresh();
             foreach ($deliveryNote->orders as $order) {
-                UpdateStateToDispatchedOrder::make()->action($order);
+                DispatchOrderFromDeliveryNote::make()->action($order);
             }
+
 
             OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
                 ->delay($this->hydratorsDelay);
@@ -52,6 +56,10 @@ class UpdateDeliveryNoteStateToDispatched extends OrgAction
 
             return $deliveryNote;
         });
+
+        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
+        OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
+        ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
 
         return $deliveryNote;
     }

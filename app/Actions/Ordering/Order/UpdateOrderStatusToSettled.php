@@ -8,15 +8,14 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\ActionRequest;
 
-class UpdateStateToHandlingOrder extends OrgAction
+class UpdateOrderStatusToSettled
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -27,16 +26,19 @@ class UpdateStateToHandlingOrder extends OrgAction
     public function handle(Order $order): Order
     {
         $data = [
-            'state' => OrderStateEnum::HANDLING
+            'status' => OrderStatusEnum::SETTLED
         ];
 
-        if (in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
-            $order->transactions()->update([
-                'state' => TransactionStateEnum::HANDLING
-            ]);
+        if ($order->state === OrderStateEnum::FINALISED) {
+            $transactions = $order->transactions()->where('status', TransactionStatusEnum::PROCESSING)->get();
+            foreach ($transactions as $transaction) {
+                data_set($transactionData, 'settled_at', now());
+                data_set($transactionData, 'status', TransactionStatusEnum::SETTLED);
 
-            // $data[$order->state->value . '_at'] = null;
-            $data['handling_at']                = now();
+                $transaction->update($transactionData);
+            }
+
+            $data['settled_at']                 = now();
 
             $this->update($order, $data);
 
@@ -45,7 +47,7 @@ class UpdateStateToHandlingOrder extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'You can not change the status to handling']);
+        throw ValidationException::withMessages(['status' => 'You can not change the status to settled']);
     }
 
     /**
@@ -53,13 +55,6 @@ class UpdateStateToHandlingOrder extends OrgAction
      */
     public function action(Order $order): Order
     {
-        return $this->handle($order);
-    }
-
-    public function asController(Order $order, ActionRequest $request)
-    {
-        $this->order = $order;
-        $this->initialisationFromShop($order->shop, $request);
         return $this->handle($order);
     }
 }
