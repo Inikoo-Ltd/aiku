@@ -16,7 +16,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Middleware;
-use Tightenco\Ziggy\Ziggy;
+use Tighten\Ziggy\Ziggy;
 
 class HandleIrisInertiaRequests extends Middleware
 {
@@ -50,7 +50,7 @@ class HandleIrisInertiaRequests extends Middleware
                 ->where('customer_id', $webUser->customer_id)
                 ->get();
 
-                foreach ($channels as $channel) {
+            foreach ($channels as $channel) {
                 $customerSalesChannels[$channel->id] = [
                     'customer_sales_channel_id' => $channel->id,
                     'customer_sales_channel_name' => $channel->customer_sales_channel_name,

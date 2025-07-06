@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
@@ -47,6 +48,11 @@ class DispatchDeliveryNote extends OrgAction
             foreach ($deliveryNote->orders as $order) {
                 DispatchOrderFromDeliveryNote::make()->action($order);
             }
+
+
+            OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+                ->delay($this->hydratorsDelay);
+
 
             return $deliveryNote;
         });

@@ -68,6 +68,7 @@ trait WithIrisInertia
             'theme'                => Arr::get($website->published_layout, 'theme'),
             'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
             'is_logged_in'         => (bool)$webUser,
+            'is_have_gtm'          => (bool) Arr::get($website->settings, 'google_tag_id'),
             'currency'             => [
                 'code'   => $website->shop->currency->code,
                 'symbol' => $website->shop->currency->symbol,

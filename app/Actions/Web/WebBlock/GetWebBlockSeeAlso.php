@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 03-07-2025-11h-03m
@@ -26,8 +27,8 @@ class GetWebBlockSeeAlso
 
         $ids = collect($products)
             ->pluck('id')
-            ->filter(fn($id) => is_numeric($id))
-            ->map(fn($id) => (int) $id)
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
             ->values()
             ->all();
 
@@ -44,7 +45,7 @@ class GetWebBlockSeeAlso
         });
 
         $family = $webpage->model;
-        if($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+        if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
             $family = $webpage->model->family;
         }
 

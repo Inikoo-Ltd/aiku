@@ -32,7 +32,6 @@ class OrganisationHydrateShopTypeDeliveryNotes implements ShouldBeUnique
 
     public function handle(Organisation $organisation, ShopTypeEnum $shopTypeEnum): void
     {
-
         if ($shopTypeEnum == ShopTypeEnum::FULFILMENT) {
             return;
         }
@@ -40,15 +39,18 @@ class OrganisationHydrateShopTypeDeliveryNotes implements ShouldBeUnique
         $stats = [];
 
 
-
         $count = DeliveryNote::selectRaw("delivery_notes.state, count(*) as total")
             ->leftJoin('shops', 'shops.id', '=', 'delivery_notes.shop_id')
-           ->where('shops.type', $shopTypeEnum->value)
+            // todo , remove this aftr migrations"
+            ->whereNull('delivery_notes.source_id')
+
+
+
+            ->where('shops.type', $shopTypeEnum->value)
             ->where('delivery_notes.organisation_id', $organisation->id)
             ->groupBy('delivery_notes.state')
             ->pluck('total', 'delivery_notes.state')->all();
         foreach (DeliveryNoteStateEnum::cases() as $case) {
-
             $stats["number_".$shopTypeEnum->snake()."_shop_delivery_notes_state_".$case->snake()] = Arr::get($count, $case->value, 0);
         }
 

@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,11 +20,13 @@ class UpdateDeliveryNoteStateToPacking extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-
-
         data_set($modelData, 'packing_at', now());
 
-        return $this->update($deliveryNote, $modelData);
+        $deliveryNote = $this->update($deliveryNote, $modelData);
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
+
+        return $deliveryNote;
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote

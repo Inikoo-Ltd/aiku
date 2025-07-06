@@ -14,11 +14,11 @@ use Illuminate\Support\Arr;
 
 trait WithGeneratedEbayAddress
 {
-    public function getAttributes(array $data): array
+    public function getContactAttributes(array $data): array
     {
-        $address = [];
+        $address        = [];
         $contactAddress = Arr::get($data, 'contactAddress');
-        $country = Country::where('code', Arr::get($contactAddress, 'countryCode'))->first();
+        $country        = Country::where('code', Arr::get($contactAddress, 'countryCode'))->first();
 
         if (!blank($contactAddress)) {
             $address = [
@@ -37,9 +37,10 @@ trait WithGeneratedEbayAddress
         }
 
         return [
+            'reference'    => Arr::get($data, 'username'),
             'contact_name' => Arr::get($data, 'fullName'),
-            'email' => Arr::get($data, 'email') ?? '',
-            'phone' => Arr::get($data, 'primaryPhone.phoneNumber'),
+            'email'        => Arr::get($data, 'email') ?? '',
+            'phone'        => Arr::get($data, 'primaryPhone.phoneNumber'),
             ...$address
         ];
     }

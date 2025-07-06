@@ -18,13 +18,9 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Exception;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -70,7 +66,7 @@ class CallbackRetinaEbayUser extends OrgAction
                 $ebayUser->refresh();
                 $userData = $ebayUser->getUser();
 
-                if (CustomerSalesChannel::where('name',  Arr::get($userData, 'username'))->exists()) {
+                if (CustomerSalesChannel::where('name', Arr::get($userData, 'username'))->exists()) {
                     $ebayUser->customerSalesChannel->delete();
                     $ebayUser->delete();
                     return route('retina.dropshipping.customer_sales_channels.create', [
@@ -78,7 +74,7 @@ class CallbackRetinaEbayUser extends OrgAction
                         'reason' => 'duplicate-ebay'
                     ]);
                 }
-                
+
                 $ebayUser = UpdateEbayUser::run($ebayUser, [
                     'name' => Arr::get($userData, 'username'),
                 ]);

@@ -27,7 +27,7 @@ class ImapResearch extends OrgAction
 
     }
 
-    public string $commandSignature = 'xxx';
+    public string $commandSignature = 'xxx:imap';
 
     public function asCommand($command)
     {

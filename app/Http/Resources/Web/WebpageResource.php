@@ -31,7 +31,7 @@ class WebpageResource extends JsonResource
         $webPageLayout = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
         $modelId = null;
-        if($webpage->model_type == 'Product') {
+        if ($webpage->model_type == 'Product') {
             $modelId = $webpage->model->family_id;
         } else {
             $modelId = $webpage->model_id;

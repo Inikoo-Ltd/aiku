@@ -119,14 +119,16 @@ test('add image to product', function () {
     $path      = $fakeImage->store('photos', 'public');
 
     SaveModelImages::run(
-        $this->product,
-        [
+        model: $this->product,
+        mediaData: [
             'path'         => Storage::disk('public')->path($path),
             'originalName' => $fakeImage->getClientOriginalName()
 
         ],
-        'photo',
-        'product_images'
+        mediaScope: 'product_images',
+        modelHasMediaData: [
+            'scope' => 'photo'
+        ]
     );
 
     $this->product->refresh();
@@ -144,13 +146,15 @@ test('add 2nd image to product', function () {
     $path2 = $fakeImage2->store('photos', 'public');
 
     SaveModelImages::run(
-        $this->product,
-        [
+        model: $this->product,
+        mediaData: [
             'path'         => Storage::disk('public')->path($path2),
             'originalName' => $fakeImage2->getClientOriginalName()
         ],
-        'photo',
-        'product_images'
+        mediaScope: 'product_images',
+        modelHasMediaData: [
+            'scope' => 'photo'
+        ]
     );
 
     $this->product->refresh();

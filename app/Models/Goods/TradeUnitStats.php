@@ -37,6 +37,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stocks_state_abnormality
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_stocks
+ * @property int $number_current_stocks
+ * @property int $number_stocks_state_in_process
+ * @property int $number_stocks_state_active
+ * @property int $number_stocks_state_discontinuing
+ * @property int $number_stocks_state_discontinued
+ * @property int $number_stocks_state_suspended
+ * @property int $number_images
+ * @property float $total_image_size
+ * @property float $average_image_size
+ * @property float|null $max_image_size
  * @property-read \App\Models\Goods\TradeUnit $tradeUnit
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitStats newQuery()

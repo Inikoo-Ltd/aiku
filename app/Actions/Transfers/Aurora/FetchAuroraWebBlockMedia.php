@@ -65,10 +65,13 @@ class FetchAuroraWebBlockMedia extends OrgAction
 
 
                 if (isset($imageData['image_path']) && file_exists($imageData['image_path'])) {
-                    return SaveModelImages::run($webBlock, [
-                        "path"         => $imageData['image_path'],
-                        "originalName" => $imageData['filename'],
-                    ]);
+                    return SaveModelImages::run(
+                        model: $webBlock,
+                        mediaData: [
+                            "path"         => $imageData['image_path'],
+                            "originalName" => $imageData['filename'],
+                        ]
+                    );
                 }
             }
         }
@@ -79,10 +82,13 @@ class FetchAuroraWebBlockMedia extends OrgAction
 
     private function getStaticImages($webBlock, $imageName)
     {
-        return SaveModelImages::run($webBlock, [
-            "path"         => resource_path('aurora/'.$imageName),
-            "originalName" => $imageName,
-        ]);
+        return SaveModelImages::run(
+            model: $webBlock,
+            mediaData: [
+                "path"         => resource_path('aurora/'.$imageName),
+                "originalName" => $imageName,
+            ]
+        );
     }
 
     public function downloadMediaFromWebpage(WebBlock $webBlock, Webpage $webpage, string $auroraImage): Media|null
@@ -117,10 +123,13 @@ class FetchAuroraWebBlockMedia extends OrgAction
             file_put_contents($tempFile, $content);
             $fetchNotFoundImage->update(['status' => 'found']);
 
-            return SaveModelImages::run($webBlock, [
-                "path"         => $tempFile,
-                "originalName" => "aurora_image",
-            ]);
+            return SaveModelImages::run(
+                model: $webBlock,
+                mediaData: [
+                    "path"         => $tempFile,
+                    "originalName" => "aurora_image",
+                ]
+            );
         } catch (Exception) {
             $fetchNotFoundImage->update(['status' => 'failed']);
 
