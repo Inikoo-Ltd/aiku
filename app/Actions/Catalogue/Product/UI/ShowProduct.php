@@ -23,6 +23,7 @@ use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\Helpers\ImagesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Models\Catalogue\Product;
@@ -212,7 +213,7 @@ class ShowProduct extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'      => $product->code,
-                    'model'      => $this->parent?->code,
+                    'model'      => $this->parent->code,
                     'icon'       =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
@@ -293,6 +294,10 @@ class ShowProduct extends OrgAction
                     fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
                     : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
+                ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
+                    fn () => ImagesResource::collection(IndexProductImages::run($product))
+                    : Inertia::lazy(fn () => ImagesResource::collection(IndexProductImages::run($product))),
+
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
                                     fn () => HistoryResource::collection(IndexHistory::run($product))
                                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
@@ -303,6 +308,7 @@ class ShowProduct extends OrgAction
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
+            ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value));
     }
 

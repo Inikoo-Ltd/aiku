@@ -28,6 +28,7 @@ import TableProductBackInStockReminders from "@/Components/Tables/Grp/Org/Catalo
 import TableTradeUnits from '@/Components/Tables/Grp/Goods/TableTradeUnits.vue'
 import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 
 
 library.add(
@@ -62,6 +63,7 @@ const props = defineProps<{
     trade_units?: {}
     history?: {}
     stocks?: {}
+    images?: {}
     taxonomy: {
         department?: {
             name: string
@@ -99,6 +101,7 @@ const component = computed(() => {
         reminders: TableProductBackInStockReminders,
         trade_units: TableTradeUnits,
         stocks: TableOrgStocks,
+        images: TableImages
     }
     return components[currentTab.value]
 })
