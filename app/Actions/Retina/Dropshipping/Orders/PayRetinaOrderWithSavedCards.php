@@ -21,7 +21,7 @@ class PayRetinaOrderWithSavedCards extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order)
+    public function handle(Order $order): void
     {
         $customer = $order->customer;
 

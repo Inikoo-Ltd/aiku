@@ -135,7 +135,8 @@ class ShowDeliveryNote extends OrgAction
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-        $startPickingLabel = __('Start picking');
+        $startPickingLabel    = __('Start picking');
+        $generateInvoiceLabel = __('Generate Invoice');
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
@@ -264,8 +265,8 @@ class ShowDeliveryNote extends OrgAction
                     [
                         'type'    => 'button',
                         'style'   => '',
-                        'tooltip' => __('Generate Invoice'),
-                        'label'   => __('Generate Invoice'),
+                        'tooltip' => $generateInvoiceLabel,
+                        'label'   => $generateInvoiceLabel,
                         'key'     => 'action',
                         'route'   => [
                             'method'     => 'patch',
@@ -281,8 +282,8 @@ class ShowDeliveryNote extends OrgAction
                     [
                         'type'    => 'button',
                         'style'   => '',
-                        'tooltip' => __('Generate Invoice'),
-                        'label'   => __('Generate Invoice'),
+                        'tooltip' => $generateInvoiceLabel,
+                        'label'   => $generateInvoiceLabel,
                         'key'     => 'action',
                         'route'   => [
                             'method'     => 'patch',
@@ -299,15 +300,16 @@ class ShowDeliveryNote extends OrgAction
 
     public function getInvoiceButton(DeliveryNote $deliveryNote): array
     {
-        $invoiceButton = [];
+        $invoiceButton        = [];
+        $generateInvoiceLabel = __('Generate Invoice');
 
         if (($deliveryNote->state == DeliveryNoteStateEnum::FINALISED || $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) && $deliveryNote->orders->first()->invoices->count() == 0) {
             $invoiceButton = [
                 [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('Generate Invoice'),
-                    'label'   => __('Generate Invoice'),
+                    'tooltip' => $generateInvoiceLabel,
+                    'label'   => $generateInvoiceLabel,
                     'key'     => 'action',
                     'route'   => [
                         'method'     => 'patch',
