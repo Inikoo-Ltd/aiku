@@ -85,9 +85,12 @@ class StoreOrder extends OrgAction
         if ($this->strict) {
             $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
+                data_forget($modelData, 'billing_address'); // Just in case is added by mistake
+                data_forget($modelData, 'delivery_address'); // Just in case is added by mistake
                 $billingAddress  = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
             } elseif ($parent instanceof CustomerClient) {
+                data_forget($modelData, 'billing_address'); // Just in case is added by mistake
                 $billingAddress  = $parent->customer->address;
                 $deliveryAddress = Arr::pull($modelData, 'delivery_address');
             } else {
@@ -283,7 +286,7 @@ class StoreOrder extends OrgAction
                 })
             ],
             'billing_address' => ['sometimes', 'required',  new ValidAddress()], // only need when parent is Shop
-            'delivery_address' => ['sometimes', 'required',  new ValidAddress()],  // only need when parent is Shop|CustomerClient
+            'delivery_address' => ['sometimes', 'required',  new ValidAddress()],  // only need when the parent is Shop|CustomerClient
 
 
         ];
