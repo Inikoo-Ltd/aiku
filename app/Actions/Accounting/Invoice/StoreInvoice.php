@@ -89,7 +89,6 @@ class StoreInvoice extends OrgAction
         }
 
 
-
         if (!Arr::exists($modelData, 'tax_category_id')) {
             $modelData = $this->processTaxCategory($modelData, $parent);
         }
@@ -122,7 +121,6 @@ class StoreInvoice extends OrgAction
                 'billing',
                 'address_id'
             );
-
 
 
             $invoice->updateQuietly(
@@ -203,7 +201,7 @@ class StoreInvoice extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference'                 => [
                 'sometimes',
                 'required',
                 'max:64',
@@ -215,29 +213,26 @@ class StoreInvoice extends OrgAction
                     ]
                 ),
             ],
-            'currency_id'     => ['required', 'exists:currencies,id'],
-            'type'            => ['required', Rule::enum(InvoiceTypeEnum::class)],
-            'net_amount'      => ['required', 'numeric'],
-            'total_amount'    => ['required', 'numeric'],
-            'gross_amount'    => ['required', 'numeric'],
-            'rental_amount'   => ['sometimes', 'required', 'numeric'],
-            'goods_amount'    => ['sometimes', 'required', 'numeric'],
-            'insurance_amount'    => ['sometimes', 'required', 'numeric'],
-            'shipping_amount'    => ['sometimes', 'required', 'numeric'],
-            'services_amount' => ['sometimes', 'required', 'numeric'],
-            'charges_amount' => ['sometimes', 'required', 'numeric'],
-            'tax_amount'      => ['required', 'numeric'],
-            'footer'          => ['sometimes', 'string'],
-            'in_process'      => ['sometimes', 'boolean'],
-
-            'date'             => ['sometimes', 'date'],
-            'tax_liability_at' => ['sometimes', 'date'],
-            'data'             => ['sometimes', 'array'],
-
-
+            'currency_id'               => ['required', 'exists:currencies,id'],
+            'type'                      => ['required', Rule::enum(InvoiceTypeEnum::class)],
+            'net_amount'                => ['required', 'numeric'],
+            'total_amount'              => ['required', 'numeric'],
+            'gross_amount'              => ['required', 'numeric'],
+            'rental_amount'             => ['sometimes', 'required', 'numeric'],
+            'goods_amount'              => ['sometimes', 'required', 'numeric'],
+            'insurance_amount'          => ['sometimes', 'required', 'numeric'],
+            'shipping_amount'           => ['sometimes', 'required', 'numeric'],
+            'services_amount'           => ['sometimes', 'required', 'numeric'],
+            'charges_amount'            => ['sometimes', 'required', 'numeric'],
+            'tax_amount'                => ['required', 'numeric'],
+            'footer'                    => ['sometimes', 'string'],
+            'in_process'                => ['sometimes', 'boolean'],
+            'date'                      => ['sometimes', 'date'],
+            'tax_liability_at'          => ['sometimes', 'date'],
+            'data'                      => ['sometimes', 'array'],
             'customer_sales_channel_id' => [
                 'sometimes',
-                'required',
+                'nullable',
                 'exists:customer_sales_channels,id',
             ],
 

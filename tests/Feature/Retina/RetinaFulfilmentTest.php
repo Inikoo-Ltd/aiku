@@ -51,6 +51,7 @@ use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
+use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Billables\Rental\RentalStateEnum;
@@ -91,6 +92,7 @@ beforeAll(function () {
     loadDB();
 });
 beforeEach(function () {
+    ReindexWebpageLuigiData::shouldRun();
     $this->organisation = createOrganisation();
     $this->warehouse    = createWarehouse();
     $this->fulfilment   = createFulfilment($this->organisation);

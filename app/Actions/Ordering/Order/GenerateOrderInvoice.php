@@ -58,7 +58,7 @@ class GenerateOrderInvoice extends OrgAction
                 'insurance_amount'          => $order->insurance_amount,
                 'tax_amount'                => $order->tax_amount,
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
-                'footer'                    => $order->shop->invoice_footer
+                'footer'                    => $order->shop->invoice_footer ?? ''
             ];
 
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
