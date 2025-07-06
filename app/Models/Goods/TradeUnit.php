@@ -8,6 +8,7 @@
 
 namespace App\Models\Goods;
 
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Brand;
@@ -61,7 +62,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
- * @property string $status
+ * @property TradeUnitStatusEnum $status
+ * @property string|null $anomality_status
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcodes
@@ -98,17 +100,18 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
 
     protected $casts = [
-        'data'                => 'array',
+        'status'               => TradeUnitStatusEnum::class,
+        'data'                 => 'array',
         'marketing_dimensions' => 'array',
-        'sources'             => 'array',
-        'fetched_at'          => 'datetime',
-        'last_fetched_at'     => 'datetime',
+        'sources'              => 'array',
+        'fetched_at'           => 'datetime',
+        'last_fetched_at'      => 'datetime',
     ];
 
     protected $attributes = [
-        'data'                => '{}',
+        'data'                 => '{}',
         'marketing_dimensions' => '{}',
-        'sources'             => '{}',
+        'sources'              => '{}',
     ];
 
     protected $guarded = [];
@@ -214,7 +217,6 @@ class TradeUnit extends Model implements HasMedia, Auditable
     {
         return $this->hasOne(TradeUnitStats::class);
     }
-
 
 
 }

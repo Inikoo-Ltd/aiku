@@ -2,8 +2,8 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 26 Dec 2024 12:07:39 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sun, 06 Jul 2025 10:54:51 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Enums\Goods\TradeUnit;
@@ -11,14 +11,13 @@ namespace App\Enums\Goods\TradeUnit;
 use App\Enums\EnumHelperTrait;
 use App\Models\SysAdmin\Group;
 
-enum TradeUnitStatusEnum: string
+enum TradeUnitAnomalityStatusEnum: string
 {
     use EnumHelperTrait;
 
     case IN_PROCESS = 'in_process';
     case ACTIVE = 'active';
     case DISCONTINUED = 'discontinued';
-    case ANOMALITY = 'anomality';
 
     public static function labels(): array
     {
@@ -26,7 +25,6 @@ enum TradeUnitStatusEnum: string
             'in_process'   => __('In process'),
             'active'       => __('Active'),
             'discontinued' => __('Discontinued'),
-            'anomality'    => __('Anomality'),
         ];
     }
 
@@ -48,11 +46,6 @@ enum TradeUnitStatusEnum: string
                 'icon'    => 'fal fa-laugh',
                 'class'   => 'text-red-500'
             ],
-            'anomality'    => [
-                'tooltip' => __('anomaly'),
-                'icon'    => 'fal fa-scarecrow',
-                'class'   => 'text-slate-300'
-            ],
         ];
     }
 
@@ -61,11 +54,9 @@ enum TradeUnitStatusEnum: string
         $stats = $group->goodsStats;
 
         return [
-            'in_process'   => $stats->number_trade_units_status_in_process,
-            'active'       => $stats->number_trade_units_status_active,
-            'discontinued' => $stats->number_trade_units_status_discontinued,
-            'anomality'    => $stats->number_trade_units_status_anomality
+            'in_process'   => $stats->number_trade_units_anomality_status_in_process,
+            'active'       => $stats->number_trade_units_anomality_status_active,
+            'discontinued' => $stats->number_trade_units_anomality_status_discontinued,
         ];
     }
-
 }

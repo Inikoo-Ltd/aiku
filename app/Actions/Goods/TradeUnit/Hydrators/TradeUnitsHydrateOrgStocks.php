@@ -28,7 +28,6 @@ class TradeUnitsHydrateOrgStocks implements ShouldBeUnique
 
     public function handle(TradeUnit $tradeUnit): void
     {
-
         $stats = [
             'number_org_stocks' => $tradeUnit->orgStocks()->count()
         ];
@@ -52,11 +51,7 @@ class TradeUnitsHydrateOrgStocks implements ShouldBeUnique
         $tradeUnitStats = $tradeUnit->stats;
 
         $tradeUnitStats->update($stats);
-        $changed = Arr::except($tradeUnitStats->getChanges(), ['updated_at', 'last_fetched_at']);
-        if (count($changed) > 0) {
-            TradeUnitHydrateStatus::run($tradeUnit);
-        }
-
     }
+
 
 }

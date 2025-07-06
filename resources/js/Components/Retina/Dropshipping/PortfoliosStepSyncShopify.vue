@@ -92,7 +92,6 @@ onMounted(() => {
             }
         );
 
-        console.log('xxx', xxx)
     });
 
 })

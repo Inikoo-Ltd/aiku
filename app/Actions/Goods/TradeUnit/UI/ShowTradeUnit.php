@@ -97,20 +97,20 @@ class ShowTradeUnit extends GrpAction
                 ],
 
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
-                    fn() => GetTradeUnitShowcase::run($tradeUnit)
-                    : Inertia::lazy(fn() => GetTradeUnitShowcase::run($tradeUnit)),
+                    fn () => GetTradeUnitShowcase::run($tradeUnit)
+                    : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
-                    fn() => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))
-                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
-                    fn() => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn() => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))),
+                    fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::STOCKS->value => $this->tab == TradeUnitTabsEnum::STOCKS->value ?
-                    fn() => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn() => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
+                    fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))
+                    : Inertia::lazy(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
 
             ]
         )

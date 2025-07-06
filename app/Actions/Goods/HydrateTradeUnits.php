@@ -13,6 +13,7 @@ use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatus;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateStocks;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Goods\TradeUnit;
 
@@ -32,6 +33,7 @@ class HydrateTradeUnits
         TradeUnitsHydrateCustomerExclusiveProducts::run($tradeUnit);
         TradeUnitsHydrateProducts::run($tradeUnit);
         TradeUnitsHydrateOrgStocks::run($tradeUnit);
+        TradeUnitsHydrateStocks::run($tradeUnit);
         TradeUnitHydrateStatus::run($tradeUnit);
     }
 
