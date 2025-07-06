@@ -9,15 +9,16 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Actions\Traits\WithImageStats;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProductHydrateImages implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+    use WithImageStats;
 
     public function getJobUniqueId(Product $product): string
     {
@@ -26,27 +27,15 @@ class ProductHydrateImages implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
-        // Use DB statements to efficiently calculate image statistics
-        $imageStats = DB::table('model_has_media')
-            ->join('media', 'model_has_media.media_id', '=', 'media.id')
-            ->where('model_has_media.model_id', $product->id)
-            ->where('model_has_media.model_type', 'Product')
-            ->select([
-                DB::raw('COUNT(*) as number_images'),
-                DB::raw('SUM(media.size) as images_size'),
-                DB::raw('SUM(CASE WHEN model_has_media.is_public = true THEN 1 ELSE 0 END) as number_public_images'),
-                DB::raw('SUM(CASE WHEN model_has_media.is_public = true THEN media.size ELSE 0 END) as public_images_size')
-            ])
-            ->first();
+        // Calculate image statistics using the trait method
+        $stats = $this->calculateImageStatsUsingDB(
+            model: $product,
+            modelType: 'Product',
+            hasPublicImages: true,
+            useTotalImageSize: false
+        );
 
         // Update product stats
-        $stats = [
-            'number_images' => $imageStats->number_images ?? 0,
-            'number_public_images' => $imageStats->number_public_images ?? 0,
-            'images_size' => $imageStats->images_size ?? 0,
-            'public_images_size' => $imageStats->public_images_size ?? 0,
-        ];
-
         $product->stats->update($stats);
     }
 }
