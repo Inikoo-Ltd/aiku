@@ -102,7 +102,7 @@ class ShowDeliveryNote extends OrgAction
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
         $isSomeNotPicked = !$deliveryNote->deliveryNoteItems->every(
-            fn ($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
+            fn($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
         );
 
 
@@ -261,37 +261,37 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
                 $deliveryNote->orders->first()->invoices->count() == 0 ?
-                [
-                                        'type'    => 'button',
-                                        'style'   => '',
-                                        'tooltip' => __('Generate Invoice'),
-                                        'label'   => __('Generate Invoice'),
-                                        'key'     => 'action',
-                                        'route'   => [
-                                            'method'     => 'patch',
-                                            'name'       => 'grp.models.order.generate_invoice',
-                                            'parameters' => [
-                                                'order' => $deliveryNote->orders->first()->id
-                                            ]
-                                        ]
-                ] : []
+                    [
+                        'type'    => 'button',
+                        'style'   => '',
+                        'tooltip' => __('Generate Invoice'),
+                        'label'   => __('Generate Invoice'),
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.generate_invoice',
+                            'parameters' => [
+                                'order' => $deliveryNote->orders->first()->id
+                            ]
+                        ]
+                    ] : []
             ],
             DeliveryNoteStateEnum::DISPATCHED => [
                 $deliveryNote->orders->first()->invoices->count() == 0 ?
-                [
-                    'type'    => 'button',
-                    'style'   => '',
-                    'tooltip' => __('Generate Invoice'),
-                    'label'   => __('Generate Invoice'),
-                    'key'     => 'action',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.dispatched',
-                        'parameters' => [
-                            'order' => $deliveryNote->orders->first()->id
+                    [
+                        'type'    => 'button',
+                        'style'   => '',
+                        'tooltip' => __('Generate Invoice'),
+                        'label'   => __('Generate Invoice'),
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.delivery_note.state.dispatched',
+                            'parameters' => [
+                                'order' => $deliveryNote->orders->first()->id
+                            ]
                         ]
-                    ]
-                ] : []
+                    ] : []
             ],
             default => []
         };
@@ -301,27 +301,25 @@ class ShowDeliveryNote extends OrgAction
     {
         $invoiceButton = [];
 
-        if($deliveryNote->state == DeliveryNoteStateEnum::FINALISED || $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
-            if ($deliveryNote->orders->first()->invoices->count() == 0) {
-                $invoiceButton = [
-                                    [
-                                        'type'    => 'button',
-                                        'style'   => 'save',
-                                        'tooltip' => __('Generate Invoice'),
-                                        'label'   => __('Generate Invoice'),
-                                        'key'     => 'action',
-                                        'route'   => [
-                                            'method'     => 'patch',
-                                            'name'       => 'grp.models.delivery_note.state.dispatched',
-                                            'parameters' => [
-                                                'deliveryNote' => $deliveryNote->id
-                                            ]
-                                        ]
-                                    ]
-                                ];
-            }
+        if (($deliveryNote->state == DeliveryNoteStateEnum::FINALISED || $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) && $deliveryNote->orders->first()->invoices->count() == 0) {
+            $invoiceButton = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Generate Invoice'),
+                    'label'   => __('Generate Invoice'),
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.dispatched',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ]
+            ];
         }
-        
+
         return $invoiceButton;
     }
 
@@ -421,7 +419,8 @@ class ShowDeliveryNote extends OrgAction
                 'afterTitle' => [
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
-                'actions'    => $this->getActions($deliveryNote, $request), $this->getInvoiceButton($deliveryNote)
+                'actions'    => $this->getActions($deliveryNote, $request),
+                $this->getInvoiceButton($deliveryNote)
             ],
             'tabs'          => [
                 'current'    => $this->tab,
@@ -521,23 +520,23 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
 
             ];
         }
 
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+                fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
+                : Inertia::lazy(fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
         ];
     }

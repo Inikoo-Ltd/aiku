@@ -49,7 +49,7 @@ class UpdateStateToDispatchedOrder extends OrgAction
             $this->orderHydrators($order);
             $order->refresh();
 
-            if($order->customerSalesChannel){
+            if ($order->customerSalesChannel) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                     PlatformTypeEnum::EBAY        => FulfillOrderToEbay::run($order),

@@ -17,14 +17,12 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,18 +37,13 @@ class GenerateOrderInvoice extends OrgAction
      */
     public function handle(Order $order): Invoice
     {
-        $invoice = DB::transaction(function () use ($order) {
+        return DB::transaction(function () use ($order) {
             $billingAddress = $order->billingAddress;
 
-            $payStatus = InvoicePayStatusEnum::PAID;
-
-            if ($order->payment_amount < $order->total_amount) {
-                $payStatus = InvoicePayStatusEnum::UNPAID;
-            }
 
             $invoiceData = [
                 'in_process'                => false,
-                'reference'                 => $order->reference,// Todo in SK,ES generate reference with SK rules
+                'reference'                 => $order->reference,
                 'currency_id'               => $order->currency_id,
                 'billing_address'           => new Address($billingAddress->getFields()),
                 'type'                      => InvoiceTypeEnum::INVOICE,
@@ -97,7 +90,7 @@ class GenerateOrderInvoice extends OrgAction
                 }
             }
 
-            foreach($order->payments as $payment){
+            foreach ($order->payments as $payment) {
                 AttachPaymentToInvoice::make()->action($invoice, $payment, []);
             }
 
@@ -105,8 +98,6 @@ class GenerateOrderInvoice extends OrgAction
 
             return $invoice;
         });
-
-        return $invoice;
     }
 
     public function htmlResponse(Invoice $invoice): RedirectResponse
