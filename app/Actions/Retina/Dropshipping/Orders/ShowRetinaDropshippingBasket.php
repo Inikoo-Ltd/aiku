@@ -168,9 +168,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                                 ]
                             ],
                             'download' => [
-                                'name'       => 'retina.dropshipping.orders.upload_templates',
+                                'name'       => 'retina.dropshipping.order_upload_templates',
                                 'parameters' => [
-                                    'order' => $order->slug
                                 ]
                             ],
                         ],

@@ -34,7 +34,8 @@ class StoreRetinaOrder extends RetinaAction
     {
         $order = StoreOrder::make()->action($customerClient, [
             'platform_id' => $customerClient->platform_id,
-            'customer_sales_channel_id' => $customerClient->customer_sales_channel_id
+            'customer_sales_channel_id' => $customerClient->customer_sales_channel_id,
+            'delivery_address' => $customerClient->address,
         ]);
 
         CustomerSalesChannelsHydrateOrders::dispatch($customerClient->salesChannel);
