@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 
@@ -16,7 +16,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import { get, set } from "lodash-es"
+import { debounce, get, set } from "lodash-es"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
@@ -47,6 +47,7 @@ const props = defineProps<{
 		slug: string
 		name: string
 	}
+	progressToUploadToShopify: {}
 }>()
 
 function portfolioRoute(product: Product) {
@@ -67,7 +68,6 @@ const onUnchecked = (itemId: number) => {
 	props.selectedData.products = props.selectedData.products.filter(product => product !== itemId)
 }
 
-const progressToUploadToShopify = ref({})
 const selectSocketiBasedPlatform = (porto: { id: number }) => {
     if (props.platform_data.type === 'shopify') {
         return {
@@ -97,6 +97,12 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
     }
 }
 
+const debReloadPage = debounce(() => {
+	router.reload({
+		except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+	})
+}, 1200)
+
 onMounted(() => {
     props.data?.data?.forEach(porto => {
 		if (selectSocketiBasedPlatform(porto)) {
@@ -105,13 +111,14 @@ onMounted(() => {
 				(eventData) => {
 					console.log('socket in: ', porto.id, eventData)
 					if(eventData.errors_response) {
-						set(progressToUploadToShopify.value, [porto.id], 'error')
+						set(props.progressToUploadToShopify, [porto.id], 'error')
 						setTimeout(() => {
-							set(progressToUploadToShopify.value, [porto.id], null)
+							set(props.progressToUploadToShopify, [porto.id], null)
 						}, 3000);
 	
 					} else {
-						set(progressToUploadToShopify.value, [porto.id], 'success')
+						set(props.progressToUploadToShopify, [porto.id], 'success')
+						debReloadPage()
 					}
 				}
 			);
@@ -142,7 +149,7 @@ onMounted(() => {
 		:isChecked="(item) => props.selectedData.products.includes(item.id)"
 		:rowColorFunction="(item) => {
 			if (is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
-				return 'bg-orange-100/75'
+				return 'bg-yellow-50'
 			} else {
 				return ''
 			}
