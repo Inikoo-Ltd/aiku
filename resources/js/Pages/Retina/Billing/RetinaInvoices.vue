@@ -30,6 +30,12 @@ const locale = useLocaleStore();
 
 function invoiceRoute(invoice: RecurringBill) {
     switch (route().current()) {
+        case 'retina.dropshipping.invoices.index':
+            return route(
+                'retina.dropshipping.invoices.show',
+                [
+                    invoice.slug
+                ])
         default:
             return route(
                 'retina.fulfilment.billing.invoices.show',
