@@ -235,6 +235,11 @@ class StoreInvoice extends OrgAction
                 'nullable',
                 'exists:customer_sales_channels,id',
             ],
+            'platform_id' => [
+                'sometimes',
+                'nullable',
+                'exists:platforms,id',
+            ],
 
             'sales_channel_id' => [
                 'sometimes',

@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Billing\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Http\Resources\Accounting\DropshippingInvoicesResource;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
@@ -58,9 +59,17 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                 'invoices.pay_status',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
+                'customer_sales_channels.id as customer_sales_channel_id',
+                'customer_sales_channels.reference as customer_sales_channel_reference',
+                'customer_sales_channels.slug as customer_sales_channel_slug',
+                'customer_sales_channels.name as customer_sales_channel_name',
+                'platforms.id as platform_id',
+                'platforms.name as platform_name',
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
-            ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
+            ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id')
+            ->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'invoices.customer_sales_channel_id')
+            ->leftJoin('platforms', 'platforms.id', 'invoices.platform_id');
 
 
 
@@ -111,7 +120,7 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
-        return InvoicesResource::collection($invoices);
+        return DropshippingInvoicesResource::collection($invoices);
     }
 
 
@@ -148,7 +157,7 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                     'icon'          => $icon,
                     'actions'       => $actions
                 ],
-                'data'        => InvoicesResource::collection($invoices),
+                'data'        => DropshippingInvoicesResource::collection($invoices),
 
 
             ]
