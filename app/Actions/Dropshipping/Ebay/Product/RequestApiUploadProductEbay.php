@@ -9,9 +9,11 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
@@ -92,6 +94,13 @@ class RequestApiUploadProductEbay extends RetinaAction
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($publishedOffer, 'listingId'),
             ]);
+
+
+            if (! in_array($ebayUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+                UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
+                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                ]);
+            }
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {

@@ -8,9 +8,11 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -114,6 +116,13 @@ class RequestApiUploadProductToShopify extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'platform_product_id' => Arr::get($productShopify, 'id')
                 ]);
+
+
+                if (! in_array($shopifyUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+                    UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
+                        'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                    ]);
+                }
 
                 UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $portfolio);
             } catch (\Exception $e) {

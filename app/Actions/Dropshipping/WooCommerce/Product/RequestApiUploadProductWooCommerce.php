@@ -8,10 +8,12 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Events\UploadProductToWooCommerceProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
@@ -65,6 +67,12 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
             ]);
+
+            if (! in_array($wooCommerceUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+                UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
+                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                ]);
+            }
 
             UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
         } catch (\Exception $e) {

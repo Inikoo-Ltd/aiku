@@ -10,9 +10,11 @@
 
 namespace App\Actions\Dropshipping\Amazon\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Events\UploadProductToAmazonProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AmazonUser;
@@ -65,6 +67,13 @@ class RequestApiUploadProductAmazon extends RetinaAction
                 $portfolio = UpdatePortfolio::run($portfolio, [
                     'platform_product_id' => Arr::get($product, 'sku'),
                 ]);
+
+
+                if (! in_array($amazonUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+                    UpdateCustomerSalesChannel::run($amazonUser->customerSalesChannel, [
+                        'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                    ]);
+                }
             } elseif (Arr::get($product, 'status') === "INVALID") {
                 $portfolio = UpdatePortfolio::run($portfolio, [
                     'errors_response' => Arr::get($product, 'issues', []),

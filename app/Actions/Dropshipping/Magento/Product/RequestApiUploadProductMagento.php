@@ -8,9 +8,11 @@
 
 namespace App\Actions\Dropshipping\Magento\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Events\UploadProductToMagentoProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\MagentoUser;
@@ -89,6 +91,13 @@ class RequestApiUploadProductMagento extends RetinaAction
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
             ]);
+
+
+            if (! in_array($magentoUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+                UpdateCustomerSalesChannel::run($magentoUser->customerSalesChannel, [
+                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                ]);
+            }
 
             UploadProductToMagentoProgressEvent::dispatch($magentoUser, $portfolio);
         } catch (\Exception $e) {
