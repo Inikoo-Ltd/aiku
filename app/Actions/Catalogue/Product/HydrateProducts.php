@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateDangerousGoods;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
@@ -45,6 +46,7 @@ class HydrateProducts
         ProductHydrateCustomersWhoRemindedInCategories::run($product);
         ProductHydrateGrossWeightFromTradeUnits::run($product);
         ProductHydrateMarketingWeightFromTradeUnits::run($product);
+        ProductHydrateMarketingDimensionFromTradeUnits::run($product);
         ProductHydrateBarcodeFromTradeUnit::run($product);
         ProductHydrateImages::run($product);
         ProductHydrateDangerousGoods::run($product);

@@ -11,6 +11,7 @@ namespace App\Actions\Goods\TradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateDangerousGoods;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -51,6 +52,12 @@ class UpdateTradeUnit extends GrpAction
 
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
+            }
+        }
+
+        if ($tradeUnit->wasChanged('marketing_dimensions')) {
+            foreach ($tradeUnit->products as $product) {
+                ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
             }
         }
 

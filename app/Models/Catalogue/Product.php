@@ -115,6 +115,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $pictogram_health
  * @property bool $pictogram_oxidising
  * @property bool $pictogram_danger
+ * @property array<array-key, mixed>|null $marketing_dimensions
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
@@ -174,6 +175,7 @@ class Product extends Model implements Auditable, HasMedia
         'data'                   => 'array',
         'settings'               => 'array',
         'web_images'             => 'array',
+        'marketing_dimensions'   => 'array',
         'variant_is_visible'     => 'boolean',
         'state'                  => ProductStateEnum::class,
         'status'                 => ProductStatusEnum::class,
@@ -184,9 +186,10 @@ class Product extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'       => '{}',
-        'settings'   => '{}',
-        'web_images' => '{}',
+        'data'                 => '{}',
+        'settings'             => '{}',
+        'web_images'           => '{}',
+        'marketing_dimensions' => '{}',
     ];
 
     public function generateTags(): array
