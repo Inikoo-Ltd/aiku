@@ -260,6 +260,7 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -526,6 +527,9 @@ Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');
 Route::delete('{storedItem:id}/stored-items', DeleteStoredItem::class)->name('stored-items.delete');
 
+Route::name('printing.')->prefix('printing/{shipment:id}')->group(function () {
+    Route::post('', PrintShipmentLabel::class)->name('shipment.label.print');
+});
 
 Route::prefix('rental-agreement/{rentalAgreement:id}')->group(function () {
     Route::patch('', UpdateRentalAgreement::class)->name('rental-agreement.update');
