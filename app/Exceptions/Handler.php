@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Throwable;
-use Tightenco\Ziggy\Ziggy;
+use Tighten\Ziggy\Ziggy;
 
 class Handler extends ExceptionHandler
 {

@@ -8,6 +8,9 @@
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
+use App\Actions\Traits\WithEnumStats;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -15,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GroupHydrateTradeUnits implements ShouldBeUnique
 {
     use AsAction;
+    use WithEnumStats;
 
     public function getJobUniqueId(Group $group): string
     {
@@ -23,11 +27,26 @@ class GroupHydrateTradeUnits implements ShouldBeUnique
 
     public function handle(Group $group): void
     {
+        $stats = [
+            'number_trade_units' => $group->tradeUnits()->count()
+        ];
+
+
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'trade_units',
+                field: 'status',
+                enum: TradeUnitStatusEnum::class,
+                models: TradeUnit::class,
+                where: function ($q) use ($group) {
+                    $q->where('group_id', $group->id);
+                }
+            )
+        );
 
         $group->goodsStats()->update(
-            [
-                'number_trade_units' => $group->tradeUnits()->count()
-            ]
+            $stats
         );
     }
 }

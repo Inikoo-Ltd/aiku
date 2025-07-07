@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
@@ -36,7 +37,14 @@ class UpdateTradeUnit extends GrpAction
                 StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
             }
             foreach ($tradeUnit->products as $product) {
-                ProductHydrateGrossWeightFromTradeUnits::run($product);
+                ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
+            }
+        }
+
+        if ($tradeUnit->wasChanged('marketing_weight')) {
+
+            foreach ($tradeUnit->products as $product) {
+                ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
             }
         }
 

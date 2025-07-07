@@ -15,7 +15,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SyncronisePortfolioToWooCommerce extends RetinaAction
+class SynchronisePortfolioToWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -23,12 +23,12 @@ class SyncronisePortfolioToWooCommerce extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
+    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): void
     {
         RequestApiUploadProductWooCommerce::dispatch($wooCommerceUser, $portfolio);
     }
 
-    public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request)
+    public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisation($request);
 

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
@@ -16,7 +16,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateStateToPackedOrder extends OrgAction
+class UpdateOrderStateToPacked extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -35,7 +35,6 @@ class UpdateStateToPackedOrder extends OrgAction
                 'state' => TransactionStateEnum::PACKED,
             ]);
 
-            // $data[$order->state->value . '_at'] = null;
             $data['packed_at']                  = now();
 
             $this->update($order, $data);
@@ -53,12 +52,16 @@ class UpdateStateToPackedOrder extends OrgAction
      */
     public function action(Order $order): Order
     {
+        $this->asAction=true;
+        $this->initialisationFromShop($order->shop, []);
         return $this->handle($order);
     }
 
-    public function asController(Order $order, ActionRequest $request)
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function asController(Order $order, ActionRequest $request): Order
     {
-        $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
         return $this->handle($order);
     }

@@ -37,7 +37,7 @@ class StoreFulfilmentFromEbay extends OrgAction
      */
     public function handle(EbayUser $ebayUser, array $modelData): void
     {
-        $deliveryAttributes = $this->getAttributes(Arr::get($modelData, 'fulfillmentStartInstructions.0.shippingStep.shipTo'));
+        $deliveryAttributes = $this->getContactAttributes(Arr::get($modelData, 'fulfillmentStartInstructions.0.shippingStep.shipTo'));
         $deliveryAddress = Arr::get($deliveryAttributes, 'address');
 
         $billingAddress = $ebayUser->customer->address->getFields();

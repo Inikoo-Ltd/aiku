@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
@@ -33,6 +34,10 @@ class UpdateOrgStock extends OrgAction
 
         if (Arr::has($changes, 'state')) {
             OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
+
+            foreach ($orgStock->tradeUnits as $tradeUnit) {
+                TradeUnitsHydrateOrgStocks::dispatch($tradeUnit);
+            }
 
 
             if ($orgStock->orgStockFamily) {

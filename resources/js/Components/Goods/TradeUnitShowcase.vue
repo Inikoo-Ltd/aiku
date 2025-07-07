@@ -2,9 +2,11 @@
 import { routeType } from '@/types/route'
 
 import EditTradeUnit from './EditTradeUnit.vue'
+import { TradeUnit } from "@/types/trade-unit"
 
 const props = defineProps<{
     data: {
+        tradeUnit: TradeUnit
         brand: {}
         brand_routes: {
             index_brand: routeType
@@ -31,6 +33,9 @@ const props = defineProps<{
 
 <template>
     <div class="px-8 grid grid-cols-2">
+
+        <pre>{{data.tradeUnit}}</pre>
+
         <EditTradeUnit
             :tags_selected_id="props.data.tags_selected_id"
             :brand="props.data.brand"

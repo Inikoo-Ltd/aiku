@@ -102,6 +102,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read \App\Models\Helpers\Currency $currency
+ * @property-read \App\Models\Catalogue\HistoricAsset|null $currentHistoricProduct
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
@@ -312,6 +313,11 @@ class Product extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(Collection::class, 'model', 'collection_has_models')
             ->withTimestamps();
+    }
+
+    public function currentHistoricProduct(): HasOne
+    {
+        return $this->hasOne(HistoricAsset::class, 'id', 'current_historic_asset_id');
     }
 
 }

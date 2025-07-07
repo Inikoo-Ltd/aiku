@@ -7,7 +7,7 @@ import {
     faStream, faUsers, faHeart, faMinus,
     faFolderTree
 } from '@fal'
-import { ref, computed, defineAsyncComponent } from 'vue'
+import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -16,8 +16,6 @@ import Breadcrumb from 'primevue/breadcrumb'
 import Message from 'primevue/message'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import type { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-
-// Components
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
@@ -30,8 +28,8 @@ import TableProductBackInStockReminders from "@/Components/Tables/Grp/Org/Catalo
 import TableTradeUnits from '@/Components/Tables/Grp/Goods/TableTradeUnits.vue'
 import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 library.add(
     faFolder,
@@ -65,6 +63,7 @@ const props = defineProps<{
     trade_units?: {}
     history?: {}
     stocks?: {}
+    images?: {}
     taxonomy: {
         department?: {
             name: string
@@ -102,6 +101,7 @@ const component = computed(() => {
         reminders: TableProductBackInStockReminders,
         trade_units: TableTradeUnits,
         stocks: TableOrgStocks,
+        images: TableImages
     }
     return components[currentTab.value]
 })
@@ -128,7 +128,7 @@ const breadcrumbItems = computed(() => {
                 props.taxonomy.department.route.parameters,
             )
             : null,
-        tooltip: hasDepartment ? 'Departement ' + props.taxonomy.department.tooltip : 'no department',
+        tooltip: hasDepartment ? 'Department ' + props.taxonomy.department.tooltip : 'no department',
         title: hasDepartment ? props.taxonomy.department.name : 'No department',
         icon: faFolderTree,
     })

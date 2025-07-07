@@ -48,7 +48,7 @@ enum TradeUnitStatusEnum: string
                 'icon'    => 'fal fa-laugh',
                 'class'   => 'text-red-500'
             ],
-            'anomality'      => [
+            'anomality'    => [
                 'tooltip' => __('anomaly'),
                 'icon'    => 'fal fa-scarecrow',
                 'class'   => 'text-slate-300'
@@ -64,7 +64,7 @@ enum TradeUnitStatusEnum: string
             'in_process'   => $stats->number_trade_units_status_in_process,
             'active'       => $stats->number_trade_units_status_active,
             'discontinued' => $stats->number_trade_units_status_discontinued,
-            'anomality'      => $stats->number_trade_units_status_anomality
+            'anomality'    => $stats->number_trade_units_status_anomality
         ];
     }
 

@@ -53,14 +53,16 @@ class FetchAuroraFamilies extends FetchAuroraAction
 
                     if (isset($imageData['image_path']) and isset($imageData['filename'])) {
                         SaveModelImages::run(
-                            $family,
-                            [
+                            model: $family,
+                            mediaData: [
                                 'path'         => $imageData['image_path'],
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            'photo',
-                            'product_images'
+                            mediaScope:'product_images',
+                            modelHasMediaData: [
+                                'scope' => 'photo'
+                            ]
                         );
                     }
 
@@ -100,14 +102,16 @@ class FetchAuroraFamilies extends FetchAuroraAction
 
                     if (isset($imageData['image_path']) and isset($imageData['filename'])) {
                         SaveModelImages::run(
-                            $family,
-                            [
+                            model:$family,
+                            mediaData:[
                                 'path'         => $imageData['image_path'],
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            'photo',
-                            'product_images'
+                            mediaScope:'product_images',
+                            modelHasMediaData: [
+                                'scope' => 'photo'
+                            ]
                         );
                     }
 

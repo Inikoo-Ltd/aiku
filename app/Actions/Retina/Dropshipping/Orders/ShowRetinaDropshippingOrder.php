@@ -93,7 +93,15 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                             'order' => $order->id
                         ],
                         'method'     => 'patch'
-                    ]
+                    ],
+                    'route_to_pay_unpaid' => [
+                        'name'       => 'retina.json.get_checkout_com_token_to_pay_order',
+                        'parameters' => [
+                            'order' => $order->id,
+                        ],
+                    ],
+
+
                 ],
 
                 'timelines' => $finalTimeline,

@@ -36,7 +36,7 @@ class GetRetinaCustomerClientFromEbay extends RetinaAction
                 ->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
                 ->first();
 
-            $attributes = $this->getAttributes($address);
+            $attributes = $this->getContactAttributes($address);
 
             if (blank($address)) {
                 data_set($attributes, 'address', $ebayUser->customer?->deliveryAddress?->toArray());
