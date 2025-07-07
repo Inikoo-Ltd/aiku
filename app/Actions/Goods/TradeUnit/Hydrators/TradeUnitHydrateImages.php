@@ -34,6 +34,6 @@ class TradeUnitHydrateImages implements ShouldBeUnique
             useTotalImageSize: true
         );
 
-        $tradeUnit->stats->update($stats);
+        $tradeUnit->stats()->update($stats);
     }
 }
