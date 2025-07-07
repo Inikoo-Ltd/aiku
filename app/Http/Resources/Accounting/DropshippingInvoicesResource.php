@@ -77,7 +77,22 @@ class DropshippingInvoicesResource extends JsonResource
             'customer_sales_channel_slug' => $this->customer_sales_channel_slug,
             'platform_id'       => $this->platform_id,
             'platform_name'       => $this->platform_name,
-            'footer'            => $this->footer ?? '',
+            'platform_code'       => $this->platform_code,
+            'platform_image'    => $this->getPlatformLogo($this->platform_code),
         ];
+    }
+
+    public function getPlatformLogo(?string $code): ?string
+    {
+        return match ($code) {
+            'shopify' => 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png',
+            'tiktok' => 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png',
+            'woocommerce' => 'https://cdn-icons-png.flaticon.com/512/15466/15466279.png',
+            'manual' => 'https://aw.aurora.systems/art/aurora_log_v2_orange.png',
+            'ebay' => 'https://cdn-icons-png.flaticon.com/512/888/888848.png',
+            'amazon' => 'https://cdn-icons-png.flaticon.com/512/14079/14079391.png',
+            'magento' => 'https://cdn-icons-png.flaticon.com/512/825/825535.png',
+            default => null,
+        };
     }
 }

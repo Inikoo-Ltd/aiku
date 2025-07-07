@@ -65,11 +65,12 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                 'customer_sales_channels.name as customer_sales_channel_name',
                 'platforms.id as platform_id',
                 'platforms.name as platform_name',
+                'platforms.code as platform_code',
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id')
             ->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'invoices.customer_sales_channel_id')
-            ->leftJoin('platforms', 'platforms.id', 'invoices.platform_id');
+            ->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id');
 
 
 
@@ -104,6 +105,7 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
             $table->column(key: 'type', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->defaultSort('reference');
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'customer_sales_channel_name', label: __('channel'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 

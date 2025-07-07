@@ -45,6 +45,23 @@ function invoiceRoute(invoice: RecurringBill) {
     }
 }
 
+function channelRoute(invoice: {}) {
+    switch (route().current()) {
+        case 'retina.dropshipping.invoices.index':
+            return route(
+                'retina.dropshipping.customer_sales_channels.show',
+                [
+                    invoice.customer_sales_channel_slug
+                ])
+        default:
+            return route(
+                'retina.dropshipping.customer_sales_channels.show',
+                [
+                invoice.customer_sales_channel_slug
+                ])
+    }
+}
+
 </script>
 
 
@@ -56,6 +73,20 @@ function invoiceRoute(invoice: RecurringBill) {
             <Link :href="invoiceRoute(invoice)" class="primaryLink py-0.5">
             {{ invoice.reference }}
             </Link>
+        </template>
+
+        <template #cell(customer_sales_channel_name)="{ item: invoice }">
+            <div  v-if="invoice.customer_sales_channel_slug" class="flex items-center gap-2 w-7">
+                <img v-tooltip="invoice.platform_name" :src="invoice.platform_image" :alt="invoice.platform_name"
+                    class="w-6 h-6"/>
+
+                <Link :href="channelRoute(invoice)" class="primaryLink py-0.5">
+                    {{ invoice.customer_sales_channel_name }}
+                </Link>
+            </div>
+            <div v-else class="text-gray-500 text-sm">
+                N/A
+            </div>
         </template>
 
         <!-- Column: Date -->
