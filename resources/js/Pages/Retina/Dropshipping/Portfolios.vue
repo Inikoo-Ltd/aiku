@@ -22,6 +22,7 @@ import { faSyncAlt } from "@fas";
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faBracketsCurly, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
 import axios from "axios"
+import { set } from "lodash"
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
@@ -64,6 +65,7 @@ const props = defineProps<{
         slug: string
         name: string
     }
+    count_product_not_synced: number
 }>();
 
 
@@ -127,7 +129,7 @@ const downloadUrl = (type: string) => {
 const _popover = ref()
 
 
-
+// Method: Platform reconnect
 const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 	console.log('customerSalesChannel', customerSalesChannel)
     try {
@@ -151,6 +153,41 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
         })
     }
 }
+
+// Section: Bulk upload to Shopify/Ebay/etc
+const isLoadingBulkDeleteUpload = ref(false)
+// const selectedPortfoliosToSync = ref([])
+const bulkUpload = () => {
+	router[props.routes.bulk_upload.method || 'post'](
+		route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters),
+		{
+			portfolios: null,
+		},
+		{
+			preserveScroll: true,
+			// onBefore: () => isLoadingUpload.value = true,
+			onStart: () => {
+				isLoadingBulkDeleteUpload.value = true
+			},
+			onSuccess: () => {
+                // set(progressToUploadToShopify.value, [product.id], 'loading')
+			},
+			onFinish: () => {
+				isLoadingBulkDeleteUpload.value = false
+			},
+			onError: (error) => {
+                console.log('Error during bulk upload:', error)
+				notify({
+					title: trans("Something went wrong"),
+					text: error.message || trans("An error occurred while uploading portfolios"),
+					type: "error",
+				})
+			}
+		}
+	)
+}
+
+const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 </script>
 
 <template>
@@ -259,8 +296,34 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
             </div>
         </div>
     </Message>
+    
+    <!-- Section: Alert if there is product not synced -->
+    <Message v-if="count_product_not_synced > 0" severity="warn" class="m-4 ">
+        <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
+            <div>
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <div class="inline items-center gap-x-2">
+                    {{ trans("You have :products products not synced yet", { products: `${count_product_not_synced}`}) }}
+                </div>
+            </div>
 
+            <!-- <div class="w-full sm:w-fit h-fit">
+                <Button
+                    v-if="routes.bulk_upload"
+                    @click="() => bulkUpload()"
+                    icon="fas fa-upload"
+                    :label="trans('Upload all')"
+                    zsize="xxs"
+                    :routeTarget="routes.bulk_upload"
+                    type="green"
+                    full
+                    :disabled="isLoadingBulkDeleteUpload"
+                />
+            </div> -->
+        </div>
+    </Message>
 
+<!-- retina.models.dropshipping.ebay.batch_upload -->
     <div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
             {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
@@ -285,7 +348,6 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 
     <div v-else class="overflow-x-auto">
         <RetinaTablePortfolios
-            
             :data="props.products"
             :tab="'products'"
             :selectedData
@@ -293,6 +355,7 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
             :platform_user_id
             :is_platform_connected
             :customerSalesChannel="customer_sales_channel"
+            :progressToUploadToShopify
         />
     </div>
 

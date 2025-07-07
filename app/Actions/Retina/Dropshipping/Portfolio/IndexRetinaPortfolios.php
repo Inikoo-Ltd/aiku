@@ -221,6 +221,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         default => 0
                     }
                 ],
+                'count_product_not_synced' => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count(),
                 'platform_user_id'          => $this->customerSalesChannel->user?->id,
                 'platform_data'             => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                  => DropshippingPortfoliosResource::collection($portfolios),
