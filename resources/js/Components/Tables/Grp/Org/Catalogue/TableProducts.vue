@@ -43,7 +43,6 @@ function productRoute(product: Product) {
     if (!product.slug) {
         return ''
     }
-    
     switch (route().current()) {
         case "grp.org.shops.show.catalogue.products.current_products.index":
             return route(
@@ -157,6 +156,15 @@ function shopRoute(invoice: Invoice) {
     if (!invoice.organisation_slug || !invoice.shop_slug) {
         return ''
     }
+    if (route().current() == "grp.goods.trade-units.show") {
+        
+        return route(
+            "grp.org.shops.show.catalogue.products.all_products.index",
+            [
+                invoice.organisation_slug,
+                invoice.shop_slug,
+            ]);
+    }
 
     return route(
         "grp.org.shops.show.catalogue.products.current_products.index",
@@ -206,6 +214,10 @@ const locale = inject("locale", aikuLocaleStructure);
         
         <template #cell(price)="{ item: product }">
             {{ locale.currencyFormat(product.currency_code, product.price) }}
+        </template>
+
+        <template #cell(sales_all)="{ item: product }">
+            {{ locale.currencyFormat(product.currency_code, product.sales_all) }}
         </template>
 
         <template #cell(code)="{ item: product }">

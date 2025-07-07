@@ -38,12 +38,16 @@ class IndexProductsInTradeUnit extends OrgAction
             $join->on('products.id', '=', 'model_has_trade_units.model_id')
                 ->where('model_has_trade_units.model_type', class_basename(Product::class));
         });
+        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
+        $queryBuilder->leftJoin('shops', 'products.shop_id', '=', 'shops.id')
+            ->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
+                'sales_all',
                 'products.id',
                 'products.code',
                 'products.name',
@@ -52,6 +56,12 @@ class IndexProductsInTradeUnit extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
+                'shops.code as shop_code',
+                'shops.slug as shop_slug',
+                'shops.name as shop_name',
+                'organisations.name as organisation_name',
+                'organisations.code as organisation_code',
+                'organisations.slug as organisation_slug',
             ]);
 
         return $queryBuilder->allowedSorts(['code', 'name', 'price'])
@@ -79,9 +89,11 @@ class IndexProductsInTradeUnit extends OrgAction
 
 
             $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'organisation_code', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'sales_all', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
