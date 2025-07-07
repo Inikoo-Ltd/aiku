@@ -68,9 +68,9 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
                 'platform_product_id' => Arr::get($result, 'id')
             ]);
 
-            if (! in_array($wooCommerceUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+            if (! in_array($wooCommerceUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::WITH_PORTFOLIO])) {
                 UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
-                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                    'state' => CustomerSalesChannelStateEnum::WITH_PORTFOLIO
                 ]);
             }
 

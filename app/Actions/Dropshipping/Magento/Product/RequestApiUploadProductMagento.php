@@ -93,9 +93,9 @@ class RequestApiUploadProductMagento extends RetinaAction
             ]);
 
 
-            if (! in_array($magentoUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+            if (! in_array($magentoUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::WITH_PORTFOLIO])) {
                 UpdateCustomerSalesChannel::run($magentoUser->customerSalesChannel, [
-                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                    'state' => CustomerSalesChannelStateEnum::WITH_PORTFOLIO
                 ]);
             }
 

@@ -26,13 +26,10 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
-        $cardExist = $customerSalesChannel->customer->mitSavedCard()->exists();
         $portfolioExist = $customerSalesChannel->customer->portfolios()->exists();
 
-        if ($cardExist && $portfolioExist) {
-            data_set($modelData, 'state', CustomerSalesChannelStateEnum::READY);
-        } elseif (!$cardExist) {
-            data_set($modelData, 'state', CustomerSalesChannelStateEnum::CARD_SAVED);
+        if ($portfolioExist) {
+            data_set($modelData, 'state', CustomerSalesChannelStateEnum::WITH_PORTFOLIO);
         }
 
         return $this->update($customerSalesChannel, $modelData);

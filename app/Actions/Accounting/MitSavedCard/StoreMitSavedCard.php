@@ -8,10 +8,8 @@
 
 namespace App\Actions\Accounting\MitSavedCard;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Accounting\MitSavedCard;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Str;
@@ -35,14 +33,6 @@ class StoreMitSavedCard extends OrgAction
         $savedCard = $customer->mitSavedCard()->create($modelData);
 
         $customer->refresh();
-
-        foreach ($customer->customerSalesChannels as $channel) {
-            if ($channel->state !== CustomerSalesChannelStateEnum::READY) {
-                UpdateCustomerSalesChannel::run($channel, [
-                    'state' => CustomerSalesChannelStateEnum::CARD_SAVED
-                ]);
-            }
-        }
 
         return $savedCard;
     }

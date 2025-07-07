@@ -118,9 +118,9 @@ class RequestApiUploadProductToShopify extends RetinaAction
                 ]);
 
 
-                if (! in_array($shopifyUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+                if (! in_array($shopifyUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::WITH_PORTFOLIO])) {
                     UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
-                        'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                        'state' => CustomerSalesChannelStateEnum::WITH_PORTFOLIO
                     ]);
                 }
 

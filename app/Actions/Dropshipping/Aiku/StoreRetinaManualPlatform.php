@@ -42,7 +42,7 @@ class StoreRetinaManualPlatform extends RetinaAction
             [
                 'reference' => (string) $customer->id,
                 'name' => Arr::get($modelData, 'name'),
-                'state' => CustomerSalesChannelStateEnum::READY,
+                'state' => CustomerSalesChannelStateEnum::WITH_PORTFOLIO
             ]
         );
 

@@ -70,10 +70,10 @@ class StorePortfolio extends OrgAction
             return $portfolio;
         });
 
-        if (! in_array($customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+        if (! in_array($customerSalesChannel->state, [CustomerSalesChannelStateEnum::WITH_PORTFOLIO])) {
             if ($customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
                 UpdateCustomerSalesChannel::run($customerSalesChannel, [
-                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                    'state' => CustomerSalesChannelStateEnum::WITH_PORTFOLIO
                 ]);
             }
         }

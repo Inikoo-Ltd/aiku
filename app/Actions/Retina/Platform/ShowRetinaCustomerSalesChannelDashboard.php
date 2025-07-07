@@ -45,7 +45,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     {
         $title = __('Channel Dashboard');
         $step = match ($customerSalesChannel->state) {
-            CustomerSalesChannelStateEnum::CREATED => [
+            CustomerSalesChannelStateEnum::IN_PROCESS => [
                 'label' => __('Great! You just complete first step.'),
                 'title' => __('Connect your store'),
                 'description' => __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.'),
@@ -69,24 +69,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ],
                 'icon' => 'fal fa-credit-card',
             ],
-            CustomerSalesChannelStateEnum::CARD_SAVED => [
-                'label' => __('Very very last! Add products to your store.'),
-                'title' => __('Add products to your store'),
-                'description' => __('Add products to your store to start selling. Select items from our catalogue or upload your own products to showcase in your sales channel.'),
-                'button' => [
-                    'label' => __('Add Products'),
-                    'route_target' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.portfolios.index',
-                        'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->slug,
-                        ]
-                    ],
-                ],
-                'icon' => 'fal fa-cube',
-            ],
-            CustomerSalesChannelStateEnum::PORTFOLIO_ADDED,
-            CustomerSalesChannelStateEnum::READY,
-            CustomerSalesChannelStateEnum::NOT_READY => [
+            CustomerSalesChannelStateEnum::WITH_PORTFOLIO => [
                 // Handle these states as needed
             ],
         };
@@ -126,28 +109,23 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ]
 
             ],
-            'timeline' => $customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY ? [
+            'timeline' => $customerSalesChannel->state !== CustomerSalesChannelStateEnum::WITH_PORTFOLIO ? [
                 'current_state' => $customerSalesChannel->state->value,
                 'options'   => [
-                    CustomerSalesChannelStateEnum::CREATED->value => [
+                    CustomerSalesChannelStateEnum::IN_PROCESS->value => [
                         "label" => "Account Created",
                         "tooltip" => "Create account to connect",
-                        "key" => CustomerSalesChannelStateEnum::CREATED->value
+                        "key" => CustomerSalesChannelStateEnum::IN_PROCESS->value
                     ],
                     CustomerSalesChannelStateEnum::AUTHENTICATED->value => [
                         "label" => "Connected",
                         "tooltip" => "Connect to platform to able receive orders",
                         "key" => CustomerSalesChannelStateEnum::AUTHENTICATED->value
                     ],
-                    CustomerSalesChannelStateEnum::CARD_SAVED->value => [
-                        "label" => "Setup card",
-                        "tooltip" => "Setup cards to make a payment",
-                        "key" => CustomerSalesChannelStateEnum::CARD_SAVED->value
-                    ],
-                    CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value => [
+                    CustomerSalesChannelStateEnum::WITH_PORTFOLIO->value => [
                         "label" => "Add products",
                         "tooltip" => "Add products to your portfolio",
-                        "key" => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value
+                        "key" => CustomerSalesChannelStateEnum::WITH_PORTFOLIO->value
                     ]
                 ],
             ] : null,

@@ -96,9 +96,9 @@ class RequestApiUploadProductEbay extends RetinaAction
             ]);
 
 
-            if (! in_array($ebayUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::READY->value, CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value])) {
+            if (! in_array($ebayUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::WITH_PORTFOLIO])) {
                 UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
-                    'state' => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED
+                    'state' => CustomerSalesChannelStateEnum::WITH_PORTFOLIO
                 ]);
             }
 
