@@ -80,8 +80,9 @@ trait IsOrder
                     'total_amount' => (float)$order->total_amount,
                     'paid_amount'  => (float)$order->payment_amount,
                     'pay_amount'   => $roundedDiff,
+                    'pay_status' => $order->pay_status,
                 ],
-                'estimated_weight' => $estWeight
+                'estimated_weight' => $estWeight,
             ],
 
             'order_summary' => [
