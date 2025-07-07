@@ -14,7 +14,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Psr7\Request;
-use Illuminate\Support\Str;
 
 trait WithAmazonApiRequest
 {
@@ -633,191 +632,19 @@ trait WithAmazonApiRequest
             $marketplaceId = $config['marketplace_id'];
 
             $formattedData = [
-                "productType" => "ACCESSORY",
+                "productType" => "HEALTH_PERSONAL_CARE",
                 "requirements" => "LISTING",
                 "attributes" => [
-                    "condition_type" => [
+                    'external_product_id_type' => [
                         [
-                            "value" => "new_new",
-                            "marketplace_id" => $marketplaceId
+                            'value' => 'UPC'
                         ]
                     ],
-                    "item_name" => [
+                    'external_product_id' => [
                         [
-                            "value" => Arr::get($productData, 'title'),
-                            "marketplace_id" => $marketplaceId
+                            'value' => Arr::get($productData, 'barcode')  // Same number, different type
                         ]
-                    ],
-                    "brand" => [
-                        [
-                            "value" => 'Generic',
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-/*                    "recommended_browse_nodes" => [
-                        [
-                            "value" => "281407",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],*/
-                    "merchant_suggested_asin" => [
-                        [
-                            "value" => Str::substr('ASIN-'.Arr::get($productData, 'id'), 0, 10)
-                        ]
-                    ],
-                    "product_description" => [
-                        [
-                            "value" => Arr::get($productData, 'description'),
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "item_type_keyword" => [
-                        [
-                            "value" => "accessory",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "bullet_point" => [
-                        [
-                            "value" => "High quality material",
-                            "marketplace_id" => $marketplaceId
-                        ],
-                        [
-                            "value" => "Sleek and durable design",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "generic_keyword" => [
-                        [
-                            "value" => "accessory, durable, daily use",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "care_instructions" => [
-                        [
-                            "value" => "Machine wash cold, tumble dry low",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "item_package_weight" => [
-                        [
-                            "value" => 0.5,
-                            "unit" => "pounds",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "fabric_type" => [
-                        [
-                            "value" => "100% Original",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "target_gender" => [
-                        [
-                            "value" => "unisex",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "department" => [
-                        [
-                            "value" => "unisex-adult",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "size" => [
-                        [
-                            "value" => "Medium",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "import_designation" => [
-                        [
-                            "value" => "imported",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "age_range_description" => [
-                        [
-                            "value" => "Adult",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "batteries_required" => [
-                        [
-                            "value" => false,
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "model_name" => [
-                        [
-                            "value" => 'Accessory Original',
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "list_price" => [
-                        [
-                            "value" => Arr::get($productData, 'price'),
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    'purchasable_offer' => [
-                        [
-                            'marketplace_id' => $marketplaceId,
-                            'currency' => 'USD',
-                            'our_price' => [
-                                [
-                                    'schedule' => [
-                                        [
-                                            'value_with_tax' => Arr::get($productData, 'price')
-                                        ]
-                                    ]
-                                ]
-                            ],
-                            'quantity' => Arr::get($productData, 'quantity')
-                        ]
-                    ],
-
-                    "supplier_declared_dg_hz_regulation" => [
-                        [
-                            "value" => "not_applicable",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "item_package_dimensions" => [
-                        [
-                            "length" => [
-                                "value" => 10,
-                                "unit" => "inches"
-                            ],
-                            "width" => [
-                                "value" => 6,
-                                "unit" => "inches"
-                            ],
-                            "height" => [
-                                "value" => 2,
-                                "unit" => "inches"
-                            ]
-                        ]
-                    ],
-                    "color" => [
-                        [
-                            "value" => "Black",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "country_of_origin" => [
-                        [
-                            "value" => "US",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    'fulfillment_availability' => [
-                        [
-                            "quantity" => Arr::get($productData, 'quantity'),
-                            'fulfillment_channel_code' => 'DEFAULT', // or 'AMAZON' for FBA
-                            'marketplace_id' => $marketplaceId
-                        ]
-                    ],
+                    ]
                 ]
             ];
 

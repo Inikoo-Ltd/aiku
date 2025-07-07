@@ -41,6 +41,7 @@ class RequestApiUploadProductAmazon extends RetinaAction
 
             $productData = [
                 'id' => $portfolio->id,
+                'barcode' => $product->barcode,
                 'code' => $portfolio->code,
                 'sku' => 'SKU-'.$product->code,
                 'title' => $portfolio->customer_product_name,
