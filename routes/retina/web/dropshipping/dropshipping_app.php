@@ -21,6 +21,8 @@ use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooC
 use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
+use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
+use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
@@ -117,6 +119,11 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
+});
+
+Route::prefix('invoices')->name('invoices.')->group(function () {
+    Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
+    Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {

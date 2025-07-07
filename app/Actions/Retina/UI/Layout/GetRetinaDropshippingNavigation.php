@@ -86,6 +86,28 @@ class GetRetinaDropshippingNavigation
         ];
 
 
+        $groupNavigation['invoice'] = [
+            'label'   => __('Invoice'),
+            'icon'    => ['fal', 'fa-file-invoice-dollar'],
+            'root'    => 'retina.dropshipping.invoices.',
+            'route'   => [
+                'name' => 'retina.dropshipping.invoices.index'
+            ],
+            // 'topMenu' => [
+            //     'subSections' => [
+            //         [
+            //             'label' => __('View Top ups'),
+            //             'icon'  => ['far', 'fa-eye'],
+            //             'root'  => 'retina.top_up.',
+            //             'route' => [
+            //                 'name' => 'retina.top_up.index',
+
+            //             ]
+            //         ],
+            //     ]
+            // ]
+        ];
+
         $groupNavigation['top_up'] = [
             'label'   => __('Top Up'),
             'icon'    => ['fal', 'fa-money-bill-wave'],
