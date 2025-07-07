@@ -100,7 +100,7 @@ const onSubmitSubscribe = async () => {
 
             <div v-if="modelValue?.email"
                 class="relative group flex-1 flex justify-center md:justify-start items-center">
-                <div style="font-size: 17px">{{ modelValue?.email }}</div>
+                <a :href="`mailto:${modelValue.email}`" style="font-size: 17px">{{ modelValue?.email }}</a>
             </div>
 
             <div v-if="modelValue?.whatsapp?.number"
