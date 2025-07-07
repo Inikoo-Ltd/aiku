@@ -22,6 +22,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber } from "primevue"
 import Icon from "@/Components/Icon.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import axios from "axios"
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes)
 
 const props = defineProps<{
@@ -169,6 +171,27 @@ const base64ToPdf = (base: string) => {
 
 	// Clean up the object URL
 	URL.revokeObjectURL(blobUrl);
+}
+
+const visitxxxx = async (ship) => {
+	try {
+		const response = await axios.post(
+			route(
+				'grp.models.printing.shipment.label',
+				{
+					shipment: ship.id 
+				}
+			)
+		)
+
+		console.log('respopo', response.data)
+	} catch (error: any) {
+		notify({
+			title: 'Error',
+			text: error.response?.data?.message || 'Failed to fetch shipment label.',
+			type: 'error'
+		})
+	}
 }
 </script>
 
@@ -420,8 +443,16 @@ const base64ToPdf = (base: string) => {
 									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
 								</div>
 							</div>
+							
+							<Button
+								@click="() => visitxxxx(sments)"
+								size="s"
+								label="Print label"
+								type="tertiary"
+							/>
 						</li>
 					</ul>
+
 				</div>
 			</div>
 			
