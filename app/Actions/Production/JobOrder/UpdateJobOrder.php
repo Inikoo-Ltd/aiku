@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 07 Jul 2025 18:49:42 British Summer Time, Sheffield, UK
@@ -20,7 +21,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class UpdateJobOrder extends OrgAction
 {
-
     use WithActionUpdate;
 
 
