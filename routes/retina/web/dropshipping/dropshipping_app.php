@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
+use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
@@ -115,6 +116,8 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::get('reconnect', ReconnectRetinaCustomerSalesChannel::class)->name('reconnect');
 });
+
+Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order_upload_templates');
 
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
