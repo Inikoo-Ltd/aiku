@@ -60,21 +60,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
-        $invoiceData = [];
-        $invoice = $order->invoices->first();
-
-        if ($invoice) {
-            $invoiceData = [
-                'reference' => $invoice->reference,
-                'route'     => [
-                    'name'       => 'retina.dropshipping.invoices.show',
-                    'parameters' => [
-                        'invoice' => $invoice->slug,
-                    ]
-                ]
-            ];
-        }
-
         return Inertia::render(
             'Dropshipping/RetinaDropshippingOrder',
             [
@@ -124,7 +109,6 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
 
                 'box_stats' => ShowOrder::make()->getOrderBoxStats($order),
-                'invoice'  => $invoiceData,
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'      => OrderResource::make($order),
 

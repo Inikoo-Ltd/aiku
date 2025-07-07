@@ -20,6 +20,7 @@ enum CustomerSalesChannelStateEnum: string
     case PORTFOLIO_ADDED = 'portfolio_added';
     case READY = 'ready';
     case NOT_READY = 'not_ready';
+    case WITH_PORTFOLIO = 'with_portfolio';
 
     public static function labels(): array
     {
@@ -30,6 +31,7 @@ enum CustomerSalesChannelStateEnum: string
             self::PORTFOLIO_ADDED->value => __('Portfolio Added'),
             self::READY->value => __('Ready'),
             self::NOT_READY->value => __('Not Ready'),
+            self::WITH_PORTFOLIO->value => __('With Portfolio'),
         ];
     }
 }

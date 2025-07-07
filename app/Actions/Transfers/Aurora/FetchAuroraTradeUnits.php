@@ -12,6 +12,8 @@ use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateImages;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Helpers\Media\SaveModelImages;
+use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
@@ -209,15 +211,21 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
     public function fetchTradeUnitImages(TradeUnit $tradeUnit): void
     {
         $images = [];
-        //print "Fetching images for trade unit: {$tradeUnit->slug} {$tradeUnit->code}  {$tradeUnit->name} ({$tradeUnit->source_id})=================\n";
-        foreach ($tradeUnit->products()->where('products.organisation_id', $this->organisation->id)->get() as $product) {
-            //print "Fetching images for product: {$product->slug} {$product->code}  {$product->name} ({$product->source_id})\n";
+      //  print "Fetching images for trade unit: {$tradeUnit->slug} {$tradeUnit->code}  {$tradeUnit->name} ({$tradeUnit->source_id})=================\n";
+        /** @var Product $product */
+        foreach ($tradeUnit->products()->where('unit_relationship_type',ProductUnitRelationshipType::SINGLE)->where('products.organisation_id', $this->organisation->id)->get() as $product) {
+
+            if($product->shop->state!==ShopStateEnum::OPEN){
+                continue;
+            }
+
+          //  print "Fetching images for product: {$product->slug} {$product->code}  {$product->name} ({$product->source_id})\n";
             $productImages = $this->fetchAuroraProductImages($product);
             foreach ($productImages as $productImage) {
                 if (!isset($productImage['checksum']) || !$productImage['checksum']) {
                     continue;
                 }
-                //print_r($productImage);
+               // print_r($productImage);
                 $images[$productImage['checksum']] = $productImage;
             }
         }
