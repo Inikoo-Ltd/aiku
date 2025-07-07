@@ -48,6 +48,7 @@ class IndexCreditTransactions extends OrgAction
         return $query->defaultSort('credit_transactions.id')
             ->select([
                 'credit_transactions.id',
+                'credit_transactions.created_at',
                 'credit_transactions.type',
                 'credit_transactions.amount',
                 'credit_transactions.running_amount',
@@ -89,10 +90,11 @@ class IndexCreditTransactions extends OrgAction
                 );
 
 
+            $table->column(key: 'created_at', label: __('Created at'), type: 'date', canBeHidden: false, searchable: true);
             $table->column(key: 'type', label: __('type'), canBeHidden: false, searchable: true);
             $table->column(key: 'payment_reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'running_amount', label: __('running amount'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'amount', label: __('amount'), type: 'currency', canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'running_amount', label: __('running amount'), type: 'currency', canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

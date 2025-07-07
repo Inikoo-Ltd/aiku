@@ -5,6 +5,7 @@ import Select from "primevue/select"
 import { router } from '@inertiajs/vue3'
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { InputNumber } from "primevue"
 
 
 const model = defineModel()
@@ -19,7 +20,7 @@ const props = defineProps<{
 }>()
 
 
-const amount = ref<number | null>(null)
+const amount = ref<number>(0)
 const privateNote = ref<string>("")
 const increaseReason = ref(null)
 const increaseType = ref(null)
@@ -113,13 +114,17 @@ const onSubmitIncrease = () => {
                     {{ trans("Amount to deposit") }}
                 </label>
 
-                <input
-                    type="number"
-                    id="amount"
-                    name="amount"
-                    :placeholder="trans('Enter amount')"
-                    v-model.number="amount"
-                    class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <InputNumber
+                    v-model="amount"
+                    inputId="currency-us"
+                    mode="currency"
+                    :currency="currency.code"
+                    :maxFractionDigits="2"
+                    locale="en-US"
+                    :min="0"
+                    prefix="-"
+                    fluid
+                />
             </div>
 
             <div>
@@ -150,6 +155,8 @@ const onSubmitIncrease = () => {
                 @click="() => onSubmitIncrease()"
                 full
                 :loading="isLoading"
+                :disabled="amount <= 0"
+                v-tooltip="amount <= 0 ? trans('Add amount to submit') : ''"
             >
             </Button>
         </div>
