@@ -250,6 +250,9 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 ],
                 'estimated_weight' => $estWeight
             ],
+            'order_properties' => [
+                'weight' => $order->estimated_weight,
+            ],
 
 
 

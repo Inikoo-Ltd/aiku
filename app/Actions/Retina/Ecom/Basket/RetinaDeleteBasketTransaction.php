@@ -19,7 +19,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
-class RetinaEcomDeleteTransaction extends RetinaAction
+class RetinaDeleteBasketTransaction extends RetinaAction
 {
     use WithActionUpdate;
 
@@ -27,7 +27,13 @@ class RetinaEcomDeleteTransaction extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        /** @var Transaction $transaction */
+        $transaction = $request->route('transaction');
+        if($transaction->customer_id != $request->user()->customer_id) {
+            return false;
+        }
+
+        return true;
     }
 
     public function handle(Transaction $transaction): Transaction
@@ -35,7 +41,10 @@ class RetinaEcomDeleteTransaction extends RetinaAction
         return DeleteTransaction::run($transaction);
     }
 
-    public function prepareForValidation()
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function prepareForValidation(): void
     {
         if ($this->order->state != OrderStateEnum::CREATING) {
             throw ValidationException::withMessages([
@@ -46,6 +55,7 @@ class RetinaEcomDeleteTransaction extends RetinaAction
 
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
+
         $this->order = $transaction->order;
         $this->initialisation($request);
 

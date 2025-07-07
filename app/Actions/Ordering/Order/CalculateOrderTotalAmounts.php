@@ -25,10 +25,12 @@ class CalculateOrderTotalAmounts extends OrgAction
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
         $tax        = $order->taxCategory->rate;
 
+        $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
         $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
+
 
         $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
 
@@ -49,6 +51,12 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'estimated_weight', $estimatedWeight);
 
         $order->update($modelData);
+        $order->stats->update(
+            [
+                'number_item_transactions' => $numberItemTransactions
+            ]
+        );
+
 
         $changes = $order->getChanges();
 

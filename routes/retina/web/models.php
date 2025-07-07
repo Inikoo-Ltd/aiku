@@ -55,7 +55,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
-use App\Actions\Retina\Ecom\Basket\RetinaEcomDeleteTransaction;
+use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual\StoreRetinaFulfilmentManualPlatform;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\StoreRetinaFulfilmentCustomerClient;
@@ -194,7 +194,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
         Route::post('upload', ImportRetinaOrderTransaction::class)->name('upload');
-        Route::post('/', StoreRetinaTransaction::class)->name('store')->withoutScopedBindings();
+        Route::post('/', StoreRetinaTransaction::class)->name('store');
     });
 });
 
@@ -283,8 +283,8 @@ Route::get('attachment/{media:ulid}', DownloadRetinaAttachment::class)->name('at
 
 
 Route::name('transaction.')->prefix('transaction')->group(function () {
-    Route::delete('{transaction:id}', RetinaEcomDeleteTransaction::class)->name('delete')->withoutScopedBindings();
-    Route::patch('{transaction:id}', RetinaEcomUpdateTransaction::class)->name('update')->withoutScopedBindings();
+    Route::delete('{transaction:id}', RetinaDeleteBasketTransaction::class)->name('delete');
+    Route::patch('{transaction:id}', RetinaEcomUpdateTransaction::class)->name('update');
 });
 
 Route::name('top-up.')->prefix('top-up')->group(function () {
