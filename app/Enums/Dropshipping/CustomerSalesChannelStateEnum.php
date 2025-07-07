@@ -14,22 +14,18 @@ enum CustomerSalesChannelStateEnum: string
 {
     use EnumHelperTrait;
 
-    case CREATED = 'created';
+    case IN_PROCESS = 'in_process';
     case AUTHENTICATED = 'authenticated';
-    case CARD_SAVED = 'card_saved';
-    case PORTFOLIO_ADDED = 'portfolio_added';
-    case READY = 'ready';
-    case NOT_READY = 'not_ready';
+    case WITH_PORTFOLIO = 'with_portfolio';
+    case CLOSED = 'closed';
 
     public static function labels(): array
     {
         return [
-            self::CREATED->value => __('Created'),
+            self::IN_PROCESS->value => __('Created'),
             self::AUTHENTICATED->value => __('Authenticated'),
-            self::CARD_SAVED->value => __('Card Saved'),
-            self::PORTFOLIO_ADDED->value => __('Portfolio Added'),
-            self::READY->value => __('Ready'),
-            self::NOT_READY->value => __('Not Ready'),
+            self::WITH_PORTFOLIO->value => __('Portfolio Added'),
+            self::CLOSED->value => __('Closed'),
         ];
     }
 }

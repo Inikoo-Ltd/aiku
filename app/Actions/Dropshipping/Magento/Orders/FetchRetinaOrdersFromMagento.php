@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetRetinaOrdersFromMagento extends OrgAction
+class FetchRetinaOrdersFromMagento extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -59,12 +59,12 @@ class GetRetinaOrdersFromMagento extends OrgAction
                     continue;
                 }
 
-                $shippingAddress = Arr::get($order, 'extension_attributes.shipping_assignments.0.shipping.address', []);
+                $lineItems = collect($order['items']);
+                $hasOutProducts = DB::table('portfolios')->where('customer_sales_channel_id', $magentoUser->customer_sales_channel_id)
+                    ->whereIn('platform_product_id', $lineItems)->exists();
 
-                if (!empty($shippingAddress)) {
+                if ($hasOutProducts) {
                     StoreOrderFromMagento::run($magentoUser, $order);
-                } else {
-                    \Sentry::captureMessage('The order doesnt have shipping, order: id ' . Arr::get($order, 'entity_id'));
                 }
             }
         });

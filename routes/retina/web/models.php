@@ -15,7 +15,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
 use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfoliosToEbay;
 use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfolioToEbay;
-use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
+use App\Actions\Dropshipping\Magento\Orders\FetchRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
@@ -268,7 +268,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', FetchWooUserOrders::class)->name('woocommerce.orders.catch')->withoutScopedBindings();
     Route::get('ebay/{ebayUser:id}/catch-orders', FetchEbayUserOrders::class)->name('ebay.orders.catch')->withoutScopedBindings();
     Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings();
-    Route::get('magento/{magentoUser:id}/catch-orders', GetRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings();
+    Route::get('magento/{magentoUser:id}/catch-orders', FetchRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings();
 
 
 });

@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
+use App\Actions\Dropshipping\Magento\Orders\FetchRetinaOrdersFromMagento;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -43,7 +43,7 @@ class ScheduleGetRetinaOrders extends RetinaAction
 
 
                         match ($channel->platform->type) {
-                            PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::dispatch($user),
+                            PlatformTypeEnum::MAGENTO => FetchRetinaOrdersFromMagento::dispatch($user),
                             default => null
                         };
                     }
