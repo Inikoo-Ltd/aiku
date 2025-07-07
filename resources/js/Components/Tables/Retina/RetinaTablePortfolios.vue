@@ -140,6 +140,13 @@ onMounted(() => {
 			onUnchecked(item.id)
 		}"
 		:isChecked="(item) => props.selectedData.products.includes(item.id)"
+		:rowColorFunction="(item) => {
+			if (is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
+				return 'bg-orange-100/75'
+			} else {
+				return ''
+			}
+		}"
 	>
         <template #cell(image)="{ item: product }">
             <div class="overflow-hidden w-10 h-10">
@@ -187,19 +194,9 @@ onMounted(() => {
 				<template v-if="is_platform_connected">
 					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
 					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
-					<div v-else>
-						<ButtonWithLink
-							:routeTarget="product.platform_upload_portfolio"
-							label="Upload"
-							icon="fal fa-upload"
-							type="positive"
-							size="xs"
-							:bindToLink="{
-								preserveScroll: true,
-							}"
-							@success="() => set(progressToUploadToShopify, [product.id], 'loading')"
-						/>
-					</div>
+					<span v-else class="text-gray-500 text-xs text-center italic">
+						{{ trans("Pending upload") }}
+					</span>
 				</template>
 
 				<div v-else v-tooltip="trans('Your channel is not connected to the platform yet.')" class="text-center text-lg">
@@ -210,7 +207,26 @@ onMounted(() => {
 
 		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }">
-			<div class="mx-auto">
+			<div class="mx-auto flex flex-wrap justify-center gap-2">
+				<!-- {{ item.platform_product_id }} -->
+				<ButtonWithLink
+					v-if="
+						is_platform_connected
+						&& !item.platform_product_id
+						&& get(progressToUploadToShopify, [item.id], undefined) != 'success'
+					"
+					:routeTarget="item.platform_upload_portfolio"
+					label="Upload"
+					icon="fal fa-upload"
+					type="positive"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+					@success="() => set(progressToUploadToShopify, [item.id], 'loading')"
+					:disabled="get(progressToUploadToShopify, [item.id], null)"
+				/>
+
 				<ButtonWithLink
 					v-tooltip="trans('Delete product')"
 					type="negative"
