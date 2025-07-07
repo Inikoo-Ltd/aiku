@@ -1,10 +1,14 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 07 Jul 2025 18:49:42 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Production\JobOrder;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
@@ -12,17 +16,13 @@ use Exception;
 use Illuminate\Console\Command;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
 
 class UpdateJobOrder extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+
     use WithActionUpdate;
 
-    private bool $action = false;
 
     private JobOrder $jobOrder;
 
@@ -96,12 +96,6 @@ class UpdateJobOrder extends OrgAction
     {
         $this->asAction = true;
 
-        // Dummy test Data
-        // $data = [
-        //     'public_notes' => 'Update.',
-        //     'internal_notes' => 'Update. ',
-        //     'customer_notes' => 'Update.'
-        // ];
 
         try {
             $jobOrder = JobOrder::where('slug', $command->argument('job-order'))->firstOrFail();

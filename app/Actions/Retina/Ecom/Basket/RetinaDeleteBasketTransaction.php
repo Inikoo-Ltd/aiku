@@ -29,7 +29,7 @@ class RetinaDeleteBasketTransaction extends RetinaAction
     {
         /** @var Transaction $transaction */
         $transaction = $request->route('transaction');
-        if($transaction->customer_id != $request->user()->customer_id) {
+        if ($transaction->customer_id != $request->user()->customer_id) {
             return false;
         }
 
