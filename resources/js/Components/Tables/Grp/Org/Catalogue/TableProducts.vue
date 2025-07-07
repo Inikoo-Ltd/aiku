@@ -75,6 +75,13 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
                     product.slug]);
+        case "grp.goods.trade-units.show":
+            return route(
+                "grp.org.shops.show.catalogue.products.all_products.show",
+                [
+                    product.organisation_slug,
+                    product.shop_slug,
+                    product.slug]);
         case "grp.org.shops.show.catalogue.products.all_products.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.dashboard":
