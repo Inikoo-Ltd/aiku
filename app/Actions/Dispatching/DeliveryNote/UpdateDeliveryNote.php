@@ -14,6 +14,7 @@ use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -47,6 +48,9 @@ class UpdateDeliveryNote extends OrgAction
                 OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
                 ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
                 CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer)->delay($this->hydratorsDelay);
+
+                OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+                    ->delay($this->hydratorsDelay);
             }
         }
 
@@ -57,7 +61,7 @@ class UpdateDeliveryNote extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference' => [
+            'reference'      => [
                 'sometimes',
                 'string',
                 'max:64',
@@ -69,15 +73,15 @@ class UpdateDeliveryNote extends OrgAction
                     ]
                 ),
             ],
-            'state'     => ['sometimes', 'required', new Enum(DeliveryNoteStateEnum::class)],
-            'email'     => ['sometimes', 'nullable', 'string', $this->strict ? 'email' : 'string'],
-            'phone'     => ['sometimes', 'nullable', 'string'],
-            'date'      => ['sometimes', 'date'],
-            'picker_id' => ['sometimes'],
-            'packer_id' => ['sometimes'],
+            'state'          => ['sometimes', 'required', new Enum(DeliveryNoteStateEnum::class)],
+            'email'          => ['sometimes', 'nullable', 'string', $this->strict ? 'email' : 'string'],
+            'phone'          => ['sometimes', 'nullable', 'string'],
+            'date'           => ['sometimes', 'date'],
+            'picker_id'      => ['sometimes'],
+            'packer_id'      => ['sometimes'],
             'picker_user_id' => ['sometimes'],
             'packer_user_id' => ['sometimes'],
-            'parcels' => ['sometimes', 'array']
+            'parcels'        => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {

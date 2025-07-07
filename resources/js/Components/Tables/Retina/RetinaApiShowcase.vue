@@ -146,21 +146,34 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div> -->
 
                 <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
-                    Manage your API Tokens
+                    {{ trans("Manage your API Tokens") }}
                 </h1>
                 <p class="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
-                    API Tokens are used to authenticate requests to the API. You can create, view, and manage your API tokens here. With API Tokens, you can create order, add products, add client, etc by using Web API.
+                    {{ trans("API Tokens are used to authenticate requests to the API. You can create, view, and manage your API tokens here. With API Tokens, you can create order, add products, add client, etc by using Web API.") }}
                 </p>
+                
+                <!-- Section: See Documentation -->
                 <div class="mt-10 flex xitems-center flex-col justify-center gap-x-6">
-                    <div class="mb-2 text-gray-500">Wanna learn more about API Tokens?</div>
-                    <a href="https://documenter.getpostman.com/view/28816137/2sB34Zrjrp" target="_blank" rel="noopener noreferrer">
+                    <div class="mb-2 text-gray-500">{{ trans("Wanna learn more about API Tokens?") }}</div>
+                    <a href="https://documenter.getpostman.com/view/28816137/2sB34Zrjrp" target="_blank" rel="noopener noreferrer" class="w-fit">
                         <Button
-                            xrouteTarget="{
-                                name: 'retina.dropshipping.customer_sales_channels.create'
-                            }"
-                            url="https://documenter.getpostman.com/view/28816137/2sB34Zrjrp"
                             :label="trans('See documentation')"
-                            iconRight="far fa-arrow-right"
+                            iconRight="fal fa-external-link"
+                        >
+                        </Button>
+                    </a>
+                </div>
+
+                <!-- Section: Sandbox -->
+                <div class="mt-10 flex xitems-center flex-col justify-center gap-x-6">
+                    <div class="mb-2 text-gray-500">
+                        {{ trans("Wanna test the API Tokens in safe mode? You can test it in our staging. Enter the same credential as your current account.") }}
+                    </div>
+                    <a href="https://canary.aw-dropship.com/app/dropshipping/sale-channels" target="_blank" rel="noopener noreferrer" class="w-fit">
+                        <Button
+                            :label="trans('Test in staging')"
+                            iconRight="fal fa-external-link"
+                            type="rainbow"
                         >
                         </Button>
                     </a>

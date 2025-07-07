@@ -40,6 +40,33 @@ trait IsOrder
             ];
         }
 
+        $invoiceData = [];
+        $invoice = $order->invoices->first();
+
+        if ($invoice) {
+
+            $route = [];
+            match (request()->routeIs('retina.*')) {
+                true => $route = [
+                    'name'       => 'retina.dropshipping.invoices.show',
+                    'parameters' => [
+                        'invoice' => $invoice->slug,
+                    ]
+                ],
+                default => $route = [
+                    'name'       => 'grp.org.accounting.invoices.show',
+                    'parameters' => [
+                        'organisation'  => $order->organisation->slug,
+                        'invoice'       => $invoice->slug,
+                    ]
+                ]
+            };
+            $invoiceData = [
+                'reference' => $invoice->reference,
+                'route'     => $route
+            ];
+        }
+
         return [
             'customer' => array_merge(
                 $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : CustomerResource::make($order->customer)->getArray(),
@@ -60,6 +87,7 @@ trait IsOrder
             ),
             'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
             'customer_channel' => $customerChannel,
+            'invoice'  => $invoiceData,
             'products' => [
                 'payment'          => [
                     'routes'       => [
@@ -80,8 +108,9 @@ trait IsOrder
                     'total_amount' => (float)$order->total_amount,
                     'paid_amount'  => (float)$order->payment_amount,
                     'pay_amount'   => $roundedDiff,
+                    'pay_status' => $order->pay_status,
                 ],
-                'estimated_weight' => $estWeight
+                'estimated_weight' => $estWeight,
             ],
 
             'order_summary' => [

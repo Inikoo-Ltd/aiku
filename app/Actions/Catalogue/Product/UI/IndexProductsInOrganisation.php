@@ -71,6 +71,7 @@ class IndexProductsInOrganisation extends OrgAction
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.organisation_id', $organisation->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
+        $queryBuilder->leftJoin('currencies', 'organisations.currency_id', '=', 'currencies.id');
 
 
         foreach ($this->getElementGroups($organisation) as $key => $elementGroup) {
@@ -101,7 +102,8 @@ class IndexProductsInOrganisation extends OrgAction
                 'organisations.code as organisation_code',
                 'organisations.slug as organisation_slug',
                 'invoices_all',
-                'sales_all',
+                'currencies.code as currency_code',
+                'sales_org_currency_all as sales_all',
                 'customers_invoiced_all',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');

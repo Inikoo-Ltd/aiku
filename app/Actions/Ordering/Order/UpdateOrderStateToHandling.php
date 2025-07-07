@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:33:12 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
@@ -16,7 +16,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateStateToPackedOrder extends OrgAction
+class UpdateOrderStateToHandling extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -27,16 +27,15 @@ class UpdateStateToPackedOrder extends OrgAction
     public function handle(Order $order): Order
     {
         $data = [
-            'state' => OrderStateEnum::PACKED
+            'state' => OrderStateEnum::HANDLING
         ];
 
-        if (in_array($order->state, [\App\Enums\Ordering\Order\OrderStateEnum::HANDLING, \App\Enums\Ordering\Order\OrderStateEnum::FINALISED])) {
+        if (in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
             $order->transactions()->update([
-                'state' => TransactionStateEnum::PACKED,
+                'state' => TransactionStateEnum::HANDLING
             ]);
 
-            // $data[$order->state->value . '_at'] = null;
-            $data['packed_at']                  = now();
+            $data['handling_at']                = now();
 
             $this->update($order, $data);
 
@@ -45,7 +44,7 @@ class UpdateStateToPackedOrder extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'You can not change the status to submitted']);
+        throw ValidationException::withMessages(['status' => 'You can not change the status to handling']);
     }
 
     /**
@@ -53,12 +52,16 @@ class UpdateStateToPackedOrder extends OrgAction
      */
     public function action(Order $order): Order
     {
+        $this->asAction = true;
+        $this->initialisationFromShop($order->shop, []);
         return $this->handle($order);
     }
 
-    public function asController(Order $order, ActionRequest $request)
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function asController(Order $order, ActionRequest $request): Order
     {
-        $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
         return $this->handle($order);
     }

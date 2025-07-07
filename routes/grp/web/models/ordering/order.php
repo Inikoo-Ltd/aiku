@@ -12,6 +12,7 @@ use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Ordering\Order\GenerateOrderInvoice;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
@@ -20,10 +21,9 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
-use App\Actions\Ordering\Order\UpdateStateToDispatchedOrder;
-use App\Actions\Ordering\Order\UpdateStateToFinalizedOrder;
-use App\Actions\Ordering\Order\UpdateStateToHandlingOrder;
-use App\Actions\Ordering\Order\UpdateStateToPackedOrder;
+use App\Actions\Ordering\Order\UpdateOrderStateToDispatched;
+use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
@@ -37,6 +37,7 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('update', UpdateOrder::class)->name('update');
+    Route::patch('generate-invoice', GenerateOrderInvoice::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
 
@@ -57,10 +58,9 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', UpdateOrderStateToCancelled::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
-        Route::patch('handling', UpdateStateToHandlingOrder::class)->name('handling');
-        Route::patch('packed', UpdateStateToPackedOrder::class)->name('packed');
-        Route::patch('finalized', UpdateStateToFinalizedOrder::class)->name('finalized');
-        Route::patch('dispatched', UpdateStateToDispatchedOrder::class)->name('dispatched');
+        Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
+        Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
+        Route::patch('dispatched', UpdateOrderStateToDispatched::class)->name('dispatched');
     });
 });
 

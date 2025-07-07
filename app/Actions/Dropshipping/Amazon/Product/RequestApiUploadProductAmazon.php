@@ -40,7 +40,7 @@ class RequestApiUploadProductAmazon extends RetinaAction
             $productData = [
                 'id' => $portfolio->id,
                 'code' => $portfolio->code,
-                'sku' => $portfolio->id . '-' . $product->code . $amazonUser->slug,
+                'sku' => 'SKU-'.$product->code,
                 'title' => $portfolio->customer_product_name,
                 'description' => $portfolio->customer_description,
                 'product_type' => $product->type ?? null,

@@ -236,7 +236,6 @@ const onOpenModalAddService = async () => {
         const xxx = await axios.get(
             route(props.service_list_route.name, props.service_list_route.parameters)
         )
-        console.log('xxx', xxx)
         dataServiceList.value = xxx.data.data
     } catch (error) {
         notify({

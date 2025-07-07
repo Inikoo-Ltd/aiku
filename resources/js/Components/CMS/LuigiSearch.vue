@@ -120,7 +120,6 @@ const LBInitAutocompleteNew = async () => {
         },
         "#inputLuigi"
     )
-    // console.log('xxx', xxx)
 
     console.log("Init autocomplete")
 }

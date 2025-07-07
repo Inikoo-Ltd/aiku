@@ -2,8 +2,9 @@
 
 namespace App\Console;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopSellers;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
+use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -27,9 +28,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('domain:check-cloudflare-status')->hourly();
 
 
-        $schedule->job(ShopHydrateTopSellers::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'ShopHydrateTopSellers',
-        );
 
         $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'FulfilmentCustomersHydrateStatus',
@@ -77,6 +75,14 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'FetchOrdersInBasket',
             );
 
+
+        $schedule->job(FetchEbayOrders::makeJob())->everyTenMinutes()->sentryMonitor(
+            monitorSlug: 'FetchEbayOrders',
+        );
+
+        $schedule->job(FetchWooOrders::makeJob())->cron('2,12,22,32,42,52 * * * *')->sentryMonitor(
+            monitorSlug: 'FetchWooOrders',
+        );
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');

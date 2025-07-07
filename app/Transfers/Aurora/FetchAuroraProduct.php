@@ -148,7 +148,7 @@ class FetchAuroraProduct extends FetchAurora
             'trade_unit_composition'    => ProductUnitRelationshipType::SINGLE,
             'source_id'                 => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
             'historic_source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
-            'images'                    => $this->parseImages(),
+
             'fetched_at'                => now(),
             'last_fetched_at'           => now(),
             'rrp'                       => $rrp
@@ -171,6 +171,7 @@ class FetchAuroraProduct extends FetchAurora
         }
 
         $this->parsedData['au_data'] = $this->auroraModelData;
+        $this->parsedData['images'] = $this->parseImages();
     }
 
     private function parseImages(): array

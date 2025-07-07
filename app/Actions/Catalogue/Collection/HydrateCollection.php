@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateParents;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateState;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateImages;
 use App\Models\Catalogue\Collection;
 
 class HydrateCollection
@@ -34,6 +35,7 @@ class HydrateCollection
         CollectionHydrateFamilies::run($collection);
         CollectionHydrateState::run($collection);
         CollectionHydrateParents::run($collection);
+        CollectionHydrateImages::run($collection);
         SyncIndirectProductsToCollection::run($collection);
     }
 }

@@ -25,8 +25,8 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
         $globalSearch         = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value)
-                    ->orWhereStartWith('portfolios.reference', $value);
+                    ->orWhereStartWith('products.code', $value);
+                //    ->orWhereStartWith('portfolios.reference', $value);
             });
         });
 
@@ -38,11 +38,11 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
         $query = QueryBuilder::for(Product::class);
         $query->where('products.shop_id', $this->shop->id);
 
-        $query->join('portfolios', function ($join) use ($customerSalesChannel) {
-            $join->on('portfolios.item_id', '=', 'products.id')
-                ->where('portfolios.item_type', '=', 'Product')
-                ->where('portfolios.customer_sales_channel_id', '=', $customerSalesChannel->id);
-        });
+        //        $query->join('portfolios', function ($join) use ($customerSalesChannel) {
+        //            $join->on('portfolios.item_id', '=', 'products.id')
+        //                ->where('portfolios.item_type', '=', 'Product')
+        //                ->where('portfolios.customer_sales_channel_id', '=', $customerSalesChannel->id);
+        //        });
 
         $query->leftJoin('transactions', function ($join) use ($order) {
             $join->on('transactions.model_id', '=', 'products.id')
@@ -53,6 +53,7 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
 
 
         if ($this->customer->number_exclusive_products > 0) {
+
             $query->where(function ($query) {
                 $query->where('products.is_for_sale', true)
                     ->orWhere('products.exclusive_for_customer_id', $this->customer->id);
@@ -70,7 +71,7 @@ class IndexRetinaDropshippingProductsForBasket extends RetinaAction
             'products.current_historic_asset_id as historic_asset_id',
             'products.available_quantity',
             'products.image_id',
-            'portfolios.reference as portfolio_reference',
+           // 'portfolios.reference as portfolio_reference',
             'transactions.id as transaction_id',
             'transactions.quantity_ordered',
         ]);

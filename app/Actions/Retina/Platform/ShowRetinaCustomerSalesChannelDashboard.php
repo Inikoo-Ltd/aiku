@@ -89,6 +89,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             CustomerSalesChannelStateEnum::NOT_READY => [
                 // Handle these states as needed
             ],
+            CustomerSalesChannelStateEnum::WITH_PORTFOLIO => [
+            ],
         };
 
         $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL

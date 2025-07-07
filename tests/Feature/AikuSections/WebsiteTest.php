@@ -20,6 +20,7 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\HydrateWebpage;
+use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\Search\ReindexWebpageSearch;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\HydrateWebsite;
@@ -69,12 +70,11 @@ beforeEach(function () {
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->user);
+
+    ReindexWebpageLuigiData::shouldRun();
 });
 
 test('create b2b website', function () {
-
-
-
     $website = StoreWebsite::make()->action(
         $this->shop,
         Website::factory()->definition()
@@ -292,7 +292,6 @@ test('launch fulfilment website from command', function (Website $website) {
 // Hydrator commands
 
 
-
 test('store hello banner', function (Website $website) {
     $banner = StoreBanner::make()->action($website, [
         'name' => 'hello',
@@ -314,11 +313,11 @@ test('update hello banner', function (Banner $banner) {
     expect($banner)->toBeInstanceOf(Banner::class)
         ->and($banner->name)->toBe('hello2')
         ->and($banner->type)->toBe(BannerTypeEnum::LANDSCAPE);
+
     return $banner;
 })->depends('store hello banner');
 
 test('banners search', function ($banner) {
-
     $this->artisan('search:banners')->assertExitCode(0);
     ReindexBannerSearch::run($banner);
     $banner->refresh();
@@ -330,10 +329,12 @@ test('delete hello banner', function (Banner $banner) {
 
     expect($banner)->toBeInstanceOf(Banner::class)
         ->and($banner->trashed())->toBeTrue()
-        ->and(UniversalSearch::where(
-            'model_type',
-            'Banner'
-        )->count())->toBe(0);
+        ->and(
+            UniversalSearch::where(
+                'model_type',
+                'Banner'
+            )->count()
+        )->toBe(0);
 })->depends('update hello banner');
 
 test('websites search', function () {
@@ -353,7 +354,6 @@ test('webpages search', function () {
 });
 
 
-
 test('hydrate website', function () {
     $website = Website::first();
     $this->artisan('hydrate:websites', [
@@ -364,13 +364,12 @@ test('hydrate website', function () {
 
     HydrateWebsite::run($website);
     $website->refresh();
-
 });
 
 test('hydrate webpage', function () {
     $webpage = Webpage::first();
     $this->artisan('hydrate:webpages', [
-        '--slugs'       => $webpage->slug
+        '--slugs' => $webpage->slug
     ])
         ->assertExitCode(0);
 
@@ -382,22 +381,20 @@ test('web hydrator', function () {
 });
 
 test('store redirect', function (Webpage $webpage) {
-
     $homepage = $webpage->website->storefront;
 
     $redirect = StoreRedirect::make()->action($webpage, [
-        'type' => RedirectTypeEnum::PERMANENT,
+        'type'          => RedirectTypeEnum::PERMANENT,
         'to_webpage_id' => $homepage->id
     ]);
 
     expect($redirect)->toBeInstanceOf(Redirect::class)
         ->and($redirect->type)->toBe(RedirectTypeEnum::PERMANENT)
         ->and($redirect->from_path)->toBe($webpage->url)
-        ->and($redirect->from_url)->toBe('https://'.$redirect->website->domain . '/' . $webpage->url);
+        ->and($redirect->from_url)->toBe('https://'.$redirect->website->domain.'/'.$webpage->url);
 
     return $redirect;
 })->depends('create webpage');
-
 
 
 test('web sitemap creation', function () {

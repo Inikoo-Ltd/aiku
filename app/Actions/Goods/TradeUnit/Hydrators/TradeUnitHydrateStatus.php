@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit\Hydrators;
 
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
@@ -32,30 +33,35 @@ class TradeUnitHydrateStatus implements ShouldBeUnique
             return;
         }
 
-        $status = $this->getTradeUnitStatusFromOrgStocks($tradeUnit->stats);
+        $status = $this->getTradeUnitStatusFromStocks($tradeUnit->stats);
 
         $tradeUnit->update([
             'status' => $status,
         ]);
+
+
+        if ($tradeUnit->wasChanged('status')) {
+            GroupHydrateTradeUnits::dispatch($tradeUnit->group)->delay(now()->addSeconds(30));
+        }
     }
 
 
-    public function getTradeUnitStatusFromOrgStocks(TradeUnitStats $stats): TradeUnitStatusEnum
+    public function getTradeUnitStatusFromStocks(TradeUnitStats $stats): TradeUnitStatusEnum
     {
-        if ($stats->number_org_stocks_state_active > 0 || $stats->number_org_stocks_state_discontinuing > 0) {
+
+
+        if ($stats->number_stocks_state_active > 0 || $stats->number_stocks_state_discontinuing > 0) {
             return TradeUnitStatusEnum::ACTIVE;
         }
 
-        if ($stats->number_org_stocks_state_abnormality > 0) {
-            return TradeUnitStatusEnum::ANOMALITY;
-        }
 
-        if ($stats->number_org_stocks_state_discontinued == 0 && $stats->number_org_stocks_state_suspended == 0) {
+        if ($stats->number_stocks_state_discontinued == 0 && $stats->number_stocks_state_suspended == 0) {
             return TradeUnitStatusEnum::IN_PROCESS;
         }
 
         return TradeUnitStatusEnum::DISCONTINUED;
     }
+
 
 
 }

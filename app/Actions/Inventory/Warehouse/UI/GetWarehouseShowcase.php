@@ -19,7 +19,6 @@ class GetWarehouseShowcase
     public function handle(Warehouse $warehouse, $routeParameters): array
     {
         return [
-            'xxx'       => $warehouse,
             'address'   => $warehouse->address ? AddressResource::make($warehouse->address) : null,
             'box_stats' => [
                 [

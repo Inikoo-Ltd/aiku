@@ -79,6 +79,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_id
  * @property string|null $source_alt_id to be used in no product transactions
  * @property int|null $estimated_weight grams
+ * @property string|null $platform_transaction_id
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItem

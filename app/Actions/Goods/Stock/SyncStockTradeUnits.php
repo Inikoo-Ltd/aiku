@@ -9,7 +9,7 @@
 namespace App\Actions\Goods\Stock;
 
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateStocks;
 use App\Models\Goods\Stock;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,7 +22,7 @@ class SyncStockTradeUnits
         $stock->tradeUnits()->sync($tradeUnitsData);
 
         foreach ($stock->tradeUnits as $tradeUnit) {
-            TradeUnitsHydrateOrgStocks::run($tradeUnit);
+            TradeUnitsHydrateStocks::dispatch($tradeUnit);
         }
 
         StockHydrateGrossWeightFromTradeUnits::dispatch($stock);

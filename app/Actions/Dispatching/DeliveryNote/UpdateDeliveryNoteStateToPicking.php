@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -20,11 +21,14 @@ class UpdateDeliveryNoteStateToPicking extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-
         data_set($modelData, 'picking_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING);
 
-        return $this->update($deliveryNote, $modelData);
+        $deliveryNote = $this->update($deliveryNote, $modelData);
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
+
+        return $deliveryNote;
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote

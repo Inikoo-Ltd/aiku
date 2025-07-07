@@ -129,12 +129,11 @@ class IndexRetinaBaskets extends RetinaAction
             $table->withGlobalSearch()
                 ->withModelOperations($modelOperations);
 
+            $table->column(key: 'created_at', label: __('date'), canBeHidden: false, type: 'date', sortable: true);
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
-
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, align: 'right', sortable: true);
             $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
-            $table->column(key: 'created_at', label: __('date'), canBeHidden: false, type: 'date', sortable: true);
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, align: 'right', sortable: true);
         };
     }
 

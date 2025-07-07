@@ -52,7 +52,7 @@ trait IsDeliveryNotesIndex
         if ($shopType != 'all') {
 
             //HACK temporal hack to show only new system orders , remove after migration
-            if($shopType=='dropshipping'){
+            if ($shopType == 'dropshipping') {
                 $query->whereNull('delivery_notes.source_id');
 
             }
