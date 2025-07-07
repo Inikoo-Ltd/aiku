@@ -200,7 +200,9 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function brand(): ?Brand
     {
-        return $this->brands()->first();
+        /** @var Brand $brand */
+        $brand= $this->brands()->first();
+        return $brand;
     }
 
     public function tags(): MorphToMany
