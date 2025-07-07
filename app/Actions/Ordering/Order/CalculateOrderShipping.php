@@ -155,7 +155,7 @@ class CalculateOrderShipping
         if ($pricingType == 'Step Order Items Net Amount') {
             return $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'Step Order Estimated Weight') {
-            return $this->getPriceBlanketFromAmount($order->estimated_weight, Arr::get($shippingZone->price, 'steps'));
+            return $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'TBC') {
             $this->toBeConfirmed = true;
 

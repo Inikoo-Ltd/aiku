@@ -124,7 +124,7 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <div class="col-span-2">
-            <pre>{{summary.order_properties}}</pre>xx
+         Weight: {{summary.order_properties.weight}}
         </div>
 
         <div class="col-span-3">

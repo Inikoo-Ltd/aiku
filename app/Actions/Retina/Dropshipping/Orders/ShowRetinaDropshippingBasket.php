@@ -17,6 +17,7 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\BasketTabsEnum;
+use App\Helpers\NaturalLanguage;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -251,7 +252,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'estimated_weight' => $estWeight
             ],
             'order_properties' => [
-                'weight' => $order->estimated_weight,
+                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
 
 
