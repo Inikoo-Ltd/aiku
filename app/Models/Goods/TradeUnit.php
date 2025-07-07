@@ -201,7 +201,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function brand(): ?Brand
     {
         /** @var Brand $brand */
-        $brand= $this->brands()->first();
+        $brand = $this->brands()->first();
         return $brand;
     }
 

@@ -1,34 +1,25 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 07 Jul 2025 22:51:13 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Dispatching\Printer\Json;
 
 use App\Actions\Dispatching\Printer\WithPrintNode;
 use App\Actions\OrgAction;
-use App\Models\Dispatching\Shipment;
-use App\Models\SysAdmin\Organisation;
-use Exception;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Rawilk\Printing\Api\PrintNode\PendingPrintJob;
 use Rawilk\Printing\Api\PrintNode\Resources\Computer;
-use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
-use Rawilk\Printing\Api\PrintNode\Enums\ContentType;
-use Rawilk\Printing\Facades\Printing;
 
 class GetComputers extends OrgAction
 {
-
     use WithPrintNode;
 
-    /**
-     * Get all printers and computers from PrintNode API
-     *
-     * @return array
-     * @throws Exception
-     */
-    public function handle()
+
+    public function handle(): Collection
     {
         $this->ensureClientInitialized();
 
@@ -40,13 +31,13 @@ class GetComputers extends OrgAction
         if ($after = $this->get('after')) {
             $options['after'] = $after;
         }
-        
+
         return Computer::all(
             $options
         );
     }
 
-    public function jsonResponse(Collection $computers)
+    public function jsonResponse(Collection $computers): Collection
     {
         return $computers;
     }
@@ -63,7 +54,7 @@ class GetComputers extends OrgAction
         $this->set('after', $request->get('after'));
     }
 
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): Collection
     {
         $this->initialisationFromGroup(group(), $request);
 

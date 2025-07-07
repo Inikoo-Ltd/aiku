@@ -18,8 +18,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Spatie\LaravelOptions\Options;
-
 
 class EditProfileSettings
 {
