@@ -95,6 +95,26 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $top_seller
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property string|null $un_number
+ * @property string|null $un_class
+ * @property string|null $packing_group
+ * @property string|null $proper_shipping_name
+ * @property string|null $hazard_identification_number
+ * @property string|null $gpsr_manufacturer
+ * @property string|null $gpsr_eu_responsible
+ * @property string|null $gpsr_warnings
+ * @property string|null $gpsr_manual
+ * @property string|null $gpsr_class_category_danger
+ * @property string|null $gpsr_class_languages
+ * @property bool $pictogram_toxic
+ * @property bool $pictogram_corrosive
+ * @property bool $pictogram_explosive
+ * @property bool $pictogram_flammable
+ * @property bool $pictogram_gas
+ * @property bool $pictogram_environment
+ * @property bool $pictogram_health
+ * @property bool $pictogram_oxidising
+ * @property bool $pictogram_danger
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
