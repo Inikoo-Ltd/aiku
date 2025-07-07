@@ -128,7 +128,7 @@ function clientRoute(order) {
 
 
       <template #cell(total_amount)="{ item }">
-        {{ currency?.code }}
+        <!-- {{ currency?.code }} -->
         {{ locale?.currencyFormat(currency?.code, item.total_amount || 0) }}
       </template>
 
