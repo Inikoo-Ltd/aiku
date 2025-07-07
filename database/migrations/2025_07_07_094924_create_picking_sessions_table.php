@@ -16,9 +16,9 @@ return new class extends Migration
             $table = $this->groupOrgRelationship($table);
             $table->string('slug')->unique()->collation('und_ns');
             $table->string('reference');
-            $table->unsignedSmallInteger('warehouse_id')->index();
+            $table->unsignedInteger('warehouse_id')->index();
             $table->foreign('warehouse_id')->references('id')->on('warehouses')->nullOnDelete();
-            $table->unsignedSmallInteger('user_id')->index();
+            $table->unsignedInteger('user_id')->index();
             $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
             $table->string('state')->index()->default(PickingSessionStateEnum::IN_PROCESS->value);
             $table->unsignedInteger('number_trolleys')->default(0);

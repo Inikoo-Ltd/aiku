@@ -10,11 +10,15 @@ namespace App\Models\Inventory;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -53,5 +57,25 @@ class PickingSession extends Model
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    public function deliveryNotes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            DeliveryNote::class,
+            'picking_session_has_delivery_notes',
+            'picking_session_id',
+            'delivery_note_id'
+        );
+    }
+
+    public function trolleys(): HasMany
+    {
+        return $this->hasMany(Trolley::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }
