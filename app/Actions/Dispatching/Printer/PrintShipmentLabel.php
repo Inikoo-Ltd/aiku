@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 23 Feb 2023 16:47:00 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
- */
-
 namespace App\Actions\Dispatching\Printer;
 
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
@@ -22,51 +16,46 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
-
+use Lorisleiva\Actions\ActionRequest;
 
 class PrintShipmentLabel extends OrgAction
 {
     use WithPrintNode;
 
-    public function handle(Shipment $shipment, array $modelData)
+    public function handle(Shipment $shipment, ActionRequest $request)
     {
-
         switch($shipment->label_type) {
             case ShipmentLabelTypeEnum::PDF:
                 return $this->printPdf(
                     title: $shipment->tracking,
-                    printId: $modelData['printer_id'],
+                    printId: $this->get('printerId'),
                     pdfBaset64: $shipment->label
                 );
         }
 
     }
 
-    public function rules(): array
-    {
-        return [
-            'printer_id'      => ['required', 'integer'],
-        ];
-    }
-
     public function afterValidator(Validator $validator): void{
-        $printerId = $this->get('printer_id');
-        if ($printerId) {
-            if(!$this->isExistPrinter($printerId)){
-                $validator->errors()->add('printer_id', 'Printer does not exist');
-            }
+        $user = request()->user();
+        $printerId = Arr::get($user->settings, 'preferred_printer_id', null);
+        if (!$printerId) {
+            throw ValidationException::withMessages([
+                'messages' => __('You must set a preferred printer in your user settings!'),
+            ]);
         }
+        $this->set('printerId', $printerId);
     }
 
-    public function asController(Shipment $shipment, array $modelData)
+    public function asController(Shipment $shipment, ActionRequest $request)
     {
-        $this->initialisationFromGroup($shipment->group, $modelData);
+        $this->initialisationFromGroup($shipment->group, $request);
 
-        return $this->handle($shipment, $this->validatedData);
+        return $this->handle($shipment, $request);
     }
 
 

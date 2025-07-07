@@ -528,7 +528,7 @@ Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('store
 Route::delete('{storedItem:id}/stored-items', DeleteStoredItem::class)->name('stored-items.delete');
 
 Route::name('printing.')->prefix('printing/{shipment:id}')->group(function () {
-    Route::post('', PrintShipmentLabel::class)->name('shipment.label.print');
+    Route::post('', PrintShipmentLabel::class)->name('shipment.label');
 });
 
 Route::prefix('rental-agreement/{rentalAgreement:id}')->group(function () {
