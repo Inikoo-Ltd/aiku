@@ -29,20 +29,11 @@ class GetPrinters extends OrgAction
      * @return array
      * @throws Exception
      */
-    public function handle()
+    public function handle(): Collection
     {
         $this->ensureClientInitialized();
-
-        $options = [
-            'limit' => 50,
-            'dir' => 'desc',
-        ];
-
-        if ($after = $this->get('after')) {
-            $options['after'] = $after;
-        }
-
-        return Printer::all($options);
+        
+        return Printer::all();
     }
 
     public function jsonResponse(Collection $printers)
@@ -53,7 +44,7 @@ class GetPrinters extends OrgAction
     public function rules(): array
     {
         return [
-            'after' => ['sometimes', 'integer'],
+            'after' => ['nullable', 'integer'],
         ];
     }
 
@@ -67,6 +58,12 @@ class GetPrinters extends OrgAction
     public function asController(ActionRequest $request)
     {
         $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle();
+    }
+
+    public function action(array $modelData): Collection {
+        $this->initialisationFromGroup(group(), $modelData);
 
         return $this->handle();
     }
