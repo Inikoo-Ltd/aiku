@@ -41,7 +41,7 @@ class IndexProductsInTradeUnit extends OrgAction
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('shops', 'products.shop_id', '=', 'shops.id')
             ->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('currencies', 'products.currency_id', '=', 'currencies.id');
+        $queryBuilder->leftJoin('currencies', 'shops.currency_id', '=', 'currencies.id');
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
