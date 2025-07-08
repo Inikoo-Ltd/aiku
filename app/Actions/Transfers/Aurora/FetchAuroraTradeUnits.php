@@ -185,7 +185,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                     $tradeUnit,
                 );
 
-                $this->fetchTradeUnitDangerousGoodsInfo(
+                $this->fetchTradeUnitProductPropertiesInfo(
                     $tradeUnit,
                 );
             }
@@ -212,14 +212,14 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         ]);
     }
 
-    public function fetchTradeUnitDangerousGoodsInfo(TradeUnit $tradeUnit): void
+    public function fetchTradeUnitProductPropertiesInfo(TradeUnit $tradeUnit): void
     {
         foreach ($tradeUnit->products()->where('unit_relationship_type', ProductUnitRelationshipType::SINGLE)->where('products.organisation_id', $this->organisation->id)->get() as $product) {
             if ($product->shop->state !== ShopStateEnum::OPEN) {
                 continue;
             }
 
-            $dangerousGoodsInfo = $this->fetchAuroraDangerousGoodsInfo($product);
+            $dangerousGoodsInfo = $this->fetchAuroraProductPropertiesInfo($product);
 
             if ($this->organisation->id == 1) {
                 UpdateTradeUnit::make()->action(
@@ -255,7 +255,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         }
     }
 
-    public function fetchAuroraDangerousGoodsInfo(Product $product): array
+    public function fetchAuroraProductPropertiesInfo(Product $product): array
     {
         $sourceData = $product->source_id;
         if (!$sourceData) {
@@ -263,36 +263,40 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         }
         $sourceData = explode(':', $sourceData);
 
-        $dangerousGoodsInfo = DB::connection('aurora')->table('Product Dimension')
+        $productPropertiesInfo = DB::connection('aurora')->table('Product Dimension')
             ->where('Product Id', $sourceData[1])
             ->first();
 
-        if (!$dangerousGoodsInfo) {
+        if (!$productPropertiesInfo) {
             return [];
         }
 
         return [
-            'un_number'                    => $dangerousGoodsInfo->{'Product UN Number'} ?? null,
-            'un_class'                     => $dangerousGoodsInfo->{'Product UN Class'} ?? null,
-            'packing_group'                => $dangerousGoodsInfo->{'Product Packing Group'} ?? null,
-            'proper_shipping_name'         => $dangerousGoodsInfo->{'Product Proper Shipping Name'} ?? null,
-            'hazard_identification_number' => $dangerousGoodsInfo->{'Product Hazard Identification Number'} ?? null,
-            'gpsr_manufacturer'            => $dangerousGoodsInfo->{'Product GPSR Manufacturer'} ?? null,
-            'gpsr_eu_responsible'          => $dangerousGoodsInfo->{'Product GPSR EU Responsible'} ?? null,
-            'gpsr_warnings'                => $dangerousGoodsInfo->{'Product GPSR Warnings'} ?? null,
-            'gpsr_manual'                  => $dangerousGoodsInfo->{'Product GPSR Manual'} ?? null,
-            'gpsr_class_category_danger'   => $dangerousGoodsInfo->{'Product GPSR Class Category Danger'} ?? null,
-            'gpsr_class_languages'         => $dangerousGoodsInfo->{'Product GPSR Class Languages'} ?? null,
-            'pictogram_toxic'              => $dangerousGoodsInfo->{'Product Pictogram Toxic'} == 'Yes',
-            'pictogram_corrosive'          => $dangerousGoodsInfo->{'Product Pictogram Corrosive'} == 'Yes',
-            'pictogram_explosive'          => $dangerousGoodsInfo->{'Product Pictogram Explosive'} == 'Yes',
-            'pictogram_flammable'          => $dangerousGoodsInfo->{'Product Pictogram Flammable'} == 'Yes',
-            'pictogram_gas'                => $dangerousGoodsInfo->{'Product Pictogram Gas'} == 'Yes',
-            'pictogram_environment'        => $dangerousGoodsInfo->{'Product Pictogram Environment'} == 'Yes',
-            'pictogram_health'             => $dangerousGoodsInfo->{'Product Pictogram Health'} == 'Yes',
-            'pictogram_oxidising'          => $dangerousGoodsInfo->{'Product Pictogram Oxidising'} == 'Yes',
-            'pictogram_danger'             => $dangerousGoodsInfo->{'Product Pictogram Danger'} == 'Yes',
-
+            'un_number'                    => $productPropertiesInfo->{'Product UN Number'} ?? null,
+            'un_class'                     => $productPropertiesInfo->{'Product UN Class'} ?? null,
+            'packing_group'                => $productPropertiesInfo->{'Product Packing Group'} ?? null,
+            'proper_shipping_name'         => $productPropertiesInfo->{'Product Proper Shipping Name'} ?? null,
+            'hazard_identification_number' => $productPropertiesInfo->{'Product Hazard Identification Number'} ?? null,
+            'gpsr_manufacturer'            => $productPropertiesInfo->{'Product GPSR Manufacturer'} ?? null,
+            'gpsr_eu_responsible'          => $productPropertiesInfo->{'Product GPSR EU Responsible'} ?? null,
+            'gpsr_warnings'                => $productPropertiesInfo->{'Product GPSR Warnings'} ?? null,
+            'gpsr_manual'                  => $productPropertiesInfo->{'Product GPSR Manual'} ?? null,
+            'gpsr_class_category_danger'   => $productPropertiesInfo->{'Product GPSR Class Category Danger'} ?? null,
+            'gpsr_class_languages'         => $productPropertiesInfo->{'Product GPSR Class Languages'} ?? null,
+            'pictogram_toxic'              => $productPropertiesInfo->{'Product Pictogram Toxic'} == 'Yes',
+            'pictogram_corrosive'          => $productPropertiesInfo->{'Product Pictogram Corrosive'} == 'Yes',
+            'pictogram_explosive'          => $productPropertiesInfo->{'Product Pictogram Explosive'} == 'Yes',
+            'pictogram_flammable'          => $productPropertiesInfo->{'Product Pictogram Flammable'} == 'Yes',
+            'pictogram_gas'                => $productPropertiesInfo->{'Product Pictogram Gas'} == 'Yes',
+            'pictogram_environment'        => $productPropertiesInfo->{'Product Pictogram Environment'} == 'Yes',
+            'pictogram_health'             => $productPropertiesInfo->{'Product Pictogram Health'} == 'Yes',
+            'pictogram_oxidising'          => $productPropertiesInfo->{'Product Pictogram Oxidising'} == 'Yes',
+            'pictogram_danger'             => $productPropertiesInfo->{'Product Pictogram Danger'} == 'Yes',
+            'cpnp_number'                  => $productPropertiesInfo->{'Product CPNP Number'} ?? null,
+            'country_of_origin'            => $productPropertiesInfo->{'Product Origin Country Code'} ?? null,
+            'tariff_code'                  => $productPropertiesInfo->{'Product Tariff Code'} ?? null,
+            'duty_rate'                    => $productPropertiesInfo->{'Product Duty Rate'} ?? null,
+            'hts_us'                       => $productPropertiesInfo->{'Product HTSUS Code'} ?? null,
         ];
     }
 
