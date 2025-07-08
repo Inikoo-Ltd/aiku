@@ -48,6 +48,15 @@ class PrintShipmentLabel extends OrgAction
                 'messages' => __('You must set a preferred printer in your user settings!'),
             ]);
         }
+
+        $printByPrintNode = Arr::get($user->group->settings, 'printnode.print_by_printnode', false);
+        if (!$printByPrintNode) {
+            throw ValidationException::withMessages([
+                'messages' => __('Print by Printnode is not enabled for your group!'),
+            ]);
+        }
+        
+        
         $this->set('printerId', $printerId);
     }
 

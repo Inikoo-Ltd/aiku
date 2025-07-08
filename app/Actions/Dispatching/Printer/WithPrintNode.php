@@ -18,6 +18,8 @@ use Rawilk\Printing\Api\PrintNode\PendingPrintJob;
 use Rawilk\Printing\Api\PrintNode\PrintNode;
 use Rawilk\Printing\Api\PrintNode\Resources\Printer;
 use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
+use Illuminate\Validation\ValidationException;
+
 
 trait WithPrintNode
 {
@@ -34,6 +36,11 @@ trait WithPrintNode
             } else {
                 $group  = group();
                 $apiKey = Arr::get($group->settings, 'printnode.api_key');
+            }
+            if (empty($apiKey)) {
+                throw ValidationException::withMessages([
+                    'messages' => __('Printnode API key is not set for your group!'),
+                ]);
             }
             PrintNode::setApiKey($apiKey);
             $this->clientInitialized = true;

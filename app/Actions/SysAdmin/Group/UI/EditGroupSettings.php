@@ -130,6 +130,11 @@ class EditGroupSettings extends GrpAction
                                 "label"       => __("Printnode Apikey"),
                                 "value"       => Arr::get($group->settings, 'printnode.apikey', ''),
                             ],
+                            'print_by_printnode' => [
+                                'type'  => 'toggle',
+                                'label' => __('Print by Printnode'),
+                                'value' => Arr::get($group->settings, 'printnode.print_by_printnode', false),
+                            ],
                         ]
                     ],
                 ],

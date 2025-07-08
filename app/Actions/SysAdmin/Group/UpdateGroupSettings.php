@@ -66,6 +66,11 @@ class UpdateGroupSettings extends GrpAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'printnode_api_key');
         }
+        if (Arr::has($modelData, 'print_by_printnode')) {
+            data_set($groupSettings, 'printnode.print_by_printnode', Arr::get($modelData, 'print_by_printnode'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'print_by_printnode');
+        }
 
         return $this->update($group, $modelData);
     }
@@ -93,6 +98,7 @@ class UpdateGroupSettings extends GrpAction
             'client_secret'                     => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
+            'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
         ];
     }
 
