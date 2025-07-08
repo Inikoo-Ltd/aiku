@@ -84,6 +84,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $pictogram_health
  * @property bool $pictogram_oxidising
  * @property bool $pictogram_danger
+ * @property int|null $front_image_id
+ * @property int|null $34_image_id
+ * @property int|null $left_image_id
+ * @property int|null $right_image_id
+ * @property int|null $back_image_id
+ * @property int|null $top_image_id
+ * @property int|null $bottom_image_id
+ * @property int|null $size_comparison_image_id
+ * @property string|null $video_url
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcodes
@@ -201,7 +210,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function brand(): ?Brand
     {
         /** @var Brand $brand */
-        $brand= $this->brands()->first();
+        $brand = $this->brands()->first();
         return $brand;
     }
 
