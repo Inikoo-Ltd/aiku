@@ -3,6 +3,7 @@
 namespace App\Actions\Dispatching\Printer;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Dispatching\Shipment;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -15,12 +16,17 @@ class PrintShipmentLabel extends OrgAction
 
     public function handle(Shipment $shipment)
     {
-        // idk how to handle label html (because when convert to pdf it will be broken)
         if ($shipment->combined_label_url) {
             return $this->printPdfFromPdfUri(
                 title: $shipment->tracking,
                 printId: $this->get('printerId'),
                 pdfUri: $shipment->combined_label_url
+            );
+        }elseif($shipment->label && $shipment->label_type == ShipmentLabelTypeEnum::HTML) {
+            return $this->printRawBase64(
+                title: $shipment->tracking,
+                printId: $this->get('printerId'),
+                rawBase64: $shipment->label
             );
         }
         return $this->printPdf(
@@ -42,6 +48,15 @@ class PrintShipmentLabel extends OrgAction
                 'messages' => __('You must set a preferred printer in your user settings!'),
             ]);
         }
+
+        $printByPrintNode = Arr::get($user->group->settings, 'printnode.print_by_printnode', false);
+        if (!$printByPrintNode) {
+            throw ValidationException::withMessages([
+                'messages' => __('Print by Printnode is not enabled for your group!'),
+            ]);
+        }
+        
+        
         $this->set('printerId', $printerId);
     }
 

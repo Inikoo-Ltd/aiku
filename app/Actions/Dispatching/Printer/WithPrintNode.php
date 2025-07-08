@@ -12,11 +12,14 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf;
 use Rawilk\Printing\Api\PrintNode\Enums\ContentType;
 use Rawilk\Printing\Api\PrintNode\PendingPrintJob;
 use Rawilk\Printing\Api\PrintNode\PrintNode;
 use Rawilk\Printing\Api\PrintNode\Resources\Printer;
 use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
+use Illuminate\Validation\ValidationException;
+
 
 trait WithPrintNode
 {
@@ -32,7 +35,12 @@ trait WithPrintNode
                 $apiKey = config('printing.drivers.'.$driver.'.key');
             } else {
                 $group  = group();
-                $apiKey = Arr::get($group->settings, 'printing.api_key');
+                $apiKey = Arr::get($group->settings, 'printnode.api_key');
+            }
+            if (empty($apiKey)) {
+                throw ValidationException::withMessages([
+                    'messages' => __('Printnode API key is not set for your group!'),
+                ]);
             }
             PrintNode::setApiKey($apiKey);
             $this->clientInitialized = true;
@@ -59,6 +67,24 @@ trait WithPrintNode
         $content    = Str::fromBase64($pdfBase64);
         $pendingJob = PendingPrintJob::make()
             ->setContent($content)
+            ->setContentType(ContentType::PdfBase64)
+            ->setPrinter($printId)
+            ->setTitle($title)
+            ->setSource(config('app.name'));
+
+        return PrintJob::create($pendingJob);
+    }
+
+    public function printRawBase64(string $title, int $printId, string $rawBase64): PrintJob
+    {
+        // Convert raw base64 content to PDF using LaravelMPDF
+        $content = Str::fromBase64($rawBase64);
+        $pdf = LaravelMpdf::loadHTML($content);
+        $pdfContent = $pdf->output();
+
+        $this->ensureClientInitialized();
+        $pendingJob = PendingPrintJob::make()
+            ->setContent($pdfContent)
             ->setContentType(ContentType::PdfBase64)
             ->setPrinter($printId)
             ->setTitle($title)
