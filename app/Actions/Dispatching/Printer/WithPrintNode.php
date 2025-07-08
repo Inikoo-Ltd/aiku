@@ -70,7 +70,7 @@ trait WithPrintNode
     public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri) {
         $this->ensureClientInitialized();
         $pendingJob = PendingPrintJob::make()
-            ->setContent($pdfUri)
+            ->setUrl($pdfUri)
             ->setContentType(ContentType::PdfUri)
             ->setPrinter($printId)
             ->setTitle($title)

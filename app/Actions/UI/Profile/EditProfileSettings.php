@@ -72,7 +72,7 @@ class EditProfileSettings
                                 "value"   => Arr::get($user->settings, 'hide_logo'),
 
                             ],
-                            'type' => [
+                            'preferred_printer' => [
                                 'type'     => 'select',
                                 'label'    => __('preferred printer'),
                                 'required' => true,

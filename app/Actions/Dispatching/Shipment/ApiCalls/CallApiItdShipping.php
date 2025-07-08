@@ -116,7 +116,6 @@ class CallApiItdShipping extends OrgAction
         $modelData = [
             'api_response' => $apiResponse,
         ];
-        dd($apiResponse);
 
         $errorData = [];
         if (Arr::get($apiResponse, 'data.status') == 'COMPLETE') {
