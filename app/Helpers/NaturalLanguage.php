@@ -48,7 +48,7 @@ class NaturalLanguage
         }
     }
 
-    public function weight($weight, $precision = 2, $suffix = null): string
+    public function weight($weight, $precision = 2, $suffix = null): ?string
     {
         if ($weight > 0) {
             $weight   = (float)$weight;

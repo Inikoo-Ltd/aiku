@@ -95,7 +95,13 @@ const component = computed(() => {
     </template>
   </PageHeading>
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-  <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" />
+  
+  <component
+    :is="component"
+    :data="props[currentTab as keyof typeof props]"
+    :tab="currentTab"
+    :handleTabUpdate
+    :detachRoute="attachmentRoutes.detachRoute" />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

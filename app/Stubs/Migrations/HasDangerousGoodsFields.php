@@ -25,10 +25,10 @@ trait HasDangerousGoodsFields
         $table->string('packing_group')->nullable();
         $table->string('proper_shipping_name')->nullable();
         $table->string('hazard_identification_number')->nullable();
-        $table->string('gpsr_manufacturer')->nullable();
-        $table->string('gpsr_eu_responsible')->nullable();
-        $table->string('gpsr_warnings')->nullable();
-        $table->string('gpsr_manual')->nullable();
+        $table->text('gpsr_manufacturer')->nullable();
+        $table->text('gpsr_eu_responsible')->nullable();
+        $table->text('gpsr_warnings')->nullable();
+        $table->text('gpsr_manual')->nullable();
         $table->string('gpsr_class_category_danger')->nullable();
         $table->string('gpsr_class_languages')->nullable();
         $table->boolean('pictogram_toxic')->default(false);

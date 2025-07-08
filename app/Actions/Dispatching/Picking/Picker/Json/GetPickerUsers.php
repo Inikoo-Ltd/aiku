@@ -15,13 +15,14 @@ use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class GetPickerUsers extends OrgAction
 {
-    public function handle(Organisation $organisation): LengthAwarePaginator
+    public function handle(Organisation $organisation, $quick = false): LengthAwarePaginator|Collection
     {
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -45,6 +46,8 @@ class GetPickerUsers extends OrgAction
                         ->where('user_has_models.model_type', '=', 'Employee');
                 });
 
+
+
         $queryBuilder
             ->defaultSort('employees.id')
             ->select([
@@ -54,6 +57,10 @@ class GetPickerUsers extends OrgAction
                 'user_has_models.user_id as id'
             ]);
 
+        if($quick) {
+            $queryBuilder->limit(6);
+            return $queryBuilder->get();
+        }
 
         return $queryBuilder->allowedSorts(['contact_name','alias'])
             ->allowedFilters([$globalSearch])

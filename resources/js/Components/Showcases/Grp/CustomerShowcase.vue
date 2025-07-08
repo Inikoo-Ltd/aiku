@@ -73,6 +73,7 @@ const props = defineProps<{
         }
     },
     tab: string
+    handleTabUpdate?: Function
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -285,6 +286,10 @@ const isModalBalanceIncrease = ref(false)
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')" class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                    {{ trans("See all transactions list") }}
                 </div>
             </div>
 

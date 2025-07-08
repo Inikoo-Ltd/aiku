@@ -54,15 +54,8 @@ watch(() => isLoading.value, (loading) => {
 
     <div class="flex justify-center">
         <div class="relative w-full max-w-xl isolate xmx-auto my-8 overflow-hidden">
-            <!-- <div class="mb-2">
-                Need to pay: <span class="font-bold">{{ locale.currencyFormat(currency_code, props.needToPay) }}</span>
-                <Transition name="spin-to-right">
-                    <FontAwesomeIcon v-if="isRecentlyCopied" icon="fal fa-check" class="ml-1 text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else @click="() => onClickCopy(props.needToPay.toFixed(2))" icon="fal fa-copy" class="ml-1 text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true" />
-                </Transition>
-            </div> -->
-            <div xv-show="!isLoading" id="flow-container" class="absolute " />
-            <div class="w-full h-[511px] -z-10" :class="isLoadingCheckout ? 'skeleton' : ''">
+            <div xv-show="!isLoading" id="flow-container" class="absolute w-full" />
+            <div class="w-full h-[623px] md:h-[511px] -z-10" :class="isLoadingCheckout ? 'skeleton' : ''">
             </div>
         </div>
     </div>

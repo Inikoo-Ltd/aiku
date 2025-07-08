@@ -362,7 +362,7 @@ const onPrintShipment = async (ship) => {
 						class="text-gray-500" />
 				</dt>
 				<dd class="text-gray-500">
-					{{ locale.number(boxStats?.products.estimated_weight) || 0 }} kilograms
+					{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
 				</dd>
 			</div>
 
