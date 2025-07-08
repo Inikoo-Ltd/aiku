@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\Dispatching\Printer\Json\GetPrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\UI\LoggedUserResource;
@@ -35,6 +36,20 @@ class EditProfileSettings
 
     public function generateBlueprint(User $user): array
     {
+        $cacheKey = "user_printers";
+        $cachedPrinters = cache()->get($cacheKey);
+        if ($cachedPrinters) {
+                $printers = $cachedPrinters;
+        }else {
+            $printers = GetPrinters::make()->action([])->map(function ($printer) {
+                return [
+                    'value' => $printer->id,
+                    'label' => $printer->name,
+                ];
+            })->values()->toArray();
+            cache()->put($cacheKey, $printers, now()->addMinutes(5));
+        }
+
         return [
             "title"       => __("Preferences"),
             "pageHead"    => [
@@ -64,6 +79,13 @@ class EditProfileSettings
                                 "noIcon"    => true,
                                 "value"   => Arr::get($user->settings, 'hide_logo'),
 
+                            ],
+                            'preferred_printer' => [
+                                'type'     => 'select',
+                                'label'    => __('preferred printer'),
+                                'required' => true,
+                                'options'  => $printers,
+                                'value'    => Arr::get($user->settings, 'preferred_printer_id'),
                             ],
                         ],
                     ],

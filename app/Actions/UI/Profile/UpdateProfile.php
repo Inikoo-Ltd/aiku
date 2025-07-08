@@ -24,10 +24,14 @@ class UpdateProfile extends OrgAction
 
     public function handle(User $user, array $modelData): User
     {
-
         if (Arr::exists($modelData, 'hide_logo')) {
             $appTheme = Arr::pull($modelData, 'hide_logo');
             $modelData['settings']['hide_logo'] = $appTheme;
+        }
+
+        if (Arr::exists($modelData, 'preferred_printer')) {
+            $printerId = Arr::pull($modelData, 'preferred_printer');
+            $modelData['settings']['preferred_printer_id'] = $printerId;
         }
 
         $user = $this->processProfileAvatar($modelData, $user);
@@ -49,6 +53,7 @@ class UpdateProfile extends OrgAction
             'language_id' => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'   => ['sometimes', 'required'],
             'hide_logo'   => ['sometimes', 'boolean'],
+            'preferred_printer' => ['sometimes', 'integer'],
             'image'       => [
                 'sometimes',
                 'nullable',
