@@ -85,15 +85,4 @@ class SendNewPalletReturnCustomerNotification extends OrgAction
 
     }
 
-    // public string $commandSignature = 'xxx';
-
-    // public function asCommand($command){
-    //     $pallet = PalletReturn::find(33);
-
-
-    //     $this->handle($pallet);
-    // }
-
-
-
 }

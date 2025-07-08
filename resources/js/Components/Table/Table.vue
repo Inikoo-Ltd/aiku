@@ -166,7 +166,14 @@ const props = defineProps(
             type: Boolean,
             default: false,
             required: false,
-        }
+        },
+        rowColorFunction: {
+            type: Function,
+            default: () => {
+                return ''
+            },
+            required: false,
+        },
     });
 
 const emits = defineEmits<{
@@ -962,7 +969,11 @@ const isLoading = ref<string | boolean>(false)
                                                 },
                                                 selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
                                                     ? 'bg-green-100/70'
-                                                    : striped ? 'bg-gray-200 hover:bg-gray-300' : 'hover:bg-gray-50'
+                                                    : striped
+                                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                                        : rowColorFunction(item)
+                                                            ? rowColorFunction(item)
+                                                            : 'hover:bg-gray-50'
                                             ]"
                                         >
                                             <!-- Column: Check box -->

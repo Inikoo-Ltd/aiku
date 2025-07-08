@@ -4,39 +4,37 @@
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
 
-
-
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import PageHeading from '@/Components/Headings/PageHeading.vue';
-import {useLocaleStore} from '@/Stores/locale';
-import {library} from '@fortawesome/fontawesome-svg-core';
-import { faInventory, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign } from '@fal';
-import { computed, defineAsyncComponent, ref } from "vue";
-import { useTabChange } from "@/Composables/tab-change";
-import ModelDetails from "@/Components/ModelDetails.vue";
-import Tabs from "@/Components/Navigation/Tabs.vue";
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faInventory, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign } from "@fal"
+import { computed, defineAsyncComponent, ref } from "vue"
+import { useTabChange } from "@/Composables/tab-change"
+import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
-import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue";
-import Button from '@/Components/Elements/Buttons/Button.vue';
-import UploadAttachment from '@/Components/Upload/UploadAttachment.vue';
-import TradeUnitShowcase from '@/Components/Goods/TradeUnitShowcase.vue';
-import { routeType } from '@/types/route'
-import TableProducts from '@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue';
-import TableStocks from '@/Components/Tables/Grp/Goods/TableStocks.vue';
+import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
+import TradeUnitShowcase from "@/Components/Goods/TradeUnitShowcase.vue"
+import { routeType } from "@/types/route"
+import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
+import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import type { Navigation } from "@/types/Tabs"
+import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 
-library.add( faInventory, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, );
+library.add(faInventory, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign)
 
-const locale = useLocaleStore();
 const isModalUploadOpen = ref(false)
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
+const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 const props = defineProps<{
     title: string,
-    pageHead: object,
+    pageHead: PageHeadingTypes
     tabs: {
         current: string;
-        navigation: object;
+        navigation: Navigation
     }
     showcase?: object,
     attachments?: {}
@@ -50,11 +48,13 @@ const props = defineProps<{
     }
     products?: {}
     stocks?: {}
+    images?: {},
+    imagesCategoryBox?: {  }
 
 }>()
 
-let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+let currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
 
@@ -63,11 +63,12 @@ const component = computed(() => {
         history: ModelChangelog,
         attachments: TableAttachments,
         products: TableProducts,
-        stocks: TableStocks
-    };
-    return components[currentTab.value];
+        stocks: TableStocks,
+        images: TableImages
+    }
+    return components[currentTab.value]
 
-});
+})
 
 </script>
 
@@ -76,10 +77,10 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach" icon="upload"/>
+            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach" icon="upload" />
         </template>
     </PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component
         :is="component"
         :data="props[currentTab]"

@@ -17,16 +17,9 @@ enum ProductTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
-
-
     case SALES = 'sales';
-
-
     case VARIATIONS = 'variations';
-
-
     case HISTORY = 'history';
-
     case IMAGES = 'images';
     case STOCKS = 'stocks';
     case TRADE_UNITS = 'trade_units';

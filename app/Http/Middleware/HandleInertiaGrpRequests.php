@@ -15,7 +15,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
-use Tightenco\Ziggy\Ziggy;
+use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaGrpRequests extends Middleware
 {

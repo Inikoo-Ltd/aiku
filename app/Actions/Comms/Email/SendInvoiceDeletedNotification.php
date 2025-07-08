@@ -84,12 +84,5 @@ class SendInvoiceDeletedNotification extends OrgAction
         }
     }
 
-    // public string $commandSignature = 'xxx';
 
-    // public function asCommand($command){
-    //     $pallet = Invoice::withTrashed()->find(413619);
-
-
-    //     $this->handle($pallet);
-    // }
 }

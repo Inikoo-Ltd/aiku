@@ -1,41 +1,31 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 07 Jul 2025 22:51:10 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Dispatching\Printer\Json;
 
 use App\Actions\Dispatching\Printer\WithPrintNode;
 use App\Actions\OrgAction;
-use App\Models\Dispatching\Shipment;
-use App\Models\SysAdmin\Organisation;
-use Exception;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Rawilk\Printing\Api\PrintNode\PendingPrintJob;
-use Rawilk\Printing\Api\PrintNode\Resources\Computer;
-use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
-use Rawilk\Printing\Api\PrintNode\Enums\ContentType;
 use Rawilk\Printing\Api\PrintNode\Resources\Printer;
-use Rawilk\Printing\Facades\Printing;
 
 class GetPrinters extends OrgAction
 {
-
     use WithPrintNode;
 
-    /**
-     * Get all printers and computers from PrintNode API
-     *
-     * @return array
-     * @throws Exception
-     */
+
     public function handle(): Collection
     {
         $this->ensureClientInitialized();
         return Printer::all();
     }
 
-    public function jsonResponse(Collection $printers)
+    public function jsonResponse(Collection $printers): Collection
     {
         return $printers;
     }
@@ -54,14 +44,16 @@ class GetPrinters extends OrgAction
 
 
 
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): Collection
     {
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle();
     }
 
-    public function action(array $modelData): Collection {
+    public function action(array $modelData): Collection
+    {
+        $this->asAction = true;
         $this->initialisationFromGroup(group(), $modelData);
 
         return $this->handle();

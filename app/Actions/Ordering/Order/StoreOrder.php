@@ -30,6 +30,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
@@ -82,12 +83,19 @@ class StoreOrder extends OrgAction
 
 
         if ($this->strict) {
+            $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
+                data_forget($modelData, 'billing_address'); // Just in case is added by mistake
+                data_forget($modelData, 'delivery_address'); // Just in case is added by mistake
                 $billingAddress  = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
-            } else {
+            } elseif ($parent instanceof CustomerClient) {
+                data_forget($modelData, 'billing_address'); // Just in case is added by mistake
                 $billingAddress  = $parent->customer->address;
-                $deliveryAddress = $parent->address;
+                $deliveryAddress = Arr::pull($modelData, 'delivery_address');
+            } else {
+                $billingAddress  = Arr::pull($modelData, 'billing_address');
+                $deliveryAddress = Arr::pull($modelData, 'delivery_address');
             }
         } else {
             $billingAddress  = Arr::pull($modelData, 'billing_address');
@@ -266,9 +274,10 @@ class StoreOrder extends OrgAction
             'handing_type'              => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
+            'platform_order_id'         => ['sometimes', 'nullable'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
-            'data' => ['sometimes', 'array'],
+            'data'                      => ['sometimes', 'array'],
             'sales_channel_id'          => [
                 'sometimes',
                 'required',
@@ -276,6 +285,9 @@ class StoreOrder extends OrgAction
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
+            'billing_address' => ['sometimes', 'required',  new ValidAddress()], // only need when parent is Shop
+            'delivery_address' => ['sometimes', 'required',  new ValidAddress()],  // only need when the parent is Shop|CustomerClient
+
 
         ];
 

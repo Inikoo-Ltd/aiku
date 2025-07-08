@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -31,7 +32,7 @@ class UpdateDeliveryNoteStateToUnassigned extends OrgAction
         data_set($modelData, 'picker_user_id', null);
 
 
-        return DB::transaction(function () use ($deliveryNote, $modelData) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
             UpdateDeliveryNote::run($deliveryNote, $modelData);
 
             DB::table('delivery_note_items')
@@ -42,6 +43,11 @@ class UpdateDeliveryNoteStateToUnassigned extends OrgAction
 
             return $deliveryNote;
         });
+
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
+
+        return $deliveryNote;
     }
 
     /**

@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,9 @@ class DeleteDeliveryNote extends OrgAction
         ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop);
         OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation);
         GroupHydrateDeliveryNotes::dispatch($deliveryNote->group);
+
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
 
         return $deliveryNote;
     }

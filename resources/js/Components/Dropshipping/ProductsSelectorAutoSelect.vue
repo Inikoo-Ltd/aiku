@@ -105,7 +105,6 @@ onUnmounted(() => {
 })
 
 watch(() => props.valueToRefetch, (newVal, oldVal) => {
-    console.log('xxx', oldVal, newVal)
     getPortfoliosList()
 })
 </script>

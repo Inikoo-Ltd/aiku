@@ -60,11 +60,12 @@ const props = defineProps<{
     routes?: {
         update_route: routeType
         submit_route: routeType
+        route_to_pay_unpaid: routeType
     }
     timelines: {
 
     }
-    fffff: {}
+
 
 
     box_stats: {
@@ -164,7 +165,8 @@ console.log('DS Orders', props)
     </div>
 
     <!-- Section: Alert if unpaid -->
-    <Message v-if="!data?.data?.is_fully_paid" severity="error" class="mx-4 mt-4 ">
+<!--    <Message v-if="!data?.data?.is_fully_paid" severity="error" class="mx-4 mt-4 ">-->
+    <Message v-if="false" severity="error" class="mx-4 mt-4 ">
         <template #icon>
             <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true" />
         </template>
@@ -173,10 +175,8 @@ console.log('DS Orders', props)
             <div class="flex items-center gap-x-2">
                 {{ trans("You have unpaid amount of the order") }}: <span class="font-bold">{{ locale.currencyFormat(locale.currencyInertia?.code, data?.data.unpaid_amount) }}</span>
             </div>
-
             <ButtonWithLink
-                v-if="data?.data.route_to_pay_unpaid"
-                :routeTarget="data?.data.route_to_pay_unpaid"
+                :routeTarget="routes.route_to_pay_unpaid"
                 :label="trans('Click to pay')"
                 type="positive"
                 class="bg-green-100"

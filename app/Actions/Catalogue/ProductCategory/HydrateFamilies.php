@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateBestSellerProduct;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateImages;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSales;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
@@ -29,6 +30,7 @@ class HydrateFamilies
     {
         FamilyHydrateProducts::run($productCategory);
         ProductCategoryHydrateSales::run($productCategory);
+        ProductCategoryHydrateImages::run($productCategory);
         FamilyHydrateBestSellerProduct::run($productCategory);
     }
 

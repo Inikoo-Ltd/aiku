@@ -30,7 +30,11 @@ class PrintShipmentLabel extends OrgAction
         );
     }
 
-    public function afterValidator(Validator $validator): void{
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function afterValidator(Validator $validator): void
+    {
         $user = request()->user();
         $printerId = Arr::get($user->settings, 'preferred_printer_id', null);
         if (!$printerId) {

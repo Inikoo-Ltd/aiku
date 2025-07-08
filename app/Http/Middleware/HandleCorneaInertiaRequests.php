@@ -14,7 +14,7 @@ use App\Models\SupplyChain\SupplierUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
-use Tightenco\Ziggy\Ziggy;
+use Tighten\Ziggy\Ziggy;
 
 class HandleCorneaInertiaRequests extends Middleware
 {

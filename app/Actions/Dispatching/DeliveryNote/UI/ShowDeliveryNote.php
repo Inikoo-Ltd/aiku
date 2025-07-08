@@ -135,7 +135,8 @@ class ShowDeliveryNote extends OrgAction
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-        $startPickingLabel = __('Start picking');
+        $startPickingLabel    = __('Start picking');
+        $generateInvoiceLabel = __('Generate Invoice');
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
@@ -259,10 +260,69 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ]
+                ],
+                $deliveryNote->orders->first()->invoices->count() == 0 ?
+                    [
+                        'type'    => 'button',
+                        'style'   => '',
+                        'tooltip' => $generateInvoiceLabel,
+                        'label'   => $generateInvoiceLabel,
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.generate_invoice',
+                            'parameters' => [
+                                'order' => $deliveryNote->orders->first()->id
+                            ]
+                        ]
+                    ] : []
+            ],
+            DeliveryNoteStateEnum::DISPATCHED => [
+                $deliveryNote->orders->first()->invoices->count() == 0 ?
+                    [
+                        'type'    => 'button',
+                        'style'   => '',
+                        'tooltip' => $generateInvoiceLabel,
+                        'label'   => $generateInvoiceLabel,
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.delivery_note.state.dispatched',
+                            'parameters' => [
+                                'order' => $deliveryNote->orders->first()->id
+                            ]
+                        ]
+                    ] : []
             ],
             default => []
         };
+    }
+
+    public function getInvoiceButton(DeliveryNote $deliveryNote): array
+    {
+        $invoiceButton        = [];
+        $generateInvoiceLabel = __('Generate Invoice');
+
+        if (($deliveryNote->state == DeliveryNoteStateEnum::FINALISED || $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) && $deliveryNote->orders->first()->invoices->count() == 0) {
+            $invoiceButton = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => $generateInvoiceLabel,
+                    'label'   => $generateInvoiceLabel,
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.dispatched',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ]
+            ];
+        }
+
+        return $invoiceButton;
     }
 
     public function getBoxStats(DeliveryNote $deliveryNote): array
@@ -362,6 +422,7 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'    => $this->getActions($deliveryNote, $request),
+                $this->getInvoiceButton($deliveryNote)
             ],
             'tabs'          => [
                 'current'    => $this->tab,

@@ -32,7 +32,7 @@ class FetchAuroraMasterAssets extends FetchAuroraAction
         }
 
         $sourceData = explode(':', $masterAssetData['master_asset']['source_id']);
-        $stocks  = $organisationSource->fetchMasterAssetHasStock($sourceData[1])['stocks'];
+        $stocks     = $organisationSource->fetchMasterAssetHasStock($sourceData[1])['stocks'];
 
         data_set(
             $masterAssetData,
@@ -92,14 +92,16 @@ class FetchAuroraMasterAssets extends FetchAuroraAction
                 if (isset($imageData['image_path']) and isset($imageData['filename'])) {
                     try {
                         SaveModelImages::run(
-                            model:$masterAsset,
-                            imageData:[
-                                'path'         => $imageData['image_path'],
+                            model: $masterAsset,
+                            mediaData: [
+                                'path' => $imageData['image_path'],
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            scope:'photo',
-                            mediaScope:'master_asset_images'
+                            mediaScope: 'master_asset_images',
+                            modelHasMediaData: [
+                                'scope' => 'photo'
+                            ]
                         );
                     } catch (Exception $e) {
                         $this->recordError($organisationSource, $e, $imageData, 'Image', 'store');
@@ -127,7 +129,6 @@ class FetchAuroraMasterAssets extends FetchAuroraAction
 
     public function getModelsQuery(): Builder
     {
-
         $query = $this->commonSelectModelsToFetch();
 
         $query->select('Product ID as source_id')

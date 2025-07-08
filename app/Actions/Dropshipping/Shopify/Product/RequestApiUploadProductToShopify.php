@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToShopifyProgressEvent;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
@@ -55,23 +56,28 @@ class RequestApiUploadProductToShopify extends RetinaAction
                     Sentry::captureException($e);
                 }
 
+                /** @var Product $item */
+                $item = $portfolio->item;
+
                 $body = [
                     "product" => [
-                        "id"           => $portfolio->item->id,
+                        "id"           => $item->id,
                         "title"        => $portfolio->customer_product_name,
                         "handle"       => $portfolio->platform_handle,
                         "body_html"    => $portfolio->customer_description,
-                        "vendor"       => $portfolio->item->shop->name,
-                        "product_type" => $portfolio->item->family?->name,
+                        "vendor"       => $item->shop->name,
+                        "product_type" => $item->family?->name,
                         "images"       => $images,
                         "variants"     => [
                             [
                                 "price"                => number_format($portfolio->customer_price, 2, '.', ''),
-                                "sku"                  => $portfolio->id,
+                                "sku"                  => $item->code,
+                                "barcode"              => $item->barcode,
                                 "inventory_management" => "shopify",
                                 "inventory_policy"     => "deny",
-                                "weight"               => $portfolio->item->gross_weight,
-                                "weight_unit"          => "g"
+                                "weight"               => $item->marketing_weight,
+                                "weight_unit"          => "g",
+                                "cost"                 => $item->price,
                             ]
                         ]
                     ]
@@ -105,7 +111,7 @@ class RequestApiUploadProductToShopify extends RetinaAction
 
                 $inventoryVariants = [];
                 foreach (Arr::get($productShopify, 'variants', []) as $variant) {
-                    $variant['available_quantity'] = $portfolio->item->available_quantity;
+                    $variant['available_quantity'] = $item->available_quantity;
                     $inventoryVariants[]           = $variant;
                 }
 

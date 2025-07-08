@@ -19,7 +19,7 @@ trait WithWeightFromTradeUnits
         $weight  = 0;
 
         foreach ($model->tradeUnits as $tradeUnit) {
-            if (is_numeric($tradeUnit->gross_weight) and is_numeric($tradeUnit->pivot->quantity)) {
+            if (is_numeric($tradeUnit->gross_weight) && is_numeric($tradeUnit->pivot->quantity)) {
                 $changed = true;
                 $weight  += $tradeUnit->gross_weight * $tradeUnit->pivot->quantity;
             }

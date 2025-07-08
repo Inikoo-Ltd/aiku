@@ -21,6 +21,9 @@ defineProps<{
         goods_amount: string
         services_amount: string
         charges_amount: string
+        order_properties: {
+            weight: string
+        }
         customer_channel: {
             status: boolean
             platform: {
@@ -56,7 +59,7 @@ const isModalShippingAddress = ref(false)
             </div>
 
             <!-- Field: Reference Number -->
-            <!-- <pre>{{ summary.customer_channel }}</pre> -->
+
             <Link v-if="summary?.customer_client.ulid" as="a" v-tooltip="trans('Client')"
                 :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
@@ -121,6 +124,7 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <div class="col-span-2">
+         Weight: {{summary.order_properties.weight}}
         </div>
 
         <div class="col-span-3">

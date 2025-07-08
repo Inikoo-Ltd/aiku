@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Catalogue\ProductsWebpageResource;
-use App\Http\Resources\Catalogue\WorkshopProductsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;

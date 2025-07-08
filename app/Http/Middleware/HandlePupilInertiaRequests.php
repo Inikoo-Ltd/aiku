@@ -12,7 +12,7 @@ use App\Actions\Pupil\GetPupilFirstLoadProps;
 use App\Http\Resources\UI\LoggedShopifyUserResource;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use Tightenco\Ziggy\Ziggy;
+use Tighten\Ziggy\Ziggy;
 
 class HandlePupilInertiaRequests extends Middleware
 {

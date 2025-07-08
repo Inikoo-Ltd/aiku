@@ -9,9 +9,6 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Catalogue\Product\UI\GetProductShowcase;
-use App\Actions\Comms\Mailshot\UI\IndexMailshots;
-use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
@@ -77,9 +74,7 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
             ]
-        )->table(IndexOrders::make()->tableStructure($product->asset))
-            ->table(IndexCustomers::make()->tableStructure($product->shop))
-            ->table(IndexMailshots::make()->tableStructure($product));
+        );
     }
 
     public function jsonResponse(Product $product): ProductsResource

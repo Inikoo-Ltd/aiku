@@ -90,7 +90,7 @@
     "symfony/psr-http-message-bridge": "^7.2",
     "theiconic/name-parser": "^1.2",
     "theodo-group/llphant": "^0.9.9",
-    "tightenco/ziggy": "^1.0",
+    "tightenco/ziggy": "^2.5",
     "treblle/treblle-laravel": "^5.0",
     "tuupola/base32": "^2.0",
     "vemcogroup/laravel-translation": "^3.0",

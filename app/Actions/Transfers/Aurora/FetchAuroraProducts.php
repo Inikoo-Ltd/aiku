@@ -104,14 +104,16 @@ class FetchAuroraProducts extends FetchAuroraAction
                 if (isset($imageData['image_path']) and isset($imageData['filename'])) {
                     try {
                         SaveModelImages::run(
-                            $product,
-                            [
-                                'path'         => $imageData['image_path'],
+                            model: $product,
+                            mediaData: [
+                                'path' => $imageData['image_path'],
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            'photo',
-                            'product_images'
+                            mediaScope: 'product_images',
+                            modelHasMediaData: [
+                                'scope' => 'photo'
+                            ]
                         );
                     } catch (Exception $e) {
                         $this->recordError($organisationSource, $e, $imageData, 'Image', 'store');
