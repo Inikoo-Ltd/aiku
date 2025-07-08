@@ -44,7 +44,6 @@ class EditProfileSettings
             'label' => $printer->name
             ];
         })->values()->toArray();
-        // dd($printers);
         return [
             "title"       => __("Preferences"),
             "pageHead"    => [
@@ -80,7 +79,7 @@ class EditProfileSettings
                                 'label'    => __('preferred printer'),
                                 'required' => true,
                                 'options'  => $printers,
-                                'value'    => '',
+                                'value'    => Arr::get($user->settings, 'preferred_printer_id'),
                             ],
                         ],
                     ],

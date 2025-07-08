@@ -30,6 +30,11 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['hide_logo'] = $appTheme;
         }
 
+        if (Arr::exists($modelData, 'preferred_printer_id')) {
+            $printerId = Arr::pull($modelData, 'preferred_printer_id');
+            $modelData['settings']['preferred_printer_id'] = $printerId;
+        }
+
         $user = $this->processProfileAvatar($modelData, $user);
         if (Arr::exists($modelData, 'app_theme')) {
             $appTheme = Arr::pull($modelData, 'app_theme');
@@ -49,6 +54,7 @@ class UpdateProfile extends OrgAction
             'language_id' => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'   => ['sometimes', 'required'],
             'hide_logo'   => ['sometimes', 'boolean'],
+            'preferred_printer_id' => ['sometimes', 'integer'],
             'image'       => [
                 'sometimes',
                 'nullable',

@@ -32,7 +32,6 @@ class GetPrinters extends OrgAction
     public function handle(): Collection
     {
         $this->ensureClientInitialized();
-        
         return Printer::all();
     }
 

@@ -60,4 +60,16 @@ trait WithPrintNode
 
         return PrintJob::create($pendingJob);
     }
+
+    public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri) {
+        $this->ensureClientInitialized();
+        $pendingJob = PendingPrintJob::make()
+            ->setContent($pdfUri)
+            ->setContentType(ContentType::PdfUri)
+            ->setPrinter($printId)
+            ->setTitle($title)
+            ->setSource(config('app.name'));
+
+        return PrintJob::create($pendingJob);
+    }
 }

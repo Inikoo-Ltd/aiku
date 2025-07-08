@@ -2,23 +2,9 @@
 
 namespace App\Actions\Dispatching\Printer;
 
-use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
-use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
-use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSKShipping;
-use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
-use App\Actions\Dispatching\Shipment\ApiCalls\DpdGbCallShipperApi;
-use App\Actions\Dispatching\Shipment\ApiCalls\PostmenCallShipperApi;
-use App\Actions\Dispatching\Shipment\ApiCalls\WhistlGbCallShipperApi;
-use App\Actions\Dispatching\Shipment\Hydrators\ShipmentHydrateUniversalSearch;
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
-use App\Models\Dispatching\Shipper;
-use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,17 +13,21 @@ class PrintShipmentLabel extends OrgAction
 {
     use WithPrintNode;
 
-    public function handle(Shipment $shipment, ActionRequest $request)
+    public function handle(Shipment $shipment)
     {
-        switch($shipment->label_type) {
-            case ShipmentLabelTypeEnum::PDF:
-                return $this->printPdf(
-                    title: $shipment->tracking,
-                    printId: $this->get('printerId'),
-                    pdfBaset64: $shipment->label
-                );
+        // idk how to handle label html (because when convert to pdf it will be broken)
+        if ($shipment->combined_label_url) {
+            return $this->printPdfFromPdfUri(
+                title: $shipment->tracking,
+                printId: $this->get('printerId'),
+                pdfUri: $shipment->combined_label_url
+            );
         }
-
+        return $this->printPdf(
+            title: $shipment->tracking,
+            printId: $this->get('printerId'),
+            pdfBaset64: $shipment->label
+        );
     }
 
     public function afterValidator(Validator $validator): void{
@@ -55,7 +45,7 @@ class PrintShipmentLabel extends OrgAction
     {
         $this->initialisationFromGroup($shipment->group, $request);
 
-        return $this->handle($shipment, $request);
+        return $this->handle($shipment);
     }
 
 
