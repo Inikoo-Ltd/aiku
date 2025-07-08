@@ -116,6 +116,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $pictogram_oxidising
  * @property bool $pictogram_danger
  * @property array<array-key, mixed>|null $marketing_dimensions
+ * @property int|null $front_image_id
+ * @property int|null $34_image_id
+ * @property int|null $left_image_id
+ * @property int|null $right_image_id
+ * @property int|null $back_image_id
+ * @property int|null $top_image_id
+ * @property int|null $bottom_image_id
+ * @property int|null $size_comparison_image_id
+ * @property string|null $video_url
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
