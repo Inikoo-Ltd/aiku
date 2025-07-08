@@ -94,22 +94,36 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $bottom_image_id
  * @property int|null $size_comparison_image_id
  * @property string|null $video_url
- * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
+ * @property string|null $cpnp_number
+ * @property string|null $country_of_origin
+ * @property string|null $tariff_code
+ * @property string|null $duty_rate
+ * @property string|null $hts_us
+ * @property string|null $marketing_ingredients
+ * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Media|null $backImage
  * @property-read Collection<int, Barcode> $barcodes
+ * @property-read Media|null $bottomImage
  * @property-read Collection<int, Brand> $brands
+ * @property-read Media|null $frontImage
  * @property-read Group $group
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients
- * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read Media|null $leftImage
+ * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read Collection<int, Product> $products
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $rightImage
+ * @property-read Media|null $seoImage
+ * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Goods\TradeUnitStats|null $stats
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, Tag> $tags
+ * @property-read Media|null $threeQuarterImage
+ * @property-read Media|null $topImage
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()

@@ -125,6 +125,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $bottom_image_id
  * @property int|null $size_comparison_image_id
  * @property string|null $video_url
+ * @property string|null $cpnp_number
+ * @property string|null $country_of_origin
+ * @property string|null $tariff_code
+ * @property string|null $duty_rate
+ * @property string|null $hts_us
+ * @property string|null $marketing_ingredients
+ * @property string|null $price_updated_at
+ * @property string|null $available_quantity_updated_at
+ * @property string|null $images_updated_at
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
