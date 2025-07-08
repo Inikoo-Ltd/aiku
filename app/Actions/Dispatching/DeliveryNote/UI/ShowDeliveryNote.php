@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
+use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
@@ -26,6 +27,7 @@ use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Ordering\PickersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
@@ -398,6 +400,12 @@ class ShowDeliveryNote extends OrgAction
         return $timeline;
     }
 
+    public function quickGetPickers()
+    {
+        $pickers = PickersResource::collection(GetPickerUsers::run($this->organisation, true))->resolve();
+
+        return $pickers;
+    }
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $props = [
@@ -432,6 +440,8 @@ class ShowDeliveryNote extends OrgAction
 
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
+
+            'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
                 'update'         => [
                     'name'       => 'grp.models.delivery_note.update',

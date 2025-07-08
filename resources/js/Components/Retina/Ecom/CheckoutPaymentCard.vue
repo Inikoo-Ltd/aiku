@@ -57,6 +57,9 @@ onMounted(async () => {
         onError: (component, error) => {
             console.log("onError", error, "Component", component.type)
         },
+        appearance: {
+            colorAction: 'rgb(15, 22, 38)',
+        }
     })
     
     const flowComponent = checkout.create('flow');
@@ -78,7 +81,7 @@ const onClickCopy = (textToCopy: string) => {
 
 <template>
     <div class="relative w-full max-w-xl isolate mx-auto my-8 overflow-hidden">
-        <div class="mb-2">
+        <div class="mb-2 pl-2">
             Need to pay: <span class="font-bold">{{ locale.currencyFormat(currency_code, props.needToPay) }}</span>
             <Transition name="spin-to-right">
                 <FontAwesomeIcon v-if="isRecentlyCopied" icon="fal fa-check" class="ml-1 text-green-500" fixed-width aria-hidden="true" />
@@ -86,8 +89,8 @@ const onClickCopy = (textToCopy: string) => {
             </Transition>
         </div>
 
-        <div xv-show="!isLoading" id="flow-container" class="absolute " />
-        <div class="w-full h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
+        <div xv-show="!isLoading" id="flow-container" class="absolute w-full" />
+        <div class="w-full h-[623px] md:h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
 
         </div>
     </div>

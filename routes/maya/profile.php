@@ -9,9 +9,9 @@
 
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\UI\Notification\ShowNotification;
-use App\Actions\UI\Profile\ShowProfile;
+use App\Actions\UI\Profile\GetMayaProfile;
 
-Route::get('/', ShowProfile::class)->name('show');
+Route::get('/', GetMayaProfile::class)->name('show');
 
 Route::get('/notifications', IndexNotification::class)->name('notifications.index');
 Route::get('/notifications/{notification}', ShowNotification::class)->name('notifications.show');
