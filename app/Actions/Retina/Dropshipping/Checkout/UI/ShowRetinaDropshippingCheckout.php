@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData;
+use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
@@ -30,6 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowRetinaDropshippingCheckout extends RetinaAction
 {
     use IsOrder;
+    use CalculatesPaymentWithBalance;
 
     public function handle(Order $order, Customer $customer): array
     {
@@ -42,7 +44,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         return [
             'order'          => $order,
             'paymentMethods' => $paymentMethods,
-            'balance'        => $customer?->balance,
+            'balance'        => $customer->balance,
         ];
     }
 
@@ -91,18 +93,14 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $order = Arr::get($checkoutData, 'order');
 
 
-        $toPay = (float) max($order->total_amount, 0.0);
-        $balance = (float) $this->customer->balance;
+        $paymentAmounts = $this->calculatePaymentWithBalance(
+            $order->total_amount,
+            $this->customer->balance
+        );
 
-        $decimalPart = $toPay - floor($toPay);
-
-        $payFloatWithBalance = min($decimalPart, $balance);
-
-        $remainingBalance = $balance - $payFloatWithBalance;
-        $payIntWithBalance = min(floor($toPay), floor($remainingBalance));
-
-        $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
-        $toPayByOther = round($toPay - $toPayByBalance, 2);
+        $toPay = $paymentAmounts['total'];
+        $toPayByBalance = $paymentAmounts['by_balance'];
+        $toPayByOther = $paymentAmounts['by_other'];
 
 
 
@@ -119,7 +117,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                 'order'          => OrderResource::make($order)->resolve(),
                 'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
-                'balance'        => $this->customer?->balance,
+                'balance'        => $this->customer->balance,
                 'total_amount'   => $order->total_amount,
                 'currency_code'  => $order->currency->code,
                 'to_pay_data'    => [

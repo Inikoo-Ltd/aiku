@@ -15,14 +15,17 @@ use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedEbayAddress;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Helpers\Address;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class StoreOrderFromEbay extends OrgAction
 {
@@ -64,7 +67,11 @@ class StoreOrderFromEbay extends OrgAction
             );
         }
 
-
+        try {
+            PayOrderAsync::run($order);
+        } catch (Exception $e) {
+            Sentry::captureException($e);
+        }
         SubmitOrder::run($order);
     }
 

@@ -10,12 +10,12 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
-use App\Actions\Comms\Email\SendNewOrderToCustomerNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -35,6 +35,9 @@ class SubmitOrder extends OrgAction
     private Order $order;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Order $order): Order
     {
         $modelData = [
@@ -72,6 +75,11 @@ class SubmitOrder extends OrgAction
         SendNewOrderEmailToSubscribers::dispatch($order);
         SendNewOrderEmailToCustomer::dispatch($order);
 
+        if ($order->pay_status == OrderPayStatusEnum::PAID) {
+            SendOrderToWarehouse::make()->action($order, []);
+        }
+
+
         return $order;
     }
 
@@ -93,6 +101,9 @@ class SubmitOrder extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Order $order): Order
     {
         $this->asAction = true;
@@ -102,6 +113,9 @@ class SubmitOrder extends OrgAction
         return $this->handle($order);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->order = $order;
