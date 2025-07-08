@@ -32,7 +32,7 @@ trait WithPrintNode
                 $apiKey = config('printing.drivers.'.$driver.'.key');
             } else {
                 $group  = group();
-                $apiKey = Arr::get($group->settings, 'printing.api_key');
+                $apiKey = Arr::get($group->settings, 'printnode.api_key');
             }
             PrintNode::setApiKey($apiKey);
             $this->clientInitialized = true;

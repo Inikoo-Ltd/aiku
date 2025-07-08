@@ -12,6 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -118,6 +119,17 @@ class EditGroupSettings extends GrpAction
                                 "label"       => __("Region"),
                                 "value"       => $group->settings['email']['provider']['region'] ?? '',
                             ]
+                        ]
+                    ],
+                    [
+                        'label'  => __('Printer'),
+                        'icon'   => 'fa-light fa-print',
+                        'fields' => [
+                            "printnode_api_key" => [
+                                "type"        => "purePassword",
+                                "label"       => __("Printnode Apikey"),
+                                "value"       => Arr::get($group->settings, 'printnode.apikey', ''),
+                            ],
                         ]
                     ],
                 ],
