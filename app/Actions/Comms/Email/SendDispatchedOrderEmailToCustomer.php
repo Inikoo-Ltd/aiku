@@ -1,7 +1,7 @@
 <?php
 /*
  * author Arya Permana - Kirin
- * created on 08-07-2025-16h-31m
+ * created on 08-07-2025-18h-02m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
@@ -21,7 +21,7 @@ use App\Models\Comms\Email;
 use App\Models\Comms\Outbox;
 use App\Models\Ordering\Order;
 
-class SendNewOrderEmailToCustomer extends OrgAction
+class SendDispatchedOrderEmailToCustomer extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -38,7 +38,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         }
 
         /** @var Outbox $outbox */
-        $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::ORDER_CONFIRMATION->value)->first();
+        $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::DELIVERY_CONFIRMATION->value)->first();
         $outboxDispatch = $customer->shop->outboxes()->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
 
 
@@ -61,7 +61,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         }
 
         $orderUrl = $baseUrl.'/app/dropshipping/channels/'.$order->customerSalesChannel->slug.'/orders/'.$order->slug;
-
+        $invoiceUrl = $baseUrl.'/app/dropshipping/invoices/'.$order->invoices->first()->slug;
         return $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $outbox->emailOngoingRun->sender(),
@@ -73,6 +73,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
                     'order_reference' => $order->reference,
                     'date' => $order->created_at->format('F jS, Y'),
                     'order_link' => $orderUrl,
+                    'invoice_link' => $invoiceUrl,
                 ]
             );
     }
