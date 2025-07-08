@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Comms\Email\SendNewOrderToCustomerNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\OrgAction;
@@ -66,6 +67,7 @@ class SubmitOrder extends OrgAction
         }
 
         $this->orderHydrators($order);
+        SendNewOrderToCustomerNotification::dispatch($order);
 
         return $order;
     }
