@@ -15,10 +15,12 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCreditTransactions;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransactions;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreCreditTransaction extends OrgAction
 {
@@ -56,6 +58,7 @@ class StoreCreditTransaction extends OrgAction
             'amount'     => ['required', 'numeric'],
             'date'       => ['sometimes', 'date'],
             'type'       => ['required', Rule::enum(CreditTransactionTypeEnum::class)],
+            'reason'     => ['sometimes', Rule::enum(CreditTransactionReasonEnum::class)],
             'payment_id' => [
                 'sometimes',
                 'nullable',
@@ -86,5 +89,11 @@ class StoreCreditTransaction extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($customer->shop, $modelData);
         return $this->handle($customer, $modelData);
+    }
+
+    public function asController(Customer $customer, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($customer->shop, $request);
+        $this->handle($customer, $this->validatedData);
     }
 }

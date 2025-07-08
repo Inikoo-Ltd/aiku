@@ -13,6 +13,8 @@ use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 
 class GetCustomerShowcase
 {
@@ -34,7 +36,6 @@ class GetCustomerShowcase
             ];
         }
 
-
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
@@ -47,22 +48,22 @@ class GetCustomerShowcase
             ],
             'currency'  => CurrencyResource::make($customer->shop->currency)->toArray(request()),
             'balance'  => [
-                // 'route_increase'    => [  // TODO
-                //     'name'       => 'grp.org.shops.show.crm.customers.show.balance.increase',
-                //     'parameters' => [
-                //         'organisation' => $customer->organisation->slug,
-                //         'shop'         => $customer->shop->slug,
-                //         'customer'     => $customer->slug
-                //     ]
-                // ],
-                // 'route_decrease'    => [   // TODO
-                //     'name'       => 'grp.org.shops.show.crm.customers.show.balance.decrease',
-                //     'parameters' => [
-                //         'organisation' => $customer->organisation->slug,
-                //         'shop'         => $customer->shop->slug,
-                //         'customer'     => $customer->slug
-                //     ]
-                // ],
+                'route_store'    => [
+                    'name'       => 'grp.models.customer.credit-transaction.store',
+                    'parameters' => [
+                        'customer'     => $customer->id
+                    ]
+                ],
+                'route_update'    => [
+                    'name'       => 'grp.models.customer_balance.update',
+                    'parameters' => [
+                        'customer'     => $customer->id
+                    ]
+                ],
+                'increaase_reasons_options' => CreditTransactionReasonEnum::getIncreaseReasons(),
+                'decrease_reasons_options' => CreditTransactionReasonEnum::getDecreaseReasons(),
+
+                'type_options' => CreditTransactionTypeEnum::getOptions()
             ],
             'editWebUser' => $webUserRoute
         ];
