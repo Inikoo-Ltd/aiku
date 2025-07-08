@@ -41,7 +41,7 @@ export default function App() {
               onSuccess: async (profileRes) => {
                 const user = { ...userRes, ...profileRes.data };
                 signIn(user);
-                router.replace("/home");
+                router.replace("/(drawer-setup)/home");
                 resolve(true);
               },
               onFailed: (err) => {

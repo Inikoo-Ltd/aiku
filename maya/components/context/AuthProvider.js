@@ -26,11 +26,12 @@ export const AuthProvider = ({ children }) => {
   const authContext = useMemo(() => ({
     signIn: async (user) => {
       await AsyncStorage.setItem('persist:user', JSON.stringify(user));
-      dispatch({ type: 'LOGIN', token: user.token, userData: user, organisation: user.organisation });
+      dispatch({ type: 'LOGIN', token: user.token, userData: user, organisation: user.authorised_organisations });
     },
     setOrganisation: async (user) => {
+      console.log('set_organistaion',user)
       await AsyncStorage.setItem('persist:user', JSON.stringify(user));
-      dispatch({ type: 'SET_ORGANISATION', ...user });
+      dispatch({ type: 'SET_ORGANISATION', organisation: user.organisation });
     },
     setFulfilmentWarehouse: async (user) => {
       await AsyncStorage.setItem('persist:user', JSON.stringify(user));

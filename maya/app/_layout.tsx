@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/components/context/AuthProvider";
+import "@/global.css";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -34,7 +35,7 @@ export default function RootLayout() {
               name="scanner-login"
               options={{ headerShown: false }}
             />
-            <Stack.Screen name="home" options={{ headerShown: false }} />
+            <Stack.Screen name="(drawer-setup)" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

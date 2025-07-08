@@ -1,16 +1,18 @@
 import { AuthContext } from '@/components/context/AuthContext'; // or from `context.js` if re-exported
+import { useRouter } from 'expo-router';
 import React, { useContext } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 
 const HomeScreen = () => {
   const { userData, signOut } = useContext(AuthContext);
+  const router = useRouter()
 
   return (
     <View style={styles.container}>
       <Text style={styles.welcomeText}>
         Welcome, {userData?.name || userData?.username || 'User'}!
       </Text>
-      <Button title="Logout" onPress={signOut} />
+      <Button title="Logout" onPress={()=>router.replace("/(drawer-setup)/fulfilment")} />
     </View>
   );
 };

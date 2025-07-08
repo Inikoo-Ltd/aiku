@@ -5,11 +5,11 @@ import { retrieveProfile } from '@/utils/user';
 import { useRouter } from "expo-router";
 import React, { useContext, useState } from 'react';
 import {
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { ALERT_TYPE, Toast } from "react-native-alert-notification";
 
@@ -42,7 +42,7 @@ const ManualLoginScreen = () => {
                 console.log('dsf',profileRes)
                 const user = { ...userRes, ...profileRes.data };
                 signIn(user); // enable if you're using AuthContext
-                router.replace("/home"); // or your intended route
+                router.replace("/(drawer-setup)/home"); // or your intended route
                 resolve(true);
               },
               onFailed: (err) => {

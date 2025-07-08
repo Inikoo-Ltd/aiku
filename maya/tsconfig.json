@@ -12,6 +12,7 @@
     "**/*.ts",
     "**/*.tsx",
     "app/scanner-login.jsx",
-    "app/manual-login.jsx"
+    "app/manual-login.jsx",
+    "nativewind-env.d.ts"
   ]
 }

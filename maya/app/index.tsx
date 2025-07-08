@@ -10,10 +10,9 @@ export default function Index() {
   useEffect(() => {
     const checkAuth = async () => {
       const user = await getData('persist:user'); // ✅ correct usage
-      console.log('User from storage:', user);
 
       if (user?.token) {
-        router.replace('/home'); // ✅ logged in
+        router.replace('/(drawer-setup)/home'); // ✅ logged in
       } else {
         router.replace('/manual-login'); // ❌ not logged in
       }
