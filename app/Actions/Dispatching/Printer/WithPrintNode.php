@@ -12,6 +12,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf;
 use Rawilk\Printing\Api\PrintNode\Enums\ContentType;
 use Rawilk\Printing\Api\PrintNode\PendingPrintJob;
 use Rawilk\Printing\Api\PrintNode\PrintNode;
@@ -59,6 +60,24 @@ trait WithPrintNode
         $content    = Str::fromBase64($pdfBase64);
         $pendingJob = PendingPrintJob::make()
             ->setContent($content)
+            ->setContentType(ContentType::PdfBase64)
+            ->setPrinter($printId)
+            ->setTitle($title)
+            ->setSource(config('app.name'));
+
+        return PrintJob::create($pendingJob);
+    }
+
+    public function printRawBase64(string $title, int $printId, string $rawBase64): PrintJob
+    {
+        // Convert raw base64 content to PDF using LaravelMPDF
+        $content = Str::fromBase64($rawBase64);
+        $pdf = LaravelMpdf::loadHTML($content);
+        $pdfContent = $pdf->output();
+
+        $this->ensureClientInitialized();
+        $pendingJob = PendingPrintJob::make()
+            ->setContent($pdfContent)
             ->setContentType(ContentType::PdfBase64)
             ->setPrinter($printId)
             ->setTitle($title)
