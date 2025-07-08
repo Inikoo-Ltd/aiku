@@ -2,7 +2,7 @@
 import { Head, router } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import RetinaTablePortfolios from "@/Components/Tables/Retina/RetinaTablePortfolios.vue";
@@ -55,7 +55,7 @@ const props = defineProps<{
     }
     platform_data: {
         id: number
-        code: string
+        code: string  // 'manual' | 'shopify' | 'ebay' | 'amazon'
         name: string
         type: string
     }
@@ -70,7 +70,7 @@ const props = defineProps<{
 
 
 const step = ref(props.step);
-
+const isPlatformManual = computed(() => props.platform_data.type === 'manual');
 const isOpenModalPortfolios = ref(false);
 
 
@@ -274,7 +274,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
     </PageHeading>
 
     <!-- Section: Alert if Platform not connected yet -->
-    <Message v-if="!is_platform_connected" severity="error" class="m-4 ">
+    <Message v-if="!is_platform_connected && !isPlatformManual" severity="error" class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
@@ -298,7 +298,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
     </Message>
     
     <!-- Section: Alert if there is product not synced -->
-    <Message v-if="count_product_not_synced > 0" severity="warn" class="m-4 ">
+    <Message v-if="count_product_not_synced > 0 && !isPlatformManual" severity="warn" class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
@@ -356,6 +356,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
             :is_platform_connected
             :customerSalesChannel="customer_sales_channel"
             :progressToUploadToShopify
+            :isPlatformManual
         />
     </div>
 

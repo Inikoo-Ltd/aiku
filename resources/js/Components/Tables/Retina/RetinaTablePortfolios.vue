@@ -48,6 +48,7 @@ const props = defineProps<{
 		name: string
 	}
 	progressToUploadToShopify: {}
+	isPlatformManual?: boolean
 }>()
 
 function portfolioRoute(product: Product) {
@@ -148,7 +149,7 @@ onMounted(() => {
 		}"
 		:isChecked="(item) => props.selectedData.products.includes(item.id)"
 		:rowColorFunction="(item) => {
-			if (is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
+			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
 				return 'bg-yellow-50'
 			} else {
 				return ''
@@ -218,7 +219,8 @@ onMounted(() => {
 				<!-- {{ item.platform_product_id }} -->
 				<ButtonWithLink
 					v-if="
-						is_platform_connected
+						!isPlatformManual
+						&& is_platform_connected
 						&& !item.platform_product_id
 						&& get(progressToUploadToShopify, [item.id], undefined) != 'success'
 					"
