@@ -60,4 +60,8 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
+    'wix' => [
+        'app_id' => env('WIX_APP_ID'),
+        'secret_key' => env('WIX_SECRET_KEY'),
+    ],
 ];

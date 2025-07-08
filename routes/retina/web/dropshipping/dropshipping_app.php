@@ -68,6 +68,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::get('amazon-user-callback', CallbackRetinaAmazonUser::class)->name('amazon.callback');
 
     Route::post('magento/authorize', StoreMagentoUser::class)->name('magento.store');
+    Route::get('wix/callback', StoreMagentoUser::class)->name('wix.callback');
 });
 
 
