@@ -25,12 +25,12 @@ interface PagePropsWithFlash extends InertiaPageProps {
 
 const page = usePage<PagePropsWithFlash>()
 // console.log('checkout_com_data', props.checkout_com_data)
-const { isLoading, initializeCheckout } = useCheckoutCom(props.checkout_com_data)
+const { isLoading, initializeCheckout } = useCheckoutCom(props.checkout_com_data, {
+    isChangeLabelToSaved: true
+})
 onMounted(() => {
     initializeCheckout("flow-container")
 })
-
-
 
 </script>
 
