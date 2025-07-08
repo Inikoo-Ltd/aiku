@@ -47,7 +47,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
-        Route::post('upload', ImportTransactionInOrder::class, )->name('upload');
+        Route::post('upload', ImportTransactionInOrder::class,)->name('upload');
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
@@ -75,5 +75,4 @@ Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
         Route::patch('picker', AssignPickerToPicking::class)->name('picker');
         Route::patch('packer', AssignPackerToPicking::class)->name('packer');
     });
-
 });

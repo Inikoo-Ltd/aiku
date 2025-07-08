@@ -9,9 +9,12 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Accounting\Invoice\DeleteInvoice;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
@@ -48,17 +51,42 @@ class UpdateOrderStateToCancelled extends OrgAction
             $transaction->update($transactionData);
         }
 
+        $deliveryNotes = $order->deliveryNotes()->get();
+        foreach ($deliveryNotes as $deliveryNote) {
+            UpdateDeliveryNote::make()->action(
+                $deliveryNote,
+                [
+                    'state' => DeliveryNoteStateEnum::CANCELLED,
+                ],
+                strict: false
+            );
+            $deliveryNote->state = OrderStateEnum::CANCELLED;
+            $deliveryNote->save();
+        }
+
+        $invoices = $order->invoices()->get();
+        foreach ($invoices as $invoice) {
+            DeleteInvoice::make()->action(
+                $invoice,
+                [
+                    'deleted_note' => 'Order cancelled',
+                ]
+            );
+        }
+
         $this->update($order, $modelData);
         $this->orderHydrators($order);
 
         return $order;
     }
 
-
-    public function afterValidator(Validator $validator): void
+    public function afterValidator(Validator $validator)
     {
-        if ($this->order->state == OrderStateEnum::CANCELLED) {
-            $validator->errors()->add('state', __('Order has been cancelled'));
+        $order = $this->order;
+        if ($order && $order->state === OrderStateEnum::CANCELLED) {
+            $validator->errors()->add('messages', 'Order is already cancelled.');
+        } elseif ($order && !in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
+            $validator->errors()->add('messages', "Cannot cancel an order in '{$order->state->value}' state.");
         }
     }
 

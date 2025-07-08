@@ -22,6 +22,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -49,6 +50,12 @@ class StoreOrderFromShopify extends OrgAction
 
         $shopifyUserHasProductExists = $shopifyUser->customerSalesChannel->portfolios()
             ->whereIn('platform_product_id', $shopifyProducts->pluck('product_id'))->exists();
+
+        $existOrder = Order::where('platform_order_id', Arr::get($modelData, 'order_id'))->first();
+
+        if ($existOrder) {
+            return;
+        }
 
         if ($shopifyUserHasProductExists) {
             $order = StoreOrder::make()->action($customerClient, [

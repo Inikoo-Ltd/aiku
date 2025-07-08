@@ -28,6 +28,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { Images } from "@/types/Images"
+import Modal from "@/Components/Utils/Modal.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import Image from "@/Components/Image.vue"
+import { set } from "lodash"
 
 library.add(faInventory, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
@@ -59,8 +63,9 @@ const props = defineProps<{
         type: string
         key_in_db: string
         url?: string
-        image?: Images
-    }
+        images?: Images
+    }[]
+    images_update_route: routeType
 
 }>()
 
@@ -123,18 +128,19 @@ const onDropImage = (event: DragEvent, client: any) => {
 
     console.log('111 Files dropped:', dataRowImage?.image?.original)
     console.log('222 Files dropped:', dataRowImage)
+    console.log('222 client:', client)
     
     if (dataRowImage) {
         client.imageUrl = dataRowImage?.image?.original
-        router.post(
-            'xxxx',
+        router[props.images_update_route.method || 'patch'](
+            route(props.images_update_route.name, props.images_update_route.parameters),
             {
-                image_id: dataRowImage.id,
+                [client.key_in_db]: dataRowImage.id,
             },
             {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['yyyyyyyy'],
+                only: ['images_category_box'],
                 onStart: () => { 
                     loadingSubmit.value = 'true'
                 },
@@ -159,7 +165,8 @@ const onDropImage = (event: DragEvent, client: any) => {
         )
     }
 }
-
+const isModalEditVideo = ref(false)
+const selectedVideoToUpdate = ref(null)
 </script>
 
 
@@ -174,7 +181,7 @@ const onDropImage = (event: DragEvent, client: any) => {
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
     <div class="px-4 py-3">
-        <ul class="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-5 xl:gap-x-8">
+        <ul v-if="images_category_box?.length" class="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-5 xl:gap-x-8">
             <li
                 v-for="category_box in images_category_box"
                 :key="category_box.id"
@@ -183,26 +190,36 @@ const onDropImage = (event: DragEvent, client: any) => {
                 <div
                     class="aspect-square w-full flex items-center justify-center border-b border-gray-900/5 bg-gray-100 relative"
                     @dragover.prevent
-                    @drop.prevent="(e) => onDropImage(e, category_box)"
+                    @drop.prevent="(e) => category_box.type === 'image' ? onDropImage(e, category_box) : undefined"
                     xclass="selectedDragImage ? 'shimmer' : ''"
                 >
-                    <img
-                        :src="category_box.imageUrl"
-                        :alt="category_box.name"
-                        class="max-h-full max-w-full mx-auto object-contain"
+                    <Image
+                        v-if="category_box.type === 'image' && category_box.images"
+                        :src="category_box.images"
+                        xclass="max-h-full max-w-full mx-auto object-contain"
                     />
+
+                    <!-- Button: Edit -->
+                    <!-- <div
+                        v-if="category_box.type === 'video'"
+                        @click="() => (isModalEditVideo = true, selectedVideoToUpdate = category_box)"
+                        v-tooltip="trans('Change url')"
+                        class="text-gray-400 hover:text-gray-700 absolute bottom-2 right-2 cursor-pointer">
+                        <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                    </div> -->
+
                     <div
-                        v-if="selectedDragImage"
-                        class="absolute bg-black/50 text-white text-xl inset-0 flex items-center justify-center"
+                        v-if="selectedDragImage && category_box.type === 'image'"
+                        class="absolute bg-black/50 text-center text-white text-xl inset-0 flex items-center justify-center"
                     >
                         {{ trans("Drop image here") }}
                     </div>
                 </div>
+
                 <dl class="-my-3 text-center font-medium text-base divide-y divide-gray-100 px-6 py-4">
                     {{ category_box.label }}
                     <FontAwesomeIcon v-if="category_box.information" v-tooltip="category_box.information" icon="fal fa-info-circle" class="text-sm text-gray-400 hover:text-gray-700" fixed-width aria-hidden="true" />
                 </dl>
-                {{ category_box.imageUrl }}
             </li>
         </ul>
     </div>
@@ -224,7 +241,8 @@ const onDropImage = (event: DragEvent, client: any) => {
     <Table v-if="currentTab === 'images'" :resource="images" name="images" class="mt-5">
         <template #cell(grabable_area)="{ item }">
             <div
-                class="qwezxc px-2 py-1 text-gray-400 hover:text-gray-700 cursor-grab"
+                v-tooltip="trans('Drag and drop to the box to set image')"
+                class="px-2 py-1 text-gray-400 hover:text-gray-700 cursor-grab"
                 draggable="true"
                 @dragstart="(e) => onStartDrag(e, item)"
                 @dragend="(e) => selectedDragImage = null"
@@ -257,6 +275,46 @@ const onDropImage = (event: DragEvent, client: any) => {
         :tag_routes
         :detachRoute="attachmentRoutes.detachRoute">
     </component>
+
+    <!-- Modal: Increase balance -->
+    <!-- <Modal :isOpen="isModalEditVideo" @onClose="() => (isModalEditVideo = false)" width="max-w-2xl w-full">
+        <div class="p-6">
+            <h2 class="text-3xl font-bold text-center">{{ trans("Increase Balance") }}</h2>
+            <p class="text-base text-gray-500 italic mb-6 text-center">{{ trans("Enter the details to increase balance") }}</p>
+
+            <div class="space-y-6">
+                <div>
+                    <label for="amount" class="block text-gray-700 font-medium mb-2">
+                        {{ trans("Reason to deposit") }}
+                    </label>
+                    <PureInput
+                        :modelValue="selectedVideoToUpdate?.url"
+                        @update:modelValue="(value) => set(selectedVideoToUpdate, ['url'], value)"
+                        :placeholder="trans('Input your video url')"
+                        class="w-full"
+                    />
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end space-x-4">
+                <Button
+                    :label="trans('Cancel')"
+                    type="negative"
+                    @click="() => closeModal()"
+                >
+                </Button>
+
+                <Button
+                    :label="trans('Submit')"
+                    type="primary"
+                    @click="() => onSubmitIncrease()"
+                    full
+                >
+                </Button>
+            </div>
+        </div>
+    </Modal> -->
+
 
     <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

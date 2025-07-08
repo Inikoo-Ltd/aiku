@@ -118,6 +118,36 @@ class ShowWebsite extends OrgAction
                 'value' => $website->webStats->number_webpages_sub_type_product,
             ],
         ];
+        $content_blog_stats = [
+            [
+                'label' => __('Contents'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.type.content',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-folder-tree',
+                "color" => "#b45309",
+                'value' => $website->webStats->number_webpages_sub_type_content,
+            ],
+            [
+                'label' => __('Blogs'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.type.blog',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-folder-tree',
+                "color" => "#f59e0b",
+                'value' => $website->webStats->number_webpages_sub_type_blog,
+            ],
+        ];
 
         return Inertia::render(
             'Org/Web/Website',
@@ -142,22 +172,22 @@ class ShowWebsite extends OrgAction
                     'iconRight' => $website->state->stateIcon()[$website->state->value],
                     'actions'   =>
 
-                        array_merge(
-                            $this->workshopActions($request),
-                            [
-                                $this->isSupervisor && $website->state == WebsiteStateEnum::IN_PROCESS ? [
-                                    'type'  => 'button',
-                                    'style' => 'edit',
-                                    'label' => __('launch'),
-                                    'icon'  => ["fal", "fa-rocket"],
-                                    'route' => [
-                                        'method'     => 'post',
-                                        'name'       => 'grp.models.website.launch',
-                                        'parameters' => $website->id
-                                    ]
-                                ] : [],
-                            ]
-                        ),
+                    array_merge(
+                        $this->workshopActions($request),
+                        [
+                            $this->isSupervisor && $website->state == WebsiteStateEnum::IN_PROCESS ? [
+                                'type'  => 'button',
+                                'style' => 'edit',
+                                'label' => __('launch'),
+                                'icon'  => ["fal", "fa-rocket"],
+                                'route' => [
+                                    'method'     => 'post',
+                                    'name'       => 'grp.models.website.launch',
+                                    'parameters' => $website->id
+                                ]
+                            ] : [],
+                        ]
+                    ),
 
 
                 ],
@@ -166,21 +196,21 @@ class ShowWebsite extends OrgAction
                     'navigation' => WebsiteTabsEnum::navigation()
                 ],
 
-                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats])
-                    : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
+                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats, 'content_blog_stats' => $content_blog_stats])
+                    : Inertia::lazy(fn() => WebsiteResource::make($website)->getArray()),
 
 
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($website))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($website))),
+                    fn() => HistoryResource::collection(IndexHistory::run($website))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($website))),
 
                 WebsiteTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebsiteTabsEnum::EXTERNAL_LINKS->value ?
-                    fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))
-                    : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
+                    fn() => ExternalLinksResource::collection(IndexExternalLinks::run($website))
+                    : Inertia::lazy(fn() => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
 
                 WebsiteTabsEnum::REDIRECTS->value => $this->tab == WebsiteTabsEnum::REDIRECTS->value ?
-                    fn () => RedirectsResource::collection(IndexRedirects::run($website))
-                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($website))),
+                    fn() => RedirectsResource::collection(IndexRedirects::run($website))
+                    : Inertia::lazy(fn() => RedirectsResource::collection(IndexRedirects::run($website))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))

@@ -12,7 +12,6 @@ use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
@@ -117,14 +116,9 @@ class IndexRetinaDropshippingOrders extends RetinaAction
 
             $table->column(key: 'state', label: __('Status'), sortable: true, type: 'icon');
 
-            if (!$customerSalesChannel) {
+            /*if ($customerSalesChannel) {
                 $table->column(key: 'platform_name', label: __('Channel'), sortable: true);
-            } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-                $table->column(key: 'platform_order_id', label: __('shopify order id'), canBeHidden: false, searchable: true);
-            } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::TIKTOK) {
-                $table->column(key: 'platform_order_id', label: __('tiktok order id'), canBeHidden: false, searchable: true);
-            }
-
+            }*/
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
