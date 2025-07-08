@@ -28,6 +28,7 @@ class IndexRedirects extends OrgAction
 
     public function handle(Website|Webpage $parent, $prefix = null): LengthAwarePaginator
     {
+        // dd("test");
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('redirects.url', $value)
@@ -53,8 +54,8 @@ class IndexRedirects extends OrgAction
             ->select([
                 'redirects.id',
                 'redirects.type',
-                'redirects.url',
-                'redirects.path',
+                'redirects.from_url as url',
+                'redirects.from_path as path',
                 'webpages.title as webpage_title',
             ]);
 
@@ -88,7 +89,7 @@ class IndexRedirects extends OrgAction
                 );
             if ($parent instanceof Website) {
                 $table
-                ->column(key: 'webpage_title', label: __('Webpage'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'webpage_title', label: __('Webpage'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
