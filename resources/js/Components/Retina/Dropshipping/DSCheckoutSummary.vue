@@ -9,10 +9,10 @@ import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt } from "@fal"
+import { faIdCardAlt, faWeight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NeedToPay from "@/Components/Utils/NeedToPay.vue"
-library.add(faIdCardAlt)
+library.add(faIdCardAlt, faWeight)
 
 defineProps<{
     summary: {
@@ -45,8 +45,8 @@ const isModalShippingAddress = ref(false)
 
 <template>
 
-    <div class="py-4 grid grid-cols-7 px-4 gap-x-6">
-        <div class="col-span-2">
+    <div class="py-4 grid grid-cols-2 md:grid-cols-7 px-4 gap-x-6 divide-y divide-gray-300">
+        <div class="col-span-2 mb-4 md:mb-0">
             <!-- Field: Platform -->
             <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Platform')" class="flex-none">
@@ -124,7 +124,7 @@ const isModalShippingAddress = ref(false)
 
         </div>
 
-        <div class="col-span-2">
+        <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-0">
             <dl v-if="false" class="relative flex items-start w-full flex-none gap-x-1">
                 <dt class="flex-none pt-0.5">
                     <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
@@ -173,7 +173,7 @@ const isModalShippingAddress = ref(false)
             </div> -->
         </div>
 
-        <div class="col-span-3">
+        <div class="col-span-2 md:col-span-3">
             <div v-if="balance" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 xtext-amber-600">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div class="">
