@@ -59,6 +59,7 @@ class CreateMitSavedCard extends RetinaAction
 
         $channelID                                    = $paymentAccountShop->getCheckoutComChannel();
         $paymentSessionRequest->processing_channel_id = $channelID;
+        $paymentSessionRequest->enabled_payment_methods = ['card'];
 
         $paymentSessionRequest->success_url = $this->getSuccessUrl($mitSavedCard);
         $paymentSessionRequest->failure_url = $this->getFailureUrl($mitSavedCard);

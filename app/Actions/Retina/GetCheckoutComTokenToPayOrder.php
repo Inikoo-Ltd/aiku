@@ -26,6 +26,7 @@ class GetCheckoutComTokenToPayOrder extends RetinaAction
         return [
             'status'        => 'success',
             'token'         => 'checkout_com_token',
+            'checkout_com_data'  => [], // TODO: same structure like `ShowRetinaTopUpCheckout.php` line 133
             'amount_to_pay' => 22,
             'currency_code' => 'XX'
         ];

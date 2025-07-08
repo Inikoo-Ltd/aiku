@@ -72,29 +72,29 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 
 
 // Method: Hide the superchat widget
-const hideSuperchatWidget = () => {
-    const time = ref(0)
-    const xxInterval = setInterval(() => {
-        time.value += 150
-        const _superchatWidget = document.querySelector('#superchat-widget')
-        if (_superchatWidget) {
-            _superchatWidget.style.display = 'none'
-            clearInterval(xxInterval)
-            console.log('Cleared interval')
-        }
+// const hideSuperchatWidget = () => {
+//     const time = ref(0)
+//     const xxInterval = setInterval(() => {
+//         time.value += 150
+//         const _superchatWidget = document.querySelector('#superchat-widget')
+//         if (_superchatWidget) {
+//             _superchatWidget.style.display = 'none'
+//             clearInterval(xxInterval)
+//             console.log('Cleared interval')
+//         }
 
-        // To safety if GTM exist but don't have superchat
-        if (time.value > 10000) {
-            clearInterval(xxInterval)
-            console.log('Cleared interval due to timeout')
-        }
-    }, 150)
-}
+//         // To safety if GTM exist but don't have superchat
+//         if (time.value > 10000) {
+//             clearInterval(xxInterval)
+//             console.log('Cleared interval due to timeout')
+//         }
+//     }, 150)
+// }
 
 onMounted(() => {
-    if (layout.iris?.is_have_gtm) {
-        hideSuperchatWidget()
-    }
+    // if (layout.iris?.is_have_gtm) {
+    //     hideSuperchatWidget()
+    // }
 })
 </script>
 
@@ -276,5 +276,10 @@ onMounted(() => {
 
 .p-message-text {
     width: 100%;
+}
+
+// Hide Checkout Apple Pay
+#flow-container #googlepayAccordionContainer {
+    display: none !important;
 }
 </style>

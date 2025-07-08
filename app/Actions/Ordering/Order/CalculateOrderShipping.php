@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
@@ -18,6 +19,7 @@ use App\Models\Ordering\Transaction;
 use CommerceGuys\Addressing\Address;
 use CommerceGuys\Addressing\Zone\Zone;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class CalculateOrderShipping
@@ -28,9 +30,29 @@ class CalculateOrderShipping
 
     public function handle(Order $order, $discount = false): Order
     {
+
+
+
         if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE, OrderShippingEngineEnum::TO_BE_CONFIRMED_SET])) {
             return $order;
         }
+
+
+        if ($order->stats->number_item_transactions == 0) {
+
+
+
+            DB::table('transactions')->where('order_id', $order->id)
+                ->where('model_type', 'ShippingZone')
+                ->delete();
+            $order->update([
+                'shipping_engine' => OrderShippingEngineEnum::AUTO,
+            ]);
+            CalculateOrderTotalAmounts::run($order, false);
+            OrderHydrateTransactions::dispatch($order);
+            return $order;
+        }
+
 
         if ($discount) {
             $shippingZoneSchema = $order->shop->discountShippingZoneSchema;
@@ -51,12 +73,18 @@ class CalculateOrderShipping
 
         list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
 
+
         $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
         if ($shippingTransaction) {
             $this->updateShippingTransaction($shippingTransaction, $shippingZone, $shippingAmount);
         } else {
+
+
+
             $this->storeShippingTransaction($order, $shippingZone, $shippingAmount);
         }
+
+
 
         if ($this->toBeConfirmed) {
             $order->update([
@@ -73,6 +101,8 @@ class CalculateOrderShipping
 
     private function storeShippingTransaction(Order $order, ShippingZone $shippingZone, $shippingAmount): Transaction
     {
+
+
         return StoreTransaction::run(
             $order,
             $shippingZone->historicAsset,
@@ -125,7 +155,7 @@ class CalculateOrderShipping
         if ($pricingType == 'Step Order Items Net Amount') {
             return $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'Step Order Estimated Weight') {
-            return $this->getPriceBlanketFromAmount($order->estimated_weight, Arr::get($shippingZone->price, 'steps'));
+            return $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'TBC') {
             $this->toBeConfirmed = true;
 

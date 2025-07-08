@@ -15,7 +15,6 @@ use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
-use App\Actions\Comms\Email\SendInvoiceEmailToCustomer;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
@@ -51,8 +50,6 @@ trait WithRunInvoiceHydrators
 
         InvoiceRecordSearch::dispatch($invoice);
 
-        if ($this->strict) {
-            SendInvoiceEmailToCustomer::dispatch($invoice);
-        }
+
     }
 }

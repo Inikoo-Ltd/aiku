@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "046518cda11e55e0427b6551bdead2d3",
+    "content-hash": "05c6f05b1ae668969708a4e1f3a2a4b7",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -199,16 +199,16 @@
         },
         {
             "name": "alibabacloud/darabonba-openapi",
-            "version": "0.2.16",
+            "version": "0.2.17",
             "source": {
                 "type": "git",
                 "url": "https://github.com/alibabacloud-sdk-php/darabonba-openapi.git",
-                "reference": "abd3921d3d6526b22e1298e3ab66a392a0996baa"
+                "reference": "051cd22db3da16ab7d0110feb3fc45dd0f999f92"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-openapi/zipball/abd3921d3d6526b22e1298e3ab66a392a0996baa",
-                "reference": "abd3921d3d6526b22e1298e3ab66a392a0996baa",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-openapi/zipball/051cd22db3da16ab7d0110feb3fc45dd0f999f92",
+                "reference": "051cd22db3da16ab7d0110feb3fc45dd0f999f92",
                 "shasum": ""
             },
             "require": {
@@ -238,9 +238,9 @@
             "description": "Alibaba Cloud OpenApi Client",
             "support": {
                 "issues": "https://github.com/alibabacloud-sdk-php/darabonba-openapi/issues",
-                "source": "https://github.com/alibabacloud-sdk-php/darabonba-openapi/tree/0.2.16"
+                "source": "https://github.com/alibabacloud-sdk-php/darabonba-openapi/tree/0.2.17"
             },
-            "time": "2025-04-23T01:47:53+00:00"
+            "time": "2025-07-04T09:26:04+00:00"
         },
         {
             "name": "alibabacloud/dm-20151123",
@@ -4499,7 +4499,7 @@
         },
         {
             "name": "google/apiclient-services",
-            "version": "v0.401.0",
+            "version": "v0.402.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/googleapis/google-api-php-client-services.git",
@@ -4537,7 +4537,7 @@
             ],
             "support": {
                 "issues": "https://github.com/googleapis/google-api-php-client-services/issues",
-                "source": "https://github.com/googleapis/google-api-php-client-services/tree/v0.401.0"
+                "source": "https://github.com/googleapis/google-api-php-client-services/tree/v0.402.0"
             },
             "time": "2025-06-04T17:28:44+00:00"
         },
@@ -9389,6 +9389,112 @@
             "time": "2025-06-10T04:33:15+00:00"
         },
         {
+            "name": "mike42/escpos-php",
+            "version": "v4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mike42/escpos-php.git",
+                "reference": "74fd89a3384135c90a8c6dc4b724e03df7c0e4f9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mike42/escpos-php/zipball/74fd89a3384135c90a8c6dc4b724e03df7c0e4f9",
+                "reference": "74fd89a3384135c90a8c6dc4b724e03df7c0e4f9",
+                "shasum": ""
+            },
+            "require": {
+                "ext-intl": "*",
+                "ext-json": "*",
+                "ext-zlib": "*",
+                "mike42/gfx-php": "^0.6",
+                "php": ">=7.3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9",
+                "squizlabs/php_codesniffer": "^3.3"
+            },
+            "suggest": {
+                "ext-gd": "Used for image printing if present.",
+                "ext-imagick": "Will be used for image printing if present. Required for PDF printing or use of custom fonts."
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Mike42\\": "src/Mike42"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Michael Billington",
+                    "email": "michael.billington@gmail.com"
+                }
+            ],
+            "description": "PHP receipt printer library for use with ESC/POS-compatible thermal and impact printers",
+            "homepage": "https://github.com/mike42/escpos-php",
+            "keywords": [
+                "Epson",
+                "barcode",
+                "escpos",
+                "printer",
+                "receipt-printer"
+            ],
+            "support": {
+                "issues": "https://github.com/mike42/escpos-php/issues",
+                "source": "https://github.com/mike42/escpos-php/tree/v4.0"
+            },
+            "time": "2022-05-23T11:05:09+00:00"
+        },
+        {
+            "name": "mike42/gfx-php",
+            "version": "v0.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mike42/gfx-php.git",
+                "reference": "ed9ded2a9298e4084a9c557ab74a89b71e43dbdb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mike42/gfx-php/zipball/ed9ded2a9298e4084a9c557ab74a89b71e43dbdb",
+                "reference": "ed9ded2a9298e4084a9c557ab74a89b71e43dbdb",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.0.0"
+            },
+            "require-dev": {
+                "phpbench/phpbench": "@dev",
+                "phpunit/phpunit": "^6.5",
+                "squizlabs/php_codesniffer": "^3.3.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Mike42\\": "src/Mike42"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-2.1-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Michael Billington",
+                    "email": "michael.billington@gmail.com"
+                }
+            ],
+            "description": "The pure PHP graphics library",
+            "homepage": "https://github.com/mike42/gfx-php",
+            "support": {
+                "issues": "https://github.com/mike42/gfx-php/issues",
+                "source": "https://github.com/mike42/gfx-php/tree/v0.6"
+            },
+            "time": "2019-10-05T02:44:33+00:00"
+        },
+        {
             "name": "mobiledetect/mobiledetectlib",
             "version": "2.8.45",
             "source": {
@@ -13266,6 +13372,92 @@
             "time": "2025-06-25T14:20:11+00:00"
         },
         {
+            "name": "rawilk/laravel-printing",
+            "version": "v4.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/rawilk/laravel-printing.git",
+                "reference": "03e93c81a81a21530ca40c737634b2e3213ecc09"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/rawilk/laravel-printing/zipball/03e93c81a81a21530ca40c737634b2e3213ecc09",
+                "reference": "03e93c81a81a21530ca40c737634b2e3213ecc09",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.5",
+                "illuminate/support": "^10.0|^11.0|^12.0",
+                "mike42/escpos-php": "^4.0",
+                "php": "^8.2",
+                "spatie/laravel-package-tools": "^1.2|^1.13"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.5",
+                "mockery/mockery": ">=1.4",
+                "orchestra/testbench": "^8.0|^9.0|^10.0",
+                "pestphp/pest": "^2.34|^3.7",
+                "pestphp/pest-plugin-laravel": "^2.2|^3.1",
+                "php-http/message-factory": "^1.1",
+                "php-http/socket-client": "^2.1",
+                "psr/http-client": "^1.0",
+                "psr/http-message": "1.*|^2.0",
+                "spatie/invade": "^2.1",
+                "spatie/laravel-ray": "^1.0|^1.29"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Printing": "Rawilk\\Printing\\Facades\\Printing"
+                    },
+                    "providers": [
+                        "Rawilk\\Printing\\PrintingServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Rawilk\\Printing\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Randall Wilk",
+                    "email": "randall@randallwilk.dev",
+                    "homepage": "https://randallwilk.dev",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Direct printing for Laravel apps",
+            "homepage": "https://github.com/rawilk/laravel-printing",
+            "keywords": [
+                "CUPS",
+                "Direct printing",
+                "PrintNode",
+                "Raw printing",
+                "Receipt printing",
+                "ipp",
+                "laravel-printing",
+                "rawilk"
+            ],
+            "support": {
+                "issues": "https://github.com/rawilk/laravel-printing/issues",
+                "source": "https://github.com/rawilk/laravel-printing/tree/v4.1.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/rawilk",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-06-09T13:38:46+00:00"
+        },
+        {
             "name": "revolt/event-loop",
             "version": "v1.0.7",
             "source": {
@@ -16410,16 +16602,16 @@
         },
         {
             "name": "swagger-api/swagger-ui",
-            "version": "v5.26.0",
+            "version": "v5.26.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/swagger-api/swagger-ui.git",
-                "reference": "690b0407ecd8d7dca8fcf1de231f324cc374ec8c"
+                "reference": "2ab53f4f501e5a4a9e6cb031f49732be9ae28678"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/swagger-api/swagger-ui/zipball/690b0407ecd8d7dca8fcf1de231f324cc374ec8c",
-                "reference": "690b0407ecd8d7dca8fcf1de231f324cc374ec8c",
+                "url": "https://api.github.com/repos/swagger-api/swagger-ui/zipball/2ab53f4f501e5a4a9e6cb031f49732be9ae28678",
+                "reference": "2ab53f4f501e5a4a9e6cb031f49732be9ae28678",
                 "shasum": ""
             },
             "type": "library",
@@ -16465,9 +16657,9 @@
             ],
             "support": {
                 "issues": "https://github.com/swagger-api/swagger-ui/issues",
-                "source": "https://github.com/swagger-api/swagger-ui/tree/v5.26.0"
+                "source": "https://github.com/swagger-api/swagger-ui/tree/v5.26.2"
             },
-            "time": "2025-07-02T06:30:58+00:00"
+            "time": "2025-07-07T09:53:06+00:00"
         },
         {
             "name": "symfony/cache",

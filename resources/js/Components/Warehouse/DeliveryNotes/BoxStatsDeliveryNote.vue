@@ -22,6 +22,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber } from "primevue"
 import Icon from "@/Components/Icon.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import axios from "axios"
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes)
 
 const props = defineProps<{
@@ -57,6 +59,7 @@ const props = defineProps<{
 			label?: string
             label_type?: string
 			combined_label_url?: string
+			is_printable?: boolean
 		}[]
 	}
 	shipments: {
@@ -170,11 +173,47 @@ const base64ToPdf = (base: string) => {
 	// Clean up the object URL
 	URL.revokeObjectURL(blobUrl);
 }
+
+// Section: Print Shipment
+const isLoadingPrint = ref(false)
+const onPrintShipment = async (ship) => {
+	isLoadingPrint.value = true
+	try {
+		const response = await axios.post(
+			route(
+				'grp.models.printing.shipment.label',
+				{
+					shipment: ship.id 
+				}
+			)
+		)
+
+		if (response.data.state === 'queued') {
+			notify({
+				title: trans("Got it!"),
+				text: trans("Your shipment label is queued for printing."),
+				type: "info",
+			})
+		} else if (response.data.state === 'error') {
+			throw new Error(response.data.message || 'Failed to print shipment label.')
+		}
+
+		console.log('respopo', response.data)
+	} catch (error: any) {
+		notify({
+			title: trans('Something went wrong'),
+			text: error.response?.data?.message || error.message || 'Failed to print shipment label.',
+			type: 'error'
+		})
+	} finally {
+		isLoadingPrint.value = false
+	}
+}
 </script>
 
 <template>
-	<div class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
-		<BoxStatPallet class="py-2 px-3" icon="fal fa-user">
+	<div class="grid grid-cols-2 lg:grid-cols-4 xdivide-x xdivide-gray-300 border-b border-gray-200">
+		<BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
 			<!-- Field: Reference Number -->
 			<Link
 				as="a"
@@ -280,7 +319,7 @@ const base64ToPdf = (base: string) => {
 		</BoxStatPallet>
 
 		<!-- Box: 2 -->
-		<BoxStatPallet class="py-2.5 pl-2.5 pr-3" icon="fal fa-user">
+		<BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-r border-gray-200" icon="fal fa-user">
 			<template v-if="boxStats?.picker?.contact_name">
 				<div v-tooltip="trans('Picker name')"
 					class="border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -294,6 +333,7 @@ const base64ToPdf = (base: string) => {
 				<div class="border-t border-gray-300 w-full" />
 			</template>
 			
+			<!-- Current State -->
 			<div
 				xv-tooltip="trans('Current progress')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -310,6 +350,7 @@ const base64ToPdf = (base: string) => {
 				</dd>
 			</div>
 
+			<!-- Weight -->
 			<div
 				v-tooltip="trans('Estimated weight of all products')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -321,10 +362,11 @@ const base64ToPdf = (base: string) => {
 						class="text-gray-500" />
 				</dt>
 				<dd class="text-gray-500">
-					{{ locale.number(boxStats?.products.estimated_weight) || 0 }} kilograms
+					{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
 				</dd>
 			</div>
 
+			<!-- Total Items -->
 			<div
 				v-tooltip="trans('Total items')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -420,14 +462,25 @@ const base64ToPdf = (base: string) => {
 									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
 								</div>
 							</div>
+							
+							<Button
+								v-if="sments.is_printable"
+								@click="() => onPrintShipment(sments)"
+								size="xs"
+								icon="fal fa-print"
+								label="Print label"
+								type="tertiary"
+								:loading="isLoadingPrint"
+							/>
 						</li>
 					</ul>
+
 				</div>
 			</div>
 			
 		</BoxStatPallet>
 
-		<!-- Modal: Shipment -->
+		<!-- Modal: Parcels -->
 		<Modal
 			v-if="true"
 			:isOpen="isModalParcels"

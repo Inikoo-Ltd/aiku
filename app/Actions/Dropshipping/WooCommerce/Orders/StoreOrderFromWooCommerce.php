@@ -16,12 +16,14 @@ use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -76,6 +78,11 @@ class StoreOrderFromWooCommerce extends OrgAction
             );
         }
 
+        try {
+            PayOrderAsync::run($order);
+        } catch (Exception $e) {
+            Sentry::captureException($e);
+        }
         SubmitOrder::run($order);
 
 

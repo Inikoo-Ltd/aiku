@@ -10,6 +10,7 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\WithRunInvoiceHydrators;
+use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
@@ -37,6 +38,9 @@ class FinaliseRefund extends OrgAction
         );
 
         $this->runInvoiceHydrators($refund);
+        if ($refund->shop->type == 'fulfilment') {
+            SendInvoiceToFulfilmentCustomerEmail::dispatch($refund);
+        }
 
         return $refund;
     }

@@ -19,8 +19,11 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
+use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
+use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
+use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
@@ -114,9 +117,16 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::get('reconnect', ReconnectRetinaCustomerSalesChannel::class)->name('reconnect');
 });
 
+Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order_upload_templates');
+
 
 Route::prefix('tiktok')->name('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
+});
+
+Route::prefix('invoices')->name('invoices.')->group(function () {
+    Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
+    Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {

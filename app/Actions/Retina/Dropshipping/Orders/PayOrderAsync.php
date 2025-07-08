@@ -10,10 +10,10 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\RetinaAction;
-use App\Models\Accounting\MitSavedCard;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 
-class PayRetinaOrderWithSavedCards extends RetinaAction
+class PayOrderAsync extends RetinaAction
 {
     use WithBasketStateWarning;
     use WithRetinaOrderPlacedRedirection;
@@ -29,14 +29,28 @@ class PayRetinaOrderWithSavedCards extends RetinaAction
             PayRetinaOrderWithBalance::run($order);
         } else {
             foreach ($customer->mitSavedCard->sortBy('priority') as $card) {
-                $this->processSavedCard($order, $card);
+                $result = PayOrderWithMitCard::run($order, $card);
+                if (Arr::get($result, 'status') == 'ok') {
+                    break;
+                }
             }
         }
     }
 
-    public function processSavedCard(Order $order, MitSavedCard $mitSavedCard)
+    public string $commandSignature = 'test_pay2';
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(): int
     {
-        dd('not available yet');
+        $order = Order::find(1186846);
+
+
+        $this->handle($order);
+
+
+        return 1;
     }
 
 }

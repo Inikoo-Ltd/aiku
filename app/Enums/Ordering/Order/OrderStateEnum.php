@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:24:56 Malaysia Time, Pantai Lembeng, Bali, Id
+ * Created: Tue, 20 Jun 2023 20:24:56 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
@@ -33,22 +33,22 @@ enum OrderStateEnum: string
     public static function labels(): array
     {
         return [
-            'creating'     => __('Creating'),
-            'submitted'    => __('Submitted'),
-            'in_warehouse' => __('In Warehouse'),
-            'handling'     => __('Handling'),
+            'creating'         => __('Creating'),
+            'submitted'        => __('Submitted'),
+            'in_warehouse'     => __('In Warehouse'),
+            'handling'         => __('Handling'),
             'handling_blocked' => __('Handling Blocked'),
-            'packed'       => __('Packed'),
-            'finalised'    => __('Finalized'),
-            'dispatched'   => __('Dispatched'),
-            'cancelled'    => __('Cancelled'),
+            'packed'           => __('Packed'),
+            'finalised'        => __('Finalized'),
+            'dispatched'       => __('Dispatched'),
+            'cancelled'        => __('Cancelled'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'creating'     => [
+            'creating'         => [
                 'tooltip' => __('Creating'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
@@ -58,7 +58,7 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'submitted'    => [
+            'submitted'        => [
                 'tooltip' => __('Submitted'),
                 'icon'    => 'fal fa-paper-plane',
                 'class'   => 'text-indigo-400',
@@ -68,7 +68,7 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'in_warehouse' => [
+            'in_warehouse'     => [
                 'tooltip' => __('In Warehouse'),
                 'icon'    => 'fal fa-warehouse',
                 'class'   => 'text-gray-500',
@@ -78,7 +78,7 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'handling'     => [
+            'handling'         => [
                 'tooltip' => __('Handling'),
                 'icon'    => 'fal fa-hands-helping',
                 'class'   => 'text-gray-500',
@@ -98,7 +98,7 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'packed'       => [
+            'packed'           => [
                 'tooltip' => __('Packed'),
                 'icon'    => 'fal fa-box',
                 'class'   => 'text-gray-500',
@@ -108,7 +108,7 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'finalised'    => [
+            'finalised'        => [
                 'tooltip' => __('Finalized'),
                 'icon'    => 'fal fa-tasks',
                 'class'   => 'text-gray-500',
@@ -118,7 +118,7 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'dispatched'   => [
+            'dispatched'       => [
                 'tooltip' => __('Dispatched'),
                 'icon'    => 'fal fa-shipping-fast',
                 'class'   => 'text-gray-500',
@@ -128,7 +128,7 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'cancelled'    => [
+            'cancelled'        => [
                 'tooltip' => __('Cancelled'),
                 'icon'    => 'fal fa-times-circle',
                 'class'   => 'text-red-500',
@@ -152,15 +152,15 @@ enum OrderStateEnum: string
         }
 
         return [
-            'creating'     => $stats->number_orders_state_creating,
-            'submitted'    => $stats->number_orders_state_submitted,
-            'in_warehouse' => $stats->number_orders_state_in_warehouse,
-            'handling'     => $stats->number_orders_state_handling,
+            'creating'         => $stats->number_orders_state_creating,
+            'submitted'        => $stats->number_orders_state_submitted,
+            'in_warehouse'     => $stats->number_orders_state_in_warehouse,
+            'handling'         => $stats->number_orders_state_handling,
             'handling_blocked' => $stats->number_orders_state_handling_blocked,
-            'packed'       => $stats->number_orders_state_packed,
-            'finalised'    => $stats->number_orders_state_finalised,
-            'dispatched'   => $stats->number_orders_state_dispatched,
-            'cancelled'    => $stats->number_orders_state_cancelled,
+            'packed'           => $stats->number_orders_state_packed,
+            'finalised'        => $stats->number_orders_state_finalised,
+            'dispatched'       => $stats->number_orders_state_dispatched,
+            'cancelled'        => $stats->number_orders_state_cancelled,
         ];
     }
 }

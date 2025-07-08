@@ -8,9 +8,13 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateDangerousGoods;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
+use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -26,12 +30,15 @@ class UpdateTradeUnit extends GrpAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithGoodsEditAuthorisation;
+    use HasDangerousGoodsFields;
 
     private TradeUnit $tradeUnit;
 
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
+
+
         if ($tradeUnit->wasChanged('gross_weight')) {
             foreach ($tradeUnit->stocks as $stock) {
                 StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
@@ -42,9 +49,37 @@ class UpdateTradeUnit extends GrpAction
         }
 
         if ($tradeUnit->wasChanged('marketing_weight')) {
-
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
+            }
+        }
+
+        if ($tradeUnit->wasChanged('marketing_dimensions')) {
+            foreach ($tradeUnit->products as $product) {
+                ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
+            }
+        }
+
+        // Check if any dangerous goods fields have been updated
+        $dangerousGoodsFields        = $this->getDangerousGoodsFieldNames();
+        $dangerousGoodsFieldsUpdated = false;
+
+        foreach ($dangerousGoodsFields as $field) {
+            if ($tradeUnit->wasChanged($field)) {
+                $dangerousGoodsFieldsUpdated = true;
+                break;
+            }
+        }
+
+        if ($dangerousGoodsFieldsUpdated) {
+            foreach ($tradeUnit->products as $product) {
+                ProductHydrateDangerousGoods::dispatch($product);
+            }
+        }
+
+        if ($tradeUnit->wasChanged('barcode')) {
+            foreach ($tradeUnit->products as $product) {
+                ProductHydrateBarcodeFromTradeUnit::dispatch($product);
             }
         }
 
@@ -54,7 +89,7 @@ class UpdateTradeUnit extends GrpAction
     public function rules(): array
     {
         $rules = [
-            'code'             => [
+            'code'                         => [
                 'sometimes',
                 'required',
                 'max:64',
@@ -73,23 +108,53 @@ class UpdateTradeUnit extends GrpAction
                     ]
                 ),
             ],
-            'name'             => ['sometimes', 'required', 'string', 'max:255'],
-            'description'      => ['sometimes', 'required', 'string', 'max:1024'],
-            'barcode'          => ['sometimes', 'required'],
-            'gross_weight'     => ['sometimes', 'required', 'numeric'],
-            'net_weight'       => ['sometimes', 'required', 'numeric'],
-            'marketing_weight' => ['sometimes', 'required', 'numeric'],
-            'marketing_dimensions' => ['sometimes', 'required'],
-            'type'             => ['sometimes', 'required'],
-            'image_id'         => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'data'             => ['sometimes', 'required']
+            'name'                         => ['sometimes', 'required', 'string', 'max:255'],
+            'description'                  => ['sometimes', 'required', 'string', 'max:1024'],
+            'barcode'                      => ['sometimes', 'required'],
+            'gross_weight'                 => ['sometimes', 'required', 'numeric'],
+            'net_weight'                   => ['sometimes', 'required', 'numeric'],
+            'marketing_weight'             => ['sometimes', 'required', 'numeric'],
+            'marketing_dimensions'         => ['sometimes', 'required'],
+            'type'                         => ['sometimes', 'required'],
+            'image_id'                     => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
+            'data'                         => ['sometimes', 'required'],
+
+            // Dangerous goods string fields
+            'un_number'                    => ['sometimes', 'nullable', 'string'],
+            'un_class'                     => ['sometimes', 'nullable', 'string'],
+            'packing_group'                => ['sometimes', 'nullable', 'string'],
+            'proper_shipping_name'         => ['sometimes', 'nullable', 'string'],
+            'hazard_identification_number' => ['sometimes', 'nullable', 'string'],
+            'gpsr_manufacturer'            => ['sometimes', 'nullable', 'string'],
+            'gpsr_eu_responsible'          => ['sometimes', 'nullable', 'string'],
+            'gpsr_warnings'                => ['sometimes', 'nullable', 'string'],
+            'gpsr_manual'                  => ['sometimes', 'nullable', 'string'],
+            'gpsr_class_category_danger'   => ['sometimes', 'nullable', 'string'],
+            'gpsr_class_languages'         => ['sometimes', 'nullable', 'string'],
+
+            // Dangerous goods boolean fields
+            'pictogram_toxic'              => ['sometimes', 'boolean'],
+            'pictogram_corrosive'          => ['sometimes', 'boolean'],
+            'pictogram_explosive'          => ['sometimes', 'boolean'],
+            'pictogram_flammable'          => ['sometimes', 'boolean'],
+            'pictogram_gas'                => ['sometimes', 'boolean'],
+            'pictogram_environment'        => ['sometimes', 'boolean'],
+            'pictogram_health'             => ['sometimes', 'boolean'],
+            'pictogram_oxidising'          => ['sometimes', 'boolean'],
+            'pictogram_danger'             => ['sometimes', 'boolean'],
+            'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
+            'country_of_origin'            => ['sometimes', 'nullable', 'string'],
+            'tariff_code'                  => ['sometimes', 'nullable', 'string'],
+            'duty_rate'                    => ['sometimes', 'nullable', 'string'],
+            'hts_us'                       => ['sometimes', 'nullable', 'string'],
+            'marketing_ingredients'        => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {
-            $rules['gross_weight'] = ['sometimes', 'nullable', 'numeric'];
-            $rules['net_weight']   = ['sometimes', 'nullable', 'numeric'];
-            $rules['marketing_weight']   = ['sometimes', 'nullable', 'numeric'];
-            $rules                 = $this->noStrictUpdateRules($rules);
+            $rules['gross_weight']     = ['sometimes', 'nullable', 'numeric'];
+            $rules['net_weight']       = ['sometimes', 'nullable', 'numeric'];
+            $rules['marketing_weight'] = ['sometimes', 'nullable', 'numeric'];
+            $rules                     = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
@@ -98,7 +163,7 @@ class UpdateTradeUnit extends GrpAction
     public function action(TradeUnit $tradeUnit, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): TradeUnit
     {
         $this->asAction = true;
-        $this->strict = $strict;
+        $this->strict   = $strict;
 
         if (!$audit) {
             TradeUnit::disableAuditing();
