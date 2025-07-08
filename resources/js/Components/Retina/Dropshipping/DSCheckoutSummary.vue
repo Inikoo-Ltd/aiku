@@ -145,7 +145,7 @@ const isModalShippingAddress = ref(false)
                 </dt>
                 
                 <dd class="text-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
-                    {{ locale.number(summary.order_properties.weight || 0) }} kg
+                    {{ locale.number(summary.order_properties?.weight || 0) }} kg
                 </dd>
             </div>
 
