@@ -59,6 +59,7 @@ const props = defineProps<{
 			label?: string
             label_type?: string
 			combined_label_url?: string
+			is_printable?: boolean
 		}[]
 	}
 	shipments: {
@@ -332,6 +333,7 @@ const onPrintShipment = async (ship) => {
 				<div class="border-t border-gray-300 w-full" />
 			</template>
 			
+			<!-- Current State -->
 			<div
 				xv-tooltip="trans('Current progress')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -348,6 +350,7 @@ const onPrintShipment = async (ship) => {
 				</dd>
 			</div>
 
+			<!-- Weight -->
 			<div
 				v-tooltip="trans('Estimated weight of all products')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -363,6 +366,7 @@ const onPrintShipment = async (ship) => {
 				</dd>
 			</div>
 
+			<!-- Total Items -->
 			<div
 				v-tooltip="trans('Total items')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -460,6 +464,7 @@ const onPrintShipment = async (ship) => {
 							</div>
 							
 							<Button
+								v-if="sments.is_printable"
 								@click="() => onPrintShipment(sments)"
 								size="xs"
 								icon="fal fa-print"

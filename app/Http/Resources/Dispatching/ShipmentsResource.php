@@ -32,6 +32,7 @@ class ShipmentsResource extends JsonResource
             'combined_label_url' => $this->combined_label_url,
             'label'         => $this->label,
             'label_type'    => $this->label_type,
+            'is_printable'  => false,  // TODO: make it to correct one
         ];
     }
 }
