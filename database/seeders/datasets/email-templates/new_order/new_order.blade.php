@@ -1,20 +1,9 @@
-<!--
-  ~ Author: Raul Perusquia <raul@inikoo.com>
-    Based on alert.tpl : 2 February 2019 at 17:20:13 GMT+8, Kuala Lumpur Malaysia
-  ~ Created: Mon, 26 Nov 2024 08:23:00 Kuala Lumpur, Malaysia
-  ~ Copyright (c) 2024, Raul A Perusquia Flores
-  -->
-
-
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
 <head>
   <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <title>New order [Order Shop Name]</title>
-
+  <title>New Order Notification</title>
 
   <style type="text/css">
       img {
@@ -82,8 +71,6 @@
           .content-wrap {
               padding: 10px !important;
           }
-
-
       }
   </style>
 </head>
@@ -103,10 +90,10 @@
                style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; border-radius: 3px; background-color: #fff; margin: 0; border: 1px solid #e9e9e9;"
                bgcolor="#fff">
           <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-            <td class="alert alert-warning"
-                style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#26A65B; margin: 0; padding: 20px;"
-                align="center" bgcolor="#26A65B" valign="top">
-              New customer registration [Customer Shop Name]
+            <td class="alert alert-success"
+                style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#27AE60; margin: 0; padding: 20px;"
+                align="center" bgcolor="#27AE60" valign="top">
+              New Order Notification
             </td>
           </tr>
           <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -115,33 +102,21 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    New customer [Customer Name or Email]
+                      A new order has been placed with the following details:
                   </td>
                 </tr>
-
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    <a href="{{$customer->getUrl()}}" class="btn-primary"
-                       style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px;  background-color: #348eda; margin: 0; border-color: #348eda; border-style: solid; border-width: 10px 20px;">[Customer Name]</a>
+                    <strong>Order Reference:</strong> <a href="[Order Link]" style="color: #3498DB; text-decoration: none;">[Order Reference]</a><br/>
+                    <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br/>
+                    <strong>Order Date:</strong> [Order Date]
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
         </table>
-        <div class="footer" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; clear: both; color: #999; margin: 0; padding: 20px;">
-          <table width="100%" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-            <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-              <td class="aligncenter content-block"
-                  style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;"
-                  align="center" valign="top">
-                [Customer Organisation Name]<br/>[Order Date]
-              </td>
-            </tr>
-
-          </table>
-        </div>
       </div>
     </td>
     <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;" valign="top"></td>
