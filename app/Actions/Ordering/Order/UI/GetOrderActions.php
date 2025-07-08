@@ -92,71 +92,11 @@ class GetOrderActions
                         ]
                     ]
                 ],
-                OrderStateEnum::IN_WAREHOUSE => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Handle'),
-                        'label'   => __('Handle'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.handling',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ]
-                ],
-                OrderStateEnum::HANDLING => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Pack'),
-                        'label'   => __('Pack'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.packed',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ]
-                ],
 
-                OrderStateEnum::FINALISED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'tooltip' => __('Dispatch'),
-                        'label'   => __('Dispatch'),
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.dispatched',
-                            'parameters' => [
-                                'order' => $order->id
-                            ]
-                        ]
-                    ],
-                    $order->invoices->count() == 0 ?
-                        [
-                            'type'    => 'button',
-                            'style'   => '',
-                            'tooltip' => $generateInvoiceLabel,
-                            'label'   => $generateInvoiceLabel,
-                            'key'     => 'action',
-                            'route'   => [
-                                'method'     => 'patch',
-                                'name'       => 'grp.models.order.generate_invoice',
-                                'parameters' => [
-                                    'order' => $order->id
-                                ]
-                            ]
-                        ] : []
-                ],
-                OrderStateEnum::DISPATCHED => [
+
+
+                OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED => [
+
                     $order->invoices->count() == 0 ?
                         [
                             'type'    => 'button',
@@ -176,7 +116,7 @@ class GetOrderActions
                 default => []
             };
 
-            if ($order->state !== OrderStateEnum::CANCELLED && !app()->isProduction()) {
+            if ($order->state !== OrderStateEnum::CANCELLED) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'cancel',
