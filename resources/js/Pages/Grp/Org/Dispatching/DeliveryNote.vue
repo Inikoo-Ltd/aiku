@@ -402,8 +402,8 @@ provide("listError", listError.value);
 
                 <div v-else
                      v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
-                     @click="() => formTrackingNumber.shipping_id = shipment"
-                     class="relative w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
+                     @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
+                     class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
                      :class="[
 						formTrackingNumber.shipping_id?.id == shipment.id
 							? 'bg-indigo-200 border-indigo-300'
@@ -420,6 +420,10 @@ provide("listError", listError.value);
                     </div>
 
                     <FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
+
+                    <div v-if="isLoadingButton == 'addTrackingNumber'" class="bg-black/40 rounded-md absolute inset-0 z-10">
+    
+                    </div>
                 </div>
 
             </div>
@@ -429,6 +433,7 @@ provide("listError", listError.value);
                     v-model="formTrackingNumber.shipping_id"
                     :fetchRoute="shipments.fetch_route"
                     required
+                    :disabled="isLoadingButton == 'addTrackingNumber'"
                     :placeholder="trans('Select shipping')"
                     object
                     @optionsList="(e) => optionShippingList = e"
