@@ -6,8 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Goods\TradeUnit\UI\UpdateTradeUnitImages;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
+use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use Illuminate\Support\Facades\Route;

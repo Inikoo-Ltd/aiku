@@ -6,7 +6,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Goods\TradeUnit\UI;
+namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
