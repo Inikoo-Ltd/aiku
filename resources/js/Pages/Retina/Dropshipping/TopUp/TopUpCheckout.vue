@@ -47,14 +47,12 @@ watch(() => isLoading.value, (loading) => {
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <FlashNotification :notification="page.props.flash.notification" />
-
     <div class="flex justify-center">
-        <div class="relative w-full max-w-xl isolate xmx-auto my-8 overflow-hidden">
-            <div xv-show="!isLoading" id="flow-container" class="absolute w-full" />
+        <div class="relative w-full max-w-xl isolate xmx-auto my-8">
+            <div xv-show="!isLoading" id="flow-container" class="absolute w-full border-b border-gray-300" />
             <div class="w-full h-[623px] md:h-[511px] -z-10" :class="isLoadingCheckout ? 'skeleton' : ''">
             </div>
         </div>

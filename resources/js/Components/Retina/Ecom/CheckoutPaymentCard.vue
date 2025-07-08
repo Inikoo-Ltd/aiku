@@ -89,7 +89,7 @@ const onClickCopy = (textToCopy: string) => {
             </Transition>
         </div>
 
-        <div xv-show="!isLoading" id="flow-container" class="absolute w-full" />
+        <div xv-show="!isLoading" id="flow-container" class="absolute w-full border-b border-gray-300" />
         <div class="w-full h-[623px] md:h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
 
         </div>
