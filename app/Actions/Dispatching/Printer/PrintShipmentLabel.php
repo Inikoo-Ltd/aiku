@@ -26,7 +26,7 @@ class PrintShipmentLabel extends OrgAction
         return $this->printPdf(
             title: $shipment->tracking,
             printId: $this->get('printerId'),
-            pdfBaset64: $shipment->label
+            pdfBase64: $shipment->label
         );
     }
 
