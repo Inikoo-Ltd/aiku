@@ -179,11 +179,8 @@ class GetOrderActions
             if ($order->state !== OrderStateEnum::CANCELLED && !app()->isProduction()) {
                 $actions[] = [
                     'type'    => 'button',
-                    'style'   => 'danger',
-                    'icon'    => 'fal fa-times',
+                    'style'   => 'cancel',
                     'key'     => 'action',
-                    'label'   => __('cancel'),
-                    'tooltip' => __('Cancel Order'),
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.state.cancelled',
