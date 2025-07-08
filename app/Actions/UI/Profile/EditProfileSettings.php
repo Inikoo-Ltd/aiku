@@ -36,12 +36,20 @@ class EditProfileSettings
 
     public function generateBlueprint(User $user): array
     {
-        $printers = GetPrinters::make()->action([])->map(function ($printer) {
-            return [
-            'value' => $printer->id,
-            'label' => $printer->name
-            ];
-        })->values()->toArray();
+        $cacheKey = "user_printers";
+        $cachedPrinters = cache()->get($cacheKey);
+        if ($cachedPrinters) {
+                $printers = $cachedPrinters;
+        }else {
+            $printers = GetPrinters::make()->action([])->map(function ($printer) {
+                return [
+                    'value' => $printer->id,
+                    'label' => $printer->name,
+                ];
+            })->values()->toArray();
+            cache()->put($cacheKey, $printers, now()->addMinutes(5));
+        }
+
         return [
             "title"       => __("Preferences"),
             "pageHead"    => [
