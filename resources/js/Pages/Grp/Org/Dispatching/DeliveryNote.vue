@@ -68,6 +68,7 @@ const props = defineProps<{
         [key: string]: TSTimeline
     }
     box_stats: {}
+    quick_pickers: {}
     routes: {
         update: routeType
         products_list: routeType
@@ -312,7 +313,6 @@ provide("listError", listError.value);
             <div class="mx-auto font-semibold text-lg">
                 {{ trans("Select Picker") }}
             </div>
-
             <div class="mt-4 flex items-center w-full gap-x-1.5">
                 <dd class="flex-1">
                     <!-- Label for Picker -->
@@ -340,16 +340,29 @@ provide("listError", listError.value);
                                 {{ value.contact_name }}
                             </div>
                         </template>
-
                         <template #option="{ option, isSelected, isPointed }">
                             <div class="w-full text-left text-sm whitespace-nowrap truncate">
                                 {{ option.contact_name }}
                             </div>
                         </template>
                     </PureMultiselectInfiniteScroll>
+                    
+                    <!-- Quick Pickers -->
+                    <div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <Button
+                                v-for="picker in quick_pickers"
+                                :key="picker.id"
+                                @click="selectedPicker = picker"
+                                class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                :class="{ 'bg-blue-500 text-white': selectedPicker?.id === picker.id }"
+                            >
+                                {{ picker.contact_name }}
+                            </Button>
+                        </div>
+                    </div>
                 </dd>
             </div>
-
             <div class="w-full mt-2">
                 <Button
                     @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
@@ -360,7 +373,6 @@ provide("listError", listError.value);
                     :disabled="!selectedPicker"
                     v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')"
                 >
-
                 </Button>
             </div>
         </div>
