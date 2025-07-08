@@ -77,6 +77,8 @@ const onSubmitTopUp = () => {
         }
     })
 }
+
+const isCustom = ref(false)
 </script>
 
 <template>
@@ -144,7 +146,7 @@ const onSubmitTopUp = () => {
         </div>
 
         <Modal width="w-full max-w-xl" :isOpen="isModalTopUpOpen" @close="() => isModalTopUpOpen = false">
-            <div class="p-6 max-w-lg mx-auto w-full">
+            <div class="p-6 ">
                 <div class="mb-8">
                     <h2 class="text-3xl font-bold">{{ trans("Top up Balance") }}</h2>
                     <span class="text-sm italic text-gray-400">
@@ -152,32 +154,47 @@ const onSubmitTopUp = () => {
                         {{ trans("Deposit funds for various purposes such as orders payment.") }}
                     </span>
                 </div>
-                <div class="space-y-8">
-                    <div>
-                        <label for="amount" class="block font-medium mb-2">
-                            {{ trans("Amount to deposit") }}
-                        </label>
-                        <InputNumber v-model="amount" inputId="currency-germany" mode="currency" placeholder="100"
-                            :currency="currency.code" locale="en-GB" fluid />
+                <div class="space-y-4">
+
+                    <div class="flex flex-wrap gap-2 sm:gap-x-4">
+                        <button :disabled="isCustom" @click="amount = 50"
+                            :class="amount === 50 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                            {{ locale.currencyFormat(currency.code, 50) }}
+                        </button>
+
+                        <button :disabled="isCustom" @click="amount = 100"
+                            :class="amount === 100 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                            {{ locale.currencyFormat(currency.code, 100) }}
+                        </button>
+
+                        <button :disabled="isCustom" @click="amount = 200"
+                            :class="amount === 200 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                            {{ locale.currencyFormat(currency.code, 200) }}
+                        </button>
+
+                        <button :disabled="isCustom" @click="amount = 300"
+                            :class="amount === 300 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                            {{ locale.currencyFormat(currency.code, 300) }}
+                        </button>
                     </div>
 
-                     <div class="flex flex-wrap gap-2 sm:gap-x-4">
-                        <div @click="amount = 100"
-                            :class="amount === 100 ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
-                            class="h-12 w-fit cursor-pointer border border-gray-300 rounded-md flex items-center px-7 font-bold">
-                            {{ locale.currencyFormat(currency.code, 100) }}
-                        </div>
-                        <div @click="amount = 200"
-                            :class="amount === 200 ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
-                            class="h-12 w-fit cursor-pointer border border-gray-300 rounded-md flex items-center px-7 font-bold">
-                            {{ locale.currencyFormat(currency.code, 200) }}
-                        </div>
-                        <div @click="amount = 300"
-                            :class="amount === 300 ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
-                            class="h-12 w-fit cursor-pointer border border-gray-300 rounded-md flex items-center px-7 font-bold">
-                            {{ locale.currencyFormat(currency.code, 300) }}
-                        </div>
+                    <div @click="isCustom = !isCustom"
+                        :class="isCustom ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
+                        class="h-12 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                        {{ trans("Custom amount") }}
                     </div>
+                    
+                </div>
+                <div v-if="isCustom" class="mt-4">
+                    <label for="amount" class="block font-medium mb-2">
+                        {{ trans("Amount to deposit") }}
+                    </label>
+                    <InputNumber v-model="amount" inputId="currency-germany" mode="currency" placeholder="100"
+                        :currency="currency.code" locale="en-GB" fluid />
                 </div>
 
                 <div class="mt-8 flex justify-end space-x-4">
