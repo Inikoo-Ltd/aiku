@@ -14,6 +14,7 @@ enum CustomerSalesChannelStateEnum: string
 {
     use EnumHelperTrait;
 
+    case CREATED = 'created';
     case IN_PROCESS = 'in_process';
     case AUTHENTICATED = 'authenticated';
     case WITH_PORTFOLIO = 'with_portfolio';
@@ -22,7 +23,8 @@ enum CustomerSalesChannelStateEnum: string
     public static function labels(): array
     {
         return [
-            self::IN_PROCESS->value => __('Created'),
+            self::CREATED->value => __('Created'),
+            self::IN_PROCESS->value => __('In Process'),
             self::AUTHENTICATED->value => __('Authenticated'),
             self::WITH_PORTFOLIO->value => __('Portfolio Added'),
             self::CLOSED->value => __('Closed'),

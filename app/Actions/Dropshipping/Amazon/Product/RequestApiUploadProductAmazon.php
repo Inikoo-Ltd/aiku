@@ -12,7 +12,6 @@ namespace App\Actions\Dropshipping\Amazon\Product;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
-use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Events\UploadProductToAmazonProgressEvent;
@@ -39,30 +38,8 @@ class RequestApiUploadProductAmazon extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $productData = [
-                'id' => $portfolio->id,
-                'barcode' => $product->barcode,
-                'code' => $portfolio->code,
-                'sku' => 'SKU-'.$product->code,
-                'title' => $portfolio->customer_product_name,
-                'description' => $portfolio->customer_description,
-                'product_type' => $product->type ?? null,
-                'brand' => $product->brand ?? null,
-                'bullet_points' => $product->bullet_points ?? [],
-                'dimensions' => [
-                    'weight' => $product->gross_weight,
-                ],
-                'quantity' => $product->available_quantity,
-                'price' => $product->price,
-                'currency' => $product->currency,
-                'images' => app()->isProduction()
-                    ? collect($product->images)->map(function ($image) {
-                        return GetImgProxyUrl::run($image->getImage()->extension('jpg'));
-                    })->toArray()
-                    : [],
-            ];
-
-            $product = $amazonUser->createFullProduct(Arr::get($productData, 'sku'), $productData);
+            $searchProduct = $amazonUser->getProductByEan($product->barcode);
+            $product = $amazonUser->createProductFromSearchData($searchProduct);
 
             if (Arr::get($product, 'status') === "ACCEPTED") {
                 $portfolio = UpdatePortfolio::run($portfolio, [
