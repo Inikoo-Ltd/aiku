@@ -27,6 +27,8 @@ const props = defineProps<{
         updated_at: string
         layout: string
         stats: StatsBoxTS[]
+        content_blog_stats: StatsBoxTS[]
+        
     },
 }>()
 
@@ -63,6 +65,15 @@ const links = ref([
                     <div class="grid grid-cols-2 gap-2">
                         <StatsBox
                             v-for="stat in props.data.stats"
+                            :stat
+                        />
+                    </div>
+                    <div class="font-semibold w-fit text-lg mb-2">
+                        {{trans('Content & Blog')}}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <StatsBox
+                            v-for="stat in props.data.content_blog_stats"
                             :stat
                         />
                     </div>
