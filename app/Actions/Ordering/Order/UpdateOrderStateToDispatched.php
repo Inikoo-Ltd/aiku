@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
+use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
@@ -62,6 +64,9 @@ class UpdateOrderStateToDispatched extends OrgAction
                 };
             }
         });
+
+        SendDispatchedOrderEmailToSubscribers::dispatch($order);
+        SendDispatchedOrderEmailToCustomer::dispatch($order);
 
         return $order;
     }

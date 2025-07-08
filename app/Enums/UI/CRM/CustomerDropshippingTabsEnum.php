@@ -24,6 +24,7 @@ enum CustomerDropshippingTabsEnum: string
     case CREDIT_TRANSACTIONS = 'credit_transactions';
     case FAVOURITES          = 'favourites';
     case REMINDERS           = 'reminders';
+    case DISPATCHED_EMAILS           = 'dispatched_emails';
 
 
     public function blueprint(): array
@@ -43,12 +44,12 @@ enum CustomerDropshippingTabsEnum: string
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon'
             ],
-            // CustomerDropshippingTabsEnum::DISPATCHED_EMAILS => [
-            //     'align' => 'right',
-            //     'title' => __('dispatched emails'),
-            //     'icon'  => 'fal fa-paper-plane',
-            //     'type'  => 'icon',
-            // ],
+            CustomerDropshippingTabsEnum::DISPATCHED_EMAILS => [
+                'align' => 'right',
+                'title' => __('dispatched emails'),
+                'icon'  => 'fal fa-paper-plane',
+                'type'  => 'icon',
+            ],
             CustomerDropshippingTabsEnum::CREDIT_TRANSACTIONS => [
                 'align' => 'right',
                 'title' => __('credit transactions'),

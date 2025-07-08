@@ -1,11 +1,9 @@
 <?php
-
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 08-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
+ * author Arya Permana - Kirin
+ * created on 08-07-2025-18h-04m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
 */
 
 namespace App\Actions\Comms\Email;
@@ -24,7 +22,7 @@ use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 
-class SendNewOrderToCustomerNotification extends OrgAction
+class SendDispatchedOrderEmailToSubscribers extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -35,7 +33,7 @@ class SendNewOrderToCustomerNotification extends OrgAction
     public function handle(Order $order): void
     {
         /** @var Outbox $outbox */
-        $outbox = $order->shop->outboxes()->where('code', OutboxCodeEnum::NEW_ORDER->value)->first();
+        $outbox = $order->shop->outboxes()->where('code', OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED->value)->first();
 
         $customer = $order->customer;
         $subscribedUsers = $outbox->subscribedUsers ?? [];
@@ -75,24 +73,17 @@ class SendNewOrderToCustomerNotification extends OrgAction
                         $order->customer->slug,
                         $order->slug
                     ]),
-                    'customer_link' => $customer->shop->fulfilment ? route('grp.org.fulfilments.show.crm.customers.show', [
-                        $customer->organisation->slug,
-                        $customer->shop->fulfilment->slug,
-                        $customer->fulfilmentCustomer->slug
-                    ]) : route('grp.org.shops.show.crm.customers.show', [
-                        $customer->organisation->slug,
-                        $customer->shop->slug,
+                    'customer_link' => route('grp.org.shops.show.crm.customers.show', [
+                        $order->organisation->slug,
+                        $order->shop->slug,
                         $customer->slug
+                    ]),
+                    'invoice_link' => route('grp.org.accounting.invoices.show', [
+                        $order->organisation->slug,
+                        $order->invoices->first()->slug
                     ]),
                 ]
             );
         }
-    }
-    public string $commandSignature = 'send_new_order_to_customer_notification';
-
-    public function asCommand()
-    {
-        $ord = Order::find(1186116);
-        $this->handle($ord);
     }
 }
