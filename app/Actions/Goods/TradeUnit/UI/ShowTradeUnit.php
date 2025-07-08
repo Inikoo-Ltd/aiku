@@ -98,6 +98,64 @@ class ShowTradeUnit extends GrpAction
 
                 ],
 
+                'images_category_box' => [
+                    [
+                        'label' => __('Main'),
+                        'type'  => 'image',
+                        'key_in_db' => 'image_id',
+                        'images' => [],
+                    ],
+                    [
+                        'label' => __('Video'),
+                        'type'  => 'video',
+                        'information' => __('You can use YouTube or Vimeo links'),
+                        'key_in_db' => 'video_url',
+                        'url' => [],
+                    ],
+                    [
+                        'label' => __('Left side'),
+                        'type'  => 'image',
+                        'key_in_db' => 'left_image_id',
+                        'images' => [],
+                    ],
+                    [
+                        'label' => __('3x4 ratio'),
+                        'type'  => 'image',
+                        'key_in_db' => '34_image_id',
+                        'images' => [],
+                    ],
+                    [
+                        'label' => __('Right side'),
+                        'type'  => 'image',
+                        'key_in_db' => 'right_image_id',
+                        'images' => [],
+                    ],
+                    [
+                        'label' => __('Back side'),
+                        'type'  => 'image',
+                        'key_in_db' => 'back_image_id',
+                        'images' => [],
+                    ],
+                    [
+                        'label' => __('Top side'),
+                        'type'  => 'image',
+                        'key_in_db' => 'top_image_id',
+                        'images' => [],
+                    ],
+                    [
+                        'label' => __('Bottom side'),
+                        'type'  => 'image',
+                        'key_in_db' => 'bottom_image_id',
+                        'images' => [],
+                    ],
+                    [
+                        'label' => __('Comparison image'),
+                        'type'  => 'image',
+                        'key_in_db' => 'size_comparison_image_id',
+                        'images' => [],
+                    ],
+                ],
+
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
