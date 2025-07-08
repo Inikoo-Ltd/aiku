@@ -14,6 +14,7 @@ use App\Http\Resources\Fulfilment\FulfilmentResource;
 use App\Http\Resources\Fulfilment\FulfilmentsResource;
 use App\Http\Resources\Inventory\WarehouseResource;
 use App\Http\Resources\Inventory\WarehousesResource;
+use App\Http\Resources\SysAdmin\Organisation\MayaOrganisationResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
 use App\Models\SysAdmin\User;
@@ -50,13 +51,7 @@ class MayaUserResource extends JsonResource
             'number_expired_api_tokens' => $this->number_expired_api_tokens,
             'parent_type'               => $this->parent_type,
             'contact_name'              => $this->contact_name,
-            'authorised_organisations'  => OrganisationResource::collection($user->authorisedOrganisations)->resolve(),
-            'authorised_shops'          => ShopResource::collection($user->authorisedShops)->resolve(),
-            'authorised_fulfilments'    => FulfilmentResource::collection($user->authorisedFulfilments)->resolve(),
-            'authorised_warehouses'     => WarehouseResource::collection($user->authorisedWarehouses)->resolve(),
-
-
-
+            'authorised_organisations'  => MayaOrganisationResource::collection($user->authorisedOrganisations)->resolve(),
         ];
     }
 }
