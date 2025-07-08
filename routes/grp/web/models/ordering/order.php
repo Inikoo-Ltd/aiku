@@ -22,7 +22,6 @@ use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateOrderStateToDispatched;
-use App\Actions\Ordering\Order\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;

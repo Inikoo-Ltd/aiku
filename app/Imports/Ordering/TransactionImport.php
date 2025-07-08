@@ -56,13 +56,13 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         $product = Product::where('shop_id', $this->scope->shop_id)->where('code', $validatedData['code'])->first();
         $historicAsset = $product->historicAsset;
 
-        if($modelData['quantity_ordered'] < 1) {
+        if ($modelData['quantity_ordered'] < 1) {
             $this->setRecordAsFailed($uploadRecord, [
                 'Product with code ' . $validatedData['code'] . ' has invalid quantity.'
             ]);
             return;
         }
-        
+
         if (!in_array($product->id, $this->scope->customerSalesChannel->portfolios->pluck('item_id')->toArray())) {
             $this->setRecordAsFailed($uploadRecord, [
                 'Product with code ' . $validatedData['code'] . ' is not available for this customer.'

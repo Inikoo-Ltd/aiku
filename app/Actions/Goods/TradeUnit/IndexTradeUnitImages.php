@@ -64,8 +64,8 @@ class IndexTradeUnitImages extends OrgAction
 
 
             $table->column(key: 'image', label: __('Image'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'size', label: __('Size'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'size', label: __('Size'), canBeHidden: false, sortable: true, searchable: true);
+
 
         };
     }

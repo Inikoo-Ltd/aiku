@@ -48,7 +48,8 @@ const props = defineProps<{
     }
     products?: {}
     stocks?: {}
-    images?: {}
+    images?: {},
+    imagesCategoryBox?: {  }
 
 }>()
 

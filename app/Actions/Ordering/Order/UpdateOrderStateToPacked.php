@@ -52,7 +52,7 @@ class UpdateOrderStateToPacked extends OrgAction
      */
     public function action(Order $order): Order
     {
-        $this->asAction=true;
+        $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
         return $this->handle($order);
     }

@@ -36,8 +36,16 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
 
-        $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-        $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+
+        if (Arr::get($modelData, 'model_type') == 'Product') {
+            $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+        } else {
+            $net   = Arr::get($modelData, 'net_amount', 0);
+            $gross = Arr::get($modelData, 'gross_amount', 0);
+        }
+
+
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
@@ -54,13 +62,22 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
 
 
+        $unitWeight = $historicAsset->model->gross_weight ?? 0;
+
+        $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
+
+
+
+        data_set($modelData, 'estimated_weight', $estimatedWeight);
+
+
         $modelData = $this->processExchanges($modelData, $order->shop);
 
 
         /** @var Transaction $transaction */
         $transaction = $order->transactions()->create($modelData);
 
-
+        $order->refresh();
         if ($this->strict) {
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);

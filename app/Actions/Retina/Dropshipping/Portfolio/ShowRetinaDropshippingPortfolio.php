@@ -57,11 +57,11 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
                 ),
                 'pageHead'    => [
                     'title' => $title,
-                    'icon'  =>
-                        [
-                            'icon'  => ['fal', 'fa-cube'],
-                            'title' => $title
-                        ],
+                    'icon'  => [
+                        'icon'  => ['fal', 'fa-cube'],
+                        'title' => $title
+                    ],
+                    'model' => __('Product'),
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

@@ -208,10 +208,10 @@ const product = ref({
                     <dd class="font-bold text-xl">{{ data?.product?.data?.name ?? '-' }}</dd>
                 </div>
 
-                <div class="flex flex-col">
+                <!-- <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Added date") }}</dt>
                     <dd class="text-sm font-medium">{{ useFormatTime(data?.product?.data?.created_at) }}</dd>
-                </div>
+                </div> -->
 
                 <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Price") }}</dt>

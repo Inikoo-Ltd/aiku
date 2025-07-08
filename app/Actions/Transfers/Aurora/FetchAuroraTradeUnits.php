@@ -184,6 +184,10 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 $this->fetchTradeUnitImages(
                     $tradeUnit,
                 );
+
+                $this->fetchTradeUnitDangerousGoodsInfo(
+                    $tradeUnit,
+                );
             }
 
 
@@ -208,24 +212,108 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         ]);
     }
 
-    public function fetchTradeUnitImages(TradeUnit $tradeUnit): void
+    public function fetchTradeUnitDangerousGoodsInfo(TradeUnit $tradeUnit): void
     {
-        $images = [];
-      //  print "Fetching images for trade unit: {$tradeUnit->slug} {$tradeUnit->code}  {$tradeUnit->name} ({$tradeUnit->source_id})=================\n";
-        /** @var Product $product */
-        foreach ($tradeUnit->products()->where('unit_relationship_type',ProductUnitRelationshipType::SINGLE)->where('products.organisation_id', $this->organisation->id)->get() as $product) {
-
-            if($product->shop->state!==ShopStateEnum::OPEN){
+        foreach ($tradeUnit->products()->where('unit_relationship_type', ProductUnitRelationshipType::SINGLE)->where('products.organisation_id', $this->organisation->id)->get() as $product) {
+            if ($product->shop->state !== ShopStateEnum::OPEN) {
                 continue;
             }
 
-          //  print "Fetching images for product: {$product->slug} {$product->code}  {$product->name} ({$product->source_id})\n";
+            $dangerousGoodsInfo = $this->fetchAuroraDangerousGoodsInfo($product);
+
+            if ($this->organisation->id == 1) {
+                UpdateTradeUnit::make()->action(
+                    tradeUnit: $tradeUnit,
+                    modelData: $dangerousGoodsInfo,
+                    hydratorsDelay: $this->hydratorsDelay,
+                    strict: false,
+                    audit: false
+                );
+            } else {
+                $filteredDangerousGoodsInfo = array_filter($dangerousGoodsInfo, function ($value) {
+                    return !is_null($value);
+                });
+
+                // Filter dangerous goods info to only update fields that are currently null
+                $fieldsToUpdate = [];
+                foreach ($filteredDangerousGoodsInfo as $field => $value) {
+                    if (is_null($tradeUnit->$field)) {
+                        $fieldsToUpdate[$field] = $value;
+                    }
+                }
+
+                if (!empty($fieldsToUpdate)) {
+                    UpdateTradeUnit::make()->action(
+                        tradeUnit: $tradeUnit,
+                        modelData: $fieldsToUpdate,
+                        hydratorsDelay: $this->hydratorsDelay,
+                        strict: false,
+                        audit: false
+                    );
+                }
+            }
+        }
+    }
+
+    public function fetchAuroraDangerousGoodsInfo(Product $product): array
+    {
+        $sourceData = $product->source_id;
+        if (!$sourceData) {
+            return [];
+        }
+        $sourceData = explode(':', $sourceData);
+
+        $dangerousGoodsInfo = DB::connection('aurora')->table('Product Dimension')
+            ->where('Product Id', $sourceData[1])
+            ->first();
+
+        if (!$dangerousGoodsInfo) {
+            return [];
+        }
+
+        return [
+            'un_number'                    => $dangerousGoodsInfo->{'Product UN Number'} ?? null,
+            'un_class'                     => $dangerousGoodsInfo->{'Product UN Class'} ?? null,
+            'packing_group'                => $dangerousGoodsInfo->{'Product Packing Group'} ?? null,
+            'proper_shipping_name'         => $dangerousGoodsInfo->{'Product Proper Shipping Name'} ?? null,
+            'hazard_identification_number' => $dangerousGoodsInfo->{'Product Hazard Identification Number'} ?? null,
+            'gpsr_manufacturer'            => $dangerousGoodsInfo->{'Product GPSR Manufacturer'} ?? null,
+            'gpsr_eu_responsible'          => $dangerousGoodsInfo->{'Product GPSR EU Responsible'} ?? null,
+            'gpsr_warnings'                => $dangerousGoodsInfo->{'Product GPSR Warnings'} ?? null,
+            'gpsr_manual'                  => $dangerousGoodsInfo->{'Product GPSR Manual'} ?? null,
+            'gpsr_class_category_danger'   => $dangerousGoodsInfo->{'Product GPSR Class Category Danger'} ?? null,
+            'gpsr_class_languages'         => $dangerousGoodsInfo->{'Product GPSR Class Languages'} ?? null,
+            'pictogram_toxic'              => $dangerousGoodsInfo->{'Product Pictogram Toxic'} == 'Yes',
+            'pictogram_corrosive'          => $dangerousGoodsInfo->{'Product Pictogram Corrosive'} == 'Yes',
+            'pictogram_explosive'          => $dangerousGoodsInfo->{'Product Pictogram Explosive'} == 'Yes',
+            'pictogram_flammable'          => $dangerousGoodsInfo->{'Product Pictogram Flammable'} == 'Yes',
+            'pictogram_gas'                => $dangerousGoodsInfo->{'Product Pictogram Gas'} == 'Yes',
+            'pictogram_environment'        => $dangerousGoodsInfo->{'Product Pictogram Environment'} == 'Yes',
+            'pictogram_health'             => $dangerousGoodsInfo->{'Product Pictogram Health'} == 'Yes',
+            'pictogram_oxidising'          => $dangerousGoodsInfo->{'Product Pictogram Oxidising'} == 'Yes',
+            'pictogram_danger'             => $dangerousGoodsInfo->{'Product Pictogram Danger'} == 'Yes',
+
+        ];
+    }
+
+
+    public function fetchTradeUnitImages(TradeUnit $tradeUnit): void
+    {
+        $images = [];
+        //  print "Fetching images for trade unit: {$tradeUnit->slug} {$tradeUnit->code}  {$tradeUnit->name} ({$tradeUnit->source_id})=================\n";
+        /** @var Product $product */
+        foreach ($tradeUnit->products()->where('unit_relationship_type', ProductUnitRelationshipType::SINGLE)->where('products.organisation_id', $this->organisation->id)->get() as $product) {
+            if ($product->shop->state !== ShopStateEnum::OPEN) {
+                continue;
+            }
+
+            //  print "Fetching images for product: {$product->slug} {$product->code}  {$product->name} ({$product->source_id})\n";
             $productImages = $this->fetchAuroraProductImages($product);
             foreach ($productImages as $productImage) {
                 if (!isset($productImage['checksum']) || !$productImage['checksum']) {
                     continue;
                 }
-               // print_r($productImage);
+                // print_r($productImage);
                 $images[$productImage['checksum']] = $productImage;
             }
         }
