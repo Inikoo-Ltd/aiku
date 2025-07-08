@@ -2,7 +2,7 @@
 import { ref } from "vue"
 import { routeType } from "@/types/route"
 import Select from "primevue/select"
-import { router } from '@inertiajs/vue3'
+import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import Button from "../Elements/Buttons/Button.vue"
 import { InputNumber } from "primevue"
@@ -12,10 +12,8 @@ import { notify } from "@kyvg/vue3-notification"
 const model = defineModel()
 
 const props = defineProps<{
-	routeSubmit: routeType
-    currency: {
-
-    }
+    routeSubmit: routeType
+    currency: {}
     options: {}[]
     types: {}[]
 }>()
@@ -27,28 +25,27 @@ const reasonToDecrease = ref(null)
 const decreaseType = ref(null)
 
 const resetForm = () => {
-	amount.value = 0
-	privateNote.value = ""
-	reasonToDecrease.value = null
-	decreaseType.value = null
+    amount.value = 0
+    privateNote.value = ""
+    reasonToDecrease.value = null
+    decreaseType.value = null
 }
 
 const closeModal = () => {
-	model.value = false
-	resetForm() 
+    model.value = false
+    resetForm()
 }
 
 const isLoading = ref(false)
 const onSubmitDecrease = () => {
-    // console.log(amount.value, privateNote.value, reasonToDecrease.value, )
     if (props.routeSubmit.name) {
-        router[props.routeSubmit.method || 'patch'](
+        router[props.routeSubmit.method || "patch"](
             route(props.routeSubmit.name, props.routeSubmit.parameters),
             {
                 amount: -amount.value,
                 notes: privateNote.value,
                 type: decreaseType.value,
-                reason: reasonToDecrease.value,
+                reason: reasonToDecrease.value
             },
             {
                 onStart: () => {
@@ -66,9 +63,9 @@ const onSubmitDecrease = () => {
                     notify({
                         title: trans("Something went wrong"),
                         text: "Contact administrator.",
-                        type: "error",
+                        type: "error"
                     })
-                },
+                }
             }
         )
     } else {
@@ -119,13 +116,6 @@ const onSubmitDecrease = () => {
                     {{ trans("Amount to decrease") }}
                 </label>
 
-                <!-- <input
-                    type="number"
-                    id="amount"
-                    name="amount"
-                    :placeholder="trans('Enter amount')"
-                    v-model.number="amount"
-                    class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" /> -->
                 <InputNumber
                     v-model="amount"
                     inputId="currency-us"
