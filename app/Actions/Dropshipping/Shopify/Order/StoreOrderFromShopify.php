@@ -41,15 +41,9 @@ class StoreOrderFromShopify extends OrgAction
     {
         $deliveryAddress = Arr::get($modelData, 'shipping_address');
 
-
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
-
-
         $shopifyProducts = collect($modelData['line_items']);
-
         $attributes = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
-
-
         $deliveryAddress = Arr::get($attributes, 'address');
 
 
