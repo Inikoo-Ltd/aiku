@@ -20,7 +20,6 @@ use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\Email;
-use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 
@@ -88,11 +87,5 @@ class SendNewOrderEmailToSubscribers extends OrgAction
             );
         }
     }
-    public string $commandSignature = 'send_new_order_to_customer_notification';
 
-    public function asCommand()
-    {
-        $ord = Order::find(1186116);
-        $this->handle($ord);
-    }
 }

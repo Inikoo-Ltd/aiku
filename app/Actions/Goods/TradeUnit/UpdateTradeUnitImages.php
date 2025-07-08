@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 08-07-2025-15h-37m
@@ -35,17 +36,17 @@ class UpdateTradeUnitImages extends GrpAction
 
         $mediaIds = collect($imageTypeMapping)
             ->keys()
-            ->filter(fn($key) => Arr::exists($modelData, $key))
-            ->mapWithKeys(fn($key) => [$key => $modelData[$key]])
+            ->filter(fn ($key) => Arr::exists($modelData, $key))
+            ->mapWithKeys(fn ($key) => [$key => $modelData[$key]])
             ->filter()
             ->toArray();
 
         if (!empty($mediaIds)) {
             $mediaCollection = Media::whereIn('id', array_values($mediaIds))->get()->keyBy('id');
-            
+
             foreach ($mediaIds as $imageKey => $mediaId) {
                 $media = $mediaCollection->get($mediaId);
-                
+
                 if ($media) {
                     $tradeUnit->images()->updateExistingPivot(
                         $media->id,

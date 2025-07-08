@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 08-07-2025-18h-04m
@@ -18,7 +19,6 @@ use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\Email;
-use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 

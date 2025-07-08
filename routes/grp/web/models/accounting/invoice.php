@@ -16,7 +16,7 @@ use App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilm
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\DeleteStandaloneFulfilmentInvoiceTransaction;
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\StoreStandaloneFulfilmentInvoiceTransaction;
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\UpdateStandaloneFulfilmentInvoiceTransaction;
-use App\Actions\Comms\Email\SendInvoiceEmailToCustomer;
+use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use Illuminate\Support\Facades\Route;
 
 Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
@@ -25,7 +25,7 @@ Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
     Route::delete('in-process/delete', DeleteInProcessInvoice::class)->name('in-process.delete');
     Route::post('payment-account/{paymentAccount:id}/payment', PayInvoice::class)->name('payment.store')->withoutScopedBindings();
 
-    Route::post('send-invoice', SendInvoiceEmailToCustomer::class)->name('send_invoice');
+    Route::post('send-invoice', SendInvoiceToFulfilmentCustomerEmail::class)->name('send_invoice');
 });
 
 Route::name('standalone-invoice.')->prefix('standalone-invoice/{invoice:id}')->group(function () {

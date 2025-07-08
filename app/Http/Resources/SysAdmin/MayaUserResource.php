@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 08-07-2025-12h-31m
@@ -8,15 +9,7 @@
 
 namespace App\Http\Resources\SysAdmin;
 
-use App\Http\Resources\Api\Dropshipping\ShopResource;
-use App\Http\Resources\Api\Dropshipping\ShopsResource;
-use App\Http\Resources\Fulfilment\FulfilmentResource;
-use App\Http\Resources\Fulfilment\FulfilmentsResource;
-use App\Http\Resources\Inventory\WarehouseResource;
-use App\Http\Resources\Inventory\WarehousesResource;
 use App\Http\Resources\SysAdmin\Organisation\MayaOrganisationResource;
-use App\Http\Resources\SysAdmin\Organisation\OrganisationResource;
-use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;

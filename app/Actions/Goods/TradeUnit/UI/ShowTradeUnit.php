@@ -44,12 +44,12 @@ class ShowTradeUnit extends GrpAction
         return $this->handle($tradeUnit);
     }
 
-    
-    public function getImagesData(TradeUnit $tradeUnit):array
+
+    public function getImagesData(TradeUnit $tradeUnit): array
     {
         $imagesData = [];
 
-        if($this->tab == TradeUnitTabsEnum::IMAGES->value){
+        if ($this->tab == TradeUnitTabsEnum::IMAGES->value) {
             $imagesData = [
                 [
                             'label' => __('Main'),

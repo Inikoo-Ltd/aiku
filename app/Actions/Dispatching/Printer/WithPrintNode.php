@@ -20,7 +20,6 @@ use Rawilk\Printing\Api\PrintNode\Resources\Printer;
 use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
 use Illuminate\Validation\ValidationException;
 
-
 trait WithPrintNode
 {
     protected bool $clientInitialized = false;
@@ -93,7 +92,8 @@ trait WithPrintNode
         return PrintJob::create($pendingJob);
     }
 
-    public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri) {
+    public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri)
+    {
         $this->ensureClientInitialized();
         $pendingJob = PendingPrintJob::make()
             ->setUrl($pdfUri)
