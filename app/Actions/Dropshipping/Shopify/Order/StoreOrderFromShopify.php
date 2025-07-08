@@ -107,8 +107,7 @@ class StoreOrderFromShopify extends OrgAction
      */
     public function digestShopifyCustomerClient(ShopifyUser $shopifyUser, array $shopifyOrderData): CustomerClient
     {
-        $reference = Arr::get($shopifyOrderData, 'customer.id');
-
+        $reference = (string) Arr::get($shopifyOrderData, 'customer.id');
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')
@@ -116,25 +115,24 @@ class StoreOrderFromShopify extends OrgAction
             ->where('reference', $reference)
             ->first();
 
-        $deliveryAddress = Arr::get($shopifyOrderData, 'shipping_address');
-
-        $attributes = $this->getAttributes(Arr::get($shopifyOrderData, 'customer'), $deliveryAddress);
+        $attributes = $this->getAttributes(Arr::get($shopifyOrderData, 'customer'), Arr::get($shopifyOrderData, 'shipping_address'));
+        $deliveryAddress = Arr::get($attributes, 'address');
 
         if (!$customerClientID) {
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, [
                 'reference'    => $reference,
-                'email'        => Arr::get($attributes, 'email'),
-                'contact_name' => trim(Arr::get($shopifyOrderData, 'first_name').' '.Arr::get($shopifyOrderData, 'last_name')),
-                'phone'        => Arr::get($shopifyOrderData, 'phone'),
-                'address'      => $deliveryAddress,
+                'email'        => Arr::get($attributes, 'customer.email'),
+                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.first_name').' '.Arr::get($shopifyOrderData, 'customer.last_name')),
+                'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
+                'address'      => $deliveryAddress
             ]);
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
-                'email'        => Arr::get($attributes, 'email'),
-                'contact_name' => trim(Arr::get($shopifyOrderData, 'first_name').' '.Arr::get($shopifyOrderData, 'last_name')),
-                'phone'        => Arr::get($shopifyOrderData, 'phone'),
-                'address'      => $deliveryAddress,
+                'email'        => Arr::get($attributes, 'customer.email'),
+                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.first_name').' '.Arr::get($shopifyOrderData, 'customer.last_name')),
+                'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
+                'address'      => $deliveryAddress
             ]);
         }
 
