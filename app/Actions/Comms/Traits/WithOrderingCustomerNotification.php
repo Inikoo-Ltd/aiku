@@ -75,7 +75,7 @@ trait WithOrderingCustomerNotification
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', $outboxCode)->first();
         $liveSnapshot = $outbox->emailOngoingRun?->email?->liveSnapshot;
-        if(!$liveSnapshot) {
+        if (!$liveSnapshot) {
             return [null, null];
         }
 
