@@ -43,7 +43,6 @@ const Fulfilment = ({ navigation }) => {
   const { userData, organisation, fulfilment } = useContext(AuthContext);
   return (
     <View style={globalStyles.container}>
-      <Text className='text-white'>{organisation.name}</Text>
       <FlatList
         data={organisation?.fulfilments ? organisation?.fulfilments : []}
         keyExtractor={(item) => item.id.toString()}

@@ -13,7 +13,6 @@ export default function DrawerLayout() {
       <Drawer.Screen name="organisation/index" options={{ title: "Organisation" }} />
       <Drawer.Screen name="fulfilment/index" options={{ title: "Fulfilments" }} />
       <Drawer.Screen name="warehouse/index" options={{ title: "Warehouses" }} />
-
     </Drawer>
   );
 }

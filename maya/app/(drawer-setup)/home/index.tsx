@@ -12,7 +12,7 @@ const HomeScreen = () => {
       <Text style={styles.welcomeText}>
         Welcome, {userData?.name || userData?.username || 'User'}!
       </Text>
-      <Button title="Logout" onPress={()=>router.replace("/(drawer-setup)/fulfilment")} />
+      <Button title="Logout" onPress={signOut} />
     </View>
   );
 };
