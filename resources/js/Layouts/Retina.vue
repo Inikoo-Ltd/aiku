@@ -277,4 +277,9 @@ onMounted(() => {
 .p-message-text {
     width: 100%;
 }
+
+// Hide Checkout Apple Pay
+#flow-container #googlepayAccordionContainer {
+    display: none !important;
+}
 </style>
