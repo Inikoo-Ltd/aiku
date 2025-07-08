@@ -173,6 +173,13 @@ class ShowTradeUnit extends GrpAction
                 ],
 
                 'images_category_box' => $this->getImagesData($tradeUnit),
+                'images_update_route' => [
+                    'name'       => 'grp.models.trade-unit.update_images',
+                    'parameters' => [
+                        'tradeUnit' => $tradeUnit->id,
+                    ],
+                    'method'     => 'patch'
+                ],
 
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
