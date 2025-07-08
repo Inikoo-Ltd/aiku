@@ -173,7 +173,10 @@ const base64ToPdf = (base: string) => {
 	URL.revokeObjectURL(blobUrl);
 }
 
-const visitxxxx = async (ship) => {
+// Section: Print Shipment
+const isLoadingPrint = ref(false)
+const onPrintShipment = async (ship) => {
+	isLoadingPrint.value = true
 	try {
 		const response = await axios.post(
 			route(
@@ -184,20 +187,32 @@ const visitxxxx = async (ship) => {
 			)
 		)
 
+		if (response.data.state === 'queued') {
+			notify({
+				title: trans("Got it!"),
+				text: trans("Your shipment label is queued for printing."),
+				type: "info",
+			})
+		} else if (response.data.state === 'error') {
+			throw new Error(response.data.message || 'Failed to print shipment label.')
+		}
+
 		console.log('respopo', response.data)
 	} catch (error: any) {
 		notify({
-			title: 'Error',
-			text: error.response?.data?.message || 'Failed to fetch shipment label.',
+			title: trans('Something went wrong'),
+			text: error.response?.data?.message || error.message || 'Failed to print shipment label.',
 			type: 'error'
 		})
+	} finally {
+		isLoadingPrint.value = false
 	}
 }
 </script>
 
 <template>
-	<div class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
-		<BoxStatPallet class="py-2 px-3" icon="fal fa-user">
+	<div class="grid grid-cols-2 lg:grid-cols-4 xdivide-x xdivide-gray-300 border-b border-gray-200">
+		<BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
 			<!-- Field: Reference Number -->
 			<Link
 				as="a"
@@ -303,7 +318,7 @@ const visitxxxx = async (ship) => {
 		</BoxStatPallet>
 
 		<!-- Box: 2 -->
-		<BoxStatPallet class="py-2.5 pl-2.5 pr-3" icon="fal fa-user">
+		<BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-r border-gray-200" icon="fal fa-user">
 			<template v-if="boxStats?.picker?.contact_name">
 				<div v-tooltip="trans('Picker name')"
 					class="border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -445,10 +460,12 @@ const visitxxxx = async (ship) => {
 							</div>
 							
 							<Button
-								@click="() => visitxxxx(sments)"
-								size="s"
+								@click="() => onPrintShipment(sments)"
+								size="xs"
+								icon="fal fa-print"
 								label="Print label"
 								type="tertiary"
+								:loading="isLoadingPrint"
 							/>
 						</li>
 					</ul>
@@ -458,7 +475,7 @@ const visitxxxx = async (ship) => {
 			
 		</BoxStatPallet>
 
-		<!-- Modal: Shipment -->
+		<!-- Modal: Parcels -->
 		<Modal
 			v-if="true"
 			:isOpen="isModalParcels"
