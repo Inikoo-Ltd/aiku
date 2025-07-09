@@ -39,8 +39,8 @@ class EditProfileSettings
         $cacheKey = "user_printers";
         $cachedPrinters = cache()->get($cacheKey);
         if ($cachedPrinters) {
-                $printers = $cachedPrinters;
-        }else {
+            $printers = $cachedPrinters;
+        } else {
             $printers = GetPrinters::make()->action([])->map(function ($printer) {
                 return [
                     'value' => $printer->id,

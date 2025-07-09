@@ -15,7 +15,6 @@ use App\Actions\Retina\UI\Dashboard\GetRetinaFulfilmentHomeData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,14 +28,14 @@ class ShowPupilDashboard
     public function asController(ActionRequest $request): Response
     {
         $additionalProps = [];
-        $routes = [];
+        $routes          = [];
         /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $request->user('pupil');
 
         if ($shopifyUser) {
             $routes = [
-                'routes'                => [
-                    'products' => [
+                'routes' => [
+                    'products'      => [
                         'name'       => 'pupil.products',
                         'parameters' => [
                             'shopifyUser' => $shopifyUser->id
@@ -48,12 +47,12 @@ class ShowPupilDashboard
                             'shopifyUser' => $shopifyUser->id
                         ]
                     ],
-                    'get_started' => [
+                    'get_started'   => [
                         'name'       => 'pupil.shopify_user.get_started.store',
                         'parameters' => [
                             'shopifyUser' => $shopifyUser->id
                         ],
-                        'method'    => 'post'
+                        'method'     => 'post'
                     ]
                 ]
             ];
@@ -65,7 +64,7 @@ class ShowPupilDashboard
             $query = Shop::where('id', $shopifyUser->customer->shop_id)->get();
 
             $additionalProps = [
-                'data'       => match ($shopifyUser?->customer->shop->type) {
+                'data' => match ($shopifyUser?->customer->shop->type) {
                     ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($shopifyUser?->customer?->fulfilmentCustomer, $request),
                     ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($shopifyUser?->customer, $request),
                     default => []
@@ -73,7 +72,6 @@ class ShowPupilDashboard
             ];
         }
 
-        $render_page = null;
 
         if (!$shopifyUser?->customer) {
             $render_page = 'Intro';
@@ -84,13 +82,13 @@ class ShowPupilDashboard
         }
 
         return Inertia::render($render_page, [
-            'shop'                  => $shopifyUser?->customer?->shop?->name,
-            'shopUrl'                  => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
-            'user'                  => $shopifyUser,
+            'shop'    => $shopifyUser?->customer?->shop?->name,
+            'shopUrl' => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
+            'user'    => $shopifyUser,
             // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
-            'shops' => $query->map(function ($shop) {
+            'shops'   => $query->map(function ($shop) {
                 return [
-                    'id' => $shop->id,
+                    'id'   => $shop->id,
                     'name' => $shop->name
                 ];
             }),
@@ -105,29 +103,17 @@ class ShowPupilDashboard
             return null;
         }
 
+        $subdomain = 'www';
+        if ($shop->website->is_migrating) {
+            $subdomain = 'v2';
+        }
+
         return match (app()->environment()) {
-            'production' => 'https://v2.'.$shop->website?->domain . '/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password),
-            'staging' => 'https://canary.'.$shop->website?->domain . '/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password),
-            default => 'https://fulfilment.test/app/auth-shopify?shopify=' . base64_encode($shopifyUser->password)
+            'production' => 'https://'.$subdomain.'.'.$shop->website?->domain.'/app/auth-shopify?shopify='.base64_encode($shopifyUser->password),
+            'staging' => 'https://canary.'.$shop->website?->domain.'/app/auth-shopify?shopify='.base64_encode($shopifyUser->password),
+            default => 'https://fulfilment.test/app/auth-shopify?shopify='.base64_encode($shopifyUser->password)
         };
     }
 
-    // public function getBreadcrumbs($label = null): array
-    // {
-    //     return [
-    //         [
 
-    //             'type'   => 'simple',
-    //             'simple' => [
-    //                 'icon'  => 'fal fa-home',
-    //                 'label' => $label,
-    //                 'route' => [
-    //                     'name' => 'retina.dashboard.show'
-    //                 ]
-    //             ]
-
-    //         ],
-
-    //     ];
-    // }
 }

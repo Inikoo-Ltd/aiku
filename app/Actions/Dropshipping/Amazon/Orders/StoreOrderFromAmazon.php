@@ -15,10 +15,12 @@ use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedAmazonAddress;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Address;
+use Exception;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -94,7 +96,11 @@ class StoreOrderFromAmazon extends OrgAction
                     );
                 }
             }
-
+            try {
+                PayOrderAsync::run($order);
+            } catch (Exception $e) {
+                Sentry::captureException($e);
+            }
             SubmitOrder::run($order);
         } else {
             Sentry::captureMessage('Some products dont exist');

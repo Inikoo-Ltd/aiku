@@ -57,7 +57,7 @@ class GetPickerUsers extends OrgAction
                 'user_has_models.user_id as id'
             ]);
 
-        if($quick) {
+        if ($quick) {
             $queryBuilder->limit(6);
             return $queryBuilder->get();
         }

@@ -12,13 +12,13 @@ use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Ordering\Order\CancelOrder;
 use App\Actions\Ordering\Order\GenerateOrderInvoice;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
-use App\Actions\Ordering\Order\UpdateOrderStateToCancelled;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateOrderStateToDispatched;
@@ -47,7 +47,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
-        Route::post('upload', ImportTransactionInOrder::class,)->name('upload');
+        Route::post('upload', ImportTransactionInOrder::class, )->name('upload');
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
@@ -56,7 +56,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', SendOrderBackToBasket::class)->name('creating');
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
-        Route::patch('cancelled', UpdateOrderStateToCancelled::class)->name('cancelled');
+        Route::patch('cancelled', CancelOrder::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
         Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');

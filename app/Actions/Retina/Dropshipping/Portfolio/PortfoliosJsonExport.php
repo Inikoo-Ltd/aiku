@@ -11,9 +11,10 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Web\Webpage;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PortfoliosJsonExport
@@ -22,13 +23,12 @@ class PortfoliosJsonExport
 
     public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
     {
-
         return [
             'schema' => $this->schema(),
-            'data' => $this->getData($customer, $customerSalesChannel),
+            'data'   => $this->getData($customer, $customerSalesChannel),
         ];
-
     }
+
     public function schema(): array
     {
         return [
@@ -67,43 +67,53 @@ class PortfoliosJsonExport
     {
         $portfolios = $customer->portfolios()
             ->where('customer_sales_channel', $customerSalesChannel->id)
-
             ->with(['item.family', 'item.currency'])
             ->with(['item.image'])
             ->get();
 
         return $portfolios->map(function ($row) {
-            $webpage = Webpage::where('model_id', $row->item_id)->where('model_type', $row->item_type)->first();
+            /** @var Product $product */
+            $product = $row->item;
+
+            if ($product->units != 0) {
+                $unitPrice = $product->price / $product->units;
+            } else {
+                $unitPrice = 0;
+            }
 
             return [
                 $row->status,
                 $row->item_code,
                 $row->reference,
-                $row->item?->family?->name,
-                $row->item?->barcode,
-                '', // TODO: CPNP number
-                '', // TODO: need add column for total price in portfolio
-                $row->item?->units,
-                $row->item?->unit,
-                $row->item?->price,
-                $row->item_name,
-                '', // TODO: unit RRP
-                '', // TODO: unit net weight
-                '', // TODO: package weight (shipping)
-                '', // TODO: unit dimensions
-                '', // TODO: materials/ingredients
-                '', // TODO: webpage description (html)
-                $webpage?->description, // webpage description (plain text)
-                $row->item?->currency?->code,
-                '', // TODO: tariff code
-                '', // TODO: duty rate
-                '', // TODO: HTS US
-                $row->item?->available_quantity,
+                $product->family?->name,
+                $product->barcode,
+                $product->cpnp_number,
+                $product->price,
+                $product->units,
+                $product->unit,
+                $unitPrice,
+                $product->name,
+                $product->rrp,
+                $product->marketing_weight,
+                $product->gross_weight,
+
+                $product->marketing_dimensions,
+                $product->marketing_ingredients,
+
+                $product->description,
+                Str::of($product->description)->stripTags(),
+                $product->country_of_origin,
+
+                $product->tariff_code,
+                $product->duty_rate,
+                $product->hts_us,
+
+                $product->available_quantity,
                 $row->item->image ? GetImgProxyUrl::run($row->item->image?->getImage()) : '',
-                $row->item?->updated_at,
-                '', // TODO: stock updated
-                '', // TODO: price updated
-                $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
+                $product->updated_at,
+                $product->available_quantity_updated_at,
+                $product->price_updated_at,
+                $product->images_updated_at,// $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
             ];
         })->toArray();
     }

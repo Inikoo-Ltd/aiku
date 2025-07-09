@@ -30,6 +30,7 @@ use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -182,6 +183,9 @@ class ShowCustomer extends OrgAction
                 $tabs::ATTACHMENTS->value => $this->tab == $tabs::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
+                $tabs::DISPATCHED_EMAILS->value => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
+                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
+                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
                 $tabs::HISTORY->value => $this->tab == $tabs::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customer))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
@@ -192,7 +196,7 @@ class ShowCustomer extends OrgAction
             ->table(IndexCustomerFavourites::make()->tableStructure(parent:$customer, prefix:$tabs::FAVOURITES->value))
             ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
             ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
-            ->table(IndexDispatchedEmails::make()->tableStructure($customer))
+            ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
             ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
             ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
     }

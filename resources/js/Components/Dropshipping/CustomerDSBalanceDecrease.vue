@@ -1,122 +1,145 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
 import Select from "primevue/select"
-import { router } from '@inertiajs/vue3'
+import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import Button from "../Elements/Buttons/Button.vue"
+import { InputNumber } from "primevue"
+import { notify } from "@kyvg/vue3-notification"
 
 
 const model = defineModel()
 
 const props = defineProps<{
-	type?: string
-	updateBalanceRoute?: routeType
+    routeSubmit: routeType
+    currency: {}
+    options: {}[]
+    types: {}[]
 }>()
 
-const amount = ref<number | null>(null)
+
+const amount = ref<number>(0)
 const privateNote = ref<string>("")
-const loading = ref(false)
-
-const increaseBalance = ref(null)
-const decreaseBalance = ref(null)
-
-const increase = ref([
-	{ name: "Pay for the shipping of a return", type: "pay_return" },
-	{ name: "Compensate Customer", type: "compensation" },
-	{ name: "Transfer from other customer account", type: "transfer_out" },
-	{ name: "Other Reason", type: "remove_funds_other" },
-])
-
-const decrease = ref([
-	{ name: "Customer want money back", type: "money_back" },
-	{ name: "Transfer to other customer account", type: "transfer_in" },
-	{ name: "Other Reason", type: "remove_funds_other" },
-])
+const reasonToDecrease = ref(null)
+const decreaseType = ref(null)
 
 const resetForm = () => {
-	amount.value = null
-	privateNote.value = ""
-	increaseBalance.value = null
-	decreaseBalance.value = null
+    amount.value = 0
+    privateNote.value = ""
+    reasonToDecrease.value = null
+    decreaseType.value = null
 }
 
 const closeModal = () => {
-	model.value = false
-	resetForm() 
+    model.value = false
+    resetForm()
 }
 
-const onSubmitIncrease = () => {
-	const chosenType =
-		props.type === "increase"
-			? increaseBalance.value?.type
-			: decreaseBalance.value?.type
-
-	const payload = {
-		amount: amount.value,
-		notes: privateNote.value,
-		type: chosenType,
-	}
-
-	router.patch(
-		route(props.updateBalanceRoute.name, props.updateBalanceRoute.parameters),
-		payload,
-		{
-			onStart: () => {
-				loading.value = true
-			},
-			onFinish: () => {
-				loading.value = false
-			},
-			preserveScroll: true,
-			onSuccess: () => {
-				closeModal()
-			},
-			onError: (errors) => {
-				console.error("Error updating balance:", errors)
-			},
-		}
-	)
+const isLoading = ref(false)
+const onSubmitDecrease = () => {
+    if (props.routeSubmit.name) {
+        router[props.routeSubmit.method || "patch"](
+            route(props.routeSubmit.name, props.routeSubmit.parameters),
+            {
+                amount: -amount.value,
+                notes: privateNote.value,
+                type: decreaseType.value,
+                reason: reasonToDecrease.value
+            },
+            {
+                onStart: () => {
+                    isLoading.value = true
+                },
+                onFinish: () => {
+                    isLoading.value = false
+                },
+                preserveScroll: true,
+                onSuccess: () => {
+                    model.value = false
+                },
+                onError: (errors) => {
+                    console.error("Error updating balance:", errors)
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: "Contact administrator.",
+                        type: "error"
+                    })
+                }
+            }
+        )
+    } else {
+        console.error("No route defined for balance increase")
+    }
 }
 </script>
 
 <template>
     <div class="p-6">
+        <h2 class="text-3xl font-bold text-center">{{ trans("Decrease Balance") }}</h2>
+        <p class="text-base text-gray-500 italic mb-6 text-center">{{ trans("Enter the details to decrease balance") }}</p>
 
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">Decrease Balance</h2>
-        <p class="text-lg text-gray-600 mb-6">Enter the details to decrease balance:</p>
         <div class="space-y-6">
-            <Select
-                v-model="decreaseBalance"
-                :options="decrease"
-                optionLabel="name"
-                placeholder="Select your reason"
-                class="w-full" />
-
+            <!-- Reason -->
             <div>
                 <label for="amount" class="block text-gray-700 font-medium mb-2">
-                    Amount to withdraw
+                    {{ trans("Reason to decrease") }}
                 </label>
-                <input
-                    type="number"
-                    id="amount"
-                    name="amount"
-                    placeholder="Enter amount"
-                    v-model.number="amount"
-                    class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <Select
+                    v-model="reasonToDecrease"
+                    :options="options ?? []"
+                    optionLabel="label"
+                    optionValue="value"
+                    :placeholder="trans('Select your reason')"
+                    class="w-full"
+                />
             </div>
 
+            <!-- Type -->
+            <div>
+                <label for="type" class="block text-gray-700 font-medium mb-2">
+                    {{ trans("Select type of the decrease:") }}
+                </label>
+                <Select
+                    v-model="decreaseType"
+                    :options="types ?? []"
+                    optionLabel="label"
+                    optionValue="value"
+                    :placeholder="trans('Select your type')"
+                    class="w-full"
+                />
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label for="amount" class="block text-gray-700 font-medium mb-2">
+                    {{ trans("Amount to decrease") }}
+                </label>
+
+                <InputNumber
+                    v-model="amount"
+                    inputId="currency-us"
+                    mode="currency"
+                    :currency="currency.code"
+                    :maxFractionDigits="2"
+                    locale="en-US"
+                    :min="0"
+                    prefix="-"
+                    fluid
+                />
+            </div>
+
+            <!-- Note -->
             <div>
                 <label for="privateNote" class="block text-gray-700 font-medium mb-2">
-                    Private Note
+                    {{ trans("Private Note") }}
                 </label>
                 <textarea
+                    v-model="privateNote"
                     id="privateNote"
                     name="privateNote"
                     rows="4"
-                    placeholder="Add any private notes here..."
-                    v-model="privateNote"
+                    :placeholder="trans('Add any private notes here...')"
                     class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
         </div>
@@ -125,15 +148,18 @@ const onSubmitIncrease = () => {
             <Button
                 :label="trans('Cancel')"
                 type="negative"
-                @click="closeModal"
+                @click="() => closeModal()"
             >
             </Button>
 
             <Button
                 :label="trans('Submit')"
                 type="primary"
-                @click="() => onSubmitIncrease()"
+                @click="() => onSubmitDecrease()"
                 full
+                :loading="isLoading"
+                :disabled="amount <= 0"
+                v-tooltip="amount <= 0 ? trans('Add amount to submit') : ''"
             >
             </Button>
         </div>

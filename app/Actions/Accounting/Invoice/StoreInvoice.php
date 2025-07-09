@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -167,6 +168,9 @@ class StoreInvoice extends OrgAction
 
 
         $this->runInvoiceHydrators($invoice);
+        if ($invoice->shop->type == 'fulfilment') {
+            SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
+        }
 
         return $invoice;
     }

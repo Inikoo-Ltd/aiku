@@ -9,6 +9,7 @@
 
 namespace App\Actions\Traits;
 
+use Sentry;
 use TheIconic\NameParser\Parser;
 
 trait WithProcessContactNameComponents
@@ -21,14 +22,27 @@ trait WithProcessContactNameComponents
 
 
         $parser = new Parser();
-        $parsedName =  $parser->parse($contactName);
-        return [
-            'first_name' => $parsedName->getFirstName(),
-            'middle_name' => $parsedName->getMiddleName(),
-            'last_name'  => $parsedName->getLastName(),
-            'initials' => $parsedName->getInitials(),
-            'suffix' => $parsedName->getSuffix(),
-        ];
+        try {
+            $parsedName = $parser->parse($contactName);
 
+            return [
+                'first_name'  => $parsedName->getFirstName(),
+                'middle_name' => $parsedName->getMiddleName(),
+                'last_name'   => $parsedName->getLastName(),
+                'initials'    => $parsedName->getInitials(),
+                'suffix'      => $parsedName->getSuffix(),
+            ];
+        } catch (\Exception $e) {
+            Sentry::captureMessage('Error parsing contact name components ->'.$contactName.'<-');
+            Sentry::captureException($e);
+
+            return [
+                'first_name'  => $contactName,
+                'middle_name' => '',
+                'last_name'   => '',
+                'initials'    => '',
+                'suffix'      => '',
+            ];
+        }
     }
 }

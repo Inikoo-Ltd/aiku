@@ -2,7 +2,7 @@
 
 /*
  * author Arya Permana - Kirin
- * created on 08-07-2025-16h-31m
+ * created on 08-07-2025-18h-02m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
@@ -19,7 +19,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Ordering\Order;
 
-class SendNewOrderEmailToCustomer extends OrgAction
+class SendDispatchedOrderEmailToCustomer extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -30,16 +30,14 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
     public function handle(Order $order): ?DispatchedEmail
     {
-        list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody(
-            $order->customer,
-            OutboxCodeEnum::ORDER_CONFIRMATION
-        );
+        list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody($order->customer, OutboxCodeEnum::DELIVERY_CONFIRMATION);
         if (!$emailHtmlBody) {
             return null;
         }
         $outbox = $dispatchedEmail->outbox;
 
-
+        $orderUrl   = $this->getOrderLink($order);
+        $invoiceUrl = $this->getInvoiceLink($order->invoices()->first() ?? null);
 
         return $this->sendEmailWithMergeTags(
             $dispatchedEmail,
@@ -48,10 +46,11 @@ class SendNewOrderEmailToCustomer extends OrgAction
             $emailHtmlBody,
             '',
             additionalData: [
-                'customer_name' => $order->customer->name,
+                'customer_name'   => $order->customer->name,
                 'order_reference' => $order->reference,
-                'date' => $order->created_at->format('F jS, Y'),
-                'order_link' => $this->getOrderLink($order),
+                'date'            => $order->created_at->format('F jS, Y'),
+                'order_link'      => $orderUrl,
+                'invoice_link'    => $invoiceUrl,
             ]
         );
     }

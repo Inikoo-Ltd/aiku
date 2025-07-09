@@ -8,48 +8,94 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Sales\OrderResource;
-use App\Models\Catalogue\Shop;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
+use App\Models\Ordering\Transaction;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class CancelOrder extends OrgAction
 {
-    use WithOrderingEditAuthorisation;
     use WithActionUpdate;
+    use HasOrderHydrators;
+    use WithOrderingEditAuthorisation;
+
+
+    private Order $order;
+
 
     public function handle(Order $order): Order
     {
-        $order = $this->update($order, [
-            'state' => OrderStateEnum::CANCELLED
-        ]);
+        $modelData = [
+            'state'  => OrderStateEnum::CANCELLED,
+        ];
 
-        OrganisationHydrateOrders::dispatch($order->organisation);
-        ShopHydrateOrders::dispatch($order->shop);
+        $date = now();
+
+        if ($order->cancelled_at == null) {
+            data_set($modelData, 'cancelled_at', $date);
+        }
+        $this->update($order, $modelData);
+
+        $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
+
+        /** @var Transaction $transaction */
+        foreach ($transactions as $transaction) {
+            $transactionData = ['state' => TransactionStateEnum::CANCELLED];
+            data_set($transactionData, 'quantity_cancelled', $transaction->quantity_ordered);
+
+            $transaction->update($transactionData);
+        }
+
+
+
+        $this->orderHydrators($order);
 
         return $order;
     }
 
+    public function afterValidator(Validator $validator)
+    {
+        $order = $this->order;
+        if ($order->state === OrderStateEnum::CANCELLED) {
+            $validator->errors()->add('messages', 'Order is already cancelled.');
+        } elseif (!in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
+            $validator->errors()->add('messages', "Cannot cancel an order in '{$order->state->value}' state.");
+        }
+
+        if ($order->invoices()->count() > 0) {
+            $validator->errors()->add('messages', 'Cannot cancel an order with invoices. Please delete the invoices first.');
+        }
+
+        $deliveryNotes = $order->deliveryNotes()->get();
+        if ($deliveryNotes->count() > 0) {
+            foreach ($deliveryNotes as $deliveryNote) {
+                if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+                    $validator->errors()->add('messages', 'Cannot cancel an order with dispatched delivery notes. Please cancel the delivery notes first.');
+                }
+            }
+        }
+    }
+
     public function action(Order $order): Order
     {
+        $this->asAction = true;
+        $this->order    = $order;
+        $this->initialisationFromShop($order->shop, []);
+
         return $this->handle($order);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): Order
+    public function asController(Order $order, ActionRequest $request)
     {
-        $this->initialisationFromShop($shop, $request);
-        return $this->handle($order);
-    }
 
-    public function jsonResponse(Order $order): OrderResource
-    {
-        return new OrderResource($order);
+        $this->order = $order;
+        $this->initialisationFromShop($order->shop, $request);
+        return $this->handle($order);
     }
 }

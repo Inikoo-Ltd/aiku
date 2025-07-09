@@ -56,11 +56,13 @@ class IndexRedirects extends OrgAction
                 'redirects.type',
                 'redirects.from_url as url',
                 'redirects.from_path as path',
-                'webpages.title as webpage_title',
+                'webpages.title as to_webpage_title',
+                'webpages.url as to_webpage_url',
+                'webpages.slug as to_webpage_slug',
             ]);
 
         return $queryBuilder
-            ->allowedSorts(['url', 'type', 'path', 'webpage_title'])
+            ->allowedSorts(['url', 'type', 'to_webpage_url'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -87,14 +89,16 @@ class IndexRedirects extends OrgAction
                         default => null
                     }
                 );
-            if ($parent instanceof Website) {
-                $table
-                    ->column(key: 'webpage_title', label: __('Webpage'), canBeHidden: false, sortable: true, searchable: true);
-            }
+
             $table
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('URL'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'path', label: __('Path'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'url', label: __('From URL'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($parent instanceof Website) {
+                $table
+                    ->column(key: 'to_webpage_url', label: __('To Webpage'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
         };
     }
 
