@@ -74,7 +74,7 @@ class PayRetinaOrderWithBalance extends RetinaAction
         $paymentData = [
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
             'amount'                  => $order->total_amount,
-            'status'                  => 'in_process',
+            'status'                  => PaymentStatusEnum::SUCCESS,
             'payment_account_shop_id' => $paymentAccountShop->id
         ];
 
