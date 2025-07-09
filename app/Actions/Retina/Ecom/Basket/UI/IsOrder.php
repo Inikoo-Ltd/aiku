@@ -41,7 +41,7 @@ trait IsOrder
             ];
         }
 
-        $invoiceData = [];
+        $invoiceData = null;
         $invoice = $order->invoices->first();
 
         if ($invoice) {
@@ -67,7 +67,7 @@ trait IsOrder
                 'route'     => $route
             ];
         }
-
+        
         return [
             'customer' => array_merge(
                 $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : CustomerResource::make($order->customer)->getArray(),
@@ -77,11 +77,13 @@ trait IsOrder
                         'billing'  => AddressResource::make($order->billingAddress ?? new Address())
                     ],
                     'route' => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
                         'parameters' => [
                             'organisation'  => $order->organisation->slug,
                             'shop'          => $order->shop->slug,
                             'customer'      => $order->customer->slug,
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'customerClient'  => $order->customerClient->ulid
                         ]
                     ]
                 ]

@@ -124,6 +124,10 @@ const props = defineProps<{
                 billing: Address
             }
         }
+        invoice: {
+            reference: string
+            route: routeType
+        }
         products: {
             payment: {
                 routes: {
@@ -568,6 +572,19 @@ const isModalUploadExcel = ref(false)
                 </dd>
             </div>
 
+
+            <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
+                <Link
+                    :href="route(box_stats?.invoice?.route?.name, box_stats?.invoice?.route?.parameters)"
+                    class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                <dt class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-file-invoice-dollar' fixed-width aria-hidden='true' class="text-gray-500" />
+                </dt>
+                    <dd class="text-gray-500 " v-tooltip="trans('Invoice')">
+                        {{ box_stats?.invoice?.reference }}
+                    </dd>
+                </Link>
+            </div>
 
             <div v-if="delivery_note" class="mt-1 flex items-center w-full flex-none justify-between">
                 <Link

@@ -47,6 +47,10 @@ const props = defineProps<{
 			id: number
 			username: string
 		}
+		order?: {
+			reference: string
+			route: routeType
+		}
         state: string
 		parcels: {
 			weight: number
@@ -332,7 +336,20 @@ const onPrintShipment = async (ship) => {
 				</div>
 				<div class="border-t border-gray-300 w-full" />
 			</template>
-			
+			<template v-if="boxStats?.order">
+				<div class="mt-1 flex items-center w-full flex-none justify-between">
+					<Link
+						:href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
+						class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+					<dt class="flex-none">
+						<FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true' class="text-gray-500" />
+					</dt>
+						<dd class="text-gray-500 " v-tooltip="trans('Order')">
+							{{ boxStats?.order?.reference }}
+						</dd>
+					</Link>
+				</div>
+			</template>
 			<!-- Current State -->
 			<div
 				xv-tooltip="trans('Current progress')"
