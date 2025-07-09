@@ -63,9 +63,9 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
             <MobileMenu :header="headerData" :menu="menuData" />
 
             <Link href="/">
-            <div class="w-full h-[60px]" >
-                <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" :imageCover="true"
-                    :alt="headerData.logo?.alt" class="w-full h-full" :style="getStyles(headerData.logo.properties, screenType)" />
+            <div class="w-full max-h-[60px] min-h-[40px]" >
+                <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source"
+                    :alt="headerData.logo?.alt" class="max-w-full max-h-full" :style="{...getStyles(headerData.logo.properties, screenType), height : '65px' }" />
             </div>
             </Link>
 
