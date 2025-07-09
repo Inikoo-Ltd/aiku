@@ -11,6 +11,15 @@ namespace App\Http\Resources\Web;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $id
+ * @property mixed $url
+ * @property mixed $path
+ * @property mixed $type
+ * @property mixed $webpage_title
+ * @property mixed $webpage_url
+ * @property mixed $webpage_slug
+ */
 class RedirectsResource extends JsonResource
 {
     public function toArray($request): array
@@ -20,7 +29,9 @@ class RedirectsResource extends JsonResource
             'url'           => $this->url,
             'path'          => $this->path,
             'type'          => $this->type,
-            'webpage_title' => $this->webpage_title
+            'webpage_title' => $this->webpage_title,
+            'webpage_url'   => $this->webpage_url,
+            'webpage_slug'  => $this->webpage_slug,
         ];
     }
 }
