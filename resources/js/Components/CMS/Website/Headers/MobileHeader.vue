@@ -31,6 +31,8 @@ import {
     faClock
 } from "@far";
 import { faLambda } from "@fad";
+import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 // Add icons to the library
 library.add(
@@ -54,28 +56,35 @@ const props = defineProps<{
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
+
 </script>
 
 <template>
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
+            <!-- Section: Hamburger mobile -->
             <MobileMenu :header="headerData" :menu="menuData" />
 
-            <Link href="/">
-            <div>
-                <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" :imageCover="true"
-                    :alt="headerData.logo?.alt" :style="getStyles(headerData.logo.properties, screenType)" />
-            </div>
-            </Link>
+            <!-- Section: Logo  -->
+            <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">
+                <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" :imageCover="true"
+                    :style="{ objectFit: 'contain' }" />
+            </component>
 
-
+            <!-- Section: Profile -->
             <div class="flex items-center cursor-pointer">
                 <Link href="/app/profile" v-if="isLoggedIn">
                     <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
-                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
-                </Link>   
+                    :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                </Link>
             </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div v-if="layout.iris?.luigisbox_tracker_id" class="relative justify-self-center w-full">
+            <LuigiSearch></LuigiSearch>
         </div>
     </div>
 </template>

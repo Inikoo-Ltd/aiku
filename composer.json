@@ -54,6 +54,7 @@
     "league/flysystem-aws-s3-v3": "^3.0",
     "lorisleiva/laravel-actions": "^2.4",
     "maatwebsite/excel": "^3.1",
+    "maennchen/zipstream-php": "^3.1",
     "masbug/flysystem-google-drive-ext": "^2.3",
     "matchish/laravel-scout-elasticsearch": "^7.2",
     "meilisearch/meilisearch-php": "^1.0",

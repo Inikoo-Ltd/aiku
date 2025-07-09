@@ -28,7 +28,7 @@ import Topbar3Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar3
 import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
-import FamilyBluprint from "@/Components/CMS/Webpage/Families1/Blueprint"
+import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
 import DepartementBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"

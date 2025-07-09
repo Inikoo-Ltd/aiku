@@ -12,76 +12,59 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Storage;
+use ZipStream\ZipStream;
 
 class PortfoliosZipExport
 {
     use AsAction;
 
-    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
+    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel)
     {
 
+        $zipFileName = 'portfolios_' . now()->format('Ymd') . '.zip';
+        $zip = new ZipStream(
+            outputName: $zipFileName,
+            sendHttpHeaders: true,
+        );
 
-        $imageItems = $customer->portfolios()
-            ->where('customer_sales_channel_id', $customerSalesChannel->id)
-            ->with(['item'])
-            ->with(['item.images'])
-            ->get()
-            ->pluck('item.images');
-
-
-        $mediaRoot = storage_path('media');
-        $files = [];
         $counter = 1;
+        $batchSize = 500;
 
-        foreach ($imageItems as $imageItem) {
-            $images = $imageItem;
-
-            if ($images->isEmpty()) {
-                continue;
-            }
-
-            foreach ($images as $image) {
-                $fullPath = $image->getPath();
-
-                $disk = Storage::disk($image->disk);
-                $relativePath = ltrim(str_replace($mediaRoot, '', $fullPath), '/');
-
-                if (!$disk->exists($relativePath)) {
-                    continue;
+        $customer->portfolios()
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
+            ->with(['item.images'])
+            ->lazy($batchSize)
+            ->each(function ($portfolio) use ($zip, &$counter) {
+                if (!$portfolio->item || !$portfolio->item->images) {
+                    return;
                 }
 
-                $files[] = [
-                    'path' => $relativePath,
-                    'name' => 'image_' . $counter . '.jpg',
-                ];
-                $counter++;
-            }
-        }
+                foreach ($portfolio->item->images as $image) {
+                    try {
+                        $disk = Storage::disk($image->disk);
 
-        $zip = new \ZipArchive();
-        $zipFileName = 'portfolios_' . now()->format('Ymd') . '.zip';
-        $zipFilePathRelative = 'tmp/' . $zipFileName;
-        $zipDisk = Storage::disk('local');
+                        if (!$disk->exists($image->getPath())) {
+                            continue;
+                        }
 
-        if (!$zipDisk->exists('tmp')) {
-            $zipDisk->makeDirectory('tmp');
-        }
+                        $stream = $disk->readStream($image->getPath());
+                        $extension = pathinfo($image->getPath(), PATHINFO_EXTENSION) ?: 'jpg';
+                        $fileName = 'image_' . $counter . '.' . $extension;
 
-        $zipFilePath = $zipDisk->path($zipFilePathRelative);
+                        $zip->addFileFromStream($fileName, $stream);
+                        $counter++;
+                    } catch (\Exception $e) {
+                        Log::error('Error adding image to zip stream', [
+                            'image_id' => $image->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            });
 
-        if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
-            foreach ($files as $file) {
-                $absolutePath = Storage::disk('media')->path($file['path']);
-                $zip->addFile($absolutePath, $file['name']);
-            }
-            $zip->close();
-        } else {
-            throw new \Exception('Could not create zip file');
-        }
-
-
-        return [$zipFilePath, $zipFilePathRelative];
+        $zip->finish();
     }
 }

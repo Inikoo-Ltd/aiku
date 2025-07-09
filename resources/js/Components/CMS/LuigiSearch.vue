@@ -3,6 +3,10 @@ import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSearch } from "@far"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faSearch)
 
 
 // vika_luigi.js
@@ -158,17 +162,21 @@ onMounted(() => {
 </script>
 
 <template>
-    <input
-        v-model="inputValue"
-        xdisabled
-        class="disabled:bg-gray-200 disabled:cursor-not-allowed w-full"
-        id="inputLuigi"
-        style="border: 1px solid #d1d5db; border-radius: 7px;height: 35px;padding-left: 10px;"
-        placeholder="Search"
-    />
+    <div class="w-full relative ">
+        <input
+            v-model="inputValue"
+            xdisabled
+            class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
+            id="inputLuigi"
+            xstyle="height: 35px"
+            :placeholder="trans('Search')"
+        />
+        <FontAwesomeIcon icon="far fa-search" class="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+    </div>
 </template>
 
 <style>
+
 .luigi-ac-ribbon {
     /* Border top of the Autocomplete */
     background: var(--luigiColor1) !important;

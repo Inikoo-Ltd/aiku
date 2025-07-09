@@ -29,7 +29,7 @@ export default {
 					key: ["properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
-					useIn : ["desktop", "tablet", "mobile"],
+					useIn : ["desktop", "tablet"],
 				},
 				{
 					key: ["properties", "margin"],
