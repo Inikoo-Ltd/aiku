@@ -24,10 +24,9 @@ class SetProductOffline extends OrgAction
 
     }
 
-    public function inShop(Product $product, ActionRequest $request): RedirectResponse
+    public function asController(Product $product, ActionRequest $request): RedirectResponse
     {
         $this->initialisationFromShop($product->shop, $request);
-        $this->handle($product, $this->validatedData);
 
         return $this->handle($product, $this->validatedData);
     }

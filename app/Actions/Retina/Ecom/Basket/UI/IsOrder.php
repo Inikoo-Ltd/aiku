@@ -67,15 +67,12 @@ trait IsOrder
                 'route'     => $route
             ];
         }
-        
-        return [
-            'customer' => array_merge(
-                $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : CustomerResource::make($order->customer)->getArray(),
+        $customerClientData = null;
+
+        if($order->customerClient) {
+            $customerClientData = array_merge(
+                CustomerClientResource::make($order->customerClient)->getArray(),
                 [
-                    'addresses' => [
-                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
-                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
-                    ],
                     'route' => [
                         'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
                         'parameters' => [
@@ -87,8 +84,28 @@ trait IsOrder
                         ]
                     ]
                 ]
+            );
+        }
+        return [
+            'customer_client' => $customerClientData,
+            'customer' => array_merge(
+                CustomerResource::make($order->customer)->getArray(),
+                [
+                    'addresses' => [
+                        'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
+                        'billing'  => AddressResource::make($order->billingAddress ?? new Address())
+                    ],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                        'parameters' => [
+                            'organisation'  => $order->organisation->slug,
+                            'shop'          => $order->shop->slug,
+                            'customer'      => $order->customer->slug,
+                        ]
+                    ]
+                ]
             ),
-            'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
+            // 'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
             'customer_channel' => $customerChannel,
             'invoice'  => $invoiceData,
             'order_properties' => [

@@ -124,6 +124,13 @@ const props = defineProps<{
                 billing: Address
             }
         }
+        customer_client?: {
+            contact_name: string
+            company_name: string
+            email: string
+            phone: string
+            route: routeType
+        }
         invoice: {
             reference: string
             route: routeType
@@ -469,6 +476,15 @@ const isModalUploadExcel = ref(false)
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
                 <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+            </Link>
+
+            <Link as="a" v-if="box_stats?.customer_client" v-tooltip="trans('Customer client')"
+                :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+                <dt class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-users' class='text-gray-400' fixed-width aria-hidden='true' />
+                </dt>
+                <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
             </Link>
 
             <!-- Field: Contact name -->
