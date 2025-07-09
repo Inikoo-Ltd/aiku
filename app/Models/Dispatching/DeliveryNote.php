@@ -16,6 +16,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
+use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -279,6 +280,16 @@ class DeliveryNote extends Model implements Auditable
     public function packings(): HasMany
     {
         return $this->hasMany(Packing::class);
+    }
+
+    public function pickingSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PickingSession::class,
+            'picking_session_has_delivery_notes',
+            'delivery_note_id',
+            'picking_session_id'
+        );
     }
 
 }
