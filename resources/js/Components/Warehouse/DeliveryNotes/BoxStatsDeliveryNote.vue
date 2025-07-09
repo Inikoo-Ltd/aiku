@@ -306,7 +306,6 @@ const onPrintShipment = async (ship) => {
 
 			<!-- Field: Address -->
 
-zzzzz
 			<div
 				v-if="boxStats?.delivery_address"
 				class="pl-1 flex items w-full flex-none gap-x-2"
@@ -318,9 +317,10 @@ zzzzz
 						fixed-width
 						aria-hidden="true" />
 				</dt>
+
 				<dd
 					class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-					v-html="boxStats?.delivery_address.formatted_address"></dd>
+					v-html="boxStats.delivery_address.formatted_address"></dd>
 			</div>
 		</BoxStatPallet>
 

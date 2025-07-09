@@ -359,11 +359,11 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'delivery_address' => $deliveryNote->deliveryAddress,
+            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
             'picker'           => $deliveryNote->pickerUser,
             'packer'           => $deliveryNote->packerUser,
             'parcels'          => $deliveryNote->parcels,
-            'shipments'        => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
+            'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
         ];
     }
 
@@ -413,11 +413,10 @@ class ShowDeliveryNote extends OrgAction
         return $timeline;
     }
 
-    public function quickGetPickers()
+    public function quickGetPickers(): array
     {
-        $pickers = PickersResource::collection(GetPickerUsers::run($this->organisation, true))->resolve();
+        return PickersResource::collection(GetPickerUsers::run($this->organisation, true))->resolve();
 
-        return $pickers;
     }
 
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response

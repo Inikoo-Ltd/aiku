@@ -127,7 +127,6 @@ class CallApiItdShipping extends OrgAction
         ];
 
 
-        dd($params);
 
         $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl() . $url, $params)->json();
 
