@@ -223,6 +223,7 @@ class StoreProduct extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
             'price'                     => ['required', 'numeric', 'min:0'],
+            'unit_price'                => ['required', 'numeric', 'min:0'],
             'unit'                      => ['sometimes', 'required', 'string'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'description'               => ['sometimes', 'required', 'max:1500'],

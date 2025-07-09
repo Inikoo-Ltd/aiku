@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 09 Jul 2025 12:24:08 British Summer Time, Sheffield, UK
+ * Created: Wed, 09 Jul 2025 18:06:05 British Summer Time, Sheffield, UK
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('redirects', function (Blueprint $table) {
-            $table->unsignedInteger('to_webpage_id')->nullable()->change();
+        Schema::table('products', function (Blueprint $table) {
+            $table->decimal('unit_price', 12)->nullable()->comment('price per unit');
         });
     }
 
 
     public function down(): void
     {
-        Schema::table('redirects', function (Blueprint $table) {
-            $table->unsignedInteger('to_webpage_id')->nullable(false)->change();
+        Schema::table('products', function (Blueprint $table) {
+            $table->dropColumn('unit_price');
         });
     }
 };

@@ -75,13 +75,13 @@ class CallApiItdShipping extends OrgAction
         }
 
 
-        if($parent instanceof PalletReturn){
+        if ($parent instanceof PalletReturn) {
             $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
 
-        }else{
-            if($parent->shop->type==ShopTypeEnum::DROPSHIPPING){
+        } else {
+            if ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
-            }else{
+            } else {
                 $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
 
             }

@@ -39,9 +39,6 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-
-
-
         if (Arr::has($modelData, 'family_id')) {
             UpdateProductFamily::make()->action($product, [
                 'family_id' => Arr::pull($modelData, 'family_id'),
@@ -49,13 +46,12 @@ class UpdateProduct extends OrgAction
         }
 
 
-
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
 
-            $orgStocks    = [];
-            foreach ($orgStocksRaw as $orgStockId=>$item) {
-                $orgStocks[$orgStockId] = Arr::only($item, [ 'quantity', 'notes','source_id','last_fetched_at']);
+            $orgStocks = [];
+            foreach ($orgStocksRaw as $orgStockId => $item) {
+                $orgStocks[$orgStockId] = Arr::only($item, ['quantity', 'notes', 'source_id', 'last_fetched_at']);
             }
 
 
@@ -72,10 +68,8 @@ class UpdateProduct extends OrgAction
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
-
 
 
             $product->updateQuietly(
@@ -166,6 +160,7 @@ class UpdateProduct extends OrgAction
             ],
             'name'              => ['sometimes', 'required', 'max:250', 'string'],
             'price'             => ['sometimes', 'required', 'numeric', 'min:0'],
+            'unit_price'        => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'       => ['sometimes', 'required', 'max:1500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],

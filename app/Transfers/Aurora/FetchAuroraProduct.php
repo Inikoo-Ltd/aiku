@@ -112,9 +112,9 @@ class FetchAuroraProduct extends FetchAurora
             $created_at = $this->parseDatetime($this->auroraModelData->{'Product First Sold Date'});
         }
 
-        $price                       = $this->auroraModelData->{'Product Price'};
         $unit_price                  = $this->auroraModelData->{'Product Price'} / $units;
         $data['original_unit_price'] = $unit_price;
+        $price                       = $unit_price * $units;
 
         $this->parsedData['historic_asset_source_id'] = $this->auroraModelData->{'Product Current Key'};
 
@@ -157,9 +157,9 @@ class FetchAuroraProduct extends FetchAurora
         ];
 
 
-//        if ($grossWeight && $grossWeight < 500) {
-//            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
-//        }
+        //        if ($grossWeight && $grossWeight < 500) {
+        //            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
+        //        }
 
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {

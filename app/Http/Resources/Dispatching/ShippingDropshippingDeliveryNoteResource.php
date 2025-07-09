@@ -8,13 +8,10 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 class ShippingDropshippingDeliveryNoteResource extends JsonResource
 {
