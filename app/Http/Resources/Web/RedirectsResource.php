@@ -27,11 +27,10 @@ class RedirectsResource extends JsonResource
         return [
             'id'            => $this->id,
             'url'           => $this->url,
-            'path'          => $this->path,
             'type'          => $this->type,
-            'webpage_title' => $this->webpage_title,
-            'webpage_url'   => $this->webpage_url,
-            'webpage_slug'  => $this->webpage_slug,
+            'to_webpage_title' => $this->to_webpage_title,
+            'to_webpage_code'   => $this->to_webpage_code,
+            'to_webpage_slug'  => $this->to_webpage_slug,
         ];
     }
 }

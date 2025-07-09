@@ -14,6 +14,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use Illuminate\Validation\Rules\File;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -99,6 +100,9 @@ class UpdateProductCategory extends OrgAction
             'state'
         ])) {
             $this->productCategoryHydrators($productCategory);
+            if ($productCategory->webpage_id) {
+                ReindexWebpageLuigiData::dispatch($productCategory->webpage)->delay($this->hydratorsDelay);
+            }
         }
         $productCategory->refresh();
 
