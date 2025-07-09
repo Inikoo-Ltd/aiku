@@ -80,7 +80,7 @@ watch(descriptionTitle, (val) => {
 <template>
   <div id="family-1">
     <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), width: 'auto' }"
-      class="py-4 space-y-6 px-[50px]">
+      class="py-4 space-y-6 px-[10px] sm:px-[50px]">
 
       <!-- Description Title -->
       <input v-model="descriptionTitle" type="text" placeholder="Family Description Title"

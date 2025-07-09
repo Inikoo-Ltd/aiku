@@ -33,7 +33,7 @@ const layout: any = inject("layout", {})
 
 <template>
   <div id="family-1">
-    <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), width : 'auto' }" class="py-4 px-[50px] space-y-6"
+    <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), width : 'auto' }"  class="py-4 space-y-6 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
 
       <!-- Description Title (SEO: Heading) -->
