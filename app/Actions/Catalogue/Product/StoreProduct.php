@@ -52,14 +52,6 @@ class StoreProduct extends OrgAction
         $orgStocks = Arr::pull($modelData, 'org_stocks', []);
 
 
-        if (count($orgStocks) == 1) {
-            $units = $orgStocks[array_key_first($orgStocks)]['quantity'];
-        } else {
-            $units = 1;
-        }
-
-
-        data_set($modelData, 'units', $units);
         data_set($modelData, 'unit_relationship_type', $this->getUnitRelationshipType($orgStocks));
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'group_id', $parent->group_id);
@@ -237,6 +229,7 @@ class StoreProduct extends OrgAction
             'data'                      => ['sometimes', 'array'],
             'settings'                  => ['sometimes', 'array'],
             'is_main'                   => ['required', 'boolean'],
+            'units'                     => ['sometimes', 'numeric'],
             'main_product_id'           => [
                 'sometimes',
                 'nullable',

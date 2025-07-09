@@ -39,21 +39,29 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+
+
+
         if (Arr::has($modelData, 'family_id')) {
             UpdateProductFamily::make()->action($product, [
                 'family_id' => Arr::pull($modelData, 'family_id'),
             ]);
         }
 
+
+
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
-            $orgStocks = [];
-            foreach ($orgStocksRaw as $item) {
-                $orgStocks[] = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+
+            $orgStocks    = [];
+            foreach ($orgStocksRaw as $orgStockId=>$item) {
+                $orgStocks[$orgStockId] = Arr::only($item, [ 'quantity', 'notes','source_id','last_fetched_at']);
             }
+
 
             $product->orgStocks()->sync($orgStocks);
         }
+
 
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
@@ -63,8 +71,13 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
+
+
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
+
+
+
             $product->updateQuietly(
                 [
                     'current_historic_asset_id' => $historicAsset->id,
@@ -110,9 +123,9 @@ class UpdateProduct extends OrgAction
             )
             && $product->webpage
         ) {
-            $key = config('iris.cache.webpage.prefix') . '_' . $product->webpage->website_id . '_in_' . $product->webpage->id;
+            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_in_'.$product->webpage->id;
             Cache::forget($key);
-            $key = config('iris.cache.webpage.prefix') . '_' . $product->webpage->website_id . '_out_' . $product->webpage->id;
+            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_out_'.$product->webpage->id;
             Cache::forget($key);
             ReindexWebpageLuigiData::dispatch($product->webpage)->delay($this->hydratorsDelay);
         }
@@ -136,7 +149,7 @@ class UpdateProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'          => [
+            'code'              => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -151,20 +164,20 @@ class UpdateProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'          => ['sometimes', 'required', 'max:250', 'string'],
-            'price'         => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'   => ['sometimes', 'required', 'max:1500'],
+            'name'              => ['sometimes', 'required', 'max:250', 'string'],
+            'price'             => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description'       => ['sometimes', 'required', 'max:1500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'rrp'           => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'data'          => ['sometimes', 'array'],
-            'settings'      => ['sometimes', 'array'],
-            'status'        => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
-            'state'         => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'trade_config'  => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
-            'follow_master' => ['sometimes', 'boolean'],
-            'family_id'     => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
-            'barcode' => [
+            'rrp'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'data'              => ['sometimes', 'array'],
+            'settings'          => ['sometimes', 'array'],
+            'status'            => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
+            'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'trade_config'      => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
+            'follow_master'     => ['sometimes', 'boolean'],
+            'family_id'         => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
+            'barcode'           => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -173,9 +186,9 @@ class UpdateProduct extends OrgAction
                     ->whereNull('deleted_at')
             ],
 
-            'webpage_id' => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'        => ['sometimes', 'nullable', 'string', 'max:250'],
-
+            'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
+            'units'                     => ['sometimes', 'numeric'],
             'exclusive_for_customer_id' => [
                 'sometimes',
                 'nullable',
