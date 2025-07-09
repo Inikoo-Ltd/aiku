@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
@@ -52,7 +53,6 @@ class UpdateProduct extends OrgAction
             }
 
             $product->orgStocks()->sync($orgStocks);
-
         }
 
         $assetData = [];
@@ -96,9 +96,10 @@ class UpdateProduct extends OrgAction
             ProductRecordSearch::dispatch($product);
         }
 
-        if (Arr::hasAny(
-            $changed,
-            [
+        if (
+            Arr::hasAny(
+                $changed,
+                [
                     'code',
                     'name',
                     'description',
@@ -106,22 +107,24 @@ class UpdateProduct extends OrgAction
                     'price',
                     'available_quantity'
                 ]
-        )
-            && $product->webpage) {
-            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_in_'.$product->webpage->id;
+            )
+            && $product->webpage
+        ) {
+            $key = config('iris.cache.webpage.prefix') . '_' . $product->webpage->website_id . '_in_' . $product->webpage->id;
             Cache::forget($key);
-            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_out_'.$product->webpage->id;
+            $key = config('iris.cache.webpage.prefix') . '_' . $product->webpage->website_id . '_out_' . $product->webpage->id;
             Cache::forget($key);
+            ReindexWebpageLuigiData::dispatch($product->webpage)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny(
             $changed,
             [
-                    'code',
-                    'name',
-                    'state',
-                    'price',
-                ]
+                'code',
+                'name',
+                'state',
+                'price',
+            ]
         )) {
             BreakProductInWebpagesCache::dispatch($product);
         }
