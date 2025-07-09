@@ -29,6 +29,7 @@ use App\Actions\Catalogue\Product\AttachImagesToProduct;
 use App\Actions\Catalogue\Product\DeleteImagesFromProduct;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\MoveFamilyProductToOtherFamily;
+use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
@@ -424,6 +425,7 @@ Route::delete('recurring-bill-transaction/{recurringBillTransaction:id}', Delete
 
 Route::name('product.')->prefix('product')->group(function () {
     Route::post('/product/', StoreProduct::class)->name('store');
+    Route::patch('/{product:id}/offline', SetProductOffline::class)->name('offline');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
