@@ -33,7 +33,7 @@ function webpageRoute(data: {}) {
     <Table :resource="data" :name="tab" class="mt-5">
       <template #cell(to_webpage_url)="{ item: data }">
             <Link :href="webpageRoute(data)" class="primaryLink">
-              {{ data['to_webpage_url'] }}
+              {{ data['to_webpage_code'] }}
             </Link>
         </template>
     </Table>

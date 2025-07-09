@@ -59,6 +59,7 @@ class IndexRedirects extends OrgAction
                 'webpages.title as to_webpage_title',
                 'webpages.slug as to_webpage_slug',
                 'webpages.url as to_webpage_url',
+                'webpages.code as to_webpage_code',
                 'webpages.slug as to_webpage_slug',
                 'websites.domain as to_website_domain',
                 'websites.slug as to_website_slug',
