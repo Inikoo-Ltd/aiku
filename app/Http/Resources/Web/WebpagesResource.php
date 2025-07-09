@@ -37,6 +37,21 @@ class WebpagesResource extends JsonResource
 
     public function toArray($request): array
     {
+        $href = '';
+
+        if (app()->isProduction()) {
+            $href = 'https://www.';
+            if (str_starts_with($this->website_url, 'www.')) {
+                $href .= substr($this->website_url, 4);
+            } else {
+                $href .= $this->website_url;
+            }
+        } else {
+            $href = 'http://' . $this->website_url;
+        }
+
+        $href .= '/' . $this->url;
+
         return [
             "id"       => $this->id,
             "slug"     => $this->slug,
@@ -50,9 +65,9 @@ class WebpagesResource extends JsonResource
                 'website'      => $this->website_slug,
                 'webpage'      => $this->slug,
             ]),
-            "href"     => (app()->isProduction() ? 'https://' : 'http://').$this->website_url.'/'.$this->url,
-            "type"     => $this->type,
-            "typeIcon" => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
+            "href"              => $href,
+            "type"              => $this->type,
+            "typeIcon"          => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
 
             "sub_type"          => $this->sub_type,
             "created_at"        => $this->created_at,
