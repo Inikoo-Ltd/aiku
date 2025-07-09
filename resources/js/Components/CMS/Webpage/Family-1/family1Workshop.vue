@@ -80,7 +80,7 @@ watch(descriptionTitle, (val) => {
 <template>
   <div id="family-1">
     <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(modelValue?.container?.properties), width: 'auto' }"
-      class="py-4 space-y-6 px-[10px] sm:px-[50px]">
+      class="py-4  px-[10px] sm:px-[50px]">
 
       <!-- Description Title -->
       <input v-model="descriptionTitle" type="text" placeholder="Family Description Title"
@@ -106,7 +106,7 @@ watch(descriptionTitle, (val) => {
           </div>
         </transition>
         <button @click="toggleShowExtra"
-          class="text-sm text-gray-600 hover:underline focus:outline-none transition-colors">
+          class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors">
           {{ showExtra ? 'show less' : 'Read More' }}
         </button>
       </div>

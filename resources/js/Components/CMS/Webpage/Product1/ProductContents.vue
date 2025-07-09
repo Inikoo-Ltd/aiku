@@ -12,6 +12,7 @@ import Skeleton from 'primevue/skeleton'
 import { debounce } from 'lodash-es'
 import axios from 'axios'
 import ProductSpecDocumentation from './ProductSpec&Documentation.vue'
+import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
     product: {
@@ -34,6 +35,8 @@ const props = defineProps<{
         product_specs: boolean,
         faqs: boolean
     }
+    templateEdit : string
+    styleData : object
 }>()
 
 const confirm = useConfirm()
@@ -157,18 +160,18 @@ const openDisclosureId = ref<number | null>(null)
 <template>
     <div class="w-full">
         <!-- Product Specification Section (Static, Read-Only, No Loop) -->
-        <div v-if="setting.product_specs" class="mb-6 relative">
+        <div v-if="setting.product_specs" class="mb-6 relative" >
             <div class="space-y-2">
                 <!-- Spec Item #1 -->
                 <div class="relative hover:bg-gray-50 rounded transition">
-                    <div @click="openDisclosureId = openDisclosureId === 'spec-1' ? null : 'spec-1'"
+                    <div @click="openDisclosureId = openDisclosureId === 'spec-1' ? null : 'spec-1'" :style="getStyles(styleData?.title)"
                         class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
                         <div class="text-base font-semibold">Product Specifications & Documentations</div>
                         <FontAwesomeIcon :icon="faChevronDown"
                             class="text-sm text-gray-500 transform transition-transform duration-200"
                             :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" />
                     </div>
-                    <div v-show="openDisclosureId === 'spec-1'" class="text-sm text-gray-600 whitespace-pre-line py-2">
+                    <div v-show="openDisclosureId === 'spec-1'" class="text-sm text-gray-600 whitespace-pre-line py-2":style="getStyles(styleData?.content)" >
                        <ProductSpecDocumentation :product="product" ></ProductSpecDocumentation>
                     </div>
                 </div>
@@ -178,18 +181,18 @@ const openDisclosureId = ref<number | null>(null)
 
         <!-- FAQ Section -->
         <div v-if="setting.faqs" class="mb-6 relative">
-            <div class="text-sm text-gray-500 mb-1 font-semibold">Frequently Asked Questions (FAQs)</div>
+            <div class="text-sm text-gray-500 mb-1 font-semibold" :style="getStyles(styleData?.title)">Frequently Asked Questions (FAQs)</div>
 
-            <div v-if="faqContents.length === 0 && !loadingAdd"
+            <div v-if="faqContents.length === 0 && !loadingAdd && templateEdit == 'webpage'"
                 class="text-center text-gray-500 text-sm py-6 italic border border-dashed border-gray-300 rounded">
-                <div class="py-2">No FAQs yet. Click the add button to include some questions.</div>
+                <div class="py-2" >No FAQs yet. Click the add button to include some questions.</div>
             </div>
 
             <div v-else class="space-y-2">
                 <template v-for="content in faqContents" :key="content.id">
                     <Skeleton v-if="loadingDeleteIds.includes(content.id)" height="3rem" class="rounded-md" />
                     <div v-else class="relative hover:bg-gray-50 rounded transition">
-                        <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"
+                        <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id" :style="getStyles(styleData?.title)"
                             class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
                             <EditorV2 :modelValue="content.title"
                                 @update:model-value="(value) => updateLocalContent(content.id, { ...content, title: value })" />
@@ -204,7 +207,7 @@ const openDisclosureId = ref<number | null>(null)
                                     :class="{ 'rotate-180': openDisclosureId === content.id }" />
                             </div>
                         </div>
-                        <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600">
+                        <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600" :style="getStyles(styleData?.content)">
                             <EditorV2 :modelValue="content.text"
                                 @update:model-value="(value) => updateLocalContent(content.id, { ...content, text: value })" />
                         </div>
@@ -214,7 +217,7 @@ const openDisclosureId = ref<number | null>(null)
             </div>
 
             <!-- Add FAQ Button (independent hover) -->
-            <div class="relative group/faq w-full">
+            <div v-if="templateEdit == 'webpage'" class="relative group/faq w-full">
                 <button @click="addFAQ"
                     class="absolute w-full top-0 right-0 opacity-0 group-hover/faq:opacity-100 transition-opacity duration-300 text-sm flex items-center justify-center gap-2 text-indigo-600 hover:text-indigo-800 border border-indigo-600 hover:border-indigo-800 rounded px-3 py-2 bg-white z-10"
                     title="Add FAQ">
