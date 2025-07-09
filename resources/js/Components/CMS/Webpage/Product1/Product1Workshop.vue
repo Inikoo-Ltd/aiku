@@ -151,7 +151,7 @@ const toggleExpanded = () => {
                     </div>
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
-                        <template v-if="layout.iris?.is_logged_in">
+                        <template v-if="layout.retina.type != 'dropshipping' && layout.iris?.is_logged_in">
                             <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
@@ -285,8 +285,8 @@ const toggleExpanded = () => {
         </div>
         <div class="mt-4">
                <InformationSideProduct v-if="modelValue?.information?.length > 0" :informations="modelValue?.information" />
-            <div class="text-sm font-semibold mb-2">Secure Payments:</div>
-            <div class="flex flex-wrap gap-4">
+            <div v-if="modelValue?.paymentData?.length > 0" class="text-sm font-semibold mb-2">Secure Payments:</div>
+            <div v-if="modelValue?.paymentData?.length > 0" class="flex flex-wrap gap-4">
                 <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />
             </div>

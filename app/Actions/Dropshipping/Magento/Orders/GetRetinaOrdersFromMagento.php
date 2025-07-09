@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Magento\Orders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\MagentoUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,6 +23,8 @@ class GetRetinaOrdersFromMagento extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+
+    public string $commandSignature = 'orders:magento {magentoUser}';
 
     public function handle(MagentoUser $magentoUser): void
     {
@@ -73,6 +76,13 @@ class GetRetinaOrdersFromMagento extends OrgAction
     public function asController(MagentoUser $magentoUser, ActionRequest $request): void
     {
         $this->initialisation($magentoUser->organisation, $request);
+
+        $this->handle($magentoUser);
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $magentoUser = MagentoUser::find($command->argument('magentoUser'));
 
         $this->handle($magentoUser);
     }

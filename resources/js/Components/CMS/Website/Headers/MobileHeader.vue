@@ -64,25 +64,26 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
 <template>
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
+            <!-- Section: Hamburger mobile -->
             <MobileMenu :header="headerData" :menu="menuData" />
 
-
-             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">
+            <!-- Section: Logo  -->
+            <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">
                 <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
             </component>
 
-
+            <!-- Section: Profile -->
             <div class="flex items-center cursor-pointer">
                 <Link href="/app/profile" v-if="isLoggedIn">
-                <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
+                    <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
                     :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                 </Link>
             </div>
         </div>
 
         <!-- Search Bar -->
-        <div v-if="layout.iris?.luigisbox_tracker_id" class="relative justify-self-center w-28">
+        <div v-if="layout.iris?.luigisbox_tracker_id" class="relative justify-self-center w-full">
             <LuigiSearch></LuigiSearch>
         </div>
     </div>

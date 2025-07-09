@@ -144,8 +144,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
 
             <!-- Favorite Icon -->
-
-            <template v-if="layout?.iris?.is_logged_in">
+            <template v-if="layout.retina.type != 'dropshipping' && layout?.iris?.is_logged_in">
 
                 <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
                     <LoadingIcon />
