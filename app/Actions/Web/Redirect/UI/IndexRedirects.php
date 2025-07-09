@@ -28,11 +28,10 @@ class IndexRedirects extends OrgAction
 
     public function handle(Website|Webpage $parent, $prefix = null): LengthAwarePaginator
     {
-        // dd("test");
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('redirects.url', $value)
-                    ->orWhereStartWith('webpages.title', $value);
+                    ->orWhereStartWith('webpages.to_webpage_title', $value);
             });
         });
 
@@ -48,6 +47,7 @@ class IndexRedirects extends OrgAction
         }
 
         $queryBuilder->leftjoin('webpages', 'redirects.to_webpage_id', '=', 'webpages.id');
+        $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
 
         $queryBuilder
             ->defaultSort('redirects.id')
@@ -57,8 +57,12 @@ class IndexRedirects extends OrgAction
                 'redirects.from_url as url',
                 'redirects.from_path as path',
                 'webpages.title as to_webpage_title',
-                'webpages.url as to_webpage_url',
                 'webpages.slug as to_webpage_slug',
+                'webpages.url as to_webpage_url',
+                'webpages.code as to_webpage_code',
+                'webpages.slug as to_webpage_slug',
+                'websites.domain as to_website_domain',
+                'websites.slug as to_website_slug',
             ]);
 
         return $queryBuilder
@@ -98,7 +102,6 @@ class IndexRedirects extends OrgAction
                 $table
                     ->column(key: 'to_webpage_url', label: __('To Webpage'), canBeHidden: false, sortable: true, searchable: true);
             }
-
         };
     }
 

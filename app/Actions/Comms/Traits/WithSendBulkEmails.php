@@ -88,6 +88,7 @@ trait WithSendBulkEmails
             'delivered-date',
             'returned-date',
             'order-date' => Arr::get($additionalData, 'date'),
+            'tracking-url' => Arr::get($additionalData, 'tracking_url'),
             default => $originalPlaceholder,
         };
     }
