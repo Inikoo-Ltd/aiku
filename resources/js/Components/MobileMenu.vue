@@ -73,7 +73,7 @@ onUnmounted(() => {
                 :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),...getStyles(header?.mobile?.menu?.container?.properties)}" />
         </button>
 
-        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :showCloseIcon="false"
+        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :showCloseIcon="true"
             :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),margin : 0, padding : 0,...getStyles(props.menu?.container?.properties)}">
        
 
