@@ -260,23 +260,21 @@ const component = computed(() => {
                                     full
                                     :style="'tertiary'" />
                             </a>
-                            <!-- <a :href="downloadUrl('json')" target="_blank" rel="noopener"> -->
+                            <a :href="downloadUrl('json')" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faBracketsCurly"
                                     label="JSON"
                                     full
                                     :style="'tertiary'"
-                                    disabled
-                                    v-tooltip="trans('This feature is not available yet')"
                                 />
-                            <!-- </a> -->
-                            <a :href="downloadUrl('images')" target="_blank" rel="noopener">
+                            </a>
+                            <!-- <a :href="downloadUrl('images')" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faImage"
                                     :label="trans('Images')"
                                     full
                                     :style="'tertiary'" />
-                            </a>
+                            </a> -->
                         </div>
 
                     </div>
