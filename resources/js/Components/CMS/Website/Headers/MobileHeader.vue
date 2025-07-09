@@ -62,12 +62,11 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
         <div class="flex justify-between items-center">
             <MobileMenu :header="headerData" :menu="menuData" />
 
-            <Link href="/">
-            <div class="w-full max-h-[60px] min-h-[40px]" >
-                <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source"
-                    :alt="headerData.logo?.alt" class="max-w-full max-h-full" :style="{...getStyles(headerData.logo.properties, screenType), height : '65px' }" />
-            </div>
-            </Link>
+
+             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">
+                <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" :imageCover="true"
+                    :style="{ objectFit: 'contain' }" />
+            </component>
 
 
             <div class="flex items-center cursor-pointer">
