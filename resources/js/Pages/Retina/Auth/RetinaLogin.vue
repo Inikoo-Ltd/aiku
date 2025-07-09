@@ -93,11 +93,20 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
     <Head title="Login" />
 
+
+
     <div class="rounded-md flex items-center justify-center w-full px-6 py-12 lg:px-8">
         <div class="relative w-full max-w-lg bg-transparent px-4 py-3">
             <div v-if="isLoadingGoogle" class="absolute inset-0 bg-black/50 text-white z-10 flex justify-center items-center">
                 <LoadingIcon class="text-4xl" />
             </div>
+
+            <div class="border border-gray-300 p-5 rounded mb-4 ">
+                <p>Hey , as you notice we just got a brand new system for our website.</p>
+                <p class="py-3">You can log in with your old username and password or use your google account to login.</p>
+                <p>if the password is not working, you can reset it from the forgot password page and all will be ok.</p>
+            </div>
+
 
             <form class="space-y-6">
                 <!-- Username Field -->
