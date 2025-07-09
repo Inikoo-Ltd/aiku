@@ -45,7 +45,7 @@ const isModalShippingAddress = ref(false)
 
 <template>
 
-    <div class="py-4 grid grid-cols-2 md:grid-cols-7 px-4 gap-x-6 divide-y divide-gray-300">
+    <div class="py-4 grid grid-cols-2 md:grid-cols-7 px-4 gap-x-6 xdivide-y xdivide-gray-300">
         <div class="col-span-2 mb-4 md:mb-0">
             <!-- Field: Platform -->
             <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
@@ -145,7 +145,7 @@ const isModalShippingAddress = ref(false)
                 </dt>
                 
                 <dd class="text-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
-                    {{ locale.number(summary.order_properties?.weight || 0) }} kg
+                    {{ summary.order_properties?.weight }}
                 </dd>
             </div>
 
