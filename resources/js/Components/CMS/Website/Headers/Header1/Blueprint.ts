@@ -54,13 +54,13 @@ export default {
 					key: ["properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
-					useIn: ["desktop", "tablet", "mobile"],
+					useIn: ["desktop", "tablet"],
 				},
 				{
 					key: ["properties", "margin"],
 					label: "Margin",
 					type: "margin",
-					useIn: ["desktop", "tablet", "mobile"],
+					useIn: ["desktop"],
 				},
 				{
 					key: ["properties", "padding"],
