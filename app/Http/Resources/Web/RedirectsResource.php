@@ -24,13 +24,12 @@ class RedirectsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $toWebpageUrl = $this->to_webpage_url;
         return [
             'id'            => $this->id,
             'url'           => $this->url,
             'type'          => $this->type,
             'to_webpage_title' => $this->to_webpage_title,
-            'to_webpage_url'   => 'https://' . $this->to_website_domain . '/' . $toWebpageUrl,
+            'to_webpage_code'   => $this->to_webpage_code,
             'to_webpage_slug'  => $this->to_webpage_slug,
         ];
     }
