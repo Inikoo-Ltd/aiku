@@ -24,7 +24,7 @@ class UpdateTrackingFulfilmentOrderShopify extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public $commandSignature = 'dropshipping:shopify:fulfilment:update-tracking {palletReturnId}';
+    public $commandSignature = 'dropshipping:shopify:fulfilment:update-tracking {orderId}';
 
     /**
      * @throws \Throwable
@@ -65,7 +65,7 @@ class UpdateTrackingFulfilmentOrderShopify extends OrgAction
 
     public function asCommand(Command $command)
     {
-        $palletReturn = PalletReturn::where('id', $command->argument('palletReturnId'))->firstOrFail();
+        $palletReturn = Order::where('id', $command->argument('orderId'))->firstOrFail();
 
         $this->handle($palletReturn);
     }
