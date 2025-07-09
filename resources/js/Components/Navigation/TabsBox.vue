@@ -25,14 +25,16 @@ const props = defineProps<{
     tabs_box: {
         label: string
         currency_code?: string
+        icon?: string | string[]
         tabs: {
             label: string
-            icon?: string
+            value: string | number
             indicator?: boolean
             tab_slug: string
             type?: string // 'icon', 'date', 'number', 'currency'
             align?: string
             route?: routeType
+            icon?: string | string[]
             iconClass?: string
             information?: {
                 label: string | number
@@ -40,9 +42,10 @@ const props = defineProps<{
             }
         }[]
     }[]
-    current: string | Number
+    current: string | number
 }>()
 
+console.log('ew', props.tabs_box)
 const mergeTabs = () => {
     return props.tabs_box.reduce((acc, current) => {
         return acc.concat(current.tabs);
@@ -70,17 +73,17 @@ watch(() => props.current, (newVal) => {
 })
 
 
-const renderLabelBasedOnType = (data?: {label: string | number, type?: string}, options?: { currency_code?: string}) => {
-    if(data?.type === 'number') {
-        return locale.number(Number(data?.label))
-    } else if (data?.type === 'currency') {
+const renderLabelBasedOnType = (label?: string | number, type?: string, options?: { currency_code?: string}) => {
+    if(type === 'number') {
+        return locale.number(Number(label))
+    } else if (type === 'currency') {
         if (!options?.currency_code) {
-            return data?.label
+            return label
         } else {
-            return locale.currencyFormat(options?.currency_code, Number(data?.label))
+            return locale.currencyFormat(options?.currency_code, Number(label))
         }
     } else {
-        return data?.label || '-'
+        return label || '-'
     }
     
 }
@@ -89,20 +92,30 @@ const renderLabelBasedOnType = (data?: {label: string | number, type?: string}, 
 <template>
     <div>
         <!-- Desktop -->
-        <div class="hidden px-6 md:flex gap-x-6 my-2 border-b border-gray-300">
-            <div v-for="box in tabs_box" class="px-3 relative border border-gray-300 w-full flex flex-col  py-2 transition-all z-10"
-                :class="box.tabs.some(tab => tab.tab_slug === currentTab) ? 'mt-3 rounded-t-xl border-b-0 -mb-0.5 bg-white' : 'bg-gray-500/10 shadow-xl mb-2 rounded-md '"
+        <div class="hidden px-6 md:flex gap-x-6 my-2 xborder-b border-gray-300">
+            <div v-for="box in tabs_box" class="rounded-md px-3 relative border w-full flex flex-col py-2 xtransition-all z-10"
+                xclass="box.tabs.some(tab => tab.tab_slug === currentTab)
+                    ? 'bg-indigo-100 border-indigo-'
+                    : 'xbg-gray-50 border-gray-200'
+                "
+                :style="{
+                    backgroundColor: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] + '22' : 'transparent',
+                    color: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] : 'inherit',
+                    borderColor: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] : 'inherit'
+                }"
             >
-                <div class="text-center text-gray-500 mb-2 text-xs">
+                <!-- Title -->
+                <div class="text-center mb-2 text-xs">
                     <FontAwesomeIcon v-if="box.icon" :icon='box.icon' class='' fixed-width aria-hidden='true' />
                     {{ box.label }}
                 </div>
+                
                 <div class="flex gap-x-4">
                     <div v-for="tab in box.tabs" class="w-full flex flex-col items-center">
                         <div
                             @click="onChangeTab(tab.tab_slug)"
-                            class="tabular-nums relative cursor-pointer text-2xl px-2"
-                            :class="tab.tab_slug === currentTab ? 'text-indigo-600' : ''"
+                            class="group tabular-nums relative cursor-pointer text-xl px-2 hover:underline"
+                            xclass="tab.tab_slug === currentTab ? 'text-indigo-600' : 'text-gray-500'"
                         >
                             <template v-if="box.icon">
                                 <LoadingIcon v-if="tabLoading == tab.tab_slug" class="animate-spin text-xl" />
@@ -110,8 +123,8 @@ const renderLabelBasedOnType = (data?: {label: string | number, type?: string}, 
                             </template>
                             
                             <div class="relative ">
-                                <span class="inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : ''">
-                                    {{ renderLabelBasedOnType(tab, {currency_code: box.currency_code}) }}
+                                <span class="inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100'">
+                                    {{ renderLabelBasedOnType(tab.value, tab.type, {currency_code: box.currency_code}) }}
                                 </span>
                                 <div v-if="!box.icon && tabLoading == tab.tab_slug" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                                     <LoadingIcon />
@@ -123,8 +136,8 @@ const renderLabelBasedOnType = (data?: {label: string | number, type?: string}, 
                             </template>
                         </div>
                         
-                        <div class="text-gray-400 font-normal">
-                            {{ renderLabelBasedOnType(tab.information, {currency_code: box.currency_code}) }}
+                        <div class="xtext-gray-400 font-normal text-xs opacity-70">
+                            {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, {currency_code: box.currency_code}) }}
                         </div>
                     </div>
                 </div>
@@ -154,7 +167,7 @@ const renderLabelBasedOnType = (data?: {label: string | number, type?: string}, 
         </div>
         
 
-        <div class="mt-8"></div>
+        <div class="mt-2"></div>
         
     </div>
 </template>

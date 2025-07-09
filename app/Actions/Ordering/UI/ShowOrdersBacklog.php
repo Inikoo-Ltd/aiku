@@ -63,7 +63,8 @@ class ShowOrdersBacklog extends OrgAction
                 'tabs' => [
                     [
                         'tab_slug' => 'in_basket',
-                        'label' => $parent->orderHandlingStats->number_orders_state_creating,
+                        'label' => __('In basket'),
+                        'value' => $parent->orderHandlingStats->number_orders_state_creating,
                         'type' => 'number',
                         'icon' => $icon,
                         'information' => [
@@ -79,7 +80,8 @@ class ShowOrdersBacklog extends OrgAction
                 'tabs' => [
                     [
                         'tab_slug' => 'submitted_paid',
-                        'label' => $parent->orderHandlingStats->number_orders_state_submitted_paid,
+                        'label' => __('Submitted Paid'),
+                        'value' => $parent->orderHandlingStats->number_orders_state_submitted_paid,
                         'type' => 'number',
                         'icon' => $icon,
                         'information' => [
@@ -89,7 +91,8 @@ class ShowOrdersBacklog extends OrgAction
                         ],
                     [
                         'tab_slug' => 'submitted_unpaid',
-                        'label' => $parent->orderHandlingStats->number_orders_state_submitted_not_paid,
+                        'label' => __('Submitted Unpaid'),
+                        'value' => $parent->orderHandlingStats->number_orders_state_submitted_not_paid,
                         'type' => 'number',
                         'icon' => $icon,
                         'information' => [
@@ -105,7 +108,8 @@ class ShowOrdersBacklog extends OrgAction
                 'tabs' => [
                     [
                         'tab_slug' => 'picking',
-                        'label' => $parent->orderHandlingStats->number_orders_state_handling,
+                        'label' => __('Picking'),
+                        'value' => $parent->orderHandlingStats->number_orders_state_handling,
                         'type' => 'number',
                         'icon' => $icon,
                         'information' => [
@@ -115,7 +119,8 @@ class ShowOrdersBacklog extends OrgAction
                     ],
                     [
                         'tab_slug' => 'blocked',
-                        'label' => $parent->orderHandlingStats->number_orders_state_handling_blocked,
+                        'label' => __('Blocked'),
+                        'value' => $parent->orderHandlingStats->number_orders_state_handling_blocked,
                         'type' => 'number',
                         'icon' => $icon,
                         'information' => [
@@ -131,7 +136,8 @@ class ShowOrdersBacklog extends OrgAction
                 'tabs' => [
                     [
                         'tab_slug' => 'packed',
-                        'label' =>  $parent->orderHandlingStats->number_orders_state_packed,
+                        'label' => __('Packed'),
+                        'value' =>  $parent->orderHandlingStats->number_orders_state_packed,
                         'icon' => 'fal fa-box',
                         // 'indicator' => true,
                         'iconClass' => 'text-teal-500',
@@ -142,7 +148,8 @@ class ShowOrdersBacklog extends OrgAction
                     ],
                     [
                         'tab_slug' => 'packed_done',
-                        'label' => $parent->orderHandlingStats->number_orders_state_finalised,
+                        'label' => __('Packed Done'),
+                        'value' => $parent->orderHandlingStats->number_orders_state_finalised,
                         'icon' => 'fal fa-box-check',
                         'iconClass' => 'text-orange-500',
                         'information' => [
@@ -158,7 +165,8 @@ class ShowOrdersBacklog extends OrgAction
                 'tabs' => [
                     [
                         'tab_slug' => 'dispatched_today',
-                        'label' => $parent->orderHandlingStats->number_orders_dispatched_today,
+                        'label' => __('Dispatched Today'),
+                        'value' => $parent->orderHandlingStats->number_orders_dispatched_today,
                         'type'  => 'number',
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_dispatched_today_amount$currency"},
