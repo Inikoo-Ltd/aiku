@@ -36,6 +36,7 @@ const props = defineProps<{
 			phone: string
 			address: Address
 		}
+        delivery_address: Address,
 		products: {
 			estimated_weight: number
 		}
@@ -284,7 +285,6 @@ const onPrintShipment = async (ship) => {
 					>{{ boxStats?.customer.email }}</a
 				>
 			</div>
-
 			<!-- Field: Phone -->
 			<div
 				v-if="boxStats?.customer.phone"
@@ -305,8 +305,10 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 			<!-- Field: Address -->
+
+zzzzz
 			<div
-				v-if="boxStats?.customer?.address"
+				v-if="boxStats?.delivery_address"
 				class="pl-1 flex items w-full flex-none gap-x-2"
 				v-tooltip="trans('Shipping address')">
 				<dt class="flex-none">
@@ -318,7 +320,7 @@ const onPrintShipment = async (ship) => {
 				</dt>
 				<dd
 					class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-					v-html="boxStats?.customer.address.formatted_address"></dd>
+					v-html="boxStats?.delivery_address.formatted_address"></dd>
 			</div>
 		</BoxStatPallet>
 

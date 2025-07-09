@@ -9,7 +9,10 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Dispatching\ShippingParentResource;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -72,7 +75,19 @@ class CallApiItdShipping extends OrgAction
         }
 
 
-        $parentResource = ShippingParentResource::make($parent)->getArray();
+        if($parent instanceof PalletReturn){
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+
+        }else{
+            if($parent->shop->type==ShopTypeEnum::DROPSHIPPING){
+                $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
+            }else{
+                $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+
+            }
+
+        }
+
 
         $params = [
             'labelSize'       => '4x6',
@@ -110,6 +125,9 @@ class CallApiItdShipping extends OrgAction
                 ]
             ]
         ];
+
+
+        dd($params);
 
         $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl() . $url, $params)->json();
 

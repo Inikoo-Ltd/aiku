@@ -12,7 +12,7 @@ namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingParentResource;
+use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -61,7 +61,7 @@ class CallApiApcGbShipping extends OrgAction
     {
         $url = '/api/3.0/Orders.json';
 
-        $parentResource = ShippingParentResource::make($parent)->getArray();
+        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
         $parcels        = $parent->parcels;
 
         $shipTo = Arr::get($parentResource, 'to_address');

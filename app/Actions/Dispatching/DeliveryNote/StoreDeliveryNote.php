@@ -98,7 +98,7 @@ class StoreDeliveryNote extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference'                 => [
                 'required',
                 'max:64',
                 'string',
@@ -109,16 +109,19 @@ class StoreDeliveryNote extends OrgAction
                     ]
                 ),
             ],
-            'email'           => ['sometimes', 'nullable', $this->strict ? 'email' : 'string'],
-            'phone'           => ['sometimes', 'nullable', 'string'],
-            'date'            => ['required', 'date'],
-            'warehouse_id'    => [
+            'email'                     => ['sometimes', 'nullable', $this->strict ? 'email' : 'string'],
+            'phone'                     => ['sometimes', 'nullable', 'string'],
+            'date'                      => ['required', 'date'],
+            'warehouse_id'              => [
                 'required',
                 Rule::exists('warehouses', 'id')
                     ->where('organisation_id', $this->organisation->id),
             ],
-            'delivery_locked' => ['sometimes', 'boolean'],
-            'weight'          => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'delivery_locked'           => ['sometimes', 'boolean'],
+            'weight'                    => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'customer_client_id'        => ['sometimes', 'nullable'],
+            'customer_sales_channel_id' => ['sometimes', 'nullable'],
+            'platform_id'               => ['sometimes', 'nullable'],
         ];
 
         if (!$this->strict) {

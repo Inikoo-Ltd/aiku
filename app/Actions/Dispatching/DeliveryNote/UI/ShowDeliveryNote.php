@@ -104,7 +104,7 @@ class ShowDeliveryNote extends OrgAction
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
         $isSomeNotPicked = !$deliveryNote->deliveryNoteItems->every(
-            fn ($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
+            fn($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
         );
 
 
@@ -230,7 +230,7 @@ class ShowDeliveryNote extends OrgAction
                     ],
                 ]
             ],
-            DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote, $request),
+            DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
 
             DeliveryNoteStateEnum::PACKED => [
                 [
@@ -330,12 +330,13 @@ class ShowDeliveryNote extends OrgAction
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
-        $order = $deliveryNote->orders->first();
+        $order     = $deliveryNote->orders->first();
+
         return [
-            'state'       => $deliveryNote->state,
-            'state_icon'  => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
-            'state_label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
-            'customer'    => array_merge(
+            'state'            => $deliveryNote->state,
+            'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
+            'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
+            'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [
                     'addresses' => [
@@ -343,7 +344,7 @@ class ShowDeliveryNote extends OrgAction
                     ],
                 ]
             ),
-            'products'    => [
+            'products'         => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
             ],
@@ -358,10 +359,11 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'picker'      => $deliveryNote->pickerUser,
-            'packer'      => $deliveryNote->packerUser,
-            'parcels'     => $deliveryNote->parcels,
-            'shipments'   => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
+            'delivery_address' => $deliveryNote->deliveryAddress,
+            'picker'           => $deliveryNote->pickerUser,
+            'packer'           => $deliveryNote->packerUser,
+            'parcels'          => $deliveryNote->parcels,
+            'shipments'        => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
         ];
     }
 
@@ -417,6 +419,7 @@ class ShowDeliveryNote extends OrgAction
 
         return $pickers;
     }
+
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $props = [
@@ -449,8 +452,8 @@ class ShowDeliveryNote extends OrgAction
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
 
-            'timelines'           => $this->getTimeline($deliveryNote),
-            'box_stats'           => $this->getBoxStats($deliveryNote),
+            'timelines' => $this->getTimeline($deliveryNote),
+            'box_stats' => $this->getBoxStats($deliveryNote),
 
             'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
@@ -543,23 +546,23 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
 
             ];
         }
 
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+                fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
+                : Inertia::lazy(fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
         ];
     }

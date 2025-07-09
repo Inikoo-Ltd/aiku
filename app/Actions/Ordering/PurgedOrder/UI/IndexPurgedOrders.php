@@ -29,7 +29,7 @@ class IndexPurgedOrders extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartsWith('orders.reference', $value);
+                $query->whereStartWith('orders.reference', $value);
             });
         });
 

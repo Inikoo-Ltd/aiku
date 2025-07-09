@@ -12,7 +12,7 @@ namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingParentResource;
+use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -145,7 +145,7 @@ class CallApiDpdGbShipping extends OrgAction
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $url = 'shipping/shipment';
-        $parentResource = ShippingParentResource::make($parent)->getArray();
+        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
         $parcels = $parent->parcels;
 
         data_set($parentResource, 'reference', $parent->reference);

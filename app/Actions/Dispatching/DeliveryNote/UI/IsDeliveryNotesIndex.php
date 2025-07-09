@@ -35,7 +35,7 @@ trait IsDeliveryNotesIndex
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartsWith('delivery_notes.reference', $value);
+                $query->whereStartWith('delivery_notes.reference', $value);
             });
         });
 

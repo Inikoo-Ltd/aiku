@@ -8,27 +8,26 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
-class ShippingParentResource extends JsonResource
+class ShippingDeliveryNoteResource extends JsonResource
 {
     use HasSelfCall;
 
     public function toArray($request): array
     {
-        /** @var DeliveryNote|PalletReturn $parent */
-        $parent = $this->resource;
+        /** @var DeliveryNote $deliveryNote */
+        $deliveryNote = $this->resource;
 
-        $customer = $parent instanceof DeliveryNote ? $parent->customer : $parent->fulfilmentCustomer->customer;
-        $shop     = $parent instanceof DeliveryNote ? $parent->shop : $parent->fulfilment->shop;
+        $customer = $deliveryNote->customer;
+        $shop     = $deliveryNote->shop;
 
-        // dd($customer->contact_name);
         $shopContactName = $shop->contact_name;
         if (!$shop->contact_name) {
             $shopContactName = 'A B';
@@ -39,11 +38,18 @@ class ShippingParentResource extends JsonResource
             : 'Unknown';
 
 
-        $address = $parent->deliveryAddress;
+        $address = $deliveryNote->deliveryAddress;
+
+        $recipient = $deliveryNote->customer;
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $recipient = $deliveryNote->customerClient;
+        }
+
+
         $toCompanyName = 'Unknown'; // TODO: fill this to corresponding customer company name
         $toContactName = '';
-        if ($parent instanceof DeliveryNote) {
-            $contactName = $parent->deliveryAddress->contact_name; //todo if if Dropshippin or not
+        if ($deliveryNote instanceof DeliveryNote) {
+            $contactName = $deliveryNote->deliveryAddress->contact_name; //todo if if Dropshippin or not
             if (!$contactName) {
                 $contactName = $customer->contact_name;
             }
@@ -56,9 +62,9 @@ class ShippingParentResource extends JsonResource
             $toEmail = ''; // todo
 
         } else {
-            $isManual = $parent->platform?->type == PlatformTypeEnum::MANUAL;
+            $isManual = $deliveryNote->platform?->type == PlatformTypeEnum::MANUAL;
             if ($isManual) {
-                $customer = $parent->customerSaleChannel->customer;
+                $customer = $deliveryNote->customerSaleChannel->customer;
                 $contactName = $customer->contact_name;
                 $toFirstName = explode(' ', $contactName)[0];
                 $toLastName  = (strpos($contactName, ' ') !== false)
@@ -69,20 +75,20 @@ class ShippingParentResource extends JsonResource
                 $toEmail = ''; // todo
 
             } else {
-                $toFirstName = Arr::get($parent->data, 'destination.first_name', 'Unknown');
-                $toLastName = Arr::get($parent->data, 'destination.last_name', 'Unknown');
+                $toFirstName = Arr::get($deliveryNote->data, 'destination.first_name', 'Unknown');
+                $toLastName = Arr::get($deliveryNote->data, 'destination.last_name', 'Unknown');
                 if ($toFirstName != 'Unknown' && $toLastName != 'Unknown') {
                     $toContactName = $toFirstName . ' ' . $toLastName;
                 } else {
-                    $toContactName = Arr::get($parent->data, 'destination.contact_name', 'Unknown');
+                    $toContactName = Arr::get($deliveryNote->data, 'destination.contact_name', 'Unknown');
                 }
-                $toEmail = Arr::get($parent->data, 'destination.email') ?? $shop->email;
-                $toPhone = Arr::get($parent->data, 'destination.phone') ?? $shop->phone;
+                $toEmail = Arr::get($deliveryNote->data, 'destination.email') ?? $shop->email;
+                $toPhone = Arr::get($deliveryNote->data, 'destination.phone') ?? $shop->phone;
             }
         }
 
         return [
-            'id'                 => $parent->id,
+            'id'                 => $deliveryNote->id,
             'customer_reference' => $customer->reference,
             'from_first_name'    => explode(' ', $shopContactName)[0],
             'from_last_name'     => $shopLastName,

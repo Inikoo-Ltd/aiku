@@ -12,7 +12,7 @@ namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingParentResource;
+use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -56,7 +56,7 @@ class CallApiPacketaShipping extends OrgAction
         // $apiPassword = $this->getAccessToken($shipper);
         $url = $this->getBaseUrl() . '/api/soap.wsdl';
 
-        $parentResource = ShippingParentResource::make($parent)->getArray();
+        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
         $parcels = $parent->parcels;
         // $packages = [
         //     [

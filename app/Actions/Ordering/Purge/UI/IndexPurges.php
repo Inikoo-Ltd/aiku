@@ -37,7 +37,7 @@ class IndexPurges extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartsWith('purges.id', $value);
+                $query->whereStartWith('purges.id', $value);
             });
         });
 
