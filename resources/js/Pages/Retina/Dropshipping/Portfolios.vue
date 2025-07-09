@@ -17,12 +17,15 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import { Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import type { Component } from 'vue';
 
 import { faSyncAlt } from "@fas";
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faBracketsCurly, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
 import axios from "axios"
 import { set } from "lodash"
+import { useTabChange } from "@/Composables/tab-change"
+import Tabs from "@/Components/Navigation/Tabs.vue"
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
@@ -66,6 +69,8 @@ const props = defineProps<{
         name: string
     }
     count_product_not_synced: number
+    active: {}
+    inactive: {}
 }>();
 
 
@@ -188,6 +193,19 @@ const bulkUpload = () => {
 }
 
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
+
+
+
+const currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+
+const component = computed(() => {
+    const components: Component = {
+        active: RetinaTablePortfolios,
+        inactive: RetinaTablePortfolios,
+    };
+    return components[currentTab.value];
+});
 </script>
 
 <template>
@@ -347,7 +365,26 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
     </div>
 
     <div v-else class="overflow-x-auto">
-        <RetinaTablePortfolios
+        <Tabs
+            :current="currentTab"
+            :navigation="tabs.navigation"
+            @update:tab="handleTabUpdate"
+        />
+
+        <component
+            :is="component"
+            :data="props[currentTab as keyof typeof props]"
+            :tab="currentTab"
+            :selectedData
+            :platform_data
+            :platform_user_id
+            :is_platform_connected
+            :customerSalesChannel="customer_sales_channel"
+            :progressToUploadToShopify
+            :isPlatformManual
+        />
+
+        <!-- <RetinaTablePortfolios
             :data="props.products"
             :tab="'products'"
             :selectedData
@@ -357,7 +394,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
             :customerSalesChannel="customer_sales_channel"
             :progressToUploadToShopify
             :isPlatformManual
-        />
+        /> -->
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
