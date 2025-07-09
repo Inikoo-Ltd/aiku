@@ -44,6 +44,6 @@ class FulfillOrderToShopify extends OrgAction
             throw ValidationException::withMessages(['messages' => __('You dont have the order')]);
         }
 
-        UpdateTrackingFulfilmentOrderShopify::dispatch($palletReturn);
+        UpdateTrackingFulfilmentOrderShopify::dispatch($order);
     }
 }
