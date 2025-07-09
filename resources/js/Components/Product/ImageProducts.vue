@@ -101,7 +101,7 @@ onMounted(async () => {
       @click.self="closeImageModal">
       <div class="relative w-full max-w-5xl px-4 py-6">
         <!-- Close Button -->
-        <button class="absolute top-4 right-4 text-red-500 text-3xl z-50" @click="closeImageModal"
+        <button class="absolute top-0 right-4 text-white text-3xl z-50" @click="closeImageModal"
           aria-label="Close image viewer">
           <FontAwesomeIcon :icon="faTimesCircle" />
         </button>

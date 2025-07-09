@@ -59,6 +59,7 @@ class StoreCreditTransaction extends OrgAction
             'date'       => ['sometimes', 'date'],
             'type'       => ['required', Rule::enum(CreditTransactionTypeEnum::class)],
             'reason'     => ['sometimes', Rule::enum(CreditTransactionReasonEnum::class)],
+            'notes'      => ['sometimes'],
             'payment_id' => [
                 'sometimes',
                 'nullable',
