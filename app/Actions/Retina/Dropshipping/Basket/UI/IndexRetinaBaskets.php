@@ -82,7 +82,7 @@ class IndexRetinaBaskets extends RetinaAction
         $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel, 'orders');
+        return $this->handle($customerSalesChannel);
     }
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
@@ -111,9 +111,9 @@ class IndexRetinaBaskets extends RetinaAction
 
                 'currency' => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
 
-                'orders' => RetinaOrdersResource::collection($orders)
+                'data'     => RetinaOrdersResource::collection($orders)
             ]
-        )->table($this->tableStructure('orders'));
+        )->table($this->tableStructure());
     }
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
@@ -129,11 +129,11 @@ class IndexRetinaBaskets extends RetinaAction
             $table->withGlobalSearch()
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'created_at', label: __('date'), canBeHidden: false, type: 'date', sortable: true);
+            $table->column(key: 'created_at', label: __('date'), canBeHidden: false, sortable: true, type: 'date');
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, align: 'right', sortable: true);
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: 'right');
         };
     }
 

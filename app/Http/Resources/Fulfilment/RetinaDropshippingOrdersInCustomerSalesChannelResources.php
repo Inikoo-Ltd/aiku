@@ -24,10 +24,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $client_name
  * @property mixed $total_amount
  * @property mixed $platform_name
+ * @property mixed $platform_order_id
+ * @property mixed $order_state
+ * @property mixed $payment_amount
+ * @property mixed $client_ulid
  */
-class RetinaDropshippingOrdersInPlatformResources extends JsonResource
+class RetinaDropshippingOrdersInCustomerSalesChannelResources extends JsonResource
 {
     use HasSelfCall;
+
 
     public function toArray($request): array
     {

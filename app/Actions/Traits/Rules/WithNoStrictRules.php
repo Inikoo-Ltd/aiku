@@ -36,23 +36,24 @@ trait WithNoStrictRules
 
     protected function orderNoStrictFields(array $rules): array
     {
-        $rules['billing_locked']         = ['sometimes', 'boolean'];
-        $rules['delivery_locked']        = ['sometimes', 'boolean'];
-        $rules['submitted_at']           = ['sometimes', 'nullable', 'date'];
-        $rules['in_warehouse_at']        = ['sometimes', 'nullable', 'date'];
-        $rules['packed_at']              = ['sometimes', 'nullable', 'date'];
-        $rules['finalised_at']           = ['sometimes', 'nullable', 'date'];
-        $rules['dispatched_at']          = ['sometimes', 'nullable', 'date'];
-        $rules['payment_amount']         = ['sometimes', 'numeric'];
-        $rules['data']                   = ['sometimes', 'array'];
-        $rules['reference']              = ['sometimes', 'string', 'max:64'];
-        $rules['date']                   = ['sometimes', 'required', 'date'];
-        $rules['cancelled_at']           = ['sometimes', 'nullable', 'date'];
-        $rules['updated_by_customer_at'] = ['sometimes', 'nullable', 'date'];
-        $rules['weight']                 = ['sometimes', 'integer'];
-        $rules['estimated_weight']       = ['sometimes', 'integer'];
-        $rules['shipping_engine']        = ['sometimes', Rule::enum(OrderShippingEngineEnum::class)];
-        $rules['charges_engine']         = ['sometimes', Rule::enum(OrderChargesEngineEnum::class)];
+        $rules['billing_locked']            = ['sometimes', 'boolean'];
+        $rules['delivery_locked']           = ['sometimes', 'boolean'];
+        $rules['submitted_at']              = ['sometimes', 'nullable', 'date'];
+        $rules['in_warehouse_at']           = ['sometimes', 'nullable', 'date'];
+        $rules['packed_at']                 = ['sometimes', 'nullable', 'date'];
+        $rules['finalised_at']              = ['sometimes', 'nullable', 'date'];
+        $rules['dispatched_at']             = ['sometimes', 'nullable', 'date'];
+        $rules['payment_amount']            = ['sometimes', 'numeric'];
+        $rules['data']                      = ['sometimes', 'array'];
+        $rules['reference']                 = ['sometimes', 'string', 'max:64'];
+        $rules['date']                      = ['sometimes', 'required', 'date'];
+        $rules['cancelled_at']              = ['sometimes', 'nullable', 'date'];
+        $rules['updated_by_customer_at']    = ['sometimes', 'nullable', 'date'];
+        $rules['weight']                    = ['sometimes', 'integer'];
+        $rules['estimated_weight']          = ['sometimes', 'integer'];
+        $rules['shipping_engine']           = ['sometimes', Rule::enum(OrderShippingEngineEnum::class)];
+        $rules['charges_engine']            = ['sometimes', Rule::enum(OrderChargesEngineEnum::class)];
+        $rules['customer_sales_channel_id'] = ['sometimes', 'nullable', 'integer'];
 
         return $this->orderingAmountNoStrictFields($rules);
     }

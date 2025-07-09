@@ -81,7 +81,7 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
         $queryBuilder->leftJoin('order_stats', 'orders.id', 'order_stats.order_id');
 
         return $queryBuilder
-            ->defaultSort('orders.id')
+            ->defaultSort('-orders.date')
             ->select([
                 'orders.id', 'orders.reference', 'orders.date', 'orders.state',
                 'orders.created_at', 'orders.updated_at', 'orders.slug',

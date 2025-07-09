@@ -12,7 +12,7 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInPlatformResources;
+use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInCustomerSalesChannelResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -106,9 +106,9 @@ class IndexPupilFulfilmentDropshippingOrdersInPlatform extends RetinaAction
                 ],
 
                 'currency' => CurrencyResource::make($this->shop->currency)->getArray(),
-                'orders'   => RetinaDropshippingOrdersInPlatformResources::collection($orders)
+                'data'   => RetinaDropshippingOrdersInCustomerSalesChannelResources::collection($orders)
             ]
-        )->table(IndexRetinaDropshippingOrders::make()->tableStructure($this->customerSalesChannel, 'orders'));
+        )->table(IndexRetinaDropshippingOrders::make()->tableStructure());
     }
 
 
@@ -117,17 +117,7 @@ class IndexPupilFulfilmentDropshippingOrdersInPlatform extends RetinaAction
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
-                // [
-                //     [
-                //         'type'   => 'simple',
-                //         'simple' => [
-                //             'route' => [
-                //                 'name' => 'retina.dropshipping.orders.index'
-                //             ],
-                //             'label' => __('Orders'),
-                //         ]
-                //     ]
-                // ]
+
             );
     }
 }

@@ -31,7 +31,8 @@ class FetchAuroraOrder extends FetchAurora
             return;
         }
 
-        $platform = null;
+        $platform               = null;
+        $customerSalesChannelID = null;
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
@@ -51,12 +52,14 @@ class FetchAuroraOrder extends FetchAurora
 
 
         if ($this->auroraModelData->{'Order Customer Client Key'} != "") {
-
             $parent = $this->parseCustomerClient($this->organisation->id.':'.$this->auroraModelData->{'Order Customer Client Key'});
+
 
             if ($parent == null and $this->auroraModelData->{'Order State'} == "Cancelled") {
                 return;
             }
+
+            $customerSalesChannelID = $parent->customer_sales_channel_id;
         } else {
             $parent = $this->parseCustomer(
                 $this->organisation->id.':'.$this->auroraModelData->{'Order Customer Key'}
@@ -232,7 +235,8 @@ class FetchAuroraOrder extends FetchAurora
         }
 
         if ($platform) {
-            $this->parsedData["order"]['platform_id'] = $platform->id;
+            $this->parsedData["order"]['platform_id']               = $platform->id;
+            $this->parsedData["order"]['customer_sales_channel_id'] = $customerSalesChannelID;
         }
 
         if ($paymentAmount) {

@@ -156,9 +156,19 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this->paginate(perPage: $perPage);
     }
 
+    public function withRetinaPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return $this->processPagination($prefix, $numberOfRecords, $tableName, $queryName, 'web-user');
+    }
 
 
     public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return $this->processPagination($prefix, $numberOfRecords, $tableName, $queryName);
+    }
+
+
+    private function processPagination(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         if ($prefix === null) {
             $prefix = '';
@@ -170,7 +180,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         }
 
         $userId      = auth()->user()->id ?? null;
-        $keyRppCache = $tableName ? "ui_state-user:$userId;rrp-table:".$prefix."$tableName" : null;
+        $keyRppCache = $tableName ? "ui_state-$userType:$userId;rrp-table:".$prefix."$tableName" : null;
 
         if ($numberOfRecords) {
             $perPage = $numberOfRecords;

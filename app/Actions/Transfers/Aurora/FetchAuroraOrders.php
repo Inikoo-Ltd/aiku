@@ -131,6 +131,8 @@ class FetchAuroraOrders extends FetchAuroraAction
     {
         $order = null;
         if (!empty($orderData['order']['source_id']) and $order = Order::withTrashed()->where('source_id', $orderData['order']['source_id'])->first()) {
+
+
             try {
                 /** @var Address $deliveryAddress */
                 $deliveryAddress = Arr::pull($orderData['order'], 'delivery_address');
@@ -204,7 +206,6 @@ class FetchAuroraOrders extends FetchAuroraAction
                     ]));
                 }
 
-
                 $order = UpdateOrder::make()->action(
                     order: $order,
                     modelData: $orderData['order'],
@@ -218,6 +219,7 @@ class FetchAuroraOrders extends FetchAuroraAction
             }
         } elseif ($orderData['parent']) {
             try {
+
                 $order = StoreOrder::make()->action(
                     parent: $orderData['parent'],
                     modelData: $orderData['order'],

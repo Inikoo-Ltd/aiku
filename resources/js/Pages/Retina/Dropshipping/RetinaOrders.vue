@@ -3,14 +3,12 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { Tabs as TSTabs } from '@/types/Tabs'
 import RetinaTablePalletOrders from "@/Components/Tables/Retina/RetinaTablePalletOrders.vue";
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
-    tabs: TSTabs
-    orders: {}
+    data: {}
     currency: {
         code: string
         symbol: string
@@ -24,5 +22,5 @@ const props = defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <RetinaTablePalletOrders :data="props.orders" :currency tab="orders" />
+    <RetinaTablePalletOrders :data="props.data" :currency  />
 </template>
