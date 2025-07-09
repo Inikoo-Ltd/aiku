@@ -106,7 +106,7 @@ watch(descriptionTitle, (val) => {
           </div>
         </transition>
         <button @click="toggleShowExtra"
-          class="text-sm text-gray-600 hover:underline focus:outline-none transition-colors">
+          class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors">
           {{ showExtra ? 'show less' : 'Read More' }}
         </button>
       </div>

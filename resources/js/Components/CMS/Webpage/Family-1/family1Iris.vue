@@ -50,7 +50,7 @@ const layout: any = inject("layout", {})
           <div v-if="showExtra" v-html="fieldValue.family.description_extra"></div>
         </transition>
         <button @click="toggleShowExtra"
-          class="text-sm text-gray-600 hover:underline focus:outline-none transition-colors">
+          class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors">
           {{ showExtra ? 'Show Less' : 'Read More' }}
         </button>
       </div>
