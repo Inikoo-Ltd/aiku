@@ -166,9 +166,6 @@ const toggleExpanded = () => {
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
-                                <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
-                                    :key="n" />
-                                <span class="ml-1 text-xs text-gray-500">41</span> -->
                             </div>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -213,24 +210,22 @@ const toggleExpanded = () => {
                 <div class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-<!--                        <span class="text-sm text-gray-900 ml-2 whitespace-nowrap">({{-->
-<!--                            formatNumber(fieldValue.product.units) }}/{{-->
-<!--                            fieldValue.product.unit }})</span>-->
+
                     </div>
                     <div v-if="fieldValue.product.rrp"
                         class="text-sm text-gray-800 font-semibold text-right whitespace-nowrap pl-4">
                         <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
-<!--                        <span>/{{ fieldValue.product.unit }}</span>-->
                     </div>
                 </div>
-                <div class="flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="fieldValue.product"
-                        :productHasPortfolio="fieldValue.productChannels" />
-                </div>
-<!--                <div class="flex items-center text-sm text-medium text-gray-500 mb-6">-->
-<!--                    <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />-->
-<!--                    <span>{{ `Order ${formatNumber(fieldValue.product.units)} full carton` }}</span>-->
+
+<!--FIX THIS GT DTA FROM AJAX ABOUT THIS PORTFOLIO-->
+<!--                <div class="flex gap-2 mb-6">-->
+<!--                    <ButtonAddPortfolio :product="fieldValue.product"-->
+<!--                        :productHasPortfolio="fieldValue.productChannels" />-->
 <!--                </div>-->
+
+
+
                 <div class="text-sm font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
                 </div>
