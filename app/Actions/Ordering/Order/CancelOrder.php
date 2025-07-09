@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
@@ -51,11 +52,6 @@ class CancelOrder extends OrgAction
             $transaction->update($transactionData);
         }
 
-        $deliveryNotes = $order->deliveryNotes()->get();
-        foreach ($deliveryNotes as $deliveryNote) {
-            //todo create new action CancelDeliveryNote
-        }
-
 
 
         $this->orderHydrators($order);
@@ -76,8 +72,14 @@ class CancelOrder extends OrgAction
             $validator->errors()->add('messages', 'Cannot cancel an order with invoices. Please delete the invoices first.');
         }
 
-
-
+        $deliveryNotes = $order->deliveryNotes()->get();
+        if ($deliveryNotes->count() > 0) {
+            foreach ($deliveryNotes as $deliveryNote) {
+                if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+                    $validator->errors()->add('messages', 'Cannot cancel an order with dispatched delivery notes. Please cancel the delivery notes first.');
+                }
+            }
+        }
     }
 
     public function action(Order $order): Order
