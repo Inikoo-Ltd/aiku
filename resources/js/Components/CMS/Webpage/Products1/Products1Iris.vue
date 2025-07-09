@@ -444,14 +444,14 @@ const handleSetAllToPortfolio = () => {
 
                     <!-- Sort Tabs -->
                     <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
-                        <button @click="toggleNewArrivals"
+                        <!-- <button @click="toggleNewArrivals"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
                                 ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                                 : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                         ]">
                             New Arrivals
-                        </button>
+                        </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[

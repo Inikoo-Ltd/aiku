@@ -106,6 +106,7 @@ class StoreOrderFromShopify extends OrgAction
             } catch (Exception $e) {
                 Sentry::captureException($e);
             }
+
             SubmitOrder::run($order);
         }
     }
