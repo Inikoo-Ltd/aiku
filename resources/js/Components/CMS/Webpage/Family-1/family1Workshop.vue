@@ -79,7 +79,7 @@ watch(descriptionTitle, (val) => {
 
 <template>
   <div id="family-1">
-    <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), width: 'auto' }"
+    <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(modelValue?.container?.properties), width: 'auto' }"
       class="py-4 space-y-6 px-[10px] sm:px-[50px]">
 
       <!-- Description Title -->

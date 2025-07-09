@@ -157,9 +157,15 @@ const isCustom = ref(false)
                 <div class="space-y-4">
 
                     <div class="flex flex-wrap gap-2 sm:gap-x-4">
-                        <button :disabled="isCustom" @click="amount = 50"
-                            :class="amount === 50 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                        <button :disabled="isCustom" @click="amount = 20"
+                            :class="amount === 20 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
                             class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                            {{ locale.currencyFormat(currency.code, 20) }}
+                        </button>
+
+                        <button :disabled="isCustom" @click="amount = 50"
+                                :class="amount === 50 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                                class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
                             {{ locale.currencyFormat(currency.code, 50) }}
                         </button>
 
@@ -175,11 +181,7 @@ const isCustom = ref(false)
                             {{ locale.currencyFormat(currency.code, 200) }}
                         </button>
 
-                        <button :disabled="isCustom" @click="amount = 300"
-                            :class="amount === 300 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
-                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
-                            {{ locale.currencyFormat(currency.code, 300) }}
-                        </button>
+
                     </div>
 
                     <div @click="isCustom = !isCustom"

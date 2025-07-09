@@ -3,6 +3,10 @@ import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSearch } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faSearch)
 
 
 // vika_luigi.js
@@ -158,14 +162,17 @@ onMounted(() => {
 </script>
 
 <template>
-    <input
-        v-model="inputValue"
-        xdisabled
-        class="disabled:bg-gray-200 disabled:cursor-not-allowed w-full"
-        id="inputLuigi"
-        style="border: 1px solid #d1d5db; border-radius: 7px;height: 35px;padding-left: 10px;"
-        placeholder="Search"
-    />
+    <div class="w-full relative">
+        <input
+            v-model="inputValue"
+            xdisabled
+            class="h-12 min-w-28 w-28 md:min-w-0 md:w-full rounded-lg border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
+            id="inputLuigi"
+            xstyle="height: 35px"
+            placeholder="Search"
+        />
+        <FontAwesomeIcon icon="fal fa-search" class="absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+    </div>
 </template>
 
 <style>

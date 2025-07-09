@@ -51,11 +51,11 @@ provide("onLogout", onLogoutAuth);
 </script>
 
 <template>
-  <!-- Section: Topbar -->
+  <!-- Section: Topbar (login, logout) -->
   <component v-if="data?.topBar?.data.fieldValue" :is="getIrisComponent(data?.topBar.code)"
              :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" />
 
-  <!-- Section: Header -->
+  <!-- Section: Header (logo, search, Title) -->
   <component :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
              class="hidden md:block" />
 
@@ -63,6 +63,7 @@ provide("onLogout", onLogoutAuth);
   <component v-if="menu?.code" :is="getIrisComponent(menu?.code)" :fieldValue="menu?.data?.fieldValue"
              :colorThemed="colorThemed" class="hidden md:block" />
 
+  <!-- Section: Mobile Header -->
   <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)">
       <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :screenType="screenType" />
   </div>
