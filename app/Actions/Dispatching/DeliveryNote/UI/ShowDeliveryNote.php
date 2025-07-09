@@ -330,7 +330,7 @@ class ShowDeliveryNote extends OrgAction
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
-
+        $order = $deliveryNote->orders->first();
         return [
             'state'       => $deliveryNote->state,
             'state_icon'  => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
@@ -346,6 +346,17 @@ class ShowDeliveryNote extends OrgAction
             'products'    => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
+            ],
+            'order'            => [
+                'reference' => $order->reference,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.ordering.orders.show',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'shop'         => $order->shop->slug,
+                        'order'        => $order->slug
+                    ]
+                ],
             ],
             'picker'      => $deliveryNote->pickerUser,
             'packer'      => $deliveryNote->packerUser,

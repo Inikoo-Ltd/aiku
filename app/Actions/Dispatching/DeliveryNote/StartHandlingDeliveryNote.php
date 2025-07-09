@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
+use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
@@ -44,6 +45,8 @@ class StartHandlingDeliveryNote extends OrgAction
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
             UpdateDeliveryNote::run($deliveryNote, $modelData);
 
+            UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
+            
             DB::table('delivery_note_items')
                 ->where('delivery_note_id', $deliveryNote->id)
                 ->update(['state' => DeliveryNoteItemStateEnum::HANDLING->value]);

@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\Packing\StorePacking;
+use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
@@ -33,6 +34,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
             StorePacking::make()->action($item, $this->user, []);
         }
+
+        UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
+
         $deliveryNote = $this->update($deliveryNote, $modelData);
 
         OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
