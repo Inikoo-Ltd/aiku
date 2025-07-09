@@ -49,6 +49,10 @@ class StoreProduct extends OrgAction
      */
     public function handle(Shop|ProductCategory $parent, array $modelData): Product
     {
+        if (!Arr::has($modelData, 'unit_price')) {
+            data_set($modelData, 'unit_price', Arr::get($modelData, 'price') / Arr::get($modelData, 'units', 1));
+        }
+
         $orgStocks = Arr::pull($modelData, 'org_stocks', []);
 
 
@@ -223,7 +227,7 @@ class StoreProduct extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
             'price'                     => ['required', 'numeric', 'min:0'],
-            'unit_price'                => ['required', 'numeric', 'min:0'],
+            'unit_price'                => ['sometimes', 'numeric', 'min:0'],
             'unit'                      => ['sometimes', 'required', 'string'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'description'               => ['sometimes', 'required', 'max:1500'],

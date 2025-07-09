@@ -39,6 +39,7 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\HydrateShops;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Billables\Rental\RentalUnitEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -78,6 +79,7 @@ beforeAll(function () {
 
 
 beforeEach(function () {
+    ReindexWebpageLuigiData::shouldRun();
     $this->organisation = createOrganisation();
     $this->guest        = createAdminGuest($this->organisation->group);
     $this->warehouse    = createWarehouse();
@@ -96,6 +98,7 @@ beforeEach(function () {
     );
     actingAs($this->adminGuest->getUser());
     setPermissionsTeamId($this->organisation->group->id);
+
 });
 
 test('create shop', function () {
