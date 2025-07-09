@@ -3,6 +3,7 @@ import { faCube, faLink, faChevronDown } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink)
 
@@ -14,6 +15,7 @@ type InfoBlock = {
 
 const props = defineProps<{
   informations: InfoBlock[]
+  styleData : object
 }>()
 
 const openDisclosureId = ref<number | null>(null)
@@ -35,6 +37,7 @@ function toggleDisclosure(index: number) {
             class="w-full border-b mb-1 border-gray-400 font-bold text-[#1F2937] py-1 flex justify-between items-center cursor-pointer focus:outline-none"
             :aria-expanded="openDisclosureId === index"
             :aria-controls="'disclosure-' + content.id"
+            :style="getStyles(styleData?.title)"
           >
             {{ content.title }}
             <FontAwesomeIcon
@@ -48,6 +51,7 @@ function toggleDisclosure(index: number) {
               v-if="openDisclosureId === index"
               :id="'disclosure-' + content.id"
               class="text-sm text-gray-600"
+              :style="getStyles(styleData?.content)"
             >
               <div v-html="content.text "></div>
             </div>

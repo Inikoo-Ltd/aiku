@@ -46,6 +46,7 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>(), {
 })
 const layout = inject('layout',{})
@@ -134,7 +135,6 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
-console.log(props)
 </script>
 
 <template>
@@ -185,7 +185,7 @@ console.log(props)
                     </div>
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
-                        <template v-if="layout.retina.type != 'dropshipping' && layout.iris?.is_logged_in">
+                        <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
                             <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
@@ -231,17 +231,18 @@ console.log(props)
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
                     <span>{{ `Order ${formatNumber(fieldValue.product.units)} full carton` }}</span>
                 </div>
-                <div class="text-sm font-medium text-gray-800">
+                <div class="text-sm font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
                 </div>
-                <div class="text-xs font-medium text-gray-800">
+            
+                <div class="text-xs font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
                 <div v-if="fieldValue.setting.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                        :informations="fieldValue?.information" />
+                        :informations="fieldValue?.information" :styleData="fieldValue?.information_style"/>
                     <div v-if="fieldValue?.paymentData?.length > 0"
-                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2">
+                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2" :style="getStyles(fieldValue?.information_style?.title)">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
@@ -252,8 +253,8 @@ console.log(props)
             </div>
         </div>
 
-        <div class="text-xs font-normal text-gray-700 my-6">
-            <div ref="contentRef"
+        <div class="text-xs font-normal text-gray-700 my-6" :style="getStyles(fieldValue?.description?.description_extra, screenType)">
+            <div ref="contentRef" 
                 class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
@@ -262,7 +263,7 @@ console.log(props)
                 {{ expanded ? 'Show Less' : 'Read More' }}
             </button>
         </div>
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />
+        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" :styleData="fieldValue?.information_style"/>
     </div>
 
     <!-- Mobile Layout -->
@@ -284,7 +285,7 @@ console.log(props)
             </div>
 
             <!-- Favorite Icon -->
-            <div v-if="layout.retina.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
+            <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
                     :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
                     @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
@@ -313,7 +314,7 @@ console.log(props)
 
         <div class="mt-4">
             <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                :informations="fieldValue?.information" />
+                :informations="fieldValue?.information" :styleData="fieldValue?.information_style"/>
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
@@ -326,7 +327,7 @@ console.log(props)
             <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra"></div>
         </div>
 
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />
+        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"  :styleData="fieldValue?.information_style"/>
     </div>
 
 </template>
