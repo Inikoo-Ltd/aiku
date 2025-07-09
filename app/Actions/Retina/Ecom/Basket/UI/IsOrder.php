@@ -15,6 +15,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Helpers\NaturalLanguage;
 
 trait IsOrder
 {
@@ -88,6 +89,9 @@ trait IsOrder
             'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
             'customer_channel' => $customerChannel,
             'invoice'  => $invoiceData,
+            'order_properties' => [
+                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
+            ],
             'products' => [
                 'payment'          => [
                     'routes'       => [
