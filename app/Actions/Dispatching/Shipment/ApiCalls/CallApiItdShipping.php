@@ -80,8 +80,8 @@ class CallApiItdShipping extends OrgAction
             'shipments'       => [
                 [
                     'serviceId' => $serviceId,
-
                     'orderNumber'            => $parent->reference,
+                    // 'warehouseName' =>  Arr::get($parentResource, 'from_company_name'),
                     'customerReference'      => Arr::get($parentResource, 'customer_reference'),
                     'reasonForExport'        => 'Gift',
                     'fromAddressFirstName'   => Arr::get($parentResource, 'from_first_name'),
@@ -95,9 +95,9 @@ class CallApiItdShipping extends OrgAction
                     'fromAddressCountyState' => Arr::get($parentResource, 'from_address.administrative_area'),
                     'fromAddressZip'         => Arr::get($parentResource, 'from_address.postal_code'),
                     'fromAddressCountryIso'  => Arr::get($parentResource, 'from_address.country.code'),
-                    'toAddressFirstName'     => Arr::get($parentResource, 'to_first_name'),
-                    'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'),
-                    'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'),
+                    'toAddressFirstName'     => Arr::get($parentResource, 'to_first_name'), // this change the Customer FirstName in label
+                    'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'), // this change the Customer LastName in label
+                    'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'), // this change the Depot in label
                     'toAddressPhone'         => Arr::get($parentResource, 'to_phone'),
                     'toAddressEmail'         => Arr::get($parentResource, 'to_email'),
                     'toAddressStreet1'       => Arr::get($parentResource, 'to_address.address_line_1'),
@@ -111,7 +111,7 @@ class CallApiItdShipping extends OrgAction
             ]
         ];
 
-        $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl().$url, $params)->json();
+        $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl() . $url, $params)->json();
 
         $modelData = [
             'api_response' => $apiResponse,
@@ -169,7 +169,6 @@ class CallApiItdShipping extends OrgAction
             foreach ($errorData as $key => $value) {
                 $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
             }
-
         }
 
         return [

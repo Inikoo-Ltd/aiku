@@ -23,11 +23,12 @@ class ShippingParentResource extends JsonResource
     public function toArray($request): array
     {
         /** @var DeliveryNote|PalletReturn $parent */
-        $parent = $this;
+        $parent = $this->resource;
 
-        $customer = $parent->resource instanceof DeliveryNote ? $parent->customer : $parent->fulfilmentCustomer->customer;
-        $shop     = $parent->resource instanceof DeliveryNote ? $parent->shop : $parent->fulfilment->shop;
+        $customer = $parent instanceof DeliveryNote ? $parent->customer : $parent->fulfilmentCustomer->customer;
+        $shop     = $parent instanceof DeliveryNote ? $parent->shop : $parent->fulfilment->shop;
 
+        // dd($customer->contact_name);
         $shopContactName = $shop->contact_name;
         if (!$shop->contact_name) {
             $shopContactName = 'A B';
@@ -39,17 +40,20 @@ class ShippingParentResource extends JsonResource
 
 
         $address = $parent->deliveryAddress;
-        $toCompanyName = 'Unknown';
+        $toCompanyName = 'Unknown'; // TODO: fill this to corresponding customer company name
         $toContactName = '';
         if ($parent instanceof DeliveryNote) {
-            $contactName = $parent->deliveryAddress->contact_name;//todo if if Dropshippin or not
+            $contactName = $parent->deliveryAddress->contact_name; //todo if if Dropshippin or not
+            if (!$contactName) {
+                $contactName = $customer->contact_name;
+            }
             $toFirstName = explode(' ', $contactName)[0];
             $toLastName  = (strpos($contactName, ' ') !== false)
                 ? substr($contactName, strpos($contactName, ' ') + 1)
                 : 'Unknown';
             $toContactName = $contactName;
-            $toPhone = '';// todo
-            $toEmail = '';// todo
+            $toPhone = ''; // todo
+            $toEmail = ''; // todo
 
         } else {
             $isManual = $parent->platform?->type == PlatformTypeEnum::MANUAL;
@@ -61,14 +65,14 @@ class ShippingParentResource extends JsonResource
                     ? substr($contactName, strpos($contactName, ' ') + 1)
                     : 'Unknown';
                 $toContactName = $contactName;
-                $toPhone = '';// todo
-                $toEmail = '';// todo
+                $toPhone = ''; // todo
+                $toEmail = ''; // todo
 
             } else {
                 $toFirstName = Arr::get($parent->data, 'destination.first_name', 'Unknown');
                 $toLastName = Arr::get($parent->data, 'destination.last_name', 'Unknown');
                 if ($toFirstName != 'Unknown' && $toLastName != 'Unknown') {
-                    $toContactName = $toFirstName.' '.$toLastName;
+                    $toContactName = $toFirstName . ' ' . $toLastName;
                 } else {
                     $toContactName = Arr::get($parent->data, 'destination.contact_name', 'Unknown');
                 }
