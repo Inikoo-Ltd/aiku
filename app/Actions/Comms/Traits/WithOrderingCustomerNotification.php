@@ -36,6 +36,21 @@ trait WithOrderingCustomerNotification
         return '';
     }
 
+    public function getTrackingUrl(Order $order): string
+    {
+        $deliveryNote = $order->deliveryNotes->first();
+
+        if ($deliveryNote) {
+            $shipment = $deliveryNote->shipments?->first();
+
+            if ($shipment) {
+                return $shipment?->combined_label_url;
+            }
+        }
+
+        return '';
+    }
+
     public function getInvoiceLink(?Invoice $invoice): string
     {
         if (!$invoice) {
