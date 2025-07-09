@@ -208,22 +208,20 @@ const onUnselectFavourite = (product: ProductResource) => {
                     :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
 
                     <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                    <span>({{ product.stock > 0 ? product.stock : 0 }})</span>
+                    <span>({{ product.stock > 0 ? product.stock : 0 }} {{trans('available')}})</span>
                 </div>
                 <div class="flex items-center space-x-[1px] text-gray-500">
-                    <!-- <FontAwesomeIcon v-for="i in 5" :key="i" :class="i <= product.rating ? 'fas' : 'far'" :icon="faStar"
-                        class="text-xs" />
-                    <span class="ml-1">5</span> -->
+
                 </div>
             </div>
 
             <!-- Prices -->
             <div v-if="layout?.iris?.is_logged_in" class="mb-3">
 
-                <div class="flex justify-between text-sm font-semibold">
+                <div class="flex justify-between text-sm ">
+                    <span>{{trans('Price')}}: <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.price) }}</span></span>
+                    <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.rrp) }}</span></span>
 
-                    <span>{{ locale.currencyFormat(currency.code,product.price) }}</span>
-                    <!--   <span class="text-xs">({{ locale.number(product.units) }}/{{ product.unit }})</span> -->
                 </div>
             </div>
         </div>
