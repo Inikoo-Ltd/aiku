@@ -32,6 +32,7 @@ import TaxNumber from '@/Components/Forms/Fields/TaxNumber.vue'
 import EditorHtml from '@/Components/Forms/Fields/EditorHtml.vue'
 import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite.vue'
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
+import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 
 
 const GoogleSearch = defineAsyncComponent(() => import('@/Components/Forms/Fields/GoogleSearch.vue'))
@@ -98,6 +99,7 @@ export const componentsList: {[key: string]: Component} = {
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,
     'delete_webpage': DeleteWebpage,
+    'button' : ButtonForm,
 
     'select_infinite': SelectInfiniteScroll
 }
