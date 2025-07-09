@@ -22,6 +22,8 @@ use App\Actions\Api\Retina\Dropshipping\Portfolio\GetPortfolios;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\UpdateApiPortfolio;
+use App\Actions\Api\Retina\Dropshipping\Product\GetDataFeedsCsv;
+use App\Actions\Api\Retina\Dropshipping\Product\GetDataFeedsJson;
 use App\Actions\Api\Retina\Dropshipping\Product\GetProducts;
 use App\Actions\Api\Retina\Dropshipping\Transaction\DeleteApiOrderTransaction;
 use App\Actions\Api\Retina\Dropshipping\Transaction\GetTransactions;
@@ -63,5 +65,7 @@ Route::prefix('clients')->as('clients.')->group(function () {
     Route::get('{customerClient:id}', GetClient::class)->name('show');
     Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
     Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete');
-
 });
+
+Route::get('/my-products-data-feed-csv', GetDataFeedsCsv::class)->name('data_feed.csv');
+Route::get('/my-products-data-feed-json', GetDataFeedsJson::class)->name('data_feed.json');
