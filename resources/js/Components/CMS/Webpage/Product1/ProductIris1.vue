@@ -177,8 +177,8 @@ const toggleExpanded = () => {
                             <span>
                                 {{
                                 fieldValue.product.stock > 0
-                                ? `In Stock (${fieldValue.product.stock})`
-                                : 'Out Of Stock'
+                                ? trans('In stock')+` (${fieldValue.product.stock} `+trans('available')+`)`
+                                : trans('Out Of Stock')
                                 }}
                             </span>
                         </div>
@@ -213,24 +213,24 @@ const toggleExpanded = () => {
                 <div class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                        <span class="text-sm text-gray-900 ml-2 whitespace-nowrap">({{
-                            formatNumber(fieldValue.product.units) }}/{{
-                            fieldValue.product.unit }})</span>
+<!--                        <span class="text-sm text-gray-900 ml-2 whitespace-nowrap">({{-->
+<!--                            formatNumber(fieldValue.product.units) }}/{{-->
+<!--                            fieldValue.product.unit }})</span>-->
                     </div>
                     <div v-if="fieldValue.product.rrp"
                         class="text-sm text-gray-800 font-semibold text-right whitespace-nowrap pl-4">
                         <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
-                        <span>/{{ fieldValue.product.unit }}</span>
+<!--                        <span>/{{ fieldValue.product.unit }}</span>-->
                     </div>
                 </div>
                 <div class="flex gap-2 mb-6">
                     <ButtonAddPortfolio :product="fieldValue.product"
                         :productHasPortfolio="fieldValue.productChannels" />
                 </div>
-                <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
-                    <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
-                    <span>{{ `Order ${formatNumber(fieldValue.product.units)} full carton` }}</span>
-                </div>
+<!--                <div class="flex items-center text-sm text-medium text-gray-500 mb-6">-->
+<!--                    <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />-->
+<!--                    <span>{{ `Order ${formatNumber(fieldValue.product.units)} full carton` }}</span>-->
+<!--                </div>-->
                 <div class="text-sm font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
                 </div>
