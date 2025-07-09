@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Platform;
@@ -115,8 +116,13 @@ class GetOrderActions
                 ],
                 default => []
             };
+            $showCancel = true;
 
-            if ($order->state !== OrderStateEnum::CANCELLED) {
+            if ($order->state === OrderStateEnum::CANCELLED || $order->invoices()->count() > 0 || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0) {
+                $showCancel = false;
+            }
+
+            if ($showCancel) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'cancel',
