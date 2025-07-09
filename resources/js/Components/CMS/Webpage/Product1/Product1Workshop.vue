@@ -151,7 +151,7 @@ const toggleExpanded = () => {
                     </div>
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
-                        <template v-if="layout.iris?.is_logged_in">
+                        <template v-if="layout.retina.type != 'dropshipping' && layout.iris?.is_logged_in">
                             <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
