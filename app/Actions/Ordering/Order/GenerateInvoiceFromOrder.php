@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class GenerateOrderInvoice extends OrgAction
+class GenerateInvoiceFromOrder extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -94,6 +94,7 @@ class GenerateOrderInvoice extends OrgAction
             foreach ($order->payments as $payment) {
                 AttachPaymentToInvoice::make()->action($invoice, $payment, []);
             }
+
 
             $invoice->refresh();
 

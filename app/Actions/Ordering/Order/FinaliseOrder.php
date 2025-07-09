@@ -26,7 +26,7 @@ class FinaliseOrder extends OrgAction
      */
     public function handle(Order $order, $fromDeliveryNote = false): Order
     {
-        GenerateOrderInvoice::make()->action($order);
+        GenerateInvoiceFromOrder::make()->action($order);
 
         $data = [
             'state' => OrderStateEnum::FINALISED
