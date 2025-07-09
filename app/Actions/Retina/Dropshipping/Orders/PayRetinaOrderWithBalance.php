@@ -85,9 +85,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 'amount' => $payment->amount
             ]);
 
-            $order = UpdateOrder::make()->action(order: $order, modelData:[
-                'payment_amount' => $payment->amount
-            ], strict: false);
 
             $creditTransactionData = [
                 'amount'     => -$order->total_amount,
@@ -124,8 +121,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($order);
-
-
     }
 
 
