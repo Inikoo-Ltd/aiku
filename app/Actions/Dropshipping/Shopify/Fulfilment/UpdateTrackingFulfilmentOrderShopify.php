@@ -10,7 +10,9 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\PalletReturn;
+use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,23 +24,32 @@ class UpdateTrackingFulfilmentOrderShopify extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public $commandSignature = 'dropshipping:shopify:fulfilment:update-tracking {palletReturnId}';
+    public $commandSignature = 'dropshipping:shopify:fulfilment:update-tracking {orderId}';
 
     /**
      * @throws \Throwable
      */
-    public function handle(PalletReturn $palletReturn): void
+    public function handle(PalletReturn|Order $parent): void
     {
-        $shopifyUserHasFulfilment = $palletReturn->shopifyFulfilment;
-        $shopifyUser = $shopifyUserHasFulfilment->shopifyUser;
-        $client = $shopifyUser->api()->getRestClient();
+        if ($parent instanceof Order) {
+            $fulfilmentOrderId = Arr::get($parent->data, 'shopify_data.id');
+            $deliveryNote = $parent->deliveryNotes->first();
+            $shipments = $deliveryNote->shipments;
+        } else {
+            $fulfilmentOrderId = $parent->shopifyFulfilment->shopify_fulfilment_id;
+            $shipments = $parent->shipments;
+        }
 
-        $response = $client->request('GET', "/admin/api/2025-04/fulfillment_orders/" . $shopifyUserHasFulfilment->shopify_fulfilment_id . "/fulfillments.json");
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $parent->customerSalesChannel->user;
+
+        $client = $shopifyUser->api()->getRestClient();
+        $response = $client->request('GET', "/admin/api/2025-04/fulfillment_orders/" . $fulfilmentOrderId . "/fulfillments.json");
 
         if ($response['body']) {
             $fulfilmentId = Arr::get($response['body'], 'fulfillments.0.id');
 
-            foreach ($palletReturn->shipments as $shipment) {
+            foreach ($shipments as $shipment) {
                 $client->request('POST', "/admin/api/2025-04/fulfillments/" . $fulfilmentId . "/update_tracking.json", [
                     'fulfillment' => [
                         'notify_customer' => true,
@@ -54,7 +65,7 @@ class UpdateTrackingFulfilmentOrderShopify extends OrgAction
 
     public function asCommand(Command $command)
     {
-        $palletReturn = PalletReturn::where('id', $command->argument('palletReturnId'))->firstOrFail();
+        $palletReturn = Order::where('id', $command->argument('orderId'))->firstOrFail();
 
         $this->handle($palletReturn);
     }
