@@ -12,7 +12,6 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
-use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
@@ -25,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
-class PayRetinaOrderWithBalance extends RetinaAction
+class PayRetinaOrderWithBalanceAsync extends RetinaAction
 {
     use WithBasketStateWarning;
     use WithRetinaOrderPlacedRedirection;
@@ -35,12 +34,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
      */
     public function handle(Order $order): array
     {
-        $warning = $this->getWarnings($order);
-
-        if ($warning) {
-            return $warning;
-        }
-
         if ($order->payment_amount == $order->total_amount) {
             return [
                 'success' => false,
@@ -95,8 +88,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 'payment_id' => $payment->id,
             ];
             StoreCreditTransaction::make()->action($customer, $creditTransactionData);
-
-            return SubmitOrder::run($order);
         });
 
         return [
