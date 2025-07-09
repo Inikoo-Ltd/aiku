@@ -113,7 +113,8 @@ class EditProduct extends OrgAction
                     'name'       => 'grp.models.product.offline',
                     'parameters' => [
                         'product' => $product->id
-                    ]
+                    ],
+                    'method'    => 'patch'
                 ],
                 'formData'    => [
                     'blueprint' => $this->getBlueprint($product),
