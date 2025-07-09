@@ -31,6 +31,8 @@ import {
     faClock
 } from "@far";
 import { faLambda } from "@fad";
+import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 // Add icons to the library
 library.add(
@@ -54,7 +56,9 @@ const props = defineProps<{
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
+
 </script>
 
 <template>
@@ -62,11 +66,11 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
         <div class="flex justify-between items-center">
             <MobileMenu :header="headerData" :menu="menuData" />
 
-            <Link href="/">
-            <div>
-                <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" :imageCover="true"
-                    :alt="headerData.logo?.alt" :style="getStyles(headerData.logo.properties, screenType)" />
-            </div>
+            <Link href="/" class="">
+                <div>
+                    <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" :imageCover="true"
+                        :alt="headerData.logo?.alt" :style="getStyles(headerData.logo.properties, screenType)" />
+                </div>
             </Link>
 
 
@@ -76,6 +80,11 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
                         :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                 </Link>   
             </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div v-if="layout.iris?.luigisbox_tracker_id" class="relative justify-self-center w-28">
+            <LuigiSearch></LuigiSearch>
         </div>
     </div>
 </template>

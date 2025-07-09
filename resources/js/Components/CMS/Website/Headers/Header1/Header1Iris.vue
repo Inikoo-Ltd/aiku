@@ -96,7 +96,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 				</div>
 
 				<!-- Search Bar -->
-				<div class="relative justify-self-center w-full max-w-80">
+				<div class="relative justify-self-center w-full max-w-80 flex items-center h-full">
 					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id"></LuigiSearch>
                 </div>
 
