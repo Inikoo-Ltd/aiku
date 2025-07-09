@@ -12,12 +12,7 @@ use Illuminate\Database\Schema\Blueprint;
 
 trait HasDangerousGoodsFields
 {
-    /**
-     * Add dangerous goods fields to a table
-     *
-     * @param Blueprint $table The table blueprint
-     * @return void
-     */
+
     public function addDangerousGoodsFields(Blueprint $table): void
     {
         $table->string('un_number')->nullable();
@@ -29,8 +24,8 @@ trait HasDangerousGoodsFields
         $table->text('gpsr_eu_responsible')->nullable();
         $table->text('gpsr_warnings')->nullable();
         $table->text('gpsr_manual')->nullable();
-        $table->string('gpsr_class_category_danger')->nullable();
-        $table->string('gpsr_class_languages')->nullable();
+        $table->text('gpsr_class_category_danger')->nullable();
+        $table->text('gpsr_class_languages')->nullable();
         $table->boolean('pictogram_toxic')->default(false);
         $table->boolean('pictogram_corrosive')->default(false);
         $table->boolean('pictogram_explosive')->default(false);
@@ -42,11 +37,6 @@ trait HasDangerousGoodsFields
         $table->boolean('pictogram_danger')->default(false);
     }
 
-    /**
-     * Get the list of dangerous goods field names
-     *
-     * @return array The list of field names
-     */
     public function getDangerousGoodsFieldNames(): array
     {
         return [

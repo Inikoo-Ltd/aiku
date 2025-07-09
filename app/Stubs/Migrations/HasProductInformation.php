@@ -14,13 +14,12 @@ trait HasProductInformation
 {
     public function addProductInformationFields(Blueprint $table): void
     {
-        $table->string('cpnp_number')->nullable()->index();
+        $table->text('cpnp_number')->nullable()->index();
         $table->string('country_of_origin')->nullable()->index();
         $table->string('tariff_code')->nullable()->index();
         $table->string('duty_rate')->nullable()->index();
         $table->string('hts_us')->nullable()->index();
         $table->text('marketing_ingredients')->nullable();
-
     }
 
     public function getProductInformationFieldNames(): array
