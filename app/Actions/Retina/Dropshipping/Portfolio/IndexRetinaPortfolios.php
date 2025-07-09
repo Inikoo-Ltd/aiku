@@ -13,6 +13,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Enums\UI\Dropshipping\RetinaPortfoliosTabsEnum;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
@@ -32,7 +33,7 @@ class IndexRetinaPortfolios extends RetinaAction
     use WithPlatformStatusCheck;
     private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null, bool $disabled = false ): LengthAwarePaginator
     {
         $unUploadedFilter = AllowedFilter::callback('un_upload', function ($query) {
             $query->whereNull('platform_product_id');
@@ -40,7 +41,12 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
-        $query->where('status', true);
+
+        if ($disabled) {
+            $query->where('status', false);
+        } else {
+            $query->where('status', true);
+        }
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->with(['shopifyPortfolio', 'customerSalesChannel']);
@@ -70,9 +76,9 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $this->customerSalesChannel = $customerSalesChannel;
 
-        $this->initialisation($request);
+        $this->initialisation($request)->withTab(RetinaPortfoliosTabsEnum::values());
 
-        return $this->handle($customerSalesChannel, 'products');
+        return $this->handle($customerSalesChannel);
     }
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
@@ -221,6 +227,20 @@ class IndexRetinaPortfolios extends RetinaAction
                         default => 0
                     }
                 ],
+
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => RetinaPortfoliosTabsEnum::navigation(),
+                ],
+
+                RetinaPortfoliosTabsEnum::ACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::ACTIVE->value ?
+                    fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix:'active'))
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix:'active'))),
+
+                RetinaPortfoliosTabsEnum::INACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::INACTIVE->value ?
+                    fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix:'inactive', disabled: true))
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix:'inactive', disabled: true))),
+
                 'count_product_not_synced' => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count(),
                 'platform_user_id'          => $this->customerSalesChannel->user?->id,
                 'platform_data'             => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
@@ -228,7 +248,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 'is_platform_connected'     => $this->checkStatus($this->customerSalesChannel) === 'connected',
                 'customer_sales_channel'    => CustomerSalesChannelsResource::make($this->customerSalesChannel)->toArray(request()),
             ]
-        )->table($this->tableStructure(prefix: 'products'));
+        )->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::ACTIVE->value))
+            ->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::INACTIVE->value));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure

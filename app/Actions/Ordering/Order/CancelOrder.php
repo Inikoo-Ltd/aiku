@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -52,6 +53,19 @@ class CancelOrder extends OrgAction
             $transaction->update($transactionData);
         }
 
+        // TODO: picking
+
+        $deliveryNotes = $order->deliveryNotes()->get();
+        foreach ($deliveryNotes as $deliveryNote) {
+            UpdateDeliveryNote::make()->action(
+                $deliveryNote,
+                [
+                    'state' => DeliveryNoteStateEnum::CANCELLED,
+                ],
+                strict: false
+            );
+        }
+
 
 
         $this->orderHydrators($order);
@@ -66,9 +80,7 @@ class CancelOrder extends OrgAction
             $validator->errors()->add('messages', 'Order is already cancelled.');
         } elseif (!in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
             $validator->errors()->add('messages', "Cannot cancel an order in '{$order->state->value}' state.");
-        }
-
-        if ($order->invoices()->count() > 0) {
+        } elseif ($order->invoices()->count() > 0) {
             $validator->errors()->add('messages', 'Cannot cancel an order with invoices. Please delete the invoices first.');
         }
 

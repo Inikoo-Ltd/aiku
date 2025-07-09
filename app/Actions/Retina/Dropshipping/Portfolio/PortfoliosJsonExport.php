@@ -66,7 +66,7 @@ class PortfoliosJsonExport
     private function getData(Customer $customer, CustomerSalesChannel $customerSalesChannel): array
     {
         $portfolios = $customer->portfolios()
-            ->where('customer_sales_channel', $customerSalesChannel->id)
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->with(['item.family', 'item.currency'])
             ->with(['item.image'])
             ->get();
@@ -113,7 +113,7 @@ class PortfoliosJsonExport
                 $product->updated_at,
                 $product->available_quantity_updated_at,
                 $product->price_updated_at,
-                $product->images_updated_at,// $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
+                $product->images_updated_at, // $row->item->images->sortByDesc('updated_at')->first()?->updated_at,
             ];
         })->toArray();
     }
