@@ -11,13 +11,15 @@ namespace App\Actions\Catalogue\Product\Hydrators;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
+use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductHydrateDangerousGoods implements ShouldBeUnique
+class ProductHydrateTradeUnitsFields implements ShouldBeUnique
 {
     use AsAction;
     use HasDangerousGoodsFields;
+    use HasProductInformation;
 
     public function getJobUniqueId(Product $product): string
     {
@@ -34,13 +36,14 @@ class ProductHydrateDangerousGoods implements ShouldBeUnique
         }
     }
 
-    public function updateFromASingleTradeUnit(TradeUnit $tradeUnit, Product $product)
+    public function updateFromASingleTradeUnit(TradeUnit $tradeUnit, Product $product): void
     {
-        $dangerousGoodsFields = $this->getDangerousGoodsFieldNames();
+        $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
+        $productInformationFields = $this->getProductInformationFieldNames();
 
         $dataToUpdate = [];
 
-        foreach ($dangerousGoodsFields as $field) {
+        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
             if ($tradeUnit->$field !== null) {
                 $dataToUpdate[$field] = $tradeUnit->$field;
             }
@@ -51,14 +54,15 @@ class ProductHydrateDangerousGoods implements ShouldBeUnique
         }
     }
 
-    public function updateFromMultipleTradeUnits($tradeUnits, Product $product)
+    public function updateFromMultipleTradeUnits($tradeUnits, Product $product): void
     {
-        $dangerousGoodsFields = $this->getDangerousGoodsFieldNames();
+        $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
+        $productInformationFields = $this->getProductInformationFieldNames();
 
         $dataToUpdate = [];
 
-        foreach ($dangerousGoodsFields as $field) {
-            $values = [];
+        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
+            $values  = [];
             $hasTrue = false;
 
             // Collect all non-null values for this field from all trade units
@@ -78,8 +82,7 @@ class ProductHydrateDangerousGoods implements ShouldBeUnique
             // For boolean fields, if any value is true, set it as true for the product
             if ($hasTrue) {
                 $dataToUpdate[$field] = true;
-            }
-            // For non-boolean fields, if we have values, concatenate them with comma separators
+            } // For non-boolean fields, if we have values, concatenate them with comma separators
             elseif (!empty($values)) {
                 $dataToUpdate[$field] = implode(', ', array_unique($values));
             }

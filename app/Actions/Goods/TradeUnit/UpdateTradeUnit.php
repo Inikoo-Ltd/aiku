@@ -9,7 +9,7 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateDangerousGoods;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
@@ -22,6 +22,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Goods\TradeUnit;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,6 +32,8 @@ class UpdateTradeUnit extends GrpAction
     use WithNoStrictRules;
     use WithGoodsEditAuthorisation;
     use HasDangerousGoodsFields;
+    use HasProductInformation;
+
 
     private TradeUnit $tradeUnit;
 
@@ -60,20 +63,21 @@ class UpdateTradeUnit extends GrpAction
             }
         }
 
-        // Check if any dangerous goods fields have been updated
-        $dangerousGoodsFields        = $this->getDangerousGoodsFieldNames();
-        $dangerousGoodsFieldsUpdated = false;
+        $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
+        $productInformationFields = $this->getProductInformationFieldNames();
 
-        foreach ($dangerousGoodsFields as $field) {
+        $fieldsForProductsUpdated = false;
+
+        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
             if ($tradeUnit->wasChanged($field)) {
-                $dangerousGoodsFieldsUpdated = true;
+                $fieldsForProductsUpdated = true;
                 break;
             }
         }
 
-        if ($dangerousGoodsFieldsUpdated) {
+        if ($fieldsForProductsUpdated) {
             foreach ($tradeUnit->products as $product) {
-                ProductHydrateDangerousGoods::dispatch($product);
+                ProductHydrateTradeUnitsFields::dispatch($product);
             }
         }
 
