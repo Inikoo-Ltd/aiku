@@ -107,19 +107,19 @@ onMounted(async () => {
         </button>
 
         <!-- Manual Navigation Buttons -->
-        <button class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-800 text-4xl z-40"
+        <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
           @click="selectedIndex = (selectedIndex - 1 + props.images.length) % props.images.length">
           <FontAwesomeIcon :icon="faChevronCircleLeft" />
         </button>
-        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-800 text-4xl z-40"
+        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
           @click="selectedIndex = (selectedIndex + 1) % props.images.length">
           <FontAwesomeIcon :icon="faChevronCircleRight" />
         </button>
 
         <!-- Image Display -->
-        <div class="w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+        <div class="block w-full h-[80vh] mb-1 rounded">
           <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
-            class="max-w-full max-h-full object-contain" />
+           :style="{ objectFit: 'contain' }" :imageCover="true" />
         </div>
       </div>
     </div>
