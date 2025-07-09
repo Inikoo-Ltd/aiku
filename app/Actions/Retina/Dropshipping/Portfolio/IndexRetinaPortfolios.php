@@ -33,7 +33,7 @@ class IndexRetinaPortfolios extends RetinaAction
     use WithPlatformStatusCheck;
     private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null, bool $disabled = false ): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null, bool $disabled = false): LengthAwarePaginator
     {
         $unUploadedFilter = AllowedFilter::callback('un_upload', function ($query) {
             $query->whereNull('platform_product_id');

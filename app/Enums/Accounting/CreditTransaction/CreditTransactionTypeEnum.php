@@ -50,7 +50,7 @@ enum CreditTransactionTypeEnum: string
     public static function getOptions(): array
     {
         return array_map(
-            fn($case) => [
+            fn ($case) => [
                 'value' => $case->value,
                 'label' => $case->label(),
             ],

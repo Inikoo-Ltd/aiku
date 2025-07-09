@@ -17,7 +17,6 @@ use Maatwebsite\Excel\Facades\Excel;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-
 class GetDataFeedsCsv extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel): BinaryFileResponse

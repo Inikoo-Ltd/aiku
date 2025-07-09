@@ -46,7 +46,7 @@ class StartHandlingDeliveryNote extends OrgAction
             UpdateDeliveryNote::run($deliveryNote, $modelData);
 
             UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
-            
+
             DB::table('delivery_note_items')
                 ->where('delivery_note_id', $deliveryNote->id)
                 ->update(['state' => DeliveryNoteItemStateEnum::HANDLING->value]);

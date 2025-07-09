@@ -58,7 +58,7 @@ class CancelOrder extends OrgAction
             $transaction->update($transactionData);
         }
 
-        if($order->payment_amount > 0) {
+        if ($order->payment_amount > 0) {
             StoreCreditTransaction::make()->action($order->customer, [
                 'amount' => $order->payment_amount,
                 'type' => CreditTransactionTypeEnum::MONEY_BACK,
@@ -69,12 +69,11 @@ class CancelOrder extends OrgAction
 
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
-            if($deliveryNote->pickings) 
-            {
+            if ($deliveryNote->pickings) {
                 $deliveryNote->pickings()->delete();
                 foreach ($deliveryNote->deliveryNoteItems as $item) {
                     StoreNotPickPicking::make()->action(
-                        $item, 
+                        $item,
                         request()->user(),
                         [
                             'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,

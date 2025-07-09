@@ -12,6 +12,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
@@ -121,6 +122,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
+ * @property-read CustomerClient|null $customerClient
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, \App\Models\Dispatching\DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
@@ -279,6 +281,11 @@ class DeliveryNote extends Model implements Auditable
     public function packings(): HasMany
     {
         return $this->hasMany(Packing::class);
+    }
+
+    public function customerClient(): BelongsTo
+    {
+        return $this->belongsTo(CustomerClient::class);
     }
 
 }

@@ -24,7 +24,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBalanceCustomer extends OrgAction
 {
-
     use WithCRMEditAuthorisation;
     use WithModelAddressActions;
     use WithNoStrictRules;

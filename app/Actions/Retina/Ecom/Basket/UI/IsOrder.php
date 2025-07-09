@@ -69,7 +69,7 @@ trait IsOrder
         }
         $customerClientData = null;
 
-        if($order->customerClient) {
+        if ($order->customerClient) {
             $customerClientData = array_merge(
                 CustomerClientResource::make($order->customerClient)->getArray(),
                 [

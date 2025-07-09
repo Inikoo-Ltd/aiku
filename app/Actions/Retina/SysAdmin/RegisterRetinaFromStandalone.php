@@ -13,7 +13,6 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\IrisAction;
 use Lorisleiva\Actions\ActionRequest;
 use Inertia\Inertia;
-use Symfony\Component\HttpFoundation\Response;
 
 class RegisterRetinaFromStandalone extends IrisAction
 {
