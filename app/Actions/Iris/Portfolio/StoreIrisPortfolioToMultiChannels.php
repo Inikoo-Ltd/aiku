@@ -28,7 +28,7 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
     /**
      * @var ProductCategory|null
      */
-    private ?ProductCategory $productCategory;
+    private ?ProductCategory $productCategory = null;
 
     public function handle(Customer $customer, array $modelData): void
     {
