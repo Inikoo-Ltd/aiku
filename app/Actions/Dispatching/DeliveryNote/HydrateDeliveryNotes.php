@@ -30,10 +30,6 @@ class HydrateDeliveryNotes
     {
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
         DeliveryNoteHydrateItems::run($deliveryNote);
-        if (!$deliveryNote->source_id) {
-            CalculateDeliveryNoteItemTotalPicked::run($deliveryNote);
-        }
-
 
     }
 
