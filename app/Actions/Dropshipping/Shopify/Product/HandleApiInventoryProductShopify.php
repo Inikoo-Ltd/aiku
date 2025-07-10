@@ -109,8 +109,6 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
                         if (Arr::get($retryResponse, 'status') !== 200) {
                             \Sentry\captureMessage("Failed to set inventory after deactivating fulfillment locations: " . json_encode(Arr::get($retryResponse, 'body', [])));
                         }
-                    } else {
-                        \Sentry\captureMessage("Inventory update failed: " . json_encode($errorBody));
                     }
                 }
             } catch (\Exception $e) {
