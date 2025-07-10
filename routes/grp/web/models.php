@@ -71,6 +71,8 @@ use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
+use App\Actions\Dispatching\Box\StoreBox;
+use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
@@ -363,6 +365,10 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');
 
+    Route::prefix('boxes')->name('boxes.')->group(function () {
+        Route::post('/', StoreBox::class)->name('store');
+        Route::patch('{box:id}', UpdateBox::class)->name('update')->withoutScopedBindings();
+    });
 
     Route::prefix('fulfilment/{fulfilment:id}/rentals')->name('fulfilment.rentals.')->group(function () {
         Route::post('/', StoreRental::class)->name('store');
