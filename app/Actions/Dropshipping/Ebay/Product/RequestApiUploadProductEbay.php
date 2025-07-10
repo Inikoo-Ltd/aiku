@@ -72,9 +72,30 @@ class RequestApiUploadProductEbay extends RetinaAction
                 ]
             ];
 
-            $ebayUser->storeProduct($inventoryItem);
+            $handleError = function($result) use ($portfolio) {
+                if (isset($result['error'])) {
+                    $errorMessage = $result['error'];
+                    
+                    if (is_string($errorMessage) && str_contains($errorMessage, 'eBay API request failed:')) {
+                        $jsonPart = str_replace('eBay API request failed: ', '', $errorMessage);
+                        $decoded = json_decode($jsonPart, true);
+                        
+                        if (isset($decoded['errors'][0]['message'])) {
+                            $errorMessage = $decoded['errors'][0]['message'];
+                        }
+                    }
+                    
+                    UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
+                    return true;
+                }
+                return false;
+            };
+
+            $productResult = $ebayUser->storeProduct($inventoryItem);
+            if ($handleError($productResult)) return;
 
             $categories = $ebayUser->getCategorySuggestions($product->family->name);
+            if ($handleError($categories)) return;
 
             $offer = $ebayUser->storeOffer([
                 'sku' => Arr::get($inventoryItem, 'sku'),
@@ -84,10 +105,10 @@ class RequestApiUploadProductEbay extends RetinaAction
                 'currency' => $portfolio->shop->currency->code,
                 'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
             ]);
+            if ($handleError($offer)) return;
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
-
-
+            if ($handleError($publishedOffer)) return;  
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($publishedOffer, 'listingId'),
