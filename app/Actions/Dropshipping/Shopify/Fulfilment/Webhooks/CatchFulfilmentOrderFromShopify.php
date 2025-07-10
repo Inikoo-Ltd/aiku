@@ -34,6 +34,12 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
         DB::transaction(function () use ($shopifyUser, $modelData) {
             $client = $shopifyUser->api()->getRestClient();
             $orderId = Arr::get($modelData, 'id');
+            $orderStatus = Arr::get($modelData, 'fulfillment_status');
+
+            if ($orderStatus === 'fulfilled') {
+                return;
+            }
+
             $response = $client->request('GET', "/admin/api/2024-07/orders/$orderId/fulfillment_orders.json");
 
             foreach (Arr::get($response, 'body')['fulfillment_orders'] as $fulfilment) {
