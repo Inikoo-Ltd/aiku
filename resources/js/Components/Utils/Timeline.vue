@@ -17,6 +17,7 @@ const props = defineProps<{
     state?: string
     width?: string | Number
     slidesPerView?: number
+    formatTime?: string  // 'EEE, do MMM yy'
 }>()
 
 // console.log('ssss',props)
@@ -68,7 +69,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
     let tempLocaleCode = OptionsTime?.localeCode === 'zh-Hans' ? 'zhCN' : OptionsTime?.localeCode ?? 'enUS'
     let tempDateIso = new Date(dateIso)
 
-    return format(tempDateIso, 'EEE, do MMM yy', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
+    return format(tempDateIso, props.formatTime || 'EEE, do MMM yy', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
 }
 
 </script>
