@@ -51,7 +51,7 @@ class StoreOrderFromShopify extends OrgAction
 
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $shopifyProducts = collect($modelData['line_items']);
-        $attributes = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
+        $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($modelData, 'customer'), $deliveryAddress);
         $deliveryAddress = Arr::get($attributes, 'address');
 
 
@@ -129,7 +129,7 @@ class StoreOrderFromShopify extends OrgAction
             ->where('reference', $reference)
             ->first();
 
-        $attributes = $this->getAttributes(Arr::get($shopifyOrderData, 'customer'), Arr::get($shopifyOrderData, 'shipping_address'));
+        $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($shopifyOrderData, 'customer'), Arr::get($shopifyOrderData, 'shipping_address'));
         $deliveryAddress = Arr::get($attributes, 'address');
 
         if (!$customerClientID) {
