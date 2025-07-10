@@ -96,7 +96,7 @@ class StoreTiktokOrder extends RetinaAction
                 'quantity' => Arr::get($lineItem, 'quantity', 1)
             ];
 
-            $itemQuantity     = (int)$tiktokUserHasProduct->portfolio->item->total_quantity;
+            $itemQuantity     = $tiktokUserHasProduct->portfolio->item->total_quantity;
             $requiredQuantity = Arr::get($lineItem, 'quantity', 1);
 
             if ($itemQuantity >= $requiredQuantity) {

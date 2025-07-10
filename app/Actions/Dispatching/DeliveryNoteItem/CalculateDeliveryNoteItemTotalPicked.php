@@ -26,22 +26,32 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
     {
         $pickings = $deliveryNoteItem->pickings;
 
-        $totalPicked = $pickings->where('type', PickingTypeEnum::PICK)->sum('quantity');
+        $totalPicked    = $pickings->where('type', PickingTypeEnum::PICK)->sum('quantity');
         $totalNotPicked = $pickings->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
 
-        $isFullyPicked = ((int) $totalPicked === (int) $deliveryNoteItem->quantity_required);
-
-        $isMarkedAsUnpickable = ((int) $totalNotPicked === (int) $deliveryNoteItem->quantity_required - (int) $totalPicked);
+        $isFullyPicked        = $totalPicked == $deliveryNoteItem->quantity_required;
+        $isMarkedAsUnpickable = $totalNotPicked == $deliveryNoteItem->quantity_required - $totalPicked;
 
         $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
-        $deliveryNoteItem =  $this->update($deliveryNoteItem, [
-            'quantity_picked' => $totalPicked,
-            'quantity_not_picked' => $totalNotPicked,
-            'is_handled' => $isCompleted,
-        ]);
+        if ($deliveryNoteItem->quantity_required > 0) {
+            $pickedWeight = $totalPicked * $deliveryNoteItem->weight / $deliveryNoteItem->quantity_required;
+        } else {
+            $pickedWeight = (int)$totalPicked * $deliveryNoteItem->orgStock->stock->gross_weight;
+        }
+
+
+        $dataToUpdate = [
+            'quantity_picked'         => $totalPicked,
+            'quantity_not_picked'     => $totalNotPicked,
+            'is_handled'              => $isCompleted,
+            'estimated_picked_weight' => $pickedWeight
+        ];
+
+        $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
 
         $deliveryNoteItem->refresh();
+
 
         CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
 

@@ -23,8 +23,8 @@ trait WithInvoicesExport
     public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
     {
         try {
-            $totalItemsNet = (int) $invoice->total_amount;
-            $totalShipping = (int) $invoice->order?->shipping_amount ?? 0;
+            $totalItemsNet = $invoice->total_amount;
+            $totalShipping = $invoice->order?->shipping_amount ?? 0;
 
             $totalNet = $totalItemsNet + $totalShipping;
 
@@ -50,6 +50,7 @@ trait WithInvoicesExport
 
                 return $transaction;
             });
+
 
             $config = [
                 'title'                  => $invoice->reference,

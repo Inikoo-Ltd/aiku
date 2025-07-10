@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-07-2025-10h-29m
@@ -21,7 +22,7 @@ class GetCustomerProductSalesChannelIds extends OrgAction
     {
         $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
         $queryBuilder->where('customer_sales_channels.customer_id', $customer->id);
-        $queryBuilder->join('portfolios', function($join) use ($product) {
+        $queryBuilder->join('portfolios', function ($join) use ($product) {
             $join->on('customer_sales_channels.id', '=', 'portfolios.customer_sales_channel_id')
                 ->where('portfolios.item_type', '=', 'Product')
                 ->where('portfolios.item_id', '=', $product->id);
@@ -29,7 +30,7 @@ class GetCustomerProductSalesChannelIds extends OrgAction
 
         $queryBuilder
             ->select('customer_sales_channels.id');
-        
+
         return $queryBuilder->get()->pluck('id')->toArray();
     }
 
