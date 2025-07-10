@@ -37,6 +37,7 @@ class PortfoliosResource extends JsonResource
             'item_id'    => $this->item_id,
             'type'       => $this->type,
             'created_at' => $this->created_at,
+            'platform_product_id' => $this->platform_product_id ? '✅' : '❌', // TODO change later
             'customer_sales_channel_id' => $this->customer_sales_channel_id ?? null,
             'routes'     => [
                 'delete_route' => [
