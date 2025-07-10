@@ -114,7 +114,7 @@ class ShowDeliveryNote extends OrgAction
                 'style'    => 'save',
                 'tooltip'  => __('Set as packed'),
                 'label'    => __('Set as packed'),
-                'disabled' => $isSomeNotPicked,
+               // 'disabled' => $isSomeNotPicked,
                 'key'      => 'action',
                 'route'    => [
                     'method'     => 'patch',
