@@ -64,7 +64,7 @@ class DeliveryNoteItemsResource extends JsonResource
                         return $item->location_id
                             ?? ($item->location->id ?? 'not-picked');
                     })
-                    ->map(fn($item) => new PickingsResource($item))
+                    ->map(fn ($item) => new PickingsResource($item))
                 : [],
             'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'             => $fullWarning,

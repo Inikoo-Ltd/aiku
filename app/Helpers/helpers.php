@@ -49,9 +49,10 @@ if (!function_exists('findSmallestFactors')) {
      *
      * @param float $number The number to find factors for
      * @param float $epsilon The maximum allowed difference between the original number and the fraction
+     * @param int $retryCount Internal parameter to prevent infinite recursion
      * @return array An array containing [dividend, divisor]
      */
-    function findSmallestFactors(float $number, float $epsilon = 0.00001): array
+    function findSmallestFactors(float $number, float $epsilon = 0.00001, int $retryCount = 0): array
     {
         if ($number === 0.0) {
             return [0, 1];
@@ -96,6 +97,14 @@ if (!function_exists('findSmallestFactors')) {
         }
 
         // Fallback for cases where no exact factors are found
-        return [$number < 0 ? -1 : 1, 1];
+        $result = [$number < 0 ? -1 : 1, 1];
+
+        // If the result is [1,1] and the number is not 1 (or -1), try again with a larger epsilon
+        if ($result == [1, 1] && abs($number) != 1.0 && $retryCount < 3) {
+            $newEpsilon = $epsilon * 10; // Increase epsilon by an order of magnitude
+            return findSmallestFactors($number, $newEpsilon, $retryCount + 1);
+        }
+
+        return $result;
     }
 }

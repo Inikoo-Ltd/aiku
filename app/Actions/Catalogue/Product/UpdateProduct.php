@@ -19,9 +19,11 @@ use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
+use App\Models\Inventory\OrgStock;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Cache;
@@ -51,7 +53,34 @@ class UpdateProduct extends OrgAction
 
             $orgStocks = [];
             foreach ($orgStocksRaw as $orgStockId => $item) {
-                $orgStocks[$orgStockId] = Arr::only($item, ['quantity', 'notes', 'source_id', 'last_fetched_at']);
+                $orgStock              = OrgStock::find($orgStockId);
+                $tradeUnitsPerOrgStock = null;
+
+                if ($orgStock->type == OrgStockStateEnum::ABNORMALITY) {
+                    if ($orgStock->tradeUnits->count() == 1) {
+                        $tradeUnitsPerOrgStock = $orgStock->tradeUnits->first()->pivot->quantity;
+                    }
+                } else {
+                    $stock = $orgStock->stock;
+                    if ($stock->tradeUnits->count() == 1) {
+                        $tradeUnitsPerOrgStock = $stock->tradeUnits->first()->pivot->quantity;
+                    }
+                }
+                
+              
+                
+                data_set($item, 'trade_units_per_org_stock', (int) $tradeUnitsPerOrgStock);
+
+
+                $orgStocks[$orgStockId] = Arr::only($item, [
+                    'quantity',
+                    'notes',
+                    'source_id',
+                    'last_fetched_at',
+                    'trade_units_per_org_stock',
+                    'dividend',
+                    'divisor'
+                ]);
             }
 
 
