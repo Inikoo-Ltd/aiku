@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -31,7 +32,9 @@ class DeleteRetinaShopifyUser extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser): void
     {
-        DeleteWebhooksFromShopify::dispatch($shopifyUser);
+        if (Arr::exists($shopifyUser->settings, 'webhooks')) {
+            DeleteWebhooksFromShopify::run($shopifyUser);
+        }
 
         $randomNumber = random_int(00, 99);
         $deletedSuffix = 'deleted-' . $randomNumber;

@@ -22,16 +22,18 @@ class DeleteWebhooksFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser)
     {
-        $webhooks = $shopifyUser->getShopifyClient()->request('GET', 'admin/api/2024-07/webhooks.json');
+        $webhooks = $shopifyUser->api()->getRestClient()->request('GET', 'admin/api/2024-07/webhooks.json');
         $body = Arr::get($webhooks, 'body');
 
-        foreach (Arr::get($body, 'webhooks') as $webhook) {
-            $webhookId = $webhook['id'];
-            $shopifyUser->getShopifyClient()->request('DELETE', "admin/api/2024-07/webhooks/$webhookId.json");
-        }
+        if (Arr::exists($body, 'webhooks')) {
+            foreach (Arr::get($body, 'webhooks', []) as $webhook) {
+                $webhookId = $webhook['id'];
+                $shopifyUser->api()->getRestClient()->request('DELETE', "admin/api/2024-07/webhooks/$webhookId.json");
+            }
 
-        $this->update($shopifyUser, [
-            'settings' => []
-        ]);
+            $this->update($shopifyUser, [
+                'settings' => []
+            ]);
+        }
     }
 }
