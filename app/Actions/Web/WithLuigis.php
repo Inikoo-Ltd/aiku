@@ -23,6 +23,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -44,7 +45,7 @@ trait WithLuigis
         if (app()->environment('production')) {
             return array_filter([Arr::get($website->settings, 'luigisbox.tracker_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
         } else {
-            return [config('app.sandbox.luigisbox.tracker_id'), config('app.sandbox.luigisbox.private_key')];
+            return array_filter([config('app.sandbox.luigisbox.tracker_id'), config('app.sandbox.luigisbox.private_key')]);
         }
     }
 
@@ -58,7 +59,9 @@ trait WithLuigis
         $offsetSeconds = 0;
         $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds) . ' GMT';
 
-        [$publicKey, $privateKey] = $this->getAccessToken($parent);
+        $accessToken = $this->getAccessToken($parent);
+
+        [$publicKey, $privateKey] = $accessToken;
 
         $signature  = $this->digest(
             $privateKey,
@@ -101,6 +104,11 @@ trait WithLuigis
      */
     public function reindex(Website|Webpage $parent): void
     {
+        $accessToken = $this->getAccessToken($parent);
+        if (count($accessToken) < 2) {
+            Log::error('Luigi\'s Box access token is not configured properly');
+            return;
+        }
         if ($parent instanceof Website) {
             $website = $parent;
             $website->webpages()
@@ -121,8 +129,12 @@ trait WithLuigis
                         'objects' => $objects
                     ];
                     $compressed = count($objects) >= 1000;
-                    $this->request($website, '/v1/content', $body, 'post', $compressed);
-                    print "Reindexed count " . count($objects) . " from website: {$website->name}\n";
+                    try {
+                        $this->request($website, '/v1/content', $body, 'post', $compressed);
+                    } catch (Exception $e) {
+                        print "Failed to reindex website {$website->domain}: " . $e->getMessage() . "\n";
+                        return;
+                    }
                 });
         } else {
             $webpage = $parent;
@@ -135,8 +147,11 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            $this->request($parent, '/v1/content', $body, 'post');
-            print "Reindexed webpage: {$webpage->title} ({$webpage->url})\n";
+            try {
+                $this->request($parent, '/v1/content', $body, 'post');
+            } catch (Exception $e) {
+                Log::error("Failed to reindex webpage {$webpage->title}: " . $e->getMessage());
+            }
         }
     }
 
