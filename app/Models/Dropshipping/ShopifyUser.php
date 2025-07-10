@@ -14,6 +14,7 @@ use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\DebugWebhooks;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -167,6 +168,11 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     public function clients(): MorphMany
     {
         return $this->morphMany(PlatformHasClient::class, 'userable');
+    }
+
+    public function debugWebhooks(): MorphMany
+    {
+        return $this->morphMany(DebugWebhooks::class, 'model');
     }
 
     public function customerSalesChannel(): BelongsTo
