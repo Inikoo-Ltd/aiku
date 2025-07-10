@@ -36,6 +36,7 @@ export default function RootLayout() {
               options={{ headerShown: false }}
             />
             <Stack.Screen name="(drawer-setup)" options={{ headerShown: false }} />
+            <Stack.Screen name="show-location" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

@@ -1,12 +1,20 @@
 import { AuthContext } from '@/components/context/AuthContext';
-import globalStyles from '@/globalStyles';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons/faCheckCircle';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { useRouter } from 'expo-router';
-import { useContext, useState } from 'react';
-import { FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 
-const GroupItem = ({ item, selectedOrganisation }) => {
+import { createGlobalStyles } from '@/globalStyles';
+import { useContext, useState } from 'react';
+import {
+  FlatList,
+  Image,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from 'react-native';
+
+const GroupItem = ({ item, selectedOrganisation, globalStyles }) => {
   const [imageError, setImageError] = useState(false);
   const { setOrganisation, userData } = useContext(AuthContext);
   const router = useRouter();
@@ -36,6 +44,7 @@ const GroupItem = ({ item, selectedOrganisation }) => {
       onPress={onPickOrganisation}
     >
       <View style={globalStyles.list.container}>
+        {/* Avatar */}
         <View style={globalStyles.list.avatarContainer}>
           {!imageError && item.logo?.original ? (
             <Image
@@ -51,12 +60,16 @@ const GroupItem = ({ item, selectedOrganisation }) => {
             </View>
           )}
         </View>
+
+        {/* Text */}
         <View style={globalStyles.list.textContainer}>
           <Text style={globalStyles.list.title}>{item.name}</Text>
         </View>
+
+        {/* Active Indicator */}
         {isActive && (
           <View style={globalStyles.list.activeIndicator}>
-             <FontAwesomeIcon icon={faCheckCircle} color='green'/>
+            <FontAwesomeIcon icon={faCheckCircle} color="green" size={18} />
           </View>
         )}
       </View>
@@ -66,6 +79,9 @@ const GroupItem = ({ item, selectedOrganisation }) => {
 
 export default function OrganisationScreens() {
   const { userData, organisation } = useContext(AuthContext);
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const globalStyles = createGlobalStyles(isDark);
 
   return (
     <View style={globalStyles.container}>
@@ -74,10 +90,13 @@ export default function OrganisationScreens() {
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <GroupItem item={item} selectedOrganisation={organisation} />
+          <GroupItem
+            item={item}
+            selectedOrganisation={organisation}
+            globalStyles={globalStyles}
+          />
         )}
       />
     </View>
   );
 }
-

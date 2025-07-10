@@ -14,5 +14,5 @@
     "app/scanner-login.jsx",
     "app/manual-login.jsx",
     "nativewind-env.d.ts"
-  ]
+, "components/CardListItem.jsx", "components/PalletReturnItem.jsx"  ]
 }

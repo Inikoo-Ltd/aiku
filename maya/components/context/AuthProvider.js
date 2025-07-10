@@ -1,14 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useReducer } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { ALERT_TYPE, Toast } from 'react-native-alert-notification';
 
 import { loginReducer } from '@/reducer/loginReducer';
 import { getData } from '@/utils/AsyncStorage';
-import { retrieveProfile } from '@/utils/user'; // Replace with real function
-import { useRouter } from 'expo-router';
+import { retrieveProfile } from '@/utils/user'; // Make sure this function returns profile with all fields
 import { AuthContext } from './AuthContext';
-
 
 export const AuthProvider = ({ children }) => {
   const initialLoginState = {
@@ -19,37 +18,59 @@ export const AuthProvider = ({ children }) => {
     fulfilment: null,
     warehouse: null,
   };
-  const router = useRouter();
 
+  const router = useRouter();
   const [loginState, dispatch] = useReducer(loginReducer, initialLoginState);
 
-  const authContext = useMemo(() => ({
-    signIn: async (user) => {
-      await AsyncStorage.setItem('persist:user', JSON.stringify(user));
-      dispatch({ type: 'LOGIN', token: user.token, userData: user, organisation: user.authorised_organisations });
-    },
-    setOrganisation: async (user) => {
-      console.log('set_organistaion',user)
-      await AsyncStorage.setItem('persist:user', JSON.stringify(user));
-      dispatch({ type: 'SET_ORGANISATION', organisation: user.organisation });
-    },
-    setFulfilmentWarehouse: async (user) => {
-      await AsyncStorage.setItem('persist:user', JSON.stringify(user));
-      dispatch({ type: 'SET_FULFILMENT_WAREHOUSE', ...user });
-    },
-    signOut: async () => {
-      await AsyncStorage.removeItem('persist:user');
-      dispatch({ type: 'LOGOUT' });
-      router.replace('/manual-login'); 
-    },
-    ...loginState,
-  }), [loginState]);
+  const authContext = useMemo(
+    () => ({
+      signIn: async (user) => {
+        await AsyncStorage.setItem('persist:user', JSON.stringify(user));
+        dispatch({
+          type: 'LOGIN',
+          token: user.token,
+          userData: user,
+          organisation: user.organisation,
+          warehouse: user.warehouse,
+          fulfilment: user.fulfilment,
+        });
+      },
+
+      setOrganisation: async (user) => {
+        await AsyncStorage.setItem('persist:user', JSON.stringify(user));
+        dispatch({
+          type: 'SET_ORGANISATION',
+          organisation: user.organisation,
+        });
+      },
+
+      setFulfilmentWarehouse: async (user) => {
+        await AsyncStorage.setItem('persist:user', JSON.stringify(user));
+        dispatch({
+          type: 'SET_FULFILMENT_WAREHOUSE',
+          warehouse: user.warehouse,
+          fulfilment: user.fulfilment,
+        });
+      },
+
+      signOut: async () => {
+        await AsyncStorage.removeItem('persist:user');
+        dispatch({ type: 'LOGOUT' });
+        router.replace('/manual-login');
+      },
+
+      ...loginState,
+    }),
+    [loginState]
+  );
 
   useEffect(() => {
     const loadUserToken = async () => {
       try {
         const storedUser = await getData('persist:user');
-        if (!storedUser) return dispatch({ type: 'LOGOUT' });
+        if (!storedUser) {
+          return dispatch({ type: 'LOGOUT' });
+        }
 
         let user = storedUser;
 
@@ -57,19 +78,43 @@ export const AuthProvider = ({ children }) => {
           accessToken: storedUser.token,
           onSuccess: (profileRes) => {
             const organisation = profileRes.data.organisations.find(
-              item => item.code === storedUser.organisation?.code
+              (item) => item.code === storedUser.organisation?.code
             );
-            user = { ...storedUser, ...profileRes.data, organisation };
-            dispatch({ type: 'RETRIEVE_TOKEN', token: user.token, userData: user, organisation });
+
+            user = {
+              ...storedUser,
+              ...profileRes.data,
+              organisation,
+              warehouse: storedUser.warehouse,
+              fulfilment: storedUser.fulfilment,
+            };
+
+            dispatch({
+              type: 'RETRIEVE_TOKEN',
+              token: user.token,
+              userData: user,
+              organisation,
+              warehouse: user.warehouse,
+              fulfilment: user.fulfilment,
+            });
           },
+
           onFailed: (err) => {
             Toast.show({
               type: ALERT_TYPE.DANGER,
               title: 'Error',
               textBody: err?.data?.message || 'Failed to update profile data',
             });
-            dispatch({ type: 'RETRIEVE_TOKEN', token: user.token, userData: user, organisation: user.organisation });
-          }
+
+            dispatch({
+              type: 'RETRIEVE_TOKEN',
+              token: user.token,
+              userData: user,
+              organisation: user.organisation,
+              warehouse: user.warehouse,
+              fulfilment: user.fulfilment,
+            });
+          },
         });
       } catch (err) {
         console.error('Error loading user:', err);
