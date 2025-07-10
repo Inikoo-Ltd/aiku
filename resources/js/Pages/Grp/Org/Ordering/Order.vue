@@ -453,7 +453,13 @@ const isModalUploadExcel = ref(false)
 
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'" class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
+        <Timeline
+            v-if="timelines"
+            :options="timelines"
+            :state="props.data?.data?.state"
+            :slidesPerView="6"
+            formatTime="EEE, do MMM yy, HH:mm"
+        />
     </div>
 
     <div v-if="currentTab != 'products'" class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">

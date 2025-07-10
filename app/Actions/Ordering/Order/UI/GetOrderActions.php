@@ -118,12 +118,12 @@ class GetOrderActions
             };
             $showCancel = true;
 
-            if ($order->state === OrderStateEnum::CANCELLED || $order->invoices()->count() > 0 || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0) {
+            if (!in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE]) || $order->invoices()->count() > 0 || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0) {
                 $showCancel = false;
             }
 
             if ($showCancel) {
-                $actions[] = [
+                array_unshift($actions, [
                     'type'    => 'button',
                     'style'   => 'cancel',
                     'key'     => 'action',
@@ -134,7 +134,7 @@ class GetOrderActions
                             'order' => $order->id
                         ]
                     ]
-                ];
+                ]);
             }
         }
 
