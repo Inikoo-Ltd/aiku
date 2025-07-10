@@ -32,7 +32,9 @@ class GetCustomerProductCategorySalesChannelIds extends OrgAction
         });
 
         $queryBuilder
-            ->select('customer_sales_channels.id');
+            ->select('customer_sales_channels.id')
+            ->groupBy('customer_sales_channels.id')
+            ->havingRaw('COUNT(DISTINCT portfolios.item_id) = ?', [count($productIds)]);
 
         return $queryBuilder->get()->pluck('id')->toArray();
     }

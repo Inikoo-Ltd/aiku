@@ -35,11 +35,23 @@ class IndexRetinaPortfolios extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null, bool $disabled = false): LengthAwarePaginator
     {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('portfolios.item_code', $value)
+                    ->orWhereWith('portfolios.item_name', $value);
+            });
+        });
+
         $unUploadedFilter = AllowedFilter::callback('un_upload', function ($query) {
             $query->whereNull('platform_product_id');
         });
 
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
         $query = QueryBuilder::for(Portfolio::class);
+
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
 
         if ($disabled) {
@@ -57,7 +69,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
         return $query->defaultSort('-id')
-            ->allowedFilters([$unUploadedFilter])
+            ->allowedFilters([$unUploadedFilter, $globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -78,7 +90,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $this->initialisation($request)->withTab(RetinaPortfoliosTabsEnum::values());
 
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, 'active');
     }
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
@@ -266,7 +278,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState([
                     'title' => "No products found",
-                    'count' => 0
+                    'count' => $this->customerSalesChannel->number_portfolios
                 ]);
 
             $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
