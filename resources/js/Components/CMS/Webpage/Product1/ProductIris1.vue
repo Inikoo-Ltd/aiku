@@ -18,6 +18,7 @@ import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
+import axios from "axios"
 
 library.add(faCube, faLink)
 
@@ -123,7 +124,41 @@ const onUnselectFavourite = (product: ProductResource) => {
     )
 }
 
+// Method: to fetch the product existence in channels
+const isLoadingFetchExistenceChannels = ref(false)
+const productExistenceInChannels = ref<number[]>([])
+const fetchProductExistInChannel = async () => {
+    isLoadingFetchExistenceChannels.value = true
+    try {
+        const response = await axios.get(
+            route(
+                'iris.json.customer.product.channel_ids.index',
+                {
+                    customer: layout.iris?.customer?.id,
+                    product: props.fieldValue.product.id,
+                }
+            )
+        )
+
+        if (response.status !== 200) {
+            throw new Error('Failed to fetch product existence in channel')
+        }
+
+        // console.log('Product exist in channel response:', response.data)
+        productExistenceInChannels.value = response.data || []
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error.message,
+            type: 'error'
+        })
+    } finally {
+        isLoadingFetchExistenceChannels.value = false
+    }
+}
+
 onMounted(() => {
+    fetchProductExistInChannel()
   requestAnimationFrame(() => {
     if (contentRef.value.scrollHeight > 100) {
       showButton.value = true
@@ -218,11 +253,19 @@ const toggleExpanded = () => {
                     </div>
                 </div>
 
-<!--FIX THIS GT DTA FROM AJAX ABOUT THIS PORTFOLIO-->
-<!--                <div class="flex gap-2 mb-6">-->
-<!--                    <ButtonAddPortfolio :product="fieldValue.product"-->
-<!--                        :productHasPortfolio="fieldValue.productChannels" />-->
-<!--                </div>-->
+                <!-- Section: Button existence on all channels -->
+                <div class="relative flex gap-2 mb-6">
+                    <ButtonAddPortfolio
+                        :product="fieldValue.product"
+                        :productHasPortfolio="productExistenceInChannels"
+                    />
+
+                    <!-- Skeleton loading -->
+                    <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10 xopacity-40">
+                        <div class="h-full w-full skeleton rounded" />
+                    </div>
+
+                </div>
 
 
 

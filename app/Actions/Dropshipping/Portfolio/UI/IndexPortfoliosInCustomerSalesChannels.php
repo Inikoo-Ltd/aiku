@@ -40,7 +40,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('portfolio.reference', $value);
+                $query->whereStartWith('portfolios.reference', $value);
             });
         });
 
@@ -64,6 +64,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.item_name',
                 'portfolios.item_code',
                 'portfolios.item_type',
+                'portfolios.platform_product_id',
                 'portfolios.item_id',
                 'portfolios.customer_sales_channel_id',
             ])
@@ -129,6 +130,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ->column(key: 'item_name', label: __('product name'), canBeHidden: false, searchable: true)
                 ->column(key: 'reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'item_type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'platform_product_id', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('created at'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'action', label: __(' '), canBeHidden: false);
         };

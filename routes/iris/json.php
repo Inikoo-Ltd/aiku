@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Helpers\Brand\Json\GetIrisBrands;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
@@ -37,6 +38,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('collection/{collection:id}/in-stock-products', GetIrisInStockProductsInCollection::class)->name('collection.in_stock_products.index');
     Route::get('collection/{collection:id}/out-of-stock-products', GetIrisOutOfStockProductsInCollection::class)->name('collection.out_of_stock_products.index');
     Route::get('customer/{customer:id}/product/{product:id}/channels', GetCustomerProductSalesChannelIds::class)->name('customer.product.channel_ids.index')->withoutScopedBindings();
+    Route::get('customer/{customer:id}/product-category/{productCategory:id}/channels', GetCustomerProductCategorySalesChannelIds::class)->name('customer.product_category.channel_ids.index')->withoutScopedBindings();
 
 
     Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');

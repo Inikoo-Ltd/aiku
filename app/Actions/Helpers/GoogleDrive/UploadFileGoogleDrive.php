@@ -22,7 +22,7 @@ class UploadFileGoogleDrive
 
     private mixed $aiku_folder_key;
 
-    public string $commandSignature = 'drive:upload {organisations} {filename}';
+    public string $commandSignature = 'drive:upload {organisation} {filename}';
 
     /**
      * @throws \Google\Exception

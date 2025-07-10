@@ -26,6 +26,7 @@ import axios from "axios"
 import { set } from "lodash"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
+import { Table as TableTS } from "@/types/Table"
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
@@ -43,7 +44,7 @@ const props = defineProps<{
             add_button?: string
         }
     }
-    products: {}
+    products: TableTS
     routes: {
         syncAllRoute: routeType
         addPortfolioRoute: routeType
@@ -71,6 +72,7 @@ const props = defineProps<{
     count_product_not_synced: number
     active: {}
     inactive: {}
+    product_count: number
 }>();
 
 
@@ -224,7 +226,7 @@ const component = computed(() => {
             />
         </template>
 
-        <template v-if="props.products?.data?.length" #other>
+        <template v-if="props.product_count" #other>
             <div class="rounded-md ">
                 <a :href="downloadUrl('csv')" target="_blank" rel="noopener">
                     <Button
@@ -340,7 +342,7 @@ const component = computed(() => {
     </Message>
 
 <!-- retina.models.dropshipping.ebay.batch_upload -->
-    <div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+    <div v-if="props.product_count < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
             {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
         </h1>

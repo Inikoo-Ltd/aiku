@@ -229,7 +229,7 @@ class StoreCustomer extends OrgAction
                 'string:32'
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
-            'contact_website'          => ['sometimes', 'nullable', 'active_url'],
+            'contact_website'          => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_address'          => ['sometimes','required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 

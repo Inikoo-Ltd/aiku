@@ -49,6 +49,10 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
 
                 $fulfilmentOrder = array_merge($fulfilmentOrder, Arr::only($modelData, ['customer', 'shipping_address', 'billing_address']));
 
+                $shopifyUser->debugWebhooks()->create([
+                    'data' =>  $fulfilmentOrder
+                ]);
+
                 if ($shopifyUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
                     StoreFulfilmentFromShopify::run($shopifyUser, $fulfilmentOrder);
                 } elseif ($shopifyUser->customer?->shop?->type === ShopTypeEnum::DROPSHIPPING) {
