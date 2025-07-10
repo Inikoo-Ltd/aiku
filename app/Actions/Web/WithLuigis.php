@@ -13,13 +13,13 @@ namespace App\Actions\Web;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Brand;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Exception;
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -56,7 +56,7 @@ trait WithLuigis
         $content_type = 'application/json; charset=utf-8';
 
         $offsetSeconds = 0;
-        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
+        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds) . ' GMT';
 
         [$publicKey, $privateKey] = $this->getAccessToken($parent);
 
@@ -84,11 +84,11 @@ trait WithLuigis
 
         $response = Http::withHeaders($header)
             ->withBody($body, $content_type)
-            ->{strtolower($method)}('https://live.luigisbox.com/'.$endPoint);
+            ->{strtolower($method)}('https://live.luigisbox.com/' . $endPoint);
 
 
         if ($response->failed()) {
-            throw new Exception('Failed to send request to Luigi\'s Box API: '.$response->body());
+            throw new Exception('Failed to send request to Luigi\'s Box API: ' . $response->body());
         }
 
         if ($response->successful()) {
@@ -104,28 +104,26 @@ trait WithLuigis
         if ($parent instanceof Website) {
             $website = $parent;
             $website->webpages()
-            ->with('model')
-            ->where('state', 'live')
-            ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
-            ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-            ->chunk(1000, function ($webpages) use ($website) {
-                $objects = [];
-                foreach ($webpages as $webpage) {
-                    $object = $this->getObjectFromWebpage($webpage);
-                    if ($object) {
-                        $objects[] = $object;
+                ->with('model')
+                ->where('state', 'live')
+                ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
+                ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
+                ->chunk(1000, function ($webpages) use ($website) {
+                    $objects = [];
+                    foreach ($webpages as $webpage) {
+                        $object = $this->getObjectFromWebpage($webpage);
+                        if ($object) {
+                            $objects[] = $object;
+                        }
                     }
 
-                }
-
-                $body = [
-                    'objects' => $objects
-                ];
-                $compressed = count($objects) >= 1000;
-                $this->request($website, '/v1/content', $body, 'post', $compressed);
-                print "Reindexed count " . count($objects) . " from website: {$website->name}\n";
-            });
-
+                    $body = [
+                        'objects' => $objects
+                    ];
+                    $compressed = count($objects) >= 1000;
+                    $this->request($website, '/v1/content', $body, 'post', $compressed);
+                    print "Reindexed count " . count($objects) . " from website: {$website->name}\n";
+                });
         } else {
             $webpage = $parent;
             if ($webpage->type != WebpageTypeEnum::CATALOGUE && $webpage->type != WebpageTypeEnum::BLOG) {
@@ -139,7 +137,6 @@ trait WithLuigis
             ];
             $this->request($parent, '/v1/content', $body, 'post');
             print "Reindexed webpage: {$webpage->title} ({$webpage->url})\n";
-
         }
     }
 
@@ -159,7 +156,6 @@ trait WithLuigis
                 optional($family->webpage ?? null)->url ?? null,
                 $webpage->url,
             ])->filter()->all();
-
         } elseif ($model instanceof ProductCategory) {
             if ($model->type === ProductCategoryTypeEnum::DEPARTMENT) {
                 $segments = [
@@ -236,26 +232,26 @@ trait WithLuigis
     public function deleteContentFromWebsite(Website $website): void
     {
         $website->webpages()
-        ->where('state', 'live')
-        ->whereIn('type', [WebpageTypeEnum::CATALOGUE])
-        ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-        ->chunk(1000, function ($webpages) use ($website) {
-            $batch = [];
-            foreach ($webpages as $webpage) {
-                $object = $this->getObjectFromWebpage($webpage);
-                if ($object) {
-                    $batch[] = $object;
+            ->where('state', 'live')
+            ->whereIn('type', [WebpageTypeEnum::CATALOGUE])
+            ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
+            ->chunk(1000, function ($webpages) use ($website) {
+                $batch = [];
+                foreach ($webpages as $webpage) {
+                    $object = $this->getObjectFromWebpage($webpage);
+                    if ($object) {
+                        $batch[] = $object;
+                    }
                 }
-            }
-            if ($batch) {
-                $compressed = count($batch) >= 1000;
-                $body = [
-                    'objects' => $batch
-                ];
-                $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
-                print "Deleted count " . count($batch) . " from website: {$website->name}\n";
-            }
-        });
+                if ($batch) {
+                    $compressed = count($batch) >= 1000;
+                    $body = [
+                        'objects' => $batch
+                    ];
+                    $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
+                    print "Deleted count " . count($batch) . " from website: {$website->name}\n";
+                }
+            });
     }
 
     public function deleteContentFromWebpage(Webpage $webpage): void
@@ -274,7 +270,6 @@ trait WithLuigis
             ];
 
             $this->request($website, '/v1/content/delete', $body, 'delete');
-
         } else {
             $body = [
                 'objects' => [
@@ -365,28 +360,28 @@ trait WithLuigis
                         ($brandObject ? $brandObject : []),
                         (
                             $family && $family?->webpage ?
-                        [
-                            "type" => "category",
-                            "identity" => $this->getWebpageUrl($family?->webpage),
-                            "fields" => array_filter([
-                                "title" => $family?->webpage?->title,
-                                "web_url" => $this->getWebpageUrl($family?->webpage),
-                                "description" => $family?->webpage?->description,
-                                "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
-                            ])
-                        ] : []
+                            [
+                                "type" => "category",
+                                "identity" => $this->getWebpageUrl($family?->webpage),
+                                "fields" => array_filter([
+                                    "title" => $family?->webpage?->title,
+                                    "web_url" => $this->getWebpageUrl($family?->webpage),
+                                    "description" => $family?->webpage?->description,
+                                    "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
+                                ])
+                            ] : []
                         ),
                         ($subDepartment && $subDepartment?->webpage ?
-                        [
-                            "type" => "sub_department",
-                            "identity" => $this->getWebpageUrl($subDepartment?->webpage),
-                            "fields" => array_filter([
-                                "title" => $subDepartment?->webpage?->title,
-                                "web_url" => $this->getWebpageUrl($subDepartment?->webpage),
-                                "description" => $subDepartment?->webpage?->description,
-                                "image_link" => Arr::get($subDepartment?->imageSources(200, 200), 'original'),
-                            ]),
-                        ] : []),
+                            [
+                                "type" => "sub_department",
+                                "identity" => $this->getWebpageUrl($subDepartment?->webpage),
+                                "fields" => array_filter([
+                                    "title" => $subDepartment?->webpage?->title,
+                                    "web_url" => $this->getWebpageUrl($subDepartment?->webpage),
+                                    "description" => $subDepartment?->webpage?->description,
+                                    "image_link" => Arr::get($subDepartment?->imageSources(200, 200), 'original'),
+                                ]),
+                            ] : []),
                         ($department && $department?->webpage ?
                             [
                                 "type" => "department",
@@ -398,7 +393,7 @@ trait WithLuigis
                                     "image_link" => Arr::get($department?->imageSources(200, 200), 'original'),
                                 ]),
                             ]
-                        : []),
+                            : []),
 
                     ])),
                 ] : []),
@@ -451,5 +446,4 @@ trait WithLuigis
                 return 'category';
         }
     }
-
 }
