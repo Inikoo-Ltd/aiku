@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
+use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -19,11 +20,9 @@ use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
-use App\Models\Inventory\OrgStock;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Cache;
@@ -36,6 +35,7 @@ class UpdateProduct extends OrgAction
     use WithActionUpdate;
     use WithProductHydrators;
     use WithNoStrictRules;
+    use WithProductOrgStocks;
 
     private Product $product;
 
@@ -50,41 +50,8 @@ class UpdateProduct extends OrgAction
 
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
-
-            $orgStocks = [];
-            foreach ($orgStocksRaw as $orgStockId => $item) {
-                $orgStock              = OrgStock::find($orgStockId);
-                $tradeUnitsPerOrgStock = null;
-
-                if ($orgStock->type == OrgStockStateEnum::ABNORMALITY) {
-                    if ($orgStock->tradeUnits->count() == 1) {
-                        $tradeUnitsPerOrgStock = $orgStock->tradeUnits->first()->pivot->quantity;
-                    }
-                } else {
-                    $stock = $orgStock->stock;
-                    if ($stock->tradeUnits->count() == 1) {
-                        $tradeUnitsPerOrgStock = $stock->tradeUnits->first()->pivot->quantity;
-                    }
-                }
-                
-              
-                
-                data_set($item, 'trade_units_per_org_stock', (int) $tradeUnitsPerOrgStock);
-
-
-                $orgStocks[$orgStockId] = Arr::only($item, [
-                    'quantity',
-                    'notes',
-                    'source_id',
-                    'last_fetched_at',
-                    'trade_units_per_org_stock',
-                    'dividend',
-                    'divisor'
-                ]);
-            }
-
-
-            $product->orgStocks()->sync($orgStocks);
+            $this->syncOrgStocks($product, $orgStocksRaw);
+            //todo  after updating orgStock need a new method to update Trade Units
         }
 
 
