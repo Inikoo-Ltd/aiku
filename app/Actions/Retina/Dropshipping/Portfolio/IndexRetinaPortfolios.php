@@ -33,6 +33,8 @@ class IndexRetinaPortfolios extends RetinaAction
     use WithPlatformStatusCheck;
     private CustomerSalesChannel $customerSalesChannel;
 
+    private $product_count = 0;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null, bool $disabled = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -67,6 +69,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $query->where('item_type', class_basename(Product::class));
 
+        $this->product_count = $query->get()->count();
 
         return $query->defaultSort('-id')
             ->allowedFilters([$unUploadedFilter, $globalSearch])
@@ -244,6 +247,8 @@ class IndexRetinaPortfolios extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => RetinaPortfoliosTabsEnum::navigation(),
                 ],
+
+                'product_count'            => $this->product_count,
 
                 RetinaPortfoliosTabsEnum::ACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::ACTIVE->value ?
                     fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix:'active'))
