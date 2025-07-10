@@ -112,6 +112,7 @@ class RequestApiUploadProductEbay extends RetinaAction
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($publishedOffer, 'listingId'),
+                'upload_warning' => null,
             ]);
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);

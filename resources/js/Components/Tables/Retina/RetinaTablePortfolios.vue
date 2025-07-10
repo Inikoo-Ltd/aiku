@@ -201,8 +201,11 @@ onMounted(() => {
 			<div class="flex justify-center">
 				<template v-if="is_platform_connected">
 					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-					<FontAwesomeIcon v-if="(product.upload_warning)" v-tooltip="product.upload_warning"  icon="fa fa-exclamation-circle" class="text-yellow-500" fixed-width aria-hidden="true" />
+					<!-- <FontAwesomeIcon v-if="(product.upload_warning)" v-tooltip="product.upload_warning"  icon="fa fa-exclamation-circle" class="text-yellow-500" fixed-width aria-hidden="true" /> -->
 					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
+					<span v-if="(product.upload_warning)" class="text-red-500 text-xs text-center italic">
+						{{ product.upload_warning }}
+					</span>
 					<span v-else class="text-gray-500 text-xs text-center italic">
 						{{ trans("Pending upload") }}
 					</span>
