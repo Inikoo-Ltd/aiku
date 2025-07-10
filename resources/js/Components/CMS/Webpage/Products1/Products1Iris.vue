@@ -21,6 +21,7 @@ import { faExclamationTriangle, faLayerGroup } from "@far";
 import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
 import FontSize from "tiptap-extension-font-size";
+import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
 
 const props = defineProps<{
@@ -44,13 +45,14 @@ const props = defineProps<{
         }
         container?: any
         model_type: string
-        model_id: Number
+        model_id: number
     }
     webpageData?: any
     blockData?: Object
     screenType: "mobile" | "tablet" | "desktop"
 }>();
-console.log(props.fieldValue)
+
+const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
 const products = ref<any[]>(toRaw(props.fieldValue.products.data || []));
 const loadingInitial = ref(false);
@@ -356,53 +358,53 @@ const responsiveGridClass = computed(() => {
 });
 
 
-const toggleNewArrivals = () => {
-    isNewArrivals.value = !isNewArrivals.value;
-    page.value = 1;
-    isFetchingOutOfStock.value = false;
-    updateQueryParams();
-    debFetchProducts(false, true);
-};
+// const toggleNewArrivals = () => {
+//     isNewArrivals.value = !isNewArrivals.value;
+//     page.value = 1;
+//     isFetchingOutOfStock.value = false;
+//     updateQueryParams();
+//     debFetchProducts(false, true);
+// };
 
 
-const handleSetAllToPortfolio = () => {
-    confirm.require({
-        message: "Are you sure you want to set all products to portfolio?",
-        header: "Confirmation",
-        icon: "pi pi-exclamation-triangle",
-        acceptLabel: "Yes",
-        rejectLabel: "Cancel",
-        acceptClass: "p-button-danger",
-        accept: async () => {
-            /* settingPortfolio.value = true
-            try {
-              const apiUrl = route('iris.json.portfolio.set_all', {
-                model_type: props.fieldValue.model_type,
-                model_id: props.fieldValue.model_id,
-              })
+// const handleSetAllToPortfolio = () => {
+//     confirm.require({
+//         message: "Are you sure you want to set all products to portfolio?",
+//         header: "Confirmation",
+//         icon: "pi pi-exclamation-triangle",
+//         acceptLabel: "Yes",
+//         rejectLabel: "Cancel",
+//         acceptClass: "p-button-primary",
+//         accept: async () => {
+//             /* settingPortfolio.value = true
+//             try {
+//               const apiUrl = route('iris.json.portfolio.set_all', {
+//                 model_type: props.fieldValue.model_type,
+//                 model_id: props.fieldValue.model_id,
+//               })
 
-              await axios.post(apiUrl)
+//               await axios.post(apiUrl)
 
-              notify({
-                title: 'Success',
-                text: 'All products have been added to the portfolio.',
-                type: 'success',
-              })
+//               notify({
+//                 title: 'Success',
+//                 text: 'All products have been added to the portfolio.',
+//                 type: 'success',
+//               })
 
-              fetchProductHasPortfolio()
-            } catch (error) {
-              console.error(error)
-              notify({
-                title: 'Error',
-                text: 'Failed to update portfolio status.',
-                type: 'error',
-              })
-            } finally {
-              settingPortfolio.value = false
-            } */
-        }
-    });
-};
+//               fetchProductHasPortfolio()
+//             } catch (error) {
+//               console.error(error)
+//               notify({
+//                 title: 'Error',
+//                 text: 'Failed to update portfolio status.',
+//                 type: 'error',
+//               })
+//             } finally {
+//               settingPortfolio.value = false
+//             } */
+//         }
+//     });
+// };
 
 </script>
 
@@ -477,11 +479,14 @@ const handleSetAllToPortfolio = () => {
                             {{ products.length === 1 ? "product" : "products" }}
                         </span>
                     </div>
+
                     <div>
-                        <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup"
-                            :label="settingPortfolio ? 'Processing...' : 'Set All Products to Portfolio'"
-                            class="!p-3 !w-auto" type="secondary" :disabled="settingPortfolio"
-                            @click="handleSetAllToPortfolio" aria-label="Set all products to portfolio" />
+                        <ButtonAddCategoryToPortfolio
+                            xproduct="fieldValue.product"
+                            :products
+                            :categoryId
+                            xproductHasPortfolio="productExistenceInChannels"
+                        />
                     </div>
                 </div>
 
