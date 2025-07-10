@@ -177,7 +177,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Product Image -->
 
-            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
+            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full mb-1 rounded xsm:h-[305px] xh-[180px]">
                 <Image :src="product?.web_images?.main?.gallery" alt="product image" :imageCover="true"
                     :style="{ objectFit: 'contain' }" />
             </component>
