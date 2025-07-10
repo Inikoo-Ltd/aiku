@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faWeight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NeedToPay from "@/Components/Utils/NeedToPay.vue"
+import { useTruncate } from "@/Composables/useTruncate"
 library.add(faIdCardAlt, faWeight)
 
 defineProps<{
@@ -24,6 +25,13 @@ defineProps<{
         charges_amount: string
         order_properties: {
             weight: string
+            shipments: {
+                name: string
+                tracking?: string
+                label?: string
+                label_type?: string
+                combined_label_url?: string
+            }[]
         }
         customer_channel: {
             status: boolean
@@ -45,7 +53,7 @@ const isModalShippingAddress = ref(false)
 
 <template>
 
-    <div class="py-4 grid grid-cols-2 md:grid-cols-7 px-4 gap-x-6 xdivide-y xdivide-gray-300">
+    <div class="py-4 grid grid-cols-2 md:grid-cols-7 px-4 gap-x-4 divide-y divide-gray-200 md:divide-y-0 md:divide-x">
         <div class="col-span-2 mb-4 md:mb-0">
             <!-- Field: Platform -->
             <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
@@ -124,7 +132,7 @@ const isModalShippingAddress = ref(false)
 
         </div>
 
-        <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-0">
+        <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-3">
             <dl v-if="false" class="relative flex items-start w-full flex-none gap-x-1">
                 <dt class="flex-none pt-0.5">
                     <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
@@ -141,13 +149,65 @@ const isModalShippingAddress = ref(false)
 
             <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                 <dt v-tooltip="trans('Weight')" class="flex-none">
-                    <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-500" />
+                    <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400" />
                 </dt>
                 
-                <dd class="text-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
+                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
                     {{ summary.order_properties?.weight }}
                 </dd>
+
             </div>
+
+            <!-- Section: Shipment -->
+            <div v-if="summary.order_properties?.shipments?.length" class="flex itemcen gap-x-1 py-0.5">
+				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1' fixed-width aria-hidden='true' />
+				<div class="group w-full">
+					<div class="leading-4 text-base flex justify-between w-full py-1">
+						<div>{{ trans("Shipments") }} ({{ summary.order_properties?.shipments?.length ?? 0 }})</div>
+					</div>
+					
+					<ul v-if="summary.order_properties?.shipments" class="list-disc pl-4">
+						<li v-for="(sments, shipmentIdx) in summary.order_properties?.shipments" :key="shipmentIdx" class="xhover:bg-gray-100 hover:underline text-sm tabular-nums">
+							<div class="flex justify-between">
+								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="">
+									{{ sments.name }}
+									<FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />
+								</a>
+								
+								<div v-else-if="sments.label && sments.label_type === 'pdf'" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)" class="group cursor-pointer">
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ useTruncate(sments.tracking, 14) }})
+									</span>
+									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 group-hover:text-gray-700" fixed-width aria-hidden="true" />
+								</div>
+								
+								<div v-else>
+									<span class="truncate">
+										{{ sments.name }}
+									</span>
+									<span v-if="sments.tracking" class="text-gray-400">
+										({{ useTruncate(sments.tracking, 14) }})
+									</span>
+								</div>
+							</div>
+							
+							<!-- <Button
+								v-if="sments.is_printable"
+								@click="() => onPrintShipment(sments)"
+								size="xs"
+								icon="fal fa-print"
+								label="Print label"
+								type="tertiary"
+								:loading="isLoadingPrint"
+							/> -->
+						</li>
+					</ul>
+
+				</div>
+			</div>
 
 
             <!-- <div v-if="delivery_note" class="mt-1 flex items-center w-full flex-none justify-between">
@@ -173,7 +233,7 @@ const isModalShippingAddress = ref(false)
             </div> -->
         </div>
 
-        <div class="col-span-2 md:col-span-3">
+        <div class="col-span-2 md:col-span-3 pt-3 md:pt-0 md:pl-3">
             <div v-if="balance" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 xtext-amber-600">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div class="">
