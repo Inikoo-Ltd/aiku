@@ -16,6 +16,7 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 
 trait IsOrder
 {
@@ -86,6 +87,9 @@ trait IsOrder
                 ]
             );
         }
+        $deliveryNote =  $order->deliveryNotes->first();
+        $shipments = $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
+
         return [
             'customer_client' => $customerClientData,
             'customer' => array_merge(
@@ -110,6 +114,7 @@ trait IsOrder
             'invoice'  => $invoiceData,
             'order_properties' => [
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
+                'shipments' => $shipments,
             ],
             'products' => [
                 'payment'          => [
