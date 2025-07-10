@@ -27,11 +27,11 @@ class RegisterRetinaFromGoogle extends IrisAction
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): void
     {
         $this->initialisation($request);
         $this->handle($this->validatedData);
 
-        return redirect()->route('retina.dashboard.show');
+        // return redirect()->route('retina.dashboard.show');  // Redirect in Frontend to support GTM
     }
 }

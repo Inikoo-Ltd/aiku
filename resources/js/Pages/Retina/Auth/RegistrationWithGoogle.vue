@@ -74,7 +74,15 @@ const submit = () => {
 			isLoading.value = false
 		},
 		onFinish: () => {
+
 		},
+		onSuccess: () => {
+			window.dataLayer = window.dataLayer || [];
+			window.dataLayer.push({
+				event: 'registrationSuccess'
+			})
+			window.location.href = route('retina.dashboard.show')
+		}
 	})
 }
 
@@ -90,7 +98,7 @@ onMounted(async () => {
 	
 	<div class="pt-8">
 
-
+		
 		<div class="max-w-2xl mx-auto my-8">
 			
 			<div class="text-4xl font-semibold flex justify-center mb-8">
