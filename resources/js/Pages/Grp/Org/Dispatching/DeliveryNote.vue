@@ -221,7 +221,7 @@ provide("listError", listError.value);
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore>
             <Button
-                v-if="delivery_note_state.value == 'packed' && !(box_stats?.shipments?.length)"
+                v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
                 @click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
                 v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
                 :label="trans('Shipment')"
@@ -380,7 +380,7 @@ provide("listError", listError.value);
 
     <!-- Modal: Shipment -->
     <Modal
-        v-if="delivery_note_state.value == 'packed'"
+        v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)"
         :isOpen="isModalShipment"
         @onClose="isModalShipment = false"
         width="w-full max-w-2xl"

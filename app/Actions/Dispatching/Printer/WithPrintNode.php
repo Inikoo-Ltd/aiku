@@ -31,7 +31,7 @@ trait WithPrintNode
         if (!$this->clientInitialized) {
             if (!$isProduction) {
                 $driver = config('printing.driver');
-                $apiKey = config('printing.drivers.'.$driver.'.key');
+                $apiKey = config('printing.drivers.' . $driver . '.key');
             } else {
                 $group  = group();
                 $apiKey = Arr::get($group->settings, 'printnode.api_key');
@@ -54,7 +54,7 @@ trait WithPrintNode
 
             return true;
         } catch (Exception $e) {
-            Log::error('Error checking printer existence: '.$e->getMessage());
+            Log::error('Error checking printer existence: ' . $e->getMessage());
 
             return false;
         }

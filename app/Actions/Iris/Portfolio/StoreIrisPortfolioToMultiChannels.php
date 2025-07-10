@@ -63,7 +63,7 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
         return [
             'customer_sales_channel_ids' => 'required|array|min:1',
             'customer_sales_channel_ids.*' => 'required|integer|exists:customer_sales_channels,id',
-            'item_id' => 'required|array|min:1',
+            // 'item_id' => 'required|array|min:1',
             'item_id.*' => 'required|integer|exists:products,id'
         ];
     }

@@ -38,12 +38,34 @@ function closeImageModal() {
   showModal.value = false
 }
 
+const onPrevNavigation = () => {
+    selectedIndex.value = (selectedIndex.value - 1 + props.images.length) % props.images.length
+}
+
+const onRightNavigation = () => {
+    selectedIndex.value = (selectedIndex.value + 1) % props.images.length
+}
+
 onMounted(async () => {
   await nextTick()
   navigation.value = {
     prevEl: prevEl.value,
     nextEl: nextEl.value
   }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      closeImageModal()
+    }
+    if (showModal.value) {
+      if (e.key === 'ArrowLeft') {
+        onPrevNavigation()
+      }
+      if (e.key === 'ArrowRight') {
+        onRightNavigation()
+      }
+    }
+  })
 })
 </script>
 
@@ -108,11 +130,11 @@ onMounted(async () => {
 
         <!-- Manual Navigation Buttons -->
         <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-          @click="selectedIndex = (selectedIndex - 1 + props.images.length) % props.images.length">
+          @click="onPrevNavigation">
           <FontAwesomeIcon :icon="faChevronCircleLeft" />
         </button>
         <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-          @click="selectedIndex = (selectedIndex + 1) % props.images.length">
+          @click="onRightNavigation">
           <FontAwesomeIcon :icon="faChevronCircleRight" />
         </button>
 
