@@ -24,6 +24,7 @@ import { Fieldset, InputNumber } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import axios from "axios"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes)
 
 const props = defineProps<{
@@ -402,7 +403,7 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 			<!-- Section: Parcels -->
-			<div v-if="deliveryNote?.state === 'packed' || deliveryNote?.state === 'dispatched'" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+			<div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
 				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-base flex justify-between w-full py-1">
@@ -477,9 +478,27 @@ const onPrintShipment = async (ship) => {
 								<div v-if="isDeleteShipment === sments.id" class="px-1">
 									<LoadingIcon />
 								</div>
-								<div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
+								<!-- <div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
 									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
-								</div>
+								</div> -->
+								<ModalConfirmationDelete
+									v-else
+									:routeDelete="{
+										name: props.shipments.delete_route.name,
+										parameters: { 
+											...props.shipments.delete_route.parameters,
+											shipment: sments.id,
+										}
+									}"
+									:title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: sments.name })"
+									isFullLoading
+								>
+									<template #default="{ isOpenModal, changeModel }">
+										<div @click="changeModel">
+											<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
+										</div>
+									</template>
+								</ModalConfirmationDelete>
 							</div>
 							
 							<Button
