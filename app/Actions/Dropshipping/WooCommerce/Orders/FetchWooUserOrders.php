@@ -33,6 +33,10 @@ class FetchWooUserOrders extends OrgAction
             ]
         );
 
+        if($wooOrders===null){
+            return;
+        }
+
         foreach ($wooOrders as $wooOrder) {
             if (DB::table('orders')
                 ->where('customer_id', $wooCommerceUser->customer_id)
