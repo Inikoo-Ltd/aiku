@@ -45,6 +45,10 @@ class StoreOrderFromShopify extends OrgAction
     {
         $deliveryAddress = Arr::get($modelData, 'shipping_address');
 
+        if (! $deliveryAddress) {
+            return;
+        }
+
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $shopifyProducts = collect($modelData['line_items']);
         $attributes = $this->getAttributes(Arr::get($modelData, 'customer'), $deliveryAddress);
@@ -101,6 +105,7 @@ class StoreOrderFromShopify extends OrgAction
                     );
                 }
             }
+
             try {
                 PayOrderAsync::run($order);
             } catch (Exception $e) {
