@@ -107,15 +107,18 @@ class ShowDeliveryNote extends OrgAction
 
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
-        $setAsPackedDisabled = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)->where('is_handled', false)->exists();
+        $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
+            ->where('is_handled', false)
+            ->exists();
 
-        return [
-            [
+        $actions = [];
+
+        if (!$hasUnHandledItems) {
+            $actions[] = [
                 'type'     => 'button',
                 'style'    => 'save',
                 'tooltip'  => __('Set as packed'),
                 'label'    => __('Set as packed'),
-                'disabled' => $setAsPackedDisabled,
                 'key'      => 'action',
                 'route'    => [
                     'method'     => 'patch',
@@ -124,17 +127,21 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ]
-            ],
-            [
-                'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('Change picker'),
-                'icon'    => 'fal fa-exchange-alt',
-                'label'   => __('Change Picker'),
-                'key'     => 'change-picker',
-            ]
+            ];
+        }
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'save',
+            'tooltip' => __('Change picker'),
+            'icon'    => 'fal fa-exchange-alt',
+            'label'   => __('Change Picker'),
+            'key'     => 'change-picker',
         ];
+
+        return $actions;
     }
+
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
@@ -343,6 +350,14 @@ class ShowDeliveryNote extends OrgAction
                     'addresses' => [
                         'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     ],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                        'parameters' => [
+                            'organisation' => $deliveryNote->organisation->slug,
+                            'shop'         => $deliveryNote->shop->slug,
+                            'customer'     => $deliveryNote->customer->slug
+                        ]
+                    ]
                 ]
             ),
             'customer_client' => $deliveryNote->customerClient,
@@ -365,6 +380,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
+            'customer_client' => $deliveryNote->customerClient,
             'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
             'picker'           => $deliveryNote->pickerUser,
             'packer'           => $deliveryNote->packerUser,

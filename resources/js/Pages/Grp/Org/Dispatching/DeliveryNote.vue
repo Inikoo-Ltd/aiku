@@ -301,6 +301,7 @@ const isModalEditAddress = ref(false)
             :options="timelines"
             :state="delivery_note.state"
             :slidesPerView="6"
+            :format-time="'MMMM d yyyy, HH:mm'"
         />
     </div>
 
