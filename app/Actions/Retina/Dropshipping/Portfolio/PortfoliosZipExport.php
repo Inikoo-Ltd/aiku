@@ -64,6 +64,7 @@ class PortfoliosZipExport
                                     'image_id' => $image->id,
                                     'path' => $image->getPath()
                                 ]);
+                                \Sentry\captureMessage('Image file not found:' . $image->id . ', Path:'. $image->getPath());
                                 continue;
                             }
 
@@ -73,6 +74,7 @@ class PortfoliosZipExport
                                     'image_id' => $image->id,
                                     'path' => $image->getPath()
                                 ]);
+                                \Sentry\captureMessage('Failed to open stream for image:' . $image->id . ', Path:'. $image->getPath());
                                 continue;
                             }
 
@@ -89,6 +91,7 @@ class PortfoliosZipExport
                                 'error' => $e->getMessage(),
                                 'trace' => $e->getTraceAsString()
                             ]);
+                            \Sentry\captureMessage('Error adding image to zip stream:' . $image->id . ', Error:'. $e->getMessage());
                         } finally {
 
                             if ($stream && is_resource($stream)) {
@@ -107,6 +110,7 @@ class PortfoliosZipExport
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+            \Sentry\captureMessage('Fatal error in portfolio zip export:' . $customer->id . ', Error:'. $e->getMessage());
             throw $e;
         } finally {
             $zip->finish();
