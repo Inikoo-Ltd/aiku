@@ -36,12 +36,22 @@ class CustomerClientResource extends JsonResource
             'reference'              => $this->reference,
             'name'                   => $this->name,
             'contact_name'           => $this->contact_name,
+            'status'                 => $this->status,
             'company_name'           => $this->company_name,
             'location'               => is_string($this->location) ? json_decode($this->location) : $this->location,
             'email'                  => $this->email,
             'phone'                  => $this->phone,
             'created_at'             => $this->created_at,
             'updated_at'             => $this->updated_at,
+            'routes'                 => [
+                'update_route' => [
+                    'method'     => 'patch',
+                    'name'       => 'retina.models.customer-client.update',
+                    'parameters' => [
+                        'customerClient' => $this->id,
+                    ],
+                ],
+            ],
             'address'                => AddressResource::make($this->address),
         ];
     }
