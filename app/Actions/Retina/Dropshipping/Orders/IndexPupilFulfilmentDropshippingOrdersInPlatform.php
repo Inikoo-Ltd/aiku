@@ -117,7 +117,6 @@ class IndexPupilFulfilmentDropshippingOrdersInPlatform extends RetinaAction
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
-
             );
     }
 }

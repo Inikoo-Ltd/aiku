@@ -66,22 +66,19 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ->orderBy('picking_priority')->get();
 
 
-
-        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked);
+        $quantityToPick = round(max(0, $this->quantity_required - $this->quantity_picked), 2);
 
 
         $isPicked = $quantityToPick == 0;
         $isPacked = $isPicked && $this->quantity_packed == $this->quantity_picked;
 
 
-
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
 
 
         return [
-            'id'        => $this->id,
-            'is_picked' => $isPicked,
-
+            'id'                  => $this->id,
+            'is_picked'           => $isPicked,
             'state'               => $this->state,
             'state_icon'          => $this->state->stateIcon()[$this->state->value],
             'quantity_required'   => $this->quantity_required,
@@ -95,13 +92,12 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_name'      => $this->org_stock_name,
             'locations'           => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
             'pickings'            => PickingsResource::collection($pickings),
+            'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'warning'             => $fullWarning,
+            'is_handled'          => $this->is_handled,
+            'is_packed'           => $isPacked,
 
-            'packings'           => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-            'warning'            => $fullWarning,
-            'is_handled'         => $this->is_handled,
-            'is_packed'          => $isPacked,
-
-            'upsert_picking_route'      => [
+            'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id

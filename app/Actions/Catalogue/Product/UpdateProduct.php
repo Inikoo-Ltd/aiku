@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
+use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -34,6 +35,7 @@ class UpdateProduct extends OrgAction
     use WithActionUpdate;
     use WithProductHydrators;
     use WithNoStrictRules;
+    use WithProductOrgStocks;
 
     private Product $product;
 
@@ -48,14 +50,8 @@ class UpdateProduct extends OrgAction
 
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
-
-            $orgStocks = [];
-            foreach ($orgStocksRaw as $orgStockId => $item) {
-                $orgStocks[$orgStockId] = Arr::only($item, ['quantity', 'notes', 'source_id', 'last_fetched_at']);
-            }
-
-
-            $product->orgStocks()->sync($orgStocks);
+            $this->syncOrgStocks($product, $orgStocksRaw);
+            //todo  after updating orgStock need a new method to update Trade Units
         }
 
 

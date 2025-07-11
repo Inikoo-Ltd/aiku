@@ -10,16 +10,11 @@
 
 namespace App\Actions\Retina\UI\Dashboard;
 
-use App\Actions\Utils\Abbreviate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Services\QueryBuilder;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
+use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetRetinaDropshippingHomeData
@@ -29,11 +24,11 @@ class GetRetinaDropshippingHomeData
     public function handle(Customer $customer): array
     {
         $latestChannel = [];
-        $metas = [];
+        $metas         = [];
 
         $customerChannels = $customer->customerSalesChannels()->with('platform:id,type')->get();
-        $totalPlatforms = $customerChannels->count();
-
+        $totalPlatforms   = $customerChannels->count();
+        $manualPlatform   = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
         foreach (PlatformTypeEnum::cases() as $platformType) {
             $platformTypeName = $platformType->value;
 
@@ -42,73 +37,29 @@ class GetRetinaDropshippingHomeData
             });
 
             $metas[] = [
-                'tooltip' => __($platformType->labels()[$platformTypeName]),
-                'icon'    => [
+                'tooltip'   => __($platformType->labels()[$platformTypeName]),
+                'icon'      => [
                     'tooltip' => $platform->count() > 0 ? 'active' : 'inactive',
                     'icon'    => $platform->count() > 0 ? 'fas fa-check-circle' : 'fas fa-times-circle',
                     'class'   => $platform->count() > 0 ? 'text-green-500' : 'text-red-500'
                 ],
                 'logo_icon' => $platformType->value,
-                'count'   => $platform->count(),
+                'count'     => $platform->count(),
             ];
-
         }
 
-        $webUser = request()->user();
-
-
-        if ($webUser instanceof WebUser) {
-            $webRequest = $webUser->webUserRequests();
-            $queryBuilder = QueryBuilder::for($webRequest);
-            $queryBuilder->where('route_name', 'like', 'retina.dropshipping.customer_sales_channels.%');
-
-            $latestWebRequests = $queryBuilder->orderBy('date', 'desc')->take(5)->get();
-            foreach ($latestWebRequests as $latestWebRequest) {
-                if (!$latestWebRequest->route_params) {
-                    continue;
-                }
-
-
-                foreach (PlatformTypeEnum::cases() as $platformType) {
-                    $platform = Str::lower(Abbreviate::run($platformType->value));
-
-                    $params = json_decode($latestWebRequest->route_params, true);
-                    $customerSalesChannel = Arr::get($params, 'customerSalesChannel');
-                    if ($customerSalesChannel) {
-                        if (Str::startsWith($customerSalesChannel, $platform)) {
-                            if (!\Route::has($latestWebRequest->route_name)) {
-                                continue;
-                            }
-                            $dataCustomerSalesChannel = CustomerSalesChannel::where('slug', $customerSalesChannel)->first();
-                            $latestChannel[$customerSalesChannel] = [
-                                'route' => route(
-                                    'retina.dropshipping.customer_sales_channels.show',
-                                    array_merge(
-                                        ['customerSalesChannel' => $customerSalesChannel]
-                                    )
-                                ),
-                                'slug' => $customerSalesChannel,
-                                'date' => $latestWebRequest->date,
-                                'platform' => $platformType->value,
-                                'name' => $dataCustomerSalesChannel->name
-                            ];
-                            break;
-                        }
-                    }
-                }
-
-            }
-
-
-            // route, slug, date, nama channel
-            $latestChannel = array_values($latestChannel);
+        $manuals = $customer->customerSalesChannels()->where('platform_id', $manualPlatform->id)->get();
+        $orderButton = false;
+        $manualPlatformData = null;
+        if ($manuals->count() == 1) {
+            $orderButton = true;
+            $manualPlatformData = CustomerSalesChannelsResource::make($manuals->first())->resolve();
         }
-
 
         return [
-            'customer' => CustomerResource::make($customer)->getArray(),
-            'channels' => CustomerSalesChannelsResource::collection($customerChannels)->toArray(request()),
-            'stats'       => [
+            'customer'              => CustomerResource::make($customer)->getArray(),
+            'channels'              => CustomerSalesChannelsResource::collection($customerChannels)->toArray(request()),
+            'stats'                 => [
                 [
                     'label' => __('Channels'),
                     'route' => [
@@ -117,13 +68,15 @@ class GetRetinaDropshippingHomeData
                     ],
                     'color' => '#E87928',
                     'icon'  => [
-                        'icon' => 'fal fa-code-branch',
-                        'tooltip' => __('Channels'),
+                        'icon'          => 'fal fa-code-branch',
+                        'tooltip'       => __('Channels'),
                         'icon_rotation' => '90',
                     ],
-                    // "color" => "",
                     'value' => $totalPlatforms,
-
+                    'order' => [
+                        'button' => $orderButton,
+                        'manual_data' => $manualPlatformData
+                    ],
 
                     'metas' => $metas
                 ],

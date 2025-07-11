@@ -42,3 +42,69 @@ if (!function_exists('percentage')) {
         return $per;
     }
 }
+
+if (!function_exists('findSmallestFactors')) {
+    /**
+     * Find the smallest factors (dividend and divisor) that can represent a number as a fraction.
+     *
+     * @param float $number The number to find factors for
+     * @param float $epsilon The maximum allowed difference between the original number and the fraction
+     * @param int $retryCount Internal parameter to prevent infinite recursion
+     * @return array An array containing [dividend, divisor]
+     */
+    function findSmallestFactors(float $number, float $epsilon = 0.00001, int $retryCount = 0): array
+    {
+        if ($number === 0.0) {
+            return [0, 1];
+        }
+
+        $absNumber = abs($number);
+
+        // For numbers less than 1, try to find the simplest fraction
+        if ($absNumber < 1) {
+            // Try denominators up to 100 to find the closest fraction
+            $bestNumerator = 1;
+            $bestDenominator = 1;
+            $bestDiff = PHP_FLOAT_MAX;
+
+            for ($denominator = 1; $denominator <= 100; $denominator++) {
+                // Use round to get the closest numerator
+                $numerator = 1;
+                while ($numerator / $denominator <= $absNumber + $epsilon) {
+                    $diff = abs(($numerator / $denominator) - $absNumber);
+                    if ($diff < $bestDiff) {
+                        $bestDiff = $diff;
+                        $bestNumerator = $numerator;
+                        $bestDenominator = $denominator;
+                    }
+                    $numerator++;
+                }
+            }
+
+            if ($bestDiff < $epsilon) {
+                return [$number < 0 ? -$bestNumerator : $bestNumerator, $bestDenominator];
+            }
+        } else {
+            // For numbers greater than 1
+            for ($i = 1; $i <= ceil($absNumber); $i++) {
+                $possibleDivisor = $absNumber / $i;
+                if (abs($possibleDivisor - round($possibleDivisor)) < $epsilon) {
+                    $dividend = $i;
+                    $divisor = (int)round($possibleDivisor);
+                    return [$number < 0 ? -$dividend : $dividend, $divisor];
+                }
+            }
+        }
+
+        // Fallback for cases where no exact factors are found
+        $result = [$number < 0 ? -1 : 1, 1];
+
+        // If the result is [1,1] and the number is not 1 (or -1), try again with a larger epsilon
+        if ($result == [1, 1] && abs($number) != 1.0 && $retryCount < 3) {
+            $newEpsilon = $epsilon * 10; // Increase epsilon by an order of magnitude
+            return findSmallestFactors($number, $newEpsilon, $retryCount + 1);
+        }
+
+        return $result;
+    }
+}

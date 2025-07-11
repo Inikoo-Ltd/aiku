@@ -13,7 +13,7 @@ use Illuminate\Support\Arr;
 
 trait WithGeneratedShopifyAddress
 {
-    public function getAttributes(array $customer, array $address = []): array
+    public function getShopifyAttributesFromWebhook(array $customerClient, array $address = []): array
     {
         $country = Country::where('code', Arr::get($address, 'country_code'))->first();
 
@@ -34,9 +34,9 @@ trait WithGeneratedShopifyAddress
         }
 
         return [
-            'contact_name' => $customer['first_name'] . ' ' . Arr::get($customer, 'last_name'),
-            'email' => $customer['email'],
-            'phone' => $customer['phone'],
+            'contact_name' => $customerClient['first_name'] . ' ' . Arr::get($customerClient, 'last_name'),
+            'email' => $customerClient['email'],
+            'phone' => $customerClient['phone'],
             ...$address
         ];
     }

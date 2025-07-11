@@ -31,6 +31,7 @@ use App\Http\Resources\Ordering\PickersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -103,10 +104,7 @@ class ShowDeliveryNote extends OrgAction
 
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
-        $isSomeNotPicked = !$deliveryNote->deliveryNoteItems->every(
-            fn ($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
-        );
-
+        $setAsPackedDisabled = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)->where('is_handled', false)->exists();
 
         return [
             [
@@ -114,7 +112,7 @@ class ShowDeliveryNote extends OrgAction
                 'style'    => 'save',
                 'tooltip'  => __('Set as packed'),
                 'label'    => __('Set as packed'),
-                'disabled' => $isSomeNotPicked,
+                'disabled' => $setAsPackedDisabled,
                 'key'      => 'action',
                 'route'    => [
                     'method'     => 'patch',

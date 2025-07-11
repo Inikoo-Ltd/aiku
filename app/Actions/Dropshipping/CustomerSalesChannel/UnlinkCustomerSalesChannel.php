@@ -24,8 +24,7 @@ class UnlinkCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-        $hasOrders = $customerSalesChannel->orders()->exists();
-        $hasFulfilmentOrders = $customerSalesChannel->fulfilmentOrders()->exists();
+
 
         UpdateCustomerSalesChannel::run($customerSalesChannel, [
             'status' => CustomerSalesChannelStatusEnum::CLOSED
@@ -40,9 +39,7 @@ class UnlinkCustomerSalesChannel extends OrgAction
             };
         }
 
-        if (!$hasFulfilmentOrders || !$hasOrders) {
-            $customerSalesChannel->delete();
-        }
+
     }
 
     public function action(CustomerSalesChannel $customerSalesChannel, array $modelData, int $hydratorsDelay = 0): void

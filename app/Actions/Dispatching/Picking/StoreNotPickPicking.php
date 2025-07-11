@@ -18,7 +18,6 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
-use Illuminate\Console\Command;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -44,34 +43,37 @@ class StoreNotPickPicking extends OrgAction
         data_set($modelData, 'engine', PickingEngineEnum::AIKU);
         data_set($modelData, 'type', PickingTypeEnum::NOT_PICK);
 
+        /** @var Picking $picking */
         $picking = $deliveryNoteItem->pickings()->create($modelData);
         $picking->refresh();
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
 
         return $picking;
-
     }
 
     public function rules(): array
     {
         return [
-            'not_picked_reason'  => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
-            'not_picked_note'    => ['sometimes', 'string'],
-            'quantity' => ['sometimes', 'numeric'],
-            'picker_user_id'       => [
+            'not_picked_reason' => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
+            'not_picked_note'   => ['sometimes', 'string'],
+            'quantity'          => ['sometimes', 'numeric'],
+            'picker_user_id'    => [
                 'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
             ],
         ];
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function prepareForValidation(ActionRequest $request): void
     {
         if ($this->deliveryNoteItem->quantity_required == $this->deliveryNoteItem->quantity_picked || $this->deliveryNoteItem->is_handled) {
             throw ValidationException::withMessages([
-                    'messages' => __('This delivery note item has been fully picked')
-                ]);
+                'messages' => __('This delivery note item has been fully picked')
+            ]);
         }
         if (!$request->has('picker_user_id')) {
             $this->set('picker_user_id', $this->user->id);
@@ -79,12 +81,11 @@ class StoreNotPickPicking extends OrgAction
         if (!$request->has('quantity')) {
             $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
         }
-
     }
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): Picking
     {
-        $this->user = $request->user();
+        $this->user             = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
@@ -93,32 +94,12 @@ class StoreNotPickPicking extends OrgAction
 
     public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
     {
-        $this->user = $user;
+        $this->user             = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public string $commandSignature = 'not-picking:store {deliveryNoteItem} {locationId} {userId} {quantity}';
 
-
-    public function asCommand(Command $command)
-    {
-        $deliveryNoteItem = DeliveryNoteItem::findOrFail($command->argument('deliveryNoteItem'));
-
-        $this->deliveryNoteItem = $deliveryNoteItem;
-
-        $data = [
-            'location_id'     => (int) $command->argument('locationId'),
-            'picker_user_id'  => (int) $command->argument('userId'),
-            'quantity'        => (int) $command->argument('quantity'),
-        ];
-
-        $picking = $this->handle($deliveryNoteItem, $data);
-
-        $command->info("Picking type NOT PICK created successfully with ID: {$picking->id}");
-
-        return 1;
-    }
 }

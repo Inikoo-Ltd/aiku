@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
+use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -26,7 +27,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -41,6 +41,7 @@ class StoreProduct extends OrgAction
 {
     use WithProductHydrators;
     use WithNoStrictRules;
+    use WithProductOrgStocks;
 
     private AssetStateEnum|null $state = null;
 
@@ -98,7 +99,8 @@ class StoreProduct extends OrgAction
 
             $product = $this->createAsset($product);
 
-            return $this->associateOrgStocks($product, $orgStocks);
+            $product = $this->syncOrgStocks($product, $orgStocks);
+            return $this->associateTradeUnits($product);
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
@@ -114,29 +116,6 @@ class StoreProduct extends OrgAction
     }
 
 
-    private function associateOrgStocks(Product $product, array $orgStocks): Product
-    {
-        $product->orgStocks()->sync($orgStocks);
-
-        $tradeUnits = [];
-        foreach ($product->orgStocks as $orgStock) {
-            foreach ($orgStock->tradeUnits as $tradeUnit) {
-                $tradeUnits[$tradeUnit->id] = [
-                    'quantity' => $orgStock->pivot->quantity * $tradeUnit->pivot->quantity,
-                ];
-            }
-        }
-
-        foreach ($tradeUnits as $tradeUnitId => $tradeUnitData) {
-            $tradeUnit = TradeUnit::find($tradeUnitId);
-            AttachTradeUnitToProduct::run($product, $tradeUnit, [
-                'quantity' => $tradeUnitData['quantity'],
-                'notes'    => Arr::get($tradeUnitData, 'notes'),
-            ]);
-        }
-
-        return $product;
-    }
 
     private function createAsset(Product $product): Product
     {

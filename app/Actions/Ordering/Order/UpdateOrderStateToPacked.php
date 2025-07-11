@@ -44,7 +44,7 @@ class UpdateOrderStateToPacked extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'You can not change the status to submitted']);
+        throw ValidationException::withMessages(['status' => 'Error, order state is '.$order->state->value]);
     }
 
     /**

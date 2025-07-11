@@ -19,7 +19,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
@@ -41,14 +40,19 @@ class GenerateInvoiceFromOrder extends OrgAction
     public function handle(Order $order): Invoice
     {
         return DB::transaction(function () use ($order) {
-
             $billingAddress = $order->billingAddress;
-            $updatedData = [];
-            if($order->deliveryNotes)
-            {
-                $deliveryNote = $order->deliveryNotes->first();
-                $updatedData = $this->recalculateTotals($deliveryNote);
+            $updatedData    = [];
+            if ($order->deliveryNotes) {
+                $updatedData  = $this->recalculateTotals($order);
             }
+
+            $order->update([
+                'net_amount'                => Arr::get($updatedData, 'net_amount', $order->net_amount),
+                'total_amount'              => Arr::get($updatedData, 'total_amount', $order->total_amount),
+                'gross_amount'              => Arr::get($updatedData, 'gross_amount', $order->gross_amount),
+                'goods_amount'              => Arr::get($updatedData, 'goods_amount', $order->goods_amount),
+            ]);
+
 
             $invoiceData = [
                 'in_process'                => false,
@@ -70,6 +74,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'platform_id'               => $order->platform_id,
                 'footer'                    => $order->shop->invoice_footer ?? ''
             ];
+
 
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
 
@@ -98,6 +103,11 @@ class GenerateInvoiceFromOrder extends OrgAction
                 } else {
                     $updatedData = $this->recalculateTransactionTotals($transaction);
                     StoreInvoiceTransaction::make()->action($invoice, $transaction->historicAsset, $updatedData);
+                    $transaction->update(
+                        [
+                            'quantity_picked' => $updatedData['quantity'],
+                        ]
+                    );
                 }
             }
 
@@ -112,15 +122,14 @@ class GenerateInvoiceFromOrder extends OrgAction
         });
     }
 
-    public function recalculateTotals(DeliveryNote $deliveryNote): array
+    public function recalculateTotals(Order $order): array
     {
-        $order = $deliveryNote->orders->first();
 
         $itemsNet   = 0;
         $itemsGross = 0;
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
-            $totals = $this->recalculateTransactionTotals($transaction);
+            $totals     = $this->recalculateTransactionTotals($transaction);
             $itemsNet   += $totals['net_amount'];
             $itemsGross += $totals['gross_amount'];
         }
@@ -132,34 +141,47 @@ class GenerateInvoiceFromOrder extends OrgAction
         $taxAmount   = $netAmount * $tax;
         $totalAmount = $netAmount + $taxAmount;
 
-        $data = [
+        return [
             'net_amount'   => $netAmount,
             'total_amount' => $totalAmount,
             'tax_amount'   => $taxAmount,
             'goods_amount' => $itemsNet,
             'gross_amount' => $itemsGross,
         ];
-
-        return $data;
     }
 
     public function recalculateTransactionTotals(Transaction $transaction): array
     {
-        $data = [];
-        $deliveryNoteItem = $transaction->deliveryNoteItem;
+        $historicAsset = $transaction->historicAsset;
 
-        $historicAsset    = $transaction->historicAsset;
-        $net              = $historicAsset->price * $deliveryNoteItem->quantity_picked;
-        $gross            = $historicAsset->price * $deliveryNoteItem->quantity_picked;
 
-        $data = [
-                'tax_category_id' => $transaction->order->tax_category_id,
-                'quantity'        => $deliveryNoteItem->quantity_picked,
-                'gross_amount'    => $gross,
-                'net_amount'      => $net,
+        $pickings = [];
+        foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
+            if ($deliveryNoteItem->quantity_ordered == 0) {
+                $pickings[] = 1;
+            }
+
+            $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
+            $pickings[]     = $ratioOfPicking;
+        }
+        if (empty($pickings)) {
+            //to check this or I will reget
+            $quantityPicked = $transaction->quantity_ordered;
+        } else {
+            $sumOfPickings  = array_sum($pickings) / count($pickings);
+            $quantityPicked = $transaction->quantity_ordered * $sumOfPickings;
+        }
+
+        // fix this put correct grossly and net depend on discounts
+        $gross = $historicAsset->price * $quantityPicked;
+        $net   = $historicAsset->price * $quantityPicked;
+
+        return [
+            'tax_category_id' => $transaction->order->tax_category_id,
+            'quantity'        => $quantityPicked,
+            'gross_amount'    => $gross,
+            'net_amount'      => $net,
         ];
-
-        return $data;
     }
 
     public function htmlResponse(Invoice $invoice): RedirectResponse

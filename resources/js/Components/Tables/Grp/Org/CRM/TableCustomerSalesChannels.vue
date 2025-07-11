@@ -53,9 +53,13 @@ function ordersRoute(platform: Platform) {
 <template>
      <Table :resource="data" >
         <template #cell(reference)="{ item: platform }">
-            <Link :href="platformRoute(platform) as string" class="primaryLink">
-                {{ platform["reference"] }}
-            </Link>
+            <div class="flex items-center gap-2 w-7">
+              <img v-tooltip="platform.platform_name" :src="platform.platform_image" :alt="platform.platform_name"
+                      class="w-6 h-6"/>
+              <Link :href="platformRoute(platform) as string" class="primaryLink">
+                  {{ platform["reference"] }}
+              </Link>
+            </div>
         </template>
         <template #cell(number_portfolios)="{ item: platform }">
             <Link :href="portfoliosRoute(platform) as string" class="secondaryLink">

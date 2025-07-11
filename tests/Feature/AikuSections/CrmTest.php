@@ -1169,7 +1169,7 @@ test('withdraw balance customer', function (Customer $customer) {
 })->depends('add balance customer');
 
 test('Customer basket hydrator', function () {
-    $customer = Customer::first();
+    $customer = Customer::find(1);
     CustomerHydrateBasket::run($customer);
     expect($customer)->toBeInstanceOf(Customer::class)
         ->and($customer->amount_in_basket)->toEqual(0)

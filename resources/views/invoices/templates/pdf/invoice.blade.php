@@ -289,7 +289,7 @@
                 @endif
             </td>
 
-            <td style="text-align:right">{{ (int) $transaction->quantity }}</td>
+            <td style="text-align:right">{{  $transaction->quantity }}</td>
 
             <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
         </tr>
@@ -299,8 +299,8 @@
     <tbody class="totals">
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td>{{ __('Items Net') }}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
+        <td>{{ __('Charges') }}</td>
+        <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
     </tr>
 
     <tr>
@@ -312,7 +312,7 @@
     <tr class="total_net">
         <td style="border:none" colspan="4"></td>
         <td>{{__('Total Net')}}</td>
-        <td>{{ $invoice->currency->symbol . number_format($invoice->net_amount + $invoice->shipping_amount, 2, '.', '') }}</td>
+        <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
     </tr>
 
     <tr>

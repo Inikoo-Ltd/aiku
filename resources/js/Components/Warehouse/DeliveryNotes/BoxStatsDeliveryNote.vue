@@ -100,7 +100,7 @@ const onSubmitParcels = () => {
 			parcels: parcelsCopy.value,
 			// parcels: [{
 			// 	weight: 1,
-			// 	dimensions: [40, 40, 40],
+			// 	dimensions: [5, 5, 5],
 			// }],
 		},
 		{
@@ -415,7 +415,7 @@ const onPrintShipment = async (ship) => {
 								{{ trans("Edit") }}
 								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 							</div>
-							<div v-else-if="!isLoadingSubmitParcels" @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [40, 40, 40]}], onSubmitParcels())" class="cursor-pointer text-gray-400 hover:text-gray-600">
+							<div v-else-if="!isLoadingSubmitParcels" @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5]}], onSubmitParcels())" class="cursor-pointer text-gray-400 hover:text-gray-600">
 								{{ trans("Add") }}
 								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 							</div>
@@ -594,7 +594,7 @@ const onPrintShipment = async (ship) => {
 					<!-- Repeat for more rows -->
 					<div class=" grid grid-cols-12 mt-2">
 						<div></div>
-						<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [40, 40, 40]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+						<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
 							<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
 							{{ trans("Add another parcel") }}
 						</div>

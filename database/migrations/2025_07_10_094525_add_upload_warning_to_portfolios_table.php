@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 10 Jul 2025 11:50:30 British Summer Time, Sheffield, UK
+ * Created: Thu, 10 Jul 2025 11:50:08 British Summer Time, Sheffield, UK
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -13,17 +13,16 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('debug_webhooks', function (Blueprint $table) {
-            $table->id();
-            $table->morphs('model');
-            $table->jsonb('data');
-            $table->timestampsTz();
+        Schema::table('portfolios', function (Blueprint $table) {
+            $table->text('upload_warning')->nullable();
         });
     }
 
 
     public function down(): void
     {
-        Schema::dropIfExists('debug_webhooks');
+        Schema::table('portfolios', function (Blueprint $table) {
+            $table->dropColumn('upload_warning');
+        });
     }
 };

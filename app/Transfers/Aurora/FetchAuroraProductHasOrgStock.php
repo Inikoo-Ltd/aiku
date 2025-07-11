@@ -16,21 +16,22 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
     {
         $productStocks = [];
         foreach ($this->auroraModelData as $modelData) {
-
             $orgStock = $this->parseOrgStock($this->organisation->id.':'.$modelData->{'Product Part Part SKU'});
 
             if ($orgStock) {
+                list($smallestDividend, $correspondingDivisor) = findSmallestFactors($modelData->{'Product Part Ratio'});
                 $productStocks[$orgStock->id] = [
                     'quantity'        => $modelData->{'Product Part Ratio'},
                     'notes'           => $modelData->{'Product Part Note'} ?? null,
                     'source_id'       => $this->organisation->id.':'.$modelData->{'Product Part Key'},
+                    'dividend'        => $smallestDividend,
+                    'divisor'         => $correspondingDivisor,
                     'last_fetched_at' => now(),
                 ];
             }
         }
         $this->parsedData['org_stocks'] = $productStocks;
     }
-
 
     protected function fetchData($id): object|null
     {

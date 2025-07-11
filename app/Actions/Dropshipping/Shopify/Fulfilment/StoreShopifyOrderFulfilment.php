@@ -36,7 +36,7 @@ class StoreShopifyOrderFulfilment extends OrgAction
         $customerClient = $shopifyUser->customer->clients()->where('email', Arr::get($customer, 'email'))->first();
 
         if (!$customerClient) {
-            $attributes = $this->getAttributes($customer, $address);
+            $attributes = $this->getShopifyAttributesFromWebhook($customer, $address);
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, $attributes);
         }
 

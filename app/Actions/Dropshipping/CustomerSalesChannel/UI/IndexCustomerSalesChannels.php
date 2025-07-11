@@ -37,7 +37,7 @@ class IndexCustomerSalesChannels extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('platforms.code', $value);
+                $query->whereStartWith('customer_sales_channels.reference', $value);
             });
         });
 
@@ -50,6 +50,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->select([
                 'customer_sales_channels.id',
                 'customer_sales_channels.reference',
+                'customer_sales_channels.name',
                 'customer_sales_channels.slug',
                 'customer_sales_channels.number_customer_clients as number_customer_clients',
                 'customer_sales_channels.number_portfolios as number_portfolios',
