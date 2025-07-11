@@ -37,11 +37,11 @@ class UpdateRetinaPortfolio extends RetinaAction
         return $this->portfolio->customer_id == $this->customer->id;
     }
 
-    public function asController(Portfolio $portfolio, ActionRequest $request): Portfolio
+    public function asController(Portfolio $portfolio, ActionRequest $request)
     {
         $this->portfolio = $portfolio;
         $this->initialisation($request);
 
-        return $this->handle($portfolio, $request->all());
+        $this->handle($portfolio, $request->all());
     }
 }
