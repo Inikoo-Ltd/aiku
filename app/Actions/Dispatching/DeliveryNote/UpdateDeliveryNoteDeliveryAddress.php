@@ -11,13 +11,16 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteDeliveryAddress extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote, array $modelData): void
     {
-        UpdateAddress::run($deliveryNote->deliveryAddress, $modelData);
+        $addressData = Arr::get($modelData, 'address', []);
+
+        UpdateAddress::run($deliveryNote->deliveryAddress, $addressData);
     }
 
     public function rules(): array

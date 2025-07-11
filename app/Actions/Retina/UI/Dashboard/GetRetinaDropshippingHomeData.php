@@ -73,15 +73,24 @@ class GetRetinaDropshippingHomeData
                         'icon_rotation' => '90',
                     ],
                     'value' => $totalPlatforms,
-                    'order' => [
-                        'button' => $orderButton,
-                        'manual_data' => $manualPlatformData
-                    ],
 
                     'metas' => $metas
                 ],
             ],
-            'last_visited_channels' => $latestChannel
+            'last_visited_channels' => $latestChannel,
+            'shortcut'              => [
+                'order'                 => [
+                    'is_show_button' => $orderButton,
+                    // 'route_create_order'    => [
+                    //     'name'       => 'retina.models.customer-client.order.store',
+                    //     'parameters' => [
+                    //         'customerClient' => $customer->id,
+                    //     ],
+                    //     'method'     => 'post'
+                    // ],
+                    'manual_data' => $manualPlatformData
+                ],
+            ]
         ];
     }
 }
