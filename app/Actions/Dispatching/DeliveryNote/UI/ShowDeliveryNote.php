@@ -21,6 +21,7 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
@@ -343,7 +344,7 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ),
             'customer_client' => $deliveryNote->customerClient,
-            'platform' => $deliveryNote->platform_id,
+            'channel' => CustomerSalesChannelsResource::make($deliveryNote->customerSalesChannel),
             'products'         => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
