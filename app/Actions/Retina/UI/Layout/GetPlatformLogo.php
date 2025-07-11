@@ -12,9 +12,9 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 trait GetPlatformLogo
 {
-    public function getPlatformLogo(CustomerSalesChannel $customerSalesChannels): ?string
+    public function getPlatformLogo(?CustomerSalesChannel $customerSalesChannels): ?string
     {
-        return match ($customerSalesChannels->platform->code) {
+        return match ($customerSalesChannels?->platform?->code) {
             'shopify' => 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png',
             'tiktok' => 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png',
             'woocommerce' => 'https://cdn-icons-png.flaticon.com/512/15466/15466279.png',
