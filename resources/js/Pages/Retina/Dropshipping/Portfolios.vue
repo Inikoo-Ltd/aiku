@@ -270,13 +270,13 @@ const component = computed(() => {
                                     :style="'tertiary'"
                                 />
                             </a>
-                            <a :href="downloadUrl('images')" target="_blank" rel="noopener">
+                            <!-- <a :href="downloadUrl('images')" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faImage"
                                     :label="trans('Images')"
                                     full
                                     :style="'tertiary'" />
-                            </a>
+                            </a> -->
                         </div>
 
                     </div>
