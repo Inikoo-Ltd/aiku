@@ -9,11 +9,17 @@ import CountUp from 'vue-countup-v3'
 import { faArrowRight } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Link } from '@inertiajs/vue3'
-import { capitalize, inject } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { capitalize, inject, ref } from 'vue'
 import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
+import { Fieldset } from 'primevue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { routeType } from '@/types/route'
+import Modal from '@/Components/Utils/Modal.vue'
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import { notify } from '@kyvg/vue3-notification'
 library.add(faArrowRight)
 
 const props = defineProps<{
@@ -30,11 +36,63 @@ const props = defineProps<{
         last_visited_channels: {
 
         }[]
+        shortcut: {
+            order: {
+                is_show_button: boolean
+                manual_data: {
+                    icon: string
+                    icon_rotation: string
+                    value: number
+                }
+                route_create_order: routeType
+            }
+        }
     }
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
 
+
+// Section: Modal Create Order
+const isModalCreateOrder = ref(false)
+const selectedCustomerClientId = ref(null)
+const isLoadingSubmit = ref(false)
+const onSubmitCreateOrder = () => {
+    // Section: Submit
+    router.post(
+        route('retina.models.customer-client.order.store', {
+            customerClient: selectedCustomerClientId.value
+        }),
+        {
+            data: 'qqq'
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmit.value = true
+            },
+            onSuccess: () => {
+                isModalCreateOrder.value = false
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully create the order"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to create the order. Please try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -53,7 +111,6 @@ const locale = inject('locale', aikuLocaleStructure)
         
         <div class="mx-auto px-6 pb-12 pt-10 lg:flex lg:px-14 ">
             <div v-if="data.channels.length" class="w-full lg:shrink-0">
-
                 <div class="mx-auto xmax-w-2xl lg:mx-0 ">
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
                         {{ trans("Your channels summary") }}
@@ -62,20 +119,17 @@ const locale = inject('locale', aikuLocaleStructure)
                         {{ trans("Have a look at your channels summary.") }}
                     </p>
                 </div>
-
-                <div class="flex gapx8">
-
+                
+                <div class="flex justify-between gap-x-4">
                     <div class="w-full max-w-96 mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
                         <StatsBox
                             v-for="(stat, idxStat) in data.stats"
                             :stat="stat"
                         />
-
                         <div v-if="data.last_visited_channels?.length" class="overflow-hidden border border-gray-300 rounded-md mt-5 relative">
                             <div class="sticky top-0 z-10 border-y border-b-gray-200 border-t-gray-100 bg-gray-50 px-3 py-1.5 text-sm/6 font-semibold text-gray-900">
                                 <h3>{{ trans("Last visited Channels") }}</h3>
                             </div>
-
                             <ul role="list" class="divide-y divide-gray-100">
                                 <li v-for="channel in data.last_visited_channels" xkey="person.email" class="flex gap-x-4 px-3 py-2">
                                     <div v-html="ChannelLogo(channel.platform)" class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"></div>
@@ -88,7 +142,6 @@ const locale = inject('locale', aikuLocaleStructure)
                                                 {{ channel.baskets_count ?? 0 }} in Baskets
                                             </p>
                                         </div>
-
                                         <ButtonWithLink
                                             xrouteTarget="{
                                                 name: 'retina.dropshipping.customer_sales_channels.show',
@@ -107,6 +160,24 @@ const locale = inject('locale', aikuLocaleStructure)
                                 </li>
                             </ul>
                         </div>
+                    </div>
+
+                    <!-- Section: Shortcut -->
+                    <div v-if="
+                        data.shortcut.order.is_show_button
+                    " class="max-w-64 w-full">
+                        <Fieldset :legend="trans('Quick links (Shortcuts)')">
+                            <div class="flex flex-col">
+                                <Button
+                                    v-if="data.shortcut.order.is_show_button"
+                                    @click="isModalCreateOrder = true"
+                                    :label="trans('Create manual Order')"
+                                    full
+                                    type="tertiary"
+                                    icon="fas fa-plus"
+                                />
+                            </div>
+                        </Fieldset>
                     </div>
                 </div>
             </div>
@@ -138,5 +209,92 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
             
         </div>
+
+        <!-- Modal: Create order -->
+        <Modal :isOpen="isModalCreateOrder" @onClose="isModalCreateOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">
+            <div>
+                <div class="text-lg font-semibold mb-4 text-center">
+                    {{ trans("Create Manual Order") }}
+                </div>
+
+                <div>
+                    <div class="mb-4">
+                        <div class="text-sm xmb-2">
+                            {{ trans("Select Customer Client") }}
+                        </div>
+                        <PureMultiselectInfiniteScroll
+                            v-model="selectedCustomerClientId"
+                            :fetchRoute="{
+                                name: 'retina.dropshipping.customer_sales_channels.client.index',
+                                parameters: {
+                                    customerSalesChannel: data.shortcut.order.manual_data.slug,
+                                }
+                            }"
+                            required
+                            :disabled="isLoadingSubmit"
+                        >
+                            <template #singlelabel="{ value }">
+                                <div class="w-full text-left pl-4">
+                                    {{ value.name}}
+                                    <span v-if="value.reference" class="text-sm text-gray-400">
+                                        (#{{ value.reference }})
+                                    </span>
+                                </div>
+                            </template>
+
+                            <template #afterlist>
+                                <div class="m-2 cursor-auto text-gray-400 text-sm">
+                                    {{ trans("Can't find the client?") }}
+                                    
+                                    <Link
+                                        :href="route('retina.dropshipping.customer_sales_channels.client.create', {
+                                            customerSalesChannel: data.shortcut.order.manual_data.slug
+                                        })"
+                                        class="hover:underline hover:text-gray-700 cursor-pointer"
+                                    >
+                                        {{ trans("Create new client here") }}
+                                    </Link>
+                                </div>
+                            </template>
+                        </PureMultiselectInfiniteScroll>
+                    </div>
+
+                    <Button 
+                        @click="() => onSubmitCreateOrder()"
+                        label="Create Order"
+                        full
+                        :loading="isLoadingSubmit"
+                        :disabled="!selectedCustomerClientId"
+                    />
+                </div>
+
+                <!-- Divider -->
+                <div class="relative my-3">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-300" />
+                    </div>
+                    <div class="relative flex justify-center">
+                        <span class="bg-white px-2 text-xs text-gray-500">{{ trans("Can't find the client? Create new client") }}</span>
+                    </div>
+                </div>
+
+                <Link
+                    :href="route('retina.dropshipping.customer_sales_channels.client.create', {
+                        customerSalesChannel: data.shortcut.order.manual_data.slug
+                    })"
+                >
+                    <Button
+                        xclick="() => onSubmitCreateOrder()"
+                        label="Create new client"
+                        full
+                        type="tertiary"
+                        xloading="isLoadingSubmit"
+                        xdisabled="!selectedCustomerClientId"
+                        xiconRight="fal fa-external-link-alt"
+                        icon="fas fa-plus"
+                    />
+                </Link>
+            </div>
+        </Modal>
     </div>
 </template>

@@ -29,6 +29,7 @@ const props = defineProps<{
     }
 }>()
 
+// Section: Modal Create Order
 const isModalCreateOrder = ref(false)
 const selectedCustomerClientId = ref(null)
 const isLoadingSubmit = ref(false)
@@ -88,9 +89,9 @@ const onSubmitCreateOrder = () => {
 
     <RetinaTablePalletOrders :data="props.data" :currency  />
 
-
+    <!-- Modal: Create order -->
     <Modal :isOpen="isModalCreateOrder" @onClose="isModalCreateOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">
-        <div v-if="true">
+        <div>
             <div class="text-lg font-semibold mb-4 text-center">
                 {{ trans("Create Order") }}
             </div>
