@@ -24,7 +24,7 @@ Route::name('webhooks.')->group(function () {
 
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::prefix('products')->as('products.')->group(function () {
-        Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
+        // Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
     });
 
     Route::post('app/uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
