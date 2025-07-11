@@ -58,6 +58,8 @@ class GetClientGoogleDrive
         if (file_exists($tokenPath)) {
             $accessToken = json_decode(file_get_contents($tokenPath), true);
             $client->setAccessToken($accessToken);
+        } else {
+            $client->setAccessToken(Arr::get($organisation->settings, 'google.token'));
         }
 
         return $client;
