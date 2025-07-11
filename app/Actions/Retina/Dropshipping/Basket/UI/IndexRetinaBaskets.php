@@ -110,6 +110,8 @@ class IndexRetinaBaskets extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
+                'is_show_button_create_order'   => true,
+
                 'currency'                  => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
                 'customer_sales_channel'    => CustomerSalesChannelsResource::make($this->customerSalesChannel)->toArray(request()),
                 'data'                      => RetinaOrdersResource::collection($orders)

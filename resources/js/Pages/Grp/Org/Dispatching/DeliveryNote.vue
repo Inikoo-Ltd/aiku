@@ -37,6 +37,7 @@ import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import AddressManagementSingle from "@/Components/Utils/AddressManagementSingle.vue"
+import PureAddress from "@/Components/Pure/PureAddress.vue"
 
 
 library.add(faSmileWink,faRecycle, faTired, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -168,6 +169,7 @@ const onUpdatePicker = () => {
     );
 };
 
+
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false);
 const isLoadingData = ref<string | boolean>(false);
@@ -191,9 +193,9 @@ const onOpenModalTrackingNumber = async () => {
     }
     isLoadingData.value = false;
 };
+
+
 const onSubmitShipment = () => {
-
-
     formTrackingNumber
         .transform((data) => ({
             shipper_id: data.shipping_id?.id,
@@ -221,7 +223,50 @@ const onSubmitShipment = () => {
                 isLoadingButton.value = false;
             }
         });
-};
+}
+
+const onSaveAddress = (submitShipment: Function) => {
+    const filterDataAddress = { ...xxxCopyAddress.value }
+    delete filterDataAddress.formatted_address
+    delete filterDataAddress.country
+    delete filterDataAddress.country_code
+    delete filterDataAddress.id
+    delete filterDataAddress.can_edit
+    delete filterDataAddress.can_delete
+    
+    const updateRoute = {
+        name: 'grp.models.delivery_note.update_address',
+        parameters: { deliveryNote: props.delivery_note.id }
+    }
+    router.patch(
+        route(updateRoute.name, updateRoute.parameters),
+        {
+            address: filterDataAddress
+        },
+        {
+            preserveScroll: true,
+            onStart: () => isLoadingButton.value = true,
+            onFinish: () => {
+                isLoadingButton.value = false
+
+            },
+            onSuccess: () => {
+                submitShipment()
+            },
+            onError: () => notify({
+                title: trans("Something went wrong"),
+                text: trans("Failed to update the address, try again."),
+                type: "error"
+            })
+        }
+    )
+}
+
+
+const onSubmitAddressThenShipment = () => {
+    onSaveAddress(onSubmitShipment)
+}
+
 
 const listError = ref({
     box_stats_parcel: false
@@ -229,6 +274,7 @@ const listError = ref({
 provide("listError", listError.value);
 
 const isModalEditAddress = ref(false)
+const xxxCopyAddress = ref({ ...props.address.delivery })
 </script>
 
 
@@ -407,6 +453,7 @@ const isModalEditAddress = ref(false)
             <div class="text-center font-bold mb-4">
                 {{ trans("Add shipment") }}
             </div>
+            
             <div class="w-full mt-3">
                 <span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
                 <div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
@@ -437,6 +484,7 @@ const isModalEditAddress = ref(false)
                         </div>
                     </div>
                 </div>
+
                 <div class="">
                     <PureMultiselectInfiniteScroll
                         v-model="formTrackingNumber.shipping_id"
@@ -460,12 +508,14 @@ const isModalEditAddress = ref(false)
                             </div>
                         </template>
                     </PureMultiselectInfiniteScroll>
+
                     <p
                         v-if="get(formTrackingNumber, ['errors', 'shipping_id'])"
                         class="mt-2 text-sm text-red-500">
                         {{ formTrackingNumber.errors.shipping_id }}
                     </p>
                 </div>
+
                 <!-- Tracking number -->
                 <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
                     <span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
@@ -486,30 +536,34 @@ const isModalEditAddress = ref(false)
                     class="mt-2 text-sm text-red-600">
                     <p v-if="typeof formTrackingNumber?.errors?.address === 'string'" class="italic">
                         *{{ formTrackingNumber?.errors?.address }}
-                        <Button
-                            @click="() => (isModalEditAddress = true, isModalShipment = false)"
-                            :label="trans('Change address')"
-                            size="xs"
-                            type="tertiary"
-                            class="ml-2"
-                        />
                     </p>
                     <p v-else v-for="errorx in formTrackingNumber?.errors?.address">
                         {{ errorx }}
                     </p>
                 </div>
 
+                <!-- Field: Address -->
+                <div v-if="formTrackingNumber?.errors?.address" class="my-3 p-2 rounded bg-gray-100" :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
+                    <PureAddress
+                        v-model="xxxCopyAddress"
+                        :options="address.options"
+                        xfieldLabel
+                    />
+                </div>
+
+                <!-- Button: Save -->
                 <div class="flex justify-end mt-3">
                     <Button
                         :style="'save'"
                         :loading="isLoadingButton == 'addTrackingNumber'"
                         :label="'save'"
                         :disabled="
-                                    !formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
-                                "
+                            !formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
+                        "
                         full
-                        @click="() => onSubmitShipment()" />
+                        @click="() => formTrackingNumber?.errors?.address ? onSubmitAddressThenShipment() : onSubmitShipment()" />
                 </div>
+
                 <!-- Loading: fetching service list -->
                 <div
                     v-if="isLoadingData === 'addTrackingNumber'"
@@ -522,31 +576,5 @@ const isModalEditAddress = ref(false)
                 </div>
             </div>
         </div>
-
-        
-    </Modal>
-
-    <Modal :isOpen="isModalEditAddress" @onClose="() => (isModalEditAddress = false)" closeButton :isClosableInBackground="false" width="w-full max-w-xl">
-        <!-- <DeliveryAddressManagementModal
-            :address_modal_title="trans('Edit delivery address')"
-            :addresses="address_management.addresses"
-            :updateRoute="address_management.address_update_route"
-            keyPayloadEdit="address"
-            @onDone="() => (isModalEditAddress = false, isModalShipment = true)"
-        /> -->
-
-        <AddressManagementSingle
-            :address="address.delivery"
-            :updateRoute="{
-                name: 'grp.models.delivery_note.update_address',
-                parameters: { deliveryNote: delivery_note.id }
-            }"
-            :options="address.options"
-            @onDone="() => (
-                isModalEditAddress = false,
-                isModalShipment = true,
-                set(formTrackingNumber, ['errors', 'address'], null)
-            )"
-        />
     </Modal>
 </template>
