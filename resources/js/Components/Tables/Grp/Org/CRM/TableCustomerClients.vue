@@ -13,6 +13,8 @@ import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { RouteParams } from "@/types/route-params";
 import { CustomerSalesChannel } from "@/types/customer-client";
+import { trans } from "laravel-vue-i18n"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 const props = defineProps<{
     data: {}
@@ -98,6 +100,38 @@ function customerRoute(customer: CustomerSalesChannel) {
 
             <template #cell(created_at)="{ item: customer }">
                 <div class="text-gray-500">{{ useFormatTime(customer["created_at"]) }}</div>
+            </template>
+
+            <template #cell(action)="{ item }">
+                <ButtonWithLink
+                    v-if="item.status"
+                    v-tooltip="trans('Set to inactive')"
+                    type="negative"
+                    icon="fal fa-skull"
+                    :routeTarget="item.routes.update_route"
+                    :body="{
+                        'status': false,
+                    }"
+                    size="xs"
+                    :bindToLink="{
+                        preserveScroll: true,
+                    }"
+                />
+
+                <ButtonWithLink
+                    v-else
+                    v-tooltip="trans('Set to active')"
+                    type="positive"
+                    icon="fal fa-seedling"
+                    :routeTarget="item.routes.update_route"
+                    :body="{
+                        'status': true,
+                    }"
+                    size="xs"
+                    :bindToLink="{
+                        preserveScroll: true,
+                    }"
+                />
             </template>
         </Table>
     </div>

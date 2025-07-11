@@ -240,16 +240,47 @@ onMounted(() => {
 					:disabled="get(progressToUploadToShopify, [item.id], null)"
 				/>
 
+				
 				<ButtonWithLink
-					v-tooltip="trans('Delete product')"
+					v-if="item.status"
+					v-tooltip="trans('Set to inactive')"
 					type="negative"
-					icon="fal fa-trash-alt"
-					:routeTarget="item.delete_portfolio"
+					icon="fal fa-skull"
+					:routeTarget="item.update_portfolio"
+					:body="{
+						'status': false,
+					}"
 					size="xs"
 					:bindToLink="{
 						preserveScroll: true,
 					}"
 				/>
+
+				<ButtonWithLink
+					v-else
+					v-tooltip="trans('Set to active')"
+					type="positive"
+					icon="fal fa-seedling"
+					:routeTarget="item.update_portfolio"
+					:body="{
+						'status': true,
+					}"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+				/>
+
+				<!-- <ButtonWithLink
+					v-tooltip="trans('Remove product')"
+					type="negative"
+					icon="fal fa-times"
+					:routeTarget="item.delete_portfolio"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+				/> -->
 			</div>
 		</template>
 	</Table>

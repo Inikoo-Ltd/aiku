@@ -53,25 +53,25 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 }
 
 
-const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string}, oldValue: string, newVal: string) => {
-    const data = await axios.patch(
-        route(routeUpdate.name, routeUpdate.parameters),
-        {
+// const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string}, oldValue: string, newVal: string) => {
+//     const data = await axios.patch(
+//         route(routeUpdate.name, routeUpdate.parameters),
+//         {
             
-        }
-    )
-    // console.log('oldValue', oldValue, newVal)
-    if (data.status === 200) {
-        proxyItem.status = newVal
-        notify({
-            title: trans("Success"),
-            text: trans("Successfully update the platform status"),
-            type: "success",
-        })
-    } else {
-        proxyItem.status = oldValue
-    }
-}
+//         }
+//     )
+//     // console.log('oldValue', oldValue, newVal)
+//     if (data.status === 200) {
+//         proxyItem.status = newVal
+//         notify({
+//             title: trans("Success"),
+//             text: trans("Successfully update the platform status"),
+//             type: "success",
+//         })
+//     } else {
+//         proxyItem.status = oldValue
+//     }
+// }
 
 
 const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
@@ -158,7 +158,7 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 
         <template #cell(action)="{ item: customerSalesChannel, proxyItem }">
             <!-- <pre>{{ customerSalesChannel.platform_name }} ({{ customerSalesChannel.reference }})</pre> -->
-            <Toggle
+            <!-- <Toggle
                 v-tooltip="trans('Change platform to open/closed')"
                 :routeTarget="proxyItem.toggle_route"
                 :modelValue="proxyItem.status"
@@ -172,12 +172,15 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
                 }"
                 true-value="open"
                 false-value="closed"
-            />
+            /> -->
 
             <ModalConfirmationDelete
                 :routeDelete="customerSalesChannel.unlink_route"
                 :title="trans('Are you sure you want to unlink platform') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"
+                :description="trans('The platform will be unlinked from our system. You can relinked it in the future.')"
                 isFullLoading
+                :noLabel="trans('Unlink')"
+                :noIcon="'fal fa-unlink'"
             >
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
