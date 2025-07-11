@@ -17,11 +17,11 @@ use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
@@ -47,6 +47,7 @@ class ShowDeliveryNote extends OrgAction
 {
     use AsAction;
     use WithInertia;
+    use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
 
@@ -232,7 +233,7 @@ class ShowDeliveryNote extends OrgAction
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
 
             DeliveryNoteStateEnum::PACKED => [
-                [
+                count($deliveryNote->parcels ?? []) ? [
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Finalised'),
@@ -245,7 +246,7 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ]
+                ] : []
             ],
             DeliveryNoteStateEnum::FINALISED => [
                 [
@@ -344,7 +345,10 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ),
             'customer_client' => $deliveryNote->customerClient,
-            'channel' => CustomerSalesChannelsResource::make($deliveryNote->customerSalesChannel),
+            'platform' => [
+                'name' => $deliveryNote->platform?->name,
+                'logo' => $this->getPlatformLogo($deliveryNote->customerSalesChannel)
+            ],
             'products'         => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
@@ -451,11 +455,11 @@ class ShowDeliveryNote extends OrgAction
                 'navigation' => DeliveryNoteTabsEnum::navigation($deliveryNote)
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
-            
+
             'addresses' => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
             ],
-            
+
             'timelines' => $this->getTimeline($deliveryNote),
             'box_stats' => $this->getBoxStats($deliveryNote),
 
