@@ -55,7 +55,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 'customer_sales_channels.platform_id',
                 'customer_sales_channels.name',
             ])
-            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios', 'number_orders'])
+            ->allowedSorts(['reference', 'name', 'number_customer_clients', 'number_portfolios', 'number_orders'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -116,7 +116,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 ->column(key: 'platform_name', label: "", canBeHidden: false, type: 'avatar')
                 ->column(key: 'name', label: __('Store Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_clients', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customer_clients', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
                 // ->column(key: 'status', label: __('Status'), canBeHidden: false)
                 // ->column(key: 'connection', label: __('Connection'), canBeHidden: false)

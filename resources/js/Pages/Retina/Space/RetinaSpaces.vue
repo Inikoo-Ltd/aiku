@@ -39,7 +39,7 @@ function spaceRoute(space) {
 				space.slug,
 			])
 		default:
-			return null
+			return ''
 	}
 }
 </script>
@@ -48,6 +48,10 @@ function spaceRoute(space) {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
 	<Table :resource="data" :name="tab" class="mt-5">
+		<!-- <template #cell(state)="{ item: space }">
+			<pre>{{ space}}</pre>
+		</template> -->
+		
 		<template #cell(reference)="{ item: space }">
 			<Link :href="spaceRoute(space)" class="primaryLink">
 				{{ space["reference"] }}
