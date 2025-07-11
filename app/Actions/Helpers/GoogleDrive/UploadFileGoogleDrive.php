@@ -25,7 +25,7 @@ class UploadFileGoogleDrive
     /**
      * @throws \Google\Exception
      */
-    public function handle(Organisation $organisation, $path, $folderName = 'AWFAMILY/XX1/XX2/TEST/CODE2'): string
+    public function handle(Organisation $organisation, $path, $folderName): string
     {
         $client = GetClientGoogleDrive::run($organisation);
         $name   = Str::of($path)->basename();
