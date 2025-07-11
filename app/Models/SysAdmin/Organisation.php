@@ -40,6 +40,7 @@ use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
+use App\Models\Dispatching\Box;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
@@ -870,6 +871,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);
+    }
+
+    public function boxes(): HasMany
+    {
+        return $this->hasMany(Box::class);
     }
 
 
