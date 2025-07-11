@@ -342,6 +342,8 @@ class ShowDeliveryNote extends OrgAction
                     ],
                 ]
             ),
+            'customer_client' => $deliveryNote->customerClient,
+            'platform' => $deliveryNote->platform_id,
             'products'         => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
