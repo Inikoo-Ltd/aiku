@@ -144,9 +144,9 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
                 {{ customerSalesChannel["number_portfolios"] }}
             </Link>
         </template>
-        <template #cell(number_clients)="{ item: customerSalesChannel }">
+        <template #cell(number_customer_clients)="{ item: customerSalesChannel }">
             <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
-                {{ customerSalesChannel["number_clients"] }}
+                {{ customerSalesChannel["number_customer_clients"] }}
             </Link>
         </template>
         <template #cell(number_orders)="{ item: customerSalesChannel }">
