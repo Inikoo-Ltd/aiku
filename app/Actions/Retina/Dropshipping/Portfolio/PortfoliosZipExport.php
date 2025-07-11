@@ -10,110 +10,85 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use App\Models\CRM\Customer;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use ZipStream\ZipStream;
+use Sentry\Laravel\Facade as Sentry;
 
 class PortfoliosZipExport
 {
     use AsAction;
 
-    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel)
+    /**
+     * @throws \ZipStream\Exception\OverflowException
+     */
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        $zipFileName = 'portfolios_' . now()->format('Ymd') . '.zip';
-        $zip = new ZipStream(
-            outputName: $zipFileName,
+        $zipFileName = 'images_'.Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference).'.zip';
+        $zip         = new ZipStream(
             sendHttpHeaders: true,
+            outputName: $zipFileName,
         );
 
-        $counter = 1;
-        $batchSize = 100;
-        $processedImages = [];
 
-        try {
-            $customer->portfolios()
-                ->where('customer_sales_channel_id', $customerSalesChannel->id)
-                ->lazy($batchSize)
-                ->each(function ($portfolio) use ($zip, &$counter, &$processedImages) {
+        $imagesData = $this->getImages($customerSalesChannel);
 
-                    $portfolio->load('item.images');
 
-                    if (!$portfolio->item || !$portfolio->item->images) {
-                        return;
-                    }
+        foreach ($imagesData as $imageId => $imageData) {
+            $image = $imageData['image'];
+            $disk  = Storage::disk($image->disk);
+            if (!$disk->exists($image->getPathRelativeToRoot())) {
+                unset($imagesData[$imageId]);
+                continue;
+            }
 
-                    foreach ($portfolio->item->images as $image) {
+            try {
+                $stream = $disk->readStream($image->getPathRelativeToRoot());
+                if (!$stream) {
+                    continue;
+                }
 
-                        if (in_array($image->id, $processedImages)) {
-                            continue;
-                        }
+                $fileName = $imageData['filename'];
 
-                        $stream = null;
-                        try {
-                            $disk = Storage::disk($image->disk);
-
-                            if (!$disk->exists($image->getPath())) {
-                                Log::warning('Image file not found', [
-                                    'image_id' => $image->id,
-                                    'path' => $image->getPath()
-                                ]);
-                                \Sentry\captureMessage('Image file not found:' . $image->id . ', Path:'. $image->getPath());
-                                continue;
-                            }
-
-                            $stream = $disk->readStream($image->getPath());
-                            if (!$stream) {
-                                Log::error('Failed to open stream for image', [
-                                    'image_id' => $image->id,
-                                    'path' => $image->getPath()
-                                ]);
-                                \Sentry\captureMessage('Failed to open stream for image:' . $image->id . ', Path:'. $image->getPath());
-                                continue;
-                            }
-
-                            $extension = pathinfo($image->getPath(), PATHINFO_EXTENSION) ?: 'jpg';
-                            $fileName = sprintf('image_%06d.%s', $counter, $extension);
-
-                            $zip->addFileFromStream($fileName, $stream);
-                            $processedImages[] = $image->id;
-                            $counter++;
-
-                        } catch (\Exception $e) {
-                            Log::error('Error adding image to zip stream', [
-                                'image_id' => $image->id,
-                                'error' => $e->getMessage(),
-                                'trace' => $e->getTraceAsString()
-                            ]);
-                            \Sentry\captureMessage('Error adding image to zip stream:' . $image->id . ', Error:'. $e->getMessage());
-                        } finally {
-
-                            if ($stream && is_resource($stream)) {
-                                fclose($stream);
-                            }
-                        }
-                    }
-
-                    $portfolio->unsetRelation('item');
-                });
-
-        } catch (\Exception $e) {
-            Log::error('Fatal error in portfolio zip export', [
-                'customer_id' => $customer->id,
-                'sales_channel_id' => $customerSalesChannel->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            \Sentry\captureMessage('Fatal error in portfolio zip export:' . $customer->id . ', Error:'. $e->getMessage());
-            throw $e;
-        } finally {
-            $zip->finish();
+                $zip->addFileFromStream($fileName, $stream);
+            } catch (\Exception $e) {
+                Sentry::captureException($e, [
+                    'extra' => [
+                        'image_id'  => $imageId,
+                        'file_path' => $image->getPathRelativeToRoot()
+                    ]
+                ]);
+            } finally {
+                if (isset($stream) && is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
         }
+
+        $zip->finish();
     }
+
+
+    public function getImages(CustomerSalesChannel $customerSalesChannel): array
+    {
+        $imagesData = [];
+        foreach ($customerSalesChannel->portfolios as $portfolio) {
+            if ($portfolio->item instanceof Product) {
+                /** @var Product $product */
+                $product = $portfolio->item;
+                foreach ($product->images as $image) {
+                    $imagesData[$image->id] = [
+                        'filename' => strtolower($product->code).'__'.$image->id.'.'.$image->extension,
+                        'image'    => $image
+                    ];
+                }
+            }
+        }
+
+        return $imagesData;
+    }
+
 }

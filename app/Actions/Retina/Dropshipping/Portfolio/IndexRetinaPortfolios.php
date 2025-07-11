@@ -13,15 +13,18 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Enums\UI\Dropshipping\RetinaPortfoliosTabsEnum;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -35,7 +38,6 @@ class IndexRetinaPortfolios extends RetinaAction
     use WithPlatformStatusCheck;
     private CustomerSalesChannel $customerSalesChannel;
 
-    private $product_count = 0;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null, bool $disabled = false): LengthAwarePaginator
     {
@@ -71,7 +73,6 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $query->where('item_type', class_basename(Product::class));
 
-        $this->product_count = $query->get()->count();
 
         return $query->defaultSort('-portfolios.id')
             ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter()])
@@ -82,7 +83,6 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getStateFilter(): AllowedFilter
     {
         return AllowedFilter::callback('status', function ($query, $value) {
-            // dd($value);
             $query->join('products', function ($join) {
                 $join->on('portfolios.item_id', '=', 'products.id')
                         ->where('portfolios.item_type', 'Product');
@@ -131,6 +131,9 @@ class IndexRetinaPortfolios extends RetinaAction
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->get();
 
+        /** @var ShopifyUser|WooCommerceUser|AmazonUser|MagentoUser $platformUser */
+        $platformUser = $this->customerSalesChannel->user;
+
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -149,31 +152,31 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::SHOPIFY => [
                             'name'       => 'retina.models.dropshipping.shopify.batch_upload',
                             'parameters' => [
-                                'shopifyUser' => $this->customerSalesChannel->user->id
+                                'shopifyUser' => $platformUser->id
                             ]
                         ],
                         PlatformTypeEnum::WOOCOMMERCE => [
                             'name'       => 'retina.models.dropshipping.woo.batch_upload',
                             'parameters' => [
-                                'wooCommerceUser' => $this->customerSalesChannel->user->id
+                                'wooCommerceUser' => $platformUser->id
                             ]
                         ],
                         PlatformTypeEnum::EBAY => [
                             'name'       => 'retina.models.dropshipping.ebay.batch_upload',
                             'parameters' => [
-                                'ebayUser' => $this->customerSalesChannel->user->id
+                                'ebayUser' => $platformUser->id
                             ]
                         ],
                         PlatformTypeEnum::AMAZON => [
                             'name'       => 'retina.models.dropshipping.amazon.batch_upload',
                             'parameters' => [
-                                'amazonUser' => $this->customerSalesChannel->user->id
+                                'amazonUser' => $platformUser->id
                             ]
                         ],
                         PlatformTypeEnum::MAGENTO => [
                             'name'       => 'retina.models.dropshipping.magento.batch_upload',
                             'parameters' => [
-                                'magentoUser' => $this->customerSalesChannel->user->id
+                                'magentoUser' => $platformUser->id
                             ]
                         ],
                         default => false
@@ -236,10 +239,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ],
                     'images' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
+                        'name'       => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
                         'parameters' => [
-                            'customerSalesChannel' => $this->customerSalesChannel->slug,
-                            'type'                 => 'portfolio_images'
+                            'customerSalesChannel' => $this->customerSalesChannel->id,
                         ]
                     ]
                 ],
@@ -258,10 +260,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         'add_button'  => __("Add Product"),
                     ]
                 ],
-                'tabs'           => [
-                    'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
-                ],
+
 
                 'step'             => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
@@ -275,7 +274,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     'navigation' => RetinaPortfoliosTabsEnum::navigation(),
                 ],
 
-                'product_count'            => $this->product_count,
+                'product_count'            => $this->customerSalesChannel->number_portfolios,
 
                 RetinaPortfoliosTabsEnum::ACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::ACTIVE->value ?
                     fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix:'active'))
@@ -286,7 +285,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix:'inactive', disabled: true))),
 
                 'count_product_not_synced' => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count(),
-                'platform_user_id'          => $this->customerSalesChannel->user?->id,
+                'platform_user_id'          => $platformUser?->id,
                 'platform_data'             => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                  => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'     => $this->checkStatus($this->customerSalesChannel) === 'connected',

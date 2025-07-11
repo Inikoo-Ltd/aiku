@@ -24,7 +24,6 @@ use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
 use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
-use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForBasket;
@@ -110,7 +109,6 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('api')->as('api.')->group(function () {
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-        // Route::get('/history', IndexRetinaApiDropshipping::class)->name('index');
     });
 
 

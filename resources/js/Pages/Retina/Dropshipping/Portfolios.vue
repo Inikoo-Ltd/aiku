@@ -18,9 +18,7 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import type {Component} from 'vue';
-
 import {faSyncAlt} from "@fas";
-import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
 import {
     faBracketsCurly,
     faFileExcel,
@@ -33,10 +31,10 @@ import {
     faDownload
 } from "@fal";
 import axios from "axios"
-import {set} from "lodash"
 import {useTabChange} from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import {Table as TableTS} from "@/types/Table"
+import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -124,7 +122,6 @@ const onUploadToShopify = () => {
             router.reload({only: ["pageHead", "products"]});
             notify({
                 title: trans("Success!"),
-                // text: trans("Portfolios successfully uploaded to Shopify"),
                 text: `Portfolios successfully uploaded to ${props.platform_data.name}`,
                 type: "success"
             });
@@ -138,7 +135,6 @@ const onUploadToShopify = () => {
 
 
 const downloadUrl = (type: string) => {
-    // return '';
     if (props.download_route?.[type]?.name) {
         return route(props.download_route[type].name, props.download_route[type].parameters);
     } else {
@@ -285,6 +281,15 @@ const component = computed(() => {
                     />
                 </a>
 
+                <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
+                    <Button
+                        :icon="faImage"
+                        label="Images"
+                        type="tertiary"
+                        class="border-l-0 border-r-0 rounded-none"
+                    />
+                </a>
+
                 <!-- Section: Download button -->
                 <Button
                     @click="(e) => _popover?.toggle(e)"
@@ -299,18 +304,18 @@ const component = computed(() => {
                 <Popover ref="_popover">
                     <div class="w-64 relative">
                         <div class="text-sm mb-2">
-                            {{ trans("Select another download file type:") }}:
+                            {{ trans("Select another download file type") }}:
                         </div>
 
                         <div class="flex flex-col gap-y-2">
-                            <a :href="downloadUrl('xlsx')" target="_blank" rel="noopener">
+                            <a :href="downloadUrl('xlsx') as string" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faFileExcel"
                                     label="Excel"
                                     full
                                     :style="'tertiary'"/>
                             </a>
-                            <a :href="downloadUrl('json')" target="_blank" rel="noopener">
+                            <a :href="downloadUrl('json') as string" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faBracketsCurly"
                                     label="JSON"
@@ -318,13 +323,13 @@ const component = computed(() => {
                                     :style="'tertiary'"
                                 />
                             </a>
-                            <!-- <a :href="downloadUrl('images')" target="_blank" rel="noopener">
+                          <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faImage"
                                     :label="trans('Images')"
                                     full
                                     :style="'tertiary'" />
-                            </a> -->
+                            </a>
                         </div>
 
                     </div>
@@ -412,7 +417,7 @@ const component = computed(() => {
                     @click="() => bulkUpload()"
                     icon="fas fa-upload"
                     :label="trans('Upload all')"
-                    zsize="xxs"
+                    size="xxs"
                     :routeTarget="routes.bulk_upload"
                     type="green"
                     full
