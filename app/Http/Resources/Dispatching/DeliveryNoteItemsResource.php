@@ -32,6 +32,9 @@ class DeliveryNoteItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $requiredFactionalData = divideWithRemainder(findSmallestFactors($this->quantity_required));
+
+
         $orgStock         = OrgStock::find($this->org_stock_id);
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
         $fullWarning      = [
@@ -45,20 +48,21 @@ class DeliveryNoteItemsResource extends JsonResource
             ];
         }
         $pickingLocations = $orgStock->locationOrgstocks->where('type', LocationStockTypeEnum::PICKING);
+
         return [
-            'id'                  => $this->id,
-            'state'               => $this->state,
-            'state_icon'          => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'   => $this->quantity_required,
-           'quantity_to_pick'    => max(0, $this->quantity_required - $this->quantity_picked),
-            'quantity_picked'     => $this->quantity_picked,
-            'quantity_not_picked' => $this->quantity_not_picked,
-            'quantity_packed'     => $this->quantity_packed,
-            'quantity_dispatched' => $this->quantity_dispatched,
-            'org_stock_code'      => $this->org_stock_code,
-            'org_stock_name'      => $this->org_stock_name,
-            'locations'           => $pickingLocations->isNotEmpty() ? LocationOrgStocksResource::collection($pickingLocations) : [],
-            'pickings'            => $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
+            'id'                           => $this->id,
+            'state'                        => $this->state,
+            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
+            'quantity_required'            => $this->quantity_required,
+            'quantity_to_pick'             => max(0, $this->quantity_required - $this->quantity_picked),
+            'quantity_picked'              => $this->quantity_picked,
+            'quantity_not_picked'          => $this->quantity_not_picked,
+            'quantity_packed'              => $this->quantity_packed,
+            'quantity_dispatched'          => $this->quantity_dispatched,
+            'org_stock_code'               => $this->org_stock_code,
+            'org_stock_name'               => $this->org_stock_name,
+            'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksResource::collection($pickingLocations) : [],
+            'pickings'                     => $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
                 ? $deliveryNoteItem->pickings->where('type', PickingTypeEnum::PICK)
                     ->keyBy(function ($item) {
                         return $item->location_id
@@ -66,45 +70,46 @@ class DeliveryNoteItemsResource extends JsonResource
                     })
                     ->map(fn ($item) => new PickingsResource($item))
                 : [],
-            'packings'            => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-            'warning'             => $fullWarning,
-            'is_handled'          => $this->is_handled,
-            'is_packed'           => $this->quantity_packed == $this->quantity_picked,
-            'picking_route'       => [
+            'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'warning'                      => $fullWarning,
+            'is_handled'                   => $this->is_handled,
+            'is_packed'                    => $this->quantity_packed == $this->quantity_picked,
+            'quantity_required_fractional' => $requiredFactionalData,
+            'picking_route'                => [
                 'name'       => 'grp.models.delivery_note_item.picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-            'picking_all_route'   => [
+            'picking_all_route'            => [
                 'name'       => 'grp.models.delivery_note_item.picking_all.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-            'not_picking_route'   => [
+            'not_picking_route'            => [
                 'name'       => 'grp.models.delivery_note_item.not_picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-            'packing_route'       => [
+            'packing_route'                => [
                 'name'       => 'grp.models.delivery_note_item.packing.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-            'pickers_list_route'  => [
+            'pickers_list_route'           => [
                 'name'       => 'grp.json.employees.picker_users',
                 'parameters' => [
                     'organisation' => $deliveryNoteItem->organisation->slug
                 ]
             ],
-            'packers_list_route'  => [
+            'packers_list_route'           => [
                 'name'       => 'grp.json.employees.packers',
                 'parameters' => [
                     'organisation' => $deliveryNoteItem->organisation->slug

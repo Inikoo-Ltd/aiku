@@ -21,8 +21,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteCustomerSalesChannel extends OrgAction
 {
-
-
     public function handle(CustomerSalesChannel $customerSalesChannel): ?bool
     {
         foreach ($customerSalesChannel->portfolios as $portfolio) {
@@ -30,7 +28,7 @@ class DeleteCustomerSalesChannel extends OrgAction
         }
 
 
-        if($customerSalesChannel->user) {
+        if ($customerSalesChannel->user) {
             match ($customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => DeleteShopifyUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::WOOCOMMERCE => DeleteWooCommerceUser::run($customerSalesChannel->user),

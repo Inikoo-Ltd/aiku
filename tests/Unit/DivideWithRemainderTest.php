@@ -60,7 +60,7 @@ test('divideWithRemainder works with large numbers', function () {
     $result = divideWithRemainder([1000000, 7]);
     expect($result)->toBe([142857, [1, 7]]);
 
-    // Test for PHP_INT_MAX / 2 
+    // Test for PHP_INT_MAX / 2
     $result = divideWithRemainder([PHP_INT_MAX, 2]);
     expect($result[0])->toBe(intdiv(PHP_INT_MAX, 2));
     expect($result[1][0])->toBe(PHP_INT_MAX % 2);
