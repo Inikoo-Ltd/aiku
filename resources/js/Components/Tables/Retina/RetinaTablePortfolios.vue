@@ -38,7 +38,7 @@ const props = defineProps<{
 	selectedData: {
 		products: number[]
 	}
-	
+
     platform_data: PlatformData
 	platform_user_id: number
 	is_platform_connected: boolean
@@ -116,7 +116,7 @@ onMounted(() => {
 						setTimeout(() => {
 							set(props.progressToUploadToShopify, [porto.id], null)
 						}, 3000);
-	
+
 					} else {
 						set(props.progressToUploadToShopify, [porto.id], 'success')
 						debReloadPage()
@@ -125,7 +125,7 @@ onMounted(() => {
 			);
 
 			console.log(`Subscription porto id: ${porto.id}`, xxx)
-	
+
 		}
     });
 
@@ -206,7 +206,7 @@ onMounted(() => {
 					<span v-if="(product.upload_warning)" class="text-red-500 text-xs text-center italic">
 						{{ product.upload_warning }}
 					</span>
-					<span v-else class="text-gray-500 text-xs text-center italic">
+					<span v-else-if="!product.platform_product_id" class="text-gray-500 text-xs text-center italic">
 						{{ trans("Pending upload") }}
 					</span>
 				</template>
