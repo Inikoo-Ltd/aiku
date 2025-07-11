@@ -287,33 +287,36 @@ const onPrintShipment = async (ship) => {
 			<!-- Field: Address + Customer (icons di luar box) -->
 			<div v-if="boxStats?.delivery_address" class="w-full space-y-3 text-sm text-gray-700 mt-2">
 
-				<!-- Customer Info -->
-				<div class="flex items-start gap-x-2">
-					<!-- Icon di luar box -->
-					<FontAwesomeIcon icon="fal fa-user" class="text-gray-400 text-base mt-[2px]" fixed-width />
 
-					<!-- Box konten -->
-					<div class="flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-0.5">
-						<p class="font-medium">Customer Info</p>
-						<div class="text-xs text-gray-600 leading-snug">
-							<div><strong>Name:</strong> {{ boxStats.customer.contact_name || boxStats.customer.name }}
-							</div>
-							<div v-if="boxStats.customer.email"><strong>Email:</strong> {{ boxStats.customer.email }}
-							</div>
-							<div v-if="boxStats.customer.phone"><strong>Phone:</strong> {{ boxStats.customer.phone }}
-							</div>
-						</div>
-					</div>
-				</div>
 
 				<!-- Shipping Address -->
 				<div class="flex items-start gap-x-2">
-					<!-- Icon di luar box -->
+
+
+
+
 					<FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400 text-base mt-[2px]" fixed-width />
 
 					<!-- Box konten -->
 					<div class="flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-0.5">
-						<p class="font-medium">Shipping Address</p>
+						<p class="font-medium">Shipping Info</p>
+
+
+                        <div v-if="boxStats.customer_client" class="mb-3">
+                            <div class="text-xs text-gray-600 leading-snug">
+                                <div><strong>Name:</strong> {{ boxStats.customer_client.contact_name || boxStats.customer_client.name }}
+                                </div>
+                                <div v-if="boxStats.customer_client.email"><strong>Email:</strong> {{ boxStats.customer_client.email }}
+                                </div>
+                                <div v-if="boxStats.customer_client.phone"><strong>Phone:</strong> {{ boxStats.customer_client.phone }}
+                                </div>
+                            </div>
+
+
+                        </div>
+
+
+
 						<div v-html="boxStats.delivery_address.formatted_address"
 							class="text-xs text-gray-600 leading-snug"></div>
 					</div>

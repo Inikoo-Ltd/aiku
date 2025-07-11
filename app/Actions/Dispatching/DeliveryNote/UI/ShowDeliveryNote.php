@@ -380,7 +380,6 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'customer_client' => $deliveryNote->customerClient,
             'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
             'picker'           => $deliveryNote->pickerUser,
             'packer'           => $deliveryNote->packerUser,

@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Enums\UI\Dropshipping\RetinaPortfoliosTabsEnum;
@@ -19,6 +20,7 @@ use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -123,6 +125,11 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $title = __('My Products');
 
+        $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+        $manualChannels = $this->customer->customerSalesChannels()
+            ->where('platform_id', $platform->id)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->get();
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -190,6 +197,13 @@ class IndexRetinaPortfolios extends RetinaAction
                     'deletePortfolioRoute'      => [
                         'name'       => 'retina.models.portfolio.delete',
                         'parameters' => []
+                    ],
+                    'clonePortfolioRoute'      => [
+                        'method'       => 'post',
+                        'name'       => 'retina.models.customer_sales_channel.portfolio.clone_manual',
+                        'parameters' => [
+                            'targetCustomerSalesChannel' => $this->customerSalesChannel->id
+                        ]
                     ],
                     'batchDeletePortfolioRoute' => [
                         'name'       => 'retina.models.customer_sales_channel.portfolio.batch.delete',
@@ -277,6 +291,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products'                  => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'     => $this->checkStatus($this->customerSalesChannel) === 'connected',
                 'customer_sales_channel'    => CustomerSalesChannelsResource::make($this->customerSalesChannel)->toArray(request()),
+                'manual_channels'           => CustomerSalesChannelsResource::collection($manualChannels)
             ]
         )->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::ACTIVE->value))
             ->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::INACTIVE->value));

@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
+use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
@@ -229,6 +230,8 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('shopify-sync-all-stored-items', SyncRetinaStoredItemsFromApiProductsShopify::class)->name('shopify_sync_all_stored_items');
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
+    Route::post('portfolio-clone-manual/{targetCustomerSalesChannel:id}', CloneMultipleManualPortfolios::class)->name('portfolio.clone_manual')->withoutScopedBindings();
+
 
     Route::delete('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
     Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
