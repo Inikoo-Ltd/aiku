@@ -12,7 +12,7 @@ use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteProductWebhooksShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
-use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
@@ -27,7 +27,7 @@ Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group
         // Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
     });
 
-    Route::post('app/uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
+    Route::post('app/uninstalled', [DeleteShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
     });

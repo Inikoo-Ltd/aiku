@@ -21,7 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Random\RandomException;
 
-class DeleteRetinaShopifyUser extends OrgAction
+class DeleteShopifyUser extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -55,14 +55,7 @@ class DeleteRetinaShopifyUser extends OrgAction
         $shopifyUser->delete();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction || $request->user() instanceof WebUser) {
-            return true;
-        }
 
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
-    }
 
     /**
      * @throws \Random\RandomException

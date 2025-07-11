@@ -41,7 +41,5 @@ class DeleteWebUser
             $command->error($e->getMessage());
             return 1;
         }
-
-
     }
 }

@@ -38,11 +38,11 @@ test('findSmallestFactors works for numbers greater than 1', function () {
 
     // Test for 3.5 (7/2)
     $result = findSmallestFactors(3.5);
-    expect($result)->toBe([1, 1]);
+    expect($result)->toBe([7, 2]);
 
     // Test for 1.5 (3/2)
     $result = findSmallestFactors(1.5);
-    expect($result)->toBe([1, 1]);
+    expect($result)->toBe([3, 2]);
 });
 
 test('findSmallestFactors works for negative numbers', function () {

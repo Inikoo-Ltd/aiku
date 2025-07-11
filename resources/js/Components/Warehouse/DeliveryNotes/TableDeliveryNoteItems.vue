@@ -29,6 +29,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
 
@@ -171,7 +172,9 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
-            <span v-tooltip="item.quantity_required">{{ locale.number(item.quantity_required) }} </span>
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay  :fractionData="item.quantity_required_fractional" />
+            </span>
 
             <template v-if="state === 'handling'">
                 <span v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2">

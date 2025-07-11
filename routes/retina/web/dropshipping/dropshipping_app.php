@@ -13,7 +13,7 @@ use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
-use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
@@ -59,10 +59,10 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
 Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
-    Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
+    Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
-    Route::delete('wc-user', DeleteRetinaShopifyUser::class)->name('wc.delete');
+    Route::delete('wc-user', DeleteShopifyUser::class)->name('wc.delete');
 
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');
     Route::get('ebay-user-callback', CallbackRetinaEbayUser::class)->name('ebay.callback');
