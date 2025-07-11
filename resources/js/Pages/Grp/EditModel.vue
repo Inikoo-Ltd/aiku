@@ -78,6 +78,7 @@ const props = defineProps<{
                 label: string,
                 title: string,
                 subtitle?: string,
+                information?: string,  // Tooltip information
                 icon: string
                 fields: {
                     // FieldData
@@ -210,6 +211,13 @@ function connectToPlatform(routeName, parameters) {
                                 ]"
                                              :icon="sectionData.icon" />
                             <span class="truncate">{{ sectionData.label }}</span>
+                            <FontAwesomeIcon v-if="sectionData.information"
+                                v-tooltip="sectionData.information"
+                                icon="fal fa-info-circle"
+                                class="ml-1 text-gray-400 hover:text-gray-700"
+                                fixed-width
+                                aria-hidden="true"
+                            />
                             <!-- {{ tabActive }} -- {{ key == currentTab }} -->
                         </div>
                     </template>

@@ -406,7 +406,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
 
             <!-- Button: Pack -->
-            <div v-if="itemValue.is_picked && !itemValue.is_packed" class="w-full max-w-32 mx-auto">
+          <!--   <div v-if="itemValue.is_picked && !itemValue.is_packed" class="w-full max-w-32 mx-auto">
                 <ButtonWithLink
                     
                     :routeTarget="itemValue.packing_route"
@@ -419,7 +419,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                     size="xs"
                     :label="trans('Pack')"
                 />
-            </div>
+            </div> -->
 
         </template>
     </Table>

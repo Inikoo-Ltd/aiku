@@ -142,6 +142,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'price'                     => $price,
             'selling_price'             => $this->selling_price,
             'customer_price'            => $this->customer_price,
+            'status'                    => $this->status,
             'margin'                    => percentage($this->margin, 1),
             'image'                     => $image,
             'type'                      => $this->item_type,
@@ -154,6 +155,13 @@ class DropshippingPortfoliosResource extends JsonResource
             'delete_portfolio' => [
                 'method' => 'delete',
                 'name'       => 'retina.models.portfolio.delete',
+                'parameters' => [
+                    'portfolio' => $this->id
+                ]
+            ],
+            'update_portfolio' => [
+                'method' => 'patch',
+                'name'       => 'retina.models.portfolio.update',
                 'parameters' => [
                     'portfolio' => $this->id
                 ]
