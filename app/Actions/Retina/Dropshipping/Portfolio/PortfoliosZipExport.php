@@ -23,6 +23,9 @@ class PortfoliosZipExport
 
     public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel)
     {
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
 
         $zipFileName = 'portfolios_' . now()->format('Ymd') . '.zip';
         $zip = new ZipStream(
@@ -31,40 +34,82 @@ class PortfoliosZipExport
         );
 
         $counter = 1;
-        $batchSize = 500;
+        $batchSize = 100;
+        $processedImages = [];
 
-        $customer->portfolios()
-            ->where('customer_sales_channel_id', $customerSalesChannel->id)
-            ->with(['item.images'])
-            ->lazy($batchSize)
-            ->each(function ($portfolio) use ($zip, &$counter) {
-                if (!$portfolio->item || !$portfolio->item->images) {
-                    return;
-                }
+        try {
+            $customer->portfolios()
+                ->where('customer_sales_channel_id', $customerSalesChannel->id)
+                ->lazy($batchSize)
+                ->each(function ($portfolio) use ($zip, &$counter, &$processedImages) {
 
-                foreach ($portfolio->item->images as $image) {
-                    try {
-                        $disk = Storage::disk($image->disk);
+                    $portfolio->load('item.images');
+                    
+                    if (!$portfolio->item || !$portfolio->item->images) {
+                        return;
+                    }
 
-                        if (!$disk->exists($image->getPath())) {
+                    foreach ($portfolio->item->images as $image) {
+
+                        if (in_array($image->id, $processedImages)) {
                             continue;
                         }
 
-                        $stream = $disk->readStream($image->getPath());
-                        $extension = pathinfo($image->getPath(), PATHINFO_EXTENSION) ?: 'jpg';
-                        $fileName = 'image_' . $counter . '.' . $extension;
+                        $stream = null;
+                        try {
+                            $disk = Storage::disk($image->disk);
 
-                        $zip->addFileFromStream($fileName, $stream);
-                        $counter++;
-                    } catch (\Exception $e) {
-                        Log::error('Error adding image to zip stream', [
-                            'image_id' => $image->id,
-                            'error' => $e->getMessage()
-                        ]);
+                            if (!$disk->exists($image->getPath())) {
+                                Log::warning('Image file not found', [
+                                    'image_id' => $image->id,
+                                    'path' => $image->getPath()
+                                ]);
+                                continue;
+                            }
+
+                            $stream = $disk->readStream($image->getPath());
+                            if (!$stream) {
+                                Log::error('Failed to open stream for image', [
+                                    'image_id' => $image->id,
+                                    'path' => $image->getPath()
+                                ]);
+                                continue;
+                            }
+
+                            $extension = pathinfo($image->getPath(), PATHINFO_EXTENSION) ?: 'jpg';
+                            $fileName = sprintf('image_%06d.%s', $counter, $extension);
+
+                            $zip->addFileFromStream($fileName, $stream);
+                            $processedImages[] = $image->id;
+                            $counter++;
+
+                        } catch (\Exception $e) {
+                            Log::error('Error adding image to zip stream', [
+                                'image_id' => $image->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                        } finally {
+
+                            if ($stream && is_resource($stream)) {
+                                fclose($stream);
+                            }
+                        }
                     }
-                }
-            });
 
-        $zip->finish();
+                    $portfolio->unsetRelation('item');
+                });
+
+        } catch (\Exception $e) {
+            Log::error('Fatal error in portfolio zip export', [
+                'customer_id' => $customer->id,
+                'sales_channel_id' => $customerSalesChannel->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        } finally {
+            $zip->finish();
+        }
     }
 }

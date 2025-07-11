@@ -54,12 +54,12 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $query = QueryBuilder::for(Portfolio::class);
 
-        $query->where('customer_sales_channel_id', $customerSalesChannel->id);
+        $query->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id);
 
         if ($disabled) {
-            $query->where('status', false);
+            $query->where('portfolios.status', false);
         } else {
-            $query->where('status', true);
+            $query->where('portfolios.status', true);
         }
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
@@ -71,10 +71,23 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $this->product_count = $query->get()->count();
 
-        return $query->defaultSort('-id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch])
+        return $query->defaultSort('-portfolios.id')
+            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter()])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    public function getStateFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('status', function ($query, $value) {
+            // dd($value);
+            $query->join('products', function ($join) {
+                $join->on('portfolios.item_id', '=', 'products.id')
+                        ->where('portfolios.item_type', 'Product');
+            });
+
+            $query->whereIn('products.status', (array) $value);
+        });
     }
 
     public function authorize(ActionRequest $request): bool
