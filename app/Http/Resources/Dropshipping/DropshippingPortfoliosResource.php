@@ -158,6 +158,13 @@ class DropshippingPortfoliosResource extends JsonResource
                     'portfolio' => $this->id
                 ]
             ],
+            'update_portfolio' => [
+                'method' => 'patch',
+                'name'       => 'grp.models.portfolio.update',
+                'parameters' => [
+                    'portfolio' => $this->id
+                ]
+            ],
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
             ...$ebayUploadRoute,

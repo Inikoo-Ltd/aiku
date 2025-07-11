@@ -37,7 +37,7 @@ const props = defineProps<{
 			phone: string
 			address: Address
 		}
-        delivery_address: Address,
+		delivery_address: Address,
 		products: {
 			estimated_weight: number
 		}
@@ -53,7 +53,7 @@ const props = defineProps<{
 			reference: string
 			route: routeType
 		}
-        state: string
+		state: string
 		parcels: {
 			weight: number
 			dimensions: [number, number, number]
@@ -63,7 +63,7 @@ const props = defineProps<{
 			name: string
 			tracking: string
 			label?: string
-            label_type?: string
+			label_type?: string
 			combined_label_url?: string
 			is_printable?: boolean
 		}[]
@@ -79,10 +79,14 @@ const props = defineProps<{
 	deliveryNote: {
 		state: string
 	}
+	platform: {
+		logo : String
+		name: String
+	}
 	updateRoute: routeType
 }>()
 
-// console.log(props.boxStats)
+/* console.log(props.boxStats) */
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -128,34 +132,34 @@ const onSubmitParcels = () => {
 // Section: Shipment
 const isDeleteShipment = ref<number | null>(null)
 const onDeleteShipment = (idShipment: number) => {
-	router.delete(route(props.shipments.delete_route.name, { 
+	router.delete(route(props.shipments.delete_route.name, {
 		...props.shipments.delete_route.parameters,
 		shipment: idShipment,
 	}),
-	{
-		preserveScroll: true,
-		onStart: () => {
-			isDeleteShipment.value = idShipment
-		},
-		onSuccess: () => {
-			notify({
-				title: trans("Success!"),
-				text: trans("Shipment has deleted."),
-				type: "success",
-			})
-		},
-		onError: (errors) => {
-			notify({
-				title: trans("Something went wrong."),
-				text: trans("Failed to delete shipment. Please try again or contact administrator."),
-				type: "error",
-			})
-		},
-		onFinish: () => {
-			isDeleteShipment.value = null
-			isLoadingSubmitParcels.value = false
-		},
-	})
+		{
+			preserveScroll: true,
+			onStart: () => {
+				isDeleteShipment.value = idShipment
+			},
+			onSuccess: () => {
+				notify({
+					title: trans("Success!"),
+					text: trans("Shipment has deleted."),
+					type: "success",
+				})
+			},
+			onError: (errors) => {
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to delete shipment. Please try again or contact administrator."),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isDeleteShipment.value = null
+				isLoadingSubmitParcels.value = false
+			},
+		})
 }
 
 const listError = inject('listError', {})
@@ -189,7 +193,7 @@ const onPrintShipment = async (ship) => {
 			route(
 				'grp.models.printing.shipment.label',
 				{
-					shipment: ship.id 
+					shipment: ship.id
 				}
 			)
 		)
@@ -221,108 +225,101 @@ const onPrintShipment = async (ship) => {
 	<div class="grid grid-cols-2 lg:grid-cols-4 xdivide-x xdivide-gray-300 border-b border-gray-200">
 		<BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
 			<!-- Field: Reference Number -->
-			<Link
-				as="a"
-				v-if="boxStats?.customer.reference"
-				:href="'route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)'"
+			<Link as="a" v-if="boxStats?.customer.reference"
+				:href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
 				class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-				<dt v-tooltip="'Company name'" class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-id-card-alt"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
-				</dt>
-				<dd class="text-sm text-gray-500" v-tooltip="'Reference'">
-					#{{ boxStats?.customer.reference }}
-				</dd>
+			<dt v-tooltip="'Company name'" class="flex-none">
+				<FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
+			</dt>
+			<dd class="text-sm text-gray-500" v-tooltip="'Reference'">
+				#{{ boxStats?.customer.reference }}
+			</dd>
 			</Link>
 
 			<!-- Field: Contact name -->
-			<div
-				v-if="boxStats?.customer.contact_name"
-				class="pl-1 flex items-center w-full flex-none gap-x-2"
+			<div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
 				v-tooltip="trans('Contact name')">
 				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-user"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
+					<FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
 				</dt>
 				<dd class="text-sm text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
 			</div>
 
 			<!-- Field: Company name -->
-			<div
-				v-if="boxStats?.customer.company_name"
-				class="pl-1 flex items-center w-full flex-none gap-x-2"
+			<div v-if="boxStats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
 				v-tooltip="trans('Company name')">
 				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-building"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
+					<FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
 				</dt>
 				<dd class="text-sm text-gray-500">{{ boxStats?.customer.company_name }}</dd>
 			</div>
 
 			<!-- Field: Email -->
-			<div
-				v-if="boxStats?.customer.email"
-				class="pl-1 flex items-center w-full flex-none gap-x-2">
+			<div v-if="boxStats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="'Email'" class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-envelope"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
+					<FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true" />
 				</dt>
-				<a
-					:href="`mailto:${boxStats?.customer.email}`"
-					v-tooltip="'Click to send email'"
-					class="text-sm text-gray-500 hover:text-gray-700 truncate"
-					>{{ boxStats?.customer.email }}</a
-				>
+				<a :href="`mailto:${boxStats?.customer.email}`" v-tooltip="'Click to send email'"
+					class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ boxStats?.customer.email }}</a>
 			</div>
 			<!-- Field: Phone -->
-			<div
-				v-if="boxStats?.customer.phone"
-				class="pl-1 flex items-center w-full flex-none gap-x-2">
+			<div v-if="boxStats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
 				<dt v-tooltip="'Phone'" class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-phone"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
+					<FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
 				</dt>
-				<a
-					:href="`tel:${boxStats?.customer.phone}`"
-					v-tooltip="'Click to make a phone call'"
-					class="text-sm text-gray-500 hover:text-gray-700"
-					>{{ boxStats?.customer.phone }}</a
-				>
+				<a :href="`tel:${boxStats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
+					class="text-sm text-gray-500 hover:text-gray-700">{{ boxStats?.customer.phone }}</a>
 			</div>
 
-			<!-- Field: Address -->
-
-			<div
-				v-if="boxStats?.delivery_address"
-				class="pl-1 flex items w-full flex-none gap-x-2"
-				v-tooltip="trans('Shipping address')">
-				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-shipping-fast"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
+			<!-- Field: Channel -->
+			<!-- Field: Platform -->
+			<div v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
+				<dt v-tooltip="'Phone'" class="flex-none">
+					<div class="block w-full rounded h-[18px]">
+						<img :src="boxStats?.platform?.logo" alt="image" class="w-full h-full object-contain rounded" />
+					</div>
 				</dt>
-
-				<dd
-					class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-					v-html="boxStats.delivery_address.formatted_address"></dd>
+				<span v-tooltip="'Click to make a phone call'" class="text-sm text-gray-500 hover:text-gray-700">
+					{{ boxStats?.platform?.name }}
+				</span>
 			</div>
+
+			<!-- Field: Address + Customer (icons di luar box) -->
+			<div v-if="boxStats?.delivery_address" class="w-full space-y-3 text-sm text-gray-700 mt-2">
+
+				<!-- Customer Info -->
+				<div class="flex items-start gap-x-2">
+					<!-- Icon di luar box -->
+					<FontAwesomeIcon icon="fal fa-user" class="text-gray-400 text-base mt-[2px]" fixed-width />
+
+					<!-- Box konten -->
+					<div class="flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-0.5">
+						<p class="font-medium">Customer Info</p>
+						<div class="text-xs text-gray-600 leading-snug">
+							<div><strong>Name:</strong> {{ boxStats.customer.contact_name || boxStats.customer.name }}
+							</div>
+							<div v-if="boxStats.customer.email"><strong>Email:</strong> {{ boxStats.customer.email }}
+							</div>
+							<div v-if="boxStats.customer.phone"><strong>Phone:</strong> {{ boxStats.customer.phone }}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Shipping Address -->
+				<div class="flex items-start gap-x-2">
+					<!-- Icon di luar box -->
+					<FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400 text-base mt-[2px]" fixed-width />
+
+					<!-- Box konten -->
+					<div class="flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-0.5">
+						<p class="font-medium">Shipping Address</p>
+						<div v-html="boxStats.delivery_address.formatted_address"
+							class="text-xs text-gray-600 leading-snug"></div>
+					</div>
+				</div>
+			</div>
+
 		</BoxStatPallet>
 
 		<!-- Box: 2 -->
@@ -334,29 +331,27 @@ const onPrintShipment = async (ship) => {
 						{{ trans("Picker") }}:
 					</dt>
 					<dd class="text-gray-500">
-						{{ boxStats?.picker?.contact_name}}
+						{{ boxStats?.picker?.contact_name }}
 					</dd>
 				</div>
 				<div class="border-t border-gray-300 w-full" />
 			</template>
 			<template v-if="boxStats?.order">
 				<div class="mt-1 flex items-center w-full flex-none justify-between">
-					<Link
-						:href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
+					<Link :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
 						class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
 					<dt class="flex-none">
-						<FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true' class="text-gray-500" />
+						<FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
+							class="text-gray-500" />
 					</dt>
-						<dd class="text-gray-500 " v-tooltip="trans('Order')">
-							{{ boxStats?.order?.reference }}
-						</dd>
+					<dd class="text-gray-500 " v-tooltip="trans('Order')">
+						{{ boxStats?.order?.reference }}
+					</dd>
 					</Link>
 				</div>
 			</template>
 			<!-- Current State -->
-			<div
-				xv-tooltip="trans('Current progress')"
-				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+			<div xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 				<dt class="flex-none">
 					<!-- <FontAwesomeIcon
 						icon="fal fa-weight"
@@ -371,15 +366,10 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 			<!-- Weight -->
-			<div
-				v-tooltip="trans('Estimated weight of all products')"
+			<div v-tooltip="trans('Estimated weight of all products')"
 				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-weight"
-						fixed-width
-						aria-hidden="true"
-						class="text-gray-500" />
+					<FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
 				</dt>
 				<dd class="text-gray-500">
 					{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
@@ -387,52 +377,56 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 			<!-- Total Items -->
-			<div
-				v-tooltip="trans('Total items')"
-				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+			<div v-tooltip="trans('Total items')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-cube"
-						fixed-width
-						aria-hidden="true"
-						class="text-gray-500" />
+					<FontAwesomeIcon icon="fal fa-cube" fixed-width aria-hidden="true" class="text-gray-500" />
 				</dt>
 				<dd class="text-gray-500">
-					{{ locale.number(boxStats.products?.number_items|| 0) }} items
+					{{ locale.number(boxStats.products?.number_items || 0) }} items
 				</dd>
 			</div>
 
 			<!-- Section: Parcels -->
-			<div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+			<div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)" class="flex gap-x-1 py-0.5"
+				:class="listError.box_stats_parcel ? 'errorShake' : ''">
+				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width
+					aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-base flex justify-between w-full py-1">
 						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
 						<!-- Can't edit Parcels if Shipment has set AND already dispatched-->
 						<template v-if="!(boxStats?.shipments?.length > 1) && deliveryNote?.state === 'packed'">
-							<div v-if="boxStats?.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
+							<div v-if="boxStats?.parcels?.length"
+								@click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
+								class="cursor-pointer text-gray-400 hover:text-gray-600">
 								{{ trans("Edit") }}
-								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width
+									aria-hidden="true" />
 							</div>
-							<div v-else-if="!isLoadingSubmitParcels" @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5]}], onSubmitParcels())" class="cursor-pointer text-gray-400 hover:text-gray-600">
+							<div v-else-if="!isLoadingSubmitParcels"
+								@click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
+								class="cursor-pointer text-gray-400 hover:text-gray-600">
 								{{ trans("Add") }}
-								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
+								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
+									aria-hidden="true" />
 							</div>
 							<div v-else>
 								<LoadingIcon />
 							</div>
 						</template>
 					</div>
-					
+
 					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
-						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx" class="text-sm tabular-nums">
+						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
+							class="text-sm tabular-nums">
 							<span class="truncate">
 								{{ parcel.weight }} kg
 							</span>
 
 							<span class="text-gray-500 truncate">
-								({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }} cm)
+								({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }}
+								cm)
 							</span>
 						</li>
 					</ul>
@@ -440,32 +434,41 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 			<!-- Section: Shipments -->
-			<div v-if="boxStats.shipments?.length" class="flex gap-x-1 py-0.5" xxclass="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
+			<div v-if="boxStats.shipments?.length" class="flex gap-x-1 py-0.5"
+				xxclass="listError.box_stats_parcel ? 'errorShake' : ''">
+				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400'
+					fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-base flex justify-between w-full py-1">
 						<div>{{ trans("Shipments") }} ({{ boxStats.shipments?.length ?? 0 }})</div>
 
 					</div>
-					
+
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
-						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums">
+						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx"
+							class="hover:bg-gray-100 text-sm tabular-nums">
 							<div class="flex justify-between">
-								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="">
+								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')"
+									target="_blank" :href="sments.combined_label_url" class="">
 									{{ sments.name }}
-									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+									<FontAwesomeIcon icon="fal fa-external-link"
+										class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 								</a>
-								
-								<div v-else-if="sments.label && sments.label_type === 'pdf'" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)" class="group cursor-pointer">
+
+								<div v-else-if="sments.label && sments.label_type === 'pdf'"
+									v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)"
+									class="group cursor-pointer">
 									<span class="truncate">
 										{{ sments.name }}
 									</span>
 									<span v-if="sments.tracking" class="text-gray-400">
 										({{ useTruncate(sments.tracking, 14) }})
 									</span>
-									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 group-hover:text-gray-700" fixed-width aria-hidden="true" />
+									<FontAwesomeIcon icon="fal fa-external-link"
+										class="text-gray-400 group-hover:text-gray-700" fixed-width
+										aria-hidden="true" />
 								</div>
-								
+
 								<div v-else>
 									<span class="truncate">
 										{{ sments.name }}
@@ -481,50 +484,35 @@ const onPrintShipment = async (ship) => {
 								<!-- <div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
 									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
 								</div> -->
-								<ModalConfirmationDelete
-									v-else
-									:routeDelete="{
-										name: props.shipments.delete_route.name,
-										parameters: { 
-											...props.shipments.delete_route.parameters,
-											shipment: sments.id,
-										}
-									}"
-									:title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: sments.name })"
-									isFullLoading
-								>
+								<ModalConfirmationDelete v-else :routeDelete="{
+									name: props.shipments.delete_route.name,
+									parameters: {
+										...props.shipments.delete_route.parameters,
+										shipment: sments.id,
+									}
+								}" :title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: sments.name })"
+									isFullLoading>
 									<template #default="{ isOpenModal, changeModel }">
 										<div @click="changeModel">
-											<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
+											<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600"
+												fixed-width aria-hidden="true" />
 										</div>
 									</template>
 								</ModalConfirmationDelete>
 							</div>
-							
-							<Button
-								v-if="sments.is_printable"
-								@click="() => onPrintShipment(sments)"
-								size="xs"
-								icon="fal fa-print"
-								label="Print label"
-								type="tertiary"
-								:loading="isLoadingPrint"
-							/>
+
+							<Button v-if="sments.is_printable" @click="() => onPrintShipment(sments)" size="xs"
+								icon="fal fa-print" label="Print label" type="tertiary" :loading="isLoadingPrint" />
 						</li>
 					</ul>
 
 				</div>
 			</div>
-			
+
 		</BoxStatPallet>
 
 		<!-- Modal: Parcels -->
-		<Modal
-			v-if="true"
-			:isOpen="isModalParcels"
-			@onClose="isModalParcels = false"
-			width="w-full max-w-lg"
-		>
+		<Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
 			<div class="text-center font-bold mb-4">
 				{{ trans('Add shipment') }}
 			</div>
@@ -551,19 +539,26 @@ const onPrintShipment = async (ship) => {
 					<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
 						<!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
 						<TransitionGroup v-if="parcelsCopy?.length" name="list">
-							<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex" class="grid grid-cols-12 items-center gap-x-6">
+							<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
+								class="grid grid-cols-12 items-center gap-x-6">
 								<div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
-									<FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
+									<FontAwesomeIcon icon="fal fa-trash-alt"
+										class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
+										aria-hidden="true" />
 								</div>
 								<div class="col-span-2 flex items-center space-x-2">
-									<InputNumber :min="0.001" v-model="parcel.weight" class="w-16" size="small" placeholder="0" fluid />
+									<InputNumber :min="0.001" v-model="parcel.weight" class="w-16" size="small"
+										placeholder="0" fluid />
 								</div>
 								<div class="col-span-9 flex items-center gap-x-1 font-light">
-									<InputNumber :min="0.001" v-model="parcel.dimensions[0]" class="w-16" size="small" placeholder="0" fluid />
+									<InputNumber :min="0.001" v-model="parcel.dimensions[0]" class="w-16" size="small"
+										placeholder="0" fluid />
 									<div class="text-gray-400">x</div>
-									<InputNumber :min="0.001" v-model="parcel.dimensions[1]" class="w-16" size="small" placeholder="0" fluid />
+									<InputNumber :min="0.001" v-model="parcel.dimensions[1]" class="w-16" size="small"
+										placeholder="0" fluid />
 									<div class="text-gray-400">x</div>
-									<InputNumber :min="0.001" v-model="parcel.dimensions[2]" class="w-16" size="small" placeholder="0" fluid />
+									<InputNumber :min="0.001" v-model="parcel.dimensions[2]" class="w-16" size="small"
+										placeholder="0" fluid />
 									<!-- <button class="text-gray-600">≡</button> -->
 
 									<!-- <Popover>
@@ -594,7 +589,8 @@ const onPrintShipment = async (ship) => {
 					<!-- Repeat for more rows -->
 					<div class=" grid grid-cols-12 mt-2">
 						<div></div>
-						<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+						<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
+							class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
 							<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
 							{{ trans("Add another parcel") }}
 						</div>
@@ -602,15 +598,9 @@ const onPrintShipment = async (ship) => {
 				</Fieldset>
 
 				<div class="flex justify-end mt-3">
-					<Button
-						:style="'save'"
-						:loading="isLoadingSubmitParcels"
-						:label="'save'"
-						xdisabled="
+					<Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
 							!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
-						"
-						full
-						@click="() => onSubmitParcels()" />
+						" full @click="() => onSubmitParcels()" />
 				</div>
 			</div>
 		</Modal>
