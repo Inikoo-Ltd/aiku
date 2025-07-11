@@ -14,6 +14,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetRetinaDropshippingHomeData
@@ -27,7 +28,7 @@ class GetRetinaDropshippingHomeData
 
         $customerChannels = $customer->customerSalesChannels()->with('platform:id,type')->get();
         $totalPlatforms   = $customerChannels->count();
-
+        $manualPlatform   = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
         foreach (PlatformTypeEnum::cases() as $platformType) {
             $platformTypeName = $platformType->value;
 
@@ -47,6 +48,13 @@ class GetRetinaDropshippingHomeData
             ];
         }
 
+        $manuals = $customer->customerSalesChannels()->where('platform_id', $manualPlatform->id)->get();
+        $orderButton = false;
+        $manualPlatformData = null;
+        if ($manuals->count() == 1) {
+            $orderButton = true;
+            $manualPlatformData = CustomerSalesChannelsResource::make($manuals->first())->resolve();
+        }
 
         return [
             'customer'              => CustomerResource::make($customer)->getArray(),
@@ -65,7 +73,10 @@ class GetRetinaDropshippingHomeData
                         'icon_rotation' => '90',
                     ],
                     'value' => $totalPlatforms,
-
+                    'order' => [
+                        'button' => $orderButton,
+                        'manual_data' => $manualPlatformData
+                    ],
 
                     'metas' => $metas
                 ],
