@@ -11,12 +11,22 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DownloadPortfolioZipImages extends RetinaAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         PortfoliosZipExport::run($customerSalesChannel);
+
+        $filename = 'images.zip';
+        $response = response()->streamDownload(function () use ($customerSalesChannel) {
+            PortfoliosZipExport::make()->handle($customerSalesChannel);
+        }, $filename);
+
+        $response->headers->set('X-Accel-Buffering', 'no');
+
+        return $response;
     }
 
 
@@ -31,9 +41,9 @@ class DownloadPortfolioZipImages extends RetinaAction
     }
 
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): StreamedResponse
     {
         $this->initialisation($request);
-        $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel);
     }
 }

@@ -281,14 +281,14 @@ const component = computed(() => {
                     />
                 </a>
 
-<!--                <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">-->
-<!--                    <Button-->
-<!--                        :icon="faImage"-->
-<!--                        label="Images"-->
-<!--                        type="tertiary"-->
-<!--                        class="border-l-0 border-r-0 rounded-none"-->
-<!--                    />-->
-<!--                </a>-->
+                <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
+                    <Button
+                        :icon="faImage"
+                        label="Images"
+                        type="tertiary"
+                        class="border-l-0 border-r-0 rounded-none"
+                    />
+                </a>
 
                 <!-- Section: Download button -->
                 <Button
