@@ -84,7 +84,7 @@ switch (props.size) {
     sizeClass = "rounded-md px-2 md:px-3 py-[5px] md:py-[7px] text-sm";
     break;
   case "m":
-    sizeClass = "rounded-md px-3 md:px-4 py-[7px] md:py-[9px] text-sm";
+    sizeClass = "rounded-md px-3 md:px-4 py-[6px] md:py-[9px] text-sm";
     break;
   case "l":
     sizeClass = "rounded-md px-4 md:px-[18px] py-[9px] md:py-[11px] text-base";
