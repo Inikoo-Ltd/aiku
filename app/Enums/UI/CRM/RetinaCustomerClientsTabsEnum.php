@@ -38,6 +38,7 @@ enum RetinaCustomerClientsTabsEnum: string
             RetinaCustomerClientsTabsEnum::INACTIVE => [
                 'title' => __('inactive'),
                 'icon'  => 'fal fa-users-slash',
+                'align' => 'right',
             ],
         };
     }
