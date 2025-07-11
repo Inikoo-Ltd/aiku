@@ -46,11 +46,10 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         $toFirstName = explode(' ', $contactName)[0];
         $toLastName  = (strpos($contactName, ' ') !== false)
             ? substr($contactName, strpos($contactName, ' ') + 1)
-            : '';
+            : '-';
 
         $toPhone = $recipient->phone ?? '';
         $toEmail = $recipient->email ?? '';
-
 
         return [
             'id'                 => $deliveryNote->id,

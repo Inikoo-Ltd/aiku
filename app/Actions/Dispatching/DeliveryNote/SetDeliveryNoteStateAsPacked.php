@@ -37,6 +37,14 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
             StorePacking::make()->action($item, $this->user, []);
         }
+        $defaultParcel = [
+            [
+                'weight' => 1,
+                'dimensions' => [5, 5, 5]
+            ]
+        ];
+
+        data_set($modelData, 'parcels', $defaultParcel);
 
         UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
 
