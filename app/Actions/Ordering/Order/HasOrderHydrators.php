@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
@@ -32,6 +33,10 @@ trait HasOrderHydrators
 
         if ($order->platform_id) {
             PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+        }
+        
+        if ($order->customerSalesChannel) {
+            CustomerSalesChannelsHydrateOrders::dispatch($order->customerSalesChannel);
         }
     }
 }
