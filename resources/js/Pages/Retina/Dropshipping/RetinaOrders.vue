@@ -27,6 +27,7 @@ const props = defineProps<{
     customer_sales_channel: {
         
     }
+    is_show_button_create_order?: boolean  // Will show the button to create order
 }>()
 
 // Section: Modal Create Order
@@ -75,7 +76,7 @@ const onSubmitCreateOrder = () => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
+        <template v-if="is_show_button_create_order" #other>
             <div>
                 <Button
                 @click="() => isModalCreateOrder = true"
@@ -90,7 +91,7 @@ const onSubmitCreateOrder = () => {
     <RetinaTablePalletOrders :data="props.data" :currency  />
 
     <!-- Modal: Create order -->
-    <Modal :isOpen="isModalCreateOrder" @onClose="isModalCreateOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">
+    <Modal v-if="is_show_button_create_order" :isOpen="isModalCreateOrder" @onClose="isModalCreateOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">
         <div>
             <div class="text-lg font-semibold mb-4 text-center">
                 {{ trans("Create Order") }}
