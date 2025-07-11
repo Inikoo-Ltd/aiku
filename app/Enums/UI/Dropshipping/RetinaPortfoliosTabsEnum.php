@@ -30,6 +30,7 @@ enum RetinaPortfoliosTabsEnum: string
             RetinaPortfoliosTabsEnum::INACTIVE => [
                 'title' => __('inactive'),
                 'icon'  => 'fal fa-bars',
+                'align' => 'right',
             ],
         };
     }

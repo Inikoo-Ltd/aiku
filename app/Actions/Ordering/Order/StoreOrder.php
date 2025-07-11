@@ -219,14 +219,6 @@ class StoreOrder extends OrgAction
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
         }
 
-        if ($order->platform_id) {
-            $customerSalesChannel = CustomerSalesChannel::where('customer_id', $order->customer_id)
-                ->where('platform_id', $order->platform_id)->first();
-            if ($customerSalesChannel) {
-                CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
-            }
-        }
-
         if ($order->customer_client_id) {
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);
         }
