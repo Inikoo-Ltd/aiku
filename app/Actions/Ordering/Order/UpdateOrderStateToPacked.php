@@ -30,7 +30,11 @@ class UpdateOrderStateToPacked extends OrgAction
             'state' => OrderStateEnum::PACKED
         ];
 
-        if (in_array($order->state, [\App\Enums\Ordering\Order\OrderStateEnum::HANDLING, \App\Enums\Ordering\Order\OrderStateEnum::FINALISED])) {
+        if (in_array($order->state, [
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::FINALISED,
+            OrderStateEnum::IN_WAREHOUSE,
+        ])) {
             $order->transactions()->update([
                 'state' => TransactionStateEnum::PACKED,
             ]);
