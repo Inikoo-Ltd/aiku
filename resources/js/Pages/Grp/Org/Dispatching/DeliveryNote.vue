@@ -215,7 +215,7 @@ const onSubmitShipment = () => {
                 // set(listError.value, 'box_stats_delivery_address', true) // To make the Box stats delivery address error
                 notify({
                     title: trans("Something went wrong."),
-                    text: trans("Failed to add Shipment. Please try again."),
+                    text: errors.message,
                     type: "error"
                 });
             },
