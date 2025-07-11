@@ -52,6 +52,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 'customer_sales_channels.reference',
                 'customer_sales_channels.name',
                 'customer_sales_channels.slug',
+                'customer_sales_channels.status',
                 'customer_sales_channels.number_customer_clients as number_customer_clients',
                 'customer_sales_channels.number_portfolios as number_portfolios',
                 'customer_sales_channels.number_orders as number_orders',
@@ -127,6 +128,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'connection', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
