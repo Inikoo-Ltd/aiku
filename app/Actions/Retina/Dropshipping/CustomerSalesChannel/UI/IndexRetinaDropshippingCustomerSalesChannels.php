@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
@@ -39,6 +40,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
         $query = QueryBuilder::for(CustomerSalesChannel::class);
         $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
+        $query->whereNot('customer_sales_channels.status', CustomerSalesChannelStatusEnum::CLOSED);
 
         return $query
             ->defaultSort('customer_sales_channels.reference')
