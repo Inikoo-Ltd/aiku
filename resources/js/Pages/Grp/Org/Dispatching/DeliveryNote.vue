@@ -35,6 +35,8 @@ import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
 import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
+import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
+import AddressManagementSingle from "@/Components/Utils/AddressManagementSingle.vue"
 
 
 library.add(faSmileWink,faRecycle, faTired, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -84,6 +86,18 @@ const props = defineProps<{
         submit_route: routeType
         fetch_route: routeType
         delete_route: routeType
+    }
+    address: {
+        delivery: {
+
+        }
+        options: {
+            countriesAddressData: {
+                id: number
+                name: string
+                code: string
+            }[]
+        }
     }
 }>();
 
@@ -213,6 +227,8 @@ const listError = ref({
     box_stats_parcel: false
 });
 provide("listError", listError.value);
+
+const isModalEditAddress = ref(false)
 </script>
 
 
@@ -303,6 +319,7 @@ provide("listError", listError.value);
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes :state="delivery_note.state" />
     </div>
 
+    <!-- Modal: Select picker -->
     <Modal
         :isOpen="isModalToQueue"
         @close="isModalToQueue = false"
@@ -385,126 +402,150 @@ provide("listError", listError.value);
         @onClose="isModalShipment = false"
         width="w-full max-w-2xl"
     >
-        <div class="text-center font-bold mb-4">
-            {{ trans("Add shipment") }}
-        </div>
-
-        <div class="w-full mt-3">
-            <span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
-
-            <div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
-                <div v-if="isLoadingData === 'addTrackingNumber'"
-                     v-for="sip in 3"
-                     class="skeleton w-full max-w-52 h-20 rounded"
-                >
-
-                </div>
-
-                <div v-else
-                     v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
-                     @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
-                     class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
-                     :class="[
-						formTrackingNumber.shipping_id?.id == shipment.id
-							? 'bg-indigo-200 border-indigo-300'
-							: 'hover:bg-gray-100 border-gray-300',
-					]"
-
-                >
-                    <div class="font-bold tesm">{{ shipment.name }}</div>
-                    <div class="text-xs text-gray-500 italic">
-                        {{ shipment.phone }}
+        <div>
+            <div class="text-center font-bold mb-4">
+                {{ trans("Add shipment") }}
+            </div>
+            <div class="w-full mt-3">
+                <span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+                <div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
+                    <div v-if="isLoadingData === 'addTrackingNumber'"
+                         v-for="sip in 3"
+                         class="skeleton w-full max-w-52 h-20 rounded"
+                    >
                     </div>
-                    <div class="text-xs text-gray-500 italic">
-                        {{ shipment.tracking_url }}
-                    </div>
-
-                    <FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
-
-                    <div v-if="isLoadingButton == 'addTrackingNumber'" class="bg-black/40 rounded-md absolute inset-0 z-10">
-    
+                    <div v-else
+                         v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
+                         @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
+                         class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
+                         :class="[
+                                    formTrackingNumber.shipping_id?.id == shipment.id
+                                        ? 'bg-indigo-200 border-indigo-300'
+                                        : 'hover:bg-gray-100 border-gray-300',
+                                ]"
+                    >
+                        <div class="font-bold tesm">{{ shipment.name }}</div>
+                        <div class="text-xs text-gray-500 italic">
+                            {{ shipment.phone }}
+                        </div>
+                        <div class="text-xs text-gray-500 italic">
+                            {{ shipment.tracking_url }}
+                        </div>
+                        <FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
+                        <div v-if="isLoadingButton == 'addTrackingNumber'" class="bg-black/40 rounded-md absolute inset-0 z-10">
+                        </div>
                     </div>
                 </div>
+                <div class="">
+                    <PureMultiselectInfiniteScroll
+                        v-model="formTrackingNumber.shipping_id"
+                        :fetchRoute="shipments.fetch_route"
+                        required
+                        :disabled="isLoadingButton == 'addTrackingNumber'"
+                        :placeholder="trans('Select shipping')"
+                        object
+                        @optionsList="(e) => optionShippingList = e"
+                    >
+                        <template #singlelabel="{ value }">
+                            <div class="w-full text-left pl-4">
+                                {{ value.name }}
+                                <span class="text-sm text-gray-400">({{ value.code }})</span>
+                            </div>
+                        </template>
+                        <template #option="{ option, isSelected, isPointed }">
+                            <div class="">
+                                {{ option.name }}
+                                <span class="text-sm text-gray-400">({{ option.code }})</span>
+                            </div>
+                        </template>
+                    </PureMultiselectInfiniteScroll>
+                    <p
+                        v-if="get(formTrackingNumber, ['errors', 'shipping_id'])"
+                        class="mt-2 text-sm text-red-500">
+                        {{ formTrackingNumber.errors.shipping_id }}
+                    </p>
+                </div>
+                <!-- Tracking number -->
+                <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
+                    <span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+                    <PureInput
+                        v-model="formTrackingNumber.tracking_number"
+                        placeholder="ABC-DE-1234567"
+                        xxkeydown.enter="() => onSubmitAddService(action, closed)" />
+                    <p
+                        v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
+                        class="mt-2 text-sm text-red-600">
+                        {{ formTrackingNumber.errors.tracking_number }}
+                    </p>
+                </div>
 
-            </div>
-
-            <div class="">
-                <PureMultiselectInfiniteScroll
-                    v-model="formTrackingNumber.shipping_id"
-                    :fetchRoute="shipments.fetch_route"
-                    required
-                    :disabled="isLoadingButton == 'addTrackingNumber'"
-                    :placeholder="trans('Select shipping')"
-                    object
-                    @optionsList="(e) => optionShippingList = e"
-                >
-                    <template #singlelabel="{ value }">
-                        <div class="w-full text-left pl-4">
-                            {{ value.name }}
-                            <span class="text-sm text-gray-400">({{ value.code }})</span>
-                        </div>
-                    </template>
-
-                    <template #option="{ option, isSelected, isPointed }">
-                        <div class="">
-                            {{ option.name }}
-                            <span class="text-sm text-gray-400">({{ option.code }})</span>
-                        </div>
-                    </template>
-                </PureMultiselectInfiniteScroll>
-
-                <p
-                    v-if="get(formTrackingNumber, ['errors', 'shipping_id'])"
-                    class="mt-2 text-sm text-red-500">
-                    {{ formTrackingNumber.errors.shipping_id }}
-                </p>
-            </div>
-
-            <!-- Tracking number -->
-            <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
-                <span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
-                <PureInput
-                    v-model="formTrackingNumber.tracking_number"
-                    placeholder="ABC-DE-1234567"
-                    xxkeydown.enter="() => onSubmitAddService(action, closed)" />
-                <p
-                    v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
+                <!-- Section: error -->
+                <div
+                    v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
                     class="mt-2 text-sm text-red-600">
-                    {{ formTrackingNumber.errors.tracking_number }}
-                </p>
-            </div>
+                    <p v-if="typeof formTrackingNumber?.errors?.address === 'string'" class="italic">
+                        *{{ formTrackingNumber?.errors?.address }}
+                        <Button
+                            @click="() => (isModalEditAddress = true, isModalShipment = false)"
+                            :label="trans('Change address')"
+                            size="xs"
+                            type="tertiary"
+                            class="ml-2"
+                        />
+                    </p>
+                    <p v-else v-for="errorx in formTrackingNumber?.errors?.address">
+                        {{ errorx }}
+                    </p>
+                </div>
 
-
-            <div
-                v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
-                class="mt-2 text-sm text-red-600">
-                <p v-for="errorx in formTrackingNumber?.errors?.address">
-                    {{ errorx }}
-                </p>
-            </div>
-
-            <div class="flex justify-end mt-3">
-                <Button
-                    :style="'save'"
-                    :loading="isLoadingButton == 'addTrackingNumber'"
-                    :label="'save'"
-                    :disabled="
-						!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
-					"
-                    full
-                    @click="() => onSubmitShipment()" />
-            </div>
-
-            <!-- Loading: fetching service list -->
-            <div
-                v-if="isLoadingData === 'addTrackingNumber'"
-                class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                <FontAwesomeIcon
-                    icon="fad fa-spinner-third"
-                    class="animate-spin text-5xl"
-                    fixed-width
-                    aria-hidden="true" />
+                <div class="flex justify-end mt-3">
+                    <Button
+                        :style="'save'"
+                        :loading="isLoadingButton == 'addTrackingNumber'"
+                        :label="'save'"
+                        :disabled="
+                                    !formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
+                                "
+                        full
+                        @click="() => onSubmitShipment()" />
+                </div>
+                <!-- Loading: fetching service list -->
+                <div
+                    v-if="isLoadingData === 'addTrackingNumber'"
+                    class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                    <FontAwesomeIcon
+                        icon="fad fa-spinner-third"
+                        class="animate-spin text-5xl"
+                        fixed-width
+                        aria-hidden="true" />
+                </div>
             </div>
         </div>
+
+        
+    </Modal>
+
+    <Modal :isOpen="isModalEditAddress" @onClose="() => (isModalEditAddress = false)" closeButton :isClosableInBackground="false" width="w-full max-w-xl">
+        <!-- <DeliveryAddressManagementModal
+            :address_modal_title="trans('Edit delivery address')"
+            :addresses="address_management.addresses"
+            :updateRoute="address_management.address_update_route"
+            keyPayloadEdit="address"
+            @onDone="() => (isModalEditAddress = false, isModalShipment = true)"
+        /> -->
+
+        <AddressManagementSingle
+            :address="address.delivery"
+            :updateRoute="{
+                name: 'grp.models.delivery_note.update_address',
+                parameters: { deliveryNote: delivery_note.id }
+            }"
+            :options="address.options"
+            @onDone="() => (
+                isModalEditAddress = false,
+                isModalShipment = true,
+                set(formTrackingNumber, ['errors', 'address'], null)
+            )"
+        />
     </Modal>
 </template>
