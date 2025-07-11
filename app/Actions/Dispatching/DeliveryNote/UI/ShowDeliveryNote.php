@@ -448,7 +448,11 @@ class ShowDeliveryNote extends OrgAction
                 'navigation' => DeliveryNoteTabsEnum::navigation($deliveryNote)
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
-
+            
+            'addresses' => [
+                'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+            ],
+            
             'timelines' => $this->getTimeline($deliveryNote),
             'box_stats' => $this->getBoxStats($deliveryNote),
 
