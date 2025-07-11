@@ -26,7 +26,7 @@ class GetClientGoogleDrive
      */
     public function handle(Organisation $organisation): Google_Service_Drive
     {
-        $tokenPath = $this->getTokenPath();
+        $tokenPath = $this->getTokenPath($organisation);
 
         $client = $this->getClient($organisation, $tokenPath);
 
