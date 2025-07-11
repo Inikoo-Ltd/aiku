@@ -171,7 +171,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
-            <span v-tooltip="item.quantity_required">{{ locale.number(item.quantity_required) }}</span>
+            <span v-tooltip="item.quantity_required">{{ locale.number(item.quantity_required) }} </span>
 
             <template v-if="state === 'handling'">
                 <span v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2">

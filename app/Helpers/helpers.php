@@ -108,3 +108,30 @@ if (!function_exists('findSmallestFactors')) {
         return $result;
     }
 }
+
+if (!function_exists('divideWithRemainder')) {
+    /**
+     * Divides a dividend by a divisor and returns the quotient and the remaining dividend and divisor.
+     *
+     * @param array $input An array containing [dividend, divisor]
+     * @return array An array containing [quotient, [remaining_dividend, remaining_divisor]]
+     */
+    function divideWithRemainder(array $input): array
+    {
+        $dividend = $input[0];
+        $divisor = $input[1];
+
+        if ($divisor == 0) {
+            return [0, [$dividend, $divisor]];
+        }
+
+        // Calculate the quotient (integer division)
+        $quotient = intdiv($dividend, $divisor);
+
+        // Calculate the remainder
+        $remainder = $dividend % $divisor;
+
+        // Return the quotient and the remaining dividend and divisor
+        return [$quotient, [$remainder, $divisor]];
+    }
+}
