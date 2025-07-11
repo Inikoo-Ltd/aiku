@@ -216,7 +216,7 @@ interface Modal {
 watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     console.log('modal ret', modal)
     if (!modal) return
-    
+
     // selectedModal.value = modal
     // isModalOpen.value = true
 })
@@ -369,15 +369,11 @@ const isModalEbayDuplicate = ref(false)
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'production' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
-
-                    <Button v-else :label="trans('Staging & Production')" type="tertiary" disabled full/>
-
                 </div>
             </div>
             <!-- Section: Ebay -->
@@ -633,5 +629,5 @@ const isModalEbayDuplicate = ref(false)
         </div>
         </div>
     </Modal>
-    
+
 </template>
