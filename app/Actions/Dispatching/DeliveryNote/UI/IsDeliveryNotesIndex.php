@@ -140,7 +140,7 @@ trait IsDeliveryNotesIndex
         if ($employee) {
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
         }
-        return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee,$shopType) {
+        return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee, $shopType) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -153,7 +153,7 @@ trait IsDeliveryNotesIndex
             $noResults = __("No delivery notes found");
             $count = 0;
             if ($parent instanceof Customer) {
-                $count=$parent->stats->number_delivery_notes;
+                $count = $parent->stats->number_delivery_notes;
                 $noResults = __("Customer has no delivery notes");
             } elseif ($parent instanceof CustomerClient) {
                 $count = $parent->stats->number_delivery_notes;
@@ -161,24 +161,24 @@ trait IsDeliveryNotesIndex
             } elseif ($parent instanceof Group) {
                 $count = $parent->orderingStats->number_delivery_notes;
             } elseif ($parent instanceof Warehouse) {
-                $count= $parent->organisation->orderingStats->number_delivery_notes;
+                $count = $parent->organisation->orderingStats->number_delivery_notes;
 
                 if ($shopType == 'dropshipping') {
                     if ($bucket == 'unassigned') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_unassigned;
-                    }elseif ($bucket == 'queued') {
+                    } elseif ($bucket == 'queued') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_queued;
-                    }elseif ($bucket == 'handling') {
+                    } elseif ($bucket == 'handling') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling;
-                    }elseif ($bucket == 'handling_blocked') {
+                    } elseif ($bucket == 'handling_blocked') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling_blocked;
-                    }elseif ($bucket == 'packed') {
+                    } elseif ($bucket == 'packed') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_packed;
-                    }elseif ($bucket == 'finalised') {
+                    } elseif ($bucket == 'finalised') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_finalised;
-                    }elseif ($bucket == 'dispatched') {
+                    } elseif ($bucket == 'dispatched') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_dispatched;
-                    }elseif ($bucket == 'cancelled') {
+                    } elseif ($bucket == 'cancelled') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_cancelled;
                     }
                 }

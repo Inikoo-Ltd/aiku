@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedInterv
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
@@ -36,7 +35,6 @@ use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;

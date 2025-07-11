@@ -125,6 +125,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
  * @property-read CustomerClient|null $customerClient
+ * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, \App\Models\Dispatching\DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
@@ -138,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
+ * @property-read Platform|null $platform
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read UniversalSearch|null $universalSearch

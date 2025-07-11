@@ -33,7 +33,7 @@ class FetchWooUserOrders extends OrgAction
             ]
         );
 
-        if($wooOrders===null){
+        if ($wooOrders === null) {
             return;
         }
 

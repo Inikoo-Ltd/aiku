@@ -44,7 +44,7 @@ class PortfoliosZipExport
                 ->each(function ($portfolio) use ($zip, &$counter, &$processedImages) {
 
                     $portfolio->load('item.images');
-                    
+
                     if (!$portfolio->item || !$portfolio->item->images) {
                         return;
                     }
