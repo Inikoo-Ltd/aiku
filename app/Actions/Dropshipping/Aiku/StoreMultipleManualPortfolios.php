@@ -43,6 +43,7 @@ class StoreMultipleManualPortfolios extends OrgAction
                     /** @var Product $item */
                     $item = Product::find($itemID);
                 }
+
                 if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
                     continue;
                 }
@@ -73,6 +74,16 @@ class StoreMultipleManualPortfolios extends OrgAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisationFromShop($customerSalesChannel->shop, $request);
+
+        $this->handle($customerSalesChannel, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): void
+    {
+        $this->initialisationFromShop($customerSalesChannel->shop, $modelData);
 
         $this->handle($customerSalesChannel, $this->validatedData);
     }
