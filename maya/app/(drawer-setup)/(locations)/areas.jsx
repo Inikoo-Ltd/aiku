@@ -2,16 +2,16 @@ import AreaItem from '@/components/AreaItem';
 import BaseList from '@/components/BaseList';
 import { AuthContext } from '@/components/context/AuthContext';
 import { createGlobalStyles } from '@/globalStyles';
+import { useRouter } from 'expo-router'; // Uncomment if needed
 import { useContext } from 'react';
 import { View, useColorScheme } from 'react-native';
-// import { useRouter } from 'expo-router'; // Uncomment if needed
 
 const AreasScreens = () => {
   const { organisation, warehouse } = useContext(AuthContext);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const globalStyles = createGlobalStyles(isDark);
-  // const router = useRouter(); // Uncomment if you need to navigate
+  const router = useRouter(); // Uncomment if you need to navigate
 
   return (
     <View style={globalStyles.container}>
@@ -21,8 +21,7 @@ const AreasScreens = () => {
         listItem={({ item }) => (
           <AreaItem
             item={item}
-            onPress={() => null}
-            // Example: onPress={() => router.push(`/show-area?id=${item.id}`)}
+            onPress={() => router.push(`/show-area?id=${item.id}`)}
           />
         )}
       />

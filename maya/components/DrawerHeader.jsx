@@ -1,43 +1,106 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
-import { Platform, StatusBar, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import {
+  DrawerActions,
+  useNavigation,
+  useNavigationState,
+  useTheme,
+} from '@react-navigation/native';
+import {
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DrawerHeader({ title }) {
   const navigation = useNavigation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { dark: isDark } = useTheme();
   const paddingTop = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
+
+  const canGoBack = navigation.canGoBack();
+  const isDrawerAvailable = useNavigationState(
+    (state) => !!state?.key && state?.type === 'drawer'
+  );
+
+  const handleLeftPress = () => {
+    if (isDrawerAvailable) {
+      navigation.dispatch(DrawerActions.toggleDrawer());
+    } else if (canGoBack) {
+      navigation.goBack();
+    }
+  };
 
   return (
     <SafeAreaView
       edges={['top']}
-      className={isDark ? 'bg-black' : 'bg-white'}
+      style={[styles.safeArea, isDark ? styles.darkBg : styles.lightBg]}
     >
       <View
-        className={`relative flex-row items-center justify-between px-4 py-4 border-b ${
-          isDark ? 'border-gray-700 bg-black' : 'border-gray-200 bg-white'
-        }`}
-        style={{ paddingTop }}
+        style={[
+          styles.container,
+          {
+            paddingTop,
+            backgroundColor: isDark ? '#000' : '#fff',
+            borderBottomColor: isDark ? '#374151' : '#E5E7EB',
+          },
+        ]}
       >
-        {/* Drawer Button */}
-        <TouchableOpacity
-          onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-          className="z-10"
-        >
-          <FontAwesome name="bars" size={24} color={isDark ? '#fff' : '#333'} />
+        {/* Left Icon: Drawer toggle or Back */}
+        <TouchableOpacity onPress={handleLeftPress} style={styles.leftIcon}>
+          <FontAwesome
+            name={isDrawerAvailable ? 'bars' : 'arrow-left'}
+            size={24}
+            color={isDark ? '#fff' : '#333'}
+          />
         </TouchableOpacity>
 
-        {/* Centered Title */}
-        <View className="absolute left-0 right-0 items-center">
-          <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+        {/* Center Title */}
+        <View style={styles.titleWrapper}>
+          <Text style={[styles.title, { color: isDark ? '#fff' : '#000' }]}>
             {title}
           </Text>
         </View>
 
-        {/* Placeholder for right side (to balance layout) */}
+        {/* Placeholder to balance right side */}
         <View style={{ width: 24 }} />
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    zIndex: 10,
+  },
+  darkBg: {
+    backgroundColor: '#000',
+  },
+  lightBg: {
+    backgroundColor: '#fff',
+  },
+  container: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  leftIcon: {
+    zIndex: 10,
+  },
+  titleWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+});

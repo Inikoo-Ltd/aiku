@@ -2,7 +2,6 @@ import BaseList from '@/components/BaseList';
 import { AuthContext } from '@/components/context/AuthContext';
 import PalletItem from '@/components/PalletItem';
 import { createGlobalStyles } from '@/globalStyles';
-import { useRouter } from 'expo-router';
 import { useContext } from 'react';
 import { View, useColorScheme } from 'react-native';
 
@@ -11,7 +10,6 @@ const Pallet = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const globalStyles = createGlobalStyles(isDark);
-  const router = useRouter();
 
   return (
     <View style={globalStyles.container}>
@@ -21,7 +19,6 @@ const Pallet = () => {
         listItem={({ item }) => (
           <PalletItem
             item={item}
-            onPress={() => router.push(`/show-pallet?id=${item.id}`)}
           />
         )}
       />

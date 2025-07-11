@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/components/context/AuthProvider";
+import DrawerHeader from '@/components/DrawerHeader';
 import "@/global.css";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
@@ -36,7 +37,10 @@ export default function RootLayout() {
               options={{ headerShown: false }}
             />
             <Stack.Screen name="(drawer-setup)" options={{ headerShown: false }} />
-            <Stack.Screen name="show-location" options={{ headerShown: false }} />
+            <Stack.Screen name="show-location" options={{ headerShown: true }} />
+            <Stack.Screen name="show-area" options={{ header: () => <DrawerHeader title="Area Detail" /> }}/>
+            <Stack.Screen name="show-org-stock" options={{ header: () => <DrawerHeader title="Org Stock Detail" /> }}/>
+            <Stack.Screen name="show-pallet" options={{ header: () => <DrawerHeader title="Pallet Detail" /> }}/>
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

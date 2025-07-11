@@ -1,5 +1,5 @@
 import Modal from '@/components/Modal'; // ✅ Your reusable modal
-import globalStyles from '@/globalStyles';
+import { createGlobalStyles } from '@/globalStyles'; // ✅ Fix here
 import {
   faCheck,
   faCheckDouble,
@@ -9,12 +9,13 @@ import {
   faShare,
   faSpellCheck,
   faTimes,
-  faWarehouseAlt
+  faWarehouseAlt,
 } from '@/private/fa/pro-light-svg-icons';
 import { faFileInvoiceDollar, faFragile, faInventory, faSave } from '@/private/fa/pro-regular-svg-icons';
 import request from '@/utils/Request';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -44,15 +45,18 @@ library.add(
 const MAX_SWIPE = 100;
 const SWIPE_THRESHOLD = 60;
 
-const PalletItem = ({ item: initialItem, navigation }) => {
+const PalletItem = ({ item: initialItem }) => {
   const [item, setItem] = useState(initialItem);
   const [showModalMove, setShowModalMove] = useState(false);
   const [showModalDamage, setShowModalDamage] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [locationValue, setLocationValue] = useState(item.location_code || '');
   const translateX = useRef(new Animated.Value(0)).current;
+  const router = useRouter()
+
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const globalStyles = createGlobalStyles(isDark); // ✅ Use global styles based on theme
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -75,8 +79,8 @@ const PalletItem = ({ item: initialItem, navigation }) => {
           gesture.dx > SWIPE_THRESHOLD
             ? MAX_SWIPE
             : gesture.dx < -SWIPE_THRESHOLD
-            ? -MAX_SWIPE
-            : 0;
+              ? -MAX_SWIPE
+              : 0;
         Animated.spring(translateX, {
           toValue: move,
           useNativeDriver: true,
@@ -143,28 +147,24 @@ const PalletItem = ({ item: initialItem, navigation }) => {
   return (
     <View className="relative">
       {/* Swipe Left */}
-      <View className="absolute right-0 top-0 h-full justify-center items-end pr-4 w-[100px] bg-red-100">
+      <View className="absolute right-0 justify-center items-end pr-4 w-[100px] bg-red-100  h-[93px]">
         <TouchableOpacity onPress={() => setShowModalDamage(true)}>
           <FontAwesomeIcon icon={faFragile} color="red" size={25} />
         </TouchableOpacity>
       </View>
 
-      {/* Swipe Right */}
-      <View className="absolute left-0 top-0 h-full justify-center items-start pl-4 w-[100px] bg-indigo-100">
+      <View className="absolute left-0 justify-center items-start pl-4 w-[100px] bg-indigo-100  h-[93px]">
         <TouchableOpacity onPress={() => setShowModalMove(true)}>
-          <FontAwesomeIcon icon={faInventory} size={25} color="#615FFF" />
+          <FontAwesomeIcon icon={faInventory} size={23} color="#615FFF" />
         </TouchableOpacity>
       </View>
+
 
       {/* Swipeable Card */}
       <Animated.View
         {...panResponder.panHandlers}
-        className={`
-          bg-white dark:bg-gray-800
-          border border-gray-200 dark:border-gray-700
-          p-4 
-        `}
         style={[
+          globalStyles.list.card,
           { transform: [{ translateX }] },
           {
             shadowColor: isDark ? '#000' : '#000',
@@ -177,7 +177,7 @@ const PalletItem = ({ item: initialItem, navigation }) => {
       >
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => navigation.navigate('show-pallet', { id: item.id })}
+          onPress={() => router.push(`/show-pallet?id=${item.id}`)}
         >
           <View style={globalStyles.list.container}>
             <View style={globalStyles.list.avatarContainer}>
@@ -200,14 +200,14 @@ const PalletItem = ({ item: initialItem, navigation }) => {
 
             <View style={globalStyles.list.textContainer}>
               <View className="flex-row justify-between">
-                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                <Text style={globalStyles.list.title}>
                   {item.customer_reference || 'N/A'}
                 </Text>
-                <Text className="text-base font-semibold text-gray-500 dark:text-gray-300">
+                <Text style={globalStyles.list.description}>
                   {item.location_code || '-'}
                 </Text>
               </View>
-              <Text className="text-sm text-gray-600 dark:text-gray-400">{item.reference}</Text>
+              <Text style={globalStyles.list.description}>{item.reference}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -247,11 +247,10 @@ const PalletItem = ({ item: initialItem, navigation }) => {
           {['damaged', 'lost', 'other_incident'].map((status) => (
             <TouchableOpacity
               key={status}
-              className={`px-3 py-2 rounded border ${
-                selectedStatus === status
+              className={`px-3 py-2 rounded border ${selectedStatus === status
                   ? 'bg-blue-500 border-blue-500'
                   : 'border-gray-300 dark:border-gray-600'
-              }`}
+                }`}
               onPress={() => setSelectedStatus(status)}
             >
               <Text className="text-white text-sm capitalize">
