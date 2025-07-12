@@ -20,8 +20,7 @@ trait WithCRMEditAuthorisation
 
         $routeName = $request->route()->getName();
 
-        if (str_starts_with($routeName, 'grp.model.')) {
-            //todo fine tune this
+        if (str_starts_with($routeName, 'grp.model.') || str_starts_with($routeName, 'grp.json.')) {
             return $request->user()->authTo(
                 [
                     "crm.{$this->shop->id}.prospects.edit",

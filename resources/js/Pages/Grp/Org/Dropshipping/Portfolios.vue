@@ -10,26 +10,23 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Modal from '@/Components/Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
-import { RouteParams } from '@/types/route-params'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import { notify } from '@kyvg/vue3-notification'
+import { Customer } from "@/types/customer"
 
-const props = defineProps<{
+defineProps<{
     data: {}
     title: string
     pageHead: PageHeadingTypes
-    customer: {}
+    customer: Customer
     is_show_add_products_modal: boolean
     customerSalesChannelId: number
 }>()
 
-const layout = inject('layout', layoutStructure)
-const locale = inject('locale', null)
 
 const isOpenModalPortfolios = ref(false)
 
@@ -52,7 +49,7 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
             router.reload({only: ['data']})
             notify({
                 title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
+                text: trans("Successfully added the portfolio"),
                 type: "success"
             })
             isOpenModalPortfolios.value = false
@@ -71,8 +68,7 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
                 @click="() => isOpenModalPortfolios = true"
                 :type="'secondary'"
                 icon="fal fa-plus"
-                :xxstooltip="'action.tooltip'"
-                :label="trans('Add products to portfolios')"
+                :label="trans('Add products to portfolio')"
             />
         </template>
     </PageHeading>
@@ -83,11 +79,9 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
         <ProductsSelector
             :headLabel="trans('Add products to portfolios')"
             :route-fetch="{
-                name: 'grp.org.shops.show.crm.customers.show.portfolios.filtered-products',
+                name: 'grp.json.products_for_portfolio_select',
                 parameters: {
-                    organisation: layout?.currentParams?.organisation,
-                    shop: layout?.currentParams?.shop,
-                    customer: layout?.currentParams?.customer,
+                    customerSalesChannel: customerSalesChannelId
                 }
             }"
             :isLoadingSubmit
