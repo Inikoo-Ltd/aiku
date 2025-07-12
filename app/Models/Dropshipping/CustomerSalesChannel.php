@@ -9,6 +9,7 @@
 namespace App\Models\Dropshipping;
 
 use App\Actions\Utils\Abbreviate;
+use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\Customer;
@@ -61,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $slug
  * @property string|null $name
  * @property CustomerSalesChannelStateEnum|null $state
+ * @property CustomerSalesChannelConnectionStatusEnum|null $connection_status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders
@@ -88,16 +90,17 @@ class CustomerSalesChannel extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'data'   => 'array',
-        'status' => CustomerSalesChannelStatusEnum::class,
-        'state' => CustomerSalesChannelStateEnum::class
+        'data'              => 'array',
+        'status'            => CustomerSalesChannelStatusEnum::class,
+        'state'             => CustomerSalesChannelStateEnum::class,
+        'connection_status' => CustomerSalesChannelConnectionStatusEnum::class
     ];
 
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return  Abbreviate::run($this->platform->type->value).'-'.$this->reference;
+                return Abbreviate::run($this->platform->type->value).'-'.$this->reference;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
