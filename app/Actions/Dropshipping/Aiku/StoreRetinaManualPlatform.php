@@ -18,6 +18,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -40,9 +41,9 @@ class StoreRetinaManualPlatform extends RetinaAction
             $customer,
             $platform,
             [
-                'reference' => (string) $customer->id,
-                'name' => Arr::get($modelData, 'name'),
-                'state' => CustomerSalesChannelStateEnum::READY,
+                'reference' => (string)$customer->id,
+                'name'      => Arr::get($modelData, 'name'),
+                'state'     => CustomerSalesChannelStateEnum::READY,
             ]
         );
 
@@ -62,7 +63,24 @@ class StoreRetinaManualPlatform extends RetinaAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:customer_sales_channels,name']
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                new IUnique(
+                    table: 'customer_sales_channels',
+                    extraConditions: [
+                        [
+                            'column' => 'customer_id',
+                            'value'  => $this->customer->id,
+                        ],
+                        [
+                            'column' => 'deleted_at',
+                            'operator' => 'null',
+                        ],
+                    ]
+                ),
+            ]
         ];
     }
 

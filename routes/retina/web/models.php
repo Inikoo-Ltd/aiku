@@ -12,7 +12,7 @@ use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
-use App\Actions\Dropshipping\CustomerSalesChannel\ToggleCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\RetinaDeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
 use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfoliosToEbay;
 use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfolioToEbay;
@@ -41,7 +41,6 @@ use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
 use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
-use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnlinkRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
@@ -231,11 +230,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
     Route::post('portfolio-clone-manual/{targetCustomerSalesChannel:id}', CloneMultipleManualPortfolios::class)->name('portfolio.clone_manual')->withoutScopedBindings();
-
-
-    Route::delete('unlink', UnlinkRetinaCustomerSalesChannel::class)->name('unlink');
-    Route::patch('toggle', ToggleCustomerSalesChannel::class)->name('toggle');
-
+    Route::delete('delete', RetinaDeleteCustomerSalesChannel::class)->name('delete');
     Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
     Route::post('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
     Route::post('access-token', StoreCustomerToken::class)->name('access_token.create');

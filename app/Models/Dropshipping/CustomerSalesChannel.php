@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -63,6 +64,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property CustomerSalesChannelStateEnum|null $state
  * @property CustomerSalesChannelConnectionStatusEnum|null $connection_status
+ * @property string|null $closed_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders
@@ -76,7 +79,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Model|\Eloquent|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withoutTrashed()
  * @mixin \Eloquent
  */
 class CustomerSalesChannel extends Model
@@ -84,6 +90,7 @@ class CustomerSalesChannel extends Model
     use InShop;
     use HasSlug;
     use HasApiTokens;
+    use SoftDeletes;
 
     protected $table = 'customer_sales_channels';
 

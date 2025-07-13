@@ -29,7 +29,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('customer_sales_channels.reference', $value);
+                $query->whereStartWith('customer_sales_channels.name', $value);
             });
         });
 
@@ -40,7 +40,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
         $query = QueryBuilder::for(CustomerSalesChannel::class);
         $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
-        $query->whereNot('customer_sales_channels.status', CustomerSalesChannelStatusEnum::CLOSED);
+        $query->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN);
 
         return $query
             ->defaultSort('customer_sales_channels.reference')
@@ -54,6 +54,9 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 'customer_sales_channels.number_orders as number_orders',
                 'customer_sales_channels.platform_id',
                 'customer_sales_channels.name',
+                'customer_sales_channels.connection_status',
+                'platforms.name as platform_name',
+                'platforms.code as platform_code',
             ])
             ->allowedSorts(['reference', 'name', 'number_customer_clients', 'number_portfolios', 'number_orders'])
             ->allowedFilters([$globalSearch])

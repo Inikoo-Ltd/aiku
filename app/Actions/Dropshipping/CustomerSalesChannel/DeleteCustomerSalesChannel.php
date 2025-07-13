@@ -9,11 +9,14 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Amazon\DeleteAmazonUser;
+use App\Actions\Dropshipping\CustomerClient\DeleteCustomerClient;
 use App\Actions\Dropshipping\Magento\DeleteMagentoUser;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\WooCommerce\DeleteWooCommerceUser;
 use App\Actions\OrgAction;
+use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
@@ -23,11 +26,6 @@ class DeleteCustomerSalesChannel extends OrgAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel): ?bool
     {
-        foreach ($customerSalesChannel->portfolios as $portfolio) {
-            DeletePortfolio::run($portfolio);
-        }
-
-
         if ($customerSalesChannel->user) {
             match ($customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => DeleteShopifyUser::run($customerSalesChannel->user),
@@ -38,8 +36,29 @@ class DeleteCustomerSalesChannel extends OrgAction
             };
         }
 
+        $numberOrders = $customerSalesChannel->orders()->count();
+        if ($numberOrders > 0) {
+            UpdateCustomerSalesChannel::run(
+                $customerSalesChannel,
+                [
+                    'status' => CustomerSalesChannelStatusEnum::CLOSED,
+                    'connection_status' => CustomerSalesChannelConnectionStatusEnum::DISCONNECTED,
+                    'closed_at' => now()
+                ]
+            );
 
-        return $customerSalesChannel->forceDelete();
+            return false;
+        } else {
+            foreach ($customerSalesChannel->clients as $client) {
+                DeleteCustomerClient::run($client);
+            }
+
+            foreach ($customerSalesChannel->portfolios as $portfolio) {
+                DeletePortfolio::run($portfolio);
+            }
+
+            return $customerSalesChannel->delete();
+        }
     }
 
 
