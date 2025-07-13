@@ -43,10 +43,14 @@ class ShopifyAppInstalledListener
             ]
         ]);
 
-        UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
-            'name'              => Arr::get($shopifyUser->data, 'store.name'),
-            'state'             => CustomerSalesChannelStateEnum::AUTHENTICATED,
-            'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
-        ]);
+        if($shopifyUser->customerSalesChannel){
+            UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
+                'name'              => Arr::get($shopifyUser->data, 'store.name'),
+                'state'             => CustomerSalesChannelStateEnum::AUTHENTICATED,
+                'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
+            ]);
+        }
+
+
     }
 }

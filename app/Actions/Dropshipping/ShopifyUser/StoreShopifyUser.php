@@ -26,8 +26,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreShopifyUser extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
+
     use WithActionUpdate;
 
     /**
