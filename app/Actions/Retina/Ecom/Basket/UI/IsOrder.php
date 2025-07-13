@@ -37,7 +37,7 @@ trait IsOrder
                 'status'    => $order->customer_sales_channel_id,
                 'platform'  => [
                     'name' => $order->platform?->name,
-                    'image' => $this->getPlatformLogo($order->customerSalesChannel)
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel->platform->code)
                 ]
             ];
         }

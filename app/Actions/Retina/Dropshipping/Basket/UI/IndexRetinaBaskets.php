@@ -12,7 +12,7 @@ use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\RetinaOrdersResource;
 use App\InertiaTable\InertiaTable;
@@ -113,7 +113,7 @@ class IndexRetinaBaskets extends RetinaAction
                 'is_show_button_create_order'   => true,
 
                 'currency'                  => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
-                'customer_sales_channel'    => CustomerSalesChannelsResource::make($this->customerSalesChannel)->toArray(request()),
+                'customer_sales_channel'    => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
                 'data'                      => RetinaOrdersResource::collection($orders)
             ]
         )->table($this->tableStructure());

@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\RetinaAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -98,7 +98,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                         ]
                     ]
                 ],
-                'data' => CustomerSalesChannelsResource::collection($platforms),
+                'data' => RetinaCustomerSalesChannelsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }

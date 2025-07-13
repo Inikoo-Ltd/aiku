@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -31,17 +32,35 @@ class DeleteShopifyUser extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser): void
     {
+        if ($shopifyUser->trashed()) {
+            return;
+        }
+
         if (Arr::exists($shopifyUser->settings, 'webhooks')) {
             DeleteWebhooksFromShopify::run($shopifyUser);
         }
 
-        $randomNumber = random_int(00, 99);
-        $deletedSuffix = 'deleted-' . $randomNumber;
+        $randomNumber  = random_int(00, 99);
+        $deletedSuffix = 'deleted-'.$randomNumber;
+
+        $data = $shopifyUser->data;
+
+        $ulid = (string)Str::ulid();
+
+        data_set(
+            $data,
+            'original_data',
+            [
+                'name'  => $shopifyUser->name,
+                'email' => $shopifyUser->email,
+                'slug'  => $shopifyUser->slug,
+            ]
+        );
 
         $this->update($shopifyUser, [
-            'name' => $shopifyUser->name . $deletedSuffix,
-            'slug' => $shopifyUser->slug . $deletedSuffix,
-            'email' => $shopifyUser->email . $deletedSuffix,
+            'name'   => $shopifyUser->name.$deletedSuffix.'-'.$ulid,
+            'slug'   => $ulid,
+            'email'  => $ulid,
             'status' => false
         ]);
 
@@ -53,7 +72,6 @@ class DeleteShopifyUser extends OrgAction
 
         $shopifyUser->delete();
     }
-
 
 
     /**

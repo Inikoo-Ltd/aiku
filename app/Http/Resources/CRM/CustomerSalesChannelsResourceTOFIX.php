@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 11-04-2025-09h-29m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 12 Jul 2025 20:25:35 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Http\Resources\CRM;
 
@@ -28,7 +27,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $total_amount
  */
-class CustomerSalesChannelsResource extends JsonResource
+class CustomerSalesChannelsResourceTOFIX extends JsonResource
 {
     use GetPlatformLogo;
     use WithPlatformStatusCheck;

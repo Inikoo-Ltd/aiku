@@ -12,7 +12,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
@@ -99,7 +99,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                     'subNavigation' => $subNavigation,
 
                 ],
-                'data'        => CustomerSalesChannelsResource::collection($platforms),
+                'data'        => CustomerSalesChannelsResourceTOFIX::collection($platforms),
             ]
         )->table($this->tableStructure());
     }

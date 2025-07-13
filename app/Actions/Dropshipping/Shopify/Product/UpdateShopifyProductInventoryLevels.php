@@ -10,13 +10,13 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUnique
+class UpdateShopifyProductInventoryLevels extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -27,11 +27,19 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, array $productVariants): void
+    public function handle(Product $product, ShopifyUser $shopifyUser, array $productShopify): void
     {
+        // Prepare inventory data for each product variant
+        $inventoryVariants = [];
+        foreach (Arr::get($productShopify, 'variants', []) as $variant) {
+            // Set the available quantity from our product
+            $variant['available_quantity'] = $product->available_quantity;
+            $inventoryVariants[]           = $variant;
+        }
+
         $client = $shopifyUser->api()->getRestClient();
 
-        $locations = $client->request('GET', '/admin/api/2025-04/locations.json');
+        $locations    = $client->request('GET', '/admin/api/2025-04/locations.json');
         $allLocations = Arr::get($locations, 'body.locations', []);
 
         $targetLocation = null;
@@ -49,16 +57,16 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
 
         $locationId = Arr::get($targetLocation, 'id');
 
-        \Log::info("Using location: " . Arr::get($targetLocation, 'name') . " (ID: {$locationId})");
+        \Log::info("Using location: ".Arr::get($targetLocation, 'name')." (ID: $locationId)");
 
-        foreach ($productVariants as $variant) {
+        foreach ($inventoryVariants as $variant) {
             $inventoryItemId = Arr::get($variant, 'inventory_item_id');
 
             // First, check existing inventory levels for this item
-            $existingLevels = $client->request('GET', "/admin/api/2025-04/inventory_levels.json?inventory_item_ids={$inventoryItemId}");
-            $currentLevels = Arr::get($existingLevels, 'body.inventory_levels', []);
+            $existingLevels = $client->request('GET', "/admin/api/2025-04/inventory_levels.json?inventory_item_ids=$inventoryItemId");
+            $currentLevels  = Arr::get($existingLevels, 'body.inventory_levels', []);
 
-            // Check if item is already active at a fulfillment service location
+            // Check if an item is already active at a fulfillment service location
             $hasActiveFulfillmentLocation = false;
             foreach ($currentLevels as $level) {
                 $levelLocationId = Arr::get($level, 'location_id');
@@ -68,29 +76,29 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
 
                 if ($levelLocation && Arr::get($levelLocation, 'legacy', false)) {
                     $hasActiveFulfillmentLocation = true;
-                    \Log::warning("Item {$inventoryItemId} is already active at fulfillment service location: " . Arr::get($levelLocation, 'name'));
+                    \Log::warning("Item $inventoryItemId is already active at fulfillment service location: ".Arr::get($levelLocation, 'name'));
                     break;
                 }
             }
 
             // Skip setting inventory if already active at fulfillment service
             if ($hasActiveFulfillmentLocation) {
-                \Log::info("Skipping inventory update for item {$inventoryItemId} due to fulfillment service conflict");
+                \Log::info("Skipping inventory update for item $inventoryItemId due to fulfillment service conflict");
                 continue;
             }
 
             try {
                 $response = $client->request('POST', '/admin/api/2025-04/inventory_levels/set.json', [
-                    'location_id' => $locationId,
+                    'location_id'       => $locationId,
                     'inventory_item_id' => $inventoryItemId,
-                    'available' => Arr::get($variant, 'available_quantity', 100)
+                    'available'         => Arr::get($variant, 'available_quantity', 100)
                 ]);
 
                 if (Arr::get($response, 'status') !== 200) {
-                    \Log::error("Failed to set inventory for item {$inventoryItemId}", [
-                        'response' => $response,
+                    \Log::error("Failed to set inventory for item $inventoryItemId", [
+                        'response'    => $response,
                         'location_id' => $locationId,
-                        'available' => Arr::get($variant, 'available_quantity', 100)
+                        'available'   => Arr::get($variant, 'available_quantity', 100)
                     ]);
 
                     // Handle specific error cases
@@ -101,18 +109,18 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
 
                         // Retry the request
                         $retryResponse = $client->request('POST', '/admin/api/2025-04/inventory_levels/set.json', [
-                            'location_id' => $locationId,
+                            'location_id'       => $locationId,
                             'inventory_item_id' => $inventoryItemId,
-                            'available' => Arr::get($variant, 'available_quantity', 100)
+                            'available'         => Arr::get($variant, 'available_quantity', 100)
                         ]);
 
                         if (Arr::get($retryResponse, 'status') !== 200) {
-                            \Sentry\captureMessage("Failed to set inventory after deactivating fulfillment locations: " . json_encode(Arr::get($retryResponse, 'body', [])));
+                            \Sentry\captureMessage("Failed to set inventory after deactivating fulfillment locations: ".json_encode(Arr::get($retryResponse, 'body', [])));
                         }
                     }
                 }
             } catch (\Exception $e) {
-                \Log::error("Exception setting inventory for item {$inventoryItemId}: " . $e->getMessage());
+                \Log::error("Exception setting inventory for item $inventoryItemId: ".$e->getMessage());
                 \Sentry\captureException($e);
             }
         }
@@ -122,31 +130,28 @@ class HandleApiInventoryProductShopify extends OrgAction implements ShouldBeUniq
     {
         try {
             // Get current inventory levels
-            $existingLevels = $client->request('GET', "/admin/api/2025-04/inventory_levels.json?inventory_item_ids={$inventoryItemId}");
-            $currentLevels = Arr::get($existingLevels, 'body.inventory_levels', []);
+            $existingLevels = $client->request('GET', "/admin/api/2025-04/inventory_levels.json?inventory_item_ids=$inventoryItemId");
+            $currentLevels  = Arr::get($existingLevels, 'body.inventory_levels', []);
 
             foreach ($currentLevels as $level) {
                 $levelLocationId = Arr::get($level, 'location_id');
-                $levelLocation = collect($allLocations)->firstWhere('id', $levelLocationId);
+                $levelLocation   = collect($allLocations)->firstWhere('id', $levelLocationId);
 
                 // If this is a fulfillment service location, deactivate it
                 if ($levelLocation && Arr::get($levelLocation, 'legacy', false)) {
                     $client->request('POST', '/admin/api/2025-04/inventory_levels/set.json', [
-                        'location_id' => $levelLocationId,
+                        'location_id'       => $levelLocationId,
                         'inventory_item_id' => $inventoryItemId,
-                        'available' => 0
+                        'available'         => 0
                     ]);
 
-                    \Log::info("Deactivated inventory at fulfillment service location: " . Arr::get($levelLocation, 'name'));
+                    \Log::info("Deactivated inventory at fulfillment service location: ".Arr::get($levelLocation, 'name'));
                 }
             }
         } catch (\Exception $e) {
-            \Log::error("Failed to deactivate fulfillment locations: " . $e->getMessage());
+            \Log::error("Failed to deactivate fulfillment locations: ".$e->getMessage());
         }
     }
 
-    public function getJobUniqueId(ShopifyUser $shopifyUser, array $productVariants): int
-    {
-        return rand();
-    }
+
 }

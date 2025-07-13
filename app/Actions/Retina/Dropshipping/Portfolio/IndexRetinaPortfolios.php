@@ -31,7 +31,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 
 class IndexRetinaPortfolios extends RetinaAction
 {
@@ -255,7 +255,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'content'        => [
                     'portfolio_empty' => [
                         'title'       => __("You don't have any items in your portfolio"),
-                        'description' => __("To get started, add products to your portfolios."),
+                        'description' => __("To get started, add products to your channel."),
                         'separation'  => __("or"),
                         'add_button'  => __("Add Product"),
                     ]
@@ -289,8 +289,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_data'             => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                  => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'     => $this->checkStatus($this->customerSalesChannel) === 'connected',
-                'customer_sales_channel'    => CustomerSalesChannelsResource::make($this->customerSalesChannel)->toArray(request()),
-                'manual_channels'           => CustomerSalesChannelsResource::collection($manualChannels)
+                'customer_sales_channel'    => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
+                'manual_channels'           => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)
             ]
         )->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::ACTIVE->value))
             ->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::INACTIVE->value));

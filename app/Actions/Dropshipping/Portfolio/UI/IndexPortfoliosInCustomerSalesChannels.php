@@ -55,7 +55,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
 
 
-
         return $query
             ->select([
                 'portfolios.id',
@@ -77,17 +76,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
-        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerSalesChannel, $request);
-        $icon          = ['fal', 'fa-user'];
-        $title         = $this->customerSalesChannel->customer->name.' ('.$this->customerSalesChannel->customer->reference.')';
-        $iconRight     = [
-            'icon'  => ['fal', 'fa-bookmark'],
-            'title' => __('portfolios')
-        ];
-        $afterTitle    = [
-            'label' => __('Portfolios').' @'.$this->customerSalesChannel->platform->name,
-        ];
-
         return Inertia::render(
             'Org/Dropshipping/Portfolios',
             [
@@ -96,20 +84,24 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Portfolios'),
+                'title'       => __('Portfolio'),
                 'pageHead'    => [
-                    'title'         => $title,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'subNavigation' => $subNavigation,
+                    ...$this->getCustomerSalesChannelSubNavigationHead(
+                        $this->customerSalesChannel,
+                        $request,
+                        __('Portfolio'),
+                        [
+                            'icon'  => ['fal', 'fa-bookmark'],
+                            'title' => __('portfolios')
+                        ]
+                    ),
+
                 ],
 
-
                 'is_show_add_products_modal' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
-                'data'        => PortfoliosResource::collection($portfolios),
-                'customer'      => $this->customerSalesChannel->customer,
-                'customerSalesChannelId' => $this->customerSalesChannel->id,
+                'data'                       => PortfoliosResource::collection($portfolios),
+                'customer'                   => $this->customerSalesChannel->customer,
+                'customerSalesChannelId'     => $this->customerSalesChannel->id,
             ]
         )->table($this->tableStructure());
     }

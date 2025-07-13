@@ -21,7 +21,7 @@ class DeleteCustomerClient extends OrgAction
     use WithActionUpdate;
 
 
-    public function handle(CustomerClient $customerClient, array $deletedData): CustomerClient
+    public function handle(CustomerClient $customerClient, array $deletedData = []): CustomerClient
     {
         $customerClient = $this->update($customerClient, $deletedData, ['data']);
         $customerClient->delete();

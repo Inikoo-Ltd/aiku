@@ -10,26 +10,19 @@ namespace App\Actions\Dropshipping\Shopify\Webhook;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Route;
 
 class StoreWebhooksToShopify extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
-    public string $commandSignature = 'shopify:webhook {shopify}';
 
     /**
-     * @throws \Exception
+     * @throws \Throwable
      */
-    public function handle(ShopifyUser $shopifyUser)
+    public function handle(ShopifyUser $shopifyUser): void
     {
         $webhooks     = [];
         $webhookTypes = [];
@@ -57,6 +50,7 @@ class StoreWebhooksToShopify extends OrgAction
         }
 
         DB::transaction(function () use ($webhooks, $shopifyUser) {
+
             DeleteWebhooksFromShopify::run($shopifyUser);
 
             $webhooksData = [];
@@ -76,10 +70,5 @@ class StoreWebhooksToShopify extends OrgAction
         });
     }
 
-    public function asController(ShopifyUser $shopifyUser, ActionRequest $request)
-    {
-        $shop = Shop::find($request->input('shop'));
 
-        $this->handle($shopifyUser);
-    }
 }

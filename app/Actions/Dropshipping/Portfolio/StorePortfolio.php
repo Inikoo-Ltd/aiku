@@ -39,7 +39,6 @@ class StorePortfolio extends OrgAction
     {
         $rrp = $item->rrp ?? 0;
         data_set($modelData, 'last_added_at', now(), overwrite: false);
-
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
         data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
         data_set($modelData, 'shop_id', $customerSalesChannel->shop_id);

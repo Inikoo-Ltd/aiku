@@ -11,6 +11,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -21,10 +22,51 @@ class GetProductsForPortfolioSelect extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
-            });
+            // Get the type filter to determine how to filter products
+            $type = Arr::get(request()->get('filter'), 'type');
+
+            switch (strtolower($type)) {
+                case 'department':
+                    // Find products that belong to departments matching the search term
+                    $query->whereHas('department', function ($query) use ($value) {
+                        $query->whereAnyWordStartWith('product_categories.name', $value);
+                    });
+                    break;
+
+                case 'family':
+                    // Find products that belong to families matching the search term
+                    $query->whereHas('family', function ($query) use ($value) {
+                        $query->whereAnyWordStartWith('product_categories.name', $value);
+                    });
+                    break;
+
+                case 'sub_department':
+                    // Find products that belong to subdepartments matching the search term
+                    $query->whereHas('subDepartment', function ($query) use ($value) {
+                        $query->whereAnyWordStartWith('product_categories.name', $value);
+                    });
+                    break;
+
+                case 'all':
+                default:
+                    // Search products by their own attributes (name, code, etc.)
+                    $query->where(function ($query) use ($value) {
+                        $query->whereAnyWordStartWith('products.name', $value)
+                            ->orWhereStartWith('products.code', $value);
+                    });
+                    break;
+            }
+        });
+
+        // Type filter - validates the type parameter
+        $typeFilter = AllowedFilter::callback('type', function ($query, $value) {
+            // This filter doesn't modify the query directly
+            // It's used by the global search to determine filtering behavior
+            $allowedTypes = ['all', 'department', 'family', 'sub_department'];
+            if (!in_array(strtolower($value), $allowedTypes)) {
+                // Default to 'all' if invalid type provided
+                request()->merge(['filter' => array_merge(request()->get('filter', []), ['type' => 'all'])]);
+            }
         });
 
         if ($prefix) {
@@ -35,11 +77,10 @@ class GetProductsForPortfolioSelect extends OrgAction
 
         $queryBuilder->where('products.is_for_sale', true);
 
-        $queryBuilder->where('products.shop_id', $customerSalesChannel->shop_id)
+        $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id)
             ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
                 $subQuery->select('item_id')
                     ->from('portfolios')
-                    ->where('item_type', class_basename(Product::class))
                     ->where('customer_sales_channel_id', $customerSalesChannel->id);
             });
 
@@ -65,10 +106,11 @@ class GetProductsForPortfolioSelect extends OrgAction
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
         return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $typeFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
+
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {

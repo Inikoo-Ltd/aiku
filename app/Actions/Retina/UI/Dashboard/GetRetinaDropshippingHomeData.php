@@ -12,7 +12,7 @@ namespace App\Actions\Retina\UI\Dashboard;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerResource;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -53,12 +53,12 @@ class GetRetinaDropshippingHomeData
         $manualPlatformData = null;
         if ($manuals->count() == 1) {
             $orderButton = true;
-            $manualPlatformData = CustomerSalesChannelsResource::make($manuals->first())->resolve();
+            $manualPlatformData = CustomerSalesChannelsResourceTOFIX::make($manuals->first())->resolve();
         }
 
         return [
             'customer'              => CustomerResource::make($customer)->getArray(),
-            'channels'              => CustomerSalesChannelsResource::collection($customerChannels)->toArray(request()),
+            'channels'              => CustomerSalesChannelsResourceTOFIX::collection($customerChannels)->toArray(request()),
             'stats'                 => [
                 [
                     'label' => __('Channels'),

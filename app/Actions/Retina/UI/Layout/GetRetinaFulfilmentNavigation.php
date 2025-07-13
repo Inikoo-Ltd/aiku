@@ -98,7 +98,7 @@ class GetRetinaFulfilmentNavigation
                         'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
                         'key'           => $customerSalesChannel->slug,
-                        'img'           => $this->getPlatformLogo($customerSalesChannel),
+                        'img'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
                         'label'         => $customerSalesChannel->platform->name.' ('.$reference.')',
                         'route'         => [
                             'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
@@ -258,17 +258,7 @@ class GetRetinaFulfilmentNavigation
                 ];
             }
 
-            // if (!app()->environment('production')) {
-            //     $groupNavigation['api'] = [
-            //         'label'   => __('API'),
-            //         'icon'    => ['fal', 'fa-key'],
-            //         'root'    => '',
-            //         'route'   => [
-            //             'name' => ''
-            //         ],
-            //         'topMenu' => []
-            //     ];
-            // }
+
         }
 
         return $groupNavigation;
