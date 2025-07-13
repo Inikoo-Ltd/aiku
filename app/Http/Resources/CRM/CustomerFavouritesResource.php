@@ -12,7 +12,6 @@ namespace App\Http\Resources\CRM;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 /**
  * @property mixed $id
  * @property mixed $code
