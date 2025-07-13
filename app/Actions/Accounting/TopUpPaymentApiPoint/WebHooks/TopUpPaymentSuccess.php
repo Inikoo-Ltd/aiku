@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\TopUp\StoreTopUp;
+use App\Actions\Accounting\TopUpPaymentApiPoint\UpdateTopUpPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
@@ -18,6 +19,7 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\TopUp\TopUpStatusEnum;
+use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
 use App\Http\Resources\Accounting\TopUpResource;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\PaymentAccountShop;
@@ -78,10 +80,40 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
         ];
 
 
-        return StoreCreditTransaction::run(
+        UpdateTopUpPaymentApiPoint::run(
+            $topUpPaymentApiPoint,
+            [
+                'state'        => TopUpPaymentApiPointStateEnum::SUCCESS,
+                'processed_at' => now(),
+                'data'         => [
+                    'payment_id' => $payment->id,
+                    'top_up_id'  => $topUp->id,
+                ]
+
+            ]
+        );
+
+
+        $creditTransaction = StoreCreditTransaction::run(
             $topUpPaymentApiPoint->customer,
             $creditTransactionData
         );
+
+        UpdateTopUpPaymentApiPoint::run(
+            $topUpPaymentApiPoint,
+            [
+                'state'        => TopUpPaymentApiPointStateEnum::SUCCESS,
+                'processed_at' => now(),
+                'data'         => [
+                    'payment_id'            => $payment->id,
+                    'top_up_id'             => $topUp->id,
+                    'credit_transaction_id' => $creditTransaction->id,
+                ]
+
+            ]
+        );
+
+        return $creditTransaction;
     }
 
     public function rules(): array

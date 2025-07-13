@@ -43,7 +43,7 @@ class ShopifyAppInstalledListener
             ]
         ]);
 
-        if($shopifyUser->customerSalesChannel){
+        if ($shopifyUser->customerSalesChannel) {
             UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
                 'name'              => Arr::get($shopifyUser->data, 'store.name'),
                 'state'             => CustomerSalesChannelStateEnum::AUTHENTICATED,

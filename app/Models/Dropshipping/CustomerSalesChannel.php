@@ -64,7 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property CustomerSalesChannelStateEnum|null $state
  * @property CustomerSalesChannelConnectionStatusEnum|null $connection_status
- * @property string|null $closed_at
+ * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
@@ -100,7 +100,8 @@ class CustomerSalesChannel extends Model
         'data'              => 'array',
         'status'            => CustomerSalesChannelStatusEnum::class,
         'state'             => CustomerSalesChannelStateEnum::class,
-        'connection_status' => CustomerSalesChannelConnectionStatusEnum::class
+        'connection_status' => CustomerSalesChannelConnectionStatusEnum::class,
+        'closed_at'         => 'datetime'
     ];
 
     public function getSlugOptions(): SlugOptions
