@@ -363,7 +363,7 @@ class ShowDeliveryNote extends OrgAction
             'customer_client' => $deliveryNote->customerClient,
             'platform' => [
                 'name' => $deliveryNote->platform?->name,
-                'logo' => $this->getPlatformLogo($deliveryNote->customerSalesChannel)
+                'logo' => $this->getPlatformLogo($deliveryNote->customerSalesChannel->platform->code),
             ],
             'products'         => [
                 'estimated_weight' => $estWeight,
