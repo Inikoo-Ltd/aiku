@@ -435,7 +435,7 @@ const component = computed(() => {
         </h1>
         <p class="mt-4 text-xl">
             {{
-                content?.portfolio_empty?.description || trans("To get started, add products to your portfolios. You can sync from your inventory or create a new one.")
+                content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
             }}
         </p>
         <div class="mt-6 space-y-4">

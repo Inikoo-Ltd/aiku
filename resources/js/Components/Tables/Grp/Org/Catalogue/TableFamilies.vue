@@ -15,6 +15,7 @@ import { remove as loRemove } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fal";
+import { RouteParams } from "@/types/route-params";
 
 library.add(faCheck)
 
@@ -43,27 +44,27 @@ function familyRoute(family: Family) {
         case "grp.org.shops.show.catalogue.collections.show":
             return route(
                 "grp.org.shops.show.catalogue.families.show",
-                [route().params["organisation"], route().params["shop"], family.slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.slug])
         case "grp.org.shops.show.catalogue.departments.show":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show",
-                [route().params["organisation"], route().params["shop"], route().params["department"], family.slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, family.slug])
         case 'grp.org.shops.index':
             return route(
                 "grp.org.shops.show.catalogue.families.show",
-                [route().params["organisation"], family.shop_slug, family.slug])
+                [(route().params as RouteParams).organisation, family.shop_slug, family.slug])
         case "grp.org.shops.show.catalogue.dashboard":
             return route(
                 "grp.org.shops.show.catalogue.families.show",
-                [route().params["organisation"], route().params["shop"], family.slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.slug])
         case "grp.org.shops.show.catalogue.departments.show.families.index":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show",
-                [route().params["organisation"], route().params["shop"], route().params["department"], family.slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, family.slug])
         case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show",
-                [route().params["organisation"], route().params["shop"], route().params["department"], route().params["subDepartment"], family.slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, (route().params as RouteParams).subDepartment, family.slug])
         case 'grp.overview.catalogue.families.index':
             return route(
                 'grp.org.shops.show.catalogue.families.show',
@@ -76,7 +77,7 @@ function shopRoute(family: Family) {
         case 'grp.org.shops.index':
             return route(
                 "grp.org.shops.show.catalogue.dashboard",
-                [route().params["organisation"], family.shop_slug])
+                [(route().params as RouteParams).organisation, family.shop_slug])
     }
 }
 function productRoute(family: Family) {
@@ -84,11 +85,11 @@ function productRoute(family: Family) {
         case 'grp.org.shops.show.catalogue.departments.show.families.index':
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show.products.index",
-                [route().params["organisation"], route().params["shop"], route().params["department"], family.slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, family.slug])
         case 'grp.org.shops.show.catalogue.families.index':
             return route(
                 "grp.org.shops.show.catalogue.families.show.products.index",
-                [route().params["organisation"], route().params["shop"], family.slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.slug])
     }
 }
 
@@ -97,12 +98,12 @@ function departmentRoute(family: Family) {
         case 'grp.org.shops.index':
             return route(
                 "grp.org.shops.show.catalogue.departments.index",
-                [route().params["organisation"], family.shop_slug, family.department_slug])
+                [(route().params as RouteParams).organisation, family.shop_slug, family.department_slug])
         case 'grp.org.shops.show.catalogue.dashboard':
         case 'grp.org.shops.show.catalogue.families.index':
             return route(
                 "grp.org.shops.show.catalogue.departments.show",
-                [route().params["organisation"], route().params["shop"], family.department_slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug])
 
     }
 }
@@ -112,11 +113,11 @@ function subDepartmentRoute(family: Family) {
         case 'grp.org.shops.show.catalogue.families.index':
             return route(
                 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
-                 [route().params["organisation"], route().params["shop"], family.department_slug, family.sub_department_slug])
+                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug, family.sub_department_slug])
         case 'grp.org.shops.show.catalogue.departments.show.families.index':
             return route(
                 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
-                [route().params["organisation"], route().params["shop"], family.department_slug, family.sub_department_slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug, family.sub_department_slug])
     }
 }
 
@@ -150,7 +151,7 @@ const isLoadingDetach = ref<string[]>([])
                 {{ family["current_products"] }}
             </Link>
         </template>
-        
+
         <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
             <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
@@ -222,5 +223,3 @@ const isLoadingDetach = ref<string[]>([])
         </template>
     </Table>
 </template>
-
-

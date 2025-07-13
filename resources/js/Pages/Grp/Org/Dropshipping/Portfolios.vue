@@ -5,18 +5,22 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
+import { Head, router } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { ref } from 'vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Modal from '@/Components/Utils/Modal.vue'
-import { trans } from 'laravel-vue-i18n'
-import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
-import { notify } from '@kyvg/vue3-notification'
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { ref } from "vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import { trans } from "laravel-vue-i18n"
+import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
+import { notify } from "@kyvg/vue3-notification"
 import { Customer } from "@/types/customer"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBookmark } from "@fal"
+
+library.add(faBookmark)
 
 defineProps<{
     data: {}
@@ -34,7 +38,7 @@ const isOpenModalPortfolios = ref(false)
 // Method: Submit the selected item
 const isLoadingSubmit = ref(false)
 const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: number) => {
-    router.post(route('grp.models.customer_sales_channel.portfolio.store_multiple_manual', { customerSalesChannel: customerSalesChannelId} ), {
+    router.post(route("grp.models.customer_sales_channel.portfolio.store_multiple_manual", { customerSalesChannel: customerSalesChannelId }), {
         items: idProduct
     }, {
         onBefore: () => isLoadingSubmit.value = true,
@@ -46,7 +50,7 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
             })
         },
         onSuccess: () => {
-            router.reload({only: ['data']})
+            router.reload({ only: ["data"] })
             notify({
                 title: trans("Success!"),
                 text: trans("Successfully added the portfolio"),
@@ -72,7 +76,7 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
             />
         </template>
     </PageHeading>
-    
+
     <TablePortfolios :data="data" />
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
