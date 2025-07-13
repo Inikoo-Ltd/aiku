@@ -91,18 +91,22 @@ class StoreShopifyUser extends RetinaAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $nameInput       = $request->input('name');
-        $myShopifyDomain = config('shopify-app.my_shopify_domain');
+        $nameInput = $request->input('name');
+        $nameInput = trim($nameInput);
 
-        if (preg_match('/([a-zA-Z0-9\-]+)\.myshopify\.com/', $nameInput, $matches)) {
-            $storeName = $matches[1];
-        } else {
-            $storeName = preg_replace('/[^a-zA-Z0-9\-]/', '', $nameInput);
+        $nameInput = preg_replace('#^https?:?:?//+#i', '', $nameInput);
+        $nameInput = preg_replace('/\.myshopify\.com$/i', '', $nameInput);
+
+        $nameInput = trim($nameInput);
+
+
+        if ($nameInput) {
+            $myShopifyDomain = config('shopify-app.my_shopify_domain');
+            $nameInput       = $nameInput.'.'.$myShopifyDomain;
         }
 
-        $shopifyFullName = $storeName.'.'.$myShopifyDomain;
 
-        $this->set('name', $shopifyFullName);
+        $this->set('name', $nameInput);
     }
 
     /**
