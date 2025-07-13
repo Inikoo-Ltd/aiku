@@ -228,6 +228,19 @@ class GetWarehouseNavigation
                                 ],
                             ]
                         ],
+                        [
+                            'label' => __('boxes'),
+                            'tooltip' => __('boxes'),
+                            'icon'  => ['fal', 'fa-box'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.boxes.',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.dispatching.boxes.index",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ],
                     ]
                 ],
             ];
