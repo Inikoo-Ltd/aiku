@@ -12,6 +12,7 @@ namespace App\Actions\Pupil\Dashboard;
 
 use App\Actions\Retina\UI\Dashboard\GetRetinaDropshippingHomeData;
 use App\Actions\Retina\UI\Dashboard\GetRetinaFulfilmentHomeData;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
@@ -58,7 +59,10 @@ class ShowPupilDashboard
             ];
         }
 
-        $query = Shop::where('type', ShopTypeEnum::FULFILMENT->value)->get();
+        // TODO: We need open it for all shops: fulfilment and dropships
+        $query = Shop::where('type', ShopTypeEnum::DROPSHIPPING)
+            ->where('state', ShopStateEnum::OPEN)
+            ->get();
 
         if ($shopifyUser->customer) {
             $query = Shop::where('id', $shopifyUser->customer->shop_id)->get();

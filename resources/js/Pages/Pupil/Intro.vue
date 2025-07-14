@@ -2,8 +2,10 @@
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
-import { ref } from 'vue'
+import {inject, ref} from 'vue'
 import { router } from '@inertiajs/vue3'
+
+const layout = inject("layout", {});
 
 const props = defineProps<{
     shops: {
