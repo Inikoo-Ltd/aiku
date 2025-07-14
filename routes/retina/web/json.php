@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
+use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
 use App\Actions\Retina\GetCheckoutComTokenToPayOrder;
@@ -20,3 +21,6 @@ Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWhole
 Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads::class)->name('recent_uploads');
 
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order');
+
+Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip');
+;

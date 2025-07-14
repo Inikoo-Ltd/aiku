@@ -15,7 +15,6 @@ use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\CRM\Customer\UI\IndexFilteredProducts;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\WebUser\CreateWebUser;
@@ -84,7 +83,5 @@ Route::prefix('{customer}')->as('show')->group(function () {
         });
     });
 
-    Route::prefix('portfolios')->as('.portfolios')->group(function () {
-        Route::get('products', IndexFilteredProducts::class)->name('.filtered-products');
-    });
+
 });

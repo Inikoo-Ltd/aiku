@@ -25,6 +25,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
     private DeliveryNote $deliveryNote;
     protected User $user;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         data_set($modelData, 'packed_at', now());
@@ -34,6 +37,14 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
             StorePacking::make()->action($item, $this->user, []);
         }
+        $defaultParcel = [
+            [
+                'weight' => 1,
+                'dimensions' => [5, 5, 5]
+            ]
+        ];
+
+        data_set($modelData, 'parcels', $defaultParcel);
 
         UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
 
@@ -46,6 +57,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
     }
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->user = $request->user();
@@ -55,6 +69,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $this->user = $user;

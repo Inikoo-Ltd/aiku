@@ -25,9 +25,16 @@ class StoreRetinaFulfilmentManualPlatform extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Customer $customer): CustomerSalesChannel
+    public function handle(Customer $customer, array $modelData): CustomerSalesChannel
     {
-        return StoreRetinaManualPlatform::run($customer);
+        return StoreRetinaManualPlatform::run($customer, $modelData);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255', 'unique:customer_sales_channels,name']
+        ];
     }
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
@@ -41,6 +48,6 @@ class StoreRetinaFulfilmentManualPlatform extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer);
+        return $this->handle($this->customer, $this->validatedData);
     }
 }

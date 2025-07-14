@@ -5,56 +5,45 @@
   -->
 
 <script setup lang="ts">
-import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { FulfilmentCustomer } from "@/types/Customer"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes } from "@fal"
+import { faCheck, faTimes, faTimesCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faCheckCircle } from "@fas"
-import { faTimesCircle } from "@fal"
-import { trans } from "laravel-vue-i18n"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import ModalRejected from "@/Components/Utils/ModalRejected.vue"
-import { ref } from "vue"
-import ModalApproveConfirmation from "@/Components/Utils/ModalApproveConfirmation.vue"
 
 library.add(faCheck, faTimes, faCheckCircle, faTimesCircle)
 
-const props = defineProps<{
-	data: {}
-	tab?: string
+defineProps<{
+    data: {}
+    tab?: string
 }>()
 
-const locale = useLocaleStore();
+const locale = useLocaleStore()
 
 </script>
 
 <template>
-	<Table :resource="data" :name="tab" class="mt-5">
-		<template #cell(amount)="{ item: customer }">
-			<div class="text-gray-500">
-				{{ useLocaleStore().currencyFormat(customer.currency_code, customer.amount) }}
-			</div>
-		</template>
-		<template #cell(running_amount)="{ item: customer }">
-			<div class="text-gray-500">
-				{{ useLocaleStore().currencyFormat(customer.currency_code, customer.running_amount) }}
-			</div>
-		</template>
-		<template #cell(date)="{ item: customer }">
-			<div class="text-right">
-				{{
-					useFormatTime(customer.date, {
-						localeCode: locale.language.code,
-						formatTime: "aiku",
-					})
-				}}
-			</div>
-		</template>
-	</Table>
+    <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(amount)="{ item: customer }">
+            <div class="text-gray-500">
+                {{ useLocaleStore().currencyFormat(customer.currency_code, customer.amount) }}
+            </div>
+        </template>
+        <template #cell(running_amount)="{ item: customer }">
+            <div class="text-gray-500">
+                {{ useLocaleStore().currencyFormat(customer.currency_code, customer.running_amount) }}
+            </div>
+        </template>
+        <template #cell(date)="{ item: customer }">
+            <div class="text-right">
+                {{
+                    useFormatTime(customer.date, {
+                        localeCode: locale.language.code,
+                        formatTime: "aiku"
+                    })
+                }}
+            </div>
+        </template>
+    </Table>
 </template>

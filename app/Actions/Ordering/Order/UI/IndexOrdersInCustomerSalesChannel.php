@@ -13,7 +13,6 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
@@ -114,7 +113,7 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('orders').' @'.$this->customerSalesChannel->platform->name,
         ];
-        $subNavigation = $this->getCustomerPlatformSubNavigation(
+        $subNavigation = $this->getCustomerSalesChannelSubNavigation(
             $this->customerSalesChannel,
             $request
         );

@@ -10,18 +10,8 @@ import Table from '@/Components/Table/Table.vue'
 import type {Table as TableTS} from "@/types/Table"
 import {CustomerSalesChannel} from "@/types/customer-sales-channel";
 import {trans} from "laravel-vue-i18n";
-import Toggle from "primevue/toggleswitch"
-import axios from "axios"
-import { routeType } from "@/types/route"
-import { notify } from "@kyvg/vue3-notification"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-
-import { faUnlink } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-library.add(faUnlink)
 
 defineProps<{
     data: TableTS,
@@ -53,49 +43,8 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 }
 
 
-const onChangeToggle = async (routeUpdate: routeType, proxyItem: {status: string}, oldValue: string, newVal: string) => {
-    const data = await axios.patch(
-        route(routeUpdate.name, routeUpdate.parameters),
-        {
-            
-        }
-    )
-    // console.log('oldValue', oldValue, newVal)
-    if (data.status === 200) {
-        proxyItem.status = newVal
-        notify({
-            title: trans("Success"),
-            text: trans("Successfully update the platform status"),
-            type: "success",
-        })
-    } else {
-        proxyItem.status = oldValue
-    }
-}
 
 
-const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
-    try {
-        const response = await axios[customerSalesChannel.reconnect_route.method || 'get'](
-            route(
-                customerSalesChannel.reconnect_route.name,
-                customerSalesChannel.reconnect_route.parameters
-            )
-        )
-        console.log('1111 response', response)
-        if (response.status !== 200) {
-            throw new Error('Something went wrong. Try again later.')
-        } else {
-            window.open(response.data, '_blank');
-        }
-    } catch (error: any) {
-        notify({
-            title: 'Something went wrong',
-            text: error.message || 'Please try again later.',
-            type: 'error'
-        })
-    }
-}
 </script>
 <template>
     <Table :resource="data">
@@ -110,33 +59,6 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
             <Link :href="(platformRoute(customerSalesChannel) as string)" class="primaryLink">
                 {{ customerSalesChannel["name"] }}
             </Link>
-
-            <!-- Button: Reconnect -->
-            <template v-if="customerSalesChannel.platform_code !== 'manual'">
-                <FontAwesomeIcon
-                    v-if="customerSalesChannel.connection === 'connected'"
-                    v-tooltip="trans('Connected')"
-                    icon="fal fa-check"
-                    class="text-green-500"
-                    fixed-width
-                    aria-hidden="true"
-                />
-
-                <template v-else>
-                    <FontAwesomeIcon v-tooltip="trans('Not connected to the platform yet')" icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                    <Button
-                        v-if="customerSalesChannel.reconnect_route?.name"
-                        @click="() => onClickReconnect(customerSalesChannel)"
-                        xrouteTarget="customerSalesChannel.reconnect_route"
-                        iconRight="fal fa-external-link"
-                        :label="trans('Reconnect')"
-                        size="xxs"
-                        type="tertiary"
-                        class="ml-2"
-                    />
-                </template>
-
-            </template>
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
@@ -144,9 +66,9 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
                 {{ customerSalesChannel["number_portfolios"] }}
             </Link>
         </template>
-        <template #cell(number_clients)="{ item: customerSalesChannel }">
+        <template #cell(number_customer_clients)="{ item: customerSalesChannel }">
             <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
-                {{ customerSalesChannel["number_clients"] }}
+                {{ customerSalesChannel["number_customer_clients"] }}
             </Link>
         </template>
         <template #cell(number_orders)="{ item: customerSalesChannel }">
@@ -157,34 +79,22 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 
 
         <template #cell(action)="{ item: customerSalesChannel, proxyItem }">
-            <!-- <pre>{{ customerSalesChannel.platform_name }} ({{ customerSalesChannel.reference }})</pre> -->
-            <Toggle
-                v-tooltip="trans('Change platform to open/closed')"
-                :routeTarget="proxyItem.toggle_route"
-                :modelValue="proxyItem.status"
-                @update:modelValue="(newVal: string) => {
-                    onChangeToggle(
-                        proxyItem.toggle_route,
-                        proxyItem,
-                        proxyItem.status,
-                        newVal
-                    )
-                }"
-                true-value="open"
-                false-value="closed"
-            />
+
 
             <ModalConfirmationDelete
-                :routeDelete="customerSalesChannel.unlink_route"
-                :title="trans('Are you sure you want to unlink platform') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"
+                :routeDelete="customerSalesChannel.delete_route"
+                :title="trans('Are you sure you want to delete this channel') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"
+                :description="trans('The channel will be unlinked from our shop. You can relinked it in the future.')"
                 isFullLoading
+                :noLabel="trans('Delete')"
+                :noIcon="'fal fa-trash-alt'"
             >
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
-                        v-tooltip="trans('Unlink') + ' ' + customerSalesChannel.platform_name"
+                        v-tooltip="trans('Delete') + ' ' + customerSalesChannel.name"
                         @click="() => changeModel()"
                         type="negative"
-                        icon="fal fa-unlink"
+                        icon="fal fa-trash-alt"
                         size="s"
                         :key="1"
                     />
@@ -193,9 +103,3 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
         </template>
     </Table>
 </template>
-
-<style lang="scss">
-:root {
-    --p-toggleswitch-checked-background: #22c55e;
-}
-</style>

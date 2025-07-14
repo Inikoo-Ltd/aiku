@@ -41,7 +41,6 @@ class UpdatePicking extends OrgAction
         /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $picking->deliveryNoteItem;
 
-        $totalPicked = $deliveryNoteItem->pickings()->where('type', PickingTypeEnum::PICK)->sum('quantity');
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
 

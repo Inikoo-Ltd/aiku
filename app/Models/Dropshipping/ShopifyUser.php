@@ -14,6 +14,7 @@ use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\DebugWebhooks;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -77,6 +78,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
  * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
+ * @property-read Collection<int, DebugWebhooks> $debugWebhooks
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -167,6 +169,11 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     public function clients(): MorphMany
     {
         return $this->morphMany(PlatformHasClient::class, 'userable');
+    }
+
+    public function debugWebhooks(): MorphMany
+    {
+        return $this->morphMany(DebugWebhooks::class, 'model');
     }
 
     public function customerSalesChannel(): BelongsTo

@@ -37,7 +37,7 @@ trait IsOrder
                 'status'    => $order->customer_sales_channel_id,
                 'platform'  => [
                     'name' => $order->platform?->name,
-                    'image' => $this->getPlatformLogo($order->customerSalesChannel)
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel->platform->code)
                 ]
             ];
         }
@@ -46,28 +46,41 @@ trait IsOrder
         $invoice = $order->invoices->first();
 
         if ($invoice) {
-
-            $route = [];
-            match (request()->routeIs('retina.*')) {
-                true => $route = [
+            if (request()->routeIs('retina.*')) {
+                $routeShow = [
                     'name'       => 'retina.dropshipping.invoices.show',
                     'parameters' => [
                         'invoice' => $invoice->slug,
                     ]
-                ],
-                default => $route = [
+                ];
+                $routeDownload = null;
+            } else {
+                $routeShow = [
                     'name'       => 'grp.org.accounting.invoices.show',
                     'parameters' => [
                         'organisation'  => $order->organisation->slug,
                         'invoice'       => $invoice->slug,
                     ]
-                ]
-            };
+                ];
+
+                $routeDownload = [
+                    'name'       => 'grp.org.accounting.invoices.download',
+                    'parameters' => [
+                        'organisation'  => $order->organisation->slug,
+                        'invoice'      => $invoice->slug,
+                    ]
+                ];
+            }
+
             $invoiceData = [
                 'reference' => $invoice->reference,
-                'route'     => $route
+                'routes' => [
+                    'show'     => $routeShow,
+                    'download' => $routeDownload || null,
+                ]
             ];
         }
+
         $customerClientData = null;
 
         if ($order->customerClient) {

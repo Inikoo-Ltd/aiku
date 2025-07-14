@@ -35,7 +35,7 @@ trait IsDeliveryNotesIndex
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('delivery_notes.reference', $value);
+                $query->whereWith('delivery_notes.reference', $value);
             });
         });
 
@@ -51,7 +51,7 @@ trait IsDeliveryNotesIndex
 
         if ($shopType != 'all') {
 
-            //HACK temporal hack to show only new system orders , remove after migration
+            //HACK temporal hack to show only new system orders, remove after migration
             if ($shopType == 'dropshipping') {
                 $query->whereNull('delivery_notes.source_id');
 
@@ -130,7 +130,7 @@ trait IsDeliveryNotesIndex
             ->withQueryString();
     }
 
-    public function tableStructure($parent, $prefix = null, $bucket = 'all'): Closure
+    public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all'): Closure
     {
         $employee = null;
         if (!request()->user() instanceof WebUser) {
@@ -140,34 +140,63 @@ trait IsDeliveryNotesIndex
         if ($employee) {
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
         }
-        return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee) {
+        return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee, $shopType) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
+
             $table->betweenDates(['date']);
 
             $noResults = __("No delivery notes found");
+            $count = 0;
             if ($parent instanceof Customer) {
-                $stats = $parent->stats;
+                $count = $parent->stats->number_delivery_notes;
                 $noResults = __("Customer has no delivery notes");
             } elseif ($parent instanceof CustomerClient) {
-                $stats = $parent->stats;
+                $count = $parent->stats->number_delivery_notes;
                 $noResults = __("This customer client hasn't place any delivery notes");
             } elseif ($parent instanceof Group) {
-                $stats = $parent->orderingStats;
-            } else {
-                $stats = $parent->salesStats;
+                $count = $parent->orderingStats->number_delivery_notes;
+            } elseif ($parent instanceof Warehouse) {
+                $count = $parent->organisation->orderingStats->number_delivery_notes;
+
+                if ($shopType == 'dropshipping') {
+                    if ($bucket == 'unassigned') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_unassigned;
+                    } elseif ($bucket == 'queued') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_queued;
+                    } elseif ($bucket == 'handling') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling;
+                    } elseif ($bucket == 'handling_blocked') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling_blocked;
+                    } elseif ($bucket == 'packed') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_packed;
+                    } elseif ($bucket == 'finalised') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_finalised;
+                    } elseif ($bucket == 'dispatched') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_dispatched;
+                    } elseif ($bucket == 'cancelled') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_cancelled;
+                    }
+                }
+
+
+            } elseif ($parent instanceof Shop) {
+                $count = $parent->orderingStats->number_delivery_notes;
+            } elseif ($parent instanceof Order) {
+                $count = $parent->stats->number_delivery_notes;
             }
+
 
             $table
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
                         'title' => $noResults,
-                        'count' => $stats->number_delivery_notes ?? 0
+                        'count' => $count
                     ]
                 );
 
@@ -183,8 +212,8 @@ trait IsDeliveryNotesIndex
             }
             $table->column(key: 'effective_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_items', label: __('items'), canBeHidden: false, sortable: true, searchable: true);
-            if ($bucket && $bucket == 'unassigned' && $pickerEmployee) {
-                $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false);
+            if ($bucket == 'unassigned' && $pickerEmployee) {
+                $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }
         };
     }

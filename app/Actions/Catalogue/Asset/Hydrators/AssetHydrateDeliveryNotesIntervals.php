@@ -13,6 +13,7 @@ use App\Actions\Traits\Hydrators\WithHydrateIntervals;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Asset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssetHydrateDeliveryNotesIntervals implements ShouldBeUnique
@@ -30,39 +31,36 @@ class AssetHydrateDeliveryNotesIntervals implements ShouldBeUnique
 
     public function handle(Asset $asset): void
     {
+        if ($asset->model_type != 'Product') {
+            return;
+        }
 
         $dateRanges = $this->getDateRanges();
-        $stats = [];
+        $stats      = [];
 
         foreach ($dateRanges as $key => $range) {
             if ($key === 'all') {
-                $deliveryNotes = $asset->transactions()
-                    ->with('deliveryNoteItem.deliveryNote')
-                    ->get()
-                    ->pluck('deliveryNoteItem')
-                    ->pluck('deliveryNote')
-                    ->filter()
-                    ->unique('id');
+                $deliveryNotesData = DB::table('delivery_note_items')
+                    ->leftJoin('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', '=', 'delivery_note_items.org_stock_id')
+                    ->select(DB::raw('COUNT(DISTINCT delivery_note_items.delivery_note_id) as count'))
+                    ->where('product_has_org_stocks.product_id', $asset->model_id)
+                    ->first();
             } else {
                 [$start, $end] = $range;
 
-                $deliveryNotes = $asset->transactions()
-                    ->with('deliveryNoteItem.deliveryNote')
-                    ->whereHas('deliveryNoteItem.deliveryNote', function ($query) use ($start, $end) {
-                        $query->whereBetween('created_at', [$start, $end]);
-                    })
-                    ->get()
-                    ->pluck('deliveryNoteItem')
-                    ->pluck('deliveryNote')
-                    ->filter()
-                    ->unique('id');
+                $deliveryNotesData = DB::table('delivery_note_items')
+                    ->leftJoin('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', '=', 'delivery_note_items.org_stock_id')
+                    ->leftJoin('delivery_notes', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->select(DB::raw('COUNT(DISTINCT delivery_notes.id) as count'))
+                    ->whereBetween('delivery_notes.created_at', [$start, $end])
+                    ->where('product_has_org_stocks.product_id', $asset->model_id)
+                    ->first();
             }
 
-            $stats["delivery_notes_$key"] = $deliveryNotes->count();
+            $stats["delivery_notes_$key"] = $deliveryNotesData->count;
         }
 
         $asset->orderingIntervals()->update($stats);
-
     }
 
 }

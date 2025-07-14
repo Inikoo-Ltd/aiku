@@ -10,61 +10,85 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use App\Models\CRM\Customer;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use ZipStream\ZipStream;
+use Sentry\Laravel\Facade as Sentry;
 
 class PortfoliosZipExport
 {
     use AsAction;
 
-    public function handle(Customer $customer, CustomerSalesChannel $customerSalesChannel)
+    /**
+     * @throws \ZipStream\Exception\OverflowException
+     */
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-
-        $zipFileName = 'portfolios_' . now()->format('Ymd') . '.zip';
-        $zip = new ZipStream(
-            outputName: $zipFileName,
+        $zipFileName = 'images_'.Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference).'.zip';
+        $zip         = new ZipStream(
             sendHttpHeaders: true,
+            outputName: $zipFileName,
         );
 
-        $counter = 1;
-        $batchSize = 500;
 
-        $customer->portfolios()
-            ->where('customer_sales_channel_id', $customerSalesChannel->id)
-            ->with(['item.images'])
-            ->lazy($batchSize)
-            ->each(function ($portfolio) use ($zip, &$counter) {
-                if (!$portfolio->item || !$portfolio->item->images) {
-                    return;
+        $imagesData = $this->getImages($customerSalesChannel);
+
+
+        foreach ($imagesData as $imageId => $imageData) {
+            $image = $imageData['image'];
+            $disk  = Storage::disk($image->disk);
+            if (!$disk->exists($image->getPathRelativeToRoot())) {
+                unset($imagesData[$imageId]);
+                continue;
+            }
+
+            try {
+                $stream = $disk->readStream($image->getPathRelativeToRoot());
+                if (!$stream) {
+                    continue;
                 }
 
-                foreach ($portfolio->item->images as $image) {
-                    try {
-                        $disk = Storage::disk($image->disk);
+                $fileName = $imageData['filename'];
 
-                        if (!$disk->exists($image->getPath())) {
-                            continue;
-                        }
-
-                        $stream = $disk->readStream($image->getPath());
-                        $extension = pathinfo($image->getPath(), PATHINFO_EXTENSION) ?: 'jpg';
-                        $fileName = 'image_' . $counter . '.' . $extension;
-
-                        $zip->addFileFromStream($fileName, $stream);
-                        $counter++;
-                    } catch (\Exception $e) {
-                        Log::error('Error adding image to zip stream', [
-                            'image_id' => $image->id,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
+                $zip->addFileFromStream($fileName, $stream);
+            } catch (\Exception $e) {
+                Sentry::captureException($e, [
+                    'extra' => [
+                        'image_id'  => $imageId,
+                        'file_path' => $image->getPathRelativeToRoot()
+                    ]
+                ]);
+            } finally {
+                if (isset($stream) && is_resource($stream)) {
+                    fclose($stream);
                 }
-            });
+            }
+        }
 
         $zip->finish();
     }
+
+
+    public function getImages(CustomerSalesChannel $customerSalesChannel): array
+    {
+        $imagesData = [];
+        foreach ($customerSalesChannel->portfolios as $portfolio) {
+            if ($portfolio->item instanceof Product) {
+                /** @var Product $product */
+                $product = $portfolio->item;
+                foreach ($product->images as $image) {
+                    $imagesData[$image->id] = [
+                        'filename' => strtolower($product->code).'__'.$image->id.'.'.$image->extension,
+                        'image'    => $image
+                    ];
+                }
+            }
+        }
+
+        return $imagesData;
+    }
+
 }

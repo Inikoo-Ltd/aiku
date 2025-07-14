@@ -19,6 +19,7 @@ use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -129,7 +130,9 @@ class CallApiItdShipping extends OrgAction
 
 
         $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl() . $url, $params)->json();
-
+        if (Arr::get($apiResponse, 'data.status') == 'ERROR') {
+            throw ValidationException::withMessages(['message' => Arr::get($apiResponse, 'data.errors.0') . ' from ITD Shipping, please try again later']);
+        }
         $modelData = [
             'api_response' => $apiResponse,
         ];

@@ -7,10 +7,9 @@
  * copyright 2025
 */
 
-namespace App\Actions\Dropshipping\Aiku;
+namespace App\Actions\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
-use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -19,13 +18,9 @@ use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreMultipleManualPortfolios extends OrgAction
+class StoreMultiplePortfolios extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     /**
@@ -35,7 +30,7 @@ class StoreMultipleManualPortfolios extends OrgAction
     {
         DB::transaction(function () use ($customerSalesChannel, $modelData) {
             foreach (Arr::get($modelData, 'items') as $itemID) {
-                $itemID = (int) $itemID;
+                $itemID = (int)$itemID;
                 if ($customerSalesChannel->customer->is_fulfilment) {
                     /** @var StoredItem $item */
                     $item = StoredItem::find($itemID);
@@ -43,6 +38,7 @@ class StoreMultipleManualPortfolios extends OrgAction
                     /** @var Product $item */
                     $item = Product::find($itemID);
                 }
+
                 if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
                     continue;
                 }
@@ -54,8 +50,6 @@ class StoreMultipleManualPortfolios extends OrgAction
                 );
             }
         });
-
-
 
         CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
     }
@@ -73,6 +67,16 @@ class StoreMultipleManualPortfolios extends OrgAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisationFromShop($customerSalesChannel->shop, $request);
+
+        $this->handle($customerSalesChannel, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): void
+    {
+        $this->initialisationFromShop($customerSalesChannel->shop, $modelData);
 
         $this->handle($customerSalesChannel, $this->validatedData);
     }

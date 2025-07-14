@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Shopify\Product;
+namespace App\Actions\Dropshipping\Shopify\Pupil;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
@@ -16,12 +16,11 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetProductForShopify
+class IndexPupilProductsInShopifyUser
 {
     use AsAction;
     use WithAttributes;
@@ -67,10 +66,13 @@ class GetProductForShopify
         return ProductResource::collection($products);
     }
 
-    public function asController(ShopifyUser $shopifyUser, ActionRequest $request)
+    /**
+     * @throws \Exception
+     */
+    public function asController(ShopifyUser $shopifyUser)
     {
         $this->parent = $shopifyUser;
-        $shop         =  $shopifyUser->customer->shop;
+        $shop         = $shopifyUser->customer->shop;
 
         return $this->handle($shop);
     }

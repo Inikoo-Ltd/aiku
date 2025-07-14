@@ -142,17 +142,26 @@ class DropshippingPortfoliosResource extends JsonResource
             'price'                     => $price,
             'selling_price'             => $this->selling_price,
             'customer_price'            => $this->customer_price,
+            'status'                    => $this->status,
             'margin'                    => percentage($this->margin, 1),
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
             'platform_product_id' => $this->platform_product_id,
+            'upload_warning'            => $this->upload_warning,
             'category' => $category,
             'platform' => $this->platform->type,
             'delete_portfolio' => [
                 'method' => 'delete',
                 'name'       => 'retina.models.portfolio.delete',
+                'parameters' => [
+                    'portfolio' => $this->id
+                ]
+            ],
+            'update_portfolio' => [
+                'method' => 'patch',
+                'name'       => 'retina.models.portfolio.update',
                 'parameters' => [
                     'portfolio' => $this->id
                 ]

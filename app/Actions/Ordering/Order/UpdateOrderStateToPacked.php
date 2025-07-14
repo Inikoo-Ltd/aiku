@@ -30,7 +30,11 @@ class UpdateOrderStateToPacked extends OrgAction
             'state' => OrderStateEnum::PACKED
         ];
 
-        if (in_array($order->state, [\App\Enums\Ordering\Order\OrderStateEnum::HANDLING, \App\Enums\Ordering\Order\OrderStateEnum::FINALISED])) {
+        if (in_array($order->state, [
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::FINALISED,
+            OrderStateEnum::IN_WAREHOUSE,
+        ])) {
             $order->transactions()->update([
                 'state' => TransactionStateEnum::PACKED,
             ]);
@@ -44,7 +48,7 @@ class UpdateOrderStateToPacked extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'You can not change the status to submitted']);
+        throw ValidationException::withMessages(['status' => 'Error, order state is '.$order->state->value]);
     }
 
     /**

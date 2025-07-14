@@ -40,7 +40,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('portfolio.reference', $value);
+                $query->whereStartWith('portfolios.reference', $value);
             });
         });
 
@@ -55,7 +55,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
 
 
-
         return $query
             ->select([
                 'portfolios.id',
@@ -64,6 +63,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.item_name',
                 'portfolios.item_code',
                 'portfolios.item_type',
+                'portfolios.platform_product_id',
                 'portfolios.item_id',
                 'portfolios.customer_sales_channel_id',
             ])
@@ -76,17 +76,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
-        $subNavigation = $this->getCustomerPlatformSubNavigation($this->customerSalesChannel, $request);
-        $icon          = ['fal', 'fa-user'];
-        $title         = $this->customerSalesChannel->customer->name.' ('.$this->customerSalesChannel->customer->reference.')';
-        $iconRight     = [
-            'icon'  => ['fal', 'fa-bookmark'],
-            'title' => __('portfolios')
-        ];
-        $afterTitle    = [
-            'label' => __('Portfolios').' @'.$this->customerSalesChannel->platform->name,
-        ];
-
         return Inertia::render(
             'Org/Dropshipping/Portfolios',
             [
@@ -95,20 +84,24 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Portfolios'),
+                'title'       => __('Portfolio'),
                 'pageHead'    => [
-                    'title'         => $title,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'subNavigation' => $subNavigation,
+                    ...$this->getCustomerSalesChannelSubNavigationHead(
+                        $this->customerSalesChannel,
+                        $request,
+                        __('Portfolio'),
+                        [
+                            'icon'  => ['fal', 'fa-bookmark'],
+                            'title' => __('portfolios')
+                        ]
+                    ),
+
                 ],
 
-
                 'is_show_add_products_modal' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
-                'data'        => PortfoliosResource::collection($portfolios),
-                'customer'      => $this->customerSalesChannel->customer,
-                'customerSalesChannelId' => $this->customerSalesChannel->id,
+                'data'                       => PortfoliosResource::collection($portfolios),
+                'customer'                   => $this->customerSalesChannel->customer,
+                'customerSalesChannelId'     => $this->customerSalesChannel->id,
             ]
         )->table($this->tableStructure());
     }
@@ -129,6 +122,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ->column(key: 'item_name', label: __('product name'), canBeHidden: false, searchable: true)
                 ->column(key: 'reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'item_type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'platform_product_id', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('created at'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'action', label: __(' '), canBeHidden: false);
         };

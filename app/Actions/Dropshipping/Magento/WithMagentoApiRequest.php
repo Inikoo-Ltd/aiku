@@ -106,7 +106,7 @@ trait WithMagentoApiRequest
 
             throw new Exception("Magento API request failed: {$response->status()} - {$response->body()}");
         } catch (Exception $e) {
-            Log::error("Magento API {$method} request to {$endpoint} failed: " . $e->getMessage());
+            Log::error("Magento API $method request to $endpoint failed: " . $e->getMessage());
             throw $e;
         }
     }
@@ -260,7 +260,7 @@ trait WithMagentoApiRequest
             }
 
             // Log the deletion
-            Log::info("Product deleted via webhook: SKU {$sku}");
+            Log::info("Product deleted via webhook: SKU $sku");
 
             // You can add custom logic here, such as:
             // - Update local database
@@ -292,7 +292,7 @@ trait WithMagentoApiRequest
             }
 
             // Log the order event
-            Log::info("Order webhook received: Order ID {$orderId}");
+            Log::info("Order webhook received: Order ID $orderId");
 
             // Optionally fetch full order details
             try {
@@ -308,7 +308,7 @@ trait WithMagentoApiRequest
                 // event(new OrderWebhookEvent($orderId, $orderDetails, $webhookData));
 
             } catch (Exception $e) {
-                Log::warning("Could not fetch order details for webhook: {$e->getMessage()}");
+                Log::warning("Could not fetch order details for webhook: " . $e->getMessage());
             }
 
             return true;
@@ -360,7 +360,7 @@ trait WithMagentoApiRequest
                     $webhook['topics']
                 );
             } catch (Exception $e) {
-                Log::error("Failed to create webhook {$webhook['name']}: " . $e->getMessage());
+                Log::error("Failed to create webhook " . $webhook['name'] . ": " . $e->getMessage());
                 throw $e;
             }
         }

@@ -64,6 +64,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                 'customer_clients.id',
                 'customer_clients.name',
                 'customer_clients.ulid',
+                'customer_clients.status',
                 'customer_clients.created_at'
             ])
             ->allowedSorts(['reference', 'name', 'created_at'])
@@ -94,7 +95,8 @@ class IndexRetinaCustomerClients extends RetinaAction
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('location'), canBeHidden: false, searchable: true)
-                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'action', label:'', canBeHidden: false, sortable: false, searchable: false);
         };
 
     }

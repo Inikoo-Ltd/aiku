@@ -358,7 +358,6 @@ const isModalUploadExcel = ref(false)
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-add-products="{ action }">
@@ -597,7 +596,7 @@ const isModalUploadExcel = ref(false)
 
             <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
                 <Link
-                    :href="route(box_stats?.invoice?.route?.name, box_stats?.invoice?.route?.parameters)"
+                    :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
                     class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-file-invoice-dollar' fixed-width aria-hidden='true' class="text-gray-500" />
@@ -606,6 +605,16 @@ const isModalUploadExcel = ref(false)
                         {{ box_stats?.invoice?.reference }}
                     </dd>
                 </Link>
+
+                <a v-if="box_stats?.invoice?.routes?.download?.name" :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
+                    as="a" target="_blank" class="flex items-center">
+                    <button class="flex items-center">
+                        <div class="flex-none">
+                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"
+                                class="text-gray-500 hover:text-indigo-500 transition-colors duration-200" />
+                        </div>
+                    </button>
+                </a>
             </div>
 
             <div v-if="delivery_note" class="mt-1 flex items-center w-full flex-none justify-between">

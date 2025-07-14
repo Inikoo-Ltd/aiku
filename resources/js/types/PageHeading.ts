@@ -1,4 +1,9 @@
-import { Button } from '@/types/Button'
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 12 Jul 2025 19:13:19 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 import { routeType } from '@/types/route'
 import { Action } from '@/types/Action'
 import { Icon } from '@/types/Utils/Icon'
@@ -23,7 +28,7 @@ export interface PageHeading {
     edit: {
         route: routeType
     }
-    noCapitalise?: boolean  // Off capitalize in 'title'
+    noCapitalise?: boolean  // Off capitalizing in 'title'
     meta?: {
         key: string
         label?: string
@@ -37,15 +42,27 @@ export interface PageHeading {
         title: string
         tooltip?: string
     }
+    image?: {
+        tooltip: string
+        src: string
+        alt: string
+        class: string
+        width: string
+        height: string
+        style: string
+    }
     iconRight?: {
         tooltip: string
         icon: string
         class: string
+        icon_rotation:  90 | 180 | 270 | '90' | '180' | '270'
     }
+    icon_rotation:  90 | 180 | 270 | '90' | '180' | '270'
+    titleRight?: string
     title: string,
     subNavigation?: any
     wrapped_actions: Action[]
-    parentTag?: ParentTag[] | ParentTag
+    parentTag?: ParentTag[]
 }
 
 
@@ -54,4 +71,5 @@ interface ParentTag {
     route: routeType
     icon: string | string[]
     tooltip: string
+    length: number
 }

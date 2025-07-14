@@ -29,6 +29,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
 
@@ -171,7 +172,11 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
-            <span v-tooltip="item.quantity_required">{{ locale.number(item.quantity_required) }}</span>
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay  v-if="item.quantity_required_fractional"   :fractionData="item.quantity_required_fractional" />
+                <span v-else>{{item.quantity_required}}</span>
+
+            </span>
 
             <template v-if="state === 'handling'">
                 <span v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2">
@@ -406,7 +411,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
 
             <!-- Button: Pack -->
-            <div v-if="itemValue.is_picked && !itemValue.is_packed" class="w-full max-w-32 mx-auto">
+          <!--   <div v-if="itemValue.is_picked && !itemValue.is_packed" class="w-full max-w-32 mx-auto">
                 <ButtonWithLink
                     
                     :routeTarget="itemValue.packing_route"
@@ -419,7 +424,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                     size="xs"
                     :label="trans('Pack')"
                 />
-            </div>
+            </div> -->
 
         </template>
     </Table>

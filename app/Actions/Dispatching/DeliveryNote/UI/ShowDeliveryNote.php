@@ -14,9 +14,11 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
+use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
@@ -31,6 +33,7 @@ use App\Http\Resources\Ordering\PickersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -45,6 +48,7 @@ class ShowDeliveryNote extends OrgAction
 {
     use AsAction;
     use WithInertia;
+    use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
 
@@ -103,18 +107,18 @@ class ShowDeliveryNote extends OrgAction
 
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
-        $isSomeNotPicked = !$deliveryNote->deliveryNoteItems->every(
-            fn ($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
-        );
+        $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
+            ->where('is_handled', false)
+            ->exists();
 
+        $actions = [];
 
-        return [
-            [
+        if (!$hasUnHandledItems) {
+            $actions[] = [
                 'type'     => 'button',
                 'style'    => 'save',
                 'tooltip'  => __('Set as packed'),
                 'label'    => __('Set as packed'),
-                'disabled' => $isSomeNotPicked,
                 'key'      => 'action',
                 'route'    => [
                     'method'     => 'patch',
@@ -123,17 +127,21 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ]
-            ],
-            [
-                'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('Change picker'),
-                'icon'    => 'fal fa-exchange-alt',
-                'label'   => __('Change Picker'),
-                'key'     => 'change-picker',
-            ]
+            ];
+        }
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'save',
+            'tooltip' => __('Change picker'),
+            'icon'    => 'fal fa-exchange-alt',
+            'label'   => __('Change Picker'),
+            'key'     => 'change-picker',
         ];
+
+        return $actions;
     }
+
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
@@ -233,7 +241,7 @@ class ShowDeliveryNote extends OrgAction
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
 
             DeliveryNoteStateEnum::PACKED => [
-                [
+                count($deliveryNote->parcels ?? []) ? [
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Finalised'),
@@ -246,7 +254,7 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ]
+                ] : []
             ],
             DeliveryNoteStateEnum::FINALISED => [
                 [
@@ -342,8 +350,21 @@ class ShowDeliveryNote extends OrgAction
                     'addresses' => [
                         'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     ],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                        'parameters' => [
+                            'organisation' => $deliveryNote->organisation->slug,
+                            'shop'         => $deliveryNote->shop->slug,
+                            'customer'     => $deliveryNote->customer->slug
+                        ]
+                    ]
                 ]
             ),
+            'customer_client' => $deliveryNote->customerClient,
+            'platform' => [
+                'name' => $deliveryNote->platform?->name,
+                'logo' => $this->getPlatformLogo($deliveryNote->customerSalesChannel->platform->code),
+            ],
             'products'         => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
@@ -450,6 +471,13 @@ class ShowDeliveryNote extends OrgAction
                 'navigation' => DeliveryNoteTabsEnum::navigation($deliveryNote)
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
+
+            'address' => [
+                'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+                'options'                        => [
+                    'countriesAddressData' => GetAddressData::run()
+                ]
+            ],
 
             'timelines' => $this->getTimeline($deliveryNote),
             'box_stats' => $this->getBoxStats($deliveryNote),

@@ -14,7 +14,43 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomerSalesChannelSubNavigation
 {
-    public function getCustomerPlatformSubNavigation(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
+    public function getCustomerSalesChannelSubNavigationHead(CustomerSalesChannel $customerSalesChannel, ActionRequest $request, $titleRight = '', $iconRight = null): array
+    {
+        return [
+            'subNavigation' => $this->getCustomerSalesChannelSubNavigation($customerSalesChannel, $request),
+            ...$this->getCustomerSalesChannelSubNavigationHeadProperties($customerSalesChannel, $titleRight, $iconRight),
+        ];
+    }
+
+
+    public function getCustomerSalesChannelSubNavigationHeadProperties(CustomerSalesChannel $customerSalesChannel, $titleRight = '', $iconRight = null): array
+    {
+        $title = $customerSalesChannel->name;
+        if (!$title) {
+            $title = $customerSalesChannel->reference;
+        }
+
+
+        return [
+            'title'      => $title,
+            'icon'       => [
+                'icon'          => ['fal', 'fa-code-branch'],
+                'icon_rotation' => 90,
+                'title'         => __('channel')
+            ],
+            'iconRight'  => $iconRight,
+            'titleRight' => $titleRight,
+            'platform'   => [
+                'label' => 'xxx',
+            ],
+            'afterTitle' => [
+                'label' => ' @'.$customerSalesChannel->customer->name.' ('.$customerSalesChannel->platform->name.')',
+            ],
+        ];
+    }
+
+
+    public function getCustomerSalesChannelSubNavigation(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
     {
         $subNavigation = [];
 

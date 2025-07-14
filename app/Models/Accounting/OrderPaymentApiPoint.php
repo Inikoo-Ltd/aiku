@@ -8,6 +8,7 @@
 
 namespace App\Models\Accounting;
 
+use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Models\Ordering\Order;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property OrderPaymentApiPointStateEnum|null $state
+ * @property \Illuminate\Support\Carbon|null $processed_at
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Order $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -38,7 +41,9 @@ class OrderPaymentApiPoint extends Model
     use InOrganisation;
 
     protected $casts = [
-        'data' => 'array',
+        'data'         => 'array',
+        'processed_at' => 'datetime',
+        'state'        => OrderPaymentApiPointStateEnum::class,
     ];
 
     protected $attributes = [

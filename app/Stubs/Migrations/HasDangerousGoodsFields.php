@@ -12,7 +12,6 @@ use Illuminate\Database\Schema\Blueprint;
 
 trait HasDangerousGoodsFields
 {
-
     public function addDangerousGoodsFields(Blueprint $table): void
     {
         $table->string('un_number')->nullable();

@@ -240,7 +240,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'status'   => $order->customer_sales_channel_id,
                 'platform' => [
                     'name'  => $customerChannel->platform->name,
-                    'image' => $this->getPlatformLogo($customerChannel)
+                    'image' => $this->getPlatformLogo($customerChannel->platform->code),
                 ]
             ],
             'products'         => [

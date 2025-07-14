@@ -19,11 +19,11 @@ import Image from "@/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle} from "@fal"
 import { faStar } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
-library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck )
+library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck, faExclamationCircle )
 
 interface PlatformData {
 	id: number
@@ -38,7 +38,7 @@ const props = defineProps<{
 	selectedData: {
 		products: number[]
 	}
-	
+
     platform_data: PlatformData
 	platform_user_id: number
 	is_platform_connected: boolean
@@ -116,7 +116,7 @@ onMounted(() => {
 						setTimeout(() => {
 							set(props.progressToUploadToShopify, [porto.id], null)
 						}, 3000);
-	
+
 					} else {
 						set(props.progressToUploadToShopify, [porto.id], 'success')
 						debReloadPage()
@@ -125,7 +125,7 @@ onMounted(() => {
 			);
 
 			console.log(`Subscription porto id: ${porto.id}`, xxx)
-	
+
 		}
     });
 
@@ -201,8 +201,12 @@ onMounted(() => {
 			<div class="flex justify-center">
 				<template v-if="is_platform_connected">
 					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+					<!-- <FontAwesomeIcon v-if="(product.upload_warning)" v-tooltip="product.upload_warning"  icon="fa fa-exclamation-circle" class="text-yellow-500" fixed-width aria-hidden="true" /> -->
 					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
-					<span v-else class="text-gray-500 text-xs text-center italic">
+					<span v-if="(product.upload_warning)" class="text-red-500 text-xs text-center italic">
+						{{ product.upload_warning }}
+					</span>
+					<span v-else-if="!product.platform_product_id" class="text-gray-500 text-xs text-center italic">
 						{{ trans("Pending upload") }}
 					</span>
 				</template>
@@ -236,16 +240,47 @@ onMounted(() => {
 					:disabled="get(progressToUploadToShopify, [item.id], null)"
 				/>
 
+				
 				<ButtonWithLink
-					v-tooltip="trans('Delete product')"
+					v-if="item.status"
+					v-tooltip="trans('Set to inactive')"
 					type="negative"
-					icon="fal fa-trash-alt"
-					:routeTarget="item.delete_portfolio"
+					icon="fal fa-skull"
+					:routeTarget="item.update_portfolio"
+					:body="{
+						'status': false,
+					}"
 					size="xs"
 					:bindToLink="{
 						preserveScroll: true,
 					}"
 				/>
+
+				<ButtonWithLink
+					v-else
+					v-tooltip="trans('Set to active')"
+					type="positive"
+					icon="fal fa-seedling"
+					:routeTarget="item.update_portfolio"
+					:body="{
+						'status': true,
+					}"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+				/>
+
+				<!-- <ButtonWithLink
+					v-tooltip="trans('Remove product')"
+					type="negative"
+					icon="fal fa-times"
+					:routeTarget="item.delete_portfolio"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+				/> -->
 			</div>
 		</template>
 	</Table>

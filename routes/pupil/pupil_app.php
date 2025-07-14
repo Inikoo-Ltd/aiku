@@ -7,17 +7,16 @@
  */
 
 
-use App\Actions\Dropshipping\Shopify\Product\GetProductForShopify;
-use App\Actions\Dropshipping\Shopify\Product\StorePortfolioShopify;
+use App\Actions\Dropshipping\Shopify\Product\StoreMultiplePortfoliosFromShopify;
+use App\Actions\Dropshipping\Shopify\Pupil\IndexPupilProductsInShopifyUser;
 use App\Actions\Dropshipping\Shopify\Webhook\SetupShopifyAccount;
 use App\Actions\Pupil\Auth\AuthShopifyUser;
 use App\Actions\Pupil\Dashboard\ShowPupilDashboard;
 
 Route::middleware(['verify.shopify'])->group(function () {
     Route::get('/', ShowPupilDashboard::class)->name('home');
-    Route::get('shopify-user/{shopifyUser:id}/products', GetProductForShopify::class)->name('products');
-    Route::post('shopify-user/{shopifyUser:id}/products', StorePortfolioShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
-
+    Route::get('shopify-user/{shopifyUser:id}/products', IndexPupilProductsInShopifyUser::class)->name('products');
+    Route::post('shopify-user/{shopifyUser:id}/products', StoreMultiplePortfoliosFromShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::post('shopify-user/{shopifyUser:id}/get-started', SetupShopifyAccount::class)->name('shopify_user.get_started.store')->withoutScopedBindings();
 
     Route::prefix("dashboard")

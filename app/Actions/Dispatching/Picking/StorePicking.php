@@ -34,6 +34,8 @@ class StorePicking extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Picking
     {
+
+
         data_forget($modelData, 'location_org_stock_id');
 
         data_set($modelData, 'group_id', $deliveryNoteItem->group_id);

@@ -129,12 +129,12 @@ class EditOrganisationSettings extends OrgAction
                             "label"  => __("google drive"),
                             "icon"   => "fab fa-google",
                             "button" => [
-                                "title"   => !file_exists($this->getTokenPath()) ? "Authorize" : "Authorized",
+                                "title"   => !file_exists($this->getTokenPath($organisation)) ? "Authorize" : "Authorized",
                                 "route"   => [
                                     'name'       => 'grp.models.org.google_drive.authorize',
                                     'parameters' => [$organisation->id]
                                 ],
-                                "disable" => file_exists($this->getTokenPath())
+                                "disable" => file_exists($this->getTokenPath($organisation))
                             ],
 
                             "fields" => [
@@ -150,12 +150,12 @@ class EditOrganisationSettings extends OrgAction
                                     "value" => Arr::get($organisation->settings, 'google.secret'),
                                     "use_generate_password" => false
                                 ],
-                                "google_drive_folder_key" => [
+                                /*"google_drive_folder_key" => [
                                     "type"  => "password",
-                                    "label" => __("google drive folder key"),
+                                    "label" => __("google drive main folder key"),
                                     "value" => Arr::get($organisation->settings, 'google.drive.folder'),
                                     "use_generate_password" => false
-                                ],
+                                ],*/
                                 "google_redirect_uri" => [
                                     "type"       => "input",
                                     "label"      => __("google redirect URI"),

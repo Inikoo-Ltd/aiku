@@ -16,9 +16,9 @@ use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
-use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
+use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
 use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
@@ -31,8 +31,8 @@ use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\MoveFamilyProductToOtherFamily;
 use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
-use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
@@ -71,13 +71,14 @@ use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
+use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
-use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
+use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
@@ -165,7 +166,6 @@ use App\Actions\Helpers\Brand\DetachBrandFromModel;
 use App\Actions\Helpers\Brand\StoreBrand;
 use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
-use App\Actions\Helpers\GoogleDrive\CallbackClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -262,7 +262,6 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -347,7 +346,6 @@ Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfoli
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post("google-drive.authorize", [AuthorizeClientGoogleDrive::class, 'authorize'])->name('google_drive.authorize');
-    Route::get("google-drive.callback", CallbackClientGoogleDrive::class)->name('google_drive.callback');
     Route::patch("settings", UpdateOrganisation::class)->name('settings.update');
 
 
@@ -685,7 +683,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 });
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
-    Route::post('portfolio-multiple-manual', StoreMultipleManualPortfolios::class)->name('portfolio.store_multiple_manual');
+    Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
 });
 

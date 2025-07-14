@@ -120,6 +120,7 @@ class EditWebpage extends OrgAction
                         [
                             'label'  => __('Link Preview'),
                             'icon'   => 'fal fa-image',
+                            'information' => __('The link preview is used by social media platforms to display a preview of the webpage when the url shared.'),
                             'fields' => [
                                 "seo_image"         => [
                                     "type"    => "image_crop_square",

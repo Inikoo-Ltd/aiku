@@ -29,7 +29,9 @@ enum RetinaPortfoliosTabsEnum: string
             ],
             RetinaPortfoliosTabsEnum::INACTIVE => [
                 'title' => __('inactive'),
-                'icon'  => 'fal fa-bars',
+                'icon'  => 'fal fa-skull',
+                'align' => 'right',
+                'class' => 'text-red-500',
             ],
         };
     }

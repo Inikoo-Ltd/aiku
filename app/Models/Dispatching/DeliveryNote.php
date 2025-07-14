@@ -13,6 +13,8 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
@@ -123,6 +125,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
  * @property-read CustomerClient|null $customerClient
+ * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, \App\Models\Dispatching\DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
@@ -136,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
+ * @property-read Platform|null $platform
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read UniversalSearch|null $universalSearch
@@ -286,6 +290,16 @@ class DeliveryNote extends Model implements Auditable
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
+    }
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
     }
 
 }
