@@ -31,14 +31,35 @@ trait WithRetinaOrderPlacedRedirection
                         'order'                => $arr['order']->slug
                     ]
                 )
-                    ->with('notification', $notification);
+                    ->with('notification', $notification)
+                    ->with('gtm', [
+                        'key'               => 'retina_dropshipping_order_placed',
+                        'event'             => 'purchaseSuccess',
+                        'data_to_submit'    => [
+                            'ecommerce' => [
+                                'transaction_id'    => $arr['order']->id,
+                                'value'             => $arr['order']->total_amount,
+                                'currency'          => $arr['order']->shop->currency->code,
+                            ]
+                        ]
+                    ]);
             } else {
                 return Redirect::route(
                     'retina.ecom.orders.show',
                     [
                         'order' => $arr['order']->slug
                     ]
-                )->with('notification', $notification);
+                )->with('notification', $notification)
+                ->with('gtm', [
+                    'event'             => 'purchaseSuccess',
+                    'data_to_submit'    => [
+                        'ecommerce' => [
+                            'transaction_id'    => $arr['order']->id,
+                            'value'             => $arr['order']->total_amount,
+                            'currency'          => $arr['order']->shop->currency->code,
+                        ]
+                    ]
+                ]);
             }
         } elseif ($arr['reason'] == 'Insufficient balance') {
             return Redirect::back()->with('notification', [
