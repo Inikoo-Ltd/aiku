@@ -82,7 +82,7 @@ class IndexDeliveryNotes extends OrgAction
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
                 'picking_session_route' => [
-                    'name' =>'grp.models.warehouse.picking_session.store',
+                    'name' => 'grp.models.warehouse.picking_session.store',
                     'parameters' => [
                         'warehouse' => $this->warehouse->id
                     ]

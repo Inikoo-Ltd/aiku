@@ -1,11 +1,11 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 14-07-2025-17h-48m
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
-
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
@@ -34,22 +34,21 @@ class CancelDeliveryNote extends OrgAction
         $deliveryNote = $this->update($deliveryNote, $modelData);
 
         if ($deliveryNote->pickings) {
-                $deliveryNote->pickings()->delete();
-                foreach ($deliveryNote->deliveryNoteItems as $item) {
-                    StoreNotPickPicking::make()->action(
-                        $item,
-                        request()->user(),
-                        [
-                            'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
-                            'not_picked_note' => "Delivery Note #{$deliveryNote->reference} cancelled. Item will be returned.",
-                            'quantity' => $item->quantity_required,
-                        ]
+            $deliveryNote->pickings()->delete();
+            foreach ($deliveryNote->deliveryNoteItems as $item) {
+                StoreNotPickPicking::make()->action(
+                    $item,
+                    request()->user(),
+                    [
+                        'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
+                        'not_picked_note' => "Delivery Note #{$deliveryNote->reference} cancelled. Item will be returned.",
+                        'quantity' => $item->quantity_required,
+                    ]
                 );
             }
         }
 
-        foreach ($deliveryNote->deliveryNoteItems as $item) 
-        {
+        foreach ($deliveryNote->deliveryNoteItems as $item) {
             UpdateDeliveryNoteItem::make()->action($item, [
                 'state' => DeliveryNoteItemStateEnum::CANCELLED,
                 'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED

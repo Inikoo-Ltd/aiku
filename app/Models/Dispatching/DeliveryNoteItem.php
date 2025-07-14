@@ -76,6 +76,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool|null $need_packing
  * @property bool|null $is_packed
  * @property bool $is_done
+ * @property DeliveryNoteItemCancelStateEnum|null $cancel_state
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock

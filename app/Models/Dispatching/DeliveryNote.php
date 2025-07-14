@@ -139,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
+ * @property-read Collection<int, PickingSession> $pickingSessions
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Platform|null $platform
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments

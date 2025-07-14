@@ -6,12 +6,12 @@
  * github: https://github.com/KirinZero0
  * copyright 2025
 */
+
 namespace App\Actions\Dispatching\PickingSession;
 
 use App\Actions\Dispatching\PickingSessionItem\StorePickingSessionItem;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
-use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Arr;
@@ -44,9 +44,9 @@ class StorePickingSession extends OrgAction
         $pickingSession->deliveryNotes()->attach($deliveryNoteIds);
 
         $pickingSession->refresh();
-        
+
         $mergedItems = $this->getMergedDeliveryNoteItems($pickingSession);
-        
+
         foreach ($mergedItems as $item) {
             StorePickingSessionItem::dispatch($pickingSession, $item);
         }
@@ -56,14 +56,14 @@ class StorePickingSession extends OrgAction
     public function getMergedDeliveryNoteItems(PickingSession $pickingSession): array
     {
         $deliveryNotes = $pickingSession->deliveryNotes()->with('deliveryNoteItems')->get();
-        
+
         $mergedItems = [];
 
         foreach ($deliveryNotes as $deliveryNote) {
 
             foreach ($deliveryNote->deliveryNoteItems as $item) {
                 $orgStockId = $item->org_stock_id;
-                
+
                 if (isset($mergedItems[$orgStockId])) {
                     $mergedItems[$orgStockId]['quantity_required'] += $item->quantity;
                 } else {
@@ -74,7 +74,7 @@ class StorePickingSession extends OrgAction
                 }
             }
         }
-        
+
         return array_values($mergedItems);
     }
 

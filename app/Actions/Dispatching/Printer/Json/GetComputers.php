@@ -14,7 +14,6 @@ use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use Rawilk\Printing\Api\PrintNode\Resources\Computer;
 
-
 class GetComputers extends OrgAction
 {
     use WithPrintNode;

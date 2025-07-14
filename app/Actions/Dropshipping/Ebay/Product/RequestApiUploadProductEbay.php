@@ -49,7 +49,7 @@ class RequestApiUploadProductEbay extends RetinaAction
 
             $descriptions = $portfolio->customer_description;
 
-            if(!$descriptions) {
+            if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
             }
 

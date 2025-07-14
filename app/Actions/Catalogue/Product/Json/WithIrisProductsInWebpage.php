@@ -37,7 +37,7 @@ trait WithIrisProductsInWebpage
             }
             $min = (float)$min;
             $max = (float)$max;
-            
+
             if ($max == 0) {
                 $query->where('price', '>=', $min);
             } else {
