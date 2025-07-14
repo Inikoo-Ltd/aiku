@@ -30,7 +30,6 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
     {
         $requiredFactionalData = divideWithRemainder(findSmallestFactors($this->quantity_required));
 
-
         return [
             'id'                           => $this->id,
             'state'                        => $this->state,
