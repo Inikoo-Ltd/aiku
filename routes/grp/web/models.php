@@ -77,6 +77,7 @@ use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\DeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -685,6 +686,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
+    Route::delete('delete', DeleteCustomerSalesChannel::class)->name('delete');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
