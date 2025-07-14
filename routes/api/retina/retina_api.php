@@ -13,16 +13,15 @@ Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
-Route::middleware(['auth:sanctum', 'ability:retina', 'treblle'])->group(function () {
+// INFO: treblle middleware take off for now, to make api works in prod
+Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
     Route::get('/user-profile', GetProfile::class)->name('profile');
 
     Route::prefix("dropshipping")
         ->name("dropshipping.")
-        ->group(__DIR__."/dropshipping/dropshipping.php");
+        ->group(__DIR__ . "/dropshipping/dropshipping.php");
 
     Route::prefix("fulfilment")
         ->name("fulfilment.")
-        ->group(__DIR__."/fulfilment/fulfilment.php");
-
-
+        ->group(__DIR__ . "/fulfilment/fulfilment.php");
 });
