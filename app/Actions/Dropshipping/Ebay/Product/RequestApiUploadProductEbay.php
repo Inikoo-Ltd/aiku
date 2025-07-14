@@ -47,6 +47,12 @@ class RequestApiUploadProductEbay extends RetinaAction
                 'imageUrls' => $images
             ];
 
+            $descriptions = $portfolio->customer_description;
+
+            if(!$descriptions) {
+                $descriptions = $portfolio->item->name;
+            }
+
             $inventoryItem = [
                 'sku' => $product->code,
                 'availability' => [
@@ -57,7 +63,7 @@ class RequestApiUploadProductEbay extends RetinaAction
                 'condition' => 'NEW',
                 'product' => [
                     'title' => $portfolio->customer_product_name,
-                    'description' => $portfolio->customer_description,
+                    'description' => $descriptions,
                     'aspects' =>  [
                         'Brand' => [
                             'AncientWisdom'
