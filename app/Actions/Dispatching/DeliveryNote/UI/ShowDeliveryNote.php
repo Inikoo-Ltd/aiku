@@ -139,20 +139,7 @@ class ShowDeliveryNote extends OrgAction
             'key'     => 'change-picker',
         ];
 
-        $actions[] = [
-                    'type'      => 'button',
-                    'style'     => 'delete',
-                    'tooltip'   => __('Cancel'),
-                    'label'     => __('Cancel'),
-                    'key'       => 'cancel',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.cancel',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                ];
+
 
         return $actions;
     }

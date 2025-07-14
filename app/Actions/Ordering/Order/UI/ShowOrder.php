@@ -89,7 +89,7 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $this->parent        = $customerSalesChannel;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
@@ -99,7 +99,7 @@ class ShowOrder extends OrgAction
     public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
     {
         $customerSalesChannel       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
-        $this->parent              = $customerClient;
+        $this->parent               = $customerClient;
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
@@ -109,7 +109,7 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $this->parent              = $customerClient;
+        $this->parent               = $customerClient;
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(OrderTabsEnum::values());
 
@@ -133,7 +133,7 @@ class ShowOrder extends OrgAction
             if ($state === OrderStateEnum::CREATING) {
                 $timestamp = $order->created_at;
             } else {
-                $timestamp = $order->{$state->snake() . '_at'} ? $order->{$state->snake() . '_at'} : null;
+                $timestamp = $order->{$state->snake().'_at'} ? $order->{$state->snake().'_at'} : null;
             }
 
             // If all possible values are null, set the timestamp to null explicitly
@@ -223,7 +223,7 @@ class ShowOrder extends OrgAction
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
         }
 
-        $platform  = $order->platform;
+        $platform = $order->platform;
         if (!$platform) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
@@ -232,6 +232,7 @@ class ShowOrder extends OrgAction
         if ($platform->type == PlatformTypeEnum::MANUAL) {
             $readonly = false;
         }
+
         return Inertia::render(
             'Org/Ordering/Order',
             [
@@ -246,13 +247,16 @@ class ShowOrder extends OrgAction
                     'next'     => $this->getNext($order, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $order->reference,
-                    'model'   => __('Order'),
-                    'icon'    => [
+                    'title'    => $order->reference,
+                    'model'    => __('Order'),
+                    'icon'     => [
                         'icon'  => 'fal fa-shopping-cart',
                         'title' => __('customer client')
                     ],
-                    'actions' => $actions,
+                    'afterTitle' => [
+                        'label' => $order->state->labels()[$order->state->value],
+                    ],
+                    'actions'  => $actions,
                     'platform' => $platform ? [
                         'icon'  => $platform->imageSources(24, 24),
                         'title' => $platform->name,
@@ -279,9 +283,9 @@ class ShowOrder extends OrgAction
                     'delivery_note'    => $deliveryNoteRoute
                 ],
 
-                'notes'     => $this->getOrderNotes($order),
-                'timelines' => $finalTimeline,
-                'readonly' => $readonly,
+                'notes'              => $this->getOrderNotes($order),
+                'timelines'          => $finalTimeline,
+                'readonly'           => $readonly,
                 'address_management' => GetOrderAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
@@ -306,23 +310,23 @@ class ShowOrder extends OrgAction
                 ],
 
                 'upload_excel' => [
-                    'title' => [
-                        'label' => __('Upload product'),
+                    'title'               => [
+                        'label'       => __('Upload product'),
                         'information' => __('The list of column file: code, quantity')
                     ],
-                    'progressDescription'   => __('Adding Products'),
+                    'progressDescription' => __('Adding Products'),
                     'preview_template'    => [
                         'header' => ['code', 'quantity'],
-                        'rows' => [
+                        'rows'   => [
                             [
-                                'code' => 'product-001',
+                                'code'     => 'product-001',
                                 'quantity' => '1'
                             ]
                         ]
                     ],
-                    'upload_spreadsheet'    => [
+                    'upload_spreadsheet'  => [
                         'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.' . $this->organisation->id,
+                        'channel'         => 'grp.personal.'.$this->organisation->id,
                         'required_fields' => ['code', 'quantity'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)'

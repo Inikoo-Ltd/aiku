@@ -31,7 +31,7 @@ class GetOrderActions
         }
 
         if ($canEdit) {
-            $actions = match ($order->state) {
+            $actions    = match ($order->state) {
                 OrderStateEnum::CREATING => [
                     $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
                         'type'   => 'buttonGroup',
@@ -95,7 +95,6 @@ class GetOrderActions
                 ],
 
 
-
                 OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED => [
 
                     $order->invoices->count() == 0 ?
@@ -118,16 +117,22 @@ class GetOrderActions
             };
             $showCancel = true;
 
-            if (!in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE]) || $order->invoices()->count() > 0 || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0) {
+            if (in_array($order->state, [
+                    OrderStateEnum::CANCELLED,
+                    OrderStateEnum::DISPATCHED,
+                    OrderStateEnum::FINALISED
+                ])
+                || $order->invoices()->count() > 0
+                || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0) {
                 $showCancel = false;
             }
 
             if ($showCancel) {
                 array_unshift($actions, [
-                    'type'    => 'button',
-                    'style'   => 'cancel',
-                    'key'     => 'action',
-                    'route'   => [
+                    'type'  => 'button',
+                    'style' => 'cancel',
+                    'key'   => 'action',
+                    'route' => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.state.cancelled',
                         'parameters' => [

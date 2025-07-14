@@ -9,15 +9,13 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
-use App\Actions\Dispatching\Picking\StoreNotPickPicking;
+use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
@@ -38,7 +36,7 @@ class CancelOrder extends OrgAction
     public function handle(Order $order): Order
     {
         $modelData = [
-            'state'  => OrderStateEnum::CANCELLED,
+            'state' => OrderStateEnum::CANCELLED,
         ];
 
         $date = now();
@@ -61,42 +59,16 @@ class CancelOrder extends OrgAction
         if ($order->payment_amount > 0) {
             StoreCreditTransaction::make()->action($order->customer, [
                 'amount' => $order->payment_amount,
-                'type' => CreditTransactionTypeEnum::MONEY_BACK,
+                'type'   => CreditTransactionTypeEnum::MONEY_BACK,
                 'reason' => CreditTransactionReasonEnum::MONEY_BACK,
-                'notes' => "Order #{$order->reference} cancelled. Money returned as store credit.",
+                'notes'  => "Order #$order->reference cancelled. Money returned as store credit.",
             ]);
         }
 
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
-            if ($deliveryNote->pickings) {
-                $deliveryNote->pickings()->delete();
-                foreach ($deliveryNote->deliveryNoteItems as $item) {
-                    StoreNotPickPicking::make()->action(
-                        $item,
-                        request()->user(),
-                        [
-                            'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
-                            'not_picked_note' => "Order #{$order->reference} cancelled. Picking not required.",
-                            'quantity' => $item->quantity_required,
-                        ]
-                    );
-                }
-            }
-
-            if ($deliveryNote->packings) {
-                $deliveryNote->packings()->delete();
-            }
-
-            UpdateDeliveryNote::make()->action(
-                $deliveryNote,
-                [
-                    'state' => DeliveryNoteStateEnum::CANCELLED,
-                ],
-                strict: false
-            );
+            CancelDeliveryNote::make()->action($deliveryNote);
         }
-
 
 
         $this->orderHydrators($order);
@@ -104,12 +76,12 @@ class CancelOrder extends OrgAction
         return $order;
     }
 
-    public function afterValidator(Validator $validator)
+    public function afterValidator(Validator $validator): void
     {
         $order = $this->order;
         if ($order->state === OrderStateEnum::CANCELLED) {
             $validator->errors()->add('messages', 'Order is already cancelled.');
-        } elseif (!in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
+        } elseif (in_array($order->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED])) {
             $validator->errors()->add('messages', "Cannot cancel an order in '{$order->state->value}' state.");
         } elseif ($order->invoices()->count() > 0) {
             $validator->errors()->add('messages', 'Cannot cancel an order with invoices. Please delete the invoices first.');
@@ -117,6 +89,7 @@ class CancelOrder extends OrgAction
 
         $deliveryNotes = $order->deliveryNotes()->get();
         if ($deliveryNotes->count() > 0) {
+            /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
             foreach ($deliveryNotes as $deliveryNote) {
                 if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
                     $validator->errors()->add('messages', 'Cannot cancel an order with dispatched delivery notes. Please cancel the delivery notes first.');
@@ -134,11 +107,11 @@ class CancelOrder extends OrgAction
         return $this->handle($order);
     }
 
-    public function asController(Order $order, ActionRequest $request)
+    public function asController(Order $order, ActionRequest $request): Order
     {
-
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
+
         return $this->handle($order);
     }
 }
