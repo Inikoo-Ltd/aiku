@@ -56,6 +56,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_required'            => $this->quantity_required,
             'quantity_to_pick'             => max(0, $this->quantity_required - $this->quantity_picked),
             'quantity_picked'              => $this->quantity_picked,
+            'quantity_picked_fractional'   => divideWithRemainder(findSmallestFactors($this->quantity_picked)),
             'quantity_not_picked'          => $this->quantity_not_picked,
             'quantity_packed'              => $this->quantity_packed,
             'quantity_dispatched'          => $this->quantity_dispatched,
@@ -68,7 +69,7 @@ class DeliveryNoteItemsResource extends JsonResource
                         return $item->location_id
                             ?? ($item->location->id ?? 'not-picked');
                     })
-                    ->map(fn ($item) => new PickingsResource($item))
+                    ->map(fn($item) => new PickingsResource($item))
                 : [],
             'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'                      => $fullWarning,
