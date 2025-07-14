@@ -107,8 +107,6 @@ class UploadPortfolioToShopify extends RetinaAction
                     ]
                 ];
 
-                $productShopify = [];
-
 
                 // Check if the product already exists in Shopify
                 $shopifyProduct = GetShopifyProductFromPortfolio::run($shopifyUser, $portfolio);
@@ -118,15 +116,12 @@ class UploadPortfolioToShopify extends RetinaAction
                 }
 
 
-
-
-
                 // Update inventory levels in Shopify
-                UpdateShopifyProductInventoryLevels::dispatch($product, $shopifyUser, $productShopify);
+                UpdateShopifyProductInventoryLevels::dispatch($product, $shopifyUser, $shopifyProduct);
 
                 // Update our portfolio with the Shopify product ID
                 UpdatePortfolio::run($portfolio, [
-                    'platform_product_id' => Arr::get($productShopify, 'id')
+                    'platform_product_id' => Arr::get($shopifyProduct, 'id')
                 ]);
 
                 // Dispatch event to notify about upload progress
@@ -146,7 +141,7 @@ class UploadPortfolioToShopify extends RetinaAction
     }
 
 
-    private function storeShopifyProduct(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body = []): ?array
+    private function storeShopifyProduct(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body = [])
     {
 
         $client         = $shopifyUser->getShopifyClient();

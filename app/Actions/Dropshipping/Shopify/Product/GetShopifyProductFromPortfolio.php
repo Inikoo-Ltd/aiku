@@ -25,7 +25,7 @@ class GetShopifyProductFromPortfolio
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio): ?array
+    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio)
     {
         try {
             $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2025-04/products.json', [
