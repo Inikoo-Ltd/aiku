@@ -27,7 +27,7 @@ class UpdateShopifyProductInventoryLevels extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(Product $product, ShopifyUser $shopifyUser, array $productShopify): void
+    public function handle(Product $product, ShopifyUser $shopifyUser, $productShopify): void
     {
         // Prepare inventory data for each product variant
         $inventoryVariants = [];
