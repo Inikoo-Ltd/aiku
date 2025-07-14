@@ -10,6 +10,10 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus);
 
+const props = defineProps<{
+    screenType: 'desktop' | 'mobile' | 'tablet'
+}>()
+
 interface ModelTopbar1 {
   profile: {
     text: string
@@ -56,7 +60,7 @@ const layout = inject("layout", {});
 
 // Method: generate url for Login
 const urlLoginWithRedirect = () => {
-  if (route().current() !== "retina.login.show" && route().current() !== "retina.register") {
+  if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
     return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${
       window?.location.search ? encodeURIComponent(window?.location.search) : ""
     }`

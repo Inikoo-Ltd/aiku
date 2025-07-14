@@ -442,6 +442,31 @@ class ShowDeliveryNote extends OrgAction
 
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
+
+        $actions = $this->getActions($deliveryNote, $request);
+
+        $actions = array_merge(
+            $actions,
+            [
+                [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => ['fal', 'fa-pdf'],
+                    'key'     => 'delivery-note',
+                    'label'   => __('pdf delivery note'),
+                    'tooltip' => __('pdf delivery note'),
+                    'route'   => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+                        'parameters' => [
+                            'organisation' => $deliveryNote->organisation->slug,
+                            'warehouse'    => $deliveryNote->warehouse->slug,
+                            'deliveryNote' => $deliveryNote->slug,
+                        ],
+                    ]
+                ],
+            ]
+        );
+
         $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -463,7 +488,7 @@ class ShowDeliveryNote extends OrgAction
                 'afterTitle' => [
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
-                'actions'    => $this->getActions($deliveryNote, $request),
+                'actions'    => $actions,
                 $this->getInvoiceButton($deliveryNote)
             ],
             'tabs'          => [
