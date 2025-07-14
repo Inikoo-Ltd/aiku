@@ -174,6 +174,11 @@ const props = defineProps(
             },
             required: false,
         },
+        isParentLoading : {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
     });
 
 const emits = defineEmits<{
@@ -740,7 +745,7 @@ const isLoading = ref<string | boolean>(false)
 
         <!--suppress HtmlUnknownAttribute -->
         <fieldset v-else ref="tableFieldset" :key="`table-${name}`" :dusk="`table-${name}`" class="min-w-0"
-            :class="{ 'opacity-75': isVisiting }">
+            :class="{ 'opacity-75': isVisiting || isParentLoading }">
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">

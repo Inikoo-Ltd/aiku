@@ -8,8 +8,8 @@
 
 namespace App\Actions\Dispatching\Printer\Json;
 
-use App\Actions\Dispatching\Printer\WithPrintNode;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithPrintNode;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use Rawilk\Printing\Api\PrintNode\Resources\Printer;

@@ -30,6 +30,7 @@ import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
 import WebsiteAnalytics from "@/Pages/Grp/Org/Web/WebsiteAnalytics.vue"
 import TableRedirects from "@/Components/Tables/Grp/Org/Web/TableRedirects.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { routeType } from "@/types/route"
 
 library.add(
     faChartLine,
@@ -62,6 +63,7 @@ const props = defineProps<{
     redirects?: {}
     external_links?: {},
     analytics: object
+    route_storefront: routeType
 }>()
 
 console.log(props)
@@ -92,5 +94,10 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" ></component>
+    <component
+        :is="component"
+        :data="props[currentTab]"
+        :tab="currentTab"
+        :route_storefront
+    />
 </template>

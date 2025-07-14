@@ -48,7 +48,10 @@ const handleChange = () => props.form.clearErrors(props.fieldName);
                     :options="countries"
                     v-model="addressValues['country_id']"
                     @update:model-value="handleChange"
-                    :class="{ 'pr-8 errorShake': form.errors[fieldName] || form.recentlySuccessful }"
+                    :class="[
+                        form.errors[fieldName] || form.recentlySuccessful ? 'pr-8' : '',
+                        form.errors[fieldName] ? 'errorShake' : ''
+                    ]"
                     :placeholder="props.fieldData.placeholder ?? 'Select a country'"
                     :canDeselect="false"
                     :canClear="false"

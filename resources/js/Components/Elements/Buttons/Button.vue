@@ -80,13 +80,16 @@ switch (props.size) {
   case "xs":
     sizeClass = "rounded px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
     break;
+  case "sm":
   case "s":
     sizeClass = "rounded-md px-2 md:px-3 py-[5px] md:py-[7px] text-sm";
     break;
   case "m":
+  case "md":
     sizeClass = "rounded-md px-3 md:px-4 py-[6px] md:py-[9px] text-sm";
     break;
   case "l":
+  case "lg":
     sizeClass = "rounded-md px-4 md:px-[18px] py-[9px] md:py-[11px] text-base";
     break;
   case "xl":

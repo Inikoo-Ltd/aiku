@@ -12,6 +12,7 @@ namespace App\Actions\Pupil\Dashboard;
 
 use App\Actions\Retina\UI\Dashboard\GetRetinaDropshippingHomeData;
 use App\Actions\Retina\UI\Dashboard\GetRetinaFulfilmentHomeData;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
@@ -58,7 +59,10 @@ class ShowPupilDashboard
             ];
         }
 
-        $query = Shop::where('type', ShopTypeEnum::FULFILMENT->value)->get();
+        // TODO: We need open it for all shops: fulfilment and dropships
+        $query = Shop::where('type', ShopTypeEnum::DROPSHIPPING)
+            ->where('state', ShopStateEnum::OPEN)
+            ->get();
 
         if ($shopifyUser->customer) {
             $query = Shop::where('id', $shopifyUser->customer->shop_id)->get();
@@ -73,23 +77,24 @@ class ShowPupilDashboard
         }
 
 
-        if (!$shopifyUser?->customer) {
-            $render_page = 'Intro';
-        } elseif ($shopifyUser?->customer?->shop?->name) {
-            $render_page = 'WelcomeShop';
-        } else {
-            $render_page = 'Dashboard/PupilWelcome';
-        }
+        $render_page = 'Intro';
+
+        //        if ($shopifyUser?->customer?->shop?->name) {
+        //            $render_page = 'WelcomeShop';
+        //        } else {
+        //            $render_page = 'Dashboard/PupilWelcome';
+        //        }
 
         return Inertia::render($render_page, [
             'shop'    => $shopifyUser?->customer?->shop?->name,
             'shopUrl' => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
             'user'    => $shopifyUser,
             // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
-            'shops'   => $query->map(function ($shop) {
+            'shops'   => $query->map(function (Shop $shop) {
                 return [
                     'id'   => $shop->id,
-                    'name' => $shop->name
+                    'name' => $shop->name,
+                    'domain' => 'https://' . $shop->website?->domain . '/app/login?ref=/app/dropshipping/sale-channels/create&modal=shopify'
                 ];
             }),
             ...$routes,

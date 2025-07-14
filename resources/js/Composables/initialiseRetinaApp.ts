@@ -37,6 +37,7 @@ export const initialiseRetinaApp = () => {
     
     router.on('navigate', (event) => {
         layout.currentParams = route().v().params  // current params
+        layout.currentQuery = route().v().query  // current query
         layout.currentRoute = route().current()  // current route
 
         if (layout.currentParams?.customerSalesChannel && layout.currentParams?.customerSalesChannel !== layout.currentPlatform) {

@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dispatching\Printer;
+namespace App\Actions\Traits;
 
 use Exception;
 use Illuminate\Support\Arr;
@@ -34,7 +34,7 @@ trait WithPrintNode
                 $apiKey = config('printing.drivers.' . $driver . '.key');
             } else {
                 $group  = group();
-                $apiKey = Arr::get($group->settings, 'printnode.api_key');
+                $apiKey = Arr::get($group->settings, 'printnode.apikey');
             }
             if (empty($apiKey)) {
                 throw ValidationException::withMessages([
@@ -77,9 +77,14 @@ trait WithPrintNode
     public function printRawBase64(string $title, int $printId, string $rawBase64): PrintJob
     {
         // Convert raw base64 content to PDF using LaravelMPDF
+        $mpdf = new \Mpdf\Mpdf();
+
+
         $content = Str::fromBase64($rawBase64);
         $pdf = LaravelMpdf::loadHTML($content);
         $pdfContent = $pdf->output();
+
+
 
         $this->ensureClientInitialized();
         $pendingJob = PendingPrintJob::make()

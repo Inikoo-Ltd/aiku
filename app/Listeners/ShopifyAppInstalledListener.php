@@ -50,7 +50,5 @@ class ShopifyAppInstalledListener
                 'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
             ]);
         }
-
-
     }
 }

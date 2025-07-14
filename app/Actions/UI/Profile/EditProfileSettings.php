@@ -38,19 +38,15 @@ class EditProfileSettings
     public function generateBlueprint(User $user): array
     {
         try {
-            $cacheKey = "user_printers";
-            $cachedPrinters = cache()->get($cacheKey);
-            if ($cachedPrinters) {
-                $printers = $cachedPrinters;
-            } else {
-                $printers = GetPrinters::make()->action([])->map(function ($printer) {
+            $cacheKey = "user_printers_" . $user->id;
+            $printers = cache()->remember($cacheKey, now()->addMinutes(1), function () {
+                return GetPrinters::make()->action([])->map(function ($printer) {
                     return [
                         'value' => $printer->id,
                         'label' => $printer->name,
                     ];
                 })->values()->toArray();
-                cache()->put($cacheKey, $printers, now()->addMinutes(5));
-            }
+            });
         } catch (\Throwable $e) {
             Log::error('Failed to fetch printers: ' . $e->getMessage());
             $printers = [];
@@ -89,7 +85,7 @@ class EditProfileSettings
                             'preferred_printer' => [
                                 'type'     => 'select',
                                 'label'    => __('preferred printer'),
-                                'required' => true,
+                                'required' => false,
                                 'options'  => $printers,
                                 'value'    => Arr::get($user->settings, 'preferred_printer_id'),
                             ],

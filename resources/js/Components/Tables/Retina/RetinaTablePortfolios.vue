@@ -20,10 +20,13 @@ import { debounce, get, set } from "lodash-es"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle} from "@fal"
-import { faStar } from "@fas"
+import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
-library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck, faExclamationCircle )
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { computed } from "vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle )
 
 interface PlatformData {
 	id: number
@@ -63,6 +66,7 @@ function portfolioRoute(product: Product) {
 }
 
 const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', retinaLayoutStructure)
 
 // const selectedProducts = ref<Product[]>([])
 const onUnchecked = (itemId: number) => {
@@ -131,6 +135,37 @@ onMounted(() => {
 
 })
 
+// Table: Filter out-of-stock and discontinued
+const compTableFilterStatus = computed(() => {
+	return layout.currentQuery?.active_filter?.status
+})
+const isLoadingTable = ref<null | string>(null)
+const onClickOutOfStock = (query: string) => {
+	let xx: string | null = ''
+	if (compTableFilterStatus.value === query) {
+		xx = null
+	} else {
+		xx = query
+	}
+	
+	console.log('xx', xx)
+	router.reload(
+        {
+            data: { 'active_filter[status]': xx },  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+            onStart: () => {
+				isLoadingTable.value = query || null
+            },
+            onSuccess: () => {
+            },
+            onFinish: (e) => {
+				isLoadingTable.value = null
+            },
+            onError: (e) => {
+            }
+        }
+    )
+}
 </script>
 
 <template>
@@ -155,7 +190,33 @@ onMounted(() => {
 				return ''
 			}
 		}"
+		:isParentLoading="!!isLoadingTable"
 	>
+		<template #add-on-button>
+			<Button
+				@click="onClickOutOfStock('out-of-stock')"
+				v-tooltip="trans('Filter the product that out of stock')"
+				label="Out of stock"
+				size="xs"
+				:key="compTableFilterStatus"
+				:type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
+				:icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
+				iconRight="fal fa-exclamation-triangle"
+				:loading="isLoadingTable == 'out-of-stock'"
+			/>
+			<Button
+				@click="onClickOutOfStock('discontinued')"
+				v-tooltip="trans('Filter the product that discontinued')"
+				label="Discontinued"
+				size="xs"
+				:key="compTableFilterStatus"
+				:type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
+				:icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
+				iconRight="fal fa-times"
+				:loading="isLoadingTable == 'discontinued'"
+			/>
+		</template>
+
         <template #cell(image)="{ item: product }">
             <div class="overflow-hidden w-10 h-10">
 				<Image :src="product.image" :alt="product.name" />

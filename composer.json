@@ -65,6 +65,7 @@
     "pgvector/pgvector": "^0.2.0",
     "phlak/semver": "^4.0",
     "phpmailer/phpmailer": "^6.9",
+    "picqer/php-barcode-generator": "^3.2",
     "predis/predis": "^2.1",
     "propaganistas/laravel-phone": "^5.0",
     "pusher/pusher-php-server": "^7.2",

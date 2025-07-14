@@ -13,6 +13,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
+import { routeType } from "@/types/route"
 
 library.add(faGlobe, faLink)
 
@@ -28,8 +29,8 @@ const props = defineProps<{
         layout: string
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
-        
-    },
+    }
+    route_storefront: routeType
 }>()
 
 const links = ref([
@@ -83,6 +84,10 @@ const links = ref([
             <!-- Buttons Card (in the right part of the grid) -->
             <div class="flex justify-end">
                 <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
+                    <div class="p-2">
+                        <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary" :label="trans('Storefront')" full />
+                    </div>
+
                     <div v-for="(item, index) in links" :key="index" class="p-2">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
                             type="secondary" />

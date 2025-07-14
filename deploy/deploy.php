@@ -73,6 +73,7 @@ set('shared_files', [
 ]);
 desc('Deploys your project');
 task('deploy', [
+    'deploy:unlock',
     'deploy:prepare',
     'deploy:vendors',
     'deploy:set-release',
