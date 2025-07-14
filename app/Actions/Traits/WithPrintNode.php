@@ -34,7 +34,7 @@ trait WithPrintNode
                 $apiKey = config('printing.drivers.' . $driver . '.key');
             } else {
                 $group  = group();
-                $apiKey = Arr::get($group->settings, 'printnode.api_key');
+                $apiKey = Arr::get($group->settings, 'printnode.apikey');
             }
             if (empty($apiKey)) {
                 throw ValidationException::withMessages([
