@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\SysAdmin\Group;
@@ -15,6 +16,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class PickingSessionItem extends Model
 {
@@ -35,6 +37,16 @@ class PickingSessionItem extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function deliveryNotes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            DeliveryNoteItem::class,
+            'picking_session_item_has_delivery_note_items',
+            'picking_session_item_id',
+            'delivery_note_item_id'
+        );
     }
 
     public function location(): BelongsTo
