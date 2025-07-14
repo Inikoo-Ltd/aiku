@@ -59,4 +59,11 @@ class StorePickingSessionItem extends OrgAction
 
         return $this->handle($pickingSession, $this->validatedData);
     }
+
+    public function action(PickingSession $pickingSession, array $modelData)
+    {
+        $this->initialisationFromWarehouse($pickingSession->warehouse, $modelData);
+
+        return $this->handle($pickingSession, $this->validatedData);
+    }
 }
