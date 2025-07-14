@@ -39,8 +39,9 @@ initialiseRetinaApp()
 
 const layout = useLayoutStore()
 
+// Flash: Notification
 watch(() => usePage().props?.flash?.notification, (notif) => {
-    console.log('notif ret', notif)
+    // console.log('notif ret', notif)
     if (!notif) return
 
     notify({
@@ -53,7 +54,22 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
     immediate: true
 })
 
-// Section: Modal
+// Flash: GTM
+watch(() => usePage().props?.flash?.gtm, (newValue) => {
+    console.log('gtm ret', newValue)
+    if (!newValue) return
+
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: newValue.event,
+        ...newValue.data_to_submit,
+    });
+}, {
+    deep: true,
+    immediate: true
+})
+
+// Flash: Modal
 interface Modal {
     title: string
     description: string
@@ -62,7 +78,7 @@ interface Modal {
 const selectedModal = ref<Modal | null>(null)
 const isModalOpen = ref(false)
 watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    console.log('modal ret', modal)
+    // console.log('modal ret', modal)
     if (!modal) return
 
     selectedModal.value = modal
