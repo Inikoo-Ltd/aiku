@@ -258,16 +258,15 @@ const isModalBalanceIncrease = ref(false)
                             {{ trans("balance") }}
                         </div>
                         
-                        <!-- <div class="text-gray-700/60 text-sm leading-4 font-normal">
-                            {{ data.customer.balance }} credit transactions
-                        </div> -->
+
                     </div>
                     <div class="flex flex-col items-end">
                         <div class="text-2xl font-bold">
-                            <CountUp :endVal="data.customer.balance" :duration="1.5" :scrollSpyOnce="true" :options="{
-                                formattingFn: (value) =>
-                                    locale.currencyFormat(data.currency?.code, value),
-                            }" />
+
+                            {{locale.currencyFormat(data.currency?.code, data.customer.balance)}}
+
+
+
                         </div>
                         <div class="flex items-center">
                             <div @click="() => isModalBalanceIncrease = true" v-tooltip="trans('Increase customer balance')" class="cursor-pointer text-gray-400 hover:text-indigo-600">
