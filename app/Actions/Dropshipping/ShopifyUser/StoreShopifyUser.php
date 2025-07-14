@@ -18,8 +18,10 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreShopifyUser extends RetinaAction
@@ -69,6 +71,17 @@ class StoreShopifyUser extends RetinaAction
 
             return $shopifyUser;
         });
+    }
+
+
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        $shopifyShopUrl = 'https://'.$this->get('name');
+
+        $response = Http::get($shopifyShopUrl);
+        if (!$response->ok()) {
+            $validator->errors()->add('name', __('Shopify shop :shop not found', ['shop' => $this->get('name')]));
+        }
     }
 
     public function jsonResponse(ShopifyUser $shopifyUser): string
