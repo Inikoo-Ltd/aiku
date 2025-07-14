@@ -38,12 +38,34 @@ function closeImageModal() {
   showModal.value = false
 }
 
+const onPrevNavigation = () => {
+    selectedIndex.value = (selectedIndex.value - 1 + props.images.length) % props.images.length
+}
+
+const onRightNavigation = () => {
+    selectedIndex.value = (selectedIndex.value + 1) % props.images.length
+}
+
 onMounted(async () => {
   await nextTick()
   navigation.value = {
     prevEl: prevEl.value,
     nextEl: nextEl.value
   }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      closeImageModal()
+    }
+    if (showModal.value) {
+      if (e.key === 'ArrowLeft') {
+        onPrevNavigation()
+      }
+      if (e.key === 'ArrowRight') {
+        onRightNavigation()
+      }
+    }
+  })
 })
 </script>
 
@@ -52,11 +74,11 @@ onMounted(async () => {
     <!-- Shared Navigation Buttons -->
     <div class="absolute inset-0 pointer-events-none z-50">
       <div ref="prevEl"
-        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-white cursor-pointer pointer-events-auto">
+        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-gray-800 cursor-pointer pointer-events-auto">
         <FontAwesomeIcon :icon="faChevronCircleLeft" />
       </div>
       <div ref="nextEl"
-        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl text-white cursor-pointer pointer-events-auto">
+        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl text-gray-800 cursor-pointer pointer-events-auto">
         <FontAwesomeIcon :icon="faChevronCircleRight" />
       </div>
     </div>
@@ -101,25 +123,25 @@ onMounted(async () => {
       @click.self="closeImageModal">
       <div class="relative w-full max-w-5xl px-4 py-6">
         <!-- Close Button -->
-        <button class="absolute top-4 right-4 text-white text-3xl z-50" @click="closeImageModal"
+        <button class="absolute top-0 right-4 text-white text-3xl z-50" @click="closeImageModal"
           aria-label="Close image viewer">
           <FontAwesomeIcon :icon="faTimesCircle" />
         </button>
 
         <!-- Manual Navigation Buttons -->
         <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-          @click="selectedIndex = (selectedIndex - 1 + props.images.length) % props.images.length">
+          @click="onPrevNavigation">
           <FontAwesomeIcon :icon="faChevronCircleLeft" />
         </button>
         <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-          @click="selectedIndex = (selectedIndex + 1) % props.images.length">
+          @click="onRightNavigation">
           <FontAwesomeIcon :icon="faChevronCircleRight" />
         </button>
 
         <!-- Image Display -->
-        <div class="w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+        <div class="block w-full h-[80vh] mb-1 rounded">
           <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
-            class="max-w-full max-h-full object-contain" />
+           :style="{ objectFit: 'contain' }" :imageCover="true" />
         </div>
       </div>
     </div>

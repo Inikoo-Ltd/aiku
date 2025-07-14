@@ -25,12 +25,12 @@ interface PagePropsWithFlash extends InertiaPageProps {
 
 const page = usePage<PagePropsWithFlash>()
 // console.log('checkout_com_data', props.checkout_com_data)
-const { isLoading, initializeCheckout } = useCheckoutCom(props.checkout_com_data)
+const { isLoading, initializeCheckout } = useCheckoutCom(props.checkout_com_data, {
+    isChangeLabelToSaved: true
+})
 onMounted(() => {
     initializeCheckout("flow-container")
-});
-
-
+})
 
 </script>
 
@@ -42,8 +42,8 @@ onMounted(() => {
         </div>
 
         <div class="isolate relative w-full max-w-xl mx-auto my-8 overflow-hidden pb-4">
-            <div xv-show="!isLoading" id="flow-container" class="absolute " />
-            <div class="w-full h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
+            <div xv-show="!isLoading" id="flow-container" class="absolute w-full border-b border-gray-300" />
+            <div class="w-full h-[623px] md:h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
 
             </div>
         </div>

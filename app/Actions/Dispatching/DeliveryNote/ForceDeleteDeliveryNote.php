@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,6 @@ class ForceDeleteDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         $deliveryNote = DB::transaction(function () use ($deliveryNote) {
-
             foreach ($deliveryNote->deliveryNoteItems as $item) {
                 $item->pickings()->forceDelete();
             }
@@ -41,6 +41,8 @@ class ForceDeleteDeliveryNote extends OrgAction
         ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop);
         OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation);
         GroupHydrateDeliveryNotes::dispatch($deliveryNote->group);
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
 
         return $deliveryNote;
     }

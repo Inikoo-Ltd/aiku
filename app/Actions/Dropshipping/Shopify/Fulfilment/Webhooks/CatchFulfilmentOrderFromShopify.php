@@ -34,6 +34,12 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
         DB::transaction(function () use ($shopifyUser, $modelData) {
             $client = $shopifyUser->api()->getRestClient();
             $orderId = Arr::get($modelData, 'id');
+            $orderStatus = Arr::get($modelData, 'fulfillment_status');
+
+            if ($orderStatus === 'fulfilled') {
+                return;
+            }
+
             $response = $client->request('GET', "/admin/api/2024-07/orders/$orderId/fulfillment_orders.json");
 
             foreach (Arr::get($response, 'body')['fulfillment_orders'] as $fulfilment) {
@@ -42,6 +48,10 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
                 ]);
 
                 $fulfilmentOrder = array_merge($fulfilmentOrder, Arr::only($modelData, ['customer', 'shipping_address', 'billing_address']));
+
+                $shopifyUser->debugWebhooks()->create([
+                    'data' =>  $fulfilmentOrder
+                ]);
 
                 if ($shopifyUser->customer?->shop?->type === ShopTypeEnum::FULFILMENT) {
                     StoreFulfilmentFromShopify::run($shopifyUser, $fulfilmentOrder);

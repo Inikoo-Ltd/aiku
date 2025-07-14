@@ -7,29 +7,24 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { FulfilmentCustomer } from "@/types/Customer"
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
-import { useFormatTime } from "@/Composables/useFormatTime"
-import { useLocaleStore } from "@/Stores/locale"
+import { RouteParams } from "@/types/route-params"
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>()
 
-const locale = useLocaleStore()
 
 
 function partnerRoute(partner: {}) {
-    switch (route().current()) {
-        case "grp.org.procurement.org_partners.index":
-            return route(
-                "grp.org.procurement.org_partners.show",
-                [ route().params["organisation"], partner.id])
-        default:
-            return route(
-                "grp.org.procurement.org_partners.index",
-                [ route().params["organisation"], partner.id])
+    if (route().current() === "grp.org.procurement.org_partners.index") {
+        return route(
+            "grp.org.procurement.org_partners.show",
+            [ (route().params as RouteParams).organisation, partner.id])
+    } else {
+        return route(
+            "grp.org.procurement.org_partners.index",
+            [ (route().params as RouteParams).organisation, partner.id])
     }
 }
 </script>
@@ -41,23 +36,6 @@ function partnerRoute(partner: {}) {
             {{ partner["code"] }}
             </Link>
         </template>
-        <!-- <template #cell(reference)="{ item: customer }">
-            <Link :href="customerRoute(customer)" class="primaryLink">
-            {{ customer["reference"] }}
-            </Link>
-        </template>
-        <template #cell(shop)="{ item: customer }" class="primaryLink">
-            <Link :href="shopRoute(customer)">
-            {{ customer["shop"] }}
-            </Link>
-        </template>
-        <template #cell(location)="{ item: customer }">
-            <AddressLocation :data="customer['location']" />
-        </template>
-        <template #cell(created_at)="{ item: customer }">
-            <div class="text-gray-500">{{ useFormatTime(customer["created_at"], {
-                localeCode: locale.language.code,
-                formatTime: "Ymd" }) }}</div>
-        </template> -->
+
     </Table>
 </template>

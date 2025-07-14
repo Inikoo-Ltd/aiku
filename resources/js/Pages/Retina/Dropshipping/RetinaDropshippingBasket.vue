@@ -81,6 +81,9 @@ const props = defineProps<{
             }
             estimated_weight: number
         }
+        order_properties: {
+            weight: string
+        }
         order_summary: {
 
         }

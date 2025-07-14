@@ -13,7 +13,6 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
@@ -58,17 +57,7 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Order::class);
-        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $queryBuilder->where('orders.customer_id', $customerSalesChannel->customer->id);
-        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
-            $queryBuilder->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
-        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $queryBuilder->leftJoin('shopify_user_has_fulfilments', function ($join) {
-                $join->on('shopify_user_has_fulfilments.model_id', '=', 'orders.id')
-                        ->where('shopify_user_has_fulfilments.model_type', '=', 'Order');
-            });
-            $queryBuilder->where('shopify_user_has_fulfilments.shopify_user_id', $customerSalesChannel->customer->shopifyUser->id);
-        }
+        $queryBuilder->where('orders.customer_sales_channel_id', $customerSalesChannel->id);
 
 
         $queryBuilder->leftJoin('model_has_payments', function ($join) {
@@ -81,7 +70,7 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
         $queryBuilder->leftJoin('order_stats', 'orders.id', 'order_stats.order_id');
 
         return $queryBuilder
-            ->defaultSort('orders.id')
+            ->defaultSort('-orders.date')
             ->select([
                 'orders.id', 'orders.reference', 'orders.date', 'orders.state',
                 'orders.created_at', 'orders.updated_at', 'orders.slug',
@@ -124,7 +113,7 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
             'icon'  => ['fal', 'fa-shopping-cart'],
             'title' => __('orders').' @'.$this->customerSalesChannel->platform->name,
         ];
-        $subNavigation = $this->getCustomerPlatformSubNavigation(
+        $subNavigation = $this->getCustomerSalesChannelSubNavigation(
             $this->customerSalesChannel,
             $request
         );

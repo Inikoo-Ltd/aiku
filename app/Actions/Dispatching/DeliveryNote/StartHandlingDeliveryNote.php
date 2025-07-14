@@ -10,7 +10,9 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
+use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -40,10 +42,10 @@ class StartHandlingDeliveryNote extends OrgAction
         data_set($modelData, 'picker_user_id', $this->user->id);
 
 
-
-        return DB::transaction(function () use ($deliveryNote, $modelData) {
-
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
             UpdateDeliveryNote::run($deliveryNote, $modelData);
+
+            UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
 
             DB::table('delivery_note_items')
                 ->where('delivery_note_id', $deliveryNote->id)
@@ -52,11 +54,12 @@ class StartHandlingDeliveryNote extends OrgAction
             DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
 
             return $deliveryNote;
-
         });
 
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
 
-
+        return $deliveryNote;
     }
 
 

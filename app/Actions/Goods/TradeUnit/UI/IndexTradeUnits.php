@@ -258,7 +258,7 @@ class IndexTradeUnits extends GrpAction
                     'name'       => 'grp.goods.trade-units.anomality',
                     'parameters' => []
                 ],
-                'number' => $this->group->goodsStats->number_trade_units_status_anomaly
+                'number' => $this->group->goodsStats->number_trade_units_status_anomality
             ],
             [
                 'label'  => __('All'),

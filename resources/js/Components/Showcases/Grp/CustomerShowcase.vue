@@ -9,7 +9,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLink } from "@far"
-import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faPencil } from "@fal"
+import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faPencil, faArrowAltFromTop, faArrowAltFromBottom } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
@@ -24,6 +24,8 @@ import { Link } from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import CustomerDSBalanceIncrease from "@/Components/Dropshipping/CustomerDSBalanceIncrease.vue"
+import CustomerDSBalanceDecrease from "@/Components/Dropshipping/CustomerDSBalanceDecrease.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil)
 
@@ -61,8 +63,20 @@ const props = defineProps<{
         require_approval: boolean
         approveRoute: routeType
         editWebUser: routeType
+        balance: {
+            route_store: routeType
+            route_update: routeType
+            increaase_reasons_options: {}[]
+            decrease_reasons_options: {}[]
+        }
+        currency: {
+            code: string
+            symbol: string
+        }
+        type_options: {}
     },
     tab: string
+    handleTabUpdate?: Function
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -89,6 +103,10 @@ const links = ref([
     },
 ]);
 
+
+// Section: Balance increase and decrease
+const isModalBalanceDecrease = ref(false)
+const isModalBalanceIncrease = ref(false)
 </script>
 
 <template>
@@ -127,7 +145,7 @@ const links = ref([
             <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5">
                 <dl class="flex flex-wrap">
                     <!-- Profile: Header -->
-                    <div class="flex w-full py-6">
+                    <!-- <div class="flex w-full py-6">
                         <div v-if="data?.customer.is_dropshipping" class="flex-auto pl-6">
                             <dt class="text-sm text-gray-500">{{ trans("Total Clients") }}</dt>
                             <dd class="mt-1 text-base font-semibold leading-6">{{
@@ -145,7 +163,7 @@ const links = ref([
                                     " />
                             </dd>
                         </div>
-                    </div>
+                    </div> -->
 
                     <!-- Section: Field -->
                     <div class="flex flex-col gap-y-3 border-t border-gray-900/5 w-full py-6">
@@ -229,8 +247,9 @@ const links = ref([
                 </dl>
             </div>
         </div>
-        <div class="justify-self-end ">
 
+
+        <div class="justify-self-end ">
             <div
                 class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
                 <div class="w-full flex justify-between items-center">
@@ -247,21 +266,33 @@ const links = ref([
                         <div class="text-2xl font-bold">
                             <CountUp :endVal="data.customer.balance" :duration="1.5" :scrollSpyOnce="true" :options="{
                                 formattingFn: (value) =>
-                                    locale.currencyFormat(data.currency_code, value),
+                                    locale.currencyFormat(data.currency?.code, value),
                             }" />
                         </div>
                         <div class="flex items-center">
-                            <!-- <button aria-label="Increase Balance" class="focus:outline-none">
-                                <FontAwesomeIcon xclick="openModalBalance('increase')" :icon="faArrowAltFromBottom"
-                                    class="text-base" tooltip="Increase Balance" fixed-width aria-hidden="true" />
-                            </button>
+                            <div @click="() => isModalBalanceIncrease = true" v-tooltip="trans('Increase customer balance')" class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                <FontAwesomeIcon
+                                    :icon="faArrowAltFromBottom"
+                                    class="text-base"
+                                    tooltip="Decrease Balance"
+                                    fixed-width
+                                    aria-hidden="true" />
+                            </div>
                             <span class="mx-2 text-gray-400">|</span>
-                            <button aria-label="Decrease Balance" class="focus:outline-none">
-                                <FontAwesomeIcon xclick="openModalBalance('decrease')" :icon="faArrowAltFromTop"
-                                    class="text-base" tooltip="Decrease Balance" fixed-width aria-hidden="true" />
-                            </button> -->
+                            <div @click="() => isModalBalanceDecrease = true" v-tooltip="trans('Decrease customer balance')" class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                <FontAwesomeIcon
+                                    :icon="faArrowAltFromTop"
+                                    class="text-base"
+                                    tooltip="Decrease Balance"
+                                    fixed-width
+                                    aria-hidden="true" />
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')" class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                    {{ trans("See all transactions list") }}
                 </div>
             </div>
 
@@ -277,6 +308,28 @@ const links = ref([
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal :addresses="data.address_management.addresses"
             :updateRoute="data.address_management.address_update_route" />
+    </Modal>
+
+    <!-- Modal: Increase balance -->
+    <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
+        <CustomerDSBalanceIncrease
+            v-model="isModalBalanceIncrease"
+            :routeSubmit="data.balance.route_store"
+            :options="data.balance.increaase_reasons_options"
+            :currency="data.currency"
+            :types="data.balance.type_options"
+        />
+    </Modal>
+    
+    <!-- Modal: Decrease balance -->
+    <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
+        <CustomerDSBalanceDecrease
+            v-model="isModalBalanceDecrease"
+            :routeSubmit="data.balance.route_store"
+            :options="data.balance.decrease_reasons_options"
+            :currency="data.currency"
+            :types="data.balance.type_options"
+        />
     </Modal>
 
     <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />

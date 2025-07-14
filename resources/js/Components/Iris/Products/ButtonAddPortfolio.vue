@@ -35,7 +35,7 @@ interface ProductResource {
 
 const props = withDefaults(defineProps<{
     product: ProductResource
-    productHasPortfolio?: Array<number>
+    productHasPortfolio?: number[]
 }>(), {
     productHasPortfolio: () => []
 })
@@ -165,16 +165,16 @@ watch(() => props.productHasPortfolio, (newVal) => {
 <template>
     <!-- Bottom Section (fixed position in layout) -->
     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-        <div v-if="product.stock > 0" class="flex items-center gap-2 mt-2">
+        <div v-if="product.stock > 0" class="flex items-center gap-2 xmt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
-         
+
                     <Button v-if="isInAllChannels"
                         :label="CheckChannels ? 'Exist on all channels' : 'Exist on some channels'" type="tertiary" disabled
                         class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
-                        class="border-none border-transparent" full size="l" style="border: 0px" />
+                        class="border-none border-transparent" full xsize="l" xstyle="border: 0px" />
 
                     <Button v-if="!CheckChannels"
                         @click="(e) => (_popover?.toggle(e), Object.keys(channelList).length ? null : emits('refreshChannels'))"
@@ -217,11 +217,11 @@ watch(() => props.productHasPortfolio, (newVal) => {
             </div>
         </div>
         <div v-else>
-            <Button label="Out of stock" type="tertiary" disabled full />
+            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
         </div>
     </div>
 
-    <Link v-else href="app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+    <Link v-else href="/app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
     {{ trans("Login to add to your portfolio") }}
     </Link>
 </template>

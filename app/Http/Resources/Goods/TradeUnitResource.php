@@ -23,6 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $image_id
  * @property mixed $marketing_weight
  * @property mixed $marketing_dimensions
+ * @property mixed $status
  */
 class TradeUnitResource extends JsonResource
 {
@@ -30,6 +31,7 @@ class TradeUnitResource extends JsonResource
     {
         return array(
             'slug'                 => $this->slug,
+            'status'               => $this->status,
             'code'                 => $this->code,
             'name'                 => $this->name,
             'description'          => $this->description,

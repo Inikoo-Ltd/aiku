@@ -13,7 +13,6 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
-use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -74,7 +73,7 @@ class PayRetinaOrderWithBalance extends RetinaAction
         $paymentData = [
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
             'amount'                  => $order->total_amount,
-            'status'                  => 'in_process',
+            'status'                  => PaymentStatusEnum::SUCCESS,
             'payment_account_shop_id' => $paymentAccountShop->id
         ];
 
@@ -85,9 +84,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 'amount' => $payment->amount
             ]);
 
-            $order = UpdateOrder::make()->action(order: $order, modelData:[
-                'payment_amount' => $payment->amount
-            ], strict: false);
 
             $creditTransactionData = [
                 'amount'     => -$order->total_amount,
@@ -124,8 +120,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($order);
-
-
     }
 
 

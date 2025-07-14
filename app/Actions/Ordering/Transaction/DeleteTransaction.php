@@ -27,8 +27,9 @@ class DeleteTransaction extends OrgAction
         $transaction->delete();
 
         $order = $transaction->order;
-
+        $order->refresh();
         if ($this->strict) {
+
             CalculateOrderTotalAmounts::run($order);
             OrderHydrateTransactions::dispatch($order);
         }
@@ -43,6 +44,7 @@ class DeleteTransaction extends OrgAction
 
     public function action(Transaction $transaction): Transaction
     {
+        $this->asAction = true;
         $this->initialisationFromShop($transaction->shop, []);
 
         return $this->handle($transaction);

@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -18,7 +19,6 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class PickDeliveryNoteAsEmployee extends OrgAction
@@ -26,6 +26,7 @@ class PickDeliveryNoteAsEmployee extends OrgAction
     use WithActionUpdate;
 
     private DeliveryNote $deliveryNote;
+
     public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $deliveryNote = UpdateDeliveryNote::make()->action($deliveryNote, [
@@ -41,7 +42,11 @@ class PickDeliveryNoteAsEmployee extends OrgAction
             ]);
         }
 
-        return $this->update($deliveryNote, $modelData);
+        $deliveryNote = $this->update($deliveryNote, $modelData);
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
+
+        return $deliveryNote;
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
@@ -53,32 +58,16 @@ class PickDeliveryNoteAsEmployee extends OrgAction
         return $this->handle($deliveryNote, $user);
     }
 
-    // public function prepareForValidation()
-    // {
-    //     $employee = request()->user()->employees()->first();
-    //     if ($employee) {
-    //         $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
-    //         if (!$pickerEmployee) {
-    //             throw ValidationException::withMessages([
-    //                 'messages' => __('You Are Not A Picker')
-    //             ]);
-    //         }
-    //     } elseif (!$employee) {
-    //         throw ValidationException::withMessages([
-    //             'messages' => __('You Are Not An Employee')
-    //         ]);
-    //     }
-    // }
 
     public function htmlResponse(DeliveryNote $deliveryNote): RedirectResponse
     {
         return Redirect::route(
             'grp.org.warehouses.show.dispatching.delivery-notes.show',
             [
-            'organisation' => $deliveryNote->organisation->slug,
-            'warehouse' => $deliveryNote->warehouse->slug,
-            'deliveryNote' => $deliveryNote->slug
-        ]
+                'organisation' => $deliveryNote->organisation->slug,
+                'warehouse'    => $deliveryNote->warehouse->slug,
+                'deliveryNote' => $deliveryNote->slug
+            ]
         );
     }
 

@@ -36,7 +36,7 @@ class StoreTradeUnit extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'             => [
+            'code'                  => [
                 'required',
                 'max:64',
                 $this->strict ? new AlphaDashDot() : 'string',
@@ -49,15 +49,21 @@ class StoreTradeUnit extends OrgAction
                 ),
 
             ],
-            'name'             => ['required', 'string', 'max:255'],
-            'description'      => ['sometimes', 'nullable', 'string', 'max:1024'],
-            'barcode'          => ['sometimes', 'required'],
-            'gross_weight'     => ['sometimes', 'required', 'numeric'],
-            'net_weight'       => ['sometimes', 'required', 'numeric'],
-            'marketing_weight' => ['sometimes', 'required', 'numeric'],
-            'marketing_dimensions' => ['sometimes', 'required'],
-            'type'             => ['sometimes', 'required', 'string'],
-            'data'             => ['sometimes', 'required', 'array'],
+            'name'                  => ['required', 'string', 'max:255'],
+            'description'           => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'barcode'               => ['sometimes', 'required'],
+            'gross_weight'          => ['sometimes', 'required', 'numeric'],
+            'net_weight'            => ['sometimes', 'required', 'numeric'],
+            'marketing_weight'      => ['sometimes', 'required', 'numeric'],
+            'marketing_dimensions'  => ['sometimes', 'required'],
+            'type'                  => ['sometimes', 'required', 'string'],
+            'data'                  => ['sometimes', 'required', 'array'],
+            'cpnp_number'           => ['sometimes', 'nullable', 'string'],
+            'country_of_origin'     => ['sometimes', 'nullable', 'string'],
+            'tariff_code'           => ['sometimes', 'nullable', 'string'],
+            'duty_rate'             => ['sometimes', 'nullable', 'string'],
+            'hts_us'                => ['sometimes', 'nullable', 'string'],
+            'marketing_ingredients' => ['sometimes', 'nullable', 'string'],
 
         ];
 

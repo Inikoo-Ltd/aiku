@@ -124,6 +124,17 @@ const props = defineProps<{
                 billing: Address
             }
         }
+        customer_client?: {
+            contact_name: string
+            company_name: string
+            email: string
+            phone: string
+            route: routeType
+        }
+        invoice: {
+            reference: string
+            route: routeType
+        }
         products: {
             payment: {
                 routes: {
@@ -347,7 +358,6 @@ const isModalUploadExcel = ref(false)
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-add-products="{ action }">
@@ -442,12 +452,19 @@ const isModalUploadExcel = ref(false)
 
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'" class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
+        <Timeline
+            v-if="timelines"
+            :options="timelines"
+            :state="props.data?.data?.state"
+            :slidesPerView="6"
+            formatTime="EEE, do MMM yy, HH:mm"
+        />
     </div>
 
     <div v-if="currentTab != 'products'" class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
             <!-- Field: Reference Number -->
+            <!-- <pre>{{ box_stats?.customer }}</pre> -->
             <Link as="a" v-if="box_stats?.customer.reference" v-tooltip="trans('Customer')"
                 :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
@@ -457,8 +474,26 @@ const isModalUploadExcel = ref(false)
                 <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
             </Link>
 
+            <Link as="a" v-if="!box_stats?.customer.reference" v-tooltip="trans('Contact name')"
+                :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
+                class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+                <dt class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
+                </dt>
+                <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+            </Link>
+
+            <Link as="a" v-if="box_stats?.customer_client" v-tooltip="trans('Customer client')"
+                :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+                <dt class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-users' class='text-gray-400' fixed-width aria-hidden='true' />
+                </dt>
+                <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
+            </Link>
+
             <!-- Field: Contact name -->
-            <div v-if="box_stats?.customer.contact_name" v-tooltip="trans('Contact name')"
+            <div v-else-if="box_stats?.customer.contact_name" v-tooltip="trans('Contact name')"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
@@ -558,6 +593,29 @@ const isModalUploadExcel = ref(false)
                 </dd>
             </div>
 
+
+            <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
+                <Link
+                    :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
+                    class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                <dt class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-file-invoice-dollar' fixed-width aria-hidden='true' class="text-gray-500" />
+                </dt>
+                    <dd class="text-gray-500 " v-tooltip="trans('Invoice')">
+                        {{ box_stats?.invoice?.reference }}
+                    </dd>
+                </Link>
+
+                <a v-if="box_stats?.invoice?.routes?.download?.name" :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
+                    as="a" target="_blank" class="flex items-center">
+                    <button class="flex items-center">
+                        <div class="flex-none">
+                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"
+                                class="text-gray-500 hover:text-indigo-500 transition-colors duration-200" />
+                        </div>
+                    </button>
+                </a>
+            </div>
 
             <div v-if="delivery_note" class="mt-1 flex items-center w-full flex-none justify-between">
                 <Link

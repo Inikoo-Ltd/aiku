@@ -12,6 +12,9 @@ use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Http\Resources\Helpers\CurrencyResource;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 
 class GetCustomerShowcase
 {
@@ -33,7 +36,6 @@ class GetCustomerShowcase
             ];
         }
 
-
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
@@ -43,6 +45,25 @@ class GetCustomerShowcase
                 'parameters' => [
                     'customer' => $customer->id
                 ]
+            ],
+            'currency'  => CurrencyResource::make($customer->shop->currency)->toArray(request()),
+            'balance'  => [
+                'route_store'    => [
+                    'name'       => 'grp.models.customer.credit-transaction.store',
+                    'parameters' => [
+                        'customer'     => $customer->id
+                    ]
+                ],
+                'route_update'    => [
+                    'name'       => 'grp.models.customer_balance.update',
+                    'parameters' => [
+                        'customer'     => $customer->id
+                    ]
+                ],
+                'increaase_reasons_options' => CreditTransactionReasonEnum::getIncreaseReasons(),
+                'decrease_reasons_options' => CreditTransactionReasonEnum::getDecreaseReasons(),
+
+                'type_options' => CreditTransactionTypeEnum::getOptions()
             ],
             'editWebUser' => $webUserRoute
         ];

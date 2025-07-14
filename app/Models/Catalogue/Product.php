@@ -95,6 +95,46 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $top_seller
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property string|null $un_number
+ * @property string|null $un_class
+ * @property string|null $packing_group
+ * @property string|null $proper_shipping_name
+ * @property string|null $hazard_identification_number
+ * @property string|null $gpsr_manufacturer
+ * @property string|null $gpsr_eu_responsible
+ * @property string|null $gpsr_warnings
+ * @property string|null $gpsr_manual
+ * @property string|null $gpsr_class_category_danger
+ * @property string|null $gpsr_class_languages
+ * @property bool $pictogram_toxic
+ * @property bool $pictogram_corrosive
+ * @property bool $pictogram_explosive
+ * @property bool $pictogram_flammable
+ * @property bool $pictogram_gas
+ * @property bool $pictogram_environment
+ * @property bool $pictogram_health
+ * @property bool $pictogram_oxidising
+ * @property bool $pictogram_danger
+ * @property array<array-key, mixed>|null $marketing_dimensions
+ * @property int|null $front_image_id
+ * @property int|null $34_image_id
+ * @property int|null $left_image_id
+ * @property int|null $right_image_id
+ * @property int|null $back_image_id
+ * @property int|null $top_image_id
+ * @property int|null $bottom_image_id
+ * @property int|null $size_comparison_image_id
+ * @property string|null $video_url
+ * @property string|null $cpnp_number
+ * @property string|null $country_of_origin
+ * @property string|null $tariff_code
+ * @property string|null $duty_rate
+ * @property string|null $hts_us
+ * @property string|null $marketing_ingredients
+ * @property string|null $price_updated_at
+ * @property string|null $available_quantity_updated_at
+ * @property string|null $images_updated_at
+ * @property string|null $unit_price price per unit
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
@@ -102,6 +142,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read \App\Models\Helpers\Currency $currency
+ * @property-read \App\Models\Catalogue\HistoricAsset|null $currentHistoricProduct
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
@@ -153,6 +194,7 @@ class Product extends Model implements Auditable, HasMedia
         'data'                   => 'array',
         'settings'               => 'array',
         'web_images'             => 'array',
+        'marketing_dimensions'   => 'array',
         'variant_is_visible'     => 'boolean',
         'state'                  => ProductStateEnum::class,
         'status'                 => ProductStatusEnum::class,
@@ -163,9 +205,10 @@ class Product extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'       => '{}',
-        'settings'   => '{}',
-        'web_images' => '{}',
+        'data'                 => '{}',
+        'settings'             => '{}',
+        'web_images'           => '{}',
+        'marketing_dimensions' => '{}',
     ];
 
     public function generateTags(): array
@@ -312,6 +355,11 @@ class Product extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(Collection::class, 'model', 'collection_has_models')
             ->withTimestamps();
+    }
+
+    public function currentHistoricProduct(): HasOne
+    {
+        return $this->hasOne(HistoricAsset::class, 'id', 'current_historic_asset_id');
     }
 
 }

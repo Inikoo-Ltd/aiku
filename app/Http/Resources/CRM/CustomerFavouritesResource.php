@@ -13,15 +13,12 @@ use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property string $ulid
- * @property string $reference
- * @property string $name
- * @property string $contact_name
- * @property string $company_name
- * @property string $email
- * @property string $phone
- * @property string $created_at
- * @property string $updated_at
+ * @property mixed $id
+ * @property mixed $code
+ * @property mixed $slug
+ * @property mixed $name
+ * @property mixed $description
+ * @property mixed $price
  */
 class CustomerFavouritesResource extends JsonResource
 {

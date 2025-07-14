@@ -10,7 +10,8 @@
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\RetinaAction;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -28,7 +29,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('customer_sales_channels.reference', $value);
+                $query->whereStartWith('customer_sales_channels.name', $value);
             });
         });
 
@@ -39,6 +40,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
         $query = QueryBuilder::for(CustomerSalesChannel::class);
         $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
+        $query->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN);
 
         return $query
             ->defaultSort('customer_sales_channels.reference')
@@ -52,8 +54,11 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 'customer_sales_channels.number_orders as number_orders',
                 'customer_sales_channels.platform_id',
                 'customer_sales_channels.name',
+                'customer_sales_channels.connection_status',
+                'platforms.name as platform_name',
+                'platforms.code as platform_code',
             ])
-            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios', 'number_orders'])
+            ->allowedSorts(['reference', 'name', 'number_customer_clients', 'number_portfolios', 'number_orders'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -93,7 +98,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                         ]
                     ]
                 ],
-                'data' => CustomerSalesChannelsResource::collection($platforms),
+                'data' => RetinaCustomerSalesChannelsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -114,7 +119,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 ->column(key: 'platform_name', label: "", canBeHidden: false, type: 'avatar')
                 ->column(key: 'name', label: __('Store Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_clients', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customer_clients', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
                 // ->column(key: 'status', label: __('Status'), canBeHidden: false)
                 // ->column(key: 'connection', label: __('Connection'), canBeHidden: false)

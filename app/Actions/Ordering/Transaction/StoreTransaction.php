@@ -36,8 +36,16 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
 
-        $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-        $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+
+        if (Arr::get($modelData, 'model_type') == 'Product') {
+            $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+        } else {
+            $net   = Arr::get($modelData, 'net_amount', 0);
+            $gross = Arr::get($modelData, 'gross_amount', 0);
+        }
+
+
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
@@ -54,13 +62,22 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
 
 
+        $unitWeight = $historicAsset->model->gross_weight ?? 0;
+
+        $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
+
+
+
+        data_set($modelData, 'estimated_weight', $estimatedWeight);
+
+
         $modelData = $this->processExchanges($modelData, $order->shop);
 
 
         /** @var Transaction $transaction */
         $transaction = $order->transactions()->create($modelData);
 
-
+        $order->refresh();
         if ($this->strict) {
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
@@ -75,24 +92,25 @@ class StoreTransaction extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity_ordered'    => ['required', 'numeric', 'min:0'],
-            'quantity_bonus'      => ['sometimes', 'required', 'numeric', 'min:0'],
-            'quantity_dispatched' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'quantity_fail'       => ['sometimes', 'required', 'numeric', 'min:0'],
-            'quantity_cancelled'  => ['sometimes', 'sometimes', 'numeric', 'min:0'],
-            'state'               => ['sometimes', Rule::enum(TransactionStateEnum::class)],
-            'status'              => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
-            'fail_status'         => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
-            'gross_amount'        => ['sometimes', 'numeric'],
-            'net_amount'          => ['sometimes', 'numeric'],
-            'org_exchange'        => ['sometimes', 'numeric'],
-            'grp_exchange'        => ['sometimes', 'numeric'],
-            'org_net_amount'      => ['sometimes', 'numeric'],
-            'grp_net_amount'      => ['sometimes', 'numeric'],
-            'tax_category_id'     => ['sometimes', 'required', 'exists:tax_categories,id'],
-            'date'                => ['sometimes', 'required', 'date'],
-            'submitted_at'        => ['sometimes', 'required', 'date'],
-            'data'                => ['sometimes', 'array'],
+            'quantity_ordered'        => ['required', 'numeric', 'min:0'],
+            'quantity_bonus'          => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity_dispatched'     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity_fail'           => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity_cancelled'      => ['sometimes', 'sometimes', 'numeric', 'min:0'],
+            'platform_transaction_id' => ['sometimes', 'nullable'],
+            'state'                   => ['sometimes', Rule::enum(TransactionStateEnum::class)],
+            'status'                  => ['sometimes', Rule::enum(TransactionStatusEnum::class)],
+            'fail_status'             => ['sometimes', 'nullable', Rule::enum(TransactionFailStatusEnum::class)],
+            'gross_amount'            => ['sometimes', 'numeric'],
+            'net_amount'              => ['sometimes', 'numeric'],
+            'org_exchange'            => ['sometimes', 'numeric'],
+            'grp_exchange'            => ['sometimes', 'numeric'],
+            'org_net_amount'          => ['sometimes', 'numeric'],
+            'grp_net_amount'          => ['sometimes', 'numeric'],
+            'tax_category_id'         => ['sometimes', 'required', 'exists:tax_categories,id'],
+            'date'                    => ['sometimes', 'required', 'date'],
+            'submitted_at'            => ['sometimes', 'required', 'date'],
+            'data'                    => ['sometimes', 'array'],
         ];
 
         if (!$this->strict) {

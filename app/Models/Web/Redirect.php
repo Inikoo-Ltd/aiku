@@ -31,7 +31,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string $from_path path to redirect from
  * @property int $from_webpage_id
- * @property int $to_webpage_id webpage where it going to be redirected to
+ * @property int|null $to_webpage_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation

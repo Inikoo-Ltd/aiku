@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
+use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
@@ -21,6 +22,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
 {
     use AsObject;
     use WithCheckoutCom;
+    use CalculatesPaymentWithBalance;
 
 
     public function handle(Order $order, PaymentAccountShop $paymentAccountShop, OrderPaymentApiPoint $orderPaymentApiPoint): array
@@ -31,20 +33,12 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-        $toPay   = (float)max($order->total_amount, 0.0);
-        $balance = (float)$order->customer->balance;
+        $paymentAmounts = $this->calculatePaymentWithBalance(
+            $order->total_amount,
+            $order->customer->balance
+        );
 
-        $decimalPart = $toPay - floor($toPay);
-
-        $payFloatWithBalance = min($decimalPart, $balance);
-
-        $remainingBalance  = $balance - $payFloatWithBalance;
-        $payIntWithBalance = min(floor($toPay), floor($remainingBalance));
-
-        $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
-        $toPayByOther   = round($toPay - $toPayByBalance, 2);
-
-
+        $toPayByOther = $paymentAmounts['by_other'];
         $toPayByOther = intval($toPayByOther * 100);
 
 
@@ -64,6 +58,10 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->processing_channel_id = $channelID;
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
+
+        $paymentSessionRequest->disabled_payment_methods = [
+            'applepay',
+        ];
 
         $billingAddress = $order->billingAddress;
 

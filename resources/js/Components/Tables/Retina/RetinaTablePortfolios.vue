@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 
@@ -16,14 +16,14 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import { get, set } from "lodash-es"
+import { debounce, get, set } from "lodash-es"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt} from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle} from "@fal"
 import { faStar } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
-library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck )
+library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, falStar, faTrashAlt, faCheck, faExclamationCircle )
 
 interface PlatformData {
 	id: number
@@ -38,7 +38,7 @@ const props = defineProps<{
 	selectedData: {
 		products: number[]
 	}
-	
+
     platform_data: PlatformData
 	platform_user_id: number
 	is_platform_connected: boolean
@@ -47,6 +47,8 @@ const props = defineProps<{
 		slug: string
 		name: string
 	}
+	progressToUploadToShopify: {}
+	isPlatformManual?: boolean
 }>()
 
 function portfolioRoute(product: Product) {
@@ -67,7 +69,6 @@ const onUnchecked = (itemId: number) => {
 	props.selectedData.products = props.selectedData.products.filter(product => product !== itemId)
 }
 
-const progressToUploadToShopify = ref({})
 const selectSocketiBasedPlatform = (porto: { id: number }) => {
     if (props.platform_data.type === 'shopify') {
         return {
@@ -97,6 +98,12 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
     }
 }
 
+const debReloadPage = debounce(() => {
+	router.reload({
+		except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+	})
+}, 1200)
+
 onMounted(() => {
     props.data?.data?.forEach(porto => {
 		if (selectSocketiBasedPlatform(porto)) {
@@ -105,19 +112,20 @@ onMounted(() => {
 				(eventData) => {
 					console.log('socket in: ', porto.id, eventData)
 					if(eventData.errors_response) {
-						set(progressToUploadToShopify.value, [porto.id], 'error')
+						set(props.progressToUploadToShopify, [porto.id], 'error')
 						setTimeout(() => {
-							set(progressToUploadToShopify.value, [porto.id], null)
+							set(props.progressToUploadToShopify, [porto.id], null)
 						}, 3000);
-	
+
 					} else {
-						set(progressToUploadToShopify.value, [porto.id], 'success')
+						set(props.progressToUploadToShopify, [porto.id], 'success')
+						debReloadPage()
 					}
 				}
 			);
 
 			console.log(`Subscription porto id: ${porto.id}`, xxx)
-	
+
 		}
     });
 
@@ -140,6 +148,13 @@ onMounted(() => {
 			onUnchecked(item.id)
 		}"
 		:isChecked="(item) => props.selectedData.products.includes(item.id)"
+		:rowColorFunction="(item) => {
+			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
+				return 'bg-yellow-50'
+			} else {
+				return ''
+			}
+		}"
 	>
         <template #cell(image)="{ item: product }">
             <div class="overflow-hidden w-10 h-10">
@@ -186,20 +201,14 @@ onMounted(() => {
 			<div class="flex justify-center">
 				<template v-if="is_platform_connected">
 					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+					<!-- <FontAwesomeIcon v-if="(product.upload_warning)" v-tooltip="product.upload_warning"  icon="fa fa-exclamation-circle" class="text-yellow-500" fixed-width aria-hidden="true" /> -->
 					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
-					<div v-else>
-						<ButtonWithLink
-							:routeTarget="product.platform_upload_portfolio"
-							label="Upload"
-							icon="fal fa-upload"
-							type="positive"
-							size="xs"
-							:bindToLink="{
-								preserveScroll: true,
-							}"
-							@success="() => set(progressToUploadToShopify, [product.id], 'loading')"
-						/>
-					</div>
+					<span v-if="(product.upload_warning)" class="text-red-500 text-xs text-center italic">
+						{{ product.upload_warning }}
+					</span>
+					<span v-else-if="!product.platform_product_id" class="text-gray-500 text-xs text-center italic">
+						{{ trans("Pending upload") }}
+					</span>
 				</template>
 
 				<div v-else v-tooltip="trans('Your channel is not connected to the platform yet.')" class="text-center text-lg">
@@ -210,17 +219,68 @@ onMounted(() => {
 
 		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }">
-			<div class="mx-auto">
+			<div class="mx-auto flex flex-wrap justify-center gap-2">
+				<!-- {{ item.platform_product_id }} -->
 				<ButtonWithLink
-					v-tooltip="trans('Delete product')"
+					v-if="
+						!isPlatformManual
+						&& is_platform_connected
+						&& !item.platform_product_id
+						&& get(progressToUploadToShopify, [item.id], undefined) != 'success'
+					"
+					:routeTarget="item.platform_upload_portfolio"
+					label="Upload"
+					icon="fal fa-upload"
+					type="positive"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+					@success="() => set(progressToUploadToShopify, [item.id], 'loading')"
+					:disabled="get(progressToUploadToShopify, [item.id], null)"
+				/>
+
+				
+				<ButtonWithLink
+					v-if="item.status"
+					v-tooltip="trans('Set to inactive')"
 					type="negative"
-					icon="fal fa-trash-alt"
-					:routeTarget="item.delete_portfolio"
+					icon="fal fa-skull"
+					:routeTarget="item.update_portfolio"
+					:body="{
+						'status': false,
+					}"
 					size="xs"
 					:bindToLink="{
 						preserveScroll: true,
 					}"
 				/>
+
+				<ButtonWithLink
+					v-else
+					v-tooltip="trans('Set to active')"
+					type="positive"
+					icon="fal fa-seedling"
+					:routeTarget="item.update_portfolio"
+					:body="{
+						'status': true,
+					}"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+				/>
+
+				<!-- <ButtonWithLink
+					v-tooltip="trans('Remove product')"
+					type="negative"
+					icon="fal fa-times"
+					:routeTarget="item.delete_portfolio"
+					size="xs"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+				/> -->
 			</div>
 		</template>
 	</Table>

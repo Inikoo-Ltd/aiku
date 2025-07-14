@@ -51,9 +51,16 @@ trait WithAuroraImages
                 'image_path' => $image_path,
                 'filename'   => $auroraImageData->{'Image Filename'},
                 'mime'       => $auroraImageData->{'Image MIME Type'},
+                'checksum'   => $auroraImageData->{'Image File Checksum'},
+                'is_public'  => $auroraImageData->{'Image Subject Is Public'} == 'Yes',
+                'position'   => $auroraImageData->{'Image Subject Order'},
+                'caption'    => $auroraImageData->{'Image Subject Image Caption'},
+                'source_id'  => $this->organisation->id.':'.$auroraImageData->{'Image Subject Key'},
 
             ];
         } else {
+            print "Image not found: $image_path\n";
+
             return [];
         }
     }

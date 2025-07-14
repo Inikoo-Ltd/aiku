@@ -166,7 +166,14 @@ const props = defineProps(
             type: Boolean,
             default: false,
             required: false,
-        }
+        },
+        rowColorFunction: {
+            type: Function,
+            default: () => {
+                return ''
+            },
+            required: false,
+        },
     });
 
 const emits = defineEmits<{
@@ -962,7 +969,11 @@ const isLoading = ref<string | boolean>(false)
                                                 },
                                                 selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
                                                     ? 'bg-green-100/70'
-                                                    : striped ? 'bg-gray-200 hover:bg-gray-300' : 'hover:bg-gray-50'
+                                                    : striped
+                                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                                        : rowColorFunction(item)
+                                                            ? rowColorFunction(item)
+                                                            : 'hover:bg-gray-50'
                                             ]"
                                         >
                                             <!-- Column: Check box -->
@@ -1014,16 +1025,16 @@ const isLoading = ref<string | boolean>(false)
                                                         {{  locale.number(item[column.key]) }}
                                                     </template>
                                                     <template v-else-if="column.type === 'currency'">
-                                                        {{  locale.currencyFormat(item.currency_code || 'usd', item[column.key]) }}
+                                                        {{  locale.currencyFormat(item.currency_code, item[column.key]) }}
                                                     </template>
                                                     <template v-else-if="column.type === 'date'">
-                                                        <span class="whitespace-nowrap">{{  useFormatTime(item[column.key]) }}</span>
+                                                        <span v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })" class="whitespace-nowrap">{{ useFormatTime(item[column.key]) }}</span>
                                                     </template>
                                                     <template v-else-if="column.type === 'date_hm'">
-                                                        <span class="whitespace-nowrap">{{  useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
+                                                        <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
                                                     </template>
                                                     <template v-else-if="column.type === 'date_hms'">
-                                                        <span class="whitespace-nowrap">{{  useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
+                                                        <span class="whitespace-nowrap">{{ useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
                                                     </template>
                                                     <template v-else>
                                                         {{ item[column.key] }}

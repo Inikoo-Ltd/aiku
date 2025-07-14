@@ -10,6 +10,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
 library.add(faChevronLeft)
 
 const layout = useLayoutStore()
@@ -31,7 +32,16 @@ const handleToggleLeftBar = () => {
         }"
         id="leftSidebar"
     >
-        
+        <!-- Reference -->
+        <div class="absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.customer?.reference}`">
+            <div v-if="layout.leftSidebar.show" class="text-xxs text-gray-500 -mb-1 italic">
+                {{ trans("Customer reference:") }}
+            </div>
+            <div class=" text-xl text-[#1d252e] font-semibold">
+                <Transition name="slide-to-left"><span v-if="layout.leftSidebar.show">{{layout?.customer?.reference ?? '-'}}</span></Transition>
+            </div>
+        </div>
+
         <div class="shadow rounded-md flex flex-grow flex-col h-full overflow-y-auto custom-hide-scrollbar pb-4"
             :style="{
                 'background-color': layout.app.theme[0],

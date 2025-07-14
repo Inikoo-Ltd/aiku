@@ -46,6 +46,7 @@ class CalculateOrderHangingCharges
             $chargeTransaction = Transaction::find($chargeTransactionID);
         }
 
+
         if ($chargeApplies) {
             $chargeAmount = Arr::get($charge->settings, 'amount');
             if ($chargeTransaction) {
@@ -112,6 +113,11 @@ class CalculateOrderHangingCharges
         if ($operator == '>') {
             return $amount > $limit;
         } elseif ($operator == '<') {
+
+            if ($amount == 0) {
+                return false;
+            }
+
             return $amount < $limit;
         }
 

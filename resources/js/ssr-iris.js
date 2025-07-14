@@ -8,7 +8,8 @@ import { createSSRApp, h } from "vue";
 import { renderToString } from "@vue/server-renderer";
 import { createInertiaApp } from "@inertiajs/vue3";
 import createServer from "@inertiajs/vue3/server";
-import { ZiggyVue } from "../../vendor/tightenco/ziggy/dist/vue.m";
+import { ZiggyVue } from 'ziggy-js';
+
 import { createPinia } from "pinia";
 import Notifications from "@kyvg/vue3-notification";
 import FloatingVue from "floating-vue";

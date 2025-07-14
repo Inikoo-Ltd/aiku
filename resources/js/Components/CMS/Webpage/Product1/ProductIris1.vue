@@ -18,6 +18,7 @@ import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
+import axios from "axios"
 
 library.add(faCube, faLink)
 
@@ -46,6 +47,7 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
+	screenType: 'mobile' | 'tablet' | 'desktop'
 }>(), {
 })
 const layout = inject('layout',{})
@@ -122,7 +124,41 @@ const onUnselectFavourite = (product: ProductResource) => {
     )
 }
 
+// Method: to fetch the product existence in channels
+const isLoadingFetchExistenceChannels = ref(false)
+const productExistenceInChannels = ref<number[]>([])
+const fetchProductExistInChannel = async () => {
+    isLoadingFetchExistenceChannels.value = true
+    try {
+        const response = await axios.get(
+            route(
+                'iris.json.customer.product.channel_ids.index',
+                {
+                    customer: layout.iris?.customer?.id,
+                    product: props.fieldValue.product.id,
+                }
+            )
+        )
+
+        if (response.status !== 200) {
+            throw new Error('Failed to fetch product existence in channel')
+        }
+
+        // console.log('Product exist in channel response:', response.data)
+        productExistenceInChannels.value = response.data || []
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error.message,
+            type: 'error'
+        })
+    } finally {
+        isLoadingFetchExistenceChannels.value = false
+    }
+}
+
 onMounted(() => {
+    fetchProductExistInChannel()
   requestAnimationFrame(() => {
     if (contentRef.value.scrollHeight > 100) {
       showButton.value = true
@@ -134,7 +170,6 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
-console.log(props)
 </script>
 
 <template>
@@ -166,9 +201,6 @@ console.log(props)
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
-                                <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
-                                    :key="n" />
-                                <span class="ml-1 text-xs text-gray-500">41</span> -->
                             </div>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -177,15 +209,15 @@ console.log(props)
                             <span>
                                 {{
                                 fieldValue.product.stock > 0
-                                ? `In Stock (${fieldValue.product.stock})`
-                                : 'Out Of Stock'
+                                ? trans('In stock')+` (${fieldValue.product.stock} `+trans('available')+`)`
+                                : trans('Out Of Stock')
                                 }}
                             </span>
                         </div>
                     </div>
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
-                        <template v-if="layout.iris?.is_logged_in">
+                        <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
                             <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
@@ -213,35 +245,42 @@ console.log(props)
                 <div class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                        <span class="text-sm text-gray-900 ml-2 whitespace-nowrap">({{
-                            formatNumber(fieldValue.product.units) }}/{{
-                            fieldValue.product.unit }})</span>
+
                     </div>
                     <div v-if="fieldValue.product.rrp"
                         class="text-sm text-gray-800 font-semibold text-right whitespace-nowrap pl-4">
                         <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
-                        <span>/{{ fieldValue.product.unit }}</span>
                     </div>
                 </div>
-                <div class="flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="fieldValue.product"
-                        :productHasPortfolio="fieldValue.productChannels" />
+
+                <!-- Section: Button existence on all channels -->
+                <div class="relative flex gap-2 mb-6">
+                    <ButtonAddPortfolio
+                        :product="fieldValue.product"
+                        :productHasPortfolio="productExistenceInChannels"
+                    />
+
+                    <!-- Skeleton loading -->
+                    <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10 xopacity-40">
+                        <div class="h-full w-full skeleton rounded" />
+                    </div>
+
                 </div>
-                <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
-                    <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
-                    <span>{{ `Order ${formatNumber(fieldValue.product.units)} full carton` }}</span>
-                </div>
-                <div class="text-sm font-medium text-gray-800">
+
+
+
+                <div class="text-sm font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
                 </div>
-                <div class="text-xs font-medium text-gray-800">
+            
+                <div class="text-xs font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
                 <div v-if="fieldValue.setting.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                        :informations="fieldValue?.information" />
+                        :informations="fieldValue?.information" :styleData="fieldValue?.information_style"/>
                     <div v-if="fieldValue?.paymentData?.length > 0"
-                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2">
+                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2" :style="getStyles(fieldValue?.information_style?.title)">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
@@ -252,8 +291,8 @@ console.log(props)
             </div>
         </div>
 
-        <div class="text-xs font-normal text-gray-700 my-6">
-            <div ref="contentRef"
+        <div class="text-xs font-normal text-gray-700 my-6" :style="getStyles(fieldValue?.description?.description_extra, screenType)">
+            <div ref="contentRef" 
                 class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
@@ -262,7 +301,7 @@ console.log(props)
                 {{ expanded ? 'Show Less' : 'Read More' }}
             </button>
         </div>
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />
+        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" :styleData="fieldValue?.information_style"/>
     </div>
 
     <!-- Mobile Layout -->
@@ -284,7 +323,7 @@ console.log(props)
             </div>
 
             <!-- Favorite Icon -->
-            <div class="mt-1">
+            <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
                     :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
                     @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
@@ -313,7 +352,7 @@ console.log(props)
 
         <div class="mt-4">
             <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                :informations="fieldValue?.information" />
+                :informations="fieldValue?.information" :styleData="fieldValue?.information_style"/>
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
@@ -326,7 +365,7 @@ console.log(props)
             <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra"></div>
         </div>
 
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting" />
+        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"  :styleData="fieldValue?.information_style"/>
     </div>
 
 </template>

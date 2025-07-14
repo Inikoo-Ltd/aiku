@@ -114,6 +114,7 @@ class FetchAuroraProduct extends FetchAurora
 
         $unit_price                  = $this->auroraModelData->{'Product Price'} / $units;
         $data['original_unit_price'] = $unit_price;
+        $price                       = $unit_price * $units;
 
         $this->parsedData['historic_asset_source_id'] = $this->auroraModelData->{'Product Current Key'};
 
@@ -124,7 +125,6 @@ class FetchAuroraProduct extends FetchAurora
             $name = $code;
         }
 
-        $grossWeight = $this->auroraModelData->{'Product Package Weight'};
 
         $rrp = $this->auroraModelData->{'Product RRP'};
         if ($rrp <= 0) {
@@ -137,7 +137,9 @@ class FetchAuroraProduct extends FetchAurora
             'type'                      => AssetTypeEnum::PRODUCT,
             'code'                      => $code,
             'name'                      => $name,
-            'price'                     => round($unit_price, 2),
+            'price'                     => round($price, 2),
+            'unit_price'                => round($unit_price, 2),
+            'units'                     => $units,
             'status'                    => $status,
             'unit'                      => $this->auroraModelData->{'Product Unit Label'},
             'state'                     => $state,
@@ -148,16 +150,16 @@ class FetchAuroraProduct extends FetchAurora
             'trade_unit_composition'    => ProductUnitRelationshipType::SINGLE,
             'source_id'                 => $this->organisation->id.':'.$this->auroraModelData->{'Product ID'},
             'historic_source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Product Current Key'},
-            'images'                    => $this->parseImages(),
-            'fetched_at'                => now(),
-            'last_fetched_at'           => now(),
-            'rrp'                       => $rrp
+
+            'fetched_at'      => now(),
+            'last_fetched_at' => now(),
+            'rrp'             => $rrp
         ];
 
 
-        if ($grossWeight && $grossWeight < 500) {
-            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
-        }
+        //        if ($grossWeight && $grossWeight < 500) {
+        //            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
+        //        }
 
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {
@@ -171,6 +173,7 @@ class FetchAuroraProduct extends FetchAurora
         }
 
         $this->parsedData['au_data'] = $this->auroraModelData;
+        $this->parsedData['images']  = $this->parseImages();
     }
 
     private function parseImages(): array

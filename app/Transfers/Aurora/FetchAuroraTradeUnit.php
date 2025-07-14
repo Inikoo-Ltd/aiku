@@ -73,40 +73,39 @@ class FetchAuroraTradeUnit extends FetchAurora
         }
 
 
-        // we trust only organisation 2 for barcodes (SK)
-        if ($this->organisation->id == 2) {
-            $barcodes = [];
+        $barcodes = [];
 
 
-            $auroraBarcodes = DB::connection('aurora')
-                ->table('Barcode Asset Bridge')
-                ->where('Barcode Asset Type', 'Part')
-                ->where('Barcode Asset Key', $this->auroraModelData->{'Part SKU'})
-                ->get();
+        $auroraBarcodes = DB::connection('aurora')
+            ->table('Barcode Asset Bridge')
+            ->where('Barcode Asset Type', 'Part')
+            ->where('Barcode Asset Key', $this->auroraModelData->{'Part SKU'})
+            ->get();
 
-            foreach ($auroraBarcodes as $auroraBarcode) {
-                $barcode = $this->parseBarcode($this->organisation->id.':'.$auroraBarcode->{'Barcode Asset Barcode Key'});
+        foreach ($auroraBarcodes as $auroraBarcode) {
+            $barcode = $this->parseBarcode($this->organisation->id.':'.$auroraBarcode->{'Barcode Asset Barcode Key'});
 
-                if (!$barcode) {
-                    continue;
-                }
-
-
-                $barcodeData = [
-                    'type'         => 'ean',
-                    'status'       => $auroraBarcode->{'Barcode Asset Status'} === 'Assigned',
-                    'withdrawn_at' => $this->parseDatetime($auroraBarcode->{'Barcode Asset Withdrawn Date'})
-                ];
-                $createdAt   = $this->parseDatetime($auroraBarcode->{'Barcode Asset Assigned Date'});
-
-                if ($createdAt) {
-                    $barcodeData['created_at'] = $createdAt;
-                }
-
-                $barcodes[$barcode->id] = $barcodeData;
+            if (!$barcode) {
+                continue;
             }
-            $this->parsedData['barcodes'] = $barcodes;
+
+
+            $barcodeData = [
+                'type'         => 'ean',
+                'status'       => $auroraBarcode->{'Barcode Asset Status'} === 'Assigned',
+                'withdrawn_at' => $this->parseDatetime($auroraBarcode->{'Barcode Asset Withdrawn Date'})
+            ];
+            $createdAt   = $this->parseDatetime($auroraBarcode->{'Barcode Asset Assigned Date'});
+
+            if ($createdAt) {
+                $barcodeData['created_at'] = $createdAt;
+            }
+
+            $barcodes[$barcode->id] = $barcodeData;
         }
+        $this->parsedData['barcodes'] = $barcodes;
+
+
     }
 
 

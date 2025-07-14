@@ -51,10 +51,10 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
 
 const isMobile = ref(false)
 
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
 onMounted(() => {
-  const checkMobile = () => {
-    isMobile.value = window.innerWidth < 768
-  }
 
   checkMobile()
   window.addEventListener('resize', checkMobile)
@@ -67,13 +67,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div>
+    <div class="">
         <button @click="isOpenMenuMobile = true">
             <FontAwesomeIcon :icon="header?.mobile?.menu?.icon || faBars"
-                :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),...getStyles(header?.mobile?.menu?.container?.properties)}" />
+                :style="{
+                    ...getStyles(header?.mobile?.menu?.container?.properties)}"
+                />
         </button>
 
-        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :showCloseIcon="false"
+        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :showCloseIcon="true"
             :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),margin : 0, padding : 0,...getStyles(props.menu?.container?.properties)}">
        
 

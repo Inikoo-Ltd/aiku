@@ -31,7 +31,7 @@ class IndexRedirects extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('redirects.url', $value)
-                    ->orWhereStartWith('webpages.title', $value);
+                    ->orWhereStartWith('webpages.to_webpage_title', $value);
             });
         });
 
@@ -47,19 +47,26 @@ class IndexRedirects extends OrgAction
         }
 
         $queryBuilder->leftjoin('webpages', 'redirects.to_webpage_id', '=', 'webpages.id');
+        $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
 
         $queryBuilder
             ->defaultSort('redirects.id')
             ->select([
                 'redirects.id',
                 'redirects.type',
-                'redirects.url',
-                'redirects.path',
-                'webpages.title as webpage_title',
+                'redirects.from_url as url',
+                'redirects.from_path as path',
+                'webpages.title as to_webpage_title',
+                'webpages.slug as to_webpage_slug',
+                'webpages.url as to_webpage_url',
+                'webpages.code as to_webpage_code',
+                'webpages.slug as to_webpage_slug',
+                'websites.domain as to_website_domain',
+                'websites.slug as to_website_slug',
             ]);
 
         return $queryBuilder
-            ->allowedSorts(['url', 'type', 'path', 'webpage_title'])
+            ->allowedSorts(['url', 'type', 'to_webpage_url'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -86,14 +93,15 @@ class IndexRedirects extends OrgAction
                         default => null
                     }
                 );
-            if ($parent instanceof Website) {
-                $table
-                ->column(key: 'webpage_title', label: __('Webpage'), canBeHidden: false, sortable: true, searchable: true);
-            }
+
             $table
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('URL'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'path', label: __('Path'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'url', label: __('From URL'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($parent instanceof Website) {
+                $table
+                    ->column(key: 'to_webpage_url', label: __('To Webpage'), canBeHidden: false, sortable: true, searchable: true);
+            }
         };
     }
 

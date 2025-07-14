@@ -15,11 +15,14 @@ use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedEbayAddress;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Address;
+use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -34,70 +37,89 @@ class StoreOrderFromEbay extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(EbayUser $ebayUser, array $modelData): void
+    public function handle(EbayUser $ebayUser, array $ebayOrderData): void
     {
-        $deliveryAttributes = $this->getAttributes(Arr::get($modelData, 'fulfillmentStartInstructions.0.shippingStep.shipTo'));
-        $deliveryAddress = Arr::get($deliveryAttributes, 'address');
+        $modelData = $this->digestEbayOrderData($ebayUser, $ebayOrderData);
 
-        $billingAddress = $ebayUser->customer->address->getFields();
 
-        $customerEmail = Arr::get($deliveryAttributes, 'email');
-        $customerClient = $ebayUser->customer?->clients()->where('email', $customerEmail)->first();
+        $order = StoreOrder::make()->action($ebayUser->customer, [
+            'customer_reference'        => Arr::get($ebayOrderData, 'orderId'),
+            'customer_client_id'        => $modelData['customer_client_id'],
+            'platform_id'               => $ebayUser->platform_id,
+            'customer_sales_channel_id' => $ebayUser->customer_sales_channel_id,
+            'delivery_address'          => $modelData['delivery_address'],
+            'billing_address'           => $modelData['billing_address'],
+            'platform_order_id'         => Arr::get($ebayOrderData, 'orderId'),
+            'data'                      => [
+                'ebay_order' => $ebayOrderData
+            ]
+        ], false);
 
-        $ebayProducts = collect($modelData['line_items']);
+        foreach ($modelData['ordered_products'] as $orderedProduct) {
+            StoreTransaction::make()->action(
+                order: $order,
+                historicAsset: $orderedProduct['historicAsset'],
+                modelData: [
+                    'quantity_ordered'        => $orderedProduct['quantity_ordered'],
+                    'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
 
+                ]
+            );
+        }
+
+        try {
+            PayOrderAsync::run($order);
+        } catch (Exception $e) {
+            Sentry::captureException($e);
+        }
+        SubmitOrder::run($order);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function digestEbayOrderData(EbayUser $ebayUser, array $ebayOrderData): array
+    {
+        $deliveryAttributes = $this->getContactAttributes(Arr::get($ebayOrderData, 'fulfillmentStartInstructions.0.shippingStep.shipTo'));
+        $deliveryAddress    = Arr::get($deliveryAttributes, 'address');
+        $billingAddress     = $ebayUser->customer->address->getFields();
+
+        $customerEmail  = Arr::get($deliveryAttributes, 'email');
+        $customerClient = $ebayUser->customer->clients()->where('email', $customerEmail)->first();
         if (!$customerClient) {
             $customerClient = StoreCustomerClient::make()->action($ebayUser->customerSalesChannel, $deliveryAttributes);
         }
 
-        $ebayUserHasProductExists = $ebayUser->customerSalesChannel->portfolios()
-            ->whereIn('platform_product_id', $ebayProducts->pluck('legacyItemId'))->exists();
 
-        if ($ebayUserHasProductExists) {
-            $order = StoreOrder::make()->action($ebayUser->customer, [
-                'customer_client_id' => $customerClient->id,
-                'platform_id' => $ebayUser->platform_id,
-                'customer_sales_channel_id' => $ebayUser->customer_sales_channel_id,
-                'date' => $modelData['date_created'],
-                'delivery_address' => new Address($deliveryAddress),
-                'billing_address' => new Address($billingAddress),
-                'data' => $modelData
-            ], false);
 
-            foreach ($ebayProducts as $ebayProduct) {
-                /** @var Portfolio $ebayUserHasProduct */
-                $ebayUserHasProduct = $ebayUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $ebayProduct['legacyItemId'])->first(); //legacyItemId is listing id which we can get from publishing offer
 
-                if ($ebayUserHasProduct) {
-                    /** @var \App\Models\Catalogue\Product $product */
-                    $product = $ebayUserHasProduct->item;
-                    if (!$product) {
-                        \Sentry\captureMessage('WooCommerceUserHasProduct ' . $ebayUserHasProduct->id . ' does not have a product');
-                        continue;
-                    }
+        $orderedProducts = [];
 
-                    /** @var \App\Models\Catalogue\HistoricAsset $historicAsset */
-                    $historicAsset = $ebayUserHasProduct->item->asset?->historicAsset;
-                    if (!$historicAsset) {
-                        \Sentry\captureMessage('WooCommerceUserHasProduct ' . $ebayUserHasProduct->id . ' does not have a historic asset');
-                        continue;
-                    }
 
-                    StoreTransaction::make()->action(
-                        order: $order,
-                        historicAsset: $historicAsset,
-                        modelData: [
-                            'quantity_ordered' => $ebayProduct['quantity'],
-                            'data' => $ebayProduct
-                        ]
-                    );
+        foreach (Arr::get($ebayOrderData, 'lineItems', []) as $lineItem) {
+
+
+            $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
+                ->where('platform_product_id', $lineItem['legacyItemId'])->first();
+            if ($portfolioData && $portfolioData->item_id) {
+                $product = Product::find($portfolioData->item_id);
+                if ($product) {
+                    $orderedProducts[] = [
+                        'historicAsset'           => $product->currentHistoricProduct,
+                        'quantity_ordered'        => $lineItem['quantity'],
+                        'platform_transaction_id' => $lineItem['lineItemId']
+                    ];
                 }
             }
-
-            SubmitOrder::run($order);
-        } else {
-            Sentry::captureMessage('Some products dont exist');
         }
+
+
+        return [
+            'delivery_address'   => new Address($deliveryAddress),
+            'billing_address'    => new Address($billingAddress),
+            'customer_client_id' => $customerClient->id,
+            'ordered_products'   => $orderedProducts
+        ];
     }
+
 }

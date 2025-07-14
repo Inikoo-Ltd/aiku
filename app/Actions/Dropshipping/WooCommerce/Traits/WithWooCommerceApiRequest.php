@@ -53,9 +53,9 @@ trait WithWooCommerceApiRequest
      */
     protected function initWooCommerceApi(): void
     {
-        $this->woocommerceApiUrl = Arr::get($this->settings, 'credentials.store_url');
-        $this->woocommerceConsumerKey = Arr::get($this->settings, 'credentials.consumer_key');
-        $this->woocommerceConsumerSecret = Arr::get($this->settings, 'credentials.consumer_secret');
+        $this->woocommerceApiUrl = Arr::get($this->settings, 'credentials.store_url', '');
+        $this->woocommerceConsumerKey = Arr::get($this->settings, 'credentials.consumer_key', '');
+        $this->woocommerceConsumerSecret = Arr::get($this->settings, 'credentials.consumer_secret', '');
     }
 
     /**
@@ -128,7 +128,7 @@ trait WithWooCommerceApiRequest
                     'response' => $response->body(),
                 ]);
 
-                return null;
+                return [];
             }
         } catch (ConnectionException $e) {
             Log::error('WooCommerce API Connection Error', [
@@ -137,7 +137,7 @@ trait WithWooCommerceApiRequest
                 'error' => $e->getMessage()
             ]);
 
-            return null;
+            return [];
         }
     }
 

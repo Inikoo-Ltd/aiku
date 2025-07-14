@@ -41,7 +41,7 @@ class IndexSpaces extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartsWith('spaces.reference', $value);
+                $query->whereStartWith('spaces.reference', $value);
             });
         });
 

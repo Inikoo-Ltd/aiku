@@ -15,6 +15,8 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Helpers\NaturalLanguage;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 
 trait IsOrder
 {
@@ -35,14 +37,76 @@ trait IsOrder
                 'status'    => $order->customer_sales_channel_id,
                 'platform'  => [
                     'name' => $order->platform?->name,
-                    'image' => $this->getPlatformLogo($order->customerSalesChannel)
+                    'image' => $this->getPlatformLogo($order->customerSalesChannel->platform->code)
                 ]
             ];
         }
 
+        $invoiceData = null;
+        $invoice = $order->invoices->first();
+
+        if ($invoice) {
+            if (request()->routeIs('retina.*')) {
+                $routeShow = [
+                    'name'       => 'retina.dropshipping.invoices.show',
+                    'parameters' => [
+                        'invoice' => $invoice->slug,
+                    ]
+                ];
+                $routeDownload = null;
+            } else {
+                $routeShow = [
+                    'name'       => 'grp.org.accounting.invoices.show',
+                    'parameters' => [
+                        'organisation'  => $order->organisation->slug,
+                        'invoice'       => $invoice->slug,
+                    ]
+                ];
+
+                $routeDownload = [
+                    'name'       => 'grp.org.accounting.invoices.download',
+                    'parameters' => [
+                        'organisation'  => $order->organisation->slug,
+                        'invoice'      => $invoice->slug,
+                    ]
+                ];
+            }
+
+            $invoiceData = [
+                'reference' => $invoice->reference,
+                'routes' => [
+                    'show'     => $routeShow,
+                    'download' => $routeDownload || null,
+                ]
+            ];
+        }
+
+        $customerClientData = null;
+
+        if ($order->customerClient) {
+            $customerClientData = array_merge(
+                CustomerClientResource::make($order->customerClient)->getArray(),
+                [
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
+                        'parameters' => [
+                            'organisation'  => $order->organisation->slug,
+                            'shop'          => $order->shop->slug,
+                            'customer'      => $order->customer->slug,
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'customerClient'  => $order->customerClient->ulid
+                        ]
+                    ]
+                ]
+            );
+        }
+        $deliveryNote =  $order->deliveryNotes->first();
+        $shipments = $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
+
         return [
+            'customer_client' => $customerClientData,
             'customer' => array_merge(
-                $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : CustomerResource::make($order->customer)->getArray(),
+                CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
                         'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
@@ -58,8 +122,13 @@ trait IsOrder
                     ]
                 ]
             ),
-            'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
+            // 'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
             'customer_channel' => $customerChannel,
+            'invoice'  => $invoiceData,
+            'order_properties' => [
+                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
+                'shipments' => $shipments,
+            ],
             'products' => [
                 'payment'          => [
                     'routes'       => [
@@ -80,8 +149,9 @@ trait IsOrder
                     'total_amount' => (float)$order->total_amount,
                     'paid_amount'  => (float)$order->payment_amount,
                     'pay_amount'   => $roundedDiff,
+                    'pay_status' => $order->pay_status,
                 ],
-                'estimated_weight' => $estWeight
+                'estimated_weight' => $estWeight,
             ],
 
             'order_summary' => [

@@ -38,7 +38,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-        $topUpAmount= intval($topUpPaymentApiPoint->amount * 100);
+        $topUpAmount = intval($topUpPaymentApiPoint->amount * 100);
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
         $paymentSessionRequest->amount    = $topUpAmount;
@@ -53,6 +53,9 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($topUpPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($topUpPaymentApiPoint);
 
+        $paymentSessionRequest->disabled_payment_methods = [
+            'applepay',
+        ];
 
 
         $paymentSessionRequest = $this->setBillingInformation(

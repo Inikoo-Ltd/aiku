@@ -8,9 +8,11 @@
 
 namespace App\Models\Goods;
 
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
@@ -61,23 +63,67 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
- * @property string $status
- * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
+ * @property TradeUnitStatusEnum $status
+ * @property string|null $anomality_status
+ * @property string|null $un_number
+ * @property string|null $un_class
+ * @property string|null $packing_group
+ * @property string|null $proper_shipping_name
+ * @property string|null $hazard_identification_number
+ * @property string|null $gpsr_manufacturer
+ * @property string|null $gpsr_eu_responsible
+ * @property string|null $gpsr_warnings
+ * @property string|null $gpsr_manual
+ * @property string|null $gpsr_class_category_danger
+ * @property string|null $gpsr_class_languages
+ * @property bool $pictogram_toxic
+ * @property bool $pictogram_corrosive
+ * @property bool $pictogram_explosive
+ * @property bool $pictogram_flammable
+ * @property bool $pictogram_gas
+ * @property bool $pictogram_environment
+ * @property bool $pictogram_health
+ * @property bool $pictogram_oxidising
+ * @property bool $pictogram_danger
+ * @property int|null $front_image_id
+ * @property int|null $34_image_id
+ * @property int|null $left_image_id
+ * @property int|null $right_image_id
+ * @property int|null $back_image_id
+ * @property int|null $top_image_id
+ * @property int|null $bottom_image_id
+ * @property int|null $size_comparison_image_id
+ * @property string|null $video_url
+ * @property string|null $cpnp_number
+ * @property string|null $country_of_origin
+ * @property string|null $tariff_code
+ * @property string|null $duty_rate
+ * @property string|null $hts_us
+ * @property string|null $marketing_ingredients
+ * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Media|null $backImage
  * @property-read Collection<int, Barcode> $barcodes
+ * @property-read Media|null $bottomImage
  * @property-read Collection<int, Brand> $brands
+ * @property-read Media|null $frontImage
  * @property-read Group $group
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients
- * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read Media|null $leftImage
+ * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read Collection<int, Product> $products
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $rightImage
+ * @property-read Media|null $seoImage
+ * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Goods\TradeUnitStats|null $stats
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, Tag> $tags
+ * @property-read Media|null $threeQuarterImage
+ * @property-read Media|null $topImage
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()
@@ -98,17 +144,18 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
 
     protected $casts = [
-        'data'                => 'array',
+        'status'               => TradeUnitStatusEnum::class,
+        'data'                 => 'array',
         'marketing_dimensions' => 'array',
-        'sources'             => 'array',
-        'fetched_at'          => 'datetime',
-        'last_fetched_at'     => 'datetime',
+        'sources'              => 'array',
+        'fetched_at'           => 'datetime',
+        'last_fetched_at'      => 'datetime',
     ];
 
     protected $attributes = [
-        'data'                => '{}',
+        'data'                 => '{}',
         'marketing_dimensions' => '{}',
-        'sources'             => '{}',
+        'sources'              => '{}',
     ];
 
     protected $guarded = [];
@@ -177,7 +224,9 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function brand(): ?Brand
     {
-        return $this->brands()->first();
+        /** @var Brand $brand */
+        $brand = $this->brands()->first();
+        return $brand;
     }
 
     public function tags(): MorphToMany
@@ -215,6 +264,45 @@ class TradeUnit extends Model implements HasMedia, Auditable
         return $this->hasOne(TradeUnitStats::class);
     }
 
+    public function frontImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'front_image_id');
+    }
+
+    public function threeQuarterImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', '34_image_id');
+    }
+
+    public function leftImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'left_image_id');
+    }
+
+    public function rightImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'right_image_id');
+    }
+
+    public function backImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'back_image_id');
+    }
+
+    public function topImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'top_image_id');
+    }
+
+    public function bottomImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'top_image_id');
+    }
+
+    public function sizeComparisonImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'size_comparison_image_id');
+    }
 
 
 }

@@ -93,6 +93,13 @@ onMounted(() => {
       showButton.value = true
     }
   })
+
+  if(props.templateEdit != 'webpage') {
+    console.log('asdasd')
+    layout.iris = {
+        is_logged_in : true
+    }
+  }
 })
 
 const toggleExpanded = () => {
@@ -151,7 +158,7 @@ const toggleExpanded = () => {
                     </div>
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
-                        <template v-if="layout.iris?.is_logged_in">
+                        <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
                             <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
@@ -188,7 +195,7 @@ const toggleExpanded = () => {
                 </div>
                 <div class="space-y-1">
                     <!-- Description Title -->
-                    <div class="text-sm font-medium text-gray-800">
+                    <div class="text-sm font-medium text-gray-800" :style="getStyles(modelValue?.description?.description_title, screenType)">
                         <input v-if="templateEdit === 'webpage'" placeholder="Description title"
                             v-model="modelValue.product.description_title"
                             @update:model-value="(e) => onDescriptionUpdate('description_title', e)"
@@ -197,7 +204,7 @@ const toggleExpanded = () => {
                     </div>
 
                     <!-- Description Body -->
-                    <div class="text-xs font-normal text-gray-700">
+                    <div class="text-xs font-normal text-gray-700" :style="getStyles(modelValue?.description?.description_content, screenType)">
                         <EditorV2 v-if="templateEdit === 'webpage'" v-model="modelValue.product.description"
                             placeholder="Write product description..."
                             @update:model-value="(e) => onDescriptionUpdate('description', e)"
@@ -209,9 +216,9 @@ const toggleExpanded = () => {
 
                 <div v-if="modelValue.setting?.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="modelValue?.information?.length > 0"
-                        :informations="modelValue?.information" />
+                        :informations="modelValue?.information"  :styleData="modelValue.information_style"/>
                     <div v-if="modelValue?.paymentData?.length > 0"
-                        class="items-center gap-3 border-gray-400 font-bold text-gray-800 py-2">
+                        class="items-center gap-3 border-gray-400 font-bold text-gray-800 py-2" :style="getStyles(modelValue?.information_style?.title)">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
@@ -222,7 +229,7 @@ const toggleExpanded = () => {
             </div>
         </div>
 
-        <div class="text-xs font-normal text-gray-700 py-2">
+        <div class="text-xs font-normal text-gray-700 py-2" :style="getStyles(modelValue?.description?.description_extra, screenType)">
             <EditorV2 v-if="templateEdit === 'webpage'" v-model="modelValue.product.description_extra"
                 placeholder="Write product description extra ..."
                 @update:model-value="(e) => onDescriptionUpdate('description_extra', e)" class="text-xs text-gray-800" />
@@ -235,8 +242,8 @@ const toggleExpanded = () => {
         </div>
 
 
-        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product"
-            :setting="modelValue.setting" />
+        <ProductContents :product="props.modelValue.product" :styleData="modelValue.information_style"
+            :setting="modelValue.setting" :templateEdit="templateEdit"/>
     </div>
 
     <!-- Mobile Layout -->
@@ -284,9 +291,9 @@ const toggleExpanded = () => {
             <EditorV2 v-model="modelValue.product.description" @update:model-value="(e) => onDescriptionUpdate(e)" />
         </div>
         <div class="mt-4">
-               <InformationSideProduct v-if="modelValue?.information?.length > 0" :informations="modelValue?.information" />
-            <div class="text-sm font-semibold mb-2">Secure Payments:</div>
-            <div class="flex flex-wrap gap-4">
+               <InformationSideProduct v-if="modelValue?.information?.length > 0" :informations="modelValue?.information" :styleData="modelValue.information_style"  />
+            <div v-if="modelValue?.paymentData?.length > 0" class="text-sm font-semibold mb-2">Secure Payments:</div>
+            <div v-if="modelValue?.paymentData?.length > 0" class="flex flex-wrap gap-4">
                 <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />
             </div>
@@ -300,8 +307,8 @@ const toggleExpanded = () => {
             <div v-else class="prose prose-sm text-gray-700 max-w-none" v-html="modelValue.product.description_extra"></div>
         </div>
 
-        <ProductContents v-if="templateEdit == 'webpage'" :product="props.modelValue.product"
-            :setting="modelValue.setting" />
+        <ProductContents :product="props.modelValue.product" :styleData="modelValue.information_style"
+            :setting="modelValue.setting" :templateEdit="templateEdit"/>
     </div>
 
 </template>

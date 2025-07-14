@@ -26,7 +26,7 @@ class GetClientGoogleDrive
      */
     public function handle(Organisation $organisation): Google_Service_Drive
     {
-        $tokenPath = $this->getTokenPath();
+        $tokenPath = $this->getTokenPath($organisation);
 
         $client = $this->getClient($organisation, $tokenPath);
 
@@ -58,6 +58,8 @@ class GetClientGoogleDrive
         if (file_exists($tokenPath)) {
             $accessToken = json_decode(file_get_contents($tokenPath), true);
             $client->setAccessToken($accessToken);
+        } else {
+            $client->setAccessToken(Arr::get($organisation->settings, 'google.token'));
         }
 
         return $client;

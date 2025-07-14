@@ -17,6 +17,7 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\BasketTabsEnum;
+use App\Helpers\NaturalLanguage;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -168,9 +169,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                                 ]
                             ],
                             'download' => [
-                                'name'       => 'retina.dropshipping.orders.upload_templates',
+                                'name'       => 'retina.dropshipping.order_upload_templates',
                                 'parameters' => [
-                                    'order' => $order->slug
                                 ]
                             ],
                         ],
@@ -240,7 +240,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'status'   => $order->customer_sales_channel_id,
                 'platform' => [
                     'name'  => $customerChannel->platform->name,
-                    'image' => $this->getPlatformLogo($customerChannel)
+                    'image' => $this->getPlatformLogo($customerChannel->platform->code),
                 ]
             ],
             'products'         => [
@@ -250,6 +250,9 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'pay_amount'   => $roundedDiff,
                 ],
                 'estimated_weight' => $estWeight
+            ],
+            'order_properties' => [
+                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
 
 

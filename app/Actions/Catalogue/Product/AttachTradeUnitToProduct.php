@@ -10,6 +10,8 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
 use App\Models\Catalogue\Product;
@@ -29,6 +31,8 @@ class AttachTradeUnitToProduct
 
         ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
         ProductHydrateBarcodeFromTradeUnit::dispatch($product);
+        ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
+        ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
 
         if ($product->exclusive_for_customer_id) {
             TradeUnitsHydrateCustomerExclusiveProducts::dispatch($tradeUnit);

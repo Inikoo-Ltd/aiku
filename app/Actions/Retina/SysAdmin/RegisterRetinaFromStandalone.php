@@ -13,7 +13,6 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\IrisAction;
 use Lorisleiva\Actions\ActionRequest;
 use Inertia\Inertia;
-use Symfony\Component\HttpFoundation\Response;
 
 class RegisterRetinaFromStandalone extends IrisAction
 {
@@ -28,11 +27,11 @@ class RegisterRetinaFromStandalone extends IrisAction
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): Response
+    public function asController(ActionRequest $request): void
     {
         $this->initialisation($request);
         $this->handle($this->validatedData);
 
-        return Inertia::location(route('retina.dashboard.show'));
+        // return Inertia::location(route('retina.dashboard.show'));  // Redirect in Frontend due GTM need to track it
     }
 }

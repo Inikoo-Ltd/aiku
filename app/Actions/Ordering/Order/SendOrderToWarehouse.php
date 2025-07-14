@@ -64,12 +64,15 @@ class SendOrderToWarehouse extends OrgAction
 
 
         $deliveryNoteData = [
-            'delivery_address' => $order->deliveryAddress,
-            'date'             => $date,
-            'reference'        => $order->reference,
-            'state'            => DeliveryNoteStateEnum::UNASSIGNED,
-            'submitted_at'     => now(),
-            'warehouse_id'     => $warehouseId
+            'delivery_address'          => $order->deliveryAddress,
+            'date'                      => $date,
+            'reference'                 => $order->reference,
+            'state'                     => DeliveryNoteStateEnum::UNASSIGNED,
+            'submitted_at'              => now(),
+            'warehouse_id'              => $warehouseId,
+            'customer_client_id'        => $order->customer_client_id,
+            'customer_sales_channel_id' => $order->customer_sales_channel_id,
+            'platform_id'               => $order->platform_id,
         ];
 
         $deliveryNote = StoreDeliveryNote::make()->action($order, $deliveryNoteData);

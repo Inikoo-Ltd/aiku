@@ -17,8 +17,8 @@ enum CustomersTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DASHBOARD = 'dashboard';
     case CUSTOMERS = 'customers';
+    case DASHBOARD = 'dashboard';
 
     public function blueprint(): array
     {

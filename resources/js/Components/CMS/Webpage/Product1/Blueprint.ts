@@ -53,6 +53,48 @@ export default {
 				},
 			},
 		},
+		{
+			name: "Information & Faq Style",
+			key: ["information_style"],
+			replaceForm: [
+				{
+					key: ["title","text"],
+					type: "textProperty",
+					label: "Title",
+					props_data: {},
+				},
+				{
+					key: ["content","text"],
+					type: "textProperty",
+					label: "content",
+					props_data: {},
+				},
+			],
+		},
+		{
+			name: "Description",
+			key: ["description"],
+			replaceForm: [
+				{
+					key: ["description_title","text"],
+					type: "textProperty",
+					label: "Description Title",
+					props_data: {},
+				},
+				{
+					key: ["description_content","text"],
+					type: "textProperty",
+					label: "Description Content",
+					props_data: {},
+				},
+				{
+					key: ["description_extra","text"],
+					type: "textProperty",
+					label: "Description Extra",
+					props_data: {},
+				},
+			],
+		},
 		/* {
 			name: "Layout",
 			key: ["container", "properties"],

@@ -77,14 +77,18 @@ trait WithSendBulkEmails
             'customer-url' => Arr::get($additionalData, 'customer_url'),
             'customer-register-date' => Arr::get($additionalData, 'customer_register_date'),
 
+            'order-link' => Arr::get($additionalData, 'order_link'),
+            'order-reference' => Arr::get($additionalData, 'order_reference'),
             'invoice-reference' => Arr::get($additionalData, 'invoice_reference'),
             'invoice-link' => Arr::get($additionalData, 'invoice_link'),
             'customer-link' => Arr::get($additionalData, 'customer_link'),
             'pallet-reference' => Arr::get($additionalData, 'pallet_reference'),
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
-            'deletion-date' => Arr::get($additionalData, 'date'),
-            'delivered-date' => Arr::get($additionalData, 'date'),
-            'returned-date' => Arr::get($additionalData, 'date'),
+            'deletion-date',
+            'delivered-date',
+            'returned-date',
+            'order-date' => Arr::get($additionalData, 'date'),
+            'tracking-url' => Arr::get($additionalData, 'tracking_url'),
             default => $originalPlaceholder,
         };
     }

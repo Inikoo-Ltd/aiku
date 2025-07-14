@@ -8,14 +8,15 @@
 
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
+use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
-use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
+use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -39,7 +40,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
     public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): array
     {
         $paymentAccountShopID = Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout');
-        $paymentAccountShop = PaymentAccountShop::find($paymentAccountShopID);
+        $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
 
         $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
@@ -62,7 +63,6 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
 
         $order = DB::transaction(function () use ($orderPaymentApiPoint, $paymentAccountShop, $paymentData) {
-
             $payment = StorePayment::make()->action($orderPaymentApiPoint->order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             $order = $orderPaymentApiPoint->order;
@@ -71,15 +71,25 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
                 'amount' => $payment->amount
             ]);
 
-            $order = UpdateOrder::make()->action(order: $order, modelData:[
-                'payment_amount' => $payment->amount
-            ], strict: false);
 
             if ($order->total_amount > $order->payment_amount && $order->customer->balance > 0) {
                 SettleRetinaOrderWithBalance::run($order);
             }
 
+            UpdateOrderPaymentApiPoint::run(
+                $orderPaymentApiPoint,
+                [
+                    'state'        => OrderPaymentApiPointStateEnum::SUCCESS,
+                    'processed_at' => now(),
+                    'data'         => [
+                        'payment_id' => $payment->id,
+                    ]
+                ]
+            );
+
+
             $order->refresh();
+
             return SubmitOrder::run($order);
         });
 
@@ -88,8 +98,6 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
             'reason'  => 'Order paid successfully',
             'order'   => $order,
         ];
-
-
     }
 
     public function rules(): array
@@ -101,9 +109,13 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
         ];
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(OrderPaymentApiPoint $orderPaymentApiPoint, ActionRequest $request): array
     {
         $this->initialisation($request);
+
         return $this->handle($orderPaymentApiPoint, $this->validatedData);
     }
 

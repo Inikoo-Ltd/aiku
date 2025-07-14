@@ -8,24 +8,47 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Ordering\Order\InvoiceOrderFromDeliveryNoteFinalisation;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        data_set($modelData, 'finalised_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
+        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
+            data_set($modelData, 'finalised_at', now());
+            data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
 
-        return $this->update($deliveryNote, $modelData);
+
+            $deliveryNote->refresh();
+            foreach ($deliveryNote->orders as $order) {
+                InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
+            }
+
+            return $this->update($deliveryNote, $modelData);
+
+        });
+
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
+
+        return $deliveryNote;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
@@ -33,6 +56,9 @@ class FinaliseDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);

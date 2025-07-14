@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -89,7 +90,6 @@ class StoreInvoice extends OrgAction
         }
 
 
-
         if (!Arr::exists($modelData, 'tax_category_id')) {
             $modelData = $this->processTaxCategory($modelData, $parent);
         }
@@ -122,7 +122,6 @@ class StoreInvoice extends OrgAction
                 'billing',
                 'address_id'
             );
-
 
 
             $invoice->updateQuietly(
@@ -169,6 +168,9 @@ class StoreInvoice extends OrgAction
 
 
         $this->runInvoiceHydrators($invoice);
+        if ($invoice->shop->type == 'fulfilment') {
+            SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
+        }
 
         return $invoice;
     }
@@ -203,7 +205,7 @@ class StoreInvoice extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference'                 => [
                 'sometimes',
                 'required',
                 'max:64',
@@ -215,22 +217,33 @@ class StoreInvoice extends OrgAction
                     ]
                 ),
             ],
-            'currency_id'     => ['required', 'exists:currencies,id'],
-            'type'            => ['required', Rule::enum(InvoiceTypeEnum::class)],
-            'net_amount'      => ['required', 'numeric'],
-            'total_amount'    => ['required', 'numeric'],
-            'gross_amount'    => ['required', 'numeric'],
-            'rental_amount'   => ['sometimes', 'required', 'numeric'],
-            'goods_amount'    => ['sometimes', 'required', 'numeric'],
-            'services_amount' => ['sometimes', 'required', 'numeric'],
-            'tax_amount'      => ['required', 'numeric'],
-            'footer'          => ['sometimes', 'string'],
-            'in_process'      => ['sometimes', 'boolean'],
-
-            'date'             => ['sometimes', 'date'],
-            'tax_liability_at' => ['sometimes', 'date'],
-            'data'             => ['sometimes', 'array'],
-
+            'currency_id'               => ['required', 'exists:currencies,id'],
+            'type'                      => ['required', Rule::enum(InvoiceTypeEnum::class)],
+            'net_amount'                => ['required', 'numeric'],
+            'total_amount'              => ['required', 'numeric'],
+            'gross_amount'              => ['required', 'numeric'],
+            'rental_amount'             => ['sometimes', 'required', 'numeric'],
+            'goods_amount'              => ['sometimes', 'required', 'numeric'],
+            'insurance_amount'          => ['sometimes', 'required', 'numeric'],
+            'shipping_amount'           => ['sometimes', 'required', 'numeric'],
+            'services_amount'           => ['sometimes', 'required', 'numeric'],
+            'charges_amount'            => ['sometimes', 'required', 'numeric'],
+            'tax_amount'                => ['required', 'numeric'],
+            'footer'                    => ['sometimes', 'string'],
+            'in_process'                => ['sometimes', 'boolean'],
+            'date'                      => ['sometimes', 'date'],
+            'tax_liability_at'          => ['sometimes', 'date'],
+            'data'                      => ['sometimes', 'array'],
+            'customer_sales_channel_id' => [
+                'sometimes',
+                'nullable',
+                'exists:customer_sales_channels,id',
+            ],
+            'platform_id' => [
+                'sometimes',
+                'nullable',
+                'exists:platforms,id',
+            ],
 
             'sales_channel_id' => [
                 'sometimes',
@@ -260,7 +273,6 @@ class StoreInvoice extends OrgAction
             $rules['tax_number_valid']         = ['sometimes', 'nullable', 'boolean'];
             $rules['identity_document_type']   = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
-
 
             $rules['invoice_category_id'] = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
             $rules['tax_category_id']     = ['sometimes', 'required', 'exists:tax_categories,id'];

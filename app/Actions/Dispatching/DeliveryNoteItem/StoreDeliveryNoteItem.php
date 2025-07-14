@@ -15,6 +15,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -41,6 +42,10 @@ class StoreDeliveryNoteItem extends OrgAction
                 data_set($modelData, 'stock_id', $orgStock->stock_id);
                 data_set($modelData, 'stock_family_id', $orgStock->stock->stock_family_id);
             }
+
+            $weight = (int)(Arr::get($modelData, 'quantity_required', 0) * $orgStock->stock->gross_weight);
+
+            data_set($modelData, 'estimated_required_weight', $weight);
         }
 
         /** @var DeliveryNoteItem $deliveryNoteItem */

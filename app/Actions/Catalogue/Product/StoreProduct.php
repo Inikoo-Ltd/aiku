@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
+use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -26,7 +27,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -41,6 +41,7 @@ class StoreProduct extends OrgAction
 {
     use WithProductHydrators;
     use WithNoStrictRules;
+    use WithProductOrgStocks;
 
     private AssetStateEnum|null $state = null;
 
@@ -49,17 +50,13 @@ class StoreProduct extends OrgAction
      */
     public function handle(Shop|ProductCategory $parent, array $modelData): Product
     {
+        if (!Arr::has($modelData, 'unit_price')) {
+            data_set($modelData, 'unit_price', Arr::get($modelData, 'price') / Arr::get($modelData, 'units', 1));
+        }
+
         $orgStocks = Arr::pull($modelData, 'org_stocks', []);
 
 
-        if (count($orgStocks) == 1) {
-            $units = $orgStocks[array_key_first($orgStocks)]['quantity'];
-        } else {
-            $units = 1;
-        }
-
-
-        data_set($modelData, 'units', $units);
         data_set($modelData, 'unit_relationship_type', $this->getUnitRelationshipType($orgStocks));
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'group_id', $parent->group_id);
@@ -102,7 +99,8 @@ class StoreProduct extends OrgAction
 
             $product = $this->createAsset($product);
 
-            return $this->associateOrgStocks($product, $orgStocks);
+            $product = $this->syncOrgStocks($product, $orgStocks);
+            return $this->associateTradeUnits($product);
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
@@ -118,29 +116,6 @@ class StoreProduct extends OrgAction
     }
 
 
-    private function associateOrgStocks(Product $product, array $orgStocks): Product
-    {
-        $product->orgStocks()->sync($orgStocks);
-
-        $tradeUnits = [];
-        foreach ($product->orgStocks as $orgStock) {
-            foreach ($orgStock->tradeUnits as $tradeUnit) {
-                $tradeUnits[$tradeUnit->id] = [
-                    'quantity' => $orgStock->pivot->quantity * $tradeUnit->pivot->quantity,
-                ];
-            }
-        }
-
-        foreach ($tradeUnits as $tradeUnitId => $tradeUnitData) {
-            $tradeUnit = TradeUnit::find($tradeUnitId);
-            AttachTradeUnitToProduct::run($product, $tradeUnit, [
-                'quantity' => $tradeUnitData['quantity'],
-                'notes'    => Arr::get($tradeUnitData, 'notes'),
-            ]);
-        }
-
-        return $product;
-    }
 
     private function createAsset(Product $product): Product
     {
@@ -231,12 +206,14 @@ class StoreProduct extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
             'price'                     => ['required', 'numeric', 'min:0'],
+            'unit_price'                => ['sometimes', 'numeric', 'min:0'],
             'unit'                      => ['sometimes', 'required', 'string'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'data'                      => ['sometimes', 'array'],
             'settings'                  => ['sometimes', 'array'],
             'is_main'                   => ['required', 'boolean'],
+            'units'                     => ['sometimes', 'numeric'],
             'main_product_id'           => [
                 'sometimes',
                 'nullable',

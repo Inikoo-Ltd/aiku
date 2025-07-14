@@ -97,7 +97,7 @@ class Kernel extends HttpKernel
         ],
 
         'retina-api' => [
-            SetRetinaApiTreblle::class,
+            // SetRetinaApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -105,7 +105,7 @@ class Kernel extends HttpKernel
         ],
 
         'grp-api' => [
-            SetGrpApiTreblle::class,
+            // SetGrpApiTreblle::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,

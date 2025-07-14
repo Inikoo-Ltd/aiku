@@ -9,6 +9,7 @@
 namespace App\Actions\Traits;
 
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
 
@@ -19,13 +20,19 @@ trait WithPlatformStatusCheck
         $status = 'connected';
         if ($customerSalesChannel->user instanceof ShopifyUser) {
             $settings = $customerSalesChannel->user->settings ?? [];
-            if (empty($settings) && empty($settings['webhook'])) {
+            if (empty($settings) || empty($settings['webhook'])) {
                 $status = 'not-connected';
             }
         } elseif ($customerSalesChannel->user instanceof WooCommerceUser) {
             $settings = $customerSalesChannel->user->settings ?? [];
 
-            if (empty($settings['credentials']) or empty($settings['webhooks'])) {
+            if (empty($settings['credentials']) || empty($settings['webhooks'])) {
+                $status = 'not-connected';
+            }
+        } elseif ($customerSalesChannel->user instanceof EbayUser) {
+            $settings = $customerSalesChannel->user->settings ?? [];
+
+            if (empty($settings['credentials'])) {
                 $status = 'not-connected';
             }
         }

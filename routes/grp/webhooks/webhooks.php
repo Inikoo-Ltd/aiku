@@ -12,23 +12,22 @@ use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteProductWebhooksShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
-use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
-use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
 });
 
-
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::prefix('products')->as('products.')->group(function () {
-        Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
+        // Route::post('delete', DeleteProductWebhooksShopify::class)->name('delete');
     });
 
-    Route::post('app/uninstalled', [DeleteRetinaShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
+    Route::post('app/uninstalled', [DeleteShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
     });
@@ -43,15 +42,8 @@ Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
         });
 
         Route::prefix('orders')->as('orders.')->group(function () {
-            Route::post('catch', CatchRetinaOrdersFromWooCommerce::class)->name('catch');
+            Route::post('catch', FetchWooUserOrders::class)->name('catch');
         });
-    });
-});
-
-Route::prefix('ebay')->name('webhooks.ebay.')->group(function () {
-
-    Route::prefix('{ebayUser:id}')->group(function () {
-
     });
 });
 

@@ -12,6 +12,7 @@ use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\RetinaOrdersResource;
 use App\InertiaTable\InertiaTable;
@@ -82,7 +83,7 @@ class IndexRetinaBaskets extends RetinaAction
         $this->platform = $customerSalesChannel->platform;
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel, 'orders');
+        return $this->handle($customerSalesChannel);
     }
 
     public function htmlResponse(LengthAwarePaginator $orders): Response
@@ -109,11 +110,13 @@ class IndexRetinaBaskets extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'currency' => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
+                'is_show_button_create_order'   => true,
 
-                'orders' => RetinaOrdersResource::collection($orders)
+                'currency'                  => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
+                'customer_sales_channel'    => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
+                'data'                      => RetinaOrdersResource::collection($orders)
             ]
-        )->table($this->tableStructure('orders'));
+        )->table($this->tableStructure());
     }
 
     public function tableStructure($prefix = null, $modelOperations = []): Closure
@@ -129,12 +132,11 @@ class IndexRetinaBaskets extends RetinaAction
             $table->withGlobalSearch()
                 ->withModelOperations($modelOperations);
 
+            $table->column(key: 'created_at', label: __('date'), canBeHidden: false, sortable: true, type: 'date');
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
-
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, align: 'right', sortable: true);
             $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
-            $table->column(key: 'created_at', label: __('date'), canBeHidden: false, type: 'date', sortable: true);
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: 'right');
         };
     }
 

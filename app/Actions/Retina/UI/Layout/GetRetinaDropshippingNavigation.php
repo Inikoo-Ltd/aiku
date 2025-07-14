@@ -54,7 +54,7 @@ class GetRetinaDropshippingNavigation
                 'slug'          => $customerSalesChannels->slug,
                 'key'           => $customerSalesChannels->slug,
                 'label'         => $reference,
-                'img'           => $this->getPlatformLogo($customerSalesChannels),
+                'img'           => $this->getPlatformLogo($customerSalesChannels->platform->code),
                 'img_tooltip'   => $customerSalesChannels->platform->name,
                 'route'         => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.show',
@@ -85,6 +85,28 @@ class GetRetinaDropshippingNavigation
             'horizontal_navigations' => $platforms_navigation
         ];
 
+
+        $groupNavigation['invoice'] = [
+            'label'   => __('Invoice'),
+            'icon'    => ['fal', 'fa-file-invoice-dollar'],
+            'root'    => 'retina.dropshipping.invoices.',
+            'route'   => [
+                'name' => 'retina.dropshipping.invoices.index'
+            ],
+            // 'topMenu' => [
+            //     'subSections' => [
+            //         [
+            //             'label' => __('View Top ups'),
+            //             'icon'  => ['far', 'fa-eye'],
+            //             'root'  => 'retina.top_up.',
+            //             'route' => [
+            //                 'name' => 'retina.top_up.index',
+
+            //             ]
+            //         ],
+            //     ]
+            // ]
+        ];
 
         $groupNavigation['top_up'] = [
             'label'   => __('Top Up'),

@@ -5,26 +5,20 @@
   -->
 
 <script setup lang="ts">
-import {Link} from '@inertiajs/vue3';
-import Table from '@/Components/Table/Table.vue';
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { TradeUnit } from "@/types/trade-unit"
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>()
 
-function tradeUnitRoute(tradeUnit: {}) {
-    switch (route().current()) {
-        case 'grp.org.shops.show.catalogue.products.current_products.show':
-        case 'grp.goods.trade-units.index':
-            return route(
-                'grp.goods.trade-units.show',
-                [tradeUnit.slug]);
-
-    }
+function tradeUnitRoute(tradeUnit: TradeUnit) {
+    return route(
+        "grp.goods.trade-units.show",
+        [tradeUnit.slug])
 }
-
-console.log("asfdasfd",props.data)
 
 
 </script>
@@ -32,18 +26,18 @@ console.log("asfdasfd",props.data)
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: tradeUnit }">
-            <Link :href="tradeUnitRoute(tradeUnit)" class="primaryLink">
-                {{ tradeUnit['code'] }}
+            <Link :href="tradeUnitRoute(tradeUnit) as string" class="primaryLink">
+                {{ tradeUnit["code"] }}
             </Link>
         </template>
         <template #cell(name)="{ item: tradeUnit }">
-            {{ tradeUnit['name'] }}
+            {{ tradeUnit["name"] }}
         </template>
         <template #cell(net_weight)="{ item: tradeUnit }">
-            {{ tradeUnit['weight'] }}
+            {{ tradeUnit["weight"] }}
         </template>
         <template #cell(type)="{ item: tradeUnit }">
-            {{ tradeUnit['type'] }}
+            {{ tradeUnit["type"] }}
         </template>
     </Table>
 </template>

@@ -13,7 +13,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -37,7 +37,7 @@ class IndexCustomerSalesChannels extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('platforms.code', $value);
+                $query->whereStartWith('customer_sales_channels.reference', $value);
             });
         });
 
@@ -50,7 +50,9 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->select([
                 'customer_sales_channels.id',
                 'customer_sales_channels.reference',
+                'customer_sales_channels.name',
                 'customer_sales_channels.slug',
+                'customer_sales_channels.status',
                 'customer_sales_channels.number_customer_clients as number_customer_clients',
                 'customer_sales_channels.number_portfolios as number_portfolios',
                 'customer_sales_channels.number_orders as number_orders',
@@ -108,7 +110,7 @@ class IndexCustomerSalesChannels extends OrgAction
                     'actions'       => $actions
 
                 ],
-                'data'        => CustomerSalesChannelsResource::collection($platforms),
+                'data'        => CustomerSalesChannelsResourceTOFIX::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -125,7 +127,8 @@ class IndexCustomerSalesChannels extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'connection', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)

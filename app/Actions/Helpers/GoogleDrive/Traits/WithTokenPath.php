@@ -8,10 +8,12 @@
 
 namespace App\Actions\Helpers\GoogleDrive\Traits;
 
+use App\Models\SysAdmin\Organisation;
+
 trait WithTokenPath
 {
-    public function getTokenPath(): string
+    public function getTokenPath(Organisation $organisation): string
     {
-        return base_path('resources/private/google/'.app('group')->slug.'-token.json');
+        return base_path('resources/private/google/'.$organisation->slug.'-token.json');
     }
 }

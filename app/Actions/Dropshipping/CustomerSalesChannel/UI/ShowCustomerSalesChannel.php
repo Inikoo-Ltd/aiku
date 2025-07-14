@@ -41,11 +41,14 @@ class ShowCustomerSalesChannel extends OrgAction
         return $this->handle($customerSalesChannel);
     }
 
+
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $navigation = CustomerPlatformTabsEnum::navigation();
 
         $actions = [];
+
+
         return Inertia::render(
             'Org/Dropshipping/PlatformInCustomer',
             [
@@ -56,18 +59,8 @@ class ShowCustomerSalesChannel extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-code-branch'],
-                        'icon_rotation' => 90,
-                        'title' => __('channel')
-                    ],
-
-                    'subNavigation' => $this->getCustomerPlatformSubNavigation($customerSalesChannel, $request),
-                    'title'         => $customerSalesChannel->reference,
-                    'afterTitle'    => [
-                        'label' => ' @'.$customerSalesChannel->platform->name,
-                    ],
-                    'actions'       => $actions
+                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel, $request),
+                    'actions' => $actions
                 ],
 
                 'tabs' => [
@@ -77,15 +70,15 @@ class ShowCustomerSalesChannel extends OrgAction
 
                 'showcase' => [
                     'stats' => [
-                        'name' => match ($customerSalesChannel->platform->type) {
+                        'name'                    => match ($customerSalesChannel->platform->type) {
                             PlatformTypeEnum::SHOPIFY => $customerSalesChannel->customer->shopifyUser->name,
                             PlatformTypeEnum::WOOCOMMERCE => $customerSalesChannel->customer->wooCommerceUser->name,
                             PlatformTypeEnum::TIKTOK => $customerSalesChannel->customer->tiktokUser->name,
                             default => $customerSalesChannel->customer->name,
                         },
-                        'number_orders' => $customerSalesChannel->number_orders,
+                        'number_orders'           => $customerSalesChannel->number_orders,
                         'number_customer_clients' => $customerSalesChannel->number_customer_clients,
-                        'number_portfolios' => $customerSalesChannel->number_portfolios
+                        'number_portfolios'       => $customerSalesChannel->number_portfolios
                     ]
                 ]
             ]

@@ -5,31 +5,32 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
+import { Head, router } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { inject, ref } from 'vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-import Modal from '@/Components/Utils/Modal.vue'
-import { trans } from 'laravel-vue-i18n'
-import { RouteParams } from '@/types/route-params'
-import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
-import { notify } from '@kyvg/vue3-notification'
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { ref } from "vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import { trans } from "laravel-vue-i18n"
+import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { Customer } from "@/types/customer"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBookmark } from "@fal"
 
-const props = defineProps<{
+library.add(faBookmark)
+
+defineProps<{
     data: {}
     title: string
     pageHead: PageHeadingTypes
-    customer: {}
+    customer: Customer
     is_show_add_products_modal: boolean
     customerSalesChannelId: number
 }>()
 
-const layout = inject('layout', layoutStructure)
-const locale = inject('locale', null)
 
 const isOpenModalPortfolios = ref(false)
 
@@ -37,7 +38,7 @@ const isOpenModalPortfolios = ref(false)
 // Method: Submit the selected item
 const isLoadingSubmit = ref(false)
 const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: number) => {
-    router.post(route('grp.models.customer_sales_channel.portfolio.store_multiple_manual', { customerSalesChannel: customerSalesChannelId} ), {
+    router.post(route("grp.models.customer_sales_channel.portfolio.store_multiple_manual", { customerSalesChannel: customerSalesChannelId }), {
         items: idProduct
     }, {
         onBefore: () => isLoadingSubmit.value = true,
@@ -49,10 +50,10 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
             })
         },
         onSuccess: () => {
-            router.reload({only: ['data']})
+            router.reload({ only: ["data"] })
             notify({
                 title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
+                text: trans("Successfully added the portfolio"),
                 type: "success"
             })
             isOpenModalPortfolios.value = false
@@ -71,23 +72,20 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
                 @click="() => isOpenModalPortfolios = true"
                 :type="'secondary'"
                 icon="fal fa-plus"
-                :xxstooltip="'action.tooltip'"
-                :label="trans('Add products to portfolios')"
+                :label="trans('Add products to portfolio')"
             />
         </template>
     </PageHeading>
-    
+
     <TablePortfolios :data="data" />
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
             :headLabel="trans('Add products to portfolios')"
             :route-fetch="{
-                name: 'grp.org.shops.show.crm.customers.show.portfolios.filtered-products',
+                name: 'grp.json.products_for_portfolio_select',
                 parameters: {
-                    organisation: layout?.currentParams?.organisation,
-                    shop: layout?.currentParams?.shop,
-                    customer: layout?.currentParams?.customer,
+                    customerSalesChannel: customerSalesChannelId
                 }
             }"
             :isLoadingSubmit

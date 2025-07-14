@@ -50,6 +50,8 @@ class IndexPupilPortfolios extends RetinaAction
             $query->where('item_type', class_basename(Product::class));
         }
 
+        $query->whereNotNull('platform_product_id');
+
         return $query->defaultSort('-id')
             ->allowedFilters([$unUploadedFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -105,7 +107,7 @@ class IndexPupilPortfolios extends RetinaAction
                     'model'   =>  $platformName,
                     'icon'    => 'fal fa-cube',
                     'actions' => [
-                        [
+                        $this->customerSalesChannel->customer->is_fulfilment ? [
                             'type'  => 'button',
                             'style' => 'tertiary',
                             'icon'  => 'fas fa-sync-alt',
@@ -117,7 +119,7 @@ class IndexPupilPortfolios extends RetinaAction
                                 ],
                                 'method'     => 'post'
                             ]
-                        ]
+                        ] : []
                     ]
                 ],
                 'routes'    => [
@@ -180,7 +182,7 @@ class IndexPupilPortfolios extends RetinaAction
                 'content' => [
                     'portfolio_empty' => [
                         'title' => __("You don't have any items in your portfolio"),
-                        'description' => __("To get started, add products to your portfolios."),
+                        'description' => __("To get started, add products to your shop."),
                         'separation' => __("or"),
                         'add_button' => __("Add Product"),
                     ]
@@ -227,8 +229,7 @@ class IndexPupilPortfolios extends RetinaAction
             $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'customer_price', label: __('RRP'), tooltip: __('Recommended retail price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'status', label: __('status'));
-            $table->column(key: 'actions', label: __('action'), canBeHidden: false);
+
         };
     }
 

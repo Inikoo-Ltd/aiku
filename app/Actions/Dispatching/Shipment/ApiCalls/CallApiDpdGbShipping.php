@@ -12,7 +12,7 @@ namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingParentResource;
+use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class CallApiDpdGbShipping extends OrgAction
 {
@@ -33,11 +34,7 @@ class CallApiDpdGbShipping extends OrgAction
     private string $accountNumber = '';
     public function getBaseUrl(): string
     {
-        if (app()->environment('production')) {
-            return 'https://api.dpd.co.uk/';
-        } else {
-            return 'https://api.dpd.co.uk/';
-        }
+        return 'https://api.dpd.co.uk/';
     }
 
     public function getAccessToken(Shipper $shipper): array
@@ -79,6 +76,7 @@ class CallApiDpdGbShipping extends OrgAction
         try {
             $response = Http::withHeaders($headers)->post($this->getBaseUrl() . 'user?action=login');
         } catch (\Exception $e) {
+            Sentry::captureException($e);
             return;
         }
 
@@ -88,19 +86,12 @@ class CallApiDpdGbShipping extends OrgAction
         $this->geoSessionDate = Carbon::now()->timestamp;
         $this->accountNumber = $accountNumber;
 
-        return;
     }
 
 
-    public string $commandSignature = 'dpd_gb';
-
-    public function asCommand($command)
-    {
-        $p = PalletReturn::find(1046);
-        $shipper = Shipper::find(21);
-        $this->handle($p, $shipper);
-    }
-
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     public function getServices(Shipper $shipper, array $parcels, array $parentResource): array
     {
         $url = 'shipping/network/?';
@@ -142,10 +133,13 @@ class CallApiDpdGbShipping extends OrgAction
     }
 
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $url = 'shipping/shipment';
-        $parentResource = ShippingParentResource::make($parent)->getArray();
+        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
         $parcels = $parent->parcels;
 
         data_set($parentResource, 'reference', $parent->reference);
@@ -263,7 +257,7 @@ class CallApiDpdGbShipping extends OrgAction
                             'mobile' => preg_replace('/\s+/', '', Arr::get($parentResource, 'to_phone')),
                         ]
                     ],
-                    'networkCode' => '1^12', // Default network code, could be configurable
+                    'networkCode' => '1^12', // Default network code could be configurable
                     'numberOfParcels' => count($parcels),
                     'totalWeight' => $totalWeight,
                     'shippingRef1' => Arr::get($parentResource, 'reference', ''),
@@ -279,6 +273,9 @@ class CallApiDpdGbShipping extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     public function getLabel(string $shipmentId, Shipper $shipper, string $output): string
     {
 

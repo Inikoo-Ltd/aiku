@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedInterv
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
@@ -30,12 +29,12 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
@@ -82,12 +81,19 @@ class StoreOrder extends OrgAction
 
 
         if ($this->strict) {
+            $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
+                data_forget($modelData, 'billing_address'); // Just in case is added by mistake
+                data_forget($modelData, 'delivery_address'); // Just in case is added by mistake
                 $billingAddress  = $parent->address;
                 $deliveryAddress = $parent->deliveryAddress;
-            } else {
+            } elseif ($parent instanceof CustomerClient) {
+                data_forget($modelData, 'billing_address'); // Just in case is added by mistake
                 $billingAddress  = $parent->customer->address;
-                $deliveryAddress = $parent->address;
+                $deliveryAddress = Arr::pull($modelData, 'delivery_address');
+            } else {
+                $billingAddress  = Arr::pull($modelData, 'billing_address');
+                $deliveryAddress = Arr::pull($modelData, 'delivery_address');
             }
         } else {
             $billingAddress  = Arr::pull($modelData, 'billing_address');
@@ -211,14 +217,6 @@ class StoreOrder extends OrgAction
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
         }
 
-        if ($order->platform_id) {
-            $customerSalesChannel = CustomerSalesChannel::where('customer_id', $order->customer_id)
-                ->where('platform_id', $order->platform_id)->first();
-            if ($customerSalesChannel) {
-                CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
-            }
-        }
-
         if ($order->customer_client_id) {
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);
         }
@@ -266,9 +264,10 @@ class StoreOrder extends OrgAction
             'handing_type'              => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
+            'platform_order_id'         => ['sometimes', 'nullable'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
-            'data' => ['sometimes', 'array'],
+            'data'                      => ['sometimes', 'array'],
             'sales_channel_id'          => [
                 'sometimes',
                 'required',
@@ -276,6 +275,9 @@ class StoreOrder extends OrgAction
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
+            'billing_address' => ['sometimes', 'required',  new ValidAddress()], // only need when parent is Shop
+            'delivery_address' => ['sometimes', 'required',  new ValidAddress()],  // only need when the parent is Shop|CustomerClient
+
 
         ];
 

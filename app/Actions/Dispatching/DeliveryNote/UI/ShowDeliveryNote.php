@@ -13,9 +13,12 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
+use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
+use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
@@ -26,9 +29,11 @@ use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Ordering\PickersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -43,6 +48,7 @@ class ShowDeliveryNote extends OrgAction
 {
     use AsAction;
     use WithInertia;
+    use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
 
@@ -101,18 +107,18 @@ class ShowDeliveryNote extends OrgAction
 
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
-        $isSomeNotPicked = !$deliveryNote->deliveryNoteItems->every(
-            fn ($item) => $item->pickings->isNotEmpty() && $item->is_handled === true
-        );
+        $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
+            ->where('is_handled', false)
+            ->exists();
 
+        $actions = [];
 
-        return [
-            [
+        if (!$hasUnHandledItems) {
+            $actions[] = [
                 'type'     => 'button',
                 'style'    => 'save',
                 'tooltip'  => __('Set as packed'),
                 'label'    => __('Set as packed'),
-                'disabled' => $isSomeNotPicked,
                 'key'      => 'action',
                 'route'    => [
                     'method'     => 'patch',
@@ -121,21 +127,26 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ]
-            ],
-            [
-                'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('Change picker'),
-                'icon'    => 'fal fa-exchange-alt',
-                'label'   => __('Change Picker'),
-                'key'     => 'change-picker',
-            ]
+            ];
+        }
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'save',
+            'tooltip' => __('Change picker'),
+            'icon'    => 'fal fa-exchange-alt',
+            'label'   => __('Change Picker'),
+            'key'     => 'change-picker',
         ];
+
+        return $actions;
     }
+
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-        $startPickingLabel = __('Start picking');
+        $startPickingLabel    = __('Start picking');
+        $generateInvoiceLabel = __('Generate Invoice');
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
@@ -227,10 +238,10 @@ class ShowDeliveryNote extends OrgAction
                     ],
                 ]
             ],
-            DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote, $request),
+            DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
 
             DeliveryNoteStateEnum::PACKED => [
-                [
+                count($deliveryNote->parcels ?? []) ? [
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Finalised'),
@@ -243,7 +254,7 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ]
+                ] : []
             ],
             DeliveryNoteStateEnum::FINALISED => [
                 [
@@ -259,36 +270,121 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ]
+                ],
+                $deliveryNote->orders->first()->invoices->count() == 0 ?
+                    [
+                        'type'    => 'button',
+                        'style'   => '',
+                        'tooltip' => $generateInvoiceLabel,
+                        'label'   => $generateInvoiceLabel,
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.generate_invoice',
+                            'parameters' => [
+                                'order' => $deliveryNote->orders->first()->id
+                            ]
+                        ]
+                    ] : []
+            ],
+            DeliveryNoteStateEnum::DISPATCHED => [
+                $deliveryNote->orders->first()->invoices->count() == 0 ?
+                    [
+                        'type'    => 'button',
+                        'style'   => '',
+                        'tooltip' => $generateInvoiceLabel,
+                        'label'   => $generateInvoiceLabel,
+                        'key'     => 'action',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.delivery_note.state.dispatched',
+                            'parameters' => [
+                                'order' => $deliveryNote->orders->first()->id
+                            ]
+                        ]
+                    ] : []
             ],
             default => []
         };
     }
 
+    public function getInvoiceButton(DeliveryNote $deliveryNote): array
+    {
+        $invoiceButton        = [];
+        $generateInvoiceLabel = __('Generate Invoice');
+
+        if (($deliveryNote->state == DeliveryNoteStateEnum::FINALISED || $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) && $deliveryNote->orders->first()->invoices->count() == 0) {
+            $invoiceButton = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => $generateInvoiceLabel,
+                    'label'   => $generateInvoiceLabel,
+                    'key'     => 'action',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.dispatched',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ]
+            ];
+        }
+
+        return $invoiceButton;
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
+        $order     = $deliveryNote->orders->first();
 
         return [
-            'state'       => $deliveryNote->state,
-            'state_icon'  => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
-            'state_label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
-            'customer'    => array_merge(
+            'state'            => $deliveryNote->state,
+            'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
+            'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
+            'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [
                     'addresses' => [
                         'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     ],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show',
+                        'parameters' => [
+                            'organisation' => $deliveryNote->organisation->slug,
+                            'shop'         => $deliveryNote->shop->slug,
+                            'customer'     => $deliveryNote->customer->slug
+                        ]
+                    ]
                 ]
             ),
-            'products'    => [
+            'customer_client' => $deliveryNote->customerClient,
+            'platform' => [
+                'name' => $deliveryNote->platform?->name,
+                'logo' => $this->getPlatformLogo($deliveryNote->customerSalesChannel->platform->code),
+            ],
+            'products'         => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
             ],
-            'picker'      => $deliveryNote->pickerUser,
-            'packer'      => $deliveryNote->packerUser,
-            'parcels'     => $deliveryNote->parcels,
-            'shipments'   => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
+            'order'            => [
+                'reference' => $order->reference,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.ordering.orders.show',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'shop'         => $order->shop->slug,
+                        'order'        => $order->slug
+                    ]
+                ],
+            ],
+            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
+            'picker'           => $deliveryNote->pickerUser,
+            'packer'           => $deliveryNote->packerUser,
+            'parcels'          => $deliveryNote->parcels,
+            'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
         ];
     }
 
@@ -338,6 +434,12 @@ class ShowDeliveryNote extends OrgAction
         return $timeline;
     }
 
+    public function quickGetPickers(): array
+    {
+        return PickersResource::collection(GetPickerUsers::run($this->organisation, true))->resolve();
+
+    }
+
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $props = [
@@ -362,6 +464,7 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'    => $this->getActions($deliveryNote, $request),
+                $this->getInvoiceButton($deliveryNote)
             ],
             'tabs'          => [
                 'current'    => $this->tab,
@@ -369,8 +472,17 @@ class ShowDeliveryNote extends OrgAction
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
 
-            'timelines'           => $this->getTimeline($deliveryNote),
-            'box_stats'           => $this->getBoxStats($deliveryNote),
+            'address' => [
+                'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+                'options'                        => [
+                    'countriesAddressData' => GetAddressData::run()
+                ]
+            ],
+
+            'timelines' => $this->getTimeline($deliveryNote),
+            'box_stats' => $this->getBoxStats($deliveryNote),
+
+            'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
                 'update'         => [
                     'name'       => 'grp.models.delivery_note.update',

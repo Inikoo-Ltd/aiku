@@ -11,6 +11,7 @@ use App\Actions\Api\Retina\Dropshipping\Client\GetClient;
 use App\Actions\Api\Retina\Dropshipping\Client\GetClients;
 use App\Actions\Api\Retina\Dropshipping\Client\StoreApiCustomerClient;
 use App\Actions\Api\Retina\Dropshipping\Client\UpdateApiCustomerClient;
+use App\Actions\Api\Retina\Dropshipping\Image\GetImage;
 use App\Actions\Api\Retina\Dropshipping\Order\DeleteApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\GetOrders;
@@ -18,10 +19,13 @@ use App\Actions\Api\Retina\Dropshipping\Order\StoreApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\SubmitApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Order\UpdateApiOrder;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\DeleteApiPortfolio;
+use App\Actions\Api\Retina\Dropshipping\Image\GetImages;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\GetPortfolios;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\ShowApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\StoreApiPortfolio;
 use App\Actions\Api\Retina\Dropshipping\Portfolio\UpdateApiPortfolio;
+use App\Actions\Api\Retina\Dropshipping\Product\GetDataFeedsCsv;
+use App\Actions\Api\Retina\Dropshipping\Product\GetDataFeedsJson;
 use App\Actions\Api\Retina\Dropshipping\Product\GetProducts;
 use App\Actions\Api\Retina\Dropshipping\Transaction\DeleteApiOrderTransaction;
 use App\Actions\Api\Retina\Dropshipping\Transaction\GetTransactions;
@@ -45,17 +49,21 @@ Route::prefix('transaction')->as('transaction.')->group(function () {
     Route::delete('{transaction:id}/delete', DeleteApiOrderTransaction::class)->name('delete');
 });
 
-Route::prefix('portfolios')->as('portfolios.')->group(function () {
-    Route::get('', GetPortfolios::class)->name('index');
-    Route::post('product/{product:id}/store', StoreApiPortfolio::class)->name('store')->withoutScopedBindings();
-    Route::get('{portfolio:id}', ShowApiPortfolio::class)->name('show');
-    Route::patch('{portfolio:id}/update', UpdateApiPortfolio::class)->name('update');
-    Route::delete('{portfolio:id}/delete', DeleteApiPortfolio::class)->name('delete');
-});
 
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('', GetProducts::class)->name('index');
+    Route::get('my-products', GetPortfolios::class)->name('index');
+    Route::post('my-products/{product:id}/store', StoreApiPortfolio::class)->name('store')->withoutScopedBindings();
+    Route::get('my-products/{portfolio:id}', ShowApiPortfolio::class)->name('show');
+    Route::patch('my-products/{portfolio:id}/update', UpdateApiPortfolio::class)->name('update');
+    Route::delete('my-products/{portfolio:id}/delete', DeleteApiPortfolio::class)->name('delete');
 });
+
+Route::prefix('images')->as('images.')->group(function () {
+    Route::get('{image:id}', GetImage::class)->name('show');
+    Route::get('', GetImages::class)->name('index');
+});
+
 
 Route::prefix('clients')->as('clients.')->group(function () {
     Route::get('', GetClients::class)->name('index');
@@ -63,5 +71,7 @@ Route::prefix('clients')->as('clients.')->group(function () {
     Route::get('{customerClient:id}', GetClient::class)->name('show');
     Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
     Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete');
-
 });
+
+Route::get('/my-products-data-feed-csv', GetDataFeedsCsv::class)->name('data_feed.csv');
+Route::get('/my-products-data-feed-json', GetDataFeedsJson::class)->name('data_feed.json');

@@ -9,10 +9,10 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink } from '@fal'
+import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
 import { faSearch, faBell } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { provide, ref, watch } from 'vue'
+import { onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
@@ -30,7 +30,7 @@ import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExcla
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
+library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
 
 
 provide('layout', useLayoutStore())
@@ -48,6 +48,9 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         text: notif.description,
         type: notif.status,
     })
+}, {
+    deep: true,
+    immediate: true
 })
 
 // Section: Modal
@@ -64,12 +67,73 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 
     selectedModal.value = modal
     isModalOpen.value = true
+}, {
+    deep: true,
+    immediate: true
 })
 
 // Section: To open/close the mobile menu
 const isOpenMenuMobile = ref(false)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
+
+// Method: Hide the superchat widget
+// const hideSuperchatWidget = () => {
+//     const time = ref(0)
+//     const xxInterval = setInterval(() => {
+//         time.value += 150
+//         const _superchatWidget = document.querySelector('#superchat-widget')
+//         if (_superchatWidget) {
+//             _superchatWidget.style.display = 'none'
+//             clearInterval(xxInterval)
+//             console.log('Cleared interval')
+//         }
+
+//         // To safety if GTM exist but don't have superchat
+//         if (time.value > 10000) {
+//             clearInterval(xxInterval)
+//             console.log('Cleared interval due to timeout')
+//         }
+//     }, 150)
+// }
+
+onMounted(() => {
+    // if (layout.iris?.is_have_gtm) {
+    //     hideSuperchatWidget()
+    // }
+})
+
+
+const getTextColorDependsOnStatus = (status: string) => {
+    switch (status) {
+        case 'success':
+            return 'text-green-500'
+        case 'error':
+        case 'failure':
+            return 'text-red-500'
+        case 'warning':
+            return 'text-yellow-500'
+        case 'info':
+            return 'text-gray-500'
+        default:
+            return ''
+    }
+}
+const getBgColorDependsOnStatus = (status: string) => {
+    switch (status) {
+        case 'success':
+            return 'bg-green-100'
+        case 'error':
+        case 'failure':
+            return 'bg-red-100'
+        case 'warning':
+            return 'bg-yellow-100'
+        case 'info':
+            return 'bg-gray-100'
+        default:
+            return ''
+    }
+}
 </script>
 
 <template>
@@ -131,10 +195,14 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 
     <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
+                :class="getTextColorDependsOnStatus(selectedModal?.status)"
+            >
                 <div>
-                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
+                        :class="getBgColorDependsOnStatus(selectedModal?.status)"
+                    >
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
@@ -144,11 +212,15 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
                         <div as="h3" class="font-semibold text-2xl">
                             {{ selectedModal?.title }}
                         </div>
-                        <div class="mt-2 text-sm text-gray-500">
+                        <div v-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
                             {{ selectedModal?.description }}
+                        </div>
+                        <div v-if="selectedModal?.message" class="mt-2 text-sm opacity-75">
+                            {{ selectedModal?.message }}
                         </div>
                     </div>
                 </div>
+
                 <div class="mt-5 sm:mt-6">
                     <Button
                         @click="() => isModalOpen = false"
@@ -250,5 +322,10 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 
 .p-message-text {
     width: 100%;
+}
+
+// Hide Checkout Apple Pay
+#flow-container #googlepayAccordionContainer {
+    display: none !important;
 }
 </style>

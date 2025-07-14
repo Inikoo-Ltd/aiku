@@ -1,27 +1,41 @@
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3";
+import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import { capitalize } from "@/Composables/capitalize";
-import { reactive, ref } from "vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
-import { Tabs as TSTabs } from "@/types/Tabs";
+import {capitalize} from "@/Composables/capitalize";
+import {computed, reactive, ref} from "vue";
+import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfolios from "@/Components/Tables/Retina/RetinaTablePortfolios.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
-import { routeType } from "@/types/route";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import {notify} from "@kyvg/vue3-notification";
+import {trans} from "laravel-vue-i18n";
+import {routeType} from "@/types/route";
+import {library} from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue";
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
-import { Message, Popover } from "primevue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-
-import { faSyncAlt } from "@fas";
-import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
-import { faBracketsCurly, faFileExcel, faImage, faArrowLeft, faArrowRight, faUpload, faBox, faEllipsisV, faDownload } from "@fal";
+import {Message, Popover} from "primevue"
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
+import type {Component} from 'vue';
+import {faSyncAlt} from "@fas";
+import {
+    faBracketsCurly,
+    faFileExcel,
+    faImage,
+    faArrowLeft,
+    faArrowRight,
+    faUpload,
+    faBox,
+    faEllipsisV,
+    faDownload
+} from "@fal";
 import axios from "axios"
+import {useTabChange} from "@/Composables/tab-change"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import {Table as TableTS} from "@/types/Table"
+import { CustomerSalesChannel } from "@/types/customer-sales-channel"
+
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
@@ -39,7 +53,7 @@ const props = defineProps<{
             add_button?: string
         }
     }
-    products: {}
+    products: TableTS
     routes: {
         syncAllRoute: routeType
         addPortfolioRoute: routeType
@@ -47,6 +61,7 @@ const props = defineProps<{
         itemRoute: routeType
         updatePortfolioRoute: routeType
         batchDeletePortfolioRoute: routeType
+        clonePortfolioRoute: routeType
     }
     platform_user_id: number
     step: {
@@ -54,7 +69,7 @@ const props = defineProps<{
     }
     platform_data: {
         id: number
-        code: string
+        code: string  // 'manual' | 'shopify' | 'ebay' | 'amazon'
         name: string
         type: string
     }
@@ -64,15 +79,20 @@ const props = defineProps<{
         slug: string
         name: string
     }
+    manual_channels: object
+    count_product_not_synced: number
+    active: {}
+    inactive: {}
+    product_count: number
 }>();
 
-
 const step = ref(props.step);
-
+const isPlatformManual = computed(() => props.platform_data.type === 'manual');
 const isOpenModalPortfolios = ref(false);
 
 
 const isLoadingUpload = ref(false);
+const isLoadingClone = ref(false);
 const selectedData = reactive({
     products: [] as number[]
 });
@@ -99,10 +119,9 @@ const onUploadToShopify = () => {
         },
         onSuccess: () => {
             selectedData.products = [];
-            router.reload({ only: ["pageHead", "products"] });
+            router.reload({only: ["pageHead", "products"]});
             notify({
                 title: trans("Success!"),
-                // text: trans("Portfolios successfully uploaded to Shopify"),
                 text: `Portfolios successfully uploaded to ${props.platform_data.name}`,
                 type: "success"
             });
@@ -116,7 +135,6 @@ const onUploadToShopify = () => {
 
 
 const downloadUrl = (type: string) => {
-    // return '';
     if (props.download_route?.[type]?.name) {
         return route(props.download_route[type].name, props.download_route[type].parameters);
     } else {
@@ -125,11 +143,12 @@ const downloadUrl = (type: string) => {
 };
 
 const _popover = ref()
+const _clone_popover = ref()
 
 
-
+// Method: Platform reconnect
 const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
-	console.log('customerSalesChannel', customerSalesChannel)
+    console.log('customerSalesChannel', customerSalesChannel)
     try {
         const response = await axios[customerSalesChannel.reconnect_route.method || 'get'](
             route(
@@ -151,10 +170,92 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
         })
     }
 }
+
+// Method: Clone manual portfolios
+const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | number) => {
+    router.post(route(
+            props.routes.clonePortfolioRoute.name,
+            {
+                ...props.routes.clonePortfolioRoute.parameters,
+                customerSalesChannel: sourceCustomerSalesChannelId
+            }
+        ), {}, {
+            onBefore: () => isLoadingClone.value = true,
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: "",
+                    type: "error"
+                });
+            },
+            onSuccess: () => {
+                selectedData.products = [];
+                router.reload({only: ["pageHead", "products"]});
+                notify({
+                    title: trans("Success!"),
+                    text: `Portfolios successfully cloned.`,
+                    type: "success"
+                });
+                props.step.current = 1;
+                isLoadingClone.value = false;
+            },
+            onFinish: () => {
+                isLoadingClone.value = false;
+            }
+        }
+    )
+}
+
+// Section: Bulk upload to Shopify/Ebay/etc
+const isLoadingBulkDeleteUpload = ref(false)
+// const selectedPortfoliosToSync = ref([])
+const bulkUpload = () => {
+    router[props.routes.bulk_upload.method || 'post'](
+        route(props.routes.bulk_upload.name, props.routes.bulk_upload.parameters),
+        {
+            portfolios: null,
+        },
+        {
+            preserveScroll: true,
+            // onBefore: () => isLoadingUpload.value = true,
+            onStart: () => {
+                isLoadingBulkDeleteUpload.value = true
+            },
+            onSuccess: () => {
+                // set(progressToUploadToShopify.value, [product.id], 'loading')
+            },
+            onFinish: () => {
+                isLoadingBulkDeleteUpload.value = false
+            },
+            onError: (error) => {
+                console.log('Error during bulk upload:', error)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message || trans("An error occurred while uploading portfolios"),
+                    type: "error",
+                })
+            }
+        }
+    )
+}
+
+const progressToUploadToShopify = ref<{ [key: number]: string }>({})
+
+
+const currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+
+const component = computed(() => {
+    const components: Component = {
+        active: RetinaTablePortfolios,
+        inactive: RetinaTablePortfolios,
+    };
+    return components[currentTab.value];
+});
 </script>
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
 
 
@@ -169,7 +270,7 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
             />
         </template>
 
-        <template v-if="props.products?.data?.length" #other>
+        <template v-if="props.product_count" #other>
             <div class="rounded-md ">
                 <a :href="downloadUrl('csv')" target="_blank" rel="noopener">
                     <Button
@@ -177,6 +278,15 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
                         label="CSV"
                         type="tertiary"
                         class="rounded-r-none"
+                    />
+                </a>
+
+                <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
+                    <Button
+                        :icon="faImage"
+                        label="Images"
+                        type="tertiary"
+                        class="border-l-0 border-r-0 rounded-none"
                     />
                 </a>
 
@@ -194,28 +304,26 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
                 <Popover ref="_popover">
                     <div class="w-64 relative">
                         <div class="text-sm mb-2">
-                            {{ trans("Select another download file type:") }}:
+                            {{ trans("Select another download file type") }}:
                         </div>
 
                         <div class="flex flex-col gap-y-2">
-                           <a :href="downloadUrl('xlsx')" target="_blank" rel="noopener">
+                            <a :href="downloadUrl('xlsx') as string" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faFileExcel"
                                     label="Excel"
                                     full
-                                    :style="'tertiary'" />
+                                    :style="'tertiary'"/>
                             </a>
-                            <!-- <a :href="downloadUrl('json')" target="_blank" rel="noopener"> -->
+                            <a :href="downloadUrl('json') as string" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faBracketsCurly"
                                     label="JSON"
                                     full
                                     :style="'tertiary'"
-                                    disabled
-                                    v-tooltip="trans('This feature is not available yet')"
                                 />
-                            <!-- </a> -->
-                            <a :href="downloadUrl('images')" target="_blank" rel="noopener">
+                            </a>
+                          <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
                                 <Button
                                     :icon="faImage"
                                     :label="trans('Images')"
@@ -233,16 +341,49 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
                 :label="trans('Add products')"
                 :icon="'fas fa-plus'"
             />
+
+            <div class="rounded-md" v-if="manual_channels?.data?.length">
+                <!-- Section: Download button -->
+                <Button
+                    @click="(e) => _clone_popover?.toggle(e)"
+                    v-tooltip="trans('Open another options')"
+                    :icon="faEllipsisV"
+                    xloading="!!isLoadingSpecificChannel.length"
+                    class="!px-2 h-full"
+                    type="tertiary"
+                    key=""
+                />
+
+                <Popover ref="_clone_popover">
+                    <div class="w-64 relative">
+                        <div class="text-sm mb-2">
+                            {{ trans("Clone portfolio from channel:") }}
+                        </div>
+
+                        <div class="flex flex-col gap-y-2" v-for="manual_channel in manual_channels?.data">
+                            <Button
+                                :loading="isLoadingClone"
+                                @click="() => onCloneManualPortfolio(manual_channel.id)"
+                                :label="manual_channel.name + ' ('+manual_channel.number_portfolios+')'"
+                                full
+                                :style="'tertiary'"/>
+                        </div>
+
+                    </div>
+                </Popover>
+            </div>
         </template>
     </PageHeading>
 
     <!-- Section: Alert if Platform not connected yet -->
-    <Message v-if="!is_platform_connected" severity="error" class="m-4 ">
+    <Message v-if="!is_platform_connected && !isPlatformManual" severity="error" class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
-                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
-                    {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                    {{
+                        trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
+                    }}
                 </div>
             </div>
 
@@ -260,13 +401,42 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
         </div>
     </Message>
 
+    <!-- Section: Alert if there is product not synced -->
+    <Message v-if="count_product_not_synced > 0 && !isPlatformManual" severity="warn" class="m-4 ">
+        <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
+            <div>
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
+                <div class="inline items-center gap-x-2">
+                    {{ trans("You have :products products not synced yet", {products: `${count_product_not_synced}`}) }}
+                </div>
+            </div>
 
-    <div v-if="props.products?.data?.length < 1" class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+            <!-- <div class="w-full sm:w-fit h-fit">
+                <Button
+                    v-if="routes.bulk_upload"
+                    @click="() => bulkUpload()"
+                    icon="fas fa-upload"
+                    :label="trans('Upload all')"
+                    size="xxs"
+                    :routeTarget="routes.bulk_upload"
+                    type="green"
+                    full
+                    :disabled="isLoadingBulkDeleteUpload"
+                />
+            </div> -->
+        </div>
+    </Message>
+
+    <!-- retina.models.dropshipping.ebay.batch_upload -->
+    <div v-if="props.product_count < 1"
+         class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
             {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
         </h1>
         <p class="mt-4 text-xl">
-            {{ content?.portfolio_empty?.description || trans("To get started, add products to your portfolios. You can sync from your inventory or create a new one.") }}
+            {{
+                content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
+            }}
         </p>
         <div class="mt-6 space-y-4">
             <ButtonWithLink
@@ -278,14 +448,36 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
                 xtype="tertiary"
                 size="xl"
             />
-            <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">{{ content?.portfolio_empty?.separation || trans("or") }}</div>
-            <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true" :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus" size="xl" />
+            <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
+                {{ content?.portfolio_empty?.separation || trans("or") }}
+            </div>
+            <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true"
+                    :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus"
+                    size="xl"/>
         </div>
     </div>
 
     <div v-else class="overflow-x-auto">
-        <RetinaTablePortfolios
-            
+        <Tabs
+            :current="currentTab"
+            :navigation="tabs.navigation"
+            @update:tab="handleTabUpdate"
+        />
+
+        <component
+            :is="component"
+            :data="props[currentTab as keyof typeof props]"
+            :tab="currentTab"
+            :selectedData
+            :platform_data
+            :platform_user_id
+            :is_platform_connected
+            :customerSalesChannel="customer_sales_channel"
+            :progressToUploadToShopify
+            :isPlatformManual
+        />
+
+        <!-- <RetinaTablePortfolios
             :data="props.products"
             :tab="'products'"
             :selectedData
@@ -293,10 +485,13 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
             :platform_user_id
             :is_platform_connected
             :customerSalesChannel="customer_sales_channel"
-        />
+            :progressToUploadToShopify
+            :isPlatformManual
+        /> -->
     </div>
 
-    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+    <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
+           width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <AddPortfolios
             v-if="platform_data?.type === 'manual'"
             :step="step"

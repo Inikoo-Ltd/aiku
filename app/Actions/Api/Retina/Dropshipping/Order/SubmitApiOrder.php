@@ -11,25 +11,35 @@ namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaApiAction;
 use App\Models\Ordering\Order;
+use Exception;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class SubmitApiOrder extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Order $order): Order
     {
-        $order = SubmitOrder::make()->action($order);
+        try {
+            PayOrderAsync::run($order);
+        } catch (Exception $e) {
+            Sentry::captureException($e);
+        }
 
-        return $order;
+        return SubmitOrder::make()->action($order);
     }
 
-    public function jsonResponse(Order $order)
+    public function jsonResponse(Order $order): OrderApiResource|\Illuminate\Http\Resources\Json\JsonResource
     {
         return OrderApiResource::make($order)
             ->additional([
@@ -37,9 +47,13 @@ class SubmitApiOrder extends RetinaApiAction
             ]);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromDropshipping($request);
+
         return $this->handle($order);
     }
 }

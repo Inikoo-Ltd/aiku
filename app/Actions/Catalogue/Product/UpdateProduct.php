@@ -11,10 +11,12 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
+use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
@@ -33,6 +35,7 @@ class UpdateProduct extends OrgAction
     use WithActionUpdate;
     use WithProductHydrators;
     use WithNoStrictRules;
+    use WithProductOrgStocks;
 
     private Product $product;
 
@@ -44,16 +47,13 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
+
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
-            $orgStocks = [];
-            foreach ($orgStocksRaw as $item) {
-                $orgStocks[] = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
-            }
-
-            $product->orgStocks()->sync($orgStocks);
-
+            $this->syncOrgStocks($product, $orgStocksRaw);
+            //todo  after updating orgStock need a new method to update Trade Units
         }
+
 
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
@@ -63,8 +63,11 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
+
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
+
+
             $product->updateQuietly(
                 [
                     'current_historic_asset_id' => $historicAsset->id,
@@ -96,9 +99,10 @@ class UpdateProduct extends OrgAction
             ProductRecordSearch::dispatch($product);
         }
 
-        if (Arr::hasAny(
-            $changed,
-            [
+        if (
+            Arr::hasAny(
+                $changed,
+                [
                     'code',
                     'name',
                     'description',
@@ -106,22 +110,24 @@ class UpdateProduct extends OrgAction
                     'price',
                     'available_quantity'
                 ]
-        )
-            && $product->webpage) {
+            )
+            && $product->webpage
+        ) {
             $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_in_'.$product->webpage->id;
             Cache::forget($key);
             $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_out_'.$product->webpage->id;
             Cache::forget($key);
+            ReindexWebpageLuigiData::dispatch($product->webpage)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny(
             $changed,
             [
-                    'code',
-                    'name',
-                    'state',
-                    'price',
-                ]
+                'code',
+                'name',
+                'state',
+                'price',
+            ]
         )) {
             BreakProductInWebpagesCache::dispatch($product);
         }
@@ -133,7 +139,7 @@ class UpdateProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'          => [
+            'code'              => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -148,20 +154,21 @@ class UpdateProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'          => ['sometimes', 'required', 'max:250', 'string'],
-            'price'         => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'   => ['sometimes', 'required', 'max:1500'],
+            'name'              => ['sometimes', 'required', 'max:250', 'string'],
+            'price'             => ['sometimes', 'required', 'numeric', 'min:0'],
+            'unit_price'        => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description'       => ['sometimes', 'required', 'max:1500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'rrp'           => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'data'          => ['sometimes', 'array'],
-            'settings'      => ['sometimes', 'array'],
-            'status'        => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
-            'state'         => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'trade_config'  => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
-            'follow_master' => ['sometimes', 'boolean'],
-            'family_id'     => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
-            'barcode' => [
+            'rrp'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'data'              => ['sometimes', 'array'],
+            'settings'          => ['sometimes', 'array'],
+            'status'            => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
+            'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'trade_config'      => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
+            'follow_master'     => ['sometimes', 'boolean'],
+            'family_id'         => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
+            'barcode'           => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -170,9 +177,9 @@ class UpdateProduct extends OrgAction
                     ->whereNull('deleted_at')
             ],
 
-            'webpage_id' => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'        => ['sometimes', 'nullable', 'string', 'max:250'],
-
+            'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
+            'units'                     => ['sometimes', 'numeric'],
             'exclusive_for_customer_id' => [
                 'sometimes',
                 'nullable',

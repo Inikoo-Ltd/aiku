@@ -9,10 +9,10 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Dropshipping\Ebay\Orders\Webhooks\CatchRetinaOrdersFromEbay;
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
-use App\Actions\Dropshipping\WooCommerce\Orders\Webhooks\CatchRetinaOrdersFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
@@ -26,7 +26,7 @@ class ScheduleGetRetinaOrders extends RetinaAction
 
     public string $commandSignature = 'schedule:platform-orders';
 
-    public function asCommand()
+    public function asCommand(): void
     {
         $this->handle();
     }
@@ -40,11 +40,11 @@ class ScheduleGetRetinaOrders extends RetinaAction
         ])->orderBy('customer_sales_channels.id')
             ->chunk(100, function ($channels) {
                 foreach ($channels as $channel) {
-                    if ($user = $channel->user) {
+                    $user = $channel->user;
+                    if ($user && ($channel->state === CustomerSalesChannelStateEnum::WITH_PORTFOLIO)) {
                         match ($channel->platform->type) {
-                            PlatformTypeEnum::WOOCOMMERCE => CatchRetinaOrdersFromWooCommerce::dispatch($user),
-                            PlatformTypeEnum::EBAY => CatchRetinaOrdersFromEbay::dispatch($user),
                             PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::dispatch($user),
+                            PlatformTypeEnum::WOOCOMMERCE => FetchWooUserOrders::dispatch($user),
                             default => null
                         };
                     }

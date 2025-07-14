@@ -18,9 +18,7 @@ import { RouteParams } from "@/types/route-params";
 library.add(faPlus);
 
 defineProps<{
-  data: {}
-  tab?: string
-  location?: string
+  data: object,
   currency: {
     code: string
     symbol: string
@@ -58,36 +56,19 @@ function orderRoute(order) {
 }
 
 function clientRoute(order) {
-  switch (route().current()) {
-    // case "retina.dropshipping.orders.index":
-    //   return route(
-    //     "retina.dropshipping.orders.show",
-    //     {
-    //       order: order.slug
-    //     });
-    case "retina.dropshipping.customer_sales_channels.orders.index":
-      return route(
-         "retina.dropshipping.customer_sales_channels.client.show",
-        {
-          customerSalesChannel: (route().params as RouteParams).customerSalesChannel,
-          customerClient: order.client_ulid
-        });
-    case "retina.dropshipping.customer_sales_channels.basket.index":
-      return route(
+    return route(
         "retina.dropshipping.customer_sales_channels.client.show",
         {
-          customerSalesChannel: (route().params as RouteParams).customerSalesChannel,
-          customerClient: order.client_ulid
+            customerSalesChannel: (route().params as RouteParams).customerSalesChannel,
+            customerClient: order.client_ulid
         });
-
-  }
 }
 </script>
 
 <template>
   <div>
+    <Table :resource="data" class="mt-5">
 
-    <Table :resource="data" :name="tab" class="mt-5">
       <!-- Column: Reference -->
       <template #cell(reference)="{ item }">
         <Link :href="(orderRoute(item) as string)" class="primaryLink">
@@ -128,7 +109,7 @@ function clientRoute(order) {
 
 
       <template #cell(total_amount)="{ item }">
-        {{ currency?.code }}
+        <!-- {{ currency?.code }} -->
         {{ locale?.currencyFormat(currency?.code, item.total_amount || 0) }}
       </template>
 

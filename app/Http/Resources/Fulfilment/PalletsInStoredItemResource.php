@@ -33,7 +33,7 @@ class PalletsInStoredItemResource extends JsonResource
             'notes'                    => (string)$this->notes,
             'state'                    => $this->pallet_state,
             'location_code'            => $this->location_code,
-            'stored_items_quantity'    => (int)$this->pivot_quantity,
+            'stored_items_quantity'    => $this->pivot_quantity,
         ];
     }
 }

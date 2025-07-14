@@ -9,16 +9,17 @@ import { faShieldAlt, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faTrian
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from '@fal'
 import Image from '@/Components/Image.vue'
-import { inject ,ref} from 'vue'
+import { inject, ref} from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { unset } from 'lodash-es'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faFacebook, faWhatsapp)
 
-defineProps<{
+const props = defineProps<{
     fieldValue?: FieldValue,
     modelValue: FieldValue
 }>();
@@ -72,10 +73,11 @@ const onSubmitSubscribe = async () => {
 		isLoadingSubmit.value = false
 	}
 }
+
 </script>
 
 <template>
-    <div id="app" class="md:mx-0 pb-12 lg:pb-24 pt-4 md:pt-8 md:px-16 text-white"
+    <div id="footer_1_iris" class="md:mx-0 pb-12 lg:pb-24 pt-4 md:pt-8 md:px-16 text-white"
     :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             margin : 0,
@@ -84,20 +86,21 @@ const onSubmitSubscribe = async () => {
 		}">
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-solid border-gray-700">
-            <div class="overflow-hidden flex-1 flex items-center justify-center md:justify-start ">
+            <div class="h-36 md:h-24 overflow-hidden xflex-1 flex items-center justify-center md:justify-start ">
                 <Image v-if="modelValue?.logo?.source"
                     :src="modelValue?.logo?.source"
                     :imageCover="true"
-                    class="w-full md:w-fit h-full flex justify-center items-center"
+                    xclass="w-full md:w-fit h-full flex justify-center items-center"
+                    class="h-full"
                     :alt="modelValue?.logo?.alt"
                     :imgAttributes="modelValue?.logo?.attributes"
-                    :style="getStyles(modelValue?.logo?.properties)"
+                    :style="getStyles(unset(modelValue?.logo?.properties, 'dimension.height'))"
                 />
             </div>
 
             <div v-if="modelValue?.email"
                 class="relative group flex-1 flex justify-center md:justify-start items-center">
-                <div style="font-size: 17px">{{ modelValue?.email }}</div>
+                <a :href="`mailto:${modelValue.email}`" style="font-size: 17px">{{ modelValue?.email }}</a>
             </div>
 
             <div v-if="modelValue?.whatsapp?.number"
