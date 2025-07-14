@@ -16,6 +16,7 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
+use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 
 trait IsOrder
@@ -153,6 +154,8 @@ trait IsOrder
                 ],
                 'estimated_weight' => $estWeight,
             ],
+
+            'payments'  => PaymentsResource::collection($order->payments)->toArray(request()),
 
             'order_summary' => [
                 [

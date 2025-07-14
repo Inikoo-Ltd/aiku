@@ -150,6 +150,7 @@ const props = defineProps<{
         order_summary: {
 
         }
+        payments: {}[]
     }
     pallet_limits?: {
         status: string
@@ -355,6 +356,11 @@ function onPayClick() {
 }
 
 const isModalUploadExcel = ref(false)
+
+const last_payment = computed(() => {
+    return Array.isArray(props.box_stats.payments) && props.box_stats.payments.length > 0 ? props.box_stats.payments[props.box_stats.payments.length - 1] : null
+})
+
 </script>
 
 <template>
@@ -575,13 +581,27 @@ const isModalUploadExcel = ref(false)
                     <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
                 </dt>
 
-                <NeedToPay
-                     @click="onPayClick"
-                    :totalAmount="box_stats.products.payment.total_amount"
-                    :paidAmount="box_stats.products.payment.paid_amount"
-                    :payAmount="box_stats.products.payment.pay_amount"
-                    :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                    :currencyCode="currency.code" />
+                <div>
+                    <NeedToPay
+                        @click="onPayClick"
+                        :totalAmount="box_stats.products.payment.total_amount"
+                        :paidAmount="box_stats.products.payment.paid_amount"
+                        :payAmount="box_stats.products.payment.pay_amount"
+                        :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
+                        :currencyCode="currency.code"
+                    >
+                        <template #default>
+                        </template>
+                    </NeedToPay>
+
+                    <div v-if="last_payment" class="text-xs text-gray-500">
+                        {{ trans("Last payments:") }} <Link :href="route('grp.org.accounting.payments.show', {
+                            organisation: route().params.organisation,
+                            payment: last_payment?.id
+                        })" class="primaryLink">{{ last_payment?.reference ?? last_payment?.id }}</Link>
+                    </div>
+                </div>
+
             </dl>
 
             <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
