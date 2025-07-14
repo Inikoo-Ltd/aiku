@@ -196,6 +196,17 @@ class ShowWebsite extends OrgAction
                     'navigation' => WebsiteTabsEnum::navigation()
                 ],
 
+                'route_storefront' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.show',
+                    // 'name'       => 'grp.org.fulfilments.show.web.webpages.show',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug,
+                        'webpage'      => 'storefront-'.$shop->slug,
+                    ]
+                ],
+
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats, 'content_blog_stats' => $content_blog_stats])
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
