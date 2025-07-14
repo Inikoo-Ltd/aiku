@@ -42,10 +42,6 @@ class UpdateOrderStateToDispatched extends OrgAction
         DB::transaction(function () use ($order, $data) {
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
-
-
-
-
                 $transaction->update([
                     'state' => TransactionStateEnum::DISPATCHED,
                     'quantity_dispatched' => $transaction->quantity_picked,

@@ -14,12 +14,18 @@ use App\Models\Ordering\Order;
 
 class DispatchOrderFromDeliveryNote extends OrgAction
 {
+    /**
+     * @throws \Throwable
+     */
     public function handle(Order $order): Order
     {
         return UpdateOrderStateToDispatched::make()->action($order);
     }
 
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Order $order): Order
     {
         return $this->handle($order);

@@ -40,6 +40,8 @@ trait WithSendBulkEmails
             }
         }
 
+        $html = preg_replace('/\R+/', '', $html);
+
 
         return SendSesEmail::run(
             subject: $subject,
@@ -53,7 +55,7 @@ trait WithSendBulkEmails
     private function replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl = null, $passwordToken = null, $invoiceUrl = null, array $additionalData = []): ?string
     {
         $originalPlaceholder = $placeholder;
-        $placeholder = Str::kebab(trim($placeholder));
+        $placeholder         = Str::kebab(trim($placeholder));
 
         if ($dispatchedEmail->recipient instanceof WebUser) {
             $customerName = $dispatchedEmail->recipient->customer->name;
@@ -85,6 +87,8 @@ trait WithSendBulkEmails
             'customer-link' => Arr::get($additionalData, 'customer_link'),
             'pallet-reference' => Arr::get($additionalData, 'pallet_reference'),
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
+            'order' => Arr::get($additionalData, 'order'),
+            'tracking' => Arr::get($additionalData, 'tracking'),
             'deletion-date',
             'delivered-date',
             'returned-date',
@@ -112,8 +116,6 @@ trait WithSendBulkEmails
         } else {
             return $recipient->company_name ?? $recipient->username;
         }
-
-
     }
 
 
