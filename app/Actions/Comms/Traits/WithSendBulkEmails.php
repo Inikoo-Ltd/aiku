@@ -40,7 +40,6 @@ trait WithSendBulkEmails
             }
         }
 
-        dd($html);
 
         return SendSesEmail::run(
             subject: $subject,
