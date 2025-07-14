@@ -219,7 +219,7 @@ class IndexOrders extends OrgAction
         }
 
 
-        return $query->defaultSort('orders.id')  // Change the default sort column to match DISTINCT ON
+        return $query->defaultSort('-orders.date')
         ->select([
             'orders.id',
             'orders.slug',

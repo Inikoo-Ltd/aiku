@@ -5,6 +5,14 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <title>New Order Notification</title>
 
+  <!--[if mso]>
+  <style type="text/css">
+    .fallback-text {
+      font-family: Arial, sans-serif;
+    }
+  </style>
+  <![endif]-->
+
   <style type="text/css">
       img {
           max-width: 100%;
@@ -93,7 +101,7 @@
             <td class="alert alert-success"
                 style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#27AE60; margin: 0; padding: 20px;"
                 align="center" bgcolor="#27AE60" valign="top">
-              New Order Notification
+              <span class="fallback-text">New Order Notification</span>
             </td>
           </tr>
           <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -102,14 +110,14 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                      A new order has been placed with the following details:
+                      <span class="fallback-text">A new order has been placed with the following details:</span>
                   </td>
                 </tr>
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    <strong>Order Reference:</strong> <a href="[Order Link]" style="color: #3498DB; text-decoration: none;">[Order Reference]</a><br/>
-                    <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br/>
+                    <strong>Order Reference:</strong> <a href="[Order Link]" target="_blank" style="color: #3498DB; text-decoration: underline;">[Order Reference]</a><br/>
+                    <strong>Customer:</strong> <a href="[Customer Link]" target="_blank" style="color: #3498DB; text-decoration: underline;">[Customer Name]</a><br/>
                     <strong>Order Date:</strong> [Order Date]
                   </td>
                 </tr>
@@ -117,6 +125,17 @@
             </td>
           </tr>
         </table>
+        <div class="footer" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; clear: both; color: #999; margin: 0; padding: 20px;">
+          <table width="100%" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
+            <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
+              <td class="aligncenter content-block"
+                  style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;"
+                  align="center" valign="top">
+                  <span class="fallback-text">This is an automated notification. Please do not reply to this email.</span>
+              </td>
+            </tr>
+          </table>
+        </div>
       </div>
     </td>
     <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;" valign="top"></td>
