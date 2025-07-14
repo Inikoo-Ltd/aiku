@@ -74,7 +74,7 @@ class DeleteInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'deleted_note' => ['required', 'string', 'max:4000'],
+            'deleted_note' => ['sometimes', 'string', 'max:4000'],
             'deleted_by'   => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }
