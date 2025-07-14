@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Validation\Rules\Enum;
@@ -49,6 +50,7 @@ class UpdateDeliveryNoteItem extends OrgAction
             'quantity_picked'     => ['sometimes', 'numeric'],
             'quantity_packed'     => ['sometimes', 'numeric'],
             'state'               => ['sometimes', new Enum(DeliveryNoteItemStateEnum::class)],
+            'cancel_state'               => ['sometimes', new Enum(DeliveryNoteItemCancelStateEnum::class)],
         ];
 
         if (!$this->strict) {

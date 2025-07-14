@@ -139,6 +139,21 @@ class ShowDeliveryNote extends OrgAction
             'key'     => 'change-picker',
         ];
 
+        $actions[] = [
+                    'type'      => 'button',
+                    'style'     => 'delete',
+                    'tooltip'   => __('Cancel'),
+                    'label'     => __('Cancel'),
+                    'key'       => 'cancel',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.cancel',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
+                ];
+
         return $actions;
     }
 
@@ -147,6 +162,21 @@ class ShowDeliveryNote extends OrgAction
     {
         $startPickingLabel    = __('Start picking');
         $generateInvoiceLabel = __('Generate Invoice');
+
+        $cancelButton = [
+                    'type'      => 'button',
+                    'style'     => 'delete',
+                    'tooltip'   => __('Cancel'),
+                    'label'     => __('Cancel'),
+                    'key'       => 'cancel',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.cancel',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
+                ];
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
@@ -172,7 +202,8 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ],
-                ]
+                ],
+                $cancelButton
             ],
             DeliveryNoteStateEnum::QUEUED => [
                 [
@@ -236,7 +267,8 @@ class ShowDeliveryNote extends OrgAction
                                 'deliveryNote' => $deliveryNote->id
                             ]
                         ],
-                    ]
+                    ],
+                    $cancelButton
             ],
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
 
@@ -254,7 +286,8 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ] : []
+                ] : [],
+                $cancelButton
             ],
             DeliveryNoteStateEnum::FINALISED => [
                 [
@@ -285,7 +318,8 @@ class ShowDeliveryNote extends OrgAction
                                 'order' => $deliveryNote->orders->first()->id
                             ]
                         ]
-                    ] : []
+                    ] : [],
+                    $cancelButton
             ],
             DeliveryNoteStateEnum::DISPATCHED => [
                 $deliveryNote->orders->first()->invoices->count() == 0 ?

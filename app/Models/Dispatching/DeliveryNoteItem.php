@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
 use App\Models\Inventory\OrgStock;
@@ -98,6 +99,7 @@ class DeliveryNoteItem extends Model
         'data'       => 'array',
         'state'      => DeliveryNoteItemStateEnum::class,
         'sales_type' => DeliveryNoteItemSalesTypeEnum::class,
+        'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
         'date'               => 'datetime',
         'order_submitted_at' => 'datetime',
