@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf } from "@fal";
+import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen } from "@fal";
 import { faArrowRight, faCheck } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
@@ -305,11 +305,11 @@ watch(pickingView, (val) => {
         <template #otherBefore>
             <!-- Button: Download PDF -->
             <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
-                <FontAwesomeIcon icon="fal fa-box-open" class="text-gray-400" fixed-width />
+                <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
 
                 <div class="flex items-center justify-between w-full">
                     <span class="text-sm text-gray-700 font-medium mx-2">
-                        Show Packing Stats
+                        Picking View
                     </span>
 
                     <ToggleSwitch v-model="pickingView" />
@@ -376,17 +376,17 @@ watch(pickingView, (val) => {
             :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
 
-    <SimpleBoxStatDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes
-        :deliveryNote="delivery_note" :updateRoute="routes.update" :shipments />
+   <!--  <SimpleBoxStatDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes
+        :deliveryNote="delivery_note" :updateRoute="routes.update" :shipments /> -->
 
-    <!--   <BoxStatsDeliveryNote
-        v-if="box_stats"
+      <BoxStatsDeliveryNote
+        v-if="box_stats && pickingView"
         :boxStats="box_stats"
         :routes
         :deliveryNote="delivery_note"
         :updateRoute="routes.update"
         :shipments
-    /> -->
+    />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
