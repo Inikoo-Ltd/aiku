@@ -30,7 +30,11 @@ trait WithIrisProductsInWebpage
     public function getPriceRangeFilter(): AllowedFilter
     {
         return AllowedFilter::callback('price_range', function ($query, $value) {
-            [$min, $max] = explode(',', $value);
+            if (is_array($value)) {
+                [$min, $max] = $value;
+            } else {
+                [$min, $max] = explode(',', $value);
+            }
             $min = (float)$min;
             $max = (float)$max;
             
