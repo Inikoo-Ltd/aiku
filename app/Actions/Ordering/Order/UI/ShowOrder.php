@@ -131,7 +131,7 @@ class ShowOrder extends OrgAction
             if ($state === OrderStateEnum::CREATING) {
                 $timestamp = $order->created_at;
             } else {
-                $timestamp = $order->{$state->snake().'_at'} ? $order->{$state->snake().'_at'} : null;
+                $timestamp = $order->{$state->snake() . '_at'} ? $order->{$state->snake() . '_at'} : null;
             }
 
             // If all possible values are null, set the timestamp to null explicitly
@@ -219,6 +219,28 @@ class ShowOrder extends OrgAction
             ];
 
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
+
+            $actions = array_merge(
+                $actions,
+                [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'icon'    => ['fal', 'fa-pdf'],
+                        'key'     => 'delivery-note',
+                        'label'   => __('pdf delivery note'),
+                        'tooltip' => __('pdf delivery note'),
+                        'route'   => [
+                            'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+                            'parameters' => [
+                                'organisation' => $order->organisation->slug,
+                                'warehouse'    => $firstDeliveryNote->warehouse->slug,
+                                'deliveryNote' => $firstDeliveryNote->slug,
+                            ],
+                        ]
+                    ],
+                ]
+            );
         }
 
         $platform  = $order->platform;
@@ -252,9 +274,9 @@ class ShowOrder extends OrgAction
                     ],
                     'actions' => $actions,
                     'platform' => $platform ? [
-                                            'icon'  => $platform->imageSources(24, 24),
-                                            'title' => $platform->name,
-                                            ] : null,
+                        'icon'  => $platform->imageSources(24, 24),
+                        'title' => $platform->name,
+                    ] : null,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -320,7 +342,7 @@ class ShowOrder extends OrgAction
                     ],
                     'upload_spreadsheet'    => [
                         'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'channel'         => 'grp.personal.' . $this->organisation->id,
                         'required_fields' => ['code', 'quantity'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)'
@@ -351,20 +373,20 @@ class ShowOrder extends OrgAction
                 ],
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
-                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
-                    fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn() => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
-                    fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                    fn() => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn() => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                    fn() => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
             ]
         )
