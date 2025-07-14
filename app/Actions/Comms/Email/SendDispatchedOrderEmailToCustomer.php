@@ -69,7 +69,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
                                             <a href="' . $orderUrl . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $order->reference . '</span></a>
                                         </td>
-                                    </tr>' . 
+                                    </tr>' .
                                     ($order->customer_client_id ? '
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
@@ -150,7 +150,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
 
     /**
      * Generate HTML for tracking information
-     * 
+     *
      * @param array $shipments Array of shipment data
      * @return string HTML for tracking information
      */

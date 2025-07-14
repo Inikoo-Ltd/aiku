@@ -55,6 +55,7 @@ class UpdateWarehouseArea extends OrgAction
                 ),
             ],
             'name'                     => ['sometimes', 'required', 'max:250', 'string'],
+            'picking_position'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
 
         if (!$this->strict) {

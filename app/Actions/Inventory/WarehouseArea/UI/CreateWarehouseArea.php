@@ -64,7 +64,13 @@ class CreateWarehouseArea extends OrgAction
                                     'value'   => '',
                                     'required' => true
                                 ],
-
+                                'picking_position' => [
+                                    'type'    => 'input',
+                                    'label'   => __('picking position'),
+                                    'value'   => '',
+                                    'required' => false,
+                                    'numeric' => true
+                                ],
                             ]
                         ],
 

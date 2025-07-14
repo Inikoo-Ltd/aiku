@@ -80,6 +80,13 @@ class EditWarehouseArea extends OrgAction
                                     'label' => __('name'),
                                     'value' => $warehouseArea->name
                                 ],
+                                'picking_position' => [
+                                    'type'    => 'input',
+                                    'label'   => __('picking position'),
+                                    'value'   => $warehouseArea->picking_position,
+                                    'required' => false,
+                                    'numeric' => true
+                                ],
                             ]
                         ]
 
