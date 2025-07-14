@@ -166,6 +166,7 @@ export const createGlobalStyles = (isDark) =>
       backgroundColor: isDark ? '#3730A3' : '#E0E7FF', // dark:indigo-800 / indigo-100
       justifyContent: 'center',
       marginBottom: 3,
+      paddingVertical : 38,
     },
 
     button_swipe_danger: {
@@ -176,6 +177,7 @@ export const createGlobalStyles = (isDark) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 10,
+      paddingVertical : 38,
       backgroundColor: isDark ? '#991B1B' : '#FEE2E2', // dark:red-800 / red-100
       justifyContent: 'center',
       marginBottom: 3,

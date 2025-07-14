@@ -1,19 +1,20 @@
+import { faTruck } from '@/private/fa/pro-light-svg-icons';
+import { library } from '@fortawesome/fontawesome-svg-core';
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
-const ReturnGroupItem = ({ item, navigation }) => {
+library.add({ faTruck })
+
+const ReturnGroupItem = ({ item, onPress }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
-  const handlePress = () => {
-    navigation?.navigate('show-fulfilment-return', { id: item.id });
-  };
 
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      onPress={handlePress}
+      onPress={onPress}
       className={`
         p-4 flex-row justify-between items-center
         bg-white dark:bg-gray-800

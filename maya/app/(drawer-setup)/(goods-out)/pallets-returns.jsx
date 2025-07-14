@@ -21,7 +21,7 @@ const FulfilmentReturns = () => {
         listItem={({ item }) => (
           <PalletReturnItem
             item={item}
-            onPress={() => router.push(`/show-fulfilment-return?id=${item.id}`)}
+            onPress={() => router.replace(`/(show-return)/show-return-data?id=${item.id}`)}
           />
         )}
       />

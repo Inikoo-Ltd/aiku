@@ -19,6 +19,7 @@ import {
   faSpellCheck,
 } from '@/private/fa/pro-light-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
+import { useRouter } from 'expo-router';
 
 library.add(faSeedling, faShare, faSpellCheck, faCheck, faCross, faCheckDouble);
 
@@ -27,6 +28,7 @@ const FulfilmentDeliveries = ({ navigation }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const globalStyles = createGlobalStyles(isDark);
+  const router = useRouter()
 
   return (
     <View style={globalStyles.container}>
@@ -40,7 +42,7 @@ const FulfilmentDeliveries = ({ navigation }) => {
             iconColor={item.state_icon.color}
             title={item.reference}
             subtitle={item.customer_reference || 'No customer reference available'}
-            onPress={() => null}
+            onPress={() => router.replace(`/(show-delivery)/show-delivery-data?id=${item.id}`)}
             globalStyles={globalStyles}
           />
         )}

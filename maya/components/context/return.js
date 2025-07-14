@@ -1,43 +1,59 @@
-import { createContext, useContext, useReducer } from 'react';
+import { AuthContext } from '@/components/context/AuthContext';
+import request from '@/utils/Request';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { ALERT_TYPE, Toast } from 'react-native-alert-notification';
 
-const ReturnContext = createContext();
+const ReturnsContext = createContext({
+  data: null,
+  loading: true,
+  params: {},
+  setParams: () => {},
+  refetch: async () => {},
+});
 
-const ReturnReducer = (state, action) => {
-    switch (action.type) {
-        case 'SET_DATA':
-            return {
-                ...state,
-                data: state.data
-                    ? {...state.data, ...action.payload}
-                    : action.payload,
-            };
-        default:
-            return state;
+export const useReturns = () => useContext(ReturnsContext);
+
+export const ReturnsProvider = ({ children }) => {
+  const { organisation, warehouse } = useContext(AuthContext);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [params, setParams] = useState({});
+
+  const fetchReturns = useCallback(async (currentParams) => {
+    if (!organisation?.id || !warehouse?.id || !currentParams?.id) return;
+
+    setLoading(true);
+    try {
+      await request({
+        urlKey: 'get-return',
+        args: [organisation.id, warehouse.id, currentParams.id],
+        onSuccess: response => {
+          setData(response.data);
+          setLoading(false);
+        },
+        onFailed: error => {
+          setLoading(false);
+          Toast.show({
+            type: ALERT_TYPE.DANGER,
+            title: 'Error',
+            textBody: error.detail?.message || 'Failed to fetch return data',
+          });
+        }
+      });
+    } finally {
+      setLoading(false);
     }
+  }, [organisation?.id, warehouse?.id]);
+
+  useEffect(() => {
+    fetchReturns(params);
+  }, [params, fetchReturns]);
+
+  const refetch = async () => fetchReturns(params);
+
+  return (
+    <ReturnsContext.Provider value={{ data, loading, params, setParams, refetch }}>
+      {children}
+    </ReturnsContext.Provider>
+  );
 };
-
-export const ReturnProvider = ({children}) => {
-    const [state, dispatch] = useReducer(ReturnReducer, { data: null });
-
-    return (
-        <ReturnContext.Provider
-            value={{
-                data: state.data,
-                setData: (updater) => {
-                    // Check if updater is a function (functional update)
-                    if (typeof updater === 'function') {
-                        dispatch({
-                            type: 'SET_DATA',
-                            payload: updater(state.data || {}), // Ensure state.data is an object
-                        });
-                    } else {
-                        dispatch({ type: 'SET_DATA', payload: updater });
-                    }
-                },
-            }}>
-            {children}
-        </ReturnContext.Provider>
-    );
-};
-
-export const useReturn = () => useContext(ReturnContext);

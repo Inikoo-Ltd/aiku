@@ -1,10 +1,13 @@
+import { faInventory } from '@/private/fa/pro-light-svg-icons';
+import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View
 } from 'react-native';
+library.add(faInventory);
 
 
 

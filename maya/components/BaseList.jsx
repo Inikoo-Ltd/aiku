@@ -149,11 +149,11 @@ const BaseList = forwardRef((props, ref) => {
     () =>
       ({ item }) =>
         props.listItem ? (
-          props.listItem({ item, navigation: props.navigation })
+          props.listItem({ item })
         ) : (
-          <GroupItem item={item} navigation={props.navigation} />
+          <GroupItem item={item} />
         ),
-    [props.listItem, props.navigation]
+    [props.listItem]
   );
 
   return (
@@ -209,7 +209,7 @@ const BaseList = forwardRef((props, ref) => {
 });
 
 // Default fallback for item render
-const GroupItem = ({ item, navigation }) => (
+const GroupItem = ({ item }) => (
   <TouchableOpacity
     style={[
       globalStyles.list.card,

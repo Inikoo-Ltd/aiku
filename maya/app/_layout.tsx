@@ -41,6 +41,9 @@ export default function RootLayout() {
             <Stack.Screen name="show-area" options={{ header: () => <DrawerHeader title="Area Detail" /> }}/>
             <Stack.Screen name="show-org-stock" options={{ header: () => <DrawerHeader title="Org Stock Detail" /> }}/>
             <Stack.Screen name="show-pallet" options={{ header: () => <DrawerHeader title="Pallet Detail" /> }}/>
+            <Stack.Screen name="show-stored-item" options={{ header: () => <DrawerHeader title="SKU Detail" /> }}/>
+            <Stack.Screen name="(show-delivery)" options={{ headerShown: false }} />
+            <Stack.Screen name="(show-return)" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

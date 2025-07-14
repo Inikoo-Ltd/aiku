@@ -18,6 +18,7 @@ const Empty = ({
             backgroundColor: bgColor,
             borderRadius: size,
             padding: size * 0.5,
+            marginBottom : 10
           }}
         >
           <FontAwesomeIcon icon={icon} size={size} color={iconColor} />

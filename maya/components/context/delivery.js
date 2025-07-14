@@ -1,41 +1,60 @@
-import { createContext, useContext, useReducer } from 'react';
+import { AuthContext } from '@/components/context/AuthContext';
+import request from '@/utils/Request';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { ALERT_TYPE, Toast } from 'react-native-alert-notification';
 
-const DeliveryContext = createContext();
+const DeliveriesContext = createContext({
+  data: null,
+  loading: true,
+  params: {},
+  setParams: () => {},
+  refetch: async () => {},
+});
 
-const deliveryReducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_DATA':
-        return {
-            ...state,
-            data: state.data
-                    ? {...state.data, ...action.payload}
-                    : action.payload,
-        };
-    default:
-        return state;
-}
-};
+export const useDeliveries = () => useContext(DeliveriesContext);
 
-export const DeliveryProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(deliveryReducer, { data: null });
+export const DeliveriesProvider = ({ children }) => {
+  const { organisation, warehouse } = useContext(AuthContext);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [params, setParams] = useState({});
+
+  /** Main request function */
+  const fetchDeliveries = useCallback(async (currentParams) => {
+    if (!organisation?.id || !warehouse?.id || !currentParams?.id) return;
+
+    setLoading(true);
+    try {
+      await request({
+        urlKey: 'get-delivery',
+        args: [organisation.id, warehouse.id, currentParams.id],
+        onSuccess: response => {
+          setData(response.data);
+          setLoading(false);
+        },
+        onFailed: error => {
+           setLoading(false);
+          Toast.show({
+            type: ALERT_TYPE.DANGER,
+            title: 'Error',
+            textBody: error.detail?.message || 'Failed to fetch data',
+          });
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [organisation?.id, warehouse?.id]);
+
+  useEffect(() => {
+    fetchDeliveries(params);
+  }, [params, fetchDeliveries]);
+
+  const refetch = async () => fetchDeliveries(params);
 
   return (
-    <DeliveryContext.Provider value={{ 
-      data: state.data, 
-      setData: (updater) => {
-        if (typeof updater === 'function') {
-            dispatch({
-                type: 'SET_DATA',
-                payload: updater(state.data || {}),
-            });
-        } else {
-            dispatch({ type: 'SET_DATA', payload: updater });
-        }
-    },
-    }}>
+    <DeliveriesContext.Provider value={{ data, loading, params, setParams, refetch }}>
       {children}
-    </DeliveryContext.Provider>
+    </DeliveriesContext.Provider>
   );
 };
-
-export const useDelivery = () => useContext(DeliveryContext);
