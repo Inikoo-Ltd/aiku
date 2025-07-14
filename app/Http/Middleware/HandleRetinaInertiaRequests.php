@@ -62,7 +62,8 @@ class HandleRetinaInertiaRequests extends Middleware
                 ],
                 'flash'    => [
                     'notification'  => fn () => $request->session()->get('notification'),
-                    'modal'         => fn () => $request->session()->get('modal')
+                    'modal'         => fn () => $request->session()->get('modal'),
+                    'gtm'           => fn () => $request->session()->get('gtm'),
                 ],
                 'ziggy'    => [
                     'location' => $request->url(),
