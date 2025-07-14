@@ -20,7 +20,7 @@ trait WithPlatformStatusCheck
         $status = 'connected';
         if ($customerSalesChannel->user instanceof ShopifyUser) {
             $settings = $customerSalesChannel->user->settings ?? [];
-            if (empty($settings) || empty($settings['webhook'])) {
+            if (empty($settings) || empty($settings['webhooks'])) {
                 $status = 'not-connected';
             }
         } elseif ($customerSalesChannel->user instanceof WooCommerceUser) {

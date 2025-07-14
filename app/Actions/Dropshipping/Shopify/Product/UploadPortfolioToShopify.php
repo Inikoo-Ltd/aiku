@@ -114,9 +114,8 @@ class UploadPortfolioToShopify extends RetinaAction
                 $shopifyProduct = GetShopifyProductFromPortfolio::run($shopifyUser, $portfolio);
 
                 if ($shopifyProduct == null) {
-                    $shopifyProduct = $this->storeShopifyProduct($shopifyUser, $portfolio, $body);
+                    $shopifyProduct = $shopifyUser->createProduct($body);
                 }
-
 
 
 

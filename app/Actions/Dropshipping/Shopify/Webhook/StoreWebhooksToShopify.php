@@ -55,7 +55,7 @@ class StoreWebhooksToShopify extends OrgAction
 
             $webhooksData = [];
             foreach ($webhooks as $webhook) {
-                $webhook = $shopifyUser->api()->getRestClient()->request('POST', 'admin/api/2024-07/webhooks.json', $webhook);
+                $webhook = $shopifyUser->api()->getRestClient()->request('POST', 'admin/api/2025-07/webhooks.json', $webhook);
 
                 if (!$webhook['errors'] && is_array($webhook['body']['webhook']['container'])) {
                     $webhooksData[] = $webhook['body']['webhook']['container'];
