@@ -56,6 +56,7 @@ import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.v
 import { faSpinnerThird } from '@far'
 import DeliveryAddressManagementModal from '@/Components/Utils/DeliveryAddressManagementModal.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
+import TablePayments from '@/Components/Tables/Grp/Org/Accounting/TablePayments.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 interface UploadSection {
@@ -170,6 +171,7 @@ const props = defineProps<{
     delivery_note?: {
         reference: string
     }
+    payments: {}
     readonly?: boolean
     attachments?: {}
     invoices?: {}
@@ -195,7 +197,8 @@ const component = computed(() => {
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,
-		products: TableProductList
+		products: TableProductList,
+		payments: TablePayments
     }
 
     return components[currentTab.value]

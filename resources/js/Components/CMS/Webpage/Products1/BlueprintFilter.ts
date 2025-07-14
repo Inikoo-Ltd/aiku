@@ -2,7 +2,7 @@ export const blueprint = (productCategory: number) => {
 	return {
 		blueprint: [
 			{
-				key: ["price"],
+				key: ["price_range"],
 				label: "Price",
 				type: "min_max_price",
 			},
