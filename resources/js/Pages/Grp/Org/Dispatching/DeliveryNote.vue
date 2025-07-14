@@ -17,7 +17,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref } from "vue";
+import { computed, provide, ref, watch  } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -37,7 +37,9 @@ import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import AddressManagementSingle from "@/Components/Utils/AddressManagementSingle.vue"
+import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
+import SimpleBoxStatDeliveryNote from "@/Components/Warehouse/DeliveryNotes/SimpleBoxStatDeliveryNote.vue";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -279,22 +281,47 @@ provide("listError", listError.value);
 
 const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({ ...props.address.delivery })
+
+// ✅ Toggle for picking view — with localStorage persistence
+const pickingView = ref(false);
+
+// ✅ Get initial value from localStorage
+const storedPickingView = localStorage.getItem('delivery-note:pickingView');
+if (storedPickingView !== null) {
+  pickingView.value = storedPickingView === 'true';
+}
+
+// ✅ Watch and persist to localStorage
+watch(pickingView, (val) => {
+  localStorage.setItem('delivery-note:pickingView', String(val));
+});
 </script>
 
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore>
             <!-- Button: Download PDF -->
+            <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
+                <FontAwesomeIcon icon="fal fa-box-open" class="text-gray-400" fixed-width />
+
+                <div class="flex items-center justify-between w-full">
+                    <span class="text-sm text-gray-700 font-medium mx-2">
+                        Show Packing Stats
+                    </span>
+
+                    <ToggleSwitch v-model="pickingView" />
+                </div>
+            </div>
+
             <a :href="route('grp.org.warehouses.show.dispatching.delivery-notes.pdf', {
                 organisation: route().params.organisation,
                 warehouse: warehouse.slug,
                 deliveryNote: route().params.deliveryNote,
-            })"
-                as="a" target="_blank" class="flex items-center"
-                v-tooltip="trans('Download PDF of this Delivery Note')"
-            >
+            })" as="a" target="_blank" class="flex items-center"
+                v-tooltip="trans('Download PDF of this Delivery Note')">
                 <Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
             </a>
 
@@ -303,40 +330,28 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                 v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
                 @click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
                 v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-                :label="trans('Shipment')"
-                icon="fal fa-shipping-fast"
-                type="tertiary"
-            />
+                :label="trans('Shipment')" icon="fal fa-shipping-fast" type="tertiary" />
         </template>
-        
+
         <template #button-to-queue="{ action }">
-            <Button
-                @click="isModalToQueue = true"
-                :label="action.label"
-                :icon="action.icon"
-                :iconRight="action.iconRight"
-                :type="action.type"
-            />
+            <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon"
+                :iconRight="action.iconRight" :type="action.type" />
         </template>
 
-        <template #button-group-change-picker ="{ action }">
-            <Button
-                @click="isModalToQueue = true"
-                :label="action.label"
-                :icon="action.icon"
-                type="tertiary"
-                class="border-transparent rounded-l-none"
-            />
+        <template #button-group-change-picker="{ action }">
+            <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary"
+                class="border-transparent rounded-l-none" />
         </template>
 
-        <template #button-change-picker ="{ action }">
-            <Button
-                @click="isModalToQueue = true"
-                :label="action.label"
-                :icon="action.icon"
-                type="tertiary"
-            />
+        <template #button-change-picker="{ action }">
+            <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
         </template>
+
+        <!--   <template #other>
+           <ToggleSwitch v-model="pickingView" />
+        </template>
+ -->
+
     </PageHeading>
 
     <!-- Section: Pallet Warning -->
@@ -347,49 +362,41 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">
-            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))" class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
-                <BoxNote
-                    v-for="(note, index) in notes.note_list"
-                    :key="index+note.label"
-                    :noteData="note"
-                    :updateRoute="routes.update"
-                />
+            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
+                class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+                <BoxNote v-for="(note, index) in notes.note_list" :key="index+note.label" :noteData="note"
+                    :updateRoute="routes.update" />
             </div>
         </Transition>
     </div>
 
     <!-- Section: Timeline -->
     <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
-        <Timeline
-            :options="timelines"
-            :state="delivery_note.state"
-            :slidesPerView="6"
-            :format-time="'MMMM d yyyy, HH:mm'"
-        />
+        <Timeline :options="timelines" :state="delivery_note.state" :slidesPerView="6"
+            :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
 
-    <BoxStatsDeliveryNote
+    <SimpleBoxStatDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes
+        :deliveryNote="delivery_note" :updateRoute="routes.update" :shipments />
+
+    <!--   <BoxStatsDeliveryNote
         v-if="box_stats"
         :boxStats="box_stats"
         :routes
         :deliveryNote="delivery_note"
         :updateRoute="routes.update"
         :shipments
-    />
+    /> -->
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <div class="pb-12">
-        <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes :state="delivery_note.state" />
+        <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
+            :state="delivery_note.state" />
     </div>
 
     <!-- Modal: Select picker -->
-    <Modal
-        :isOpen="isModalToQueue"
-        @close="isModalToQueue = false"
-        width="w-full max-w-lg"
-        :title
-    >
+    <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
         <div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
             <div class="mx-auto font-semibold text-lg">
                 {{ trans("Select Picker") }}
@@ -400,24 +407,14 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                     <div class="text-sm font-medium">
                         {{ trans("Select picker") }}
                     </div>
-                    <PureMultiselectInfiniteScroll
-                        v-model="selectedPicker"
-                        xxxupdate:modelValue="
+                    <PureMultiselectInfiniteScroll v-model="selectedPicker" xxxupdate:modelValue="
                             (selectedPicker) => onSubmitPickerPacker(selectedPicker, 'picker')
-                        "
-                        required
-                        :fetchRoute="routes.pickers_list"
-                        :placeholder="trans('Select picker')"
-                        labelProp="contact_name"
-                        valueProp="id"
-                        object
-                        clearOnBlur
+                        " required :fetchRoute="routes.pickers_list" :placeholder="trans('Select picker')"
+                        labelProp="contact_name" valueProp="id" object clearOnBlur
                         :loading="isLoading['picker' + selectedPicker?.id]"
-                        :disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'"
-                    >
+                        :disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'">
                         <template #singlelabel="{ value }">
-                            <div
-                                class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                            <div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
                                 {{ value.contact_name }}
                             </div>
                         </template>
@@ -427,17 +424,13 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                             </div>
                         </template>
                     </PureMultiselectInfiniteScroll>
-                    
+
                     <!-- Quick Pickers -->
                     <div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
                         <div class="flex flex-wrap justify-center gap-2">
-                            <Button
-                                v-for="picker in quick_pickers"
-                                :key="picker.id"
-                                @click="selectedPicker = picker"
+                            <Button v-for="picker in quick_pickers" :key="picker.id" @click="selectedPicker = picker"
                                 class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                :class="{ 'bg-blue-500 text-white': selectedPicker?.id === picker.id }"
-                            >
+                                :class="{ 'bg-blue-500 text-white': selectedPicker?.id === picker.id }">
                                 {{ picker.contact_name }}
                             </Button>
                         </div>
@@ -445,50 +438,36 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                 </dd>
             </div>
             <div class="w-full mt-2">
-                <Button
-                    @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
+                <Button @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
                     :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set Picker')"
-                    :iconRight="['fas', 'fa-arrow-right']"
-                    full
-                    :loading="isLoadingToQueue"
-                    :disabled="!selectedPicker"
-                    v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')"
-                >
+                    :iconRight="['fas', 'fa-arrow-right']" full :loading="isLoadingToQueue" :disabled="!selectedPicker"
+                    v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
                 </Button>
             </div>
         </div>
     </Modal>
 
     <!-- Modal: Shipment -->
-    <Modal
-        v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)"
-        :isOpen="isModalShipment"
-        @onClose="isModalShipment = false"
-        width="w-full max-w-2xl"
-    >
+    <Modal v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)" :isOpen="isModalShipment"
+        @onClose="isModalShipment = false" width="w-full max-w-2xl">
         <div>
             <div class="text-center font-bold mb-4">
                 {{ trans("Add shipment") }}
             </div>
-            
+
             <div class="w-full mt-3">
                 <span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
                 <div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
-                    <div v-if="isLoadingData === 'addTrackingNumber'"
-                         v-for="sip in 3"
-                         class="skeleton w-full max-w-52 h-20 rounded"
-                    >
+                    <div v-if="isLoadingData === 'addTrackingNumber'" v-for="sip in 3"
+                        class="skeleton w-full max-w-52 h-20 rounded">
                     </div>
-                    <div v-else
-                         v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
-                         @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
-                         class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
-                         :class="[
+                    <div v-else v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
+                        @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
+                        class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer" :class="[
                                     formTrackingNumber.shipping_id?.id == shipment.id
                                         ? 'bg-indigo-200 border-indigo-300'
                                         : 'hover:bg-gray-100 border-gray-300',
-                                ]"
-                    >
+                                ]">
                         <div class="font-bold tesm">{{ shipment.name }}</div>
                         <div class="text-xs text-gray-500 italic">
                             {{ shipment.phone }}
@@ -496,22 +475,18 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                         <div class="text-xs text-gray-500 italic">
                             {{ shipment.tracking_url }}
                         </div>
-                        <FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
-                        <div v-if="isLoadingButton == 'addTrackingNumber'" class="bg-black/40 rounded-md absolute inset-0 z-10">
+                        <FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print"
+                            class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
+                        <div v-if="isLoadingButton == 'addTrackingNumber'"
+                            class="bg-black/40 rounded-md absolute inset-0 z-10">
                         </div>
                     </div>
                 </div>
 
                 <div class="">
-                    <PureMultiselectInfiniteScroll
-                        v-model="formTrackingNumber.shipping_id"
-                        :fetchRoute="shipments.fetch_route"
-                        required
-                        :disabled="isLoadingButton == 'addTrackingNumber'"
-                        :placeholder="trans('Select shipping')"
-                        object
-                        @optionsList="(e) => optionShippingList = e"
-                    >
+                    <PureMultiselectInfiniteScroll v-model="formTrackingNumber.shipping_id"
+                        :fetchRoute="shipments.fetch_route" required :disabled="isLoadingButton == 'addTrackingNumber'"
+                        :placeholder="trans('Select shipping')" object @optionsList="(e) => optionShippingList = e">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4">
                                 {{ value.name }}
@@ -526,9 +501,7 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                         </template>
                     </PureMultiselectInfiniteScroll>
 
-                    <p
-                        v-if="get(formTrackingNumber, ['errors', 'shipping_id'])"
-                        class="mt-2 text-sm text-red-500">
+                    <p v-if="get(formTrackingNumber, ['errors', 'shipping_id'])" class="mt-2 text-sm text-red-500">
                         {{ formTrackingNumber.errors.shipping_id }}
                     </p>
                 </div>
@@ -536,20 +509,15 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                 <!-- Tracking number -->
                 <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
                     <span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
-                    <PureInput
-                        v-model="formTrackingNumber.tracking_number"
-                        placeholder="ABC-DE-1234567"
+                    <PureInput v-model="formTrackingNumber.tracking_number" placeholder="ABC-DE-1234567"
                         xxkeydown.enter="() => onSubmitAddService(action, closed)" />
-                    <p
-                        v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
-                        class="mt-2 text-sm text-red-600">
+                    <p v-if="get(formTrackingNumber, ['errors', 'tracking_number'])" class="mt-2 text-sm text-red-600">
                         {{ formTrackingNumber.errors.tracking_number }}
                     </p>
                 </div>
 
                 <!-- Section: error -->
-                <div
-                    v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
+                <div v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
                     class="mt-2 text-sm text-red-600">
                     <p v-if="typeof formTrackingNumber?.errors?.address === 'string'" class="italic">
                         *{{ formTrackingNumber?.errors?.address }}
@@ -560,35 +528,23 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
                 </div>
 
                 <!-- Field: Address -->
-                <div v-if="formTrackingNumber?.errors?.address" class="my-3 p-2 rounded bg-gray-100" :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
-                    <PureAddress
-                        v-model="xxxCopyAddress"
-                        :options="address.options"
-                        xfieldLabel
-                    />
+                <div v-if="formTrackingNumber?.errors?.address" class="my-3 p-2 rounded bg-gray-100"
+                    :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
+                    <PureAddress v-model="xxxCopyAddress" :options="address.options" xfieldLabel />
                 </div>
 
                 <!-- Button: Save -->
                 <div class="flex justify-end mt-3">
-                    <Button
-                        :style="'save'"
-                        :loading="isLoadingButton == 'addTrackingNumber'"
-                        :label="'save'"
-                        :disabled="
+                    <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'save'" :disabled="
                             !formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
-                        "
-                        full
+                        " full
                         @click="() => formTrackingNumber?.errors?.address ? onSubmitAddressThenShipment() : onSubmitShipment()" />
                 </div>
 
                 <!-- Loading: fetching service list -->
-                <div
-                    v-if="isLoadingData === 'addTrackingNumber'"
+                <div v-if="isLoadingData === 'addTrackingNumber'"
                     class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                    <FontAwesomeIcon
-                        icon="fad fa-spinner-third"
-                        class="animate-spin text-5xl"
-                        fixed-width
+                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
                         aria-hidden="true" />
                 </div>
             </div>
