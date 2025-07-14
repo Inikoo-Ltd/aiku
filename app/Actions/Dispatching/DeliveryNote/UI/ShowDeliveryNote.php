@@ -488,7 +488,7 @@ class ShowDeliveryNote extends OrgAction
                 'afterTitle' => [
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
-                'actions'    => $this->getActions($deliveryNote, $request),
+                'actions'    => $actions,
                 $this->getInvoiceButton($deliveryNote)
             ],
             'tabs'          => [
