@@ -220,4 +220,9 @@ class Warehouse extends Model implements Auditable
         return $this->hasMany(WarehouseTimeSeries::class);
     }
 
+    public function pickingSessions(): HasMany
+    {
+        return $this->hasMany(PickingSession::class);
+    }
+
 }

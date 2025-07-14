@@ -81,6 +81,12 @@ class IndexDeliveryNotes extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
+                'picking_session_route' => [
+                    'name' =>'grp.models.warehouse.picking_session.store',
+                    'parameters' => [
+                        'warehouse' => $this->warehouse->id
+                    ]
+                ]
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType));
     }
