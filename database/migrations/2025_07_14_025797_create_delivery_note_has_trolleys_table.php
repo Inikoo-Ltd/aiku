@@ -11,6 +11,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::create('delivery_note_has_trolleys', function (Blueprint $table) {
+            $table->id();
             $table = $this->groupOrgRelationship($table);
 
             $table->unsignedInteger('delivery_note_id')->nullable()->index();
