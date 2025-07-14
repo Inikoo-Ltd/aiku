@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 
 /**
  *
@@ -85,12 +87,13 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withoutTrashed()
  * @mixin \Eloquent
  */
-class CustomerSalesChannel extends Model
+class CustomerSalesChannel extends Model implements Authenticatable
 {
     use InShop;
     use HasSlug;
     use HasApiTokens;
     use SoftDeletes;
+    use AuthenticatableTrait;
 
     protected $table = 'customer_sales_channels';
 
@@ -108,7 +111,7 @@ class CustomerSalesChannel extends Model
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return Abbreviate::run($this->platform->type->value).'-'.$this->reference;
+                return Abbreviate::run($this->platform->type->value) . '-' . $this->reference;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
@@ -155,5 +158,4 @@ class CustomerSalesChannel extends Model
     {
         return $this->hasMany(Portfolio::class);
     }
-
 }

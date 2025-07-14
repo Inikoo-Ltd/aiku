@@ -21,6 +21,7 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
     const currentModule = ref("")
     const currentRoute = ref<string | undefined>("retina.dashboard.show") // Define value to avoid route null at the first load
     const currentParams = ref<{[key: string]: string}>({})
+    const currentQuery = ref<{[key: string]: string}>({})
     const currentPlatform = ref({})
 
     const leftSidebar = ref({
@@ -44,5 +45,5 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
     const user = ref<{ id: number, avatar_thumbnail: Image, email: string, username: string } | null>(null)
 
 
-    return { root_active, stackedComponents, app, currentModule, currentRoute, currentParams, leftSidebar, navigation, currentPlatform, rightSidebar, user }
+    return { currentQuery, root_active, stackedComponents, app, currentModule, currentRoute, currentParams, leftSidebar, navigation, currentPlatform, rightSidebar, user }
 });

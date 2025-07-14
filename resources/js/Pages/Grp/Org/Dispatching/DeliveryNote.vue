@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired } from "@fal";
+import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf } from "@fal";
 import { faArrowRight, faCheck } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
@@ -40,7 +40,7 @@ import AddressManagementSingle from "@/Components/Utils/AddressManagementSingle.
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 
 
-library.add(faSmileWink,faRecycle, faTired, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
+library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
 
 const props = defineProps<{
     title: string,
@@ -100,7 +100,11 @@ const props = defineProps<{
             }[]
         }
     }
+    warehouse: {
+        slug: string
+    }
 }>();
+
 
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -282,6 +286,19 @@ const xxxCopyAddress = ref({ ...props.address.delivery })
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore>
+            <!-- Button: Download PDF -->
+            <a :href="route('grp.org.warehouses.show.dispatching.delivery-notes.pdf', {
+                organisation: route().params.organisation,
+                warehouse: warehouse.slug,
+                deliveryNote: route().params.deliveryNote,
+            })"
+                as="a" target="_blank" class="flex items-center"
+                v-tooltip="trans('Download PDF of this Delivery Note')"
+            >
+                <Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
+            </a>
+
+            <!-- Button: Shipment -->
             <Button
                 v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
                 @click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"

@@ -245,11 +245,11 @@ class ShowDeliveryNote extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Finalised'),
-                    'label'   => __('Finalised'),
+                    'label'   => __('Finalise and Dispatch'),
                     'key'     => 'action',
                     'route'   => [
                         'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.finalised',
+                        'name'       => 'grp.models.delivery_note.state.finalise_and_dispatch',
                         'parameters' => [
                             'deliveryNote' => $deliveryNote->id
                         ]
@@ -442,6 +442,31 @@ class ShowDeliveryNote extends OrgAction
 
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
+
+        $actions = $this->getActions($deliveryNote, $request);
+
+        $actions = array_merge(
+            // [
+            //     [
+            //         'type'    => 'button',
+            //         'style'   => 'tertiary',
+            //         'icon'    => ['fal', 'fa-pdf'],
+            //         'key'     => 'pdf-delivery-note',
+            //         'label'   => __('pdf delivery note'),
+            //         'tooltip' => __('pdf delivery note'),
+            //         'route'   => [
+            //             'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+            //             'parameters' => [
+            //                 'organisation' => $deliveryNote->organisation->slug,
+            //                 'warehouse'    => $deliveryNote->warehouse->slug,
+            //                 'deliveryNote' => $deliveryNote->slug,
+            //             ],
+            //         ]
+            //     ],
+            // ],
+            $actions,
+        );
+
         $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -463,7 +488,7 @@ class ShowDeliveryNote extends OrgAction
                 'afterTitle' => [
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
-                'actions'    => $this->getActions($deliveryNote, $request),
+                'actions'    => $actions,
                 $this->getInvoiceButton($deliveryNote)
             ],
             'tabs'          => [
@@ -542,6 +567,9 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ],
+            ],
+            'warehouse'           => [
+                'slug'                  => $deliveryNote->warehouse->slug,
             ],
 
 

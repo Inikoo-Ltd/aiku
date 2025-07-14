@@ -27,6 +27,7 @@ export const useLayoutStore = defineStore("layout", {
             currentModule: "",
             currentRoute: "grp.dashboard.show", // Define value to avoid route null at first load
             currentParams: {} as {[key: string]: string},
+            currentQuery: {} as {[key: string]: string},
             digital_agency: null,
             group: null as Group | null,
             leftSidebar: {

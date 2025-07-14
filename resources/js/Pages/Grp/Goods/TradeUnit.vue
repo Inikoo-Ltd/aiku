@@ -180,8 +180,8 @@ const selectedVideoToUpdate = ref(null)
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-    <div class="px-4 py-3">
-        <ul v-if="images_category_box?.length" class="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-5 xl:gap-x-8">
+    <div v-if="currentTab === 'images' && images_category_box?.length" class="px-4 py-3">
+        <ul xv-if="" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-8 xl:gap-x-8">
             <li
                 v-for="category_box in images_category_box"
                 :key="category_box.id"

@@ -13,6 +13,7 @@ use App\Http\Resources\SysAdmin\Organisation\MayaOrganisationResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use JsonSerializable;
 
 class MayaUserResource extends JsonResource
@@ -45,6 +46,7 @@ class MayaUserResource extends JsonResource
             'parent_type'               => $this->parent_type,
             'contact_name'              => $this->contact_name,
             'authorised_organisations'  => MayaOrganisationResource::collection($user->authorisedOrganisations)->resolve(),
+            'preferred_printer_id'      => Arr::get($user->settings, 'preferred_printer_id'),
         ];
     }
 }

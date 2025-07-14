@@ -34,7 +34,7 @@ const props = defineProps<{
 <template>
     <div class="px-8 grid grid-cols-2">
 
-        <pre>{{data.tradeUnit}}</pre>
+        <!-- <pre>{{data.tradeUnit}}</pre> -->
 
         <EditTradeUnit
             :tags_selected_id="props.data.tags_selected_id"

@@ -33,6 +33,7 @@ export const initialiseApp = () => {
         router.on('navigate', (event) => {
             // console.log('layout env', layout.app.environment)
             layout.currentParams = route().v().params  // current params
+            layout.currentQuery = route().v().query  // current query
             layout.currentRoute = route().current()  // current route
 
             const currentRouteSplit = layout.currentRoute.split('.')  // to handle grp with route grp.xxx.zzz with org with route grp.org.xxx.zzz
