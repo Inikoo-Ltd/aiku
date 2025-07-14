@@ -31,7 +31,14 @@ trait WithIrisProductsInWebpage
     {
         return AllowedFilter::callback('price_range', function ($query, $value) {
             [$min, $max] = explode(',', $value);
-            $query->whereBetween('price', [(float)$min, (float)$max]);
+            $min = (float)$min;
+            $max = (float)$max;
+            
+            if ($max == 0) {
+                $query->where('price', '>=', $min);
+            } else {
+                $query->whereBetween('price', [$min, $max]);
+            }
         });
     }
 
