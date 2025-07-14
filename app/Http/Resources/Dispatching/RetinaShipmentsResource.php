@@ -1,0 +1,57 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 14 Jul 2025 15:28:08 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Http\Resources\Dispatching;
+
+use App\Http\Resources\HasSelfCall;
+use App\Models\Dispatching\Shipment;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
+
+/**
+ * @property Shipment $resource
+ * @property int $id
+ * @property string $name
+ * @property string|null $reference
+ * @property string $tracking
+ * @property array|null $trackings
+ * @property array|null $tracking_urls
+ * @property string|null $label
+ * @property string|null $label_type
+ */
+class RetinaShipmentsResource extends JsonResource
+{
+    use HasSelfCall;
+
+    public static $wrap = null;
+
+    public function toArray($request): array
+    {
+        $shipment = $this->resource;
+
+
+        $trackingURls = [];
+        foreach ($shipment->trackings as $key => $tracking) {
+            $trackingURls[] = [
+                'url'      => Arr::get($shipment->tracking_urls, $key, __('tracking')),
+                'tracking' => $tracking
+            ];
+        }
+
+        return [
+            'id'            => $shipment->id,
+            'name'          => $shipment->shipper->trade_as ?? $shipment->shipper->name,
+            'reference'     => $shipment->reference,
+            'tracking'      => $shipment->tracking,
+            'trackings'     => $shipment->trackings,
+            'tracking_urls' => $trackingURls,
+            'label'         => $shipment->label,
+            'label_type'    => $shipment->label_type,
+        ];
+    }
+}

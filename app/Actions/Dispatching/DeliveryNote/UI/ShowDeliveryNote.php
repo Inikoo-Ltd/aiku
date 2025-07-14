@@ -447,24 +447,24 @@ class ShowDeliveryNote extends OrgAction
         $actions = $this->getActions($deliveryNote, $request);
 
         $actions = array_merge(
-        // [
-        //     [
-        //         'type'    => 'button',
-        //         'style'   => 'tertiary',
-        //         'icon'    => ['fal', 'fa-pdf'],
-        //         'key'     => 'pdf-delivery-note',
-        //         'label'   => __('pdf delivery note'),
-        //         'tooltip' => __('pdf delivery note'),
-        //         'route'   => [
-        //             'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
-        //             'parameters' => [
-        //                 'organisation' => $deliveryNote->organisation->slug,
-        //                 'warehouse'    => $deliveryNote->warehouse->slug,
-        //                 'deliveryNote' => $deliveryNote->slug,
-        //             ],
-        //         ]
-        //     ],
-        // ],
+            // [
+            //     [
+            //         'type'    => 'button',
+            //         'style'   => 'tertiary',
+            //         'icon'    => ['fal', 'fa-pdf'],
+            //         'key'     => 'pdf-delivery-note',
+            //         'label'   => __('pdf delivery note'),
+            //         'tooltip' => __('pdf delivery note'),
+            //         'route'   => [
+            //             'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+            //             'parameters' => [
+            //                 'organisation' => $deliveryNote->organisation->slug,
+            //                 'warehouse'    => $deliveryNote->warehouse->slug,
+            //                 'deliveryNote' => $deliveryNote->slug,
+            //             ],
+            //         ]
+            //     ],
+            // ],
             $actions,
         );
 
@@ -602,23 +602,23 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
-                    : Inertia::lazy(fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
+                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
-                    : Inertia::lazy(fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
+                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
 
             ];
         }
 
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
+                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
         ];
     }

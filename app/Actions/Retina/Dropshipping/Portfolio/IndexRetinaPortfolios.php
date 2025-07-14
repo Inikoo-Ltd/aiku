@@ -284,12 +284,12 @@ class IndexRetinaPortfolios extends RetinaAction
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
                 RetinaPortfoliosTabsEnum::ACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::ACTIVE->value ?
-                    fn() => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'active'))
-                    : Inertia::lazy(fn() => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'active'))),
+                    fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'active'))
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'active'))),
 
                 RetinaPortfoliosTabsEnum::INACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::INACTIVE->value ?
-                    fn() => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'inactive', disabled: true))
-                    : Inertia::lazy(fn() => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'inactive', disabled: true))),
+                    fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'inactive', disabled: true))
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'inactive', disabled: true))),
 
                 'count_product_not_synced' => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count(),
                 'platform_user_id'         => $platformUser?->id,

@@ -11,8 +11,6 @@ import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faWeight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import NeedToPay from "@/Components/Utils/NeedToPay.vue"
-import { useTruncate } from "@/Composables/useTruncate"
 library.add(faIdCardAlt, faWeight)
 
 defineProps<{
@@ -151,7 +149,7 @@ const isModalShippingAddress = ref(false)
                 <dt v-tooltip="trans('Weight')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400" />
                 </dt>
-                
+
                 <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
                     {{ summary.order_properties?.weight }}
                 </dd>
@@ -163,74 +161,56 @@ const isModalShippingAddress = ref(false)
 				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1' fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-base flex justify-between w-full py-1">
-						<div>{{ trans("Shipments") }} ({{ summary.order_properties?.shipments?.length ?? 0 }})</div>
+						<div>{{ trans("Tracking numbers") }}</div>
 					</div>
-					
-					<ul v-if="summary.order_properties?.shipments" class="list-disc pl-4">
-						<li v-for="(sments, shipmentIdx) in summary.order_properties?.shipments" :key="shipmentIdx" class="xhover:bg-gray-100 hover:underline text-sm tabular-nums">
-							<div class="flex justify-between">
-								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="">
-									{{ sments.name }}
-									<FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />
-								</a>
-								
-								<div v-else-if="sments.label && sments.label_type === 'pdf'" v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)" class="group cursor-pointer">
-									<span class="truncate">
-										{{ sments.name }}
-									</span>
-									<span v-if="sments.tracking" class="text-gray-400">
-										({{ useTruncate(sments.tracking, 14) }})
-									</span>
-									<FontAwesomeIcon icon="fal fa-external-link" class="text-gray-400 group-hover:text-gray-700" fixed-width aria-hidden="true" />
-								</div>
-								
-								<div v-else>
-									<span class="truncate">
-										{{ sments.name }}
-									</span>
-									<span v-if="sments.tracking" class="text-gray-400">
-										({{ useTruncate(sments.tracking, 14) }})
-									</span>
-								</div>
-							</div>
-							
-							<!-- <Button
-								v-if="sments.is_printable"
-								@click="() => onPrintShipment(sments)"
-								size="xs"
-								icon="fal fa-print"
-								label="Print label"
-								type="tertiary"
-								:loading="isLoadingPrint"
-							/> -->
-						</li>
-					</ul>
+
+					<div v-if="summary.order_properties?.shipments" class="mt-2 overflow-x-auto">
+						<table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ trans("Shipper") }}
+                                    </th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ trans("Tracking Number") }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-for="(shipment, shipmentIdx) in summary.order_properties?.shipments" :key="shipmentIdx">
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                        {{ shipment.name }}
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                        <div v-if="shipment.tracking_urls && shipment.tracking_urls.length > 0">
+                                            <div v-for="(trackingItem, trackingIdx) in shipment.tracking_urls" :key="trackingIdx" class="mb-1 last:mb-0">
+                                                <a 
+                                                    :href="trackingItem.url" 
+                                                    target="_blank" 
+                                                    class="text-blue-600 hover:text-blue-800 hover:underline"
+                                                    v-tooltip="trans('Click to track shipment')"
+                                                >
+                                                    {{ trackingItem.tracking }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div v-else-if="shipment.tracking">
+                                            {{ shipment.tracking }}
+                                        </div>
+                                        <div v-else>
+                                            {{ trans("No tracking information") }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+					</div>
 
 				</div>
 			</div>
 
 
-            <!-- <div v-if="delivery_note" class="mt-1 flex items-center w-full flex-none justify-between">
-                <Link
-                    :href="route(routes.delivery_note.deliveryNoteRoute.name, routes.delivery_note.deliveryNoteRoute.parameters)"
-                    class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true' class="text-gray-500" />
-                </dt>
-                <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
-                    {{ delivery_note?.reference }}
-                </dd>
-                </Link>
-                <a :href="route(routes.delivery_note.deliveryNotePdfRoute.name, routes.delivery_note.deliveryNotePdfRoute.parameters)"
-                    as="a" target="_blank" class="flex items-center">
-                    <button class="flex items-center">
-                        <div class="flex-none">
-                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"
-                                class="text-gray-500 hover:text-indigo-500 transition-colors duration-200" />
-                        </div>
-                    </button>
-                </a>
-            </div> -->
+
         </div>
 
         <div class="col-span-2 md:col-span-3 pt-3 md:pt-0 md:pl-3">

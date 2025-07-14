@@ -50,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property string|null $trade_as to be shown in retina UI
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
@@ -104,6 +105,7 @@ class Shipper extends Model implements Auditable
         'api_shipper',
         'status',
         'name',
+        'trade_as',
         'contact_name',
         'company_name',
         'email',
