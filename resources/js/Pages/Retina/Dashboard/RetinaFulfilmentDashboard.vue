@@ -125,9 +125,7 @@ const props = defineProps<{
 	}
 	tab: string
 }>()
-// Mendapatkan data customer dari props
-const customer = usePage().props?.layout?.customer
-const fulfilment = usePage().props?.layout?.fulfilment
+
 
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", layoutStructure)
@@ -166,7 +164,7 @@ const radioValue = ref<string[]>(
 </script>
 
 <template>
-	<div class="p-8 pb-3 text-4xl font-bold">Welcome, {{ customer?.contact_name }}!</div>
+	<div class="p-8 pb-3 text-4xl font-bold">Welcome, {{ props?.data?.fulfilment_customer?.customer?.contact_name }}!</div>
 	<!-- Section: Radiobox, Recurring bills balance, Rental agreement-->
 	<div
 		v-if="layout.user.fulfilment_active"
@@ -381,7 +379,7 @@ const radioValue = ref<string[]>(
 	<div v-else class="grid grid-cols-3 gap-6 p-6">
 		<!-- Card Informasi Perusahaan -->
 		<div
-			class="col-span-3 bg-green-50 rounded-lg shadow-xl overflow-hidden border border-green-300 p-6">
+			class="col-span-3 bg-green-50 rounded-lg shadow overflow-hidden border border-green-300 p-6">
 			<h4 class="text-lg font-semibold text-green-800">
 				{{ trans("Thank you for applying!") }}
 			</h4>
@@ -395,9 +393,9 @@ const radioValue = ref<string[]>(
 		</div>
 
 		<div
-			class="col-span-2 bg-white rounded-lg shadow-xl overflow-hidden border hover:shadow-2xl transition-shadow duration-300">
+			class="col-span-2 bg-white rounded-lg shadow overflow-hidden border xhover:shadow-2xl transition-shadow duration-300">
 			<div class="px-6 py-4 border-b border-gray-200">
-				<h3 class="text-xl font-semibold text-gray-900">{{ trans("My Details") }}</h3>
+				<h3 class="text-xl font-semibold ">{{ trans("My Details") }}</h3>
 				<p class="mt-1 text-sm text-gray-500">
 					{{ trans("Company and contact information.") }}
 				</p>
@@ -405,45 +403,45 @@ const radioValue = ref<string[]>(
 			<div class="p-6 grid grid-cols-2 gap-4">
 				<div>
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Company Name") }}</h4>
-					<p class="mt-1 text-lg font-semibold text-gray-900">
-						{{ customer.company_name }}
+					<p class="mt-1 text-lg font-semibold ">
+						{{ props?.data?.fulfilment_customer?.customer?.company_name }}
 					</p>
 				</div>
 				<div>
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Contact Name") }}</h4>
-					<p class="mt-1 text-lg font-semibold text-gray-900">
-						{{ customer.contact_name }}
+					<p class="mt-1 text-lg font-semibold ">
+						{{ props?.data?.fulfilment_customer?.customer?.contact_name }}
 					</p>
 				</div>
 				<div>
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Email") }}</h4>
-					<p class="mt-1 text-lg font-semibold text-gray-900">{{ customer.email }}</p>
+					<p class="mt-1 text-lg font-semibold ">{{ props?.data?.fulfilment_customer?.customer?.email }}</p>
 				</div>
 				<div>
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Phone") }}</h4>
-					<p class="mt-1 text-lg font-semibold text-gray-900">{{ customer.phone }}</p>
+					<p class="mt-1 text-lg font-semibold ">{{ props?.data?.fulfilment_customer?.customer?.phone }}</p>
 				</div>
 				<div class="col-span-2">
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Address") }}</h4>
 					<p
 						class="mt-1 text-sm text-gray-700"
-						v-html="customer.address.formatted_address"></p>
+						v-html="props?.data?.fulfilment_customer?.customer?.address.formatted_address"></p>
 				</div>
 				<div>
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Status") }}</h4>
 					<p
 						class="mt-1 text-sm font-semibold"
 						:class="{
-							'text-green-700': customer.state === 'active',
-							'text-red-700': customer.state !== 'active',
+							'text-green-700': props?.data?.fulfilment_customer?.customer?.state === 'active',
+							'text-red-700': props?.data?.fulfilment_customer?.customer?.state !== 'active',
 						}">
-						{{ customer.state }}
+						{{ props?.data?.fulfilment_customer?.customer?.state }}
 					</p>
 				</div>
 			</div>
 		</div>
 
-		<div class="rounded-lg shadow-2xl overflow-hidden border border-[#0F1626] h-fit">
+		<div class="rounded-lg shadow overflow-hidden border border-[#0F1626] h-fit">
 			<div
 				class="px-6 py-4 border-b border-[#0F1626] bg-gradient-to-r from-gray-900 to-gray-800">
 				<h4 class="text-2xl font-bold text-white">{{ trans("Contact Us") }}</h4>
@@ -453,23 +451,24 @@ const radioValue = ref<string[]>(
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Email") }}</h4>
 					<p class="mt-2 text-lg font-semibold text-[#0F1626] hover:text-gray-500">
 						<a :href="'mailto:' + 'info@aw-fulfilment.co.uk'" class="hover:underline">{{
-							fulfilment.email
+							props?.data?.fulfilment_customer.customer?.email
 						}}</a>
 					</p>
 				</div>
 				<div class="mb-6">
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Phone") }}</h4>
 					<p class="mt-2 text-lg font-semibold text-[#0F1626] hover:text-gray-500">
-						{{ fulfilment.phone }}
+						{{ props?.data?.fulfilment_customer.customer?.phone }}
 					</p>
 				</div>
 				<div class="mb-6">
 					<h4 class="text-sm font-medium text-gray-500">{{ trans("Office Address") }}</h4>
 					<div
-						v-html="fulfilment?.address?.formatted_address"
-						class="mt-2 text-lg font-semibold text-gray-900" />
+						v-html="props?.data?.fulfilment_customer.customer?.address?.formatted_address"
+						class="mt-2 text-lg font-semibold " />
 				</div>
 			</div>
 		</div>
+
 	</div>
 </template>
