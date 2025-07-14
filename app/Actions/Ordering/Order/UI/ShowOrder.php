@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
+use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
@@ -25,6 +26,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
+use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -366,6 +368,10 @@ class ShowOrder extends OrgAction
                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
+                OrderTabsEnum::PAYMENTS->value => $this->tab == OrderTabsEnum::PAYMENTS->value ?
+                    fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))
+                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
+
             ]
         )
             ->table(
@@ -384,6 +390,12 @@ class ShowOrder extends OrgAction
             ->table(
                 IndexAttachments::make()->tableStructure(
                     prefix: OrderTabsEnum::ATTACHMENTS->value
+                )
+            )
+            ->table(
+                IndexPayments::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::PAYMENTS->value
                 )
             )
             ->table(

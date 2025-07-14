@@ -17,7 +17,7 @@ enum OrderTabsEnum: string
     use HasTabs;
 
     case TRANSACTIONS                       = 'transactions';
-    // case PAYMENTS                    = 'payments';
+    case PAYMENTS                    = 'payments';
     // case DISCOUNTS                   = 'discounts';
     case INVOICES                    = 'invoices';
     case DELIVERY_NOTES              = 'delivery_notes';
@@ -41,12 +41,12 @@ enum OrderTabsEnum: string
                 'title' => __('transactions'),
                 'icon'  => 'fal fa-bars',
             ],
-            // OrderTabsEnum::PAYMENTS => [
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            //     'title' => __('payments'),
-            //     'icon'  => 'fal fa-dollar-sign',
-            // ],
+            OrderTabsEnum::PAYMENTS => [
+                'type'  => 'icon',
+                'align' => 'right',
+                'title' => __('payments'),
+                'icon'  => 'fal fa-dollar-sign',
+            ],
 
             // OrderTabsEnum::SENT_EMAILS => [
             //     'title' => __('sent emails'),
