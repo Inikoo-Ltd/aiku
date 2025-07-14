@@ -62,11 +62,11 @@ class DeleteCustomerSalesChannel extends OrgAction
     }
 
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): ?bool
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
     {
         $this->initialisationFromShop($customerSalesChannel->shop, $request);
 
-        return $this->handle($customerSalesChannel);
+        $this->handle($customerSalesChannel);
     }
 
     public string $commandSignature = 'delete:customer-sales-channel  {customer_sales_channel}';

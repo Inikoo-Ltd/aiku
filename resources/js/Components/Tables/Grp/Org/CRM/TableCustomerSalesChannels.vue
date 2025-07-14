@@ -4,6 +4,8 @@ import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { RouteParams } from "@/types/route-params"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faTrashAlt } from "@fal"
 
 defineProps<{
     data: TableTS,
@@ -75,6 +77,11 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
         <template #cell(number_orders)="{ item: customerSalesChannel }">
             <Link :href="ordersRoute(customerSalesChannel) as string" class="secondaryLink">
                 {{ customerSalesChannel["number_orders"] }}
+            </Link>
+        </template>
+          <template #cell(action)="{ item: customerSalesChannel }">
+            <Link :href="route('grp.models.customer_sales_channel.delete',{customerSalesChannel : customerSalesChannel.id })" method="delete"  >
+              <Button type="negative" class="w-full" label="Delete" :icon="faTrashAlt" />
             </Link>
         </template>
     </Table>
