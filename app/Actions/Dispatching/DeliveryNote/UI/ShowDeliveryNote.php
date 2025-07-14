@@ -446,25 +446,25 @@ class ShowDeliveryNote extends OrgAction
         $actions = $this->getActions($deliveryNote, $request);
 
         $actions = array_merge(
+            // [
+            //     [
+            //         'type'    => 'button',
+            //         'style'   => 'tertiary',
+            //         'icon'    => ['fal', 'fa-pdf'],
+            //         'key'     => 'pdf-delivery-note',
+            //         'label'   => __('pdf delivery note'),
+            //         'tooltip' => __('pdf delivery note'),
+            //         'route'   => [
+            //             'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+            //             'parameters' => [
+            //                 'organisation' => $deliveryNote->organisation->slug,
+            //                 'warehouse'    => $deliveryNote->warehouse->slug,
+            //                 'deliveryNote' => $deliveryNote->slug,
+            //             ],
+            //         ]
+            //     ],
+            // ],
             $actions,
-            [
-                [
-                    'type'    => 'button',
-                    'style'   => 'secondary',
-                    'icon'    => ['fal', 'fa-pdf'],
-                    'key'     => 'delivery-note',
-                    'label'   => __('pdf delivery note'),
-                    'tooltip' => __('pdf delivery note'),
-                    'route'   => [
-                        'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
-                        'parameters' => [
-                            'organisation' => $deliveryNote->organisation->slug,
-                            'warehouse'    => $deliveryNote->warehouse->slug,
-                            'deliveryNote' => $deliveryNote->slug,
-                        ],
-                    ]
-                ],
-            ]
         );
 
         $props = [
@@ -567,6 +567,9 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ],
+            ],
+            'warehouse'           => [
+                'slug'                  => $deliveryNote->warehouse->slug,
             ],
 
 
