@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
+use App\Actions\Dispatching\Printer\PrintBarcode;
 use App\Actions\Fulfilment\Pallet\BookInPallet;
 use App\Actions\Fulfilment\Pallet\ReturnPalletToCustomer;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
@@ -78,6 +78,7 @@ Route::patch('pallet-return-item/pallet/{palletReturnItem:id}/not-picked', NotPi
 Route::patch('pallet-return-item/stored-items/{palletReturnItem:id}/pick', PickPalletReturnItemInPalletReturnWithStoredItem::class)->name('pallet-return-item.stored-item.pick');
 Route::patch('pallet-return-item/stored-items/{palletReturnItem:id}/undo-pick', UndoStoredItemPick::class)->name('pallet-return-item.stored-item.not-picked');
 
+Route::post('print-barcode', [PrintBarcode::class, 'maya'])->name('print_barcode');
 
 
 
@@ -99,4 +100,4 @@ Route::delete(
 )->name('stored_item_audit_delta.delete');
 Route::patch('stored-item-audit/{storedItemAudit:id}/complete', action: CompleteStoredItemAudit::class)->name('stored_item_audit.complete');
 
-require __DIR__."/actions/inventory/location_org_stock.php";
+require __DIR__ . "/actions/inventory/location_org_stock.php";
