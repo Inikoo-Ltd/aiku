@@ -77,23 +77,24 @@ class ShowPupilDashboard
         }
 
 
-        if (!$shopifyUser?->customer) {
-            $render_page = 'Intro';
-        } elseif ($shopifyUser?->customer?->shop?->name) {
-            $render_page = 'WelcomeShop';
-        } else {
-            $render_page = 'Dashboard/PupilWelcome';
-        }
+        $render_page = 'Intro';
+
+        //        if ($shopifyUser?->customer?->shop?->name) {
+        //            $render_page = 'WelcomeShop';
+        //        } else {
+        //            $render_page = 'Dashboard/PupilWelcome';
+        //        }
 
         return Inertia::render($render_page, [
             'shop'    => $shopifyUser?->customer?->shop?->name,
             'shopUrl' => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
             'user'    => $shopifyUser,
             // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
-            'shops'   => $query->map(function ($shop) {
+            'shops'   => $query->map(function (Shop $shop) {
                 return [
                     'id'   => $shop->id,
-                    'name' => $shop->name
+                    'name' => $shop->name,
+                    'domain' => 'https://' . $shop->website?->domain . '/app/login?ref=/app/dropshipping/sale-channels/create&modal=shopify'
                 ];
             }),
             ...$routes,

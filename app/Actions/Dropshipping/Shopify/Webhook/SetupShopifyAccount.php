@@ -35,7 +35,7 @@ class SetupShopifyAccount extends OrgAction
         DB::transaction(function () use ($shopifyUser, $shop) {
             if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
                 if (!$shopifyUser?->customer) {
-
+                    // TODO: Make customer as ds if pupil enable later
                 }
             } else {
                 $fulfilment = $shop->fulfilment;
