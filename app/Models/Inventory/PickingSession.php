@@ -74,6 +74,11 @@ class PickingSession extends Model
         return $this->hasMany(Trolley::class);
     }
 
+    public function pickingSessionItem(): HasMany
+    {
+        return $this->hasMany(PickingSessionItem::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

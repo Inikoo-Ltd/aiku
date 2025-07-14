@@ -27,6 +27,8 @@ return new class extends Migration
             $table->unsignedInteger('number_delivery_notes_picked')->default(0);
             $table->unsignedInteger('number_locations')->default(0);
             $table->unsignedInteger('number_locations_picked')->default(0);
+            $table->unsignedInteger('number_picking_session_items')->default(0);
+            $table->unsignedInteger('number_picking_session_items_picked')->default(0);
             $table->dateTimeTz('start_at')->nullable();
             $table->dateTimeTz('end_at')->nullable();
             $table->timestampsTz();
