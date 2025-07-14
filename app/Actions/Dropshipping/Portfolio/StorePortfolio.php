@@ -38,6 +38,13 @@ class StorePortfolio extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
         $rrp = $item->rrp ?? 0;
+
+        $descriptions = $item->description;
+
+        if(!$descriptions) {
+            $descriptions = $item->name;
+        }
+        
         data_set($modelData, 'last_added_at', now(), overwrite: false);
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
         data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
