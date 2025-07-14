@@ -3,6 +3,7 @@
 namespace App\Actions\Dispatching\Printer;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithPrintNode;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Dispatching\Shipment;
 use Illuminate\Http\RedirectResponse;
