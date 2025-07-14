@@ -289,13 +289,12 @@ const isModalEbayDuplicate = ref(false)
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
-                        <div class="font-semibold">{{ trans("Manual") }}</div>
+                        <div class="font-semibold">{{ trans("Web") }}</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <!-- <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full/> -->
                     <Button
                         @click="() => isModalManual = true"
                         :label="trans('Create')"
@@ -308,7 +307,6 @@ const isModalEbayDuplicate = ref(false)
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12"> -->
                     <div v-html="ChannelLogo('shopify')" class="h-12"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
@@ -318,7 +316,14 @@ const isModalEbayDuplicate = ref(false)
 
                 <!-- Button: Connect -->
                 <div class="relative w-full">
-                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
+                    <Button v-if="layout?.app?.environment === 'xlocal'"
+                            :label=" trans('Connect')"
+                            type="primary"
+                            full
+                            iconRight="fal fa-external-link-alt"
+                    />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+<!--                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>-->
                 </div>
             </div>
 
@@ -326,7 +331,6 @@ const isModalEbayDuplicate = ref(false)
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12"> -->
                     <div v-html="ChannelLogo('tiktok')" class="h-12"
                          :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
                     <div class="flex flex-col">
@@ -368,12 +372,16 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <Button
-                        :label="trans('Connect')"
-                        type="primary"
-                        full
-                        @click="() => isModalWooCommerce = true"
-                    />
+
+                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
+
+
+                    <!--                    <Button-->
+<!--                        :label="trans('Connect')"-->
+<!--                        type="primary"-->
+<!--                        full-->
+<!--                        @click="() => isModalWooCommerce = true"-->
+<!--                    />-->
                 </div>
             </div>
             <!-- Section: Ebay -->
@@ -393,14 +401,17 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <Button
-                        :label="trans('Connect')"
-                        xtype="primary"
-                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"
-                        full
-                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
-                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
-                    />
+
+                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
+
+<!--                    <Button-->
+<!--                        :label="trans('Connect')"-->
+<!--                        xtype="primary"-->
+<!--                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"-->
+<!--                        full-->
+<!--                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"-->
+<!--                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"-->
+<!--                    />-->
                 </div>
             </div>
 
@@ -455,12 +466,16 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <Button
-                        :label="trans('Connect')"
-                        type="primary"
-                        full
-                        @click="() => isModalMagento = true"
-                    />
+
+                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
+
+
+<!--                    <Button-->
+<!--                        :label="trans('Connect')"-->
+<!--                        type="primary"-->
+<!--                        full-->
+<!--                        @click="() => isModalMagento = true"-->
+<!--                    />-->
                 </div>
             </div>
         </div>

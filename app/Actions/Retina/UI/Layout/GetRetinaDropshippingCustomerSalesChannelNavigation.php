@@ -83,7 +83,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
             ],
         ];
 
-        if ($isManual) {
+        if ($isManual &&  false) {
             $platformNavigation['api_token'] = [
                 'label' => __('Api'),
                 'icon'  => ['fal', 'fa-key'],
