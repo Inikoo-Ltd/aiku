@@ -219,28 +219,6 @@ class ShowOrder extends OrgAction
             ];
 
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
-
-            $actions = array_merge(
-                $actions,
-                [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'icon'    => ['fal', 'fa-pdf'],
-                        'key'     => 'delivery-note',
-                        'label'   => __('pdf delivery note'),
-                        'tooltip' => __('pdf delivery note'),
-                        'route'   => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
-                            'parameters' => [
-                                'organisation' => $order->organisation->slug,
-                                'warehouse'    => $firstDeliveryNote->warehouse->slug,
-                                'deliveryNote' => $firstDeliveryNote->slug,
-                            ],
-                        ]
-                    ],
-                ]
-            );
         }
 
         $platform  = $order->platform;
