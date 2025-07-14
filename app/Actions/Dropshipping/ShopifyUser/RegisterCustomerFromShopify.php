@@ -50,7 +50,7 @@ class RegisterCustomerFromShopify extends OrgAction
         $fulfilmentCustomer = $customerExists?->fulfilmentCustomer;
 
         if (!$fulfilmentCustomer) {
-            $fulfilmentCustomer = RegisterFulfilmentCustomer::make()->action($fulfilment, $modelData);
+            $fulfilmentCustomer = RegisterFulfilmentCustomer::run($fulfilment, $modelData);
             ApproveCustomer::run($fulfilmentCustomer->customer);
             StoreRentalAgreement::make()->action($fulfilmentCustomer, [
                 'billing_cycle' => RentalAgreementBillingCycleEnum::MONTHLY,

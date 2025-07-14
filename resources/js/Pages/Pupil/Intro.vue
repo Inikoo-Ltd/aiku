@@ -18,10 +18,12 @@ const props = defineProps<{
 }>()
 
 const isModalGetStarted = ref(false)
-const onClickGetStarted = (id: number) => {
+const onClickGetStarted = (domain: string) => {
     isModalGetStarted.value = false
 
-    router[props.routes.get_started.method || 'post'](route(props.routes.get_started.name, props.routes.get_started.parameters), {
+    window.open(domain)
+
+    /*router[props.routes.get_started.method || 'post'](route(props.routes.get_started.name, props.routes.get_started.parameters), {
         shop: id
     }, {
         headers: {
@@ -34,7 +36,7 @@ const onClickGetStarted = (id: number) => {
         onError: (error) => {
             console.error('error get started: ', error)
         }
-    })
+    })*/
 }
 </script>
 
@@ -45,7 +47,8 @@ const onClickGetStarted = (id: number) => {
         </h2>
 
         <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
-            It's looks like this is the first time you integrate Shopify, let's have a look what you can do.
+            Welcome! We're excited to help you. <br> You need to create account from our website shop first
+            <br>  Please select one of our available shops below to begin using our services.
         </p>
 
         <div class="mt-10 flex items-center justify-center gap-x-6">
@@ -53,7 +56,7 @@ const onClickGetStarted = (id: number) => {
                 <div class="flex flex-col p-4 border-gray-300 border rounded">
                     <img class="w-72 h-48 object-cover text-center" v-if="shop.name === 'AW Fulfilment'" src="https://i.ibb.co.com/CxTbCRf/undraw-factory-4d61.png" :alt="`${shop.name}`">
                     <img class="w-72 h-48 object-cover text-center" v-else src="https://i.ibb.co.com/9k4B20qk/undraw-financial-data-r0vs.png" :alt="`${shop.name}`">
-                    <Button @click="() => onClickGetStarted(shop.id)" type="tertiary" size="l" :label="`Setup ${shop.name}`" />
+                    <Button @click="() => onClickGetStarted(shop.domain)" type="tertiary" size="l" :label="`Open ${shop.name}`" />
                 </div>
             </div>
         </div>
