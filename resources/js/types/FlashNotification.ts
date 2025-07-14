@@ -9,4 +9,5 @@ export interface FlashNotification
   status: string
   title?: string
   description?: string
+  message?: string
 }

@@ -90,7 +90,7 @@ class TopUpPaymentFailure extends RetinaWebhookAction
 
 
         return Redirect::route('retina.top_up.checkout', [$newToUpPaymentApiPoint])->with(
-            'notification',
+            'modal',
             $notification
         );
     }

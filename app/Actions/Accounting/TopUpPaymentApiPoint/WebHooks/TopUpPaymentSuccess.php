@@ -137,7 +137,9 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             [
                 'status'  => 'success',
                 'title'   => __('Success!'),
-                'message' => __('Top up payment has been successfully processed.'),
+                'message' => __('Top up balance :amount has been successfully processed.', [
+                    'amount' => $creditTransaction->amount
+                ]),
                 'top_up'  => TopUpResource::make($creditTransaction->topUp)
             ]
         );

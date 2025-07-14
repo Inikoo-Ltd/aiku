@@ -48,6 +48,9 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         text: notif.description,
         type: notif.status,
     })
+}, {
+    deep: true,
+    immediate: true
 })
 
 // Section: Modal
@@ -64,6 +67,9 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 
     selectedModal.value = modal
     isModalOpen.value = true
+}, {
+    deep: true,
+    immediate: true
 })
 
 // Section: To open/close the mobile menu
@@ -96,6 +102,38 @@ onMounted(() => {
     //     hideSuperchatWidget()
     // }
 })
+
+
+const getTextColorDependsOnStatus = (status: string) => {
+    switch (status) {
+        case 'success':
+            return 'text-green-500'
+        case 'error':
+        case 'failure':
+            return 'text-red-500'
+        case 'warning':
+            return 'text-yellow-500'
+        case 'info':
+            return 'text-gray-500'
+        default:
+            return ''
+    }
+}
+const getBgColorDependsOnStatus = (status: string) => {
+    switch (status) {
+        case 'success':
+            return 'bg-green-100'
+        case 'error':
+        case 'failure':
+            return 'bg-red-100'
+        case 'warning':
+            return 'bg-yellow-100'
+        case 'info':
+            return 'bg-gray-100'
+        default:
+            return ''
+    }
+}
 </script>
 
 <template>
@@ -157,10 +195,14 @@ onMounted(() => {
 
     <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
+                :class="getTextColorDependsOnStatus(selectedModal?.status)"
+            >
                 <div>
-                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
+                        :class="getBgColorDependsOnStatus(selectedModal?.status)"
+                    >
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
@@ -170,11 +212,15 @@ onMounted(() => {
                         <div as="h3" class="font-semibold text-2xl">
                             {{ selectedModal?.title }}
                         </div>
-                        <div class="mt-2 text-sm text-gray-500">
+                        <div v-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
                             {{ selectedModal?.description }}
+                        </div>
+                        <div v-if="selectedModal?.message" class="mt-2 text-sm opacity-75">
+                            {{ selectedModal?.message }}
                         </div>
                     </div>
                 </div>
+
                 <div class="mt-5 sm:mt-6">
                     <Button
                         @click="() => isModalOpen = false"
