@@ -133,7 +133,7 @@ class UploadPortfolioToShopify extends RetinaAction
                 // Dispatch event to notify about upload progress
                 UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $portfolio);
             } catch (\Exception $e) {
-                Sentry::captureMessage($e->getMessage());
+                Sentry::captureException($e);
 
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$e->getMessage()]
@@ -170,7 +170,7 @@ class UploadPortfolioToShopify extends RetinaAction
             }
         } catch (Exception $e) {
             // Log exception to Sentry
-            Sentry::captureMessage($e->getMessage());
+            Sentry::captureException($e);
 
             // Try to find the product again in case it was created despite the exception
             return GetShopifyProductFromPortfolio::run($shopifyUser, $portfolio);
