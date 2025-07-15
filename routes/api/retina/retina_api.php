@@ -13,8 +13,7 @@ Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
-// INFO: treblle middleware take off for now, to make api works in prod
-Route::middleware(['auth:sanctum', 'ability:retina'])->group(function () {
+Route::middleware(['auth:sanctum', 'ability:retina', 'treblle'])->group(function () {
     Route::get('/user-profile', GetProfile::class)->name('profile');
 
     Route::prefix("dropshipping")

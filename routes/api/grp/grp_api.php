@@ -24,8 +24,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
-// treblle
-Route::middleware(['auth:sanctum'])->group(function () {
+
+Route::middleware(['auth:sanctum', 'treblle'])->group(function () {
     Route::get('/profile', GetApiProfile::class)->name('profile');
     Route::get('/group', ShowApiGroup::class)->name('group.show');
     Route::get('/organisations', IndexApiOrganisations::class)->name('organisations.index');
