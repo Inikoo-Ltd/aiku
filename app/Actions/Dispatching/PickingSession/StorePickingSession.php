@@ -41,7 +41,10 @@ class StorePickingSession extends OrgAction
 
         $pickingSession = $warehouse->pickingSessions()->create($modelData);
 
-        $pickingSession->deliveryNotes()->attach($deliveryNoteIds);
+        $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
+            'organisation_id' => $pickingSession->organisation_id,
+            'group_id' => $pickingSession->group_id
+        ]);
 
         $pickingSession->refresh();
 
@@ -66,10 +69,12 @@ class StorePickingSession extends OrgAction
 
                 if (isset($mergedItems[$orgStockId])) {
                     $mergedItems[$orgStockId]['quantity_required'] += $item->quantity;
+                    $mergedItems[$orgStockId]['delivery_note_item_ids'][] = $item->id;
                 } else {
                     $mergedItems[$orgStockId] = [
                         'org_stock_id' => $orgStockId->id,
-                        'quantity_required' => $item->quantity
+                        'quantity_required' => $item->quantity,
+                        'delivery_note_item_ids' => [$item->id]
                     ];
                 }
             }
