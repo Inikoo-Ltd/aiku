@@ -366,16 +366,14 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-
-                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
-
-
-                    <!--                    <Button-->
-<!--                        :label="trans('Connect')"-->
-<!--                        type="primary"-->
-<!--                        full-->
-<!--                        @click="() => isModalWooCommerce = true"-->
-<!--                    />-->
+                    <Button
+                        v-if="layout?.app?.environment === 'local'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="() => isModalWooCommerce = true"
+                    />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
             <!-- Section: Ebay -->
@@ -396,16 +394,17 @@ const isModalEbayDuplicate = ref(false)
 
                 <div class="w-full flex justify-end">
 
-                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
+                    <Button
+                        v-if="layout?.app?.environment === 'local'"
+                        :label="trans('Connect')"
+                        xtype="primary"
+                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"
+                        full
+                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
+                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
+                    />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
-<!--                    <Button-->
-<!--                        :label="trans('Connect')"-->
-<!--                        xtype="primary"-->
-<!--                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"-->
-<!--                        full-->
-<!--                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"-->
-<!--                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"-->
-<!--                    />-->
                 </div>
             </div>
 
@@ -460,16 +459,14 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-
-                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
-
-
-<!--                    <Button-->
-<!--                        :label="trans('Connect')"-->
-<!--                        type="primary"-->
-<!--                        full-->
-<!--                        @click="() => isModalMagento = true"-->
-<!--                    />-->
+                    <Button
+                        v-if="layout?.app?.environment === 'local'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="() => isModalMagento = true"
+                    />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
         </div>
