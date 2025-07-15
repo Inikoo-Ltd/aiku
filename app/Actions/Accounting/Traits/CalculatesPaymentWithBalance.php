@@ -21,7 +21,7 @@ trait CalculatesPaymentWithBalance
     {
         $toPay = (float) max($totalAmount, 0.0);
 
-        $toPay=round($toPay, 2);
+        $toPay = round($toPay, 2);
 
         $payFloatWithBalance = min($toPay, $balance);
 

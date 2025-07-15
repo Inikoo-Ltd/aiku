@@ -9,16 +9,9 @@
 
 namespace App\Actions\Dispatching\PickingSession\UI;
 
-use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\Http\Resources\Dispatching\PickingSessionsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -77,7 +70,7 @@ class IndexPickingSessions extends OrgAction
                     'icon' => 'fal fa-truck',
                 ];
 
-             $model     = __('Goods Out');
+        $model     = __('Goods Out');
 
         $actions = [];
         return Inertia::render(

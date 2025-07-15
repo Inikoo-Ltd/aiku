@@ -13,7 +13,6 @@ use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -91,9 +90,9 @@ class CustomerSalesChannelsResourcePro extends JsonResource
     {
         $status                = $customerSalesChannels->status->labels()[$customerSalesChannels->status->value];
 
-        if($customerSalesChannels->platform->type==PlatformTypeEnum::SHOPIFY){
+        if ($customerSalesChannels->platform->type == PlatformTypeEnum::SHOPIFY) {
 
-            if($customerSalesChannels->status!=CustomerSalesChannelStatusEnum::CLOSED &&  !$customerSalesChannels->user){
+            if ($customerSalesChannels->status != CustomerSalesChannelStatusEnum::CLOSED &&  !$customerSalesChannels->user) {
                 return '⚠️ Fatal Error';
             }
 

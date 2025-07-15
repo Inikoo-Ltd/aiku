@@ -104,11 +104,11 @@ class IndexOrders extends OrgAction
         $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
 
-//        $query->leftJoin('model_has_payments', function ($join) {
-//            $join->on('orders.id', '=', 'model_has_payments.model_id')
-//                ->where('model_has_payments.model_type', '=', 'Order');
-//        })
-      //  $query->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id');
+        //        $query->leftJoin('model_has_payments', function ($join) {
+        //            $join->on('orders.id', '=', 'model_has_payments.model_id')
+        //                ->where('model_has_payments.model_type', '=', 'Order');
+        //        })
+        //  $query->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id');
 
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');

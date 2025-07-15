@@ -65,7 +65,7 @@ class DropshippingPortfoliosResource extends JsonResource
         $magentoUploadRoute = [];
 
 
-        if($this->platform->type != PlatformTypeEnum::MANUAL && $this->customerSalesChannel->user){
+        if ($this->platform->type != PlatformTypeEnum::MANUAL && $this->customerSalesChannel->user) {
             if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
                 $shopifyUploadRoute = [
                     'platform_upload_portfolio' => [

@@ -34,22 +34,22 @@ class StorePickingSession extends OrgAction
         $pickingSession =  DB::transaction(function () use ($warehouse, $modelData) {
             $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
             $reference = 'PS-'. $warehouse->pickingSessions()->max('id') + 1;
-    
+
             data_set($modelData, 'group_id', $warehouse->group_id);
             data_set($modelData, 'organisation_id', $warehouse->organisation_id);
             data_set($modelData, 'reference', $reference);
             data_set($modelData, 'user_id', request()->user()->id);
             data_set($modelData, 'start_at', now());
-    
+
             $pickingSession = $warehouse->pickingSessions()->create($modelData);
-    
+
             $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
                 'organisation_id' => $pickingSession->organisation_id,
                 'group_id' => $pickingSession->group_id
             ]);
 
             $pickingSession->refresh();
-    
+
             $mergedItems = $this->getMergedDeliveryNoteItems($pickingSession);
             foreach ($mergedItems as $item) {
                 StorePickingSessionItem::dispatch($pickingSession, $item);

@@ -36,10 +36,10 @@ class StorePickingSessionItem extends OrgAction
         $deliveryNoteItemIds = Arr::pull($modelData, 'delivery_note_item_ids');
         $location = $orgStock->locationOrgStocks->where('picking_priority', 1)->first();
 
-        if(!$location) {
+        if (!$location) {
             $location = $orgStock->locationOrgStocks->where('picking_priority', 2)->first();
         }
-        
+
         data_set($modelData, 'location_id', $location->id);
         data_set($modelData, 'org_stock_family_id', $orgStock->org_stock_family_id);
         data_set($modelData, 'stock_id', $orgStock->stock_id);

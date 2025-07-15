@@ -41,12 +41,6 @@ class StorePortfolio extends OrgAction
     {
         $rrp = $item->rrp ?? 0;
 
-        $descriptions = $item->description;
-
-        if (!$descriptions) {
-            $descriptions = $item->name;
-        }
-
         data_set($modelData, 'last_added_at', now(), overwrite: false);
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
         data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
@@ -75,9 +69,9 @@ class StorePortfolio extends OrgAction
             return $portfolio;
         });
 
-        $platformProductAvailabilities=[];
-        if($customerSalesChannel->user instanceof ShopifyUser) {
-            $platformProductAvailabilities= GetShopifyProductFromPortfolio::run($customerSalesChannel->user,$portfolio);
+        $platformProductAvailabilities = [];
+        if ($customerSalesChannel->user instanceof ShopifyUser) {
+            $platformProductAvailabilities = GetShopifyProductFromPortfolio::run($customerSalesChannel->user, $portfolio);
         }
 
         data_set($modelData, 'platform_product_availabilities', $platformProductAvailabilities);
