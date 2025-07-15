@@ -9,6 +9,7 @@
 namespace App\Http\Resources\CRM;
 
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,6 +38,23 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         /** @var CustomerSalesChannel $customerSalesChannels */
         $customerSalesChannels = $this;
 
+        $reconnectRoute = null;
+
+        if (in_array($customerSalesChannels->platform->type, [
+            PlatformTypeEnum::SHOPIFY,
+            PlatformTypeEnum::WOOCOMMERCE,
+            PlatformTypeEnum::MAGENTO,
+
+        ])) {
+            $reconnectRoute = [
+                'name'       => 'retina.dropshipping.customer_sales_channels.reconnect',
+                'parameters' => [
+                    'customerSalesChannel' => $this->slug
+                ],
+                'method'     => 'get',
+            ];
+        }
+
 
         return [
             'slug'                    => $this->slug,
@@ -54,13 +72,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
             'connection'              => $this->connection_status,
 
-            'reconnect_route'                     => [
-                'name'       => 'retina.dropshipping.customer_sales_channels.reconnect',
-                'parameters' => [
-                    'customerSalesChannel' => $this->slug
-                ],
-                'method'     => 'get',
-            ],
+            'reconnect_route' => $reconnectRoute,
 
             'delete_route' => [
                 'method'     => 'delete',
