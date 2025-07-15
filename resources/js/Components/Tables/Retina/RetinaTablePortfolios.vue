@@ -137,7 +137,7 @@ onMounted(() => {
 
 // Table: Filter out-of-stock and discontinued
 const compTableFilterStatus = computed(() => {
-	return layout.currentQuery?.active_filter?.status
+	return layout.currentQuery?.[`${props.tab}_filter`]?.status
 })
 const isLoadingTable = ref<null | string>(null)
 const onClickOutOfStock = (query: string) => {
@@ -151,7 +151,7 @@ const onClickOutOfStock = (query: string) => {
 	console.log('xx', xx)
 	router.reload(
         {
-            data: { 'active_filter[status]': xx },  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            data: { [`${props.tab}_filter[status]`]: xx },  // Sent to url parameter (?tab=showcase, ?tab=menu)
             // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
             onStart: () => {
 				isLoadingTable.value = query || null
